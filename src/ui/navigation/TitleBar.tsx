@@ -18,8 +18,8 @@ const TitleBar: Component = () => {
                 submenu: [
                   { label: 'foo.gk' },
                   { label: 'bar.gk' },
-                  { label: 'Older', submenu: [{ label: 'old_foo.gk' }, { label: 'old_bar.gk' }] },
-                ],
+                  { label: 'Older', submenu: [{ label: 'old_foo.gk' }, { label: 'old_bar.gk' }] }
+                ]
               },
               {
                 label: 'Auto Save',
@@ -27,13 +27,13 @@ const TitleBar: Component = () => {
                 checked: checked(),
                 callback: () => {
                   setChecked(!checked());
-                },
-              },
-            ],
+                }
+              }
+            ]
           },
           {
             label: 'Edit',
-            submenu: [{ label: 'Undo' }, { label: 'Redo' }, { label: 'Cut' }, { label: 'Copy' }],
+            submenu: [{ label: 'Undo' }, { label: 'Redo' }, { label: 'Cut' }, { label: 'Copy' }]
           },
           {
             label: 'Object',
@@ -41,12 +41,12 @@ const TitleBar: Component = () => {
               { label: 'Transform' },
               { label: 'Arrange' },
               { label: 'Group' },
-              { label: 'Ungroup' },
-            ],
+              { label: 'Ungroup' }
+            ]
           },
           {
-            label: 'Type',
-          },
+            label: 'Type'
+          }
         ]}
       />
     </div>

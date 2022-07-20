@@ -1,5 +1,5 @@
-import { createSignal, For } from 'solid-js';
-import { Component } from 'solid-js';
+import { createSignal, For, Component } from 'solid-js';
+
 import Button from '@inputs/Button';
 import { MenuItems } from './ControlledMenu';
 import Menu from './Menu';

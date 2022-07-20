@@ -31,13 +31,13 @@ module.exports = {
           600: '#21262d',
           700: '#171b22',
           800: '#0e1117',
-          900: '#010409',
-        },
+          900: '#010409'
+        }
       },
       gridTemplateColumns: {
-        'menu-item': '1.5rem 1fr 1.5rem',
-      },
-    },
+        'menu-item': '1.5rem 1fr 1.5rem'
+      }
+    }
   },
-  plugins: [],
+  plugins: []
 };

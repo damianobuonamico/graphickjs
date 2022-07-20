@@ -1,7 +1,7 @@
 import { Component, createSignal, For, onCleanup, onMount } from 'solid-js';
 import { Button } from '@inputs';
-import Menu from './Menu';
 import { CheckIcon } from '@icons';
+import Menu from './Menu';
 
 export interface MenuItem {
   label: string;

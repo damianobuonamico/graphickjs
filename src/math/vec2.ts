@@ -17,7 +17,7 @@ export function create(): vec2 {
  * @returns {vec2} a new 2D vector
  */
 export function fromValues(x: number, y: number): vec2 {
-  let out = create();
+  const out = create();
   out[0] = x;
   out[1] = y;
   return out;

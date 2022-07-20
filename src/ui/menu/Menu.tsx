@@ -1,4 +1,4 @@
-import { JSX, Component, createSignal, Show, createEffect } from 'solid-js';
+import { Component, createSignal, Show, createEffect } from 'solid-js';
 import { vec2 } from '@math';
 import { ChevronRightIcon } from '@icons';
 import { Button } from '@inputs';

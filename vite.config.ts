@@ -5,10 +5,10 @@ import { fileURLToPath, URL } from 'url';
 export default defineConfig({
   plugins: [solidPlugin()],
   server: {
-    port: 3000,
+    port: 3000
   },
   build: {
-    target: 'esnext',
+    target: 'esnext'
   },
   resolve: {
     alias: {
@@ -18,7 +18,7 @@ export default defineConfig({
       '@inputs': fileURLToPath(new URL('./src/ui/inputs', import.meta.url)),
       '@menu': fileURLToPath(new URL('./src/ui/menu', import.meta.url)),
       '@navigation': fileURLToPath(new URL('./src/ui/navigation', import.meta.url)),
-      '@math': fileURLToPath(new URL('./src/math', import.meta.url)),
-    },
-  },
+      '@math': fileURLToPath(new URL('./src/math', import.meta.url))
+    }
+  }
 });
