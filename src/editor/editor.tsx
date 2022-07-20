@@ -1,9 +1,12 @@
 import { Component } from 'solid-js';
+import TitleBar from '@navigation/TitleBar';
 
 const Editor: Component = () => {
-  console.log();
-
-  return <p class="text-4xl text-green-700 text-center py-20">Editor!</p>;
+  return (
+    <div class="w-screen h-screen bg-primary-700">
+      <TitleBar />
+    </div>
+  );
 };
 
 export default Editor;

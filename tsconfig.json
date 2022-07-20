@@ -12,6 +12,22 @@
     "isolatedModules": true,
     "noImplicitAny": true,
     "strict": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@": ["./src"],
+      "@math/*": ["./src/math/*"],
+      "@math": ["./src/math"],
+      "@icons/*": ["./src/ui/icons/*"],
+      "@icons": ["./src/ui/icons"],
+      "@inputs/*": ["./src/ui/inputs/*"],
+      "@inputs": ["./src/ui/inputs"],
+      "@menu/*": ["./src/ui/menu/*"],
+      "@menu": ["./src/ui/menu"],
+      "@navigation/*": ["./src/ui/navigation/*"],
+      "@navigation": ["./src/ui/navigation"],
+      "@ui/*": ["./src/ui/*"],
+      "@ui": ["./src/ui"]
+    }
   }
 }
