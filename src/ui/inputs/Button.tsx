@@ -1,4 +1,4 @@
-import { JSX, Component, Show, mergeProps } from 'solid-js';
+import { JSX, Component, Show } from 'solid-js';
 import classNames from 'classnames';
 
 export type ButtonVariant = 'file-menu' | 'menu';
@@ -29,10 +29,9 @@ const Button: Component<{
       onMouseLeave={props.onLeave}
       // TODO: create custom implementation of classNames()
       class={classNames(
-        'select-none flex items-center',
+        'select-none flex items-center outline-none',
         {
-          'py-1 grow grid justify-items-start hover:bg-primary-700 grid-cols-menu-item':
-            variant === 'menu',
+          'py-1 grow grid justify-items-start grid-cols-menu-item': variant === 'menu',
           'bg-primary-700': props.active
         },
         {

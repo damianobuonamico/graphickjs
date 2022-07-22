@@ -14,7 +14,7 @@ const TitleBar: Component = () => {
               { label: 'New From Template...' },
               { label: 'Open...' },
               {
-                label: 'Open Recent Files From HD',
+                label: 'Open Recent',
                 submenu: [
                   { label: 'foo.gk' },
                   { label: 'bar.gk' },

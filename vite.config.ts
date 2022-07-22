@@ -18,7 +18,8 @@ export default defineConfig({
       '@inputs': fileURLToPath(new URL('./src/ui/inputs', import.meta.url)),
       '@menu': fileURLToPath(new URL('./src/ui/menu', import.meta.url)),
       '@navigation': fileURLToPath(new URL('./src/ui/navigation', import.meta.url)),
-      '@math': fileURLToPath(new URL('./src/math', import.meta.url))
+      '@math': fileURLToPath(new URL('./src/math', import.meta.url)),
+      '@utils': fileURLToPath(new URL('./src/utils', import.meta.url))
     }
   }
 });

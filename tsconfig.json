@@ -18,6 +18,7 @@
       "@": ["./src"],
       "@math/*": ["./src/math/*"],
       "@math": ["./src/math"],
+      "@utils/*": ["./src/utils/*"],
       "@icons/*": ["./src/ui/icons/*"],
       "@icons": ["./src/ui/icons"],
       "@inputs/*": ["./src/ui/inputs/*"],
