@@ -1,5 +1,5 @@
+import { classNames } from '@utils/utils';
 import { JSX, Component, Show } from 'solid-js';
-import classNames from 'classnames';
 
 export type ButtonVariant = 'file-menu' | 'menu';
 
@@ -27,20 +27,25 @@ const Button: Component<{
       onMouseUp={props.onMouseUp}
       onMouseOver={props.onHover}
       onMouseLeave={props.onLeave}
-      // TODO: create custom implementation of classNames()
       class={classNames(
         'select-none flex items-center outline-none',
-        {
-          'py-1 grow grid justify-items-start grid-cols-menu-item': variant === 'menu',
-          'bg-primary-700': props.active
-        },
-        {
-          'px-2 rounded h-fi border': variant === 'file-menu',
-          'border-primary-600': props.active,
-          'border-transparent': !props.active,
-          'hover:bg-primary-700': variant === 'file-menu' && !props.lighter,
-          'hover:bg-primary-600': variant === 'file-menu' && props.lighter
-        }
+        { 'py-1 grow grid justify-items-start grid-cols-menu-item': variant === 'menu' },
+        [
+          'px-2 rounded h-fi border',
+          {
+            'border-primary-600': props.active,
+            'border-transparent': !props.active
+          },
+          variant === 'file-menu'
+        ],
+        [
+          {
+            'hover:bg-primary-700': !props.lighter,
+            'hover:bg-primary-600': props.lighter,
+            'bg-primary-700': props.active
+          },
+          variant === 'file-menu' || variant === 'menu'
+        ]
       )}
     >
       <Show when={variant === 'menu' || props.leftIcon}>

@@ -5,3 +5,7 @@ export interface KeyBinding {
   ctrl?: boolean | null;
   platform?: boolean;
 }
+
+export type ClassNameValue = string | number | boolean | undefined | null;
+export type ClassNameMapping = { [key: string]: any };
+export type ClassNameArgument = ClassNameValue | ClassNameMapping | ClassNameArgument[];
