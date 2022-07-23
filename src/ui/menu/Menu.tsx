@@ -18,6 +18,7 @@ const Menu: Component<{
   level: number;
   keyCallback: MenuKeyCallback;
   alt: boolean;
+  expanded?: boolean;
 }> = (props) => {
   const [anchor, setAnchor] = createSignal(vec2.create());
   const [locked, setLocked] = createSignal(props.level !== 1);
@@ -80,14 +81,17 @@ const Menu: Component<{
       <Button
         variant={props.menuButton.variant}
         onHover={onHover}
-        onMouseDown={props.onMouseDown}
+        onMouseDown={() => {
+          if (props.onMouseDown) props.onMouseDown();
+          else setLocked(!locked());
+        }}
         ref={menuButtonRef}
         rightIcon={props.isSubMenu ? <ChevronRightIcon /> : undefined}
         active={props.active}
       >
         {(props.alt ? altLabel : false) || props.menuButton.label}
       </Button>
-      <Show when={props.active && !locked()}>
+      <Show when={props.active && !locked() && props.expanded !== false}>
         <ControlledMenu
           items={props.items}
           anchor={anchor()}

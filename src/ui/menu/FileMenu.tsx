@@ -10,8 +10,10 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
   const [focus, setFocus] = createSignal(false);
   const [active, setActive] = createSignal(-1);
   const [alt, setAlt] = createSignal<boolean | undefined>(false);
+  const [expanded, setExpanded] = createSignal(true);
   const level = 0;
   const keyCallback = new MenuKeyCallback();
+  let menuRef: HTMLUListElement | undefined;
 
   const processKey = (e: KeyboardEvent) => {
     if (active() < 0) return false;
@@ -24,8 +26,14 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
         setActive(active() === 0 ? props.items.length - 1 : active() - 1);
         break;
       }
+      case KEYS.ENTER:
+      case KEYS.ARROW_DOWN: {
+        console.log('down', focus());
+        if (focus()) setExpanded(true);
+        break;
+      }
       case KEYS.ESCAPE: {
-        setActive(-1);
+        onClose();
         break;
       }
     }
@@ -35,6 +43,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
         if (props.items[i].key === e.key) {
           if (props.items[i].submenu && props.items[i].submenu!.length) {
             setActive(i);
+            setExpanded(true);
           } else {
             onClick(props.items[i]);
           }
@@ -50,19 +59,35 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
       e.preventDefault();
       const last = alt();
       if (active() > -1) {
-        setAlt(false);
-        setActive(-1);
+        setExpanded(true);
+        onClose();
       } else {
         if (last === true || last === undefined) {
           setActive(-1);
           setFocus(false);
-        } else setActive(0);
+        } else {
+          setActive(0);
+          setFocus(true);
+        }
         setAlt(!last);
+        setExpanded(false);
       }
       return;
     }
     keyCallback.register(() => processKey(e), level);
   };
+
+  const onMouseDown = (e: MouseEvent) => {
+    if (menuRef && !menuRef.contains(e.target as Node) && !expanded()) onClose();
+  };
+
+  createEffect(() => {
+    if (alt() === true) {
+      window.addEventListener('click', onMouseDown);
+    } else {
+      window.removeEventListener('click', onMouseDown);
+    }
+  });
 
   onMount(() => {
     window.addEventListener('keydown', onKey);
@@ -84,7 +109,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
   };
 
   return (
-    <ul class="h-full flex flex-row items-center">
+    <ul ref={menuRef} class="h-full flex flex-row items-center">
       <For each={props.items}>
         {(item, index) => (
           <li>
@@ -94,7 +119,10 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
                 items={item.submenu}
                 active={active() === index()}
                 onHover={() => {
-                  if (focus()) setActive(index());
+                  if (focus()) {
+                    setActive(index());
+                    setExpanded(true);
+                  }
                 }}
                 onMouseDown={() => {
                   setFocus(true);
@@ -105,6 +133,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
                 level={level + 1}
                 keyCallback={keyCallback}
                 alt={alt() === true}
+                expanded={expanded()}
               />
             ) : (
               <Button
