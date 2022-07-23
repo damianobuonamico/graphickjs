@@ -1,14 +1,14 @@
-import { Component, createSignal, Show, createEffect, onMount, onCleanup } from 'solid-js';
+import { Component, createSignal, Show, createEffect, onMount, onCleanup, JSX } from 'solid-js';
 import { vec2 } from '@math';
 import { ChevronRightIcon } from '@icons';
 import { Button } from '@inputs';
 import { ButtonVariant } from '@inputs/Button';
-import ControlledMenu, { MenuItems } from './ControlledMenu';
+import ControlledMenu, { calculateAltLabel, MenuItems } from './ControlledMenu';
 import { KEYS } from '@utils/keys';
 import MenuKeyCallback from './menuKeyCallback';
 
 const Menu: Component<{
-  menuButton: { label: string; variant: ButtonVariant };
+  menuButton: { label: string; variant: ButtonVariant; key?: string };
   items: MenuItems;
   isSubMenu?: boolean;
   active: boolean;
@@ -17,6 +17,7 @@ const Menu: Component<{
   onClose(propagate: boolean): void;
   level: number;
   keyCallback: MenuKeyCallback;
+  alt: boolean;
 }> = (props) => {
   const [anchor, setAnchor] = createSignal(vec2.create());
   const [locked, setLocked] = createSignal(props.level !== 1);
@@ -28,6 +29,7 @@ const Menu: Component<{
     switch (e.key) {
       case KEYS.ENTER:
       case KEYS.ARROW_RIGHT: {
+        if (!locked()) return false;
         setLocked(false);
         return true;
       }
@@ -69,6 +71,10 @@ const Menu: Component<{
     props.onHover();
   };
 
+  const altLabel: JSX.Element | false = props.menuButton.key
+    ? calculateAltLabel(props.menuButton.label, props.menuButton.key)
+    : false;
+
   return (
     <>
       <Button
@@ -79,7 +85,7 @@ const Menu: Component<{
         rightIcon={props.isSubMenu ? <ChevronRightIcon /> : undefined}
         active={props.active}
       >
-        {props.menuButton.label}
+        {(props.alt ? altLabel : false) || props.menuButton.label}
       </Button>
       <Show when={props.active && !locked()}>
         <ControlledMenu
@@ -89,6 +95,7 @@ const Menu: Component<{
           level={props.level + 1}
           keyCallback={props.keyCallback}
           isSubMenu={props.isSubMenu}
+          alt={props.alt}
         />
       </Show>
     </>

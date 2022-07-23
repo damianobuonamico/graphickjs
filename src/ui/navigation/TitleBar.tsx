@@ -1,5 +1,6 @@
 import { Component, createSignal } from 'solid-js';
 import FileMenu from '@menu/FileMenu';
+import { KEYS } from '@utils/keys';
 
 const TitleBar: Component = () => {
   const [checked, setChecked] = createSignal(true);
@@ -9,20 +10,27 @@ const TitleBar: Component = () => {
         items={[
           {
             label: 'File',
+            key: KEYS.F,
             submenu: [
-              { label: 'New...' },
-              { label: 'New From Template...' },
-              { label: 'Open...' },
+              { label: 'New...', key: KEYS.N },
+              { label: 'New From Template...', key: KEYS.T },
+              { label: 'Open...', key: KEYS.O },
               {
-                label: 'Open Recent',
+                label: 'Open Recent Files',
+                key: KEYS.F,
                 submenu: [
                   { label: 'foo.gk' },
                   { label: 'bar.gk' },
-                  { label: 'Older', submenu: [{ label: 'old_foo.gk' }, { label: 'old_bar.gk' }] }
+                  {
+                    label: 'Older',
+                    key: KEYS.O,
+                    submenu: [{ label: 'old_foo.gk' }, { label: 'old_bar.gk' }]
+                  }
                 ]
               },
               {
                 label: 'Auto Save',
+                key: KEYS.A,
                 checkbox: true,
                 checked: checked(),
                 callback: () => {
@@ -33,19 +41,27 @@ const TitleBar: Component = () => {
           },
           {
             label: 'Edit',
-            submenu: [{ label: 'Undo' }, { label: 'Redo' }, { label: 'Cut' }, { label: 'Copy' }]
-          },
-          {
-            label: 'Object',
+            key: KEYS.E,
             submenu: [
-              { label: 'Transform' },
-              { label: 'Arrange' },
-              { label: 'Group' },
-              { label: 'Ungroup' }
+              { label: 'Undo', key: KEYS.U },
+              { label: 'Redo', key: KEYS.R },
+              { label: 'Cut', key: KEYS.T },
+              { label: 'Copy', key: KEYS.C }
             ]
           },
           {
-            label: 'Type'
+            label: 'Object',
+            key: KEYS.O,
+            submenu: [
+              { label: 'Transform', key: KEYS.T },
+              { label: 'Arrange', key: KEYS.A },
+              { label: 'Group', key: KEYS.G },
+              { label: 'Ungroup', key: KEYS.U }
+            ]
+          },
+          {
+            label: 'Type',
+            key: KEYS.T
           }
         ]}
       />

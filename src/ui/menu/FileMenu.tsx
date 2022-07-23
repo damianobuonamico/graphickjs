@@ -1,7 +1,7 @@
 import { createSignal, For, Component, onMount, createEffect } from 'solid-js';
 import { onCleanup } from 'solid-js';
 import Button from '@inputs/Button';
-import { MenuItems } from './ControlledMenu';
+import { calculateAltLabel, MenuItem, MenuItems } from './ControlledMenu';
 import Menu from './Menu';
 import { KEYS } from '@utils/keys';
 import MenuKeyCallback from './menuKeyCallback';
@@ -29,6 +29,19 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
         break;
       }
     }
+
+    if (alt()) {
+      for (let i = 0; i < props.items.length; i++) {
+        if (props.items[i].key === e.key) {
+          if (props.items[i].submenu && props.items[i].submenu!.length) {
+            setActive(i);
+          } else {
+            onClick(props.items[i]);
+          }
+        }
+      }
+    }
+
     return true;
   };
 
@@ -36,11 +49,16 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
     if (e.key === KEYS.ALT) {
       e.preventDefault();
       const last = alt();
-      if (last === true || last === undefined) {
+      if (active() > -1) {
+        setAlt(false);
         setActive(-1);
-        setFocus(false);
-      } else setActive(0);
-      setAlt(!last);
+      } else {
+        if (last === true || last === undefined) {
+          setActive(-1);
+          setFocus(false);
+        } else setActive(0);
+        setAlt(!last);
+      }
       return;
     }
     keyCallback.register(() => processKey(e), level);
@@ -54,6 +72,17 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
     window.removeEventListener('keydown', onKey);
   });
 
+  const onClose = () => {
+    setFocus(false);
+    setActive(-1);
+    setAlt(false);
+  };
+
+  const onClick = (item: MenuItem) => {
+    if (item.callback) item.callback();
+    onClose();
+  };
+
   return (
     <ul class="h-full flex flex-row items-center">
       <For each={props.items}>
@@ -61,7 +90,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
           <li>
             {item.submenu && item.submenu.length ? (
               <Menu
-                menuButton={{ label: item.label, variant: 'file-menu' }}
+                menuButton={{ label: item.label, variant: 'file-menu', key: item.key }}
                 items={item.submenu}
                 active={active() === index()}
                 onHover={() => {
@@ -72,17 +101,19 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
                   setActive(index());
                   setAlt(undefined);
                 }}
-                onClose={() => {
-                  setFocus(false);
-                  setActive(-1);
-                  setAlt(false);
-                }}
+                onClose={onClose}
                 level={level + 1}
                 keyCallback={keyCallback}
+                alt={alt() === true}
               />
             ) : (
-              <Button variant="file-menu" onHover={() => setActive(index())}>
-                {item.label}
+              <Button
+                variant="file-menu"
+                onHover={() => setActive(index())}
+                onClick={() => onClick(item)}
+              >
+                {(alt() && item.key ? calculateAltLabel(item.label, item.key) : false) ||
+                  item.label}
               </Button>
             )}
           </li>

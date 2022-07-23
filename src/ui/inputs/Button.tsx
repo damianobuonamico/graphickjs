@@ -4,7 +4,7 @@ import classNames from 'classnames';
 export type ButtonVariant = 'file-menu' | 'menu';
 
 const Button: Component<{
-  children: string | number;
+  children: string | number | JSX.Element;
   variant?: ButtonVariant;
   onClick?(): void;
   onMouseDown?(): void;

@@ -7,6 +7,7 @@ import MenuKeyCallback from './menuKeyCallback';
 
 export interface MenuItem {
   label: string;
+  key?: string;
   icon?: Component;
   callback?(): void;
   submenu?: MenuItems;
@@ -16,6 +17,21 @@ export interface MenuItem {
 
 export type MenuItems = MenuItem[];
 
+export function calculateAltLabel(label: string, key: string) {
+  var indices = [];
+  for (var i = 0; i < label.length; i++) {
+    if (label[i].toLowerCase() == key[0]) indices.push(i);
+  }
+
+  return (
+    <span>
+      {label.substring(0, indices[key.length - 1])}
+      <u>{label[indices[key.length - 1]]}</u>
+      {label.substring(indices[key.length - 1] + 1, label.length)}
+    </span>
+  );
+}
+
 const ControlledMenu: Component<{
   items: MenuItems;
   anchor: vec2;
@@ -23,6 +39,7 @@ const ControlledMenu: Component<{
   level: number;
   keyCallback: MenuKeyCallback;
   isSubMenu?: boolean;
+  alt: boolean;
 }> = (props) => {
   const [active, setActive] = createSignal(props.isSubMenu ? 0 : -1);
   let menuRef: HTMLDivElement | undefined;
@@ -48,11 +65,26 @@ const ControlledMenu: Component<{
         return true;
       }
       case KEYS.ENTER: {
-        console.log(active());
         onClick(props.items[active()]);
         return true;
       }
     }
+
+    if (props.alt) {
+      for (let i = 0; i < props.items.length; i++) {
+        if (props.items[i].key === e.key) {
+          if (props.items[i].submenu && props.items[i].submenu!.length) {
+            setActive(i);
+            setTimeout(
+              () => window.dispatchEvent(new KeyboardEvent('keydown', { key: KEYS.ARROW_RIGHT })),
+              25
+            );
+          } else onClick(props.items[i]);
+          return true;
+        }
+      }
+    }
+
     return false;
   };
 
@@ -88,7 +120,7 @@ const ControlledMenu: Component<{
             <li class="flex">
               {item.submenu && item.submenu.length ? (
                 <Menu
-                  menuButton={{ label: item.label, variant: 'menu' }}
+                  menuButton={{ label: item.label, variant: 'menu', key: item.key }}
                   items={item.submenu}
                   isSubMenu={true}
                   active={active() === index()}
@@ -101,6 +133,7 @@ const ControlledMenu: Component<{
                   }}
                   level={props.level + 1}
                   keyCallback={props.keyCallback}
+                  alt={props.alt}
                 />
               ) : (
                 <Button
@@ -110,7 +143,8 @@ const ControlledMenu: Component<{
                   leftIcon={item.checked && <CheckIcon />}
                   active={active() === index()}
                 >
-                  {item.label}
+                  {(props.alt && item.key ? calculateAltLabel(item.label, item.key) : false) ||
+                    item.label}
                 </Button>
               )}
             </li>
