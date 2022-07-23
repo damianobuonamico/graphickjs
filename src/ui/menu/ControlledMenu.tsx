@@ -90,11 +90,13 @@ const ControlledMenu: Component<{
       for (let i = 0; i < props.items.length; i++) {
         if (props.items[i].key === e.key) {
           if (props.items[i].submenu && props.items[i].submenu!.length) {
-            setActive(i);
-            setTimeout(
-              () => window.dispatchEvent(new KeyboardEvent('keydown', { key: KEYS.ARROW_RIGHT })),
-              25
-            );
+            if (!props.items[i].disabled) {
+              setActive(i);
+              setTimeout(
+                () => window.dispatchEvent(new KeyboardEvent('keydown', { key: KEYS.ARROW_RIGHT })),
+                25
+              );
+            }
           } else onClick(props.items[i]);
           return true;
         }

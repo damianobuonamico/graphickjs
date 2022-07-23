@@ -46,8 +46,10 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
       for (let i = 0; i < props.items.length; i++) {
         if (props.items[i].key === e.key) {
           if (props.items[i].submenu && props.items[i].submenu!.length) {
-            setActive(i);
-            setExpanded(true);
+            if (!props.items[i].disabled) {
+              setActive(i);
+              setExpanded(true);
+            }
           } else {
             onClick(props.items[i]);
           }
