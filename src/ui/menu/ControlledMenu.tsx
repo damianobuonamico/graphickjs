@@ -36,13 +36,13 @@ export function calculateAltLabel(label: string, key: string) {
 }
 
 export function menuPrev(current: number, items: MenuItems): number {
-  const prev = current === 0 ? items.length - 1 : current - 1;
+  const prev = current < 1 ? items.length - 1 : current - 1;
   if (items[prev].disabled) return menuPrev(prev, items);
   return prev;
 }
 
 export function menuNext(current: number, items: MenuItems): number {
-  const next = current === items.length - 1 ? 0 : current + 1;
+  const next = current >= items.length - 1 ? 0 : current + 1;
   if (items[next].disabled) return menuNext(next, items);
   return next;
 }
