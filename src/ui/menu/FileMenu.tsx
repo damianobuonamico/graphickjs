@@ -28,7 +28,6 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
       }
       case KEYS.ENTER:
       case KEYS.ARROW_DOWN: {
-        console.log('down', focus());
         if (focus()) setExpanded(true);
         break;
       }

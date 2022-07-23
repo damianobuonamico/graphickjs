@@ -1,3 +1,5 @@
+import { KeyBinding } from './types';
+
 export const isDarwin = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
 export const isWindows = /^Win/.test(window.navigator.platform);
 
@@ -51,3 +53,14 @@ export const BUTTONS = {
   MIDDLE: 1,
   RIGHT: 2
 };
+
+export function getShortcutString(shortcut: KeyBinding): string {
+  let string = '';
+  if (shortcut.ctrl) string += isDarwin ? 'Cmd+' : 'Ctrl+';
+  if (shortcut.platform) string += isDarwin ? 'Ctrl+' : 'Win+';
+  if (shortcut.shift) string += 'Shift+';
+  if (shortcut.alt) string += 'Alt+';
+  return (string += Array.isArray(shortcut.key)
+    ? shortcut.key[0].toUpperCase()
+    : shortcut.key.toUpperCase());
+}

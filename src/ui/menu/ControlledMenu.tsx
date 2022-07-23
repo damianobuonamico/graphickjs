@@ -1,9 +1,10 @@
-import { Component, createEffect, createSignal, For, onCleanup, onMount } from 'solid-js';
+import { Component, createSignal, For, onCleanup, onMount } from 'solid-js';
 import { Button } from '@inputs';
 import { CheckIcon } from '@icons';
 import Menu from './Menu';
-import { KEYS } from '@utils/keys';
+import { KEYS, getShortcutString } from '@utils/keys';
 import MenuKeyCallback from './menuKeyCallback';
+import { KeyBinding } from '@utils/types';
 
 export interface MenuItem {
   label: string;
@@ -13,6 +14,7 @@ export interface MenuItem {
   submenu?: MenuItems;
   checked?: boolean;
   checkbox?: boolean;
+  shortcut?: KeyBinding;
 }
 
 export type MenuItems = MenuItem[];
@@ -143,8 +145,16 @@ const ControlledMenu: Component<{
                   leftIcon={item.checked && <CheckIcon />}
                   active={active() === index()}
                 >
-                  {(props.alt && item.key ? calculateAltLabel(item.label, item.key) : false) ||
-                    item.label}
+                  {item.shortcut ? (
+                    <div class="justify-between w-full flex">
+                      {(props.alt && item.key ? calculateAltLabel(item.label, item.key) : false) ||
+                        item.label}
+                      <span class="text-primary-500 ml-6">{getShortcutString(item.shortcut)}</span>
+                    </div>
+                  ) : (
+                    (props.alt && item.key ? calculateAltLabel(item.label, item.key) : false) ||
+                    item.label
+                  )}
                 </Button>
               )}
             </li>

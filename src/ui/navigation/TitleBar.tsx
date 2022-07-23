@@ -12,9 +12,13 @@ const TitleBar: Component = () => {
             label: 'File',
             key: KEYS.F,
             submenu: [
-              { label: 'New...', key: KEYS.N },
-              { label: 'New From Template...', key: KEYS.T },
-              { label: 'Open...', key: KEYS.O },
+              { label: 'New...', key: KEYS.N, shortcut: { key: KEYS.N, ctrl: true } },
+              {
+                label: 'New From Template...',
+                key: KEYS.T,
+                shortcut: { key: KEYS.N, ctrl: true, shift: true }
+              },
+              { label: 'Open...', key: KEYS.O, shortcut: { key: KEYS.O, ctrl: true } },
               {
                 label: 'Open Recent Files',
                 key: KEYS.F,
@@ -43,10 +47,10 @@ const TitleBar: Component = () => {
             label: 'Edit',
             key: KEYS.E,
             submenu: [
-              { label: 'Undo', key: KEYS.U },
-              { label: 'Redo', key: KEYS.R },
-              { label: 'Cut', key: KEYS.T },
-              { label: 'Copy', key: KEYS.C }
+              { label: 'Undo', key: KEYS.U, shortcut: { key: KEYS.Z, ctrl: true } },
+              { label: 'Redo', key: KEYS.R, shortcut: { key: KEYS.Z, ctrl: true, shift: true } },
+              { label: 'Cut', key: KEYS.T, shortcut: { key: KEYS.X, ctrl: true } },
+              { label: 'Copy', key: KEYS.C, shortcut: { key: KEYS.C, ctrl: true } }
             ]
           },
           {
@@ -55,8 +59,8 @@ const TitleBar: Component = () => {
             submenu: [
               { label: 'Transform', key: KEYS.T },
               { label: 'Arrange', key: KEYS.A },
-              { label: 'Group', key: KEYS.G },
-              { label: 'Ungroup', key: KEYS.U }
+              { label: 'Group', key: KEYS.G, shortcut: { key: KEYS.G, ctrl: true } },
+              { label: 'Ungroup', key: KEYS.U, shortcut: { key: KEYS.G, ctrl: true, shift: true } }
             ]
           },
           {
