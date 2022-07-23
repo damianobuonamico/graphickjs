@@ -29,9 +29,10 @@ const Button: Component<{
       onMouseLeave={props.onLeave}
       class={classNames(
         'select-none flex items-center outline-none',
-        { 'py-1 grow grid justify-items-start grid-cols-menu-item': variant === 'menu' },
+        ['py-1 grow grid justify-items-start grid-cols-menu-item', variant === 'menu'],
         [
           'px-2 rounded h-fi border',
+          'hover:bg-primary-700',
           {
             'border-primary-600': props.active,
             'border-transparent': !props.active
@@ -40,8 +41,6 @@ const Button: Component<{
         ],
         [
           {
-            'hover:bg-primary-700': !props.lighter,
-            'hover:bg-primary-600': props.lighter,
             'bg-primary-700': props.active
           },
           variant === 'file-menu' || variant === 'menu'
