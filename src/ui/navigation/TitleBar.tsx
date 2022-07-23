@@ -16,6 +16,7 @@ const TitleBar: Component = () => {
               {
                 label: 'New From Template...',
                 key: KEYS.T,
+                disabled: true,
                 shortcut: { key: KEYS.N, ctrl: true, shift: true }
               },
               { label: 'Open...', key: KEYS.O, shortcut: { key: KEYS.O, ctrl: true } },
@@ -23,7 +24,7 @@ const TitleBar: Component = () => {
                 label: 'Open Recent Files',
                 key: KEYS.F,
                 submenu: [
-                  { label: 'foo.gk' },
+                  { label: 'foo.gk', disabled: true },
                   { label: 'bar.gk' },
                   {
                     label: 'Older',
@@ -35,6 +36,7 @@ const TitleBar: Component = () => {
               {
                 label: 'Auto Save',
                 key: KEYS.A,
+                disabled: true,
                 checkbox: true,
                 checked: checked(),
                 callback: () => {
@@ -55,6 +57,7 @@ const TitleBar: Component = () => {
           },
           {
             label: 'Object',
+            disabled: true,
             key: KEYS.O,
             submenu: [
               { label: 'Transform', key: KEYS.T },

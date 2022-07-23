@@ -16,6 +16,7 @@ const Button: Component<{
   ref?: HTMLButtonElement;
   leftIcon?: JSX.Element;
   rightIcon?: JSX.Element;
+  disabled?: boolean;
 }> = (props) => {
   const variant = props.variant || 'file-menu';
 
@@ -29,19 +30,21 @@ const Button: Component<{
       onMouseLeave={props.onLeave}
       class={classNames(
         'select-none flex items-center outline-none',
+        { 'cursor-default': props.disabled },
         ['py-1 grow grid justify-items-start grid-cols-menu-item', variant === 'menu'],
         [
           'px-2 rounded h-fi border',
-          'hover:bg-primary-700',
           {
-            'border-primary-600': props.active,
-            'border-transparent': !props.active
+            'hover:bg-primary-700': !props.disabled,
+            'border-primary-600': props.active && !props.disabled,
+            'border-transparent': !props.active || props.disabled
           },
           variant === 'file-menu'
         ],
         [
           {
-            'bg-primary-700': props.active
+            'bg-primary-700': props.active && !props.disabled,
+            'text-primary-500': props.disabled
           },
           variant === 'file-menu' || variant === 'menu'
         ]

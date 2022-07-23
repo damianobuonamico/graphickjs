@@ -11,6 +11,7 @@ export interface MenuItem {
   key?: string;
   icon?: Component;
   callback?(): void;
+  disabled?: boolean;
   submenu?: MenuItems;
   checked?: boolean;
   checkbox?: boolean;
@@ -34,6 +35,18 @@ export function calculateAltLabel(label: string, key: string) {
   );
 }
 
+export function menuPrev(current: number, items: MenuItems): number {
+  const prev = current === 0 ? items.length - 1 : current - 1;
+  if (items[prev].disabled) return menuPrev(prev, items);
+  return prev;
+}
+
+export function menuNext(current: number, items: MenuItems): number {
+  const next = current === items.length - 1 ? 0 : current + 1;
+  if (items[next].disabled) return menuNext(next, items);
+  return next;
+}
+
 const ControlledMenu: Component<{
   items: MenuItems;
   anchor: vec2;
@@ -48,6 +61,7 @@ const ControlledMenu: Component<{
   let mounted = false;
 
   const onClick = (item: MenuItem) => {
+    if (!item || item.disabled) return;
     if (item.callback) item.callback();
     props.onClose(true);
   };
@@ -59,11 +73,11 @@ const ControlledMenu: Component<{
   const processKey = (e: KeyboardEvent) => {
     switch (e.key) {
       case KEYS.ARROW_DOWN: {
-        setActive(active() === props.items.length - 1 ? 0 : active() + 1);
+        setActive(menuNext(active(), props.items));
         return true;
       }
       case KEYS.ARROW_UP: {
-        setActive(active() === 0 ? props.items.length - 1 : active() - 1);
+        setActive(menuPrev(active(), props.items));
         return true;
       }
       case KEYS.ENTER: {
@@ -123,6 +137,7 @@ const ControlledMenu: Component<{
               {item.submenu && item.submenu.length ? (
                 <Menu
                   menuButton={{ label: item.label, variant: 'menu', key: item.key }}
+                  disabled={item.disabled}
                   items={item.submenu}
                   isSubMenu={true}
                   active={active() === index()}
@@ -144,6 +159,7 @@ const ControlledMenu: Component<{
                   onHover={() => setActive(index())}
                   leftIcon={item.checked && <CheckIcon />}
                   active={active() === index()}
+                  disabled={item.disabled}
                 >
                   {item.shortcut ? (
                     <div class="justify-between w-full flex">

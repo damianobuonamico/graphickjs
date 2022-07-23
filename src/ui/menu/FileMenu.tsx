@@ -1,7 +1,7 @@
 import { createSignal, For, Component, onMount, createEffect } from 'solid-js';
 import { onCleanup } from 'solid-js';
 import Button from '@inputs/Button';
-import { calculateAltLabel, MenuItem, MenuItems } from './ControlledMenu';
+import { calculateAltLabel, MenuItem, MenuItems, menuNext, menuPrev } from './ControlledMenu';
 import Menu from './Menu';
 import { KEYS } from '@utils/keys';
 import MenuKeyCallback from './menuKeyCallback';
@@ -19,14 +19,19 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
     if (active() < 0) return false;
     switch (e.key) {
       case KEYS.ARROW_RIGHT: {
-        setActive(active() === props.items.length - 1 ? 0 : active() + 1);
+        setActive(menuNext(active(), props.items));
         break;
       }
       case KEYS.ARROW_LEFT: {
-        setActive(active() === 0 ? props.items.length - 1 : active() - 1);
+        setActive(menuPrev(active(), props.items));
         break;
       }
-      case KEYS.ENTER:
+      case KEYS.ENTER: {
+        if (!props.items[active()].submenu || !props.items[active()].submenu!.length) {
+          onClick(props.items[active()]);
+          break;
+        }
+      }
       case KEYS.ARROW_DOWN: {
         if (focus()) setExpanded(true);
         break;
@@ -103,6 +108,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
   };
 
   const onClick = (item: MenuItem) => {
+    if (item.disabled) return;
     if (item.callback) item.callback();
     onClose();
   };
@@ -115,6 +121,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
             {item.submenu && item.submenu.length ? (
               <Menu
                 menuButton={{ label: item.label, variant: 'file-menu', key: item.key }}
+                disabled={item.disabled}
                 items={item.submenu}
                 active={active() === index()}
                 onHover={() => {
@@ -124,6 +131,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
                   }
                 }}
                 onMouseDown={() => {
+                  if (item.disabled) return;
                   setFocus(true);
                   setActive(index());
                   setAlt(undefined);
@@ -137,8 +145,10 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
             ) : (
               <Button
                 variant="file-menu"
+                disabled={item.disabled}
                 onHover={() => setActive(index())}
                 onClick={() => onClick(item)}
+                active={focus() && active() === index()}
               >
                 {(alt() && item.key ? calculateAltLabel(item.label, item.key) : false) ||
                   item.label}
