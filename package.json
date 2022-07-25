@@ -20,8 +20,7 @@
   },
   "dependencies": {
     "nanoid": "^4.0.0",
-    "solid-js": "^1.4.7",
-    "solid-transition-group": "^0.0.10"
+    "solid-js": "^1.4.7"
   },
   "browserslist": {
     "production": [

@@ -1,7 +1,12 @@
 import { classNames } from '@utils/utils';
 import { JSX, Component, Show } from 'solid-js';
+import getIcon from '../icons';
 
-export type ButtonVariant = 'file-menu' | 'menu';
+export type ButtonVariant =
+  | 'file-menu'
+  | 'file-menu-icon'
+  | 'menu'
+  | 'menu-icon';
 
 const Button: Component<{
   children: string | number | JSX.Element;
@@ -17,8 +22,12 @@ const Button: Component<{
   leftIcon?: JSX.Element;
   rightIcon?: JSX.Element;
   disabled?: boolean;
+  style?: JSX.CSSProperties;
 }> = (props) => {
   const variant = props.variant || 'file-menu';
+  const isIcon = variant.includes('icon');
+  const isFile = variant.includes('file');
+  const isMenu = variant.includes('menu');
 
   return (
     <button
@@ -28,34 +37,51 @@ const Button: Component<{
       onMouseUp={props.onMouseUp}
       onMouseOver={props.onHover}
       onMouseLeave={props.onLeave}
+      style={props.style}
       class={classNames(
         'select-none flex items-center outline-none',
         { 'cursor-default': props.disabled },
-        ['py-1 grow grid justify-items-start grid-cols-menu-item', variant === 'menu'],
-        [
-          'px-2 rounded h-fi border',
-          {
-            'hover:bg-primary-700': !props.disabled,
-            'border-primary-600': props.active && !props.disabled,
-            'border-transparent': !props.active || props.disabled
-          },
-          variant === 'file-menu'
-        ],
         [
           {
             'bg-primary-700': props.active && !props.disabled,
             'text-primary-500': props.disabled
           },
-          variant === 'file-menu' || variant === 'menu'
+          [
+            'py-1 grow',
+            { 'grid justify-items-start grid-cols-menu-item': !isIcon },
+            { 'grid justify-items-start grid-cols-menu-item': isIcon },
+            //{ 'items-center justify-flex-start': isIcon },
+            !isFile
+          ],
+          [
+            'rounded h-fi border',
+            {
+              'hover:bg-primary-700': !props.disabled,
+              'border-primary-600': props.active && !props.disabled,
+              'border-transparent': !props.active || props.disabled
+            },
+            { 'px-2': !isIcon },
+            { 'w-[24px] h-[24px] items-center justify-center': isIcon },
+            isFile
+          ],
+          isMenu
         ]
       )}
     >
       <Show when={variant === 'menu' || props.leftIcon}>
-        <div class="flex items-center justify-center h-full w-full">{props.leftIcon}</div>
+        <div class="flex items-center justify-center h-full w-full">
+          {typeof props.leftIcon === 'string'
+            ? getIcon(props.leftIcon)
+            : props.leftIcon}
+        </div>
       </Show>
       {props.children}
       <Show when={variant === 'menu' || props.rightIcon}>
-        <div class="flex items-center justify-center h-full w-full">{props.rightIcon}</div>
+        <div class="flex items-center justify-center h-full w-full">
+          {typeof props.rightIcon === 'string'
+            ? getIcon(props.rightIcon)
+            : props.rightIcon}
+        </div>
       </Show>
     </button>
   );

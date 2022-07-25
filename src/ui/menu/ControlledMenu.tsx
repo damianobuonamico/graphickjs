@@ -1,4 +1,11 @@
-import { Component, createSignal, For, onCleanup, onMount } from 'solid-js';
+import {
+  Component,
+  createSignal,
+  For,
+  onCleanup,
+  onMount,
+  JSX
+} from 'solid-js';
 import { Button } from '@inputs';
 import { CheckIcon } from '@icons';
 import Menu from './Menu';
@@ -9,7 +16,7 @@ import { KeyBinding } from '@utils/types';
 export interface MenuItem {
   label: string;
   key?: string;
-  icon?: Component;
+  icon?: JSX.Element;
   callback?(): void;
   disabled?: boolean;
   submenu?: MenuItems;
@@ -25,6 +32,8 @@ export function calculateAltLabel(label: string, key: string) {
   for (var i = 0; i < label.length; i++) {
     if (label[i].toLowerCase() == key[0]) indices.push(i);
   }
+
+  if (!indices.length) return label;
 
   return (
     <span>
@@ -93,7 +102,10 @@ const ControlledMenu: Component<{
             if (!props.items[i].disabled) {
               setActive(i);
               setTimeout(
-                () => window.dispatchEvent(new KeyboardEvent('keydown', { key: KEYS.ARROW_RIGHT })),
+                () =>
+                  window.dispatchEvent(
+                    new KeyboardEvent('keydown', { key: KEYS.ARROW_RIGHT })
+                  ),
                 25
               );
             }
@@ -138,7 +150,12 @@ const ControlledMenu: Component<{
             <li class="flex">
               {item.submenu && item.submenu.length ? (
                 <Menu
-                  menuButton={{ label: item.label, variant: 'menu', key: item.key }}
+                  menuButton={{
+                    label: item.label,
+                    variant: 'menu',
+                    icon: item.icon,
+                    key: item.key
+                  }}
                   disabled={item.disabled}
                   items={item.submenu}
                   isSubMenu={true}
@@ -156,22 +173,28 @@ const ControlledMenu: Component<{
                 />
               ) : (
                 <Button
-                  variant="menu"
+                  variant={
+                    typeof item.label === 'string' ? 'menu' : 'menu-icon'
+                  }
                   onClick={() => onClick(item)}
                   onHover={() => setActive(index())}
-                  leftIcon={item.checked && <CheckIcon />}
+                  leftIcon={item.checked ? <CheckIcon /> : item.icon}
                   active={active() === index()}
                   disabled={item.disabled}
                 >
                   {item.shortcut ? (
                     <div class="justify-between w-full flex">
-                      {(props.alt && item.key ? calculateAltLabel(item.label, item.key) : false) ||
-                        item.label}
-                      <span class="text-primary-500 ml-6">{getShortcutString(item.shortcut)}</span>
+                      {(props.alt && item.key && typeof item.label === 'string'
+                        ? calculateAltLabel(item.label, item.key)
+                        : false) || item.label}
+                      <span class="text-primary-500 ml-6">
+                        {getShortcutString(item.shortcut)}
+                      </span>
                     </div>
                   ) : (
-                    (props.alt && item.key ? calculateAltLabel(item.label, item.key) : false) ||
-                    item.label
+                    (props.alt && item.key && typeof item.label === 'string'
+                      ? calculateAltLabel(item.label, item.key)
+                      : false) || item.label
                   )}
                 </Button>
               )}

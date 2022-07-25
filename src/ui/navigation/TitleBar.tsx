@@ -1,25 +1,71 @@
 import { Component, createSignal } from 'solid-js';
 import FileMenu from '@menu/FileMenu';
 import { KEYS } from '@utils/keys';
+import { AffinityPublisherLogoIcon } from '../icons';
+import AffinityDesignerLogoIcon from '../icons/AffinityDesignerLogoIcon';
+import AffinityPhotoLogoIcon from '../icons/AffinityPhotoLogoIcon';
 
 const TitleBar: Component = () => {
   const [checked, setChecked] = createSignal(true);
+  const [mode, setMode] = createSignal('affinityPublisherLogo');
+
   return (
     <div class="bg-primary-800 h-8 w-full flex items-center border-primary-600 border-b">
       <FileMenu
         items={[
           {
+            label: '',
+            icon: mode(),
+            submenu: [
+              {
+                label: 'Designer',
+                icon: 'affinityDesignerLogo',
+                callback: () => {
+                  setMode('affinityDesignerLogo');
+                },
+                key: KEYS.D,
+                shortcut: { key: KEYS.KEY_1, alt: true }
+              },
+              {
+                label: 'Publisher',
+                icon: 'affinityPublisherLogo',
+                callback: () => {
+                  setMode('affinityPublisherLogo');
+                },
+                key: KEYS.P,
+                shortcut: { key: KEYS.KEY_2, alt: true }
+              },
+              {
+                label: 'Photo',
+                icon: 'affinityPhotoLogo',
+                callback: () => {
+                  setMode('affinityPhotoLogo');
+                },
+                key: KEYS.H,
+                shortcut: { key: KEYS.KEY_3, alt: true }
+              }
+            ]
+          },
+          {
             label: 'File',
             key: KEYS.F,
             submenu: [
-              { label: 'New...', key: KEYS.N, shortcut: { key: KEYS.N, ctrl: true } },
+              {
+                label: 'New...',
+                key: KEYS.N,
+                shortcut: { key: KEYS.N, ctrl: true }
+              },
               {
                 label: 'New From Template...',
                 key: KEYS.T,
                 disabled: true,
                 shortcut: { key: KEYS.N, ctrl: true, shift: true }
               },
-              { label: 'Open...', key: KEYS.O, shortcut: { key: KEYS.O, ctrl: true } },
+              {
+                label: 'Open...',
+                key: KEYS.O,
+                shortcut: { key: KEYS.O, ctrl: true }
+              },
               {
                 label: 'Open Recent Files',
                 key: KEYS.F,
@@ -49,10 +95,26 @@ const TitleBar: Component = () => {
             label: 'Edit',
             key: KEYS.E,
             submenu: [
-              { label: 'Undo', key: KEYS.U, shortcut: { key: KEYS.Z, ctrl: true } },
-              { label: 'Redo', key: KEYS.R, shortcut: { key: KEYS.Z, ctrl: true, shift: true } },
-              { label: 'Cut', key: KEYS.T, shortcut: { key: KEYS.X, ctrl: true } },
-              { label: 'Copy', key: KEYS.C, shortcut: { key: KEYS.C, ctrl: true } }
+              {
+                label: 'Undo',
+                key: KEYS.U,
+                shortcut: { key: KEYS.Z, ctrl: true }
+              },
+              {
+                label: 'Redo',
+                key: KEYS.R,
+                shortcut: { key: KEYS.Z, ctrl: true, shift: true }
+              },
+              {
+                label: 'Cut',
+                key: KEYS.T,
+                shortcut: { key: KEYS.X, ctrl: true }
+              },
+              {
+                label: 'Copy',
+                key: KEYS.C,
+                shortcut: { key: KEYS.C, ctrl: true }
+              }
             ]
           },
           {
@@ -62,8 +124,16 @@ const TitleBar: Component = () => {
             submenu: [
               { label: 'Transform', key: KEYS.T },
               { label: 'Arrange', key: KEYS.A },
-              { label: 'Group', key: KEYS.G, shortcut: { key: KEYS.G, ctrl: true } },
-              { label: 'Ungroup', key: KEYS.U, shortcut: { key: KEYS.G, ctrl: true, shift: true } }
+              {
+                label: 'Group',
+                key: KEYS.G,
+                shortcut: { key: KEYS.G, ctrl: true }
+              },
+              {
+                label: 'Ungroup',
+                key: KEYS.U,
+                shortcut: { key: KEYS.G, ctrl: true, shift: true }
+              }
             ]
           },
           {

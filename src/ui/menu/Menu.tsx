@@ -1,4 +1,12 @@
-import { Component, createSignal, Show, createEffect, onMount, onCleanup, JSX } from 'solid-js';
+import {
+  Component,
+  createSignal,
+  Show,
+  createEffect,
+  onMount,
+  onCleanup,
+  JSX
+} from 'solid-js';
 import { vec2 } from '@math';
 import { ChevronRightIcon } from '@icons';
 import { Button } from '@inputs';
@@ -8,7 +16,12 @@ import { KEYS } from '@utils/keys';
 import MenuKeyCallback from './menuKeyCallback';
 
 const Menu: Component<{
-  menuButton: { label: string; variant: ButtonVariant; key?: string };
+  menuButton: {
+    label: string | JSX.Element;
+    variant: ButtonVariant;
+    icon?: JSX.Element;
+    key?: string;
+  };
   items: MenuItems;
   isSubMenu?: boolean;
   active: boolean;
@@ -73,10 +86,6 @@ const Menu: Component<{
     props.onHover();
   };
 
-  const altLabel: JSX.Element | false = props.menuButton.key
-    ? calculateAltLabel(props.menuButton.label, props.menuButton.key)
-    : false;
-
   return (
     <>
       <Button
@@ -88,12 +97,30 @@ const Menu: Component<{
           else setLocked(!locked());
         }}
         ref={menuButtonRef}
+        leftIcon={props.menuButton.icon}
         rightIcon={props.isSubMenu ? <ChevronRightIcon /> : undefined}
         active={props.active}
+        style={
+          props.menuButton.variant === 'file-menu' &&
+          props.menuButton.label === ''
+            ? { width: '2rem', height: '2rem', padding: '0' }
+            : undefined
+        }
       >
-        {(props.alt ? altLabel : false) || props.menuButton.label}
+        {(props.alt &&
+        props.menuButton.key &&
+        typeof props.menuButton.label === 'string'
+          ? calculateAltLabel(props.menuButton.label, props.menuButton.key)
+          : false) || props.menuButton.label}
       </Button>
-      <Show when={props.active && !locked() && props.expanded !== false && !props.disabled}>
+      <Show
+        when={
+          props.active &&
+          !locked() &&
+          props.expanded !== false &&
+          !props.disabled
+        }
+      >
         <ControlledMenu
           items={props.items}
           anchor={anchor()}
