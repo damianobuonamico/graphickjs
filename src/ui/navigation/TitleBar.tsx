@@ -1,13 +1,51 @@
 import { Component, createSignal } from 'solid-js';
 import FileMenu from '@menu/FileMenu';
+import { MenuItem } from '@menu/ControlledMenu';
 import { KEYS } from '@utils/keys';
-import { AffinityPublisherLogoIcon } from '../icons';
-import AffinityDesignerLogoIcon from '../icons/AffinityDesignerLogoIcon';
-import AffinityPhotoLogoIcon from '../icons/AffinityPhotoLogoIcon';
+import { Mode } from '@editor/types';
 
-const TitleBar: Component = () => {
+export function getModeComponent(
+  mode: Mode,
+  setMode: (mode: Mode) => void
+): MenuItem {
+  switch (mode) {
+    case 'photo':
+      return {
+        label: 'Photo',
+        icon: 'affinityPhotoLogo',
+        callback: () => {
+          setMode(mode);
+        },
+        key: KEYS.H,
+        shortcut: { key: KEYS.KEY_3, alt: true }
+      };
+    case 'publisher':
+      return {
+        label: 'Publisher',
+        icon: 'affinityPublisherLogo',
+        callback: () => {
+          setMode(mode);
+        },
+        key: KEYS.P,
+        shortcut: { key: KEYS.KEY_2, alt: true }
+      };
+    default:
+      return {
+        label: 'Designer',
+        icon: 'affinityDesignerLogo',
+        callback: () => {
+          setMode(mode);
+        },
+        key: KEYS.D,
+        shortcut: { key: KEYS.KEY_1, alt: true }
+      };
+  }
+}
+
+const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
+  props
+) => {
   const [checked, setChecked] = createSignal(true);
-  const [mode, setMode] = createSignal('affinityPublisherLogo');
 
   return (
     <div class="bg-primary-800 h-8 w-full flex items-center border-primary-600 border-b">
@@ -15,35 +53,11 @@ const TitleBar: Component = () => {
         items={[
           {
             label: '',
-            icon: mode(),
+            icon: getModeComponent(props.mode, props.setMode).icon,
             submenu: [
-              {
-                label: 'Designer',
-                icon: 'affinityDesignerLogo',
-                callback: () => {
-                  setMode('affinityDesignerLogo');
-                },
-                key: KEYS.D,
-                shortcut: { key: KEYS.KEY_1, alt: true }
-              },
-              {
-                label: 'Publisher',
-                icon: 'affinityPublisherLogo',
-                callback: () => {
-                  setMode('affinityPublisherLogo');
-                },
-                key: KEYS.P,
-                shortcut: { key: KEYS.KEY_2, alt: true }
-              },
-              {
-                label: 'Photo',
-                icon: 'affinityPhotoLogo',
-                callback: () => {
-                  setMode('affinityPhotoLogo');
-                },
-                key: KEYS.H,
-                shortcut: { key: KEYS.KEY_3, alt: true }
-              }
+              getModeComponent('designer', props.setMode),
+              getModeComponent('publisher', props.setMode),
+              getModeComponent('photo', props.setMode)
             ]
           },
           {

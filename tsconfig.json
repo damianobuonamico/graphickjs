@@ -16,6 +16,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@": ["./src"],
+      "@editor/*": ["./src/editor/*"],
+      "@editor": ["./src/editor"],
       "@math/*": ["./src/math/*"],
       "@math": ["./src/math"],
       "@utils/*": ["./src/utils/*"],
