@@ -10,4 +10,25 @@
     @apply text-sm;
     @apply text-primary-200;
   }
+
+  ::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary-700;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-600;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-primary-800;
+  }
+
+  ::-webkit-scrollbar-corner {
+    @apply bg-primary-800;
+  }
 }

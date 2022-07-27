@@ -1,11 +1,4 @@
-import {
-  createSignal,
-  For,
-  Component,
-  onMount,
-  createEffect,
-  Show
-} from 'solid-js';
+import { createSignal, For, Component, onMount, createEffect } from 'solid-js';
 import { onCleanup } from 'solid-js';
 import Button from '@inputs/Button';
 import {
@@ -59,8 +52,6 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
     }
 
     if (alt()) {
-      props.items;
-      /*
       for (let i = 0; i < props.items.length; i++) {
         if (props.items[i].key === e.key) {
           if (props.items[i].submenu && props.items[i].submenu!.length) {
@@ -72,7 +63,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
             onClick(props.items[i]);
           }
         }
-      }*/
+      }
     }
 
     return true;
@@ -160,6 +151,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
                   if (item.disabled) return;
                   setFocus(true);
                   setActive(index());
+                  setExpanded(true);
                   setAlt(undefined);
                 }}
                 onClose={onClose}

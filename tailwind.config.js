@@ -38,7 +38,11 @@ module.exports = {
         }
       },
       gridTemplateColumns: {
-        'menu-item': '30px 1fr 30px'
+        'menu-item': '30px 1fr 30px',
+        'tool-bar': '2.5rem 1fr'
+      },
+      gridTemplateRows: {
+        'title-bar': '2rem 1fr'
       }
     }
   },

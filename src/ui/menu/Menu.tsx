@@ -103,7 +103,13 @@ const Menu: Component<{
         style={
           props.menuButton.variant === 'file-menu' &&
           props.menuButton.label === ''
-            ? { width: '2rem', height: '2rem', padding: '0' }
+            ? {
+                width: '2rem',
+                height: '2rem',
+                padding: '0',
+                'margin-left': '4px',
+                'margin-right': '3px'
+              }
             : undefined
         }
       >

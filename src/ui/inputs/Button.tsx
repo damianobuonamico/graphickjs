@@ -6,7 +6,8 @@ export type ButtonVariant =
   | 'file-menu'
   | 'file-menu-icon'
   | 'menu'
-  | 'menu-icon';
+  | 'menu-icon'
+  | 'tool';
 
 const Button: Component<{
   children: string | number | JSX.Element;
@@ -40,17 +41,16 @@ const Button: Component<{
       style={props.style}
       class={classNames(
         'select-none flex items-center outline-none',
-        { 'cursor-default': props.disabled },
+        {
+          'cursor-default': props.disabled,
+          'bg-primary-700': props.active && !props.disabled,
+          'text-primary-500': props.disabled
+        },
         [
-          {
-            'bg-primary-700': props.active && !props.disabled,
-            'text-primary-500': props.disabled
-          },
           [
             'py-1 grow',
             { 'grid justify-items-start grid-cols-menu-item': !isIcon },
             { 'grid justify-items-start grid-cols-menu-item': isIcon },
-            //{ 'items-center justify-flex-start': isIcon },
             !isFile
           ],
           [
@@ -65,6 +65,12 @@ const Button: Component<{
             isFile
           ],
           isMenu
+        ],
+        [
+          'flex items-center justify-center',
+          { 'w-10 h-10': !props.active },
+          { 'w-8 h-8 m-1 bg-primary-700 rounded text-primary': props.active },
+          variant === 'tool'
         ]
       )}
     >
