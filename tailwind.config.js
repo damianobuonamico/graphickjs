@@ -24,7 +24,7 @@ module.exports = {
           900: '#0e0e10',
         }, */
         primary: {
-          DEFAULT: '#31efb8',
+          DEFAULT: 'var(--primary-color)',
           50: '#f3f3f4',
           100: '#dbdcdd',
           200: '#b5b6b9',
