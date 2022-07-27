@@ -36,7 +36,7 @@ const Editor: Component = () => {
       />
       <div class="grid grid-cols-tool-bar">
         <ToolBar
-          tools={['select', 'vselect', 'pen']}
+          tools={['select', 'vselect', 'separator', 'pen']}
           tool={state.tool}
           setTool={(tool: Tool) => {
             setState({ tool });

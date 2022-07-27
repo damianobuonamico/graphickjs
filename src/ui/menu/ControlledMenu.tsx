@@ -148,7 +148,12 @@ const ControlledMenu: Component<{
         <For each={props.items}>
           {(item, index) => (
             <li class="flex">
-              {item.submenu && item.submenu.length ? (
+              {item.label === 'separator' ? (
+                <div
+                  class="w-full h-[1px] my-1 bg-primary-600"
+                  onMouseOver={() => setActive(index())}
+                />
+              ) : item.submenu && item.submenu.length ? (
                 <Menu
                   menuButton={{
                     label: item.label,

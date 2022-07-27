@@ -25,22 +25,26 @@ export function getToolData(tool: Tool): ToolData {
 }
 
 const ToolBar: Component<{
-  tools: Tool[];
+  tools: Array<Tool | 'separator'>;
   tool: Tool;
   setTool(tool: Tool): void;
 }> = (props) => {
   return (
     <div class="bg-primary-800 w-10 h-full flex items-center border-primary-600 border-r flex-col">
       <For each={props.tools}>
-        {(tool) => (
-          <Button
-            active={tool === props.tool}
-            variant={'tool'}
-            onClick={() => props.setTool(tool)}
-          >
-            {getToolData(tool).icon}
-          </Button>
-        )}
+        {(tool) =>
+          tool === 'separator' ? (
+            <div class="w-6 h-[1px] bg-primary-600" />
+          ) : (
+            <Button
+              active={tool === props.tool}
+              variant={'tool'}
+              onClick={() => props.setTool(tool)}
+            >
+              {getToolData(tool).icon}
+            </Button>
+          )
+        }
       </For>
     </div>
   );
