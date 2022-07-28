@@ -21,8 +21,8 @@ export interface MenuItem {
   disabled?: boolean;
   submenu?: MenuItems;
   checked?: boolean;
-  checkbox?: boolean;
   shortcut?: KeyBinding;
+  active?: boolean;
 }
 
 export type MenuItems = MenuItem[];
@@ -60,10 +60,12 @@ const ControlledMenu: Component<{
   items: MenuItems;
   anchor: vec2;
   onClose(propagate: boolean): void;
-  level: number;
-  keyCallback: MenuKeyCallback;
+  level?: number;
+  keyCallback?: MenuKeyCallback;
   isSubMenu?: boolean;
-  alt: boolean;
+  alt?: boolean;
+  style?: JSX.CSSProperties;
+  setActiveOnHover?: boolean;
 }> = (props) => {
   const [active, setActive] = createSignal(props.isSubMenu ? 0 : -1);
   let menuRef: HTMLDivElement | undefined;
@@ -119,12 +121,13 @@ const ControlledMenu: Component<{
   };
 
   const onKey = (e: KeyboardEvent) => {
-    props.keyCallback.register(() => processKey(e), props.level);
+    if (props.keyCallback)
+      props.keyCallback.register(() => processKey(e), props.level || 0);
   };
 
   onMount(() => {
     mounted = true;
-    window.addEventListener('keydown', onKey);
+    if (props.keyCallback) window.addEventListener('keydown', onKey);
     setTimeout(() => {
       if (mounted) {
         window.addEventListener('mousedown', onMouseDown);
@@ -135,7 +138,7 @@ const ControlledMenu: Component<{
   onCleanup(() => {
     mounted = false;
     window.removeEventListener('mousedown', onMouseDown);
-    window.removeEventListener('keydown', onKey);
+    if (props.keyCallback) window.removeEventListener('keydown', onKey);
   });
 
   return (
@@ -144,11 +147,18 @@ const ControlledMenu: Component<{
       style={{ left: `${props.anchor[0]}px`, top: `${props.anchor[1]}px` }}
       ref={menuRef}
     >
-      <ul class="py-2">
+      <ul class="py-2" style={props.style}>
         <For each={props.items}>
           {(item, index) => (
             <li class="flex">
-              {item.submenu && item.submenu.length ? (
+              {item.label === 'separator' ? (
+                <div
+                  class="w-full h-[1px] my-1 bg-primary-600"
+                  onMouseOver={
+                    props.setActiveOnHover ? () => setActive(index()) : () => {}
+                  }
+                />
+              ) : item.submenu && item.submenu.length ? (
                 <Menu
                   menuButton={{
                     label: item.label,
@@ -160,26 +170,28 @@ const ControlledMenu: Component<{
                   items={item.submenu}
                   isSubMenu={true}
                   active={active() === index()}
-                  onHover={() => setActive(index())}
+                  onHover={
+                    props.setActiveOnHover ? () => setActive(index()) : () => {}
+                  }
                   onClose={(propagate: boolean) => {
                     setActive(-1);
                     if (propagate) {
                       props.onClose(propagate);
                     }
                   }}
-                  level={props.level + 1}
+                  level={props.level || 0 + 1}
                   keyCallback={props.keyCallback}
-                  alt={props.alt}
+                  alt={props.alt || false}
                 />
               ) : (
                 <Button
-                  variant={
-                    typeof item.label === 'string' ? 'menu' : 'menu-icon'
-                  }
+                  variant={typeof item.label === 'string' ? 'menu' : 'tool'}
                   onClick={() => onClick(item)}
-                  onHover={() => setActive(index())}
+                  onHover={
+                    props.setActiveOnHover ? () => setActive(index()) : () => {}
+                  }
                   leftIcon={item.checked ? <CheckIcon /> : item.icon}
-                  active={active() === index()}
+                  active={active() === index() || item.active}
                   disabled={item.disabled}
                 >
                   {item.shortcut ? (

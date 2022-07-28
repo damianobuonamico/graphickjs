@@ -76,6 +76,10 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
                 shortcut: { key: KEYS.N, ctrl: true, shift: true }
               },
               {
+                label: 'separator',
+                disabled: true
+              },
+              {
                 label: 'Open...',
                 key: KEYS.O,
                 shortcut: { key: KEYS.O, ctrl: true }
@@ -118,6 +122,10 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
                 label: 'Redo',
                 key: KEYS.R,
                 shortcut: { key: KEYS.Z, ctrl: true, shift: true }
+              },
+              {
+                label: 'separator',
+                disabled: true
               },
               {
                 label: 'Cut',

@@ -24,7 +24,7 @@ module.exports = {
           900: '#0e0e10',
         }, */
         primary: {
-          DEFAULT: '#31efb8',
+          DEFAULT: 'var(--primary-color)',
           50: '#f3f3f4',
           100: '#dbdcdd',
           200: '#b5b6b9',
@@ -38,7 +38,11 @@ module.exports = {
         }
       },
       gridTemplateColumns: {
-        'menu-item': '30px 1fr 30px'
+        'menu-item': '30px 1fr 30px',
+        'tool-bar': '2.5rem 1fr'
+      },
+      gridTemplateRows: {
+        'title-bar': '2rem 1fr'
       }
     }
   },
