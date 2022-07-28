@@ -1,7 +1,14 @@
 import { Component, For, JSX, Match, Switch } from 'solid-js';
 import { Tool } from '@editor/types';
 import { Button } from '@inputs';
-import { PenIcon, PointerIcon, PointerVertexIcon } from '@icons';
+import {
+  CircleIcon,
+  PenIcon,
+  PointerIcon,
+  PointerVertexIcon,
+  RectangleIcon
+} from '@icons';
+import Select from '../inputs/Select';
 
 interface ToolData {
   icon: JSX.Element;
@@ -10,22 +17,20 @@ interface ToolData {
 export function getToolData(tool: Tool): ToolData {
   switch (tool) {
     case 'vselect':
-      return {
-        icon: <PointerVertexIcon />
-      };
+      return { icon: <PointerVertexIcon /> };
     case 'pen':
-      return {
-        icon: <PenIcon />
-      };
+      return { icon: <PenIcon /> };
+    case 'rectangle':
+      return { icon: <RectangleIcon /> };
+    case 'ellipse':
+      return { icon: <CircleIcon /> };
     default:
-      return {
-        icon: <PointerIcon />
-      };
+      return { icon: <PointerIcon /> };
   }
 }
 
 const ToolBar: Component<{
-  tools: Array<Tool | 'separator'>;
+  tools: Array<Tool | Tool[] | 'separator'>;
   tool: Tool;
   setTool(tool: Tool): void;
 }> = (props) => {
@@ -35,6 +40,18 @@ const ToolBar: Component<{
         {(tool) =>
           tool === 'separator' ? (
             <div class="w-6 h-[1px] bg-primary-600" />
+          ) : Array.isArray(tool) ? (
+            <Select
+              menuButton={{ variant: 'tool', arrow: true }}
+              options={tool.map((tool) => {
+                return { id: tool, label: getToolData(tool).icon };
+              })}
+              position={'right'}
+              onClick={(current: string) => props.setTool(current as Tool)}
+              onChange={(current: string) => props.setTool(current as Tool)}
+              useLongPress={true}
+              active={tool.includes(props.tool)}
+            />
           ) : (
             <Button
               active={tool === props.tool}

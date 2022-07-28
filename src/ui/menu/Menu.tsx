@@ -29,7 +29,7 @@ const Menu: Component<{
   onMouseDown?(): void;
   onClose(propagate: boolean): void;
   level: number;
-  keyCallback: MenuKeyCallback;
+  keyCallback?: MenuKeyCallback;
   alt: boolean;
   expanded?: boolean;
   disabled?: boolean;
@@ -59,7 +59,8 @@ const Menu: Component<{
   };
 
   const onKey = (e: KeyboardEvent) => {
-    props.keyCallback.register(() => processKey(e), props.level);
+    if (props.keyCallback)
+      props.keyCallback.register(() => processKey(e), props.level);
   };
 
   onMount(() => {
@@ -135,6 +136,7 @@ const Menu: Component<{
           keyCallback={props.keyCallback}
           isSubMenu={props.isSubMenu}
           alt={props.alt}
+          setActiveOnHover={true}
         />
       </Show>
     </>

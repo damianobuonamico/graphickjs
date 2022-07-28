@@ -12,9 +12,10 @@ export type ButtonVariant =
 const Button: Component<{
   children: string | number | JSX.Element;
   variant?: ButtonVariant;
-  onClick?(): void;
-  onMouseDown?(): void;
-  onMouseUp?(): void;
+  onClick?(e: MouseEvent): void;
+  onLongPress?(e: MouseEvent): void;
+  onMouseDown?(e: MouseEvent): void;
+  onMouseUp?(e: MouseEvent): void;
   onHover?(): void;
   onLeave?(): void;
   lighter?: boolean;
@@ -29,13 +30,26 @@ const Button: Component<{
   const isIcon = variant.includes('icon');
   const isFile = variant.includes('file');
   const isMenu = variant.includes('menu');
+  let longPressTimer: number;
+
+  const onMouseDown = (e: MouseEvent) => {
+    if (props.onMouseDown) props.onMouseDown(e);
+    longPressTimer = window.setTimeout(() => {
+      props.onLongPress!(e);
+    }, 300);
+  };
+
+  const onMouseUp = (e: MouseEvent) => {
+    if (props.onMouseUp) props.onMouseUp(e);
+    clearTimeout(longPressTimer);
+  };
 
   return (
     <button
       ref={props.ref}
       onClick={props.onClick}
-      onMouseDown={props.onMouseDown}
-      onMouseUp={props.onMouseUp}
+      onMouseDown={props.onLongPress ? onMouseDown : props.onMouseDown}
+      onMouseUp={props.onLongPress ? onMouseUp : props.onMouseUp}
       onMouseOver={props.onHover}
       onMouseLeave={props.onLeave}
       style={props.style}
@@ -67,9 +81,9 @@ const Button: Component<{
           isMenu
         ],
         [
-          'flex items-center justify-center',
-          { 'w-10 h-10': !props.active },
-          { 'w-8 h-8 m-1 bg-primary-700 rounded text-primary': props.active },
+          'flex items-center justify-center w-8 h-8 m-1 rounded',
+          { 'hover:text-primary': !props.active },
+          { 'bg-primary-700 text-primary': props.active },
           variant === 'tool'
         ]
       )}
