@@ -1,7 +1,5 @@
 import { JSX, Component, Show, createSignal, createEffect } from 'solid-js';
 import { vec2 } from '@math';
-import { classNames } from '@utils/utils';
-import getIcon from '@icons';
 import Button, { ButtonVariant } from './Button';
 import { ControlledMenu } from '../menu';
 
@@ -42,7 +40,7 @@ const Select: Component<{
   });
 
   createEffect(() => {
-    if (props.onChange) props.onChange(current().id);
+    if (props.onChange && active()) props.onChange(current().id);
   });
 
   return (

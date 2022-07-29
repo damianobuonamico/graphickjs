@@ -1,0 +1,61 @@
+import { vec2 } from '@math';
+
+class Canvas2D implements Canvas {
+  private m_container: HTMLDivElement;
+  private m_canvas: HTMLCanvasElement;
+  private m_ctx: CanvasRenderingContext2D;
+
+  private m_resolution = 1;
+  private m_offset: vec2;
+
+  constructor() {}
+
+  get container() {
+    return this.m_container;
+  }
+
+  set container(div: HTMLDivElement) {
+    this.m_container = div;
+    this.resize();
+  }
+
+  get offset(): vec2 {
+    return vec2.clone(this.m_offset);
+  }
+
+  set offset(value: vec2) {
+    this.m_offset = value;
+    this.m_canvas.style.left = value[0] + 'px';
+    this.m_canvas.style.top = value[1] + 'px';
+  }
+
+  get size(): vec2 {
+    return [this.m_canvas.width, this.m_canvas.height];
+  }
+
+  set size(value: vec2) {
+    this.m_canvas.width = value[0] * this.m_resolution;
+    this.m_canvas.height = value[1] * this.m_resolution;
+
+    this.m_canvas.style.width = value[0] + 'px';
+    this.m_canvas.style.height = value[1] + 'px';
+  }
+
+  setup(canvas: HTMLCanvasElement) {
+    this.m_canvas = canvas;
+    this.m_ctx = canvas.getContext('2d')!;
+  }
+
+  resize() {
+    this.offset = [this.m_container.offsetLeft, this.m_container.offsetTop];
+    this.size = [this.m_container.offsetWidth, this.m_container.offsetHeight];
+    this.render();
+  }
+
+  public render() {
+    this.m_ctx.fillStyle = 'black';
+    this.m_ctx.fillRect(0, 0, this.size[0], this.size[1]);
+  }
+}
+
+export default Canvas2D;

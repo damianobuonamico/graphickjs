@@ -11,7 +11,6 @@ import { CheckIcon } from '@icons';
 import Menu from './Menu';
 import { KEYS, getShortcutString } from '@utils/keys';
 import MenuKeyCallback from './menuKeyCallback';
-import { KeyBinding } from '@utils/types';
 
 export interface MenuItem {
   label: string;
@@ -143,7 +142,7 @@ const ControlledMenu: Component<{
 
   return (
     <div
-      class="fixed bg-primary-800 shadow-md rounded border-primary-600 border"
+      class="fixed bg-primary-800 shadow-md rounded border-primary-600 border z-10"
       style={{ left: `${props.anchor[0]}px`, top: `${props.anchor[1]}px` }}
       ref={menuRef}
     >

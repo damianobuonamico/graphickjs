@@ -18,6 +18,8 @@
       "@": ["./src"],
       "@editor/*": ["./src/editor/*"],
       "@editor": ["./src/editor"],
+      "@renderer/*": ["./src/editor/renderer/*"],
+      "@renderer": ["./src/editor/renderer"],
       "@math/*": ["./src/math/*"],
       "@math": ["./src/math"],
       "@utils/*": ["./src/utils/*"],
@@ -29,6 +31,8 @@
       "@menu": ["./src/ui/menu"],
       "@navigation/*": ["./src/ui/navigation/*"],
       "@navigation": ["./src/ui/navigation"],
+      "@multimedia/*": ["./src/ui/multimedia/*"],
+      "@multimedia": ["./src/ui/multimedia"],
       "@ui/*": ["./src/ui/*"],
       "@ui": ["./src/ui"]
     }

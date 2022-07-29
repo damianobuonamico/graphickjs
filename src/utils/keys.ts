@@ -1,5 +1,3 @@
-import { KeyBinding } from './types';
-
 export const isDarwin = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
 export const isWindows = /^Win/.test(window.navigator.platform);
 

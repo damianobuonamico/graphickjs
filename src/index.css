@@ -13,6 +13,7 @@
     @apply bg-primary-700;
     @apply text-sm;
     @apply text-primary-200;
+    @apply overflow-hidden;
   }
 
   ::-webkit-scrollbar {

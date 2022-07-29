@@ -1,5 +1,5 @@
-export type Mode = 'designer' | 'publisher' | 'photo';
-export type Tool =
+type Mode = 'designer' | 'publisher' | 'photo';
+type Tool =
   | 'select'
   | 'vselect'
   | 'pen'
@@ -11,7 +11,7 @@ export type Tool =
   | 'zoom'
   | 'eraser';
 
-export interface State {
+interface State {
   mode: Mode;
   tool: Tool;
 }

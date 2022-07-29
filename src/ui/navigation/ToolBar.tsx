@@ -1,5 +1,4 @@
-import { Component, For, JSX, Match, Switch } from 'solid-js';
-import { Tool } from '@editor/types';
+import { Component, For, JSX } from 'solid-js';
 import { Button } from '@inputs';
 import {
   CircleIcon,

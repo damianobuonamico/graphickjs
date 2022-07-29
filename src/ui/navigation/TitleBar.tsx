@@ -2,7 +2,6 @@ import { Component, createSignal } from 'solid-js';
 import FileMenu from '@menu/FileMenu';
 import { MenuItem } from '@menu/ControlledMenu';
 import { KEYS } from '@utils/keys';
-import { Mode } from '@editor/types';
 
 export function getModeComponent(
   mode: Mode,
@@ -101,7 +100,6 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
                 label: 'Auto Save',
                 key: KEYS.A,
                 disabled: true,
-                checkbox: true,
                 checked: checked(),
                 callback: () => {
                   setChecked(!checked());

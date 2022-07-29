@@ -1,5 +1,3 @@
-import { ClassNameArgument } from './types';
-
 export function classNames(...args: ClassNameArgument[]) {
   const classes: string[] = [];
 
