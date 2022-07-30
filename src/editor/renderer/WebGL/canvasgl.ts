@@ -85,7 +85,7 @@ class CanvasGL implements Canvas {
     this.render();
   }
 
-  private clear({ color, depth }: { color?: vec4; depth?: boolean }) {
+  public clear({ color, depth }: { color?: vec4; depth?: boolean }) {
     const gl = this.m_gl;
     let clearFlag = 0;
 
@@ -144,7 +144,7 @@ class CanvasGL implements Canvas {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
   }
 
-  private rect({
+  public rect({
     pos,
     size,
     centered = false
@@ -155,7 +155,6 @@ class CanvasGL implements Canvas {
   }) {
     size = typeof size === 'number' ? [size, size] : size;
     if (centered) vec2.mul(size, 0.5, true);
-    const transform = mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0));
     const vertices = createVertices(
       'rectangle',
       typeof size === 'number' ? [size, size] : size,
@@ -167,10 +166,50 @@ class CanvasGL implements Canvas {
 
     this.geometry(
       vec2.join(vertices),
-      new Uint16Array([0, 1, 2]),
+      new Uint16Array([0, 1, 2, 2, 3, 0]),
       mat4.fromTranslation(vec3.fromValues(0, 0, 0)),
       mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0))
     );
+  }
+
+  public beginFrame(): void {
+    if (this.m_options.antialiasing === 'FXAA')
+      this.setBuffer(this.m_frameBuffer);
+
+    this.clear({ color: [0.0, 0.0, 0.0, 1.0] });
+
+    this.m_shaders.setGlobalUniform(
+      'uViewMatrix',
+      mat4.translate(
+        mat4.fromScaling(vec3.fromValues(1, 1, 1)),
+        vec3.fromValues(0, 0, 1)
+      )
+    );
+
+    this.m_shaders.setGlobalUniform(
+      'uProjectionMatrix',
+      mat4.translate(
+        mat4.fromScaling(
+          vec3.fromValues(
+            1 / (this.size[0] / 2 / this.m_options.resolution),
+            -1 / (this.size[1] / 2 / this.m_options.resolution),
+            1
+          )
+        ),
+        vec3.fromValues(
+          -this.size[0] / 2 / this.m_options.resolution,
+          -this.size[1] / 2 / this.m_options.resolution,
+          0
+        )
+      )
+    );
+  }
+
+  public endFrame(): void {
+    if (this.m_options.antialiasing === 'FXAA') {
+      this.setBuffer();
+      this.m_frameBuffer.render();
+    }
   }
 
   public render() {

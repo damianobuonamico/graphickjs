@@ -1,8 +1,9 @@
-import { Component, createEffect } from 'solid-js';
+import { Component, createEffect, onMount } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { ToolBar, TitleBar } from '@navigation';
 import { CanvasDOM } from '@multimedia';
-import { Canvas2D, CanvasGl } from '@renderer';
+import Renderer from './renderer/renderer';
+import SceneManager from './scene';
 
 function getModePrimaryColor(mode: Mode) {
   switch (mode) {
@@ -21,14 +22,23 @@ const Editor: Component = () => {
     tool: 'select'
   });
   const useWebGL = true;
-  const canvas: Canvas = useWebGL ? new CanvasGl() : new Canvas2D();
+  Renderer.init(useWebGL);
+  SceneManager.init();
 
   createEffect(() => {
     document.documentElement.style.setProperty(
       '--primary-color',
       getModePrimaryColor(state.mode)
     );
+
+    SceneManager.render();
   });
+
+  onMount(() =>
+    setTimeout(() => {
+      SceneManager.render();
+    }, 25)
+  );
 
   return (
     <div class="w-screen h-screen bg-primary-700 grid grid-rows-title-bar">
@@ -51,7 +61,7 @@ const Editor: Component = () => {
             setState({ tool });
           }}
         />
-        <CanvasDOM canvas={canvas} />
+        <CanvasDOM />
       </div>
     </div>
   );

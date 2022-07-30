@@ -1,37 +1,37 @@
 import Shader from './shader';
 
 export class ShaderManager {
-  private _gl: WebGL2RenderingContext | WebGLRenderingContext;
-  private _shaders: Map<string, Shader> = new Map();
-  private _current: string | null = null;
-  private _local: Set<string> = new Set();
+  private m_gl: WebGL2RenderingContext | WebGLRenderingContext;
+  private m_shaders: Map<string, Shader> = new Map();
+  private m_current: string | null = null;
+  private m_local: Set<string> = new Set();
 
   constructor(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    this._gl = gl;
+    this.m_gl = gl;
   }
 
   public create(id: string, source: string, global = true) {
-    this._shaders.set(id, new Shader(this._gl, id, source));
-    if (!global) this._local.add(id);
+    this.m_shaders.set(id, new Shader(this.m_gl, id, source));
+    if (!global) this.m_local.add(id);
   }
 
   public use(id: string | null) {
     if (!id) {
-      this._gl.useProgram(null);
-      this._current = null;
+      this.m_gl.useProgram(null);
+      this.m_current = null;
       return;
     }
 
-    const shader = this._shaders.get(id);
+    const shader = this.m_shaders.get(id);
     if (!shader) return;
 
     shader.use();
-    this._current = id;
+    this.m_current = id;
   }
 
   public setGlobalUniform(uniform: string, value: VectorOrMatrix) {
-    this._shaders.forEach((shader) => {
-      if (!this._local.has(shader.id)) {
+    this.m_shaders.forEach((shader) => {
+      if (!this.m_local.has(shader.id)) {
         shader.queueUniform(uniform, value);
       }
     });
@@ -43,25 +43,25 @@ export class ShaderManager {
     type: number,
     id?: string
   ) {
-    const shaderId = id ?? this._current;
+    const shaderId = id ?? this.m_current;
     if (!shaderId) return;
 
-    const shader = this._shaders.get(shaderId);
+    const shader = this.m_shaders.get(shaderId);
     if (!shader) return;
 
-    if (this._current !== shaderId) shader.use();
+    if (this.m_current !== shaderId) shader.use();
     shader.setAttribute(attribute, size, type);
   }
 
   public setUniform(uniform: string, value: VectorOrMatrix, id?: string) {
-    const shaderId = id ?? this._current;
+    const shaderId = id ?? this.m_current;
 
     if (!shaderId) return;
 
-    const shader = this._shaders.get(shaderId);
+    const shader = this.m_shaders.get(shaderId);
     if (!shader) return;
 
-    if (this._current !== shaderId) shader.use();
+    if (this.m_current !== shaderId) shader.use();
     shader.setUniform(uniform, value);
   }
 }

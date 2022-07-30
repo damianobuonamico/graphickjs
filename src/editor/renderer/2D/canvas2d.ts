@@ -52,9 +52,38 @@ class Canvas2D implements Canvas {
     this.render();
   }
 
+  public clear({ color }: { color: vec4 }) {
+    this.m_ctx.clearRect(0, 0, this.size[0], this.size[1]);
+    this.m_ctx.fillStyle = `rgba(${color[0] * 255}, ${color[1] * 255}, ${
+      color[2] * 255
+    }, ${color[3]})`;
+    this.m_ctx.fillRect(0, 0, this.size[0], this.size[1]);
+  }
+
+  public beginFrame(): void {}
+
+  public endFrame(): void {}
+
+  public rect({
+    pos,
+    size,
+    centered = false
+  }: {
+    pos: vec2;
+    size: vec2 | number;
+    centered?: boolean;
+  }) {
+    size = typeof size === 'number' ? [size, size] : size;
+
+    this.m_ctx.fillStyle = 'white';
+    this.m_ctx.fillRect(pos[0], pos[1], size[0], size[1]);
+  }
+
   public render() {
     this.m_ctx.fillStyle = 'black';
     this.m_ctx.fillRect(0, 0, this.size[0], this.size[1]);
+    this.m_ctx.fillStyle = 'white';
+    this.rect({ pos: [100, 100], size: [100, 100] });
   }
 }
 

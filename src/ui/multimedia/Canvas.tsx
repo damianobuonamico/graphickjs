@@ -1,10 +1,11 @@
 import { Component, createEffect, onMount } from 'solid-js';
+import { Renderer } from '@renderer';
 
-const Canvas: Component<{ canvas: Canvas }> = (props) => {
+const Canvas: Component = (props) => {
   let ref: HTMLDivElement | undefined = undefined;
 
   createEffect(() => {
-    if (ref) props.canvas.container = ref;
+    if (ref) Renderer.container = ref;
   });
 
   return (
@@ -12,7 +13,7 @@ const Canvas: Component<{ canvas: Canvas }> = (props) => {
       <canvas
         class="absolute"
         ref={(ref) => {
-          if (ref !== null) props.canvas.setup(ref);
+          if (ref !== null) Renderer.setup(ref);
         }}
       />
     </div>

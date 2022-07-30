@@ -1,10 +1,10 @@
 import { vectorMatrixCallback } from '@math';
 
 class Shader {
-  private _gl: WebGL2RenderingContext | WebGLRenderingContext;
-  private _program: WebGLProgram;
-  private _locations: Map<string, number | WebGLUniformLocation> = new Map();
-  private _uniformQueue: Array<{ uniform: string; value: VectorOrMatrix }> = [];
+  private m_gl: WebGL2RenderingContext | WebGLRenderingContext;
+  private m_program: WebGLProgram;
+  private m_locations: Map<string, number | WebGLUniformLocation> = new Map();
+  private m_uniformQueue: Array<{ uniform: string; value: VectorOrMatrix }> = [];
 
   public readonly id: string;
 
@@ -13,31 +13,31 @@ class Shader {
     id: string,
     source: string
   ) {
-    this._gl = gl;
+    this.m_gl = gl;
     this.id = id;
 
     const shaderSource = this.parse(source);
 
-    const vertexShader = this._createShader(
+    const vertexShader = this.createShader(
       gl.VERTEX_SHADER,
       shaderSource.vertex
     );
-    const fragmentShader = this._createShader(
+    const fragmentShader = this.createShader(
       gl.FRAGMENT_SHADER,
       shaderSource.fragment
     );
 
     if (!vertexShader || !fragmentShader) return;
 
-    const program = this._createProgram(vertexShader, fragmentShader);
+    const program = this.createProgram(vertexShader, fragmentShader);
 
     if (!program) return;
 
-    this._program = program;
+    this.m_program = program;
   }
 
-  private _createShader(type: number, source: string) {
-    const gl = this._gl;
+  private createShader(type: number, source: string) {
+    const gl = this.m_gl;
     const shader = gl.createShader(type);
 
     if (!shader) return null;
@@ -64,11 +64,11 @@ class Shader {
     };
   }
 
-  private _createProgram(
+  private createProgram(
     vertexShader: WebGLShader,
     fragmentShader: WebGLShader
   ) {
-    const gl = this._gl;
+    const gl = this.m_gl;
     const program = gl.createProgram();
 
     if (!program) return null;
@@ -91,30 +91,30 @@ class Shader {
   }
 
   public use() {
-    this._gl.useProgram(this._program);
+    this.m_gl.useProgram(this.m_program);
 
-    if (this._uniformQueue.length) {
-      for (let i = 0; i < this._uniformQueue.length; i++) {
+    if (this.m_uniformQueue.length) {
+      for (let i = 0; i < this.m_uniformQueue.length; i++) {
         this.setUniform(
-          this._uniformQueue[i].uniform,
-          this._uniformQueue[i].value
+          this.m_uniformQueue[i].uniform,
+          this.m_uniformQueue[i].value
         );
       }
-      this._uniformQueue.length = 0;
+      this.m_uniformQueue.length = 0;
     }
   }
 
   public queueUniform(uniform: string, value: VectorOrMatrix) {
-    this._uniformQueue.push({ uniform, value });
+    this.m_uniformQueue.push({ uniform, value });
   }
 
   public setUniform(uniform: string, value: VectorOrMatrix) {
-    const gl = this._gl;
-    let location = this._locations.get(uniform) as WebGLUniformLocation;
+    const gl = this.m_gl;
+    let location = this.m_locations.get(uniform) as WebGLUniformLocation;
 
     if (!location) {
-      location = gl.getUniformLocation(this._program, uniform)!;
-      this._locations.set(uniform, location);
+      location = gl.getUniformLocation(this.m_program, uniform)!;
+      this.m_locations.set(uniform, location);
     }
 
     vectorMatrixCallback({
@@ -129,12 +129,12 @@ class Shader {
   }
 
   public setAttribute(attribute: string, size: number, type: number) {
-    const gl = this._gl;
-    let location = this._locations.get(attribute) as number;
+    const gl = this.m_gl;
+    let location = this.m_locations.get(attribute) as number;
 
     if (!location) {
-      location = gl.getAttribLocation(this._program, attribute);
-      this._locations.set(attribute, location);
+      location = gl.getAttribLocation(this.m_program, attribute);
+      this.m_locations.set(attribute, location);
     }
 
     gl.vertexAttribPointer(location, size, type, false, 0, 0);

@@ -15,3 +15,8 @@ interface State {
   mode: Mode;
   tool: Tool;
 }
+
+interface Action {
+  fn: () => void;
+  undo: () => void;
+}
