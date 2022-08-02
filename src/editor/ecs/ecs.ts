@@ -43,6 +43,12 @@ class ECS {
       callback(this.m_children.get(id)!);
     });
   }
+
+  public render() {
+    this.forEach((entity) => {
+      entity.render();
+    });
+  }
 }
 
 export default ECS;

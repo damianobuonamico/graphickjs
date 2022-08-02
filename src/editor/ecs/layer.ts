@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import { Renderer } from '../renderer';
 import ECS from './ecs';
 
 class Layer extends ECS implements Entity {
@@ -9,7 +10,10 @@ class Layer extends ECS implements Entity {
     this.id = nanoid();
   }
 
-  public render() {}
+  public render() {
+    Renderer.rect({ pos: [100, 100], size: [100, 100], color: [1.0, 1.0, 0.0, 1.0] });
+    super.render();
+  }
 }
 
 export default Layer;

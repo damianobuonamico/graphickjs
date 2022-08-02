@@ -337,6 +337,8 @@ abstract class InputManager {
 
     if (this.button === BUTTONS.MIDDLE || this.m_shouldResetTool) {
       this.activeTool = this.m_tool.current;
+    } else {
+      this.calculateTool();
     }
 
     // if (this._tool.pointerup) this._tool.pointerup(e, this._abort);

@@ -12,5 +12,15 @@ interface Canvas {
   endFrame(): void;
 
   clear(...args: any): void;
-  rect({ pos, size, centered }: { pos: vec2; size: vec2 | number; centered: boolean }): void;
+  rect({
+    pos,
+    size,
+    centered,
+    color
+  }: {
+    pos: vec2;
+    size: vec2 | number;
+    centered: boolean;
+    color: vec4;
+  }): void;
 }

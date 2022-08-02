@@ -35,8 +35,8 @@ abstract class Renderer {
     this.m_canvas.endFrame();
   }
 
-  public static rect({ pos, size }: { pos: vec2; size: vec2 }) {
-    this.m_canvas.rect({ pos, size, centered: false });
+  public static rect({ pos, size, color }: { pos: vec2; size: vec2; color: vec4 }) {
+    this.m_canvas.rect({ pos, size, centered: false, color });
   }
 }
 

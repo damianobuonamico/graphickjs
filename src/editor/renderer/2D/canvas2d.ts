@@ -77,15 +77,19 @@ class Canvas2D implements Canvas {
   public rect({
     pos,
     size,
-    centered = false
+    centered = false,
+    color
   }: {
     pos: vec2;
     size: vec2 | number;
     centered?: boolean;
+    color: vec4;
   }) {
     size = typeof size === 'number' ? [size, size] : size;
 
-    this.m_ctx.fillStyle = 'white';
+    this.m_ctx.fillStyle = `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${
+      color[3]
+    })`;
     this.m_ctx.fillRect(pos[0], pos[1], size[0], size[1]);
   }
 }

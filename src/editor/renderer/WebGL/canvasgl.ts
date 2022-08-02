@@ -119,7 +119,8 @@ class CanvasGL implements Canvas {
     positions: Float32Array,
     indices: Uint16Array,
     modelMatrix?: mat4,
-    transformMatrix?: mat4
+    transformMatrix?: mat4,
+    color?: vec4
   ) {
     const gl = this.m_gl;
 
@@ -133,7 +134,7 @@ class CanvasGL implements Canvas {
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 
     this.m_shaders.setAttribute('aPosition', 2, gl.FLOAT, 'default');
-    this.m_shaders.setUniform('uColor', [1.0, 1.0, 1.0, 1.0], 'default');
+    this.m_shaders.setUniform('uColor', color || [1.0, 1.0, 1.0, 1.0], 'default');
 
     const indexBuffer = gl.createBuffer()!;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
@@ -148,11 +149,13 @@ class CanvasGL implements Canvas {
   public rect({
     pos,
     size,
-    centered = false
+    centered = false,
+    color
   }: {
     pos: vec2;
     size: vec2 | number;
     centered?: boolean;
+    color: vec4;
   }) {
     size = typeof size === 'number' ? [size, size] : size;
     if (centered) vec2.mul(size, 0.5, true);
@@ -167,7 +170,8 @@ class CanvasGL implements Canvas {
       vec2.join(vertices),
       new Uint16Array([0, 1, 2, 2, 3, 0]),
       mat4.fromTranslation(vec3.fromValues(0, 0, 0)),
-      mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0))
+      mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0)),
+      color
     );
   }
 
