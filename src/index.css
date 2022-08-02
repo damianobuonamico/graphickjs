@@ -4,6 +4,7 @@
 
 :root {
   --primary-color: #31efb8;
+  touch-action: none;
 }
 
 @layer base {
