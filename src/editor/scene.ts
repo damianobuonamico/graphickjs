@@ -54,9 +54,11 @@ abstract class SceneManager {
   }
 
   public static render() {
-    Renderer.beginFrame();
-    this.m_ecs.render();
-    Renderer.endFrame();
+    requestAnimationFrame(() => {
+      Renderer.beginFrame();
+      this.m_ecs.render();
+      Renderer.endFrame();
+    });
   }
 
   public static clientToScene(position: vec2, override: Partial<ViewportState> = {}) {
