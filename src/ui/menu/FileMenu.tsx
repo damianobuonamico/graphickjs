@@ -1,16 +1,11 @@
 import { createSignal, For, Component, onMount, createEffect } from 'solid-js';
 import { onCleanup } from 'solid-js';
 import Button from '@inputs/Button';
-import {
-  calculateAltLabel,
-  MenuItem,
-  MenuItems,
-  menuNext,
-  menuPrev
-} from './ControlledMenu';
+import { calculateAltLabel, MenuItem, MenuItems, menuNext, menuPrev } from './ControlledMenu';
 import Menu from './Menu';
 import { KEYS } from '@utils/keys';
 import MenuKeyCallback from './menuKeyCallback';
+import InputManager from '@editor/input';
 
 const FileMenu: Component<{ items: MenuItems }> = (props) => {
   const [focus, setFocus] = createSignal(false);
@@ -33,10 +28,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
         break;
       }
       case KEYS.ENTER: {
-        if (
-          !props.items[active()].submenu ||
-          !props.items[active()].submenu!.length
-        ) {
+        if (!props.items[active()].submenu || !props.items[active()].submenu!.length) {
           onClick(props.items[active()]);
           break;
         }
@@ -70,6 +62,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
   };
 
   const onKey = (e: KeyboardEvent) => {
+    if (InputManager.down) return;
     if (e.key === KEYS.ALT) {
       e.preventDefault();
       const last = alt();
@@ -93,8 +86,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
   };
 
   const onMouseDown = (e: MouseEvent) => {
-    if (menuRef && !menuRef.contains(e.target as Node) && !expanded())
-      onClose();
+    if (menuRef && !menuRef.contains(e.target as Node) && !expanded()) onClose();
   };
 
   createEffect(() => {
