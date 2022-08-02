@@ -39,17 +39,19 @@ abstract class SceneManager {
     Renderer.endFrame();
   }
 
-  public static clientToScene(position: vec2) {
+  public static clientToScene(position: vec2, override: Partial<ViewportState> = {}) {
+    const viewport = fillObject<ViewportState>(override, this.viewport);
     return vec2.sub(
-      vec2.div(vec2.sub(position, Renderer.canvasOffset), this.viewport.zoom, true),
-      this.viewport.position,
+      vec2.div(vec2.sub(position, Renderer.canvasOffset), viewport.zoom, true),
+      viewport.position,
       true
     );
   }
 
-  public static sceneToClient(position: vec2) {
+  public static sceneToClient(position: vec2, override: Partial<ViewportState> = {}) {
+    const viewport = fillObject<ViewportState>(override, this.viewport);
     return vec2.add(
-      vec2.mul(vec2.add(position, this.viewport.position), this.viewport.zoom, true),
+      vec2.mul(vec2.add(position, viewport.position), viewport.zoom, true),
       Renderer.canvasOffset,
       true
     );

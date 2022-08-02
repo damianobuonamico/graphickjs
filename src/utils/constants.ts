@@ -1,3 +1,9 @@
+//* Zoom Constants
+export const ZOOM_MIN = 0.02;
+export const ZOOM_MAX = 640;
+export const ZOOM_STEP = 1.8;
+
+//* Input Constants
 export const INPUT_MOVEMENT_THRESHOLD = 4;
 export const INPUT_MOVEMENT_THRESHOLD_MULTIPLIER = {
   mouse: 1,

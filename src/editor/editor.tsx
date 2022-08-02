@@ -22,19 +22,17 @@ const Editor: Component = () => {
     mode: 'designer',
     tool: 'select'
   });
-  const useWebGL = true;
+  const useWebGL = false;
   Renderer.init(useWebGL);
   SceneManager.init();
-  InputManager.init({});
+  InputManager.init({}, (tool: Tool) => {
+    setState({ tool });
+  });
 
   createEffect(() => {
     document.documentElement.style.setProperty('--primary-color', getModePrimaryColor(state.mode));
 
     SceneManager.render();
-  });
-
-  createEffect(() => {
-    InputManager.tool = state.tool;
   });
 
   onMount(() =>
@@ -56,11 +54,13 @@ const Editor: Component = () => {
             'separator',
             ['rectangle', 'ellipse'],
             'separator',
-            'pan'
+            'pan',
+            'zoom'
           ]}
           tool={state.tool}
           setTool={(tool: Tool) => {
             setState({ tool });
+            InputManager.tool = state.tool;
           }}
         />
         <CanvasDOM />

@@ -1,4 +1,5 @@
 import onPanPointerDown from './pan';
+import onZoomPointerDown from './zoom';
 
 export function getToolData(tool: Tool): ToolData {
   switch (tool) {
@@ -29,6 +30,10 @@ export function getToolData(tool: Tool): ToolData {
     case 'pan':
       return {
         callback: onPanPointerDown
+      };
+    case 'zoom':
+      return {
+        callback: onZoomPointerDown
       };
     default:
       return {

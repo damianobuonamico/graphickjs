@@ -6,7 +6,8 @@ import {
   PenIcon,
   PointerIcon,
   PointerVertexIcon,
-  RectangleIcon
+  RectangleIcon,
+  ZoomIcon
 } from '@icons';
 import Select from '../inputs/Select';
 
@@ -22,6 +23,8 @@ export function getToolIcon(tool: Tool): JSX.Element {
       return <CircleIcon />;
     case 'pan':
       return <HandIcon />;
+    case 'zoom':
+      return <ZoomIcon />;
     default:
       return <PointerIcon />;
   }

@@ -179,7 +179,9 @@ class CanvasGL implements Canvas {
     this.m_shaders.setGlobalUniform(
       'uViewMatrix',
       mat4.translate(
-        mat4.fromScaling(vec3.fromValues(1, 1, 1)),
+        mat4.fromScaling(
+          vec3.fromValues(SceneManager.viewport.zoom, SceneManager.viewport.zoom, 1)
+        ),
         vec3.fromValues(SceneManager.viewport.position[0], SceneManager.viewport.position[1], 1)
       )
     );

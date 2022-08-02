@@ -11,6 +11,7 @@ import PenIcon from './PenIcon';
 import PointerIcon from './PointerIcon';
 import PointerVertexIcon from './PointerVertexIcon';
 import RectangleIcon from './RectangleIcon';
+import ZoomIcon from './ZoomIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
@@ -23,6 +24,7 @@ export { PenIcon };
 export { PointerIcon };
 export { PointerVertexIcon };
 export { RectangleIcon };
+export { ZoomIcon };
 
 const getIcon = (name: string, props?: IconProps) => {
   switch (name) {
@@ -48,6 +50,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <PointerVertexIcon {...props} />;
     case 'rectangle':
       return <RectangleIcon {...props} />;
+    case 'zoom':
+      return <ZoomIcon {...props} />;
     default:
       return <></>;
   }

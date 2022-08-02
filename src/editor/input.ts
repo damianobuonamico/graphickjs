@@ -27,7 +27,9 @@ abstract class InputManager {
   private static m_listeners: Listeners;
   private static m_mountedListeners: MountedListener[] = [];
 
-  public static init(listeners: Partial<Listeners>) {
+  private static m_setTool: (tool: Tool) => void;
+
+  public static init(listeners: Partial<Listeners>, setTool: (tool: Tool) => void) {
     this.m_listeners = fillObject<Listeners>(listeners, {
       copy: () => {},
       paste: () => {},
@@ -44,6 +46,8 @@ abstract class InputManager {
       pointerenter: () => {},
       wheel: () => {}
     });
+
+    this.m_setTool = setTool;
 
     this.client = fillObject(
       {},
@@ -65,9 +69,18 @@ abstract class InputManager {
       }
     );
 
-    this.keys = fillObject({}, {});
+    this.keys = fillObject(
+      {},
+      {
+        ctrl: false,
+        shift: false,
+        alt: false,
+        space: false
+      }
+    );
 
-    this.m_tool = fillObject({}, {});
+    this.m_tool = fillObject({}, { current: 'select' });
+    this.activeTool = 'select';
 
     this.mount();
   }
@@ -130,6 +143,7 @@ abstract class InputManager {
     this.m_tool.active = tool;
     const data = getToolData(tool);
     this.m_tool.onPointerDown = data.callback;
+    this.m_setTool(tool);
   }
 
   private static calculateTool() {

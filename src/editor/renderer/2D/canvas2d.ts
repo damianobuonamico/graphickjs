@@ -1,3 +1,4 @@
+import SceneManager from '@/editor/scene';
 import { vec2 } from '@math';
 
 class Canvas2D implements Canvas {
@@ -53,7 +54,7 @@ class Canvas2D implements Canvas {
   resize() {
     this.offset = [this.m_container.offsetLeft, this.m_container.offsetTop];
     this.size = [this.m_container.offsetWidth, this.m_container.offsetHeight];
-    this.render();
+    SceneManager.render();
   }
 
   public clear({ color }: { color: vec4 }) {
@@ -64,7 +65,12 @@ class Canvas2D implements Canvas {
     this.m_ctx.fillRect(0, 0, this.size[0], this.size[1]);
   }
 
-  public beginFrame(): void {}
+  public beginFrame(): void {
+    this.m_ctx.setTransform();
+    this.clear({ color: [0.0, 0.0, 0.0, 1.0] });
+    this.m_ctx.scale(SceneManager.viewport.zoom, SceneManager.viewport.zoom);
+    this.m_ctx.translate(SceneManager.viewport.position[0], SceneManager.viewport.position[1]);
+  }
 
   public endFrame(): void {}
 
@@ -81,13 +87,6 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.fillStyle = 'white';
     this.m_ctx.fillRect(pos[0], pos[1], size[0], size[1]);
-  }
-
-  public render() {
-    this.m_ctx.fillStyle = 'black';
-    this.m_ctx.fillRect(0, 0, this.size[0], this.size[1]);
-    this.m_ctx.fillStyle = 'white';
-    this.rect({ pos: [100, 100], size: [100, 100] });
   }
 }
 

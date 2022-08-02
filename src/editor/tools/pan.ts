@@ -6,7 +6,7 @@ const onPanPointerDown = () => {
   function onPointerMove() {
     SceneManager.viewport.position = vec2.add(
       SceneManager.viewport.position,
-      InputManager.client.movement
+      InputManager.scene.movement
     );
   }
 

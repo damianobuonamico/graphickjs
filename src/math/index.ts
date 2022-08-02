@@ -3,6 +3,8 @@ export * as vec3 from './vec3';
 export * as vec4 from './vec4';
 export * as mat4 from './mat4';
 
+export * from './math';
+
 export function vectorMatrixCallback({
   value,
   int,
