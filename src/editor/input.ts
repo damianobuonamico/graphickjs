@@ -357,6 +357,8 @@ abstract class InputManager {
     // this.updateInputs();
 
     this.m_listeners.pointerup(e);
+
+    SceneManager.save();
   }
 
   private static onPointerEnter(e: PointerEvent) {

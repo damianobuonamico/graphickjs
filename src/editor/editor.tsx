@@ -28,8 +28,6 @@ const Editor: Component = () => {
 
   createEffect(() => {
     document.documentElement.style.setProperty('--primary-color', getModePrimaryColor(state.mode));
-
-    SceneManager.render();
   });
 
   onMount(() =>

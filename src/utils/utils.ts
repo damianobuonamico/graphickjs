@@ -55,8 +55,7 @@ export function isObject(value: any) {
 export function cloneObject(object: { [key: string]: any }) {
   const obj: { [key: string]: any } = {};
   Object.entries(object).forEach(([key, value]) => {
-    const type = typeof value;
-    if (type !== 'object' || value === null) {
+    if (!isObject(value) || value === null) {
       obj[key] = value;
     } else {
       obj[key] === cloneObject(value);

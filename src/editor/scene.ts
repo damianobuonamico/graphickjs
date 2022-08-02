@@ -7,15 +7,18 @@ import Layer from './ecs/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/vertex';
 import HistoryManager from './history';
+import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE } from '@utils/constants';
 
 abstract class SceneManager {
-  private static m_ecs = new ECS();
+  private static m_ecs: ECS;
 
   private static m_layer: Layer;
 
   public static viewport: ViewportState;
 
   public static init() {
+    this.load();
+
     const artboard = new Artboard([600, 400]);
     this.m_layer = new Layer();
     const element = new Element({
@@ -34,15 +37,6 @@ abstract class SceneManager {
     this.m_ecs.add(artboard);
 
     HistoryManager.clear();
-
-    this.viewport = fillObject(
-      {},
-      {
-        position: vec2.create(),
-        zoom: 1,
-        rotation: 0
-      }
-    );
   }
 
   public static add(entity: Entity) {
@@ -77,6 +71,29 @@ abstract class SceneManager {
       Renderer.canvasOffset,
       true
     );
+  }
+
+  public static save() {
+    //localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.m_ecs.asArray()));
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY_STATE,
+      JSON.stringify({
+        ...this.viewport,
+        position: [this.viewport.position[0], this.viewport.position[1]]
+      })
+    );
+  }
+
+  public static load() {
+    const state = localStorage.getItem(LOCAL_STORAGE_KEY_STATE);
+
+    this.m_ecs = new ECS();
+
+    this.viewport = fillObject(state ? JSON.parse(state) : {}, {
+      position: vec2.create(),
+      zoom: 1,
+      rotation: 0
+    });
   }
 }
 
