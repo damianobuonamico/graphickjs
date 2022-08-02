@@ -17,7 +17,7 @@ class Element implements Entity {
     if (vertices) this.vertices = vertices as Vertex[];
   }
 
-  private set vertices(vertices: Vertex[]) {
+  public set vertices(vertices: Vertex[]) {
     this.m_vertices.clear();
     vertices.forEach((vertex) => {
       this.m_vertices.set(vertex.id, vertex);

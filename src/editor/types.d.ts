@@ -42,7 +42,6 @@ interface KeysState {
 interface PointerDownReturn {
   onPointerMove?(): void;
   onPointerUp?(): void;
-  onKey?(): void;
 }
 
 interface ToolState {
@@ -51,7 +50,6 @@ interface ToolState {
   onPointerDown(): PointerDownReturn;
   onPointerMove?(): void;
   onPointerUp?(abort?: boolean): void;
-  onKey?(): void;
 }
 
 interface ViewportState {

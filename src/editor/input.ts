@@ -273,7 +273,6 @@ abstract class InputManager {
     const callbacks = this.m_tool.onPointerDown();
     this.m_tool.onPointerMove = callbacks.onPointerMove;
     this.m_tool.onPointerUp = callbacks.onPointerUp;
-    this.m_tool.onKey = callbacks.onKey;
 
     // const [pointermove, pointerup, keypress] = this._tool.pointerdown({
     //   input: this,
@@ -341,7 +340,7 @@ abstract class InputManager {
       this.calculateTool();
     }
 
-    // if (this._tool.pointerup) this._tool.pointerup(e, this._abort);
+    if (this.m_tool.onPointerUp) this.m_tool.onPointerUp(this.m_abort);
 
     // this.updateInputs();
 

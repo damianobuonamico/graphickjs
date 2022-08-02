@@ -46,6 +46,10 @@ abstract class SceneManager {
     this.m_layer.add(entity);
   }
 
+  public static remove(entity: Entity) {
+    (entity.parent as unknown as ECS).remove(entity.id);
+  }
+
   public static render() {
     Renderer.beginFrame();
     this.m_ecs.render();

@@ -22,10 +22,10 @@ const Editor: Component = () => {
     mode: 'designer',
     tool: 'select'
   });
-  const useWebGL = true;
+  const useWebGL = false;
   Renderer.init(useWebGL);
   SceneManager.init();
-  InputManager.init({}, (tool: Tool) => {
+  InputManager.init({}, (tool: Tool) => { 
     setState({ tool });
   });
 

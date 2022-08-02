@@ -167,7 +167,7 @@ class CanvasGL implements Canvas {
     );
 
     this.geometry(
-      vec2.join(vertices),
+      vec2.join(vertices.map((vertex) => vertex.position)),
       new Uint16Array([0, 1, 2, 2, 3, 0]),
       mat4.fromTranslation(vec3.create()),
       mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0)),
@@ -178,7 +178,7 @@ class CanvasGL implements Canvas {
   public beginFrame(): void {
     if (this.m_options.antialiasing === 'FXAA') this.setBuffer(this.m_frameBuffer);
 
-    this.clear({ color: [0.0, 0.0, 0.0, 1.0] });
+    this.clear({ color: [0.09, 0.11, 0.13, 1.0] });
 
     this.m_shaders.setGlobalUniform(
       'uViewMatrix',

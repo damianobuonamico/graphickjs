@@ -67,7 +67,7 @@ class Canvas2D implements Canvas {
 
   public beginFrame(): void {
     this.m_ctx.setTransform();
-    this.clear({ color: [0.0, 0.0, 0.0, 1.0] });
+    this.clear({ color: [0.09, 0.11, 0.13, 1.0] });
     this.m_ctx.scale(SceneManager.viewport.zoom, SceneManager.viewport.zoom);
     this.m_ctx.translate(SceneManager.viewport.position[0], SceneManager.viewport.position[1]);
   }

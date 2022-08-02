@@ -25,8 +25,10 @@ class ECS {
   }
 
   public remove(id: string) {
+    console.log('remove');
     const entity = this.m_children.get(id);
     if (!entity) return;
+    const index = this.m_order.indexOf(id);
     HistoryManager.record({
       fn: () => {
         this.splice(id, index);
@@ -35,7 +37,6 @@ class ECS {
         this.push(entity, index);
       }
     });
-    const index = this.m_order.indexOf(id);
   }
 
   public forEach(callback: (entity: Entity) => void) {

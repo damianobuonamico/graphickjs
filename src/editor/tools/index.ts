@@ -1,4 +1,5 @@
 import onPanPointerDown from './pan';
+import onPolygonPointerDown from './polygon';
 import onZoomPointerDown from './zoom';
 
 export function getToolData(tool: Tool): ToolData {
@@ -16,16 +17,9 @@ export function getToolData(tool: Tool): ToolData {
         }
       };
     case 'rectangle':
-      return {
-        callback: () => {
-          return {};
-        }
-      };
     case 'ellipse':
       return {
-        callback: () => {
-          return {};
-        }
+        callback: () => onPolygonPointerDown(tool)
       };
     case 'pan':
       return {
