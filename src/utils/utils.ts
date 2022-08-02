@@ -1,3 +1,5 @@
+import { KEYS } from './keys';
+
 export function classNames(...args: ClassNameArgument[]) {
   const classes: string[] = [];
 
@@ -86,4 +88,12 @@ export function isInputLike(
     target instanceof HTMLSelectElement ||
     target instanceof HTMLSpanElement
   );
+}
+
+export function isShortcut(e: KeyboardEvent, shortcut: KeyBinding): boolean {
+  if (e.key.toLowerCase() !== shortcut.key) return false;
+  if (!!shortcut.ctrl !== (e as any)[KEYS.CTRL]) return false;
+  if (!!shortcut.shift !== e.shiftKey) return false;
+  if (!!shortcut.alt !== e.altKey) return false;
+  return true;
 }

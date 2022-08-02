@@ -2,11 +2,9 @@ import { Component, createSignal } from 'solid-js';
 import FileMenu from '@menu/FileMenu';
 import { MenuItem } from '@menu/ControlledMenu';
 import { KEYS } from '@utils/keys';
+import actions from '@/editor/actions';
 
-export function getModeComponent(
-  mode: Mode,
-  setMode: (mode: Mode) => void
-): MenuItem {
+export function getModeComponent(mode: Mode, setMode: (mode: Mode) => void): MenuItem {
   switch (mode) {
     case 'photo':
       return {
@@ -41,9 +39,7 @@ export function getModeComponent(
   }
 }
 
-const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
-  props
-) => {
+const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (props) => {
   const [checked, setChecked] = createSignal(true);
 
   return (
@@ -112,14 +108,14 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
             key: KEYS.E,
             submenu: [
               {
+                ...actions.undo,
                 label: 'Undo',
-                key: KEYS.U,
-                shortcut: { key: KEYS.Z, ctrl: true }
+                key: KEYS.U
               },
               {
+                ...actions.redo,
                 label: 'Redo',
-                key: KEYS.R,
-                shortcut: { key: KEYS.Z, ctrl: true, shift: true }
+                key: KEYS.R
               },
               {
                 label: 'separator',

@@ -1,10 +1,11 @@
 import { INPUT_MOVEMENT_THRESHOLD, INPUT_MOVEMENT_THRESHOLD_MULTIPLIER } from '@utils/constants';
 import { BUTTONS, KEYS } from '@utils/keys';
-import { fillObject, isInputLike } from '@utils/utils';
+import { fillObject, isInputLike, isShortcut } from '@utils/utils';
 import { vec2 } from '@math';
 import { Renderer } from './renderer';
 import SceneManager from './scene';
 import { getToolData } from './tools';
+import actions from './actions';
 
 abstract class InputManager {
   public static client: PointerCoord;
@@ -105,7 +106,7 @@ abstract class InputManager {
     this.addListener('keydown', this.onKeyDown.bind(this));
     this.addListener('keyup', this.onKeyUp.bind(this));
 
-    this.addListener('pointerdown', this.calculateDeviceType.bind(this));
+    this.addListener('pointerdown', this.calculateDeviceType.bind(this), Renderer.canvas);
 
     if (this.m_type === 'touch') {
       this.addListener('touchstart', this.onTouchStart.bind(this), Renderer.canvas);
@@ -226,7 +227,17 @@ abstract class InputManager {
   private static onKeyDown(e: KeyboardEvent) {
     this.onKey(e);
 
-    // if (this.down && this._tool.keypress) this._tool.keypress(e);
+    if (this.down && this.m_tool.onKey) this.m_tool.onKey(e);
+
+    if (!this.down) {
+      Object.values(actions).forEach((action) => {
+        if (action.shortcut && isShortcut(e, action.shortcut)) {
+          action.callback();
+          SceneManager.render();
+          return;
+        }
+      });
+    }
 
     this.m_listeners.keydown(e);
   }
@@ -234,7 +245,7 @@ abstract class InputManager {
   private static onKeyUp(e: KeyboardEvent) {
     this.onKey(e, true);
 
-    // if (this.down && this._tool.keypress) this._tool.keypress(e);
+    if (this.down && this.m_tool.onKey) this.m_tool.onKey(e);
 
     this.m_listeners.keyup(e);
   }
@@ -273,6 +284,7 @@ abstract class InputManager {
     const callbacks = this.m_tool.onPointerDown();
     this.m_tool.onPointerMove = callbacks.onPointerMove;
     this.m_tool.onPointerUp = callbacks.onPointerUp;
+    this.m_tool.onKey = callbacks.onKey;
 
     // const [pointermove, pointerup, keypress] = this._tool.pointerdown({
     //   input: this,

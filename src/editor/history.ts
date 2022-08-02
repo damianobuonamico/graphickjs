@@ -37,6 +37,15 @@ abstract class HistoryManager {
     this.m_undoStack.push(action);
     console.timeEnd('redo');
   }
+
+  public static clear() {
+    this.m_undoStack.length = 0;
+    this.m_redoStack.length = 0;
+  }
+
+  public static pop() {
+    this.m_undoStack.pop();
+  }
 }
 
 export default HistoryManager;

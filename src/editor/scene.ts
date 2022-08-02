@@ -6,6 +6,7 @@ import Element from './ecs/element';
 import Layer from './ecs/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/vertex';
+import HistoryManager from './history';
 
 abstract class SceneManager {
   private static m_ecs = new ECS();
@@ -32,6 +33,8 @@ abstract class SceneManager {
 
     this.m_ecs.add(artboard);
 
+    HistoryManager.clear();
+
     this.viewport = fillObject(
       {},
       {
@@ -46,8 +49,8 @@ abstract class SceneManager {
     this.m_layer.add(entity);
   }
 
-  public static remove(entity: Entity) {
-    (entity.parent as unknown as ECS).remove(entity.id);
+  public static remove(entity: Entity, skipRecordAction = false) {
+    (entity.parent as unknown as ECS).remove(entity.id, skipRecordAction);
   }
 
   public static render() {

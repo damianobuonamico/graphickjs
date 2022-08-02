@@ -4,6 +4,7 @@ import Element from '../ecs/element';
 import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
+import HistoryManager from '../history';
 
 const onPolygonPointerDown = (tool: Tool) => {
   let size = vec2.create();
@@ -19,7 +20,8 @@ const onPolygonPointerDown = (tool: Tool) => {
       vertices = createVertices(tool, size, e.shiftKey, e.altKey);
       element.vertices = vertices;
     } else if (e.key === KEYS.ESCAPE) {
-      SceneManager.remove(element);
+      SceneManager.remove(element, true);
+      HistoryManager.pop();
     }
   }
 
@@ -30,18 +32,13 @@ const onPolygonPointerDown = (tool: Tool) => {
   }
 
   function onPointerUp() {
-    window.removeEventListener('keydown', onKey);
-    window.removeEventListener('keyup', onKey);
-
     if (Math.abs(size[0]) < 1 && Math.abs(size[1]) < 1) SceneManager.remove(element);
   }
 
-  window.addEventListener('keydown', onKey);
-  window.addEventListener('keyup', onKey);
-
   return {
     onPointerMove,
-    onPointerUp
+    onPointerUp,
+    onKey
   };
 };
 

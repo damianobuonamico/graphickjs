@@ -42,6 +42,7 @@ interface KeysState {
 interface PointerDownReturn {
   onPointerMove?(): void;
   onPointerUp?(): void;
+  onKey?(): void;
 }
 
 interface ToolState {
@@ -50,6 +51,7 @@ interface ToolState {
   onPointerDown(): PointerDownReturn;
   onPointerMove?(): void;
   onPointerUp?(abort?: boolean): void;
+  onKey?(e: KeyboardEvent): void;
 }
 
 interface ViewportState {
@@ -80,4 +82,9 @@ interface MountedListener {
   callback(e: Event): void;
   target: HTMLElement | Window | Document;
   options?: boolean | AddEventListenerOptions;
+}
+
+interface ActionBinding {
+  callback(): void;
+  shortcut?: KeyBinding;
 }

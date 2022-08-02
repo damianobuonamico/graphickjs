@@ -25,9 +25,6 @@ const Editor: Component = () => {
   const useWebGL = false;
   Renderer.init(useWebGL);
   SceneManager.init();
-  InputManager.init({}, (tool: Tool) => {
-    setState({ tool });
-  });
 
   createEffect(() => {
     document.documentElement.style.setProperty('--primary-color', getModePrimaryColor(state.mode));
@@ -37,6 +34,9 @@ const Editor: Component = () => {
 
   onMount(() =>
     setTimeout(() => {
+      InputManager.init({}, (tool: Tool) => {
+        setState({ tool });
+      });
       SceneManager.render();
     }, 25)
   );
