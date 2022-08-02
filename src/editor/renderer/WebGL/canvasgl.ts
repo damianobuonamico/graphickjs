@@ -169,7 +169,7 @@ class CanvasGL implements Canvas {
     this.geometry(
       vec2.join(vertices),
       new Uint16Array([0, 1, 2, 2, 3, 0]),
-      mat4.fromTranslation(vec3.fromValues(0, 0, 0)),
+      mat4.fromTranslation(vec3.create()),
       mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0)),
       color
     );

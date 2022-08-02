@@ -4,6 +4,8 @@ import ECS from './ecs';
 
 class Artboard extends ECS implements Entity {
   public readonly id: string;
+  public readonly type: Entity['type'] = 'artboard';
+  public parent: Entity;
 
   private m_size: vec2;
 
@@ -11,6 +13,11 @@ class Artboard extends ECS implements Entity {
     super();
     this.id = nanoid();
     this.m_size = size;
+  }
+
+  public add(entity: Entity) {
+    super.add(entity);
+    entity.parent = this;
   }
 
   public render() {

@@ -52,20 +52,20 @@ abstract class InputManager {
     this.client = fillObject(
       {},
       {
-        position: vec2.fromValues(0, 0),
-        movement: vec2.fromValues(0, 0),
-        delta: vec2.fromValues(0, 0),
-        origin: vec2.fromValues(0, 0)
+        position: vec2.create(),
+        movement: vec2.create(),
+        delta: vec2.create(),
+        origin: vec2.create()
       }
     );
 
     this.scene = fillObject(
       {},
       {
-        position: vec2.fromValues(0, 0),
-        movement: vec2.fromValues(0, 0),
-        delta: vec2.fromValues(0, 0),
-        origin: vec2.fromValues(0, 0)
+        position: vec2.create(),
+        movement: vec2.create(),
+        delta: vec2.create(),
+        origin: vec2.create()
       }
     );
 
@@ -250,14 +250,14 @@ abstract class InputManager {
 
   //* Pointer Events
   private static onPointerDown(e: PointerEvent) {
-    this.client.movement = vec2.fromValues(0, 0);
+    this.client.movement = vec2.create();
     this.client.position = vec2.fromValues(e.clientX, e.clientY);
-    this.client.delta = vec2.fromValues(0, 0);
+    this.client.delta = vec2.create();
     this.client.origin = vec2.fromValues(e.clientX, e.clientY);
 
-    this.scene.movement = vec2.fromValues(0, 0);
+    this.scene.movement = vec2.create();
     this.scene.position = SceneManager.clientToScene(this.client.position);
-    this.scene.delta = vec2.fromValues(0, 0);
+    this.scene.delta = vec2.create();
     this.scene.origin = vec2.clone(this.scene.position);
 
     this.setPointer(e);

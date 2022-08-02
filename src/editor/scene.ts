@@ -5,6 +5,7 @@ import ECS from './ecs/ecs';
 import Element from './ecs/element';
 import Layer from './ecs/layer';
 import { Renderer } from './renderer';
+import Vertex from './ecs/vertex';
 
 abstract class SceneManager {
   private static m_ecs = new ECS();
@@ -16,7 +17,15 @@ abstract class SceneManager {
   public static init() {
     const artboard = new Artboard([600, 400]);
     this.m_layer = new Layer();
-    const element = new Element();
+    const element = new Element({
+      position: [100, 100],
+      vertices: [
+        new Vertex({ position: [0, 0] }),
+        new Vertex({ position: [100, 0] }),
+        new Vertex({ position: [100, 100] }),
+        new Vertex({ position: [0, 100] })
+      ]
+    });
 
     this.m_layer.add(element);
     artboard.add(this.m_layer);
@@ -26,7 +35,7 @@ abstract class SceneManager {
     this.viewport = fillObject(
       {},
       {
-        position: vec2.fromValues(0, 0),
+        position: vec2.create(),
         zoom: 1,
         rotation: 0
       }
