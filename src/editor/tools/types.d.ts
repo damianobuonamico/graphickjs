@@ -1,0 +1,3 @@
+interface ToolData {
+  callback(): PointerDownReturn;
+}

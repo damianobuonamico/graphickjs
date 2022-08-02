@@ -6,6 +6,7 @@ import AffinityPublisherLogoIcon from './AffinityPublisherLogoIcon';
 import CheckIcon from './CheckIcon';
 import ChevronRightIcon from './ChevronRightIcon';
 import CircleIcon from './CircleIcon';
+import HandIcon from './HandIcon';
 import PenIcon from './PenIcon';
 import PointerIcon from './PointerIcon';
 import PointerVertexIcon from './PointerVertexIcon';
@@ -17,6 +18,7 @@ export { AffinityPublisherLogoIcon };
 export { CheckIcon };
 export { ChevronRightIcon };
 export { CircleIcon };
+export { HandIcon };
 export { PenIcon };
 export { PointerIcon };
 export { PointerVertexIcon };
@@ -36,6 +38,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <ChevronRightIcon {...props} />;
     case 'circle':
       return <CircleIcon {...props} />;
+    case 'hand':
+      return <HandIcon {...props} />;
     case 'pen':
       return <PenIcon {...props} />;
     case 'pointer':

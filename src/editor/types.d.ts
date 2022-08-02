@@ -39,19 +39,19 @@ interface KeysState {
   spaceStateChanged: boolean;
 }
 
+interface PointerDownReturn {
+  onPointerMove?(): void;
+  onPointerUp?(): void;
+  onKey?(): void;
+}
+
 interface ToolState {
   current: Tool;
   active: Tool;
-  pointerdown: (
-    args: any
-  ) => [
-    (e: PointerEvent | TouchEvent) => void,
-    (e: PointerEvent | TouchEvent) => void,
-    (e: KeyboardEvent) => void
-  ];
-  pointermove?: (e: PointerEvent | TouchEvent) => void;
-  pointerup?: (e: PointerEvent | TouchEvent, abort?: boolean) => void;
-  keypress?: (e: KeyboardEvent) => void;
+  onPointerDown(): PointerDownReturn;
+  onPointerMove?(): void;
+  onPointerUp?(abort?: boolean): void;
+  onKey?(): void;
 }
 
 interface ViewportState {

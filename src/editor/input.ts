@@ -1,25 +1,26 @@
-import { INPUT_MOVEMENT_THRESHOLD, INPUT_MOVEMENT_THRESHOLD_MULTIPLIER } from '@/utils/constants';
-import { KEYS } from '@/utils/keys';
-import { vec2 } from '@math';
+import { INPUT_MOVEMENT_THRESHOLD, INPUT_MOVEMENT_THRESHOLD_MULTIPLIER } from '@utils/constants';
+import { BUTTONS, KEYS } from '@utils/keys';
 import { fillObject, isInputLike } from '@utils/utils';
+import { vec2 } from '@math';
 import { Renderer } from './renderer';
 import SceneManager from './scene';
+import { getToolData } from './tools';
 
 abstract class InputManager {
-  private static m_client: PointerCoord;
-  private static m_scene: PointerCoord;
+  public static client: PointerCoord;
+  public static scene: PointerCoord;
 
-  private static m_down: boolean = false;
-  private static m_inside: boolean = true;
-  private static m_type: 'touch' | 'pen' | 'mouse' = 'mouse';
+  public static down: boolean = false;
+  public static inside: boolean = true;
+
+  public static button: number = 0;
+  public static keys: KeysState;
 
   private static m_moving: boolean = false;
   private static m_abort: boolean = false;
   private static m_shouldResetTool: boolean = false;
 
-  private static m_button: number = 0;
-  private static m_keys: KeysState;
-
+  private static m_type: 'touch' | 'pen' | 'mouse' = 'mouse';
   private static m_tool: ToolState;
   private static m_hover: Entity | undefined;
 
@@ -44,7 +45,7 @@ abstract class InputManager {
       wheel: () => {}
     });
 
-    this.m_client = fillObject(
+    this.client = fillObject(
       {},
       {
         position: vec2.fromValues(0, 0),
@@ -54,7 +55,7 @@ abstract class InputManager {
       }
     );
 
-    this.m_scene = fillObject(
+    this.scene = fillObject(
       {},
       {
         position: vec2.fromValues(0, 0),
@@ -64,7 +65,9 @@ abstract class InputManager {
       }
     );
 
-    this.m_keys = fillObject({}, {});
+    this.keys = fillObject({}, {});
+
+    this.m_tool = fillObject({}, {});
 
     this.mount();
   }
@@ -118,22 +121,49 @@ abstract class InputManager {
     this.m_mountedListeners.length = 0;
   }
 
+  public static set tool(tool: Tool) {
+    this.m_tool.current = tool;
+    this.calculateTool();
+  }
+
+  public static set activeTool(tool: Tool) {
+    this.m_tool.active = tool;
+    const data = getToolData(tool);
+    this.m_tool.onPointerDown = data.callback;
+  }
+
+  private static calculateTool() {
+    if (this.keys.space) {
+      if (this.keys.ctrl) {
+        this.activeTool = 'zoom';
+      } else {
+        this.activeTool = 'pan';
+      }
+    } else if (this.keys.ctrl) {
+      if (this.m_tool.current === 'select' || this.m_tool.current === 'pen')
+        this.activeTool = 'vselect';
+      else this.activeTool = 'select';
+    } else {
+      this.activeTool = this.m_tool.current;
+    }
+  }
+
   private static setKey(e: PointerEvent | KeyboardEvent) {
-    this.m_keys.altStateChanged = this.m_keys.alt !== e.altKey;
-    this.m_keys.alt = e.altKey;
+    this.keys.altStateChanged = this.keys.alt !== e.altKey;
+    this.keys.alt = e.altKey;
 
-    this.m_keys.ctrlStateChanged = this.m_keys.ctrl !== (e as any)[KEYS.CTRL];
-    this.m_keys.ctrl = (e as any)[KEYS.CTRL];
+    this.keys.ctrlStateChanged = this.keys.ctrl !== (e as any)[KEYS.CTRL];
+    this.keys.ctrl = (e as any)[KEYS.CTRL];
 
-    this.m_keys.shiftStateChanged = this.m_keys.shift !== e.shiftKey;
-    this.m_keys.shift = e.shiftKey;
+    this.keys.shiftStateChanged = this.keys.shift !== e.shiftKey;
+    this.keys.shift = e.shiftKey;
   }
 
   private static setPointer(e: PointerEvent) {
-    this.m_button = e.button;
+    this.button = e.button;
     this.setKey(e);
 
-    if (this.m_down) return;
+    if (this.down) return;
   }
 
   private static onCut(e: ClipboardEvent) {
@@ -156,22 +186,22 @@ abstract class InputManager {
 
     if (e.key === KEYS.ESCAPE) {
       // this.pen = null;
-      // this._abort = true;
+      this.m_abort = true;
       // this.unlockCursor();
       // this._api.ops.render();
     } else if (e.key === KEYS.SPACEBAR) {
-      this.m_keys.spaceStateChanged = this.m_keys.space === up;
-      this.m_keys.space = !up;
+      this.keys.spaceStateChanged = this.keys.space === up;
+      this.keys.space = !up;
     }
 
-    if (this.m_down) {
-      this.m_shouldResetTool = true;
+    if (this.down) {
+      this.m_shouldResetTool = false;
       return;
     }
 
-    // if (this.__meta || this.__space) {
-    //   this._calculateTool();
-    // }
+    if (this.keys.ctrlStateChanged || this.keys.spaceStateChanged) {
+      this.calculateTool();
+    }
 
     // if (this.__alt) {
     //   this.setCursor();
@@ -206,25 +236,30 @@ abstract class InputManager {
 
   //* Pointer Events
   private static onPointerDown(e: PointerEvent) {
-    this.m_client.movement = vec2.fromValues(0, 0);
-    this.m_client.position = vec2.fromValues(e.clientX, e.clientY);
-    this.m_client.delta = vec2.fromValues(0, 0);
-    this.m_client.origin = vec2.fromValues(e.clientX, e.clientY);
+    this.client.movement = vec2.fromValues(0, 0);
+    this.client.position = vec2.fromValues(e.clientX, e.clientY);
+    this.client.delta = vec2.fromValues(0, 0);
+    this.client.origin = vec2.fromValues(e.clientX, e.clientY);
 
-    this.m_scene.movement = vec2.fromValues(0, 0);
-    this.m_scene.position = SceneManager.clientToScene(this.m_client.position);
-    this.m_scene.delta = vec2.fromValues(0, 0);
-    this.m_scene.origin = vec2.clone(this.m_scene.position);
+    this.scene.movement = vec2.fromValues(0, 0);
+    this.scene.position = SceneManager.clientToScene(this.client.position);
+    this.scene.delta = vec2.fromValues(0, 0);
+    this.scene.origin = vec2.clone(this.scene.position);
 
     this.setPointer(e);
-    this.m_down = true;
+    this.down = true;
     this.m_abort = false;
 
-    // if (this.button === BUTTONS.MIDDLE) {
-    //   this.activeTool = this.__meta ? 'zoom' : 'pan';
-    // }
+    if (this.button === BUTTONS.MIDDLE) {
+      this.activeTool = this.keys.ctrlStateChanged ? 'zoom' : 'pan';
+    }
 
     // this.lockCursor();
+
+    const callbacks = this.m_tool.onPointerDown();
+    this.m_tool.onPointerMove = callbacks.onPointerMove;
+    this.m_tool.onPointerUp = callbacks.onPointerUp;
+    this.m_tool.onKey = callbacks.onKey;
 
     // const [pointermove, pointerup, keypress] = this._tool.pointerdown({
     //   input: this,
@@ -244,24 +279,24 @@ abstract class InputManager {
   }
 
   private static onPointerMove(e: PointerEvent) {
-    this.m_client.movement = vec2.sub([e.clientX, e.clientY], this.m_client.position);
-    this.m_client.position = vec2.fromValues(e.clientX, e.clientY);
-    this.m_client.delta = vec2.sub(this.m_client.position, this.m_client.origin);
+    this.client.movement = vec2.sub([e.clientX, e.clientY], this.client.position);
+    this.client.position = vec2.fromValues(e.clientX, e.clientY);
+    this.client.delta = vec2.sub(this.client.position, this.client.origin);
 
-    this.m_scene.movement = vec2.div(this.m_client.movement, SceneManager.viewport.zoom);
-    this.m_scene.position = SceneManager.clientToScene(this.m_client.position);
-    this.m_scene.delta = vec2.sub(this.m_scene.position, this.m_scene.origin);
+    this.scene.movement = vec2.div(this.client.movement, SceneManager.viewport.zoom);
+    this.scene.position = SceneManager.clientToScene(this.client.position);
+    this.scene.delta = vec2.sub(this.scene.position, this.scene.origin);
 
     this.setPointer(e);
 
     if (
       !this.m_moving &&
-      this.m_down
+      this.down
       //   this._tool.active !== 'pencil' &&
       //   this._tool.active !== 'pan'
     ) {
       if (
-        vec2.length(this.m_client.delta) >
+        vec2.length(this.client.delta) >
         INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[this.m_type]
       ) {
         this.m_moving = true;
@@ -270,11 +305,8 @@ abstract class InputManager {
 
     // if (this.down && this._tool.pointermove && !this._abort) this._tool.pointermove(e);
 
-    if (this.m_moving) {
-      SceneManager.viewport.position = vec2.add(
-        SceneManager.viewport.position,
-        this.m_client.movement
-      );
+    if (this.m_moving && this.m_tool.onPointerMove) {
+      this.m_tool.onPointerMove();
       SceneManager.render();
     }
 
@@ -283,15 +315,15 @@ abstract class InputManager {
 
   private static onPointerUp(e: PointerEvent) {
     this.setPointer(e);
-    if (!this.m_down) return;
-    this.m_down = false;
+    if (!this.down) return;
+    this.down = false;
     this.m_moving = false;
 
     // this.unlockCursor();
 
-    // if (this.button === BUTTONS.MIDDLE || this._sholdResetTool) {
-    //   this.resetTool();
-    // }
+    if (this.button === BUTTONS.MIDDLE || this.m_shouldResetTool) {
+      this.activeTool = this.m_tool.current;
+    }
 
     // if (this._tool.pointerup) this._tool.pointerup(e, this._abort);
 
@@ -301,12 +333,12 @@ abstract class InputManager {
   }
 
   private static onPointerEnter(e: PointerEvent) {
-    this.m_inside = true;
+    this.inside = true;
     this.m_listeners.pointerenter(e);
   }
 
   private static onPointerLeave(e: PointerEvent) {
-    this.m_inside = false;
+    this.inside = false;
     this.m_listeners.pointerleave(e);
   }
 

@@ -33,6 +33,10 @@ const Editor: Component = () => {
     SceneManager.render();
   });
 
+  createEffect(() => {
+    InputManager.tool = state.tool;
+  });
+
   onMount(() =>
     setTimeout(() => {
       SceneManager.render();
@@ -44,7 +48,16 @@ const Editor: Component = () => {
       <TitleBar mode={state.mode} setMode={(mode: Mode) => setState({ mode })} />
       <div class="grid grid-cols-tool-bar">
         <ToolBar
-          tools={['select', 'vselect', 'separator', 'pen', 'separator', ['rectangle', 'ellipse']]}
+          tools={[
+            'select',
+            'vselect',
+            'separator',
+            'pen',
+            'separator',
+            ['rectangle', 'ellipse'],
+            'separator',
+            'pan'
+          ]}
           tool={state.tool}
           setTool={(tool: Tool) => {
             setState({ tool });
