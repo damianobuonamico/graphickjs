@@ -1,3 +1,4 @@
+import SceneManager from '@/editor/scene';
 import { vec2, mat4, vec3 } from '@math';
 import { createVertices } from '../geometry';
 import BackBuffer from './backbuffer';
@@ -26,6 +27,10 @@ class CanvasGL implements Canvas {
   set container(div: HTMLDivElement) {
     this.m_container = div;
     this.resize();
+  }
+
+  get DOM() {
+    return this.m_canvas;
   }
 
   get offset(): vec2 {
@@ -62,8 +67,7 @@ class CanvasGL implements Canvas {
     this.m_canvas = canvas;
     this.m_gl = canvas.getContext('webgl2', {
       antialias:
-        this.m_options.antialiasing === 'FXAA' ||
-        this.m_options.antialiasing === 'OFF'
+        this.m_options.antialiasing === 'FXAA' || this.m_options.antialiasing === 'OFF'
           ? false
           : true,
       alpha: false,
@@ -82,7 +86,6 @@ class CanvasGL implements Canvas {
   public resize() {
     this.offset = [this.m_container.offsetLeft, this.m_container.offsetTop];
     this.size = [this.m_container.offsetWidth, this.m_container.offsetHeight];
-    this.render();
   }
 
   public clear({ color, depth }: { color?: vec4; depth?: boolean }) {
@@ -122,10 +125,8 @@ class CanvasGL implements Canvas {
 
     this.m_shaders.use('default');
 
-    if (modelMatrix)
-      this.m_shaders.setUniform('uModelMatrix', modelMatrix, 'default');
-    if (transformMatrix)
-      this.m_shaders.setUniform('uTransformMatrix', transformMatrix, 'default');
+    if (modelMatrix) this.m_shaders.setUniform('uModelMatrix', modelMatrix, 'default');
+    if (transformMatrix) this.m_shaders.setUniform('uTransformMatrix', transformMatrix, 'default');
 
     const buffer = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -162,8 +163,6 @@ class CanvasGL implements Canvas {
       centered
     );
 
-    console.log('hello');
-
     this.geometry(
       vec2.join(vertices),
       new Uint16Array([0, 1, 2, 2, 3, 0]),
@@ -173,8 +172,7 @@ class CanvasGL implements Canvas {
   }
 
   public beginFrame(): void {
-    if (this.m_options.antialiasing === 'FXAA')
-      this.setBuffer(this.m_frameBuffer);
+    if (this.m_options.antialiasing === 'FXAA') this.setBuffer(this.m_frameBuffer);
 
     this.clear({ color: [0.0, 0.0, 0.0, 1.0] });
 
@@ -182,7 +180,7 @@ class CanvasGL implements Canvas {
       'uViewMatrix',
       mat4.translate(
         mat4.fromScaling(vec3.fromValues(1, 1, 1)),
-        vec3.fromValues(0, 0, 1)
+        vec3.fromValues(SceneManager.viewport.position[0], SceneManager.viewport.position[1], 1)
       )
     );
 
@@ -206,46 +204,6 @@ class CanvasGL implements Canvas {
   }
 
   public endFrame(): void {
-    if (this.m_options.antialiasing === 'FXAA') {
-      this.setBuffer();
-      this.m_frameBuffer.render();
-    }
-  }
-
-  public render() {
-    if (this.m_options.antialiasing === 'FXAA')
-      this.setBuffer(this.m_frameBuffer);
-
-    this.clear({ color: [0.0, 0.0, 0.0, 1.0] });
-
-    this.m_shaders.setGlobalUniform(
-      'uViewMatrix',
-      mat4.translate(
-        mat4.fromScaling(vec3.fromValues(1, 1, 1)),
-        vec3.fromValues(0, 0, 1)
-      )
-    );
-
-    this.m_shaders.setGlobalUniform(
-      'uProjectionMatrix',
-      mat4.translate(
-        mat4.fromScaling(
-          vec3.fromValues(
-            1 / (this.size[0] / 2 / this.m_options.resolution),
-            -1 / (this.size[1] / 2 / this.m_options.resolution),
-            1
-          )
-        ),
-        vec3.fromValues(
-          -this.size[0] / 2 / this.m_options.resolution,
-          -this.size[1] / 2 / this.m_options.resolution,
-          0
-        )
-      )
-    );
-
-    this.rect({ pos: [100, 100], size: [100, 100] });
-
     if (this.m_options.antialiasing === 'FXAA') {
       this.setBuffer();
       this.m_frameBuffer.render();

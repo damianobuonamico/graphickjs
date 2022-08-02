@@ -4,6 +4,13 @@ import CanvasGL from './WebGL/canvasgl';
 abstract class Renderer {
   private static m_canvas: Canvas;
 
+  public static get canvas() {
+    return this.m_canvas.DOM;
+  }
+  public static get canvasOffset() {
+    return this.m_canvas.offset;
+  }
+
   public static set container(div: HTMLDivElement) {
     this.m_canvas.container = div;
   }
@@ -14,6 +21,10 @@ abstract class Renderer {
 
   public static setup(canvas: HTMLCanvasElement) {
     this.m_canvas.setup(canvas);
+  }
+
+  public static resize() {
+    this.m_canvas.resize();
   }
 
   public static beginFrame() {

@@ -35,6 +35,22 @@ export function clone(a: ReadonlyVec2): vec2 {
 }
 
 /**
+ * Adds two vec2's
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2 | number} b the second operand
+ * @param {boolean} self is a the receiving vector
+ * @returns {vec2} out
+ */
+export function add(a: ReadonlyVec2, b: ReadonlyVec2 | number, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  const [b0, b1] = typeof b === 'number' ? [b, b] : [b[0], b[1]];
+  out[0] = a[0] + b0;
+  out[1] = a[1] + b1;
+  return out;
+}
+
+/**
  * Subtracts vector b from vector a
  *
  * @param {ReadonlyVec2} a the first operand
@@ -42,11 +58,7 @@ export function clone(a: ReadonlyVec2): vec2 {
  * @param {boolean} self is a the receiving vector
  * @returns {vec2} out
  */
-export function subtract(
-  a: ReadonlyVec2,
-  b: ReadonlyVec2 | number,
-  self: boolean = false
-): vec2 {
+export function subtract(a: ReadonlyVec2, b: ReadonlyVec2 | number, self: boolean = false): vec2 {
   const out = self ? a : create();
   const [b0, b1] = typeof b === 'number' ? [b, b] : [b[0], b[1]];
   out[0] = a[0] - b0;
@@ -62,16 +74,40 @@ export function subtract(
  * @param {boolean} self is a the receiving vector
  * @returns {vec2} out
  */
-export function multiply(
-  a: ReadonlyVec2,
-  b: ReadonlyVec2 | number,
-  self: boolean = false
-): vec2 {
+export function multiply(a: ReadonlyVec2, b: ReadonlyVec2 | number, self: boolean = false): vec2 {
   const out = self ? a : create();
   const [b0, b1] = typeof b === 'number' ? [b, b] : [b[0], b[1]];
   out[0] = a[0] * b0;
   out[1] = a[1] * b1;
   return out;
+}
+
+/**
+ * Divides two vec2's
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2 | number} b the second operand
+ * @param {boolean} self is a the receiving vector
+ * @returns {vec2} out
+ */
+export function divide(a: ReadonlyVec2, b: ReadonlyVec2 | number, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  const [b0, b1] = typeof b === 'number' ? [b, b] : [b[0], b[1]];
+  out[0] = a[0] / b0;
+  out[1] = a[1] / b1;
+  return out;
+}
+
+/**
+ * Calculates the length of a vec2
+ *
+ * @param {ReadonlyVec2} a vector to calculate length of
+ * @returns {Number} length of a
+ */
+export function length(a: ReadonlyVec2): number {
+  var x = a[0],
+    y = a[1];
+  return Math.hypot(x, y);
 }
 
 /**
@@ -99,3 +135,9 @@ export const sub = subtract;
  * @function
  */
 export const mul = multiply;
+
+/**
+ * Alias for {@link vec2.divide}
+ * @function
+ */
+export const div = divide;

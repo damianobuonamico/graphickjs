@@ -4,6 +4,7 @@ import { ToolBar, TitleBar } from '@navigation';
 import { CanvasDOM } from '@multimedia';
 import Renderer from './renderer/renderer';
 import SceneManager from './scene';
+import InputManager from './input';
 
 function getModePrimaryColor(mode: Mode) {
   switch (mode) {
@@ -24,12 +25,10 @@ const Editor: Component = () => {
   const useWebGL = true;
   Renderer.init(useWebGL);
   SceneManager.init();
+  InputManager.init({});
 
   createEffect(() => {
-    document.documentElement.style.setProperty(
-      '--primary-color',
-      getModePrimaryColor(state.mode)
-    );
+    document.documentElement.style.setProperty('--primary-color', getModePrimaryColor(state.mode));
 
     SceneManager.render();
   });
@@ -42,20 +41,10 @@ const Editor: Component = () => {
 
   return (
     <div class="w-screen h-screen bg-primary-700 grid grid-rows-title-bar">
-      <TitleBar
-        mode={state.mode}
-        setMode={(mode: Mode) => setState({ mode })}
-      />
+      <TitleBar mode={state.mode} setMode={(mode: Mode) => setState({ mode })} />
       <div class="grid grid-cols-tool-bar">
         <ToolBar
-          tools={[
-            'select',
-            'vselect',
-            'separator',
-            'pen',
-            'separator',
-            ['rectangle', 'ellipse']
-          ]}
+          tools={['select', 'vselect', 'separator', 'pen', 'separator', ['rectangle', 'ellipse']]}
           tool={state.tool}
           setTool={(tool: Tool) => {
             setState({ tool });

@@ -1,5 +1,9 @@
 interface Canvas {
   container: HTMLDivElement;
+  DOM: HTMLCanvasElement;
+
+  size: vec2;
+  offset: vec2;
 
   setup(canvas: HTMLCanvasElement): void;
   resize(): void;
@@ -8,13 +12,5 @@ interface Canvas {
   endFrame(): void;
 
   clear(...args: any): void;
-  rect({
-    pos,
-    size,
-    centered
-  }: {
-    pos: vec2;
-    size: vec2 | number;
-    centered: boolean;
-  }): void;
+  rect({ pos, size, centered }: { pos: vec2; size: vec2 | number; centered: boolean }): void;
 }

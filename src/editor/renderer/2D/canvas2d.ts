@@ -19,6 +19,10 @@ class Canvas2D implements Canvas {
     this.resize();
   }
 
+  get DOM() {
+    return this.m_canvas;
+  }
+
   get offset(): vec2 {
     return vec2.clone(this.m_offset);
   }
@@ -54,9 +58,9 @@ class Canvas2D implements Canvas {
 
   public clear({ color }: { color: vec4 }) {
     this.m_ctx.clearRect(0, 0, this.size[0], this.size[1]);
-    this.m_ctx.fillStyle = `rgba(${color[0] * 255}, ${color[1] * 255}, ${
-      color[2] * 255
-    }, ${color[3]})`;
+    this.m_ctx.fillStyle = `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${
+      color[3]
+    })`;
     this.m_ctx.fillRect(0, 0, this.size[0], this.size[1]);
   }
 
