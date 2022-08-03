@@ -96,3 +96,10 @@ export function isShortcut(e: KeyboardEvent, shortcut: KeyBinding): boolean {
   if (!!shortcut.alt !== e.altKey) return false;
   return true;
 }
+
+export function stringifyReplacer(key: string, value: any) {
+  if (value instanceof Float32Array) {
+    return Array.apply([], value as unknown as unknown[]);
+  }
+  return value;
+}

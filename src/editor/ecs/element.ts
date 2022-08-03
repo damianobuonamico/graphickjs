@@ -34,6 +34,15 @@ class Element implements Entity {
       });
     });
   }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      type: this.type,
+      position: this.m_position,
+      vertices: Array.from(this.m_vertices.values()).map((vertex) => vertex.toJSON())
+    };
+  }
 }
 
 export default Element;

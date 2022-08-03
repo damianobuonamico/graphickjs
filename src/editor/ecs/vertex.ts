@@ -23,6 +23,16 @@ class Vertex implements VertexEntity {
   }
 
   render() {}
+
+  public toJSON() {
+    return {
+      id: this.id,
+      type: this.type,
+      position: this.position,
+      left: this.m_left ? this.m_left.position : undefined,
+      right: this.m_right ? this.m_right.position : undefined
+    };
+  }
 }
 
 export default Vertex;

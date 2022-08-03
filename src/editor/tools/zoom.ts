@@ -10,20 +10,10 @@ const onZoomPointerDown = () => {
         ? InputManager.client.movement[0]
         : -InputManager.client.movement[1];
 
-    const zoom = round(
-      clamp(SceneManager.viewport.zoom * (1 + (movement * ZOOM_STEP) / 500), ZOOM_MIN, ZOOM_MAX),
-      4
-    );
-
-    const delta = vec2.sub(
-      SceneManager.clientToScene(InputManager.client.origin, {
-        zoom
-      }),
-      SceneManager.clientToScene(InputManager.client.origin)
-    );
-
-    SceneManager.viewport.position = vec2.add(SceneManager.viewport.position, delta);
-    SceneManager.viewport.zoom = zoom; 
+    SceneManager.zoom = [
+      SceneManager.viewport.zoom * (1 + (movement * ZOOM_STEP) / 500),
+      InputManager.client.origin
+    ];
   }
 
   return {

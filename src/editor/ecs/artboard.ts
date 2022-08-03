@@ -9,9 +9,9 @@ class Artboard extends ECS implements Entity {
 
   private m_size: vec2;
 
-  constructor(size: vec2) {
+  constructor({ id = nanoid(), size }: ArtboardOptions) {
     super();
-    this.id = nanoid();
+    this.id = id;
     this.m_size = size;
   }
 
@@ -23,6 +23,15 @@ class Artboard extends ECS implements Entity {
   public render() {
     Renderer.rect({ pos: [0, 0], size: this.m_size, color: [1.0, 1.0, 1.0, 1.0] });
     super.render();
+  }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      type: this.type,
+      size: this.m_size,
+      children: this.map((entity) => entity.toJSON())
+    };
   }
 }
 

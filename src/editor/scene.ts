@@ -1,5 +1,5 @@
-import { fillObject } from '@utils/utils';
-import { vec2 } from '@math';
+import { fillObject, stringifyReplacer } from '@utils/utils';
+import { clamp, round, vec2 } from '@math';
 import Artboard from './ecs/artboard';
 import ECS from './ecs/ecs';
 import Element from './ecs/element';
@@ -7,7 +7,7 @@ import Layer from './ecs/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/vertex';
 import HistoryManager from './history';
-import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE } from '@utils/constants';
+import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE, ZOOM_MAX, ZOOM_MIN } from '@utils/constants';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -18,25 +18,20 @@ abstract class SceneManager {
 
   public static init() {
     this.load();
-
-    const artboard = new Artboard([600, 400]);
-    this.m_layer = new Layer();
-    const element = new Element({
-      position: [100, 100],
-      vertices: [
-        new Vertex({ position: [0, 0] }),
-        new Vertex({ position: [100, 0] }),
-        new Vertex({ position: [100, 100] }),
-        new Vertex({ position: [0, 100] })
-      ]
-    });
-
-    this.m_layer.add(element);
-    artboard.add(this.m_layer);
-
-    this.m_ecs.add(artboard);
-
     HistoryManager.clear();
+  }
+
+  public static set zoom(value: number | [number, vec2]) {
+    const isArray = Array.isArray(value);
+    const zoom = round(clamp(isArray ? value[0] : value, ZOOM_MIN, ZOOM_MAX), 4);
+    if (isArray) {
+      const delta = vec2.sub(
+        this.clientToScene(vec2.clone(value[1] as vec2) as vec2, { zoom }),
+        this.clientToScene(vec2.clone(value[1] as vec2) as vec2)
+      );
+      this.viewport.position = vec2.add(this.viewport.position, delta);
+    }
+    this.viewport.zoom = zoom;
   }
 
   public static add(entity: Entity) {
@@ -74,18 +69,19 @@ abstract class SceneManager {
   }
 
   public static save() {
-    //localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.m_ecs.asArray()));
+    localStorage.setItem(LOCAL_STORAGE_KEY_STATE, JSON.stringify(this.viewport, stringifyReplacer));
     localStorage.setItem(
-      LOCAL_STORAGE_KEY_STATE,
-      JSON.stringify({
-        ...this.viewport,
-        position: [this.viewport.position[0], this.viewport.position[1]]
-      })
+      LOCAL_STORAGE_KEY,
+      JSON.stringify(
+        this.m_ecs.map((entity) => entity.toJSON()),
+        stringifyReplacer
+      )
     );
   }
 
   public static load() {
     const state = localStorage.getItem(LOCAL_STORAGE_KEY_STATE);
+    const data = localStorage.getItem(LOCAL_STORAGE_KEY);
 
     this.m_ecs = new ECS();
 
@@ -94,6 +90,61 @@ abstract class SceneManager {
       zoom: 1,
       rotation: 0
     });
+
+    if (data) {
+      const parsed = JSON.parse(data) as EntityObject[];
+      parsed.forEach((object) => {
+        const entity = this.fromObject(object);
+        if (entity) this.m_ecs.add(entity);
+      });
+    } else {
+      const artboard = new Artboard({ size: [600, 400] });
+      this.m_layer = new Layer({});
+      const element = new Element({
+        position: [100, 100],
+        vertices: [
+          new Vertex({ position: [0, 0] }),
+          new Vertex({ position: [100, 0] }),
+          new Vertex({ position: [100, 100] }),
+          new Vertex({ position: [0, 100] })
+        ]
+      });
+
+      this.m_layer.add(element);
+      artboard.add(this.m_layer);
+
+      this.m_ecs.add(artboard);
+    }
+  }
+
+  private static fromObject(object: EntityObject) {
+    switch (object.type) {
+      case 'artboard': {
+        const artboard = new Artboard({ ...(object as ArtboardObject) });
+        (object as ArtboardObject).children.forEach((obj) => {
+          const entity = this.fromObject(obj);
+          if (entity) artboard.add(entity);
+        });
+        return artboard;
+      }
+      case 'layer':
+        const layer = new Layer({ ...(object as LayerObject) });
+        (object as LayerObject).children.forEach((obj) => {
+          const entity = this.fromObject(obj);
+          if (entity) layer.add(entity);
+        });
+        this.m_layer = layer;
+        return layer;
+      case 'element':
+        const vertices: Vertex[] = [];
+        (object as ElementObject).vertices.forEach((obj) => {
+          const vertex = this.fromObject(obj);
+          if (vertex) vertices.push(vertex as Vertex);
+        });
+        return new Element({ ...{ ...(object as ElementObject), vertices } });
+      case 'vertex':
+        return new Vertex({ ...(object as VertexObject) });
+    }
   }
 }
 

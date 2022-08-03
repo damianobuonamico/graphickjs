@@ -1,7 +1,11 @@
-import { INPUT_MOVEMENT_THRESHOLD, INPUT_MOVEMENT_THRESHOLD_MULTIPLIER } from '@utils/constants';
+import {
+  INPUT_MOVEMENT_THRESHOLD,
+  INPUT_MOVEMENT_THRESHOLD_MULTIPLIER,
+  ZOOM_STEP
+} from '@utils/constants';
 import { BUTTONS, KEYS } from '@utils/keys';
 import { fillObject, isInputLike, isShortcut } from '@utils/utils';
-import { vec2 } from '@math';
+import { map, vec2 } from '@math';
 import { Renderer } from './renderer';
 import SceneManager from './scene';
 import { getToolData } from './tools';
@@ -393,6 +397,16 @@ abstract class InputManager {
     e.preventDefault();
     if (e.target !== Renderer.canvas) return;
     this.m_listeners.wheel(e);
+
+    if (!this.keys.ctrl) return;
+
+    SceneManager.zoom = [
+      map(-e.deltaY, -100, 100, 1 - ZOOM_STEP / 10, 1 + ZOOM_STEP / 10) *
+        SceneManager.viewport.zoom,
+      InputManager.client.position
+    ];
+
+    SceneManager.render();
   }
 }
 

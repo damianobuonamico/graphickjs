@@ -56,6 +56,10 @@ class ECS {
     });
   }
 
+  public map<T>(callback: (entity: Entity) => T) {
+    return this.m_order.map((id) => callback(this.m_children.get(id)!));
+  }
+
   public render() {
     this.forEach((entity) => {
       entity.render();
