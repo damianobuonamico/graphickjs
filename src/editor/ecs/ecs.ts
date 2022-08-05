@@ -1,4 +1,5 @@
 import HistoryManager from '../history';
+import SceneManager from '../scene';
 
 class ECS {
   private m_children: Map<string, Entity>;
@@ -9,8 +10,12 @@ class ECS {
     this.m_order = [];
   }
 
+  public get(id: string) {
+    return this.m_children.get(id);
+  }
+
   private push(entity: Entity, index: number = this.m_order.length) {
-    this.m_order.splice(this.m_order.length, 0, entity.id);
+    this.m_order.splice(index, 0, entity.id);
     this.m_children.set(entity.id, entity);
   }
 
@@ -42,7 +47,7 @@ class ECS {
 
     HistoryManager.record({
       fn: () => {
-        this.splice(id, index);
+        this.splice(id);
       },
       undo: () => {
         this.push(entity, index);
@@ -56,6 +61,12 @@ class ECS {
     });
   }
 
+  public forEachReversed(callback: (entity: Entity) => void) {
+    for (let i = this.m_order.length - 1; i > -1; i--) {
+      callback(this.m_children.get(this.m_order[i])!);
+    }
+  }
+
   public map<T>(callback: (entity: Entity) => T) {
     return this.m_order.map((id) => callback(this.m_children.get(id)!));
   }
@@ -64,6 +75,17 @@ class ECS {
     this.forEach((entity) => {
       entity.render();
     });
+  }
+
+  public getEntityAt(position: vec2, threshold: number = 0) {
+    let toReturn: Entity | undefined = undefined;
+    this.forEachReversed((entity) => {
+      if (!toReturn) {
+        const result = entity.getEntityAt(position, threshold);
+        if (result) toReturn = result;
+      }
+    });
+    return toReturn;
   }
 }
 

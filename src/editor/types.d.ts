@@ -42,7 +42,7 @@ interface KeysState {
 interface PointerDownReturn {
   onPointerMove?(): void;
   onPointerUp?(): void;
-  onKey?(): void;
+  onKey?(e: KeyboardEvent): void;
 }
 
 interface ToolState {

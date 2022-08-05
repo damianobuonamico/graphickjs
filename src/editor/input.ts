@@ -10,6 +10,7 @@ import { Renderer } from './renderer';
 import SceneManager from './scene';
 import { getToolData } from './tools';
 import actions from './actions';
+import HoverState from './hover';
 
 abstract class InputManager {
   public static client: PointerCoord;
@@ -21,13 +22,14 @@ abstract class InputManager {
   public static button: number = 0;
   public static keys: KeysState;
 
+  public static hover: HoverState = new HoverState();
+
   private static m_moving: boolean = false;
   private static m_abort: boolean = false;
   private static m_shouldResetTool: boolean = false;
 
   private static m_type: 'touch' | 'pen' | 'mouse' = 'mouse';
   private static m_tool: ToolState;
-  private static m_hover: Entity | undefined;
 
   private static m_listeners: Listeners;
   private static m_mountedListeners: MountedListener[] = [];
@@ -317,6 +319,8 @@ abstract class InputManager {
     this.scene.delta = vec2.sub(this.scene.position, this.scene.origin);
 
     this.setPointer(e);
+
+    this.hover.entity = SceneManager.getEntityAt(this.scene.position);
 
     if (
       !this.m_moving &&

@@ -1,5 +1,6 @@
 import onPanPointerDown from './pan';
 import onPolygonPointerDown from './polygon';
+import onSelectPointerDown from './select';
 import onZoomPointerDown from './zoom';
 
 export function getToolData(tool: Tool): ToolData {
@@ -31,9 +32,7 @@ export function getToolData(tool: Tool): ToolData {
       };
     default:
       return {
-        callback: () => {
-          return {};
-        }
+        callback: onSelectPointerDown
       };
   }
 }

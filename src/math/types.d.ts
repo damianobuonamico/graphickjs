@@ -16,12 +16,8 @@ declare type mat4 = [
 ] | IndexedCollection;
 
 declare type ReadonlyVec2 = readonly [number, number] | IndexedCollection;
-declare type ReadonlyVec3 =
-  | readonly [number, number, number]
-  | IndexedCollection;
-declare type ReadonlyVec4 =
-  | readonly [number, number, number, number]
-  | IndexedCollection;
+declare type ReadonlyVec3 = readonly [number, number, number] | IndexedCollection;
+declare type ReadonlyVec4 = readonly [number, number, number, number] | IndexedCollection;
 
 // prettier-ignore
 declare type ReadonlyMat4 = readonly [
@@ -32,3 +28,5 @@ declare type ReadonlyMat4 = readonly [
 ] | IndexedCollection;
 
 declare type VectorOrMatrix = number | vec2 | vec3 | vec4;
+
+type Box = [vec2, vec2];

@@ -90,7 +90,7 @@ export function isInputLike(
 }
 
 export function isShortcut(e: KeyboardEvent, shortcut: KeyBinding): boolean {
-  if (e.key.toLowerCase() !== shortcut.key) return false;
+  if (e.key.toLowerCase() !== shortcut.key.toString().toLowerCase()) return false;
   if (!!shortcut.ctrl !== (e as any)[KEYS.CTRL]) return false;
   if (!!shortcut.shift !== e.shiftKey) return false;
   if (!!shortcut.alt !== e.altKey) return false;

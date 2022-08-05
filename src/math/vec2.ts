@@ -125,6 +125,36 @@ export function join(a: vec2[]): Float32Array {
 }
 
 /**
+ * Returns the minimum between two vectors
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2 | number} b the second operand
+ * @param {boolean} self is a the receiving vector
+ * @returns {vec2} out
+ */
+export function min(a: ReadonlyVec2, b: ReadonlyVec2, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  out[0] = Math.min(a[0], b[0]);
+  out[1] = Math.min(a[1], b[1]);
+  return out;
+}
+
+/**
+ * Returns the maximum between two vectors
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2 | number} b the second operand
+ * @param {boolean} self is a the receiving vector
+ * @returns {vec2} out
+ */
+export function max(a: ReadonlyVec2, b: ReadonlyVec2, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  out[0] = Math.max(a[0], b[0]);
+  out[1] = Math.max(a[1], b[1]);
+  return out;
+}
+
+/**
  * Alias for {@link vec2.subtract}
  * @function
  */

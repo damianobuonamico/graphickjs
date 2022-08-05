@@ -4,11 +4,15 @@ interface Entity {
 
   parent: Entity;
 
+  translate(delta: vec2): void;
+  delete(entity: Entity): void;
+
   render(): void;
-  toJSON(): EntityObject;
+  toJSON(duplicate?: boolean): EntityObject;
+  getEntityAt(position: vec2, zoom: number): Entity | undefined;
 }
 
-type EntityObject = ArtboardObject | LayerObject | ElementObject | VertexObject;
+type EntityObject = ArtboardObject | LayerObject | ElementObject | VertexObject | HandleObject;
 
 interface GenericEntityObject {
   id: string;
@@ -64,3 +68,5 @@ interface HandleOptions {
   type: 'vertex' | 'bezier';
   parent: Entity;
 }
+
+interface HandleObject extends GenericEntityObject {}

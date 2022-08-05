@@ -1,4 +1,4 @@
-import { vec2 } from '@/math';
+import { isPointInCircle, vec2 } from '@/math';
 import { nanoid } from 'nanoid';
 
 class Handle implements Entity {
@@ -21,7 +21,19 @@ class Handle implements Entity {
     return vec2.clone(this.m_position);
   }
 
+  public translate(delta: vec2) {
+    vec2.add(this.m_position, delta, true);
+  }
+
   render() {}
+  public toJSON() {
+    return {} as HandleObject;
+  }
+
+  public getEntityAt(position: vec2, threshold: number = 0) {
+    if (isPointInCircle(position, this.m_position, threshold)) return this;
+    return undefined;
+  }
 }
 
 export default Handle;

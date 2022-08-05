@@ -8,6 +8,7 @@ import { Renderer } from './renderer';
 import Vertex from './ecs/vertex';
 import HistoryManager from './history';
 import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE, ZOOM_MAX, ZOOM_MIN } from '@utils/constants';
+import SelectionManager from './selection';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -34,12 +35,22 @@ abstract class SceneManager {
     this.viewport.zoom = zoom;
   }
 
+  public static get(id: string) {
+    return this.m_ecs.get(id);
+  }
+
   public static add(entity: Entity) {
     this.m_layer.add(entity);
   }
 
   public static remove(entity: Entity, skipRecordAction = false) {
     (entity.parent as unknown as ECS).remove(entity.id, skipRecordAction);
+  }
+
+  public static delete(selected: Entity | true) {
+    (selected === true ? SelectionManager.entities : [selected]).forEach((entity) => {
+      entity.parent.delete(entity);
+    });
   }
 
   public static render() {
@@ -145,6 +156,17 @@ abstract class SceneManager {
       case 'vertex':
         return new Vertex({ ...(object as VertexObject) });
     }
+  }
+
+  public static getEntityAt(position: vec2, threshold = 5 / SceneManager.viewport.zoom) {
+    return this.m_ecs.getEntityAt(position, threshold);
+  }
+
+  public static duplicate(entity: Entity) {
+    const duplicate = this.fromObject(entity.toJSON(true));
+    if (!duplicate) return undefined;
+    this.add(duplicate);
+    return duplicate;
   }
 }
 

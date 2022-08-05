@@ -1,4 +1,4 @@
-import { vec2 } from '@/math';
+import { vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import Handle from './handle';
 
@@ -22,16 +22,33 @@ class Vertex implements VertexEntity {
     return this.m_position.position;
   }
 
+  public translate(delta: vec2) {
+    this.m_position.translate(delta);
+  }
+
+  delete() {}
+
   render() {}
 
-  public toJSON() {
+  public toJSON(duplicate = false) {
     return {
-      id: this.id,
+      id: duplicate ? nanoid() : this.id,
       type: this.type,
-      position: this.position,
-      left: this.m_left ? this.m_left.position : undefined,
-      right: this.m_right ? this.m_right.position : undefined
+      position: vec2.clone(this.position),
+      left: this.m_left ? vec2.clone(this.m_left.position) : undefined,
+      right: this.m_right ? vec2.clone(this.m_right.position) : undefined
     };
+  }
+
+  public getEntityAt(position: vec2, threshold: number = 0) {
+    let toReturn = undefined;
+    [this.m_position, this.m_left, this.m_right].forEach((handle) => {
+      if (handle) {
+        const result = handle.getEntityAt(position, threshold);
+        if (result) toReturn = result;
+      }
+    });
+    return toReturn;
   }
 }
 

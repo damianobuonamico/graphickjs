@@ -1,3 +1,4 @@
+import { vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../renderer';
 import ECS from './ecs';
@@ -15,6 +16,12 @@ class Artboard extends ECS implements Entity {
     this.m_size = size;
   }
 
+  public translate() {}
+
+  public delete(entity: Entity) {
+    this.remove(entity.id);
+  }
+
   public add(entity: Entity) {
     super.add(entity);
     entity.parent = this;
@@ -25,12 +32,12 @@ class Artboard extends ECS implements Entity {
     super.render();
   }
 
-  public toJSON() {
+  public toJSON(duplicate = false) {
     return {
-      id: this.id,
+      id: duplicate ? nanoid() : this.id,
       type: this.type,
-      size: this.m_size,
-      children: this.map((entity) => entity.toJSON())
+      size: vec2.clone(this.m_size),
+      children: this.map((entity) => entity.toJSON(duplicate))
     };
   }
 }
