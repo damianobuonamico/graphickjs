@@ -5,6 +5,7 @@ interface Entity {
   parent: Entity;
 
   translate(delta: vec2): void;
+  applyTransform(): void;
   delete(entity: Entity): void;
 
   render(): void;

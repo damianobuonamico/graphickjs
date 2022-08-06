@@ -78,20 +78,28 @@ class Canvas2D implements Canvas {
     pos,
     size,
     centered = false,
-    color
+    color,
+    transform
   }: {
     pos: vec2;
     size: vec2 | number;
     centered?: boolean;
     color: vec4;
+    transform?: mat4;
   }) {
     size = typeof size === 'number' ? [size, size] : size;
     const translate = centered ? vec2.mul(size, 0.5) : vec2.create();
+
+    this.m_ctx.save();
+
+    if (transform) this.m_ctx.transform(1, 0, 0, 1, transform[12], transform[13]);
 
     this.m_ctx.fillStyle = `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, ${
       color[3]
     })`;
     this.m_ctx.fillRect(pos[0] - translate[0], pos[1] - translate[1], size[0], size[1]);
+
+    this.m_ctx.restore();
   }
 }
 

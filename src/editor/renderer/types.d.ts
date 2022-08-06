@@ -16,11 +16,13 @@ interface Canvas {
     pos,
     size,
     centered,
-    color
+    color,
+    transform
   }: {
     pos: vec2;
     size: vec2 | number;
     centered: boolean;
     color: vec4;
+    transform?: mat4;
   }): void;
 }

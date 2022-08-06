@@ -50,6 +50,8 @@ class Vertex implements VertexEntity {
     });
     return toReturn;
   }
+
+  public applyTransform() {}
 }
 
 export default Vertex;

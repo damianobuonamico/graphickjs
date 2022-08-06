@@ -150,12 +150,14 @@ class CanvasGL implements Canvas {
     pos,
     size,
     centered = false,
-    color
+    color,
+    transform
   }: {
     pos: vec2;
     size: vec2 | number;
     centered?: boolean;
     color: vec4;
+    transform?: mat4;
   }) {
     size = typeof size === 'number' ? [size, size] : size;
     if (centered) vec2.mul(size, 0.5, true);
@@ -169,8 +171,8 @@ class CanvasGL implements Canvas {
     this.geometry(
       vec2.join(vertices.map((vertex) => vertex.position)),
       new Uint16Array([0, 1, 2, 2, 3, 0]),
-      mat4.fromTranslation(vec3.create()),
       mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0)),
+      transform || mat4.create(),
       color
     );
   }

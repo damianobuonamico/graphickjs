@@ -2,6 +2,7 @@ import { isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../history';
 import { Renderer } from '../renderer';
+import Transform from './components/transform';
 import Vertex from './vertex';
 
 class Element implements Entity {
@@ -11,10 +12,12 @@ class Element implements Entity {
 
   private m_vertices: Map<string, Vertex> = new Map();
   private m_position: vec2;
+  private m_transform: Transform;
 
   constructor({ id = nanoid(), position, vertices }: ElementOptions) {
     this.id = id;
     this.m_position = position;
+    this.m_transform = new Transform();
     if (vertices) this.vertices = vertices as Vertex[];
   }
 
@@ -37,7 +40,7 @@ class Element implements Entity {
   }
 
   public translate(delta: vec2) {
-    vec2.add(this.m_position, delta, true);
+    this.m_transform.translate(delta);
   }
 
   public render() {
@@ -46,7 +49,8 @@ class Element implements Entity {
         pos: vec2.add(this.m_position, vertex.position),
         size: [10, 10],
         color: [0.0, 0.0, 0.0, 1.0],
-        centered: true
+        centered: true,
+        transform: this.m_transform.mat4
       });
     });
   }
@@ -84,6 +88,22 @@ class Element implements Entity {
         entity.parent = this;
       }
     });
+  }
+
+  public applyTransform() {
+    const backup = vec2.clone(this.m_position);
+    const transformed = vec2.transformMat4(this.m_position, this.m_transform.mat4);
+    if (!vec2.equals(transformed, backup)) {
+      HistoryManager.record({
+        fn: () => {
+          this.m_position = transformed;
+        },
+        undo: () => {
+          this.m_position = backup;
+        }
+      });
+      this.m_transform.clear();
+    }
   }
 }
 

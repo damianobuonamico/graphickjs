@@ -39,14 +39,16 @@ abstract class Renderer {
     pos,
     size,
     color,
-    centered = false
+    centered = false,
+    transform
   }: {
     pos: vec2;
     size: vec2;
     color: vec4;
     centered?: boolean;
+    transform?: mat4;
   }) {
-    this.m_canvas.rect({ pos, size, centered, color });
+    this.m_canvas.rect({ pos, size, centered, color, transform });
   }
 }
 

@@ -128,7 +128,7 @@ export function join(a: vec2[]): Float32Array {
  * Returns the minimum between two vectors
  *
  * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2 | number} b the second operand
+ * @param {ReadonlyVec2} b the second operand
  * @param {boolean} self is a the receiving vector
  * @returns {vec2} out
  */
@@ -143,7 +143,7 @@ export function min(a: ReadonlyVec2, b: ReadonlyVec2, self: boolean = false): ve
  * Returns the maximum between two vectors
  *
  * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2 | number} b the second operand
+ * @param {ReadonlyVec2} b the second operand
  * @param {boolean} self is a the receiving vector
  * @returns {vec2} out
  */
@@ -152,6 +152,34 @@ export function max(a: ReadonlyVec2, b: ReadonlyVec2, self: boolean = false): ve
   out[0] = Math.max(a[0], b[0]);
   out[1] = Math.max(a[1], b[1]);
   return out;
+}
+
+/**
+ * Transforms the vec2 with a mat4
+ * 3rd vector component is implicitly '0'
+ * 4th vector component is implicitly '1'
+ *
+ * @param {vec2} out the receiving vector
+ * @param {ReadonlyVec2} a the vector to transform
+ * @param {ReadonlyMat4} m matrix to transform with
+ * @returns {vec2} out
+ */
+export function transformMat4(a: ReadonlyVec2, m: ReadonlyMat4, self: boolean = false) {
+  const out = self ? a : create();
+  out[0] = m[0] * a[0] + m[4] * a[1] + m[12];
+  out[1] = m[1] * a[0] + m[5] * a[1] + m[13];
+  return out;
+}
+
+/**
+ * Checks if two vectors are equal
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2} b the second operand
+ * @returns {boolean} out
+ */
+export function equals(a: ReadonlyVec2, b: ReadonlyVec2) {
+  return a[0] === b[0] && a[1] === b[1];
 }
 
 /**

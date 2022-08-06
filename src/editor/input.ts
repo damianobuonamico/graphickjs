@@ -366,6 +366,7 @@ abstract class InputManager {
 
     this.m_listeners.pointerup(e);
 
+    SceneManager.render();
     SceneManager.save();
   }
 

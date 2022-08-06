@@ -49,7 +49,9 @@ const onSelectPointerDown = () => {
     SelectionManager.sync();
     // clear selection rect
     if (draggingOccurred && SelectionManager.size && !abort) {
-      // apply translation of selected elements
+      SelectionManager.forEach((entity) => {
+        entity.applyTransform();
+      });
     } else if (element && SelectionManager.has(element.id) && !elementIsAddedToSelection) {
       if (InputManager.keys.shift) {
         SelectionManager.deselect(element.id);

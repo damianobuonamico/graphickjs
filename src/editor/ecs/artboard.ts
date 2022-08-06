@@ -40,6 +40,8 @@ class Artboard extends ECS implements Entity {
       children: this.map((entity) => entity.toJSON(duplicate))
     };
   }
+
+  public applyTransform() {}
 }
 
 export default Artboard;
