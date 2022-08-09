@@ -14,3 +14,7 @@ export const INPUT_MOVEMENT_THRESHOLD_MULTIPLIER = {
   pen: 2,
   touch: 3
 };
+
+//* Geometry constants
+export const GEOMETRY_CIRCLE_RATIO = 0.552284749831;
+export const GEOMETRY_MAX_ERROR = 1e-8;

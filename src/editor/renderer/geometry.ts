@@ -1,3 +1,4 @@
+import { GEOMETRY_CIRCLE_RATIO } from '@utils/constants';
 import { vec2 } from '@math';
 import Vertex from '../ecs/vertex';
 
@@ -12,6 +13,8 @@ export function createVertices(
   switch (type) {
     case 'rectangle':
       return createRectangleVertices(size, centered);
+    case 'ellipse':
+      return createEllipseVertices(size, centered);
     default:
       return [];
   }
@@ -20,10 +23,39 @@ export function createVertices(
 function createRectangleVertices(size: vec2, centered: boolean) {
   const half = vec2.mul(size, 0.5);
   const translate: vec2 = centered ? half : [0, 0];
+
   return [
     new Vertex({ position: vec2.sub([0, 0], translate) }),
     new Vertex({ position: vec2.sub([size[0], 0], translate) }),
     new Vertex({ position: vec2.sub(size, translate) }),
     new Vertex({ position: vec2.sub([0, size[1]], translate) })
+  ];
+}
+
+function createEllipseVertices(size: vec2, centered: boolean): Vertex[] {
+  const half = vec2.div(size, [2, 2]);
+  const translate: vec2 = centered ? half : [0, 0];
+  const handle = vec2.mul(half, [GEOMETRY_CIRCLE_RATIO, GEOMETRY_CIRCLE_RATIO]);
+  return [
+    new Vertex({
+      position: vec2.sub([half[0], 0], translate),
+      right: [handle[0], 0],
+      left: [-handle[0], 0]
+    }),
+    new Vertex({
+      position: vec2.sub([size[0], half[1]], translate),
+      right: [0, handle[1]],
+      left: [0, -handle[1]]
+    }),
+    new Vertex({
+      position: vec2.sub([half[0], size[1]], translate),
+      right: [-handle[0], 0],
+      left: [handle[0], 0]
+    }),
+    new Vertex({
+      position: vec2.sub([0, half[1]], translate),
+      right: [0, -handle[1]],
+      left: [0, handle[1]]
+    })
   ];
 }

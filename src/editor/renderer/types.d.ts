@@ -25,4 +25,24 @@ interface Canvas {
     color: vec4;
     transform?: mat4;
   }): void;
+  element(element: Entity): void;
+}
+
+interface GeometryDrawOp {
+  type: 'geometry';
+}
+
+interface BezierDrawOp {
+  type: BezierType | 'move';
+  data: vec2[];
+}
+
+interface PathDrawOp {
+  type: 'stroke' | 'fill' | 'begin' | 'close';
+}
+
+type DrawOp = GeometryDrawOp | BezierDrawOp | PathDrawOp;
+
+interface Drawable {
+  operations: DrawOp[];
 }

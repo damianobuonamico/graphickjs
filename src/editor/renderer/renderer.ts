@@ -1,3 +1,4 @@
+import Element from '../ecs/element';
 import Canvas2D from './2D/canvas2d';
 import CanvasGL from './WebGL/canvasgl';
 
@@ -49,6 +50,10 @@ abstract class Renderer {
     transform?: mat4;
   }) {
     this.m_canvas.rect({ pos, size, centered, color, transform });
+  }
+
+  public static element(element: Element) {
+    this.m_canvas.element(element);
   }
 }
 

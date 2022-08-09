@@ -10,8 +10,7 @@ const onPolygonPointerDown = (tool: Tool) => {
   let size = vec2.create();
 
   let vertices = createVertices(tool, size);
-  const element = new Element({ position: InputManager.scene.position, vertices });
-
+  const element = new Element({ position: InputManager.scene.position, vertices, closed: true });
   SceneManager.add(element);
 
   function onKey(e: KeyboardEvent) {

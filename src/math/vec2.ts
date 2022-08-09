@@ -164,7 +164,7 @@ export function max(a: ReadonlyVec2, b: ReadonlyVec2, self: boolean = false): ve
  * @param {ReadonlyMat4} m matrix to transform with
  * @returns {vec2} out
  */
-export function transformMat4(a: ReadonlyVec2, m: ReadonlyMat4, self: boolean = false) {
+export function transformMat4(a: ReadonlyVec2, m: ReadonlyMat4, self: boolean = false): vec2 {
   const out = self ? a : create();
   out[0] = m[0] * a[0] + m[4] * a[1] + m[12];
   out[1] = m[1] * a[0] + m[5] * a[1] + m[13];
@@ -178,8 +178,45 @@ export function transformMat4(a: ReadonlyVec2, m: ReadonlyMat4, self: boolean = 
  * @param {ReadonlyVec2} b the second operand
  * @returns {boolean} out
  */
-export function equals(a: ReadonlyVec2, b: ReadonlyVec2) {
+export function equals(a: ReadonlyVec2, b: ReadonlyVec2): boolean {
   return a[0] === b[0] && a[1] === b[1];
+}
+
+/**
+ * Calculates the euclidian distance between two vec2's
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2} b the second operand
+ * @returns {Number} distance between a and b
+ */
+export function distance(a: ReadonlyVec2, b: ReadonlyVec2): number {
+  var x = b[0] - a[0],
+    y = b[1] - a[1];
+  return Math.hypot(x, y);
+}
+/**
+ * Calculates the squared euclidian distance between two vec2's
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2} b the second operand
+ * @returns {Number} squared distance between a and b
+ */
+export function squaredDistance(a: ReadonlyVec2, b: ReadonlyVec2): number {
+  var x = b[0] - a[0],
+    y = b[1] - a[1];
+  return x * x + y * y;
+}
+
+/*
+ * Performs a linear interpolation between two vec2's
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2} b the second operand
+ * @param {Number} t interpolation amount, in the range [0-1], between the two inputs
+ * @returns {vec2} out
+ */
+export function lerp(a: vec2, b: vec2, t: number): vec2 {
+  return add(a, mul(sub(b, a), t));
 }
 
 /**
@@ -199,3 +236,14 @@ export const mul = multiply;
  * @function
  */
 export const div = divide;
+
+/**
+ * Alias for {@link vec2.distance}
+ * @function
+ */
+export const dist = distance;
+/**
+ * Alias for {@link vec2.squaredDistance}
+ * @function
+ */
+export const sqrDist = squaredDistance;

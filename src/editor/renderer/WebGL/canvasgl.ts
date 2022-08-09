@@ -1,3 +1,4 @@
+import Element from '@editor/ecs/element';
 import SceneManager from '@/editor/scene';
 import { vec2, mat4, vec3 } from '@math';
 import { createVertices } from '../geometry';
@@ -161,6 +162,7 @@ class CanvasGL implements Canvas {
   }) {
     size = typeof size === 'number' ? [size, size] : size;
     if (centered) vec2.mul(size, 0.5, true);
+
     const vertices = createVertices(
       'rectangle',
       typeof size === 'number' ? [size, size] : size,
@@ -217,6 +219,8 @@ class CanvasGL implements Canvas {
       this.m_frameBuffer.render();
     }
   }
+
+  public element(element: Entity) {}
 }
 
 export default CanvasGL;

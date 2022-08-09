@@ -22,6 +22,14 @@ class Vertex implements VertexEntity {
     return this.m_position.position;
   }
 
+  public get left() {
+    return this.m_left;
+  }
+
+  public get right() {
+    return this.m_right;
+  }
+
   public translate(delta: vec2) {
     this.m_position.translate(delta);
   }

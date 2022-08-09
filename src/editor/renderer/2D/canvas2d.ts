@@ -1,4 +1,5 @@
-import SceneManager from '@/editor/scene';
+import Element from '@editor/ecs/element';
+import SceneManager from '@editor/scene';
 import { vec2 } from '@math';
 
 class Canvas2D implements Canvas {
@@ -8,6 +9,17 @@ class Canvas2D implements Canvas {
 
   private m_resolution = 1;
   private m_offset: vec2;
+
+  private m_drawOpRegister = {
+    begin: this.begin.bind(this),
+    close: this.close.bind(this),
+    stroke: this.stroke.bind(this),
+    fill: this.fill.bind(this),
+    move: this.move.bind(this),
+    linear: this.line.bind(this),
+    quadratic: this.quadratic.bind(this),
+    cubic: this.cubic.bind(this)
+  };
 
   constructor() {}
 
@@ -99,6 +111,65 @@ class Canvas2D implements Canvas {
     })`;
     this.m_ctx.fillRect(pos[0] - translate[0], pos[1] - translate[1], size[0], size[1]);
 
+    this.m_ctx.restore();
+  }
+
+  private begin() {
+    this.m_ctx.beginPath();
+  }
+
+  private close() {
+    this.m_ctx.closePath();
+  }
+
+  private stroke() {
+    this.m_ctx.stroke();
+  }
+
+  private fill() {
+    this.m_ctx.fill();
+  }
+
+  private move(operation: BezierDrawOp) {
+    this.m_ctx.moveTo(operation.data[0][0], operation.data[0][1]);
+  }
+
+  private line(operation: BezierDrawOp) {
+    this.m_ctx.lineTo(operation.data[0][0], operation.data[0][1]);
+  }
+
+  private quadratic(operation: BezierDrawOp) {
+    this.m_ctx.quadraticCurveTo(
+      operation.data[0][0],
+      operation.data[0][1],
+      operation.data[1][0],
+      operation.data[1][1]
+    );
+  }
+
+  private cubic(operation: BezierDrawOp) {
+    this.m_ctx.bezierCurveTo(
+      operation.data[0][0],
+      operation.data[0][1],
+      operation.data[1][0],
+      operation.data[1][1],
+      operation.data[2][0],
+      operation.data[2][1]
+    );
+  }
+
+  private draw(drawable: Drawable) {
+    drawable.operations.forEach((operation) => {
+      (this.m_drawOpRegister as any)[operation.type](operation);
+    });
+  }
+
+  public element(element: Entity) {
+    this.m_ctx.save();
+    const position = (element as Element).position;
+    const transform = (element as Element).transform;
+    this.m_ctx.transform(1, 0, 0, 1, position[0] + transform[12], position[1] + transform[13]);
+    this.draw((element as Element).getDrawable(false));
     this.m_ctx.restore();
   }
 }

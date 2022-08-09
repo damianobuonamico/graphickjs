@@ -1,6 +1,6 @@
 interface Entity {
   readonly id: string;
-  readonly type: 'artboard' | 'layer' | 'element' | 'vertex' | 'handle';
+  readonly type: 'artboard' | 'layer' | 'element' | 'vertex' | 'handle' | 'bezier';
 
   parent: Entity;
 
@@ -42,6 +42,7 @@ interface ElementOptions {
   id?: string;
   position: vec2;
   vertices?: VertexEntity[];
+  closed?: boolean;
 }
 
 interface ElementObject extends GenericEntityObject {
@@ -64,10 +65,21 @@ interface VertexObject extends GenericEntityObject {
   right?: vec2;
 }
 
+type HandleType = 'vertex' | 'bezier';
+
 interface HandleOptions {
   position: vec2;
-  type: 'vertex' | 'bezier';
+  type: HandleType;
   parent: Entity;
 }
 
 interface HandleObject extends GenericEntityObject {}
+
+type BezierType = 'linear' | 'quadratic' | 'cubic';
+
+interface BezierOptions {
+  start: VertexEntity;
+  end: VertexEntity;
+}
+
+interface BezierObject extends GenericEntityObject {}

@@ -1,4 +1,4 @@
-import { isPointInCircle, vec2 } from '@/math';
+import { isPointInCircle, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 
 class Handle implements Entity {
@@ -26,6 +26,8 @@ class Handle implements Entity {
   }
 
   render() {}
+  delete() {}
+  applyTransform() {}
   public toJSON() {
     return {} as HandleObject;
   }
