@@ -58,7 +58,7 @@ const Editor: Component = () => {
           tool={state.tool}
           setTool={(tool: Tool) => {
             setState({ tool });
-            InputManager.tool = state.tool;
+            InputManager.tool = tool;
           }}
         />
         <CanvasDOM />

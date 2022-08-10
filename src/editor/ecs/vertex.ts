@@ -14,8 +14,8 @@ class Vertex implements VertexEntity {
   constructor({ id = nanoid(), position, left, right }: VertexOptions) {
     this.id = id;
     this.m_position = new Handle({ position, type: 'vertex', parent: this });
-    if (left) this.m_left = new Handle({ position: left, type: 'bezier', parent: this });
-    if (right) this.m_right = new Handle({ position: right, type: 'bezier', parent: this });
+    if (left) this.setLeft(left);
+    if (right) this.setRight(right);
   }
 
   public get position() {
@@ -26,8 +26,22 @@ class Vertex implements VertexEntity {
     return this.m_left;
   }
 
+  public setLeft(position: vec2 | null) {
+    if (position) {
+      if (this.m_left) this.m_left.position = position;
+      else this.m_left = new Handle({ position, type: 'bezier', parent: this });
+    } else this.m_left = undefined;
+  }
+
   public get right() {
     return this.m_right;
+  }
+
+  public setRight(position: vec2 | null) {
+    if (position) {
+      if (this.m_right) this.m_right.position = position;
+      this.m_right = new Handle({ position, type: 'bezier', parent: this });
+    } else this.m_right = undefined;
   }
 
   public translate(delta: vec2) {

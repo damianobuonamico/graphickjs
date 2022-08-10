@@ -52,6 +52,7 @@ interface ToolState {
   onPointerMove?(): void;
   onPointerUp?(abort?: boolean): void;
   onKey?(e: KeyboardEvent): void;
+  data?: PenToolData;
 }
 
 interface ViewportState {

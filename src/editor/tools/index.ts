@@ -1,38 +1,19 @@
 import onPanPointerDown from './pan';
+import onPenPointerDown from './pen';
 import onPolygonPointerDown from './polygon';
 import onSelectPointerDown from './select';
 import onZoomPointerDown from './zoom';
 
+const tools = {
+  select: { callback: onSelectPointerDown },
+  vselect: { callback: () => {} },
+  pen: { callback: onPenPointerDown, data: {} },
+  rectangle: { callback: () => onPolygonPointerDown('rectangle') },
+  ellipse: { callback: () => onPolygonPointerDown('ellipse') },
+  pan: { callback: onPanPointerDown },
+  zoom: { callback: onZoomPointerDown }
+};
+
 export function getToolData(tool: Tool): ToolData {
-  switch (tool) {
-    case 'vselect':
-      return {
-        callback: () => {
-          return {};
-        }
-      };
-    case 'pen':
-      return {
-        callback: () => {
-          return {};
-        }
-      };
-    case 'rectangle':
-    case 'ellipse':
-      return {
-        callback: () => onPolygonPointerDown(tool)
-      };
-    case 'pan':
-      return {
-        callback: onPanPointerDown
-      };
-    case 'zoom':
-      return {
-        callback: onZoomPointerDown
-      };
-    default:
-      return {
-        callback: onSelectPointerDown
-      };
-  }
+  return (tools as any)[tool] || tools.select;
 }

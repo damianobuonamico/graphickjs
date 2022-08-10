@@ -2,6 +2,7 @@ import { isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../history';
 import { Renderer } from '../renderer';
+import SelectionManager from '../selection';
 import Bezier from './bezier';
 import Transform from './components/transform';
 import Vertex from './vertex';
@@ -56,13 +57,17 @@ class Element implements Entity {
     this.m_transform.translate(delta);
   }
 
+  public recalculate() {
+    this.m_curves.forEach((bezier) => bezier.recalculate());
+  }
+
   public render() {
     Renderer.element(this);
     this.m_vertices.forEach((vertex) => {
       Renderer.rect({
         pos: vec2.add(this.m_position, vertex.position),
-        size: [10, 10],
-        color: [0.0, 0.0, 0.0, 1.0],
+        size: [4, 4],
+        color: [49 / 255, 239 / 255, 284 / 255, 1.0],
         centered: true,
         transform: this.m_transform.mat4
       });
@@ -82,11 +87,21 @@ class Element implements Entity {
   public getEntityAt(position: vec2, threshold: number = 0) {
     if (isPointInBox(position, this.boundingBox, threshold)) {
       position = vec2.sub(position, this.m_position);
-      let toReturn = this;
+      let toReturn: Entity = this;
       this.m_vertices.forEach((vertex) => {
-        const result = vertex.getEntityAt(position, threshold);
-        if (result) toReturn = result;
+        if (toReturn.id === this.id) {
+          const result = vertex.getEntityAt(position, threshold);
+          if (result) toReturn = result;
+        }
       });
+      if (toReturn.id === this.id) {
+        this.m_curves.forEach((bezier) => {
+          if (toReturn.id === this.id) {
+            const result = bezier.getEntityAt(position, threshold);
+            if (result) toReturn = result;
+          }
+        });
+      }
       return toReturn;
     }
     return undefined;
@@ -121,7 +136,7 @@ class Element implements Entity {
     }
   }
 
-  private generateCurves(ids: string[] = Array.from(this.m_vertices.keys())) {
+  public generateCurves(ids: string[] = Array.from(this.m_vertices.keys())) {
     const vertices = new Map<string, Vertex>();
     const curves = new Map<string, Bezier>();
 
@@ -148,6 +163,19 @@ class Element implements Entity {
     this.m_curves = curves;
   }
 
+  public splitCurve(bezier: Bezier, position: vec2) {
+    if (!this.m_curves.has(bezier.id)) return;
+    position = vec2.sub(position, this.m_position);
+    const order = Array.from(this.m_vertices.keys());
+    const vertex = bezier.split(position);
+    this.pushVertex(vertex);
+    order.splice(order.indexOf(bezier.getStart().id) + 1, 0, vertex.id);
+    this.generateCurves(order);
+    SelectionManager.clear();
+    SelectionManager.select(this);
+    return vertex;
+  }
+
   public getDrawable(useWebGL = false): Drawable {
     if (useWebGL) {
       return { operations: [{ type: 'geometry' }] };
@@ -161,10 +189,29 @@ class Element implements Entity {
         }
         drawable.operations.push(bezier.getDrawOp());
       });
-      drawable.operations.push({ type: 'close' });
+      if (this.m_closed) drawable.operations.push({ type: 'close' });
       drawable.operations.push({ type: 'stroke' });
       return drawable;
     }
+  }
+
+  public isOpenEnd(id: string): boolean {
+    let open = false;
+    if (!this.m_closed) {
+      let order = Array.from(this.m_vertices.keys());
+      if (order[0] === id || order[order.length - 1] === id) open = true;
+    }
+    return open;
+  }
+
+  public close() {
+    this.m_closed = true;
+  }
+
+  public pushVertex(vertex: Vertex) {
+    this.m_vertices.set(vertex.id, vertex);
+    vertex.parent = this;
+    this.generateCurves();
   }
 }
 

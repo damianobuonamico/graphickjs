@@ -88,6 +88,14 @@ class Bezier implements Entity {
     return vec2.sub(box[1], box[0]);
   }
 
+  public getStart() {
+    return this.m_start;
+  }
+
+  public getEnd() {
+    return this.m_end;
+  }
+
   public recalculate() {
     this.m_cache.clear();
   }

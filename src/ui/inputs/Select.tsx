@@ -72,11 +72,7 @@ const Select: Component<{
         {props.menuButton.arrow && (
           <div class="w-0 h-0 self-end translate-y-[-9px]">
             <svg class="text-primary-500" height="5" width="5">
-              <polygon
-                fill={'currentColor'}
-                points="5,0 0,5 5,5"
-                class="triangle"
-              />
+              <polygon fill={'currentColor'} points="5,0 0,5 5,5" class="triangle" />
             </svg>
           </div>
         )}

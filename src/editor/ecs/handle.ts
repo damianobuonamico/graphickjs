@@ -17,8 +17,16 @@ class Handle implements Entity {
     this.m_type = type;
   }
 
+  public get handleType() {
+    return this.m_type;
+  }
+
   public get position() {
     return vec2.clone(this.m_position);
+  }
+
+  public set position(position: vec2) {
+    this.m_position = vec2.clone(position);
   }
 
   public translate(delta: vec2) {

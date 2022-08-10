@@ -215,8 +215,21 @@ export function squaredDistance(a: ReadonlyVec2, b: ReadonlyVec2): number {
  * @param {Number} t interpolation amount, in the range [0-1], between the two inputs
  * @returns {vec2} out
  */
-export function lerp(a: vec2, b: vec2, t: number): vec2 {
+export function lerp(a: ReadonlyVec2, b: ReadonlyVec2, t: number): vec2 {
   return add(a, mul(sub(b, a), t));
+}
+
+/*
+ * Negates a vec2
+ *
+ * @param {ReadonlyVec2} a the vector
+ * @returns {vec2} out
+ */
+export function negate(a: ReadonlyVec2, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  out[0] = -a[0];
+  out[1] = -a[1];
+  return out;
 }
 
 /**
@@ -242,8 +255,15 @@ export const div = divide;
  * @function
  */
 export const dist = distance;
+
 /**
  * Alias for {@link vec2.squaredDistance}
  * @function
  */
 export const sqrDist = squaredDistance;
+
+/**
+ * Alias for {@link vec2.negate}
+ * @function
+ */
+export const neg = negate;

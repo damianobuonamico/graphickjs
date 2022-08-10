@@ -141,6 +141,10 @@ abstract class InputManager {
     this.m_mountedListeners.length = 0;
   }
 
+  public static get toolData() {
+    return this.m_tool.data;
+  }
+
   public static set tool(tool: Tool) {
     this.m_tool.current = tool;
     this.calculateTool();
@@ -150,6 +154,7 @@ abstract class InputManager {
     this.m_tool.active = tool;
     const data = getToolData(tool);
     this.m_tool.onPointerDown = data.callback;
+    this.m_tool.data = data.data;
     this.m_setTool(tool);
   }
 
@@ -307,6 +312,8 @@ abstract class InputManager {
     // this._tool.keypress = keypress;
 
     this.m_listeners.pointerdown(e);
+
+    SceneManager.render();
   }
 
   private static onPointerMove(e: PointerEvent) {
