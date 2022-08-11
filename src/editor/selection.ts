@@ -1,3 +1,5 @@
+import { Renderer } from './renderer';
+
 abstract class SelectionManager {
   private static m_selected: Map<string, Entity> = new Map();
 
@@ -33,6 +35,14 @@ abstract class SelectionManager {
 
   public static forEach(callback: (entity: Entity) => void) {
     this.m_selected.forEach((entity) => callback(entity));
+  }
+
+  public static render() {
+    Renderer.beginOutline();
+    this.forEach(entity => {
+      Renderer.outline(entity);
+    })
+    Renderer.endOutline();
   }
 }
 

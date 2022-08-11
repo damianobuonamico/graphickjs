@@ -221,6 +221,14 @@ class CanvasGL implements Canvas {
   }
 
   public element(element: Entity) {}
+
+  public beginOutline() {}
+
+  public outline(entity: Entity) {}
+
+  public endOutline() {}
+
+  public statistics() {}
 }
 
 export default CanvasGL;

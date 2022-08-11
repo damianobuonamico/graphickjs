@@ -12,6 +12,10 @@ class Layer extends ECS implements Entity {
     this.id = id;
   }
 
+  public get visible() {
+    return true;
+  }
+
   public translate() {}
 
   public delete(entity: Entity) {
@@ -30,7 +34,7 @@ class Layer extends ECS implements Entity {
       children: this.map((entity) => entity.toJSON(duplicate))
     };
   }
-  
+
   public applyTransform() {}
 }
 

@@ -3,6 +3,7 @@ interface Entity {
   readonly type: 'artboard' | 'layer' | 'element' | 'vertex' | 'handle' | 'bezier';
 
   parent: Entity;
+  visible: boolean;
 
   translate(delta: vec2): void;
   applyTransform(): void;

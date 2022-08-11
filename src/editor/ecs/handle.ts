@@ -29,6 +29,10 @@ class Handle implements Entity {
     this.m_position = vec2.clone(position);
   }
 
+  public get visible() {
+    return true;
+  }
+
   public translate(delta: vec2) {
     vec2.add(this.m_position, delta, true);
   }

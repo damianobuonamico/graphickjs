@@ -44,6 +44,10 @@ class Vertex implements VertexEntity {
     } else this.m_right = undefined;
   }
 
+  public get visible() {
+    return true;
+  }
+
   public translate(delta: vec2) {
     this.m_position.translate(delta);
   }

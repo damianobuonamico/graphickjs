@@ -57,6 +57,7 @@ abstract class SceneManager {
     requestAnimationFrame(() => {
       Renderer.beginFrame();
       this.m_ecs.render();
+      SelectionManager.render();
       Renderer.endFrame();
     });
   }

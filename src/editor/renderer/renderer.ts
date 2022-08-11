@@ -5,11 +5,18 @@ import CanvasGL from './WebGL/canvasgl';
 abstract class Renderer {
   private static m_canvas: Canvas;
 
+  public static statistics: boolean = true;
+
   public static get canvas() {
     return this.m_canvas.DOM;
   }
+
   public static get canvasOffset() {
     return this.m_canvas.offset;
+  }
+
+  public static get size() {
+    return this.m_canvas.size;
   }
 
   public static set container(div: HTMLDivElement) {
@@ -34,6 +41,7 @@ abstract class Renderer {
 
   public static endFrame() {
     this.m_canvas.endFrame();
+    if (this.statistics) this.m_canvas.statistics();
   }
 
   public static rect({
@@ -54,6 +62,18 @@ abstract class Renderer {
 
   public static element(element: Element) {
     this.m_canvas.element(element);
+  }
+
+  public static beginOutline() {
+    this.m_canvas.beginOutline();
+  }
+
+  public static outline(entity: Entity) {
+    this.m_canvas.outline(entity);
+  }
+
+  public static endOutline() {
+    this.m_canvas.endOutline();
   }
 }
 

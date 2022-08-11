@@ -26,6 +26,12 @@ interface Canvas {
     transform?: mat4;
   }): void;
   element(element: Entity): void;
+
+  beginOutline(): void;
+  outline(entity: Entity): void;
+  endOutline(): void;
+
+  statistics(): void;
 }
 
 interface GeometryDrawOp {
@@ -45,4 +51,9 @@ type DrawOp = GeometryDrawOp | BezierDrawOp | PathDrawOp;
 
 interface Drawable {
   operations: DrawOp[];
+}
+
+interface CanvasStatsLog {
+  entities: number;
+  elements: number;
 }

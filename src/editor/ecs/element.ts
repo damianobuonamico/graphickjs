@@ -2,6 +2,7 @@ import { isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../history';
 import { Renderer } from '../renderer';
+import SceneManager from '../scene';
 import SelectionManager from '../selection';
 import Bezier from './bezier';
 import Transform from './components/transform';
@@ -33,9 +34,10 @@ class Element implements Entity {
   public get boundingBox() {
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
-    this.m_vertices.forEach((vertex) => {
-      min = vec2.min(min, vertex.position);
-      max = vec2.max(max, vertex.position);
+    this.m_curves.forEach((bezier) => {
+      const box = bezier.boundingBox;
+      min = vec2.min(min, box[0]);
+      max = vec2.max(max, box[1]);
     });
     return [vec2.add(min, this.m_position), vec2.add(max, this.m_position)] as Box;
   }
@@ -53,6 +55,21 @@ class Element implements Entity {
     return this.m_transform.mat4;
   }
 
+  public get visible() {
+    const box = this.boundingBox;
+    const position = SceneManager.viewport.position;
+    const canvasSize = vec2.sub(
+      vec2.div(Renderer.size, SceneManager.viewport.zoom),
+      SceneManager.viewport.position
+    );
+    return (
+      box[1][0] >= -position[0] &&
+      box[0][0] <= canvasSize[0] &&
+      box[1][1] >= -position[1] &&
+      box[0][1] <= canvasSize[1]
+    );
+  }
+
   public translate(delta: vec2) {
     this.m_transform.translate(delta);
   }
@@ -63,7 +80,7 @@ class Element implements Entity {
 
   public render() {
     Renderer.element(this);
-    this.m_vertices.forEach((vertex) => {
+    /*this.m_vertices.forEach((vertex) => {
       Renderer.rect({
         pos: vec2.add(this.m_position, vertex.position),
         size: [4, 4],
@@ -71,7 +88,7 @@ class Element implements Entity {
         centered: true,
         transform: this.m_transform.mat4
       });
-    });
+    });*/
   }
 
   public toJSON(duplicate = false) {
@@ -87,16 +104,16 @@ class Element implements Entity {
   public getEntityAt(position: vec2, threshold: number = 0) {
     if (isPointInBox(position, this.boundingBox, threshold)) {
       position = vec2.sub(position, this.m_position);
-      let toReturn: Entity = this;
+      let toReturn: Entity | undefined = undefined;
       this.m_vertices.forEach((vertex) => {
-        if (toReturn.id === this.id) {
+        if (!toReturn) {
           const result = vertex.getEntityAt(position, threshold);
           if (result) toReturn = result;
         }
       });
-      if (toReturn.id === this.id) {
+      if (!toReturn) {
         this.m_curves.forEach((bezier) => {
-          if (toReturn.id === this.id) {
+          if (!toReturn) {
             const result = bezier.getEntityAt(position, threshold);
             if (result) toReturn = result;
           }
@@ -147,6 +164,7 @@ class Element implements Entity {
       if (last) {
         const bezier = new Bezier({ start: last, end: vertex });
         curves.set(bezier.id, bezier);
+        bezier.parent = this;
       }
       last = vertex;
     });
@@ -157,6 +175,7 @@ class Element implements Entity {
         end: vertices.get(ids[0])!
       });
       curves.set(bezier.id, bezier);
+      bezier.parent = this;
     }
 
     this.m_vertices = vertices;
@@ -193,6 +212,14 @@ class Element implements Entity {
       drawable.operations.push({ type: 'stroke' });
       return drawable;
     }
+  }
+
+  public getOutlineDrawable(useWebGL = false): Drawable {
+    return {
+      operations: this.getDrawable(useWebGL).operations.filter(
+        (op) => op.type !== 'stroke' && op.type !== 'begin'
+      )
+    };
   }
 
   public isOpenEnd(id: string): boolean {

@@ -16,6 +16,10 @@ class Artboard extends ECS implements Entity {
     this.m_size = size;
   }
 
+  public get visible() {
+    return true;
+  }
+
   public translate() {}
 
   public delete(entity: Entity) {
