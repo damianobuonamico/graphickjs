@@ -2,6 +2,9 @@ import Element from '@editor/ecs/element';
 import SceneManager from '@editor/scene';
 import { vec2 } from '@math';
 import CanvasStats from '../stats';
+import Renderer from '../renderer';
+import InputManager from '@/editor/input';
+import SelectionManager from '@/editor/selection';
 
 class Canvas2D implements Canvas {
   private m_container: HTMLDivElement;
@@ -173,7 +176,9 @@ class Canvas2D implements Canvas {
   }
 
   public element(element: Entity) {
+    this.m_stats.entity();
     if (!element.visible) return;
+
     this.m_ctx.save();
     this.m_ctx.strokeStyle = `rgba(0, 0, 0, 1.0)`;
     this.m_ctx.lineWidth = 1;
@@ -181,15 +186,30 @@ class Canvas2D implements Canvas {
     const transform = (element as Element).transform;
     this.m_ctx.transform(1, 0, 0, 1, position[0] + transform[12], position[1] + transform[13]);
     this.draw((element as Element).getDrawable(false));
-    const box = (element as Element).boundingBox;
-    this.m_ctx.strokeRect(
-      box[0][0] - position[0],
-      box[0][1] - position[1],
-      box[1][0] - box[0][0],
-      box[1][1] - box[0][1]
-    );
+    if (Renderer.debugging && Renderer.debug.box) {
+      if (
+        (InputManager.hover.element && InputManager.hover.element.id === element.id) ||
+        SelectionManager.has(element.id)
+      ) {
+        this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.2)';
+        this.m_ctx.strokeStyle = 'rgb(220, 20, 60)';
+      } else {
+        this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
+        this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
+      }
+      const box = (element as Element).boundingBox;
+      this.begin();
+      this.m_ctx.rect(
+        box[0][0] - position[0],
+        box[0][1] - position[1],
+        box[1][0] - box[0][0],
+        box[1][1] - box[0][1]
+      );
+      this.fill();
+      this.stroke();
+    }
     this.m_ctx.restore();
-    this.m_stats.element();
+    this.m_stats.draw();
   }
 
   public beginOutline() {
@@ -212,36 +232,45 @@ class Canvas2D implements Canvas {
     this.stroke();
   }
 
-  public statistics() {
-    const width = 170;
+  public debugging() {
+    const width = 150;
     const lAlign = 5;
-    const rAlign = width - lAlign;
+    const rAlign = 40;
 
     this.m_ctx.setTransform(1, 0, 0, 1, this.size[0] - width, 0);
     this.m_ctx.fillStyle = 'rgba(0.0, 0.0, 0.0, 0.5)';
-    this.m_ctx.fillRect(0, 0, width, 150);
+    this.m_ctx.fillRect(0, 0, width, 170);
 
     this.m_ctx.textAlign = 'left';
-    this.m_ctx.font = '12px sans-serif';
+    this.m_ctx.font = 'bold 12px Helvetica,Arial,sans-serif';
     this.m_ctx.fillStyle = 'white';
     this.m_ctx.textBaseline = 'top';
-    this.m_ctx.fillText('Frame Rate', lAlign, 5);
-    this.m_ctx.fillText('Avg Frame Rate', lAlign, 30);
-    this.m_ctx.fillText('Frame Time', lAlign, 55);
-    this.m_ctx.fillText('Avg Frame Time', lAlign, 80);
-    this.m_ctx.fillText('Max Frame Time', lAlign, 105);
-    this.m_ctx.fillText('Min Frame Rate', lAlign, 130);
-    this.m_ctx.fillStyle = 'rgba(49, 239, 284, 1.0)';
 
-    this.m_ctx.textAlign = 'right';
-    this.m_ctx.fillText(this.m_stats.fps.toString() + 'fps', rAlign, 5);
-    this.m_ctx.fillText(this.m_stats.avgFps.toString() + 'fps', rAlign, 30);
-    this.m_ctx.fillText(this.m_stats.frameTime.toString() + 'ms', rAlign, 55);
-    this.m_ctx.fillText(this.m_stats.avgFrameTime.toString() + 'ms', rAlign, 80);
-    if (this.m_stats.minFps < 30) this.m_ctx.fillStyle = 'red';
-    else if (this.m_stats.minFps < 60) this.m_ctx.fillStyle = 'orange';
-    this.m_ctx.fillText(this.m_stats.maxFrameTime.toString() + 'ms', rAlign, 105);
-    this.m_ctx.fillText(this.m_stats.minFps.toString() + 'fps', rAlign, 130);
+    this.m_ctx.fillStyle = this.m_stats.getColor(this.m_stats.fps[0]);
+    this.m_ctx.fillText('FPS:', lAlign, 5);
+    this.m_ctx.fillText(`${this.m_stats.fps[0]}  [${this.m_stats.fps[1]} MS]`, rAlign, 5);
+
+    this.m_ctx.fillStyle = this.m_stats.getColor(this.m_stats.avg[0]);
+    this.m_ctx.fillText('AVG:', lAlign, 30);
+    this.m_ctx.fillText(`${this.m_stats.avg[0]}  [${this.m_stats.avg[1]} MS]`, rAlign, 30);
+
+    this.m_ctx.fillStyle = this.m_stats.getColor(this.m_stats.min[0]);
+    this.m_ctx.fillText('MIN:', lAlign, 55);
+    this.m_ctx.fillText(`${this.m_stats.min[0]}  [${this.m_stats.min[1]} MS]`, rAlign, 55);
+
+    this.m_ctx.fillStyle = 'mediumorchid';
+    this.m_ctx.fillText('MEM:', lAlign, 80);
+    this.m_ctx.fillText(`${this.m_stats.mem} / ${this.m_stats.heap} MB`, rAlign, 80);
+
+    this.m_ctx.fillStyle = 'white';
+    this.m_ctx.fillText('BOX:', lAlign, 105);
+    this.m_ctx.fillText(`${Renderer.debug.box.toString().toUpperCase()}`, rAlign, 105);
+
+    this.m_ctx.fillText('ENT:', lAlign, 130);
+    this.m_ctx.fillText(`${this.m_stats.entities}`, rAlign, 130);
+
+    this.m_ctx.fillText('DRW:', lAlign, 155);
+    this.m_ctx.fillText(`${this.m_stats.drawn}`, rAlign, 155);
   }
 }
 

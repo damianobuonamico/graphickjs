@@ -1,5 +1,6 @@
 import { KEYS } from '@/utils/keys';
 import HistoryManager from './history';
+import { Renderer } from './renderer';
 import SceneManager from './scene';
 
 const actions: { [key: string]: ActionBinding } = {
@@ -14,6 +15,10 @@ const actions: { [key: string]: ActionBinding } = {
   delete: {
     callback: () => SceneManager.delete(true),
     shortcut: { key: KEYS.DELETE }
+  },
+  toggleStatistics: {
+    callback: () => (Renderer.debugging = !Renderer.debugging),
+    shortcut: { key: KEYS.S, shift: true, alt: true }
   }
 };
 

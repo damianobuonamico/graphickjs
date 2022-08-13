@@ -228,7 +228,7 @@ class CanvasGL implements Canvas {
 
   public endOutline() {}
 
-  public statistics() {}
+  public debugging() {}
 }
 
 export default CanvasGL;

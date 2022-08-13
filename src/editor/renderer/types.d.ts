@@ -31,7 +31,7 @@ interface Canvas {
   outline(entity: Entity): void;
   endOutline(): void;
 
-  statistics(): void;
+  debugging(): void;
 }
 
 interface GeometryDrawOp {
@@ -53,7 +53,6 @@ interface Drawable {
   operations: DrawOp[];
 }
 
-interface CanvasStatsLog {
-  entities: number;
-  elements: number;
+interface DebugState {
+  box: boolean;
 }

@@ -5,7 +5,10 @@ import CanvasGL from './WebGL/canvasgl';
 abstract class Renderer {
   private static m_canvas: Canvas;
 
-  public static statistics: boolean = true;
+  public static debugging: boolean = true;
+  public static debug: DebugState = {
+    box: true
+  };
 
   public static get canvas() {
     return this.m_canvas.DOM;
@@ -41,7 +44,7 @@ abstract class Renderer {
 
   public static endFrame() {
     this.m_canvas.endFrame();
-    if (this.statistics) this.m_canvas.statistics();
+    if (this.debugging) this.m_canvas.debugging();
   }
 
   public static rect({

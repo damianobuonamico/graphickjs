@@ -1,88 +1,118 @@
 import { round } from '@math';
 
 class CanvasStats {
-  private m_elements: number = 0;
   private m_entities: number = 0;
-  private m_frameStart = 0;
-  private m_frameTime = 0;
-  private m_frameTimes = 0;
-  private m_avgFrameTime = 0;
-  private m_max = 0;
-  private m_maxIndex = 0;
+  private m_drawn: number = 0;
 
-  private m_lastLogged: CanvasStatsLog | undefined = undefined;
+  private m_beginTime = 0;
+  private m_prevTime = 0;
+  private m_frames = 0;
+  private m_samples = 0;
 
-  public get elements() {
-    return this.m_elements;
+  private m_renderTime = 0;
+  private m_avgRenderTime = 0;
+  private m_minRenderTime = Infinity;
+  private m_maxRenderTime = -Infinity;
+
+  private m_fps = 0;
+  private m_avg = 0;
+  private m_min = Infinity;
+  private m_max = -Infinity;
+
+  private m_memory = 0;
+  private m_maxMemory = 0;
+
+  constructor() {
+    this.m_maxMemory = round((performance as any).memory.jsHeapSizeLimit / 1048576, 2);
   }
 
   public get entities() {
     return this.m_entities;
   }
 
-  public get frameTime() {
-    return round(this.m_frameTime, 2);
+  public get drawn() {
+    return this.m_drawn;
   }
 
-  public get avgFrameTime() {
-    return round(this.m_avgFrameTime, 2);
+  public get ren() {
+    return this.m_renderTime;
   }
 
   public get fps() {
-    return round(1000 / this.m_frameTime, 2);
+    return [this.m_fps, this.m_renderTime];
   }
 
-  public get avgFps() {
-    return round(1000 / this.m_avgFrameTime, 2);
+  public get avg() {
+    return [this.m_avg, this.m_avgRenderTime];
   }
 
-  public get maxFrameTime() {
-    return round(this.m_max, 2);
+  public get min() {
+    return [this.m_min, this.m_maxRenderTime];
   }
 
-  public get minFps() {
-    return round(1000 / this.m_max, 2);
+  public get max() {
+    return [this.m_max, this.m_minRenderTime];
+  }
+
+  public get mem() {
+    return this.m_memory;
+  }
+
+  public get heap() {
+    return this.m_maxMemory;
   }
 
   public clear() {
-    this.m_elements = 0;
     this.m_entities = 0;
+    this.m_drawn = 0;
   }
 
   public entity() {
-    this.m_entities += 1;
+    this.m_entities++;
   }
 
-  public element() {
-    this.m_elements += 1;
-    this.m_entities += 1;
+  public draw() {
+    this.m_drawn++;
   }
 
-  public log() {
-    const stats = { entities: this.m_entities, elements: this.m_elements };
-    if (
-      !this.m_lastLogged ||
-      this.m_lastLogged.entities !== stats.entities ||
-      this.m_lastLogged.elements !== stats.elements
-    ) {
-      console.table(stats);
-      this.m_lastLogged = stats;
-    }
+  public getColor(value: number) {
+    if (value > 49) return 'springgreen';
+    else if (value > 20) return 'orange';
+    return 'crimson';
   }
 
   public begin() {
-    this.m_frameStart = performance.now();
+    this.m_beginTime = (performance || Date).now();
   }
 
   public end() {
-    if (this.m_frameTimes - this.m_maxIndex === 1000) this.m_max = 0;
-    this.m_frameTime = performance.now() - this.m_frameStart;
-    this.m_avgFrameTime =
-      (this.m_avgFrameTime * this.m_frameTimes + this.m_frameTime) / (this.m_frameTimes + 1);
-    this.m_frameTimes++;
-    if (this.m_max < this.m_frameTime) {
-      this.m_max = this.m_frameTime;
-      this.m_maxIndex = this.m_frameTimes;
+    const time = (performance || Date).now();
+    this.m_frames++;
+
+    if (this.m_samples > 100) {
+      this.m_samples = 0;
+      this.m_max = 0;
+      this.m_min = 1000;
+    }
+
+    if (time > this.m_prevTime + 200) {
+      this.m_renderTime = round(time - this.m_beginTime, 2);
+      this.m_fps = round(1000 / this.m_renderTime, 2);
+      this.m_memory = round((performance as any).memory.usedJSHeapSize / 1048576, 2);
+
+      this.m_max = Math.max(this.m_max, this.m_fps);
+      this.m_min = Math.min(this.m_min, this.m_fps);
+      this.m_maxRenderTime = Math.max(this.m_maxRenderTime, this.m_renderTime);
+      this.m_minRenderTime = Math.min(this.m_minRenderTime, this.m_renderTime);
+      this.m_avg = round((this.m_avg * this.m_samples + this.m_fps) / (this.m_samples + 1), 2);
+      this.m_avgRenderTime = round(
+        (this.m_avgRenderTime * this.m_samples + this.m_renderTime) / (this.m_samples + 1),
+        2
+      );
+
+      this.m_prevTime = time;
+      this.m_frames = 0;
+      this.m_samples++;
     }
   }
 }
