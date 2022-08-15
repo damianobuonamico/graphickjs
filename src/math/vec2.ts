@@ -232,6 +232,18 @@ export function negate(a: ReadonlyVec2, self: boolean = false): vec2 {
   return out;
 }
 
+/*
+ * Returns the unit vector of a given vec2
+ *
+ * @param {ReadonlyVec2} a the vector
+ * @returns {vec2} out
+ */
+export function unit(a: ReadonlyVec2, self: boolean = false): vec2 {
+  const out = self ? a : clone(a);
+  div(out, length(out), true);
+  return out;
+}
+
 /**
  * Alias for {@link vec2.subtract}
  * @function
@@ -267,3 +279,9 @@ export const sqrDist = squaredDistance;
  * @function
  */
 export const neg = negate;
+
+/**
+ * Alias for {@link vec2.length}
+ * @function
+ */
+export const len = length;

@@ -1,15 +1,4 @@
 type Mode = 'designer' | 'publisher' | 'photo';
-type Tool =
-  | 'select'
-  | 'vselect'
-  | 'pen'
-  | 'rectangle'
-  | 'ellipse'
-  | 'polygon'
-  | 'pencil'
-  | 'pan'
-  | 'zoom'
-  | 'eraser';
 
 interface State {
   mode: Mode;
@@ -43,16 +32,6 @@ interface PointerDownReturn {
   onPointerMove?(): void;
   onPointerUp?(): void;
   onKey?(e: KeyboardEvent): void;
-}
-
-interface ToolState {
-  current: Tool;
-  active: Tool;
-  onPointerDown(): PointerDownReturn;
-  onPointerMove?(): void;
-  onPointerUp?(abort?: boolean): void;
-  onKey?(e: KeyboardEvent): void;
-  data?: PenToolData;
 }
 
 interface ViewportState {

@@ -123,6 +123,8 @@ class Canvas2D implements Canvas {
     this.m_ctx.fillRect(pos[0] - translate[0], pos[1] - translate[1], size[0], size[1]);
 
     this.m_ctx.restore();
+    this.m_stats.entity();
+    this.m_stats.draw();
   }
 
   private begin() {
@@ -224,6 +226,7 @@ class Canvas2D implements Canvas {
     const transform = (entity as Element).transform;
     this.m_ctx.transform(1, 0, 0, 1, position[0] + transform[12], position[1] + transform[13]);
     this.draw((entity as Element).getOutlineDrawable(false));
+    (entity as Element).forEach((vertex) => vertex.render());
     this.m_ctx.restore();
     this.m_stats.entity();
   }

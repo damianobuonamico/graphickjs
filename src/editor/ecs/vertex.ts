@@ -1,5 +1,6 @@
 import { vec2 } from '@math';
 import { nanoid } from 'nanoid';
+import { Renderer } from '../renderer';
 import Handle from './handle';
 
 class Vertex implements VertexEntity {
@@ -26,7 +27,7 @@ class Vertex implements VertexEntity {
     return this.m_left;
   }
 
-  public setLeft(position: vec2 | null) {
+  public setLeft(position?: vec2 | null) {
     if (position) {
       if (this.m_left) this.m_left.position = position;
       else this.m_left = new Handle({ position, type: 'bezier', parent: this });
@@ -37,7 +38,7 @@ class Vertex implements VertexEntity {
     return this.m_right;
   }
 
-  public setRight(position: vec2 | null) {
+  public setRight(position?: vec2 | null) {
     if (position) {
       if (this.m_right) this.m_right.position = position;
       this.m_right = new Handle({ position, type: 'bezier', parent: this });
@@ -54,7 +55,28 @@ class Vertex implements VertexEntity {
 
   delete() {}
 
-  render() {}
+  render() {
+    Renderer.rect({
+      pos: this.position,
+      size: [4, 4],
+      color: [1.0, 0.0, 1.0, 1.0],
+      centered: true
+    });
+    if (this.m_left)
+      Renderer.rect({
+        pos: vec2.add(this.m_left.position, this.position),
+        size: [4, 4],
+        color: [1.0, 0.0, 0.0, 1.0],
+        centered: true
+      });
+    if (this.m_right)
+      Renderer.rect({
+        pos: vec2.add(this.m_right.position, this.position),
+        size: [4, 4],
+        color: [1.0, 0.0, 0.0, 1.0],
+        centered: true
+      });
+  }
 
   public toJSON(duplicate = false) {
     return {
@@ -76,6 +98,8 @@ class Vertex implements VertexEntity {
     });
     return toReturn;
   }
+
+  public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
 
   public applyTransform() {}
 }

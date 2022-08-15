@@ -18,3 +18,4 @@ export const INPUT_MOVEMENT_THRESHOLD_MULTIPLIER = {
 //* Geometry constants
 export const GEOMETRY_CIRCLE_RATIO = 0.552284749831;
 export const GEOMETRY_MAX_ERROR = 1e-8;
+export const GEOMETRY_MAX_INTERSECTION_ERROR = 0.01;

@@ -1,4 +1,4 @@
-import { isPointInBox, vec2 } from '@math';
+import { doesBoxIntersectsBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../history';
 import { Renderer } from '../renderer';
@@ -45,8 +45,7 @@ class Element implements Entity {
   public set vertices(vertices: Vertex[]) {
     this.m_vertices.clear();
     vertices.forEach((vertex) => {
-      this.m_vertices.set(vertex.id, vertex);
-      vertex.parent = this;
+      this.pushVertex(vertex, false);
     });
     this.generateCurves();
   }
@@ -80,15 +79,10 @@ class Element implements Entity {
 
   public render() {
     Renderer.element(this);
-    /*this.m_vertices.forEach((vertex) => {
-      Renderer.rect({
-        pos: vec2.add(this.m_position, vertex.position),
-        size: [4, 4],
-        color: [49 / 255, 239 / 255, 284 / 255, 1.0],
-        centered: true,
-        transform: this.m_transform.mat4
-      });
-    });*/
+  }
+
+  public forEach(callback: (vertex: Vertex) => void) {
+    this.m_vertices.forEach((vertex) => callback(vertex));
   }
 
   public toJSON(duplicate = false) {
@@ -99,6 +93,23 @@ class Element implements Entity {
       position: vec2.clone(this.m_position),
       vertices: Array.from(this.m_vertices.values()).map((vertex) => vertex.toJSON(duplicate))
     };
+  }
+
+  public intersects(box: Box): boolean {
+    if (!doesBoxIntersectsBox(box, this.boundingBox)) return false;
+    box = [vec2.sub(box[0], this.m_position), vec2.sub(box[1], this.m_position)];
+    if (
+      this.m_vertices.size < 2 &&
+      isPointInBox(Array.from(this.vertices.values())[0].position, box, 5)
+    )
+      return true;
+    const curves = Array.from(this.m_curves.values());
+    /*if (!(this.fill.color.vec4[3] === 0) && !this.close) {
+      const sVertex = new Vertex({ pos: curves[curves.length - 1].eVertex._pos.pos });
+      const eVertex = new Vertex({ pos: curves[0].sVertex._pos.pos });
+      curves.push(new Segment(sVertex, eVertex));
+    }*/
+    return curves.some((segment) => segment.intersectsBox(box));
   }
 
   public getEntityAt(position: vec2, threshold: number = 0) {
@@ -122,6 +133,13 @@ class Element implements Entity {
       return toReturn;
     }
     return undefined;
+  }
+
+  public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel = false) {
+    if (lowerLevel) {
+    } else if (this.intersects(box)) {
+      entities.add(this);
+    }
   }
 
   public delete(entity: Entity) {
@@ -182,12 +200,32 @@ class Element implements Entity {
     this.m_curves = curves;
   }
 
+  public reverseCurves() {
+    this.m_vertices.forEach((vertex) => {
+      const left = vertex.left?.position;
+      const right = vertex.right?.position;
+      vertex.setLeft(right);
+      vertex.setRight(left);
+    });
+    this.generateCurves(Array.from(this.m_vertices.keys()).reverse());
+  }
+
+  public concat(element: Element) {
+    console.log(element);
+    element.forEach((vertex) => {
+      vertex.translate(vec2.sub((vertex.parent as Element).position, this.m_position));
+      this.pushVertex(vertex, false);
+    });
+    this.generateCurves();
+    SceneManager.delete(element);
+  }
+
   public splitCurve(bezier: Bezier, position: vec2) {
     if (!this.m_curves.has(bezier.id)) return;
     position = vec2.sub(position, this.m_position);
     const order = Array.from(this.m_vertices.keys());
     const vertex = bezier.split(position);
-    this.pushVertex(vertex);
+    this.pushVertex(vertex, false);
     order.splice(order.indexOf(bezier.getStart().id) + 1, 0, vertex.id);
     this.generateCurves(order);
     SelectionManager.clear();
@@ -231,14 +269,27 @@ class Element implements Entity {
     return open;
   }
 
+  public isFirstVertex(id: string): boolean {
+    let order = Array.from(this.m_vertices.keys());
+    if (order[0] === id) return true;
+    return false;
+  }
+
   public close() {
     this.m_closed = true;
   }
 
-  public pushVertex(vertex: Vertex) {
+  public pushVertex(vertex: Vertex, generateCurves = true) {
     this.m_vertices.set(vertex.id, vertex);
     vertex.parent = this;
-    this.generateCurves();
+    if (generateCurves) this.generateCurves();
+  }
+
+  public removeVertex(id: string) {
+    const order = Array.from(this.m_vertices.keys());
+    const index = order.indexOf(id);
+    order.splice(index, 1);
+    this.generateCurves(order);
   }
 }
 

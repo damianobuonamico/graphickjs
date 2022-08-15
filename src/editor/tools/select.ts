@@ -1,13 +1,20 @@
 import { BUTTONS } from '@/utils/keys';
 import { vec2 } from '@math';
+import Element from '../ecs/element';
 import InputManager from '../input';
+import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
+
+interface SelectToolData {
+  element?: Element;
+}
 
 const onSelectPointerDown = () => {
   let draggingOccurred = false;
   let elementIsAddedToSelection = false;
   const element = InputManager.hover.element;
+  const rect = InputManager.tool.data as SelectToolData;
 
   if (!InputManager.keys.shift && (!element || !SelectionManager.has(element.id))) {
     SelectionManager.clear();
@@ -28,7 +35,12 @@ const onSelectPointerDown = () => {
       });
     }
   } else {
-    // create selection rect in tool overlays
+    rect.element = new Element({
+      position: InputManager.scene.position,
+      vertices: createVertices('rectangle', vec2.create()),
+      closed: true
+    });
+    SceneManager.pushRenderOverlay(rect.element);
   }
 
   function onPointerMove() {
@@ -42,12 +54,18 @@ const onSelectPointerDown = () => {
       }
     }
 
-    // if selection rect, update it
+    if (rect.element) {
+      rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
+      SelectionManager.temp(SceneManager.getEntitiesIn(rect.element.boundingBox));
+    }
   }
 
   function onPointerUp(abort?: boolean) {
     SelectionManager.sync();
-    // clear selection rect
+    if (rect.element) {
+      SceneManager.popRenderOverlay(rect.element.id);
+      rect.element = undefined;
+    }
     if (draggingOccurred && SelectionManager.size && !abort) {
       SelectionManager.forEach((entity) => {
         entity.applyTransform();

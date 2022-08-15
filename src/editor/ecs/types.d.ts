@@ -12,6 +12,7 @@ interface Entity {
   render(): void;
   toJSON(duplicate?: boolean): EntityObject;
   getEntityAt(position: vec2, zoom: number): Entity | undefined;
+  getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean): void;
 }
 
 type EntityObject = ArtboardObject | LayerObject | ElementObject | VertexObject | HandleObject;

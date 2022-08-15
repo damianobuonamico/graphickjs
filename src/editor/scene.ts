@@ -12,6 +12,7 @@ import SelectionManager from './selection';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
+  private static m_renderOverlays: Map<string, Entity> = new Map();
 
   private static m_layer: Layer;
 
@@ -50,6 +51,7 @@ abstract class SceneManager {
   public static delete(selected: Entity | true) {
     (selected === true ? SelectionManager.entities : [selected]).forEach((entity) => {
       entity.parent.delete(entity);
+      SelectionManager.deselect(entity.id);
     });
   }
 
@@ -58,6 +60,7 @@ abstract class SceneManager {
       Renderer.beginFrame();
       this.m_ecs.render();
       SelectionManager.render();
+      this.m_renderOverlays.forEach((entity) => entity.render());
       Renderer.endFrame();
     });
   }
@@ -163,11 +166,33 @@ abstract class SceneManager {
     return this.m_ecs.getEntityAt(position, threshold);
   }
 
+  public static getEntitiesIn(box: Box, lowerLevel = false) {
+    const entities = new Set<Entity>();
+    this.m_ecs.getEntitiesIn(box, entities, lowerLevel);
+    return entities;
+  }
+
   public static duplicate(entity: Entity) {
     const duplicate = this.fromObject(entity.toJSON(true));
     if (!duplicate) return undefined;
     this.add(duplicate);
     return duplicate;
+  }
+
+  public static pushRenderOverlay(entity: Entity) {
+    this.m_renderOverlays.set(entity.id, entity);
+  }
+
+  public static popRenderOverlay(id?: string) {
+    if (!id) {
+      let order = Array.from(this.m_renderOverlays.keys());
+      id = order[order.length - 1];
+    }
+    this.m_renderOverlays.delete(id);
+  }
+
+  public static clearRenderOverlays() {
+    this.m_renderOverlays.clear();
   }
 }
 

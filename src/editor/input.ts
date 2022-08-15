@@ -8,9 +8,9 @@ import { fillObject, isInputLike, isShortcut } from '@utils/utils';
 import { map, vec2 } from '@math';
 import { Renderer } from './renderer';
 import SceneManager from './scene';
-import { getToolData } from './tools';
 import actions from './actions';
 import HoverState from './hover';
+import { ToolState } from './tools';
 
 abstract class InputManager {
   public static client: PointerCoord;
@@ -28,13 +28,12 @@ abstract class InputManager {
   private static m_abort: boolean = false;
   private static m_shouldResetTool: boolean = false;
 
+  public static tool: ToolState;
+
   private static m_type: 'touch' | 'pen' | 'mouse' = 'mouse';
-  private static m_tool: ToolState;
 
   private static m_listeners: Listeners;
   private static m_mountedListeners: MountedListener[] = [];
-
-  private static m_setTool: (tool: Tool) => void;
 
   public static init(listeners: Partial<Listeners>, setTool: (tool: Tool) => void) {
     this.m_listeners = fillObject<Listeners>(listeners, {
@@ -53,8 +52,6 @@ abstract class InputManager {
       pointerenter: () => {},
       wheel: () => {}
     });
-
-    this.m_setTool = setTool;
 
     this.client = fillObject(
       {},
@@ -86,8 +83,7 @@ abstract class InputManager {
       }
     );
 
-    this.m_tool = fillObject({}, { current: 'select' });
-    this.activeTool = 'select';
+    this.tool = new ToolState(setTool, 'select');
 
     this.mount();
   }
@@ -141,39 +137,6 @@ abstract class InputManager {
     this.m_mountedListeners.length = 0;
   }
 
-  public static get toolData() {
-    return this.m_tool.data;
-  }
-
-  public static set tool(tool: Tool) {
-    this.m_tool.current = tool;
-    this.calculateTool();
-  }
-
-  public static set activeTool(tool: Tool) {
-    this.m_tool.active = tool;
-    const data = getToolData(tool);
-    this.m_tool.onPointerDown = data.callback;
-    this.m_tool.data = data.data;
-    this.m_setTool(tool);
-  }
-
-  private static calculateTool() {
-    if (this.keys.space) {
-      if (this.keys.ctrl) {
-        this.activeTool = 'zoom';
-      } else {
-        this.activeTool = 'pan';
-      }
-    } else if (this.keys.ctrl) {
-      if (this.m_tool.current === 'select' || this.m_tool.current === 'pen')
-        this.activeTool = 'vselect';
-      else this.activeTool = 'select';
-    } else {
-      this.activeTool = this.m_tool.current;
-    }
-  }
-
   private static setKey(e: PointerEvent | KeyboardEvent) {
     this.keys.altStateChanged = this.keys.alt !== e.altKey;
     this.keys.alt = e.altKey;
@@ -211,10 +174,10 @@ abstract class InputManager {
     if (isInputLike(e.target)) return;
 
     if (e.key === KEYS.ESCAPE) {
-      // this.pen = null;
+      this.tool.abort();
       this.m_abort = true;
       // this.unlockCursor();
-      // this._api.ops.render();
+      SceneManager.render();
     } else if (e.key === KEYS.SPACEBAR) {
       this.keys.spaceStateChanged = this.keys.space === up;
       this.keys.space = !up;
@@ -225,9 +188,7 @@ abstract class InputManager {
       return;
     }
 
-    if (this.keys.ctrlStateChanged || this.keys.spaceStateChanged) {
-      this.calculateTool();
-    }
+    if (this.keys.ctrlStateChanged || this.keys.spaceStateChanged) this.tool.recalculate();
 
     // if (this.__alt) {
     //   this.setCursor();
@@ -238,7 +199,7 @@ abstract class InputManager {
   private static onKeyDown(e: KeyboardEvent) {
     this.onKey(e);
 
-    if (this.down && this.m_tool.onKey) this.m_tool.onKey(e);
+    if (this.down) this.tool.onKey(e);
 
     if (!this.down) {
       Object.values(actions).forEach((action) => {
@@ -256,7 +217,7 @@ abstract class InputManager {
   private static onKeyUp(e: KeyboardEvent) {
     this.onKey(e, true);
 
-    if (this.down && this.m_tool.onKey) this.m_tool.onKey(e);
+    if (this.down) this.tool.onKey(e);
 
     this.m_listeners.keyup(e);
   }
@@ -287,30 +248,12 @@ abstract class InputManager {
     this.m_abort = false;
 
     if (this.button === BUTTONS.MIDDLE) {
-      this.activeTool = this.keys.ctrlStateChanged ? 'zoom' : 'pan';
+      this.tool.active = this.keys.ctrlStateChanged ? 'zoom' : 'pan';
     }
 
     // this.lockCursor();
 
-    const callbacks = this.m_tool.onPointerDown();
-    this.m_tool.onPointerMove = callbacks.onPointerMove;
-    this.m_tool.onPointerUp = callbacks.onPointerUp;
-    this.m_tool.onKey = callbacks.onKey;
-
-    // const [pointermove, pointerup, keypress] = this._tool.pointerdown({
-    //   input: this,
-    //   elements: this._elements,
-    //   state: this._state,
-    //   api: this._api,
-    //   setState: this.setState,
-    //   render: this.render,
-    //   fn: getToolData(this._tool.active)?.fn
-    // });
-
-    // this._tool.pointermove = pointermove;
-    // this._tool.pointerup = pointerup;
-    // this._tool.keypress = keypress;
-
+    this.tool.onPointerDown();
     this.m_listeners.pointerdown(e);
 
     SceneManager.render();
@@ -329,12 +272,7 @@ abstract class InputManager {
 
     this.hover.entity = SceneManager.getEntityAt(this.scene.position);
 
-    if (
-      !this.m_moving &&
-      this.down
-      //   this._tool.active !== 'pencil' &&
-      //   this._tool.active !== 'pan'
-    ) {
+    if (!this.m_moving && this.down) {
       if (
         vec2.length(this.client.delta) >
         INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[this.m_type]
@@ -343,10 +281,8 @@ abstract class InputManager {
       } else return;
     }
 
-    // if (this.down && this._tool.pointermove && !this._abort) this._tool.pointermove(e);
-
-    if (this.m_moving && this.m_tool.onPointerMove) {
-      this.m_tool.onPointerMove();
+    if (this.m_moving && !this.m_abort) {
+      this.tool.onPointerMove();
       SceneManager.render();
     }
 
@@ -362,14 +298,10 @@ abstract class InputManager {
     // this.unlockCursor();
 
     if (this.button === BUTTONS.MIDDLE || this.m_shouldResetTool) {
-      this.activeTool = this.m_tool.current;
-    } else {
-      this.calculateTool();
-    }
+      this.tool.active = this.tool.current;
+    } else this.tool.recalculate();
 
-    if (this.m_tool.onPointerUp) this.m_tool.onPointerUp(this.m_abort);
-
-    // this.updateInputs();
+    this.tool.onPointerUp(this.m_abort);
 
     this.m_listeners.pointerup(e);
 

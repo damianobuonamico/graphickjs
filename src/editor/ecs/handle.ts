@@ -48,6 +48,7 @@ class Handle implements Entity {
     if (isPointInCircle(position, this.m_position, threshold)) return this;
     return undefined;
   }
+  public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
 }
 
 export default Handle;

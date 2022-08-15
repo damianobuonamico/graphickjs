@@ -1,4 +1,4 @@
-import { Component, For, JSX } from 'solid-js';
+import { Component, createEffect, For, JSX } from 'solid-js';
 import { Button } from '@inputs';
 import {
   CircleIcon,

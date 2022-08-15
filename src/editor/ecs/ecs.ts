@@ -87,6 +87,10 @@ class ECS {
     });
     return toReturn;
   }
+
+  public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel = false) {
+    this.forEach((entity) => entity.getEntitiesIn(box, entities, lowerLevel));
+  }
 }
 
 export default ECS;

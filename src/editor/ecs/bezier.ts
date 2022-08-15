@@ -3,7 +3,7 @@ import { doesBoxIntersectsBox, getLinesFromBox, isPointInBox, vec2 } from '@math
 import { nanoid } from 'nanoid';
 import Handle from './handle';
 import Vertex from './vertex';
-import { GEOMETRY_MAX_ERROR } from '@/utils/constants';
+import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 
 interface BezierPointDistance {
   t: number;
@@ -378,7 +378,7 @@ class Bezier implements Entity {
         isPointInBox(
           point,
           [vec2.min(line[0], line[1]), vec2.max(line[0], line[1])],
-          GEOMETRY_MAX_ERROR
+          GEOMETRY_MAX_INTERSECTION_ERROR
         )
       );
   }
@@ -409,7 +409,7 @@ class Bezier implements Entity {
   public intersectsBox(box: Box) {
     if (!doesBoxIntersectsBox(box, this.boundingBox)) return false;
     if (isPointInBox(this.start, box)) return true;
-    return this.getBoxIntersections(box).length > 0;
+    return this.getBoxIntersectionPoints(box).length > 0;
   }
 
   private linearSplit({ position }: { position: vec2 }): Vertex {
@@ -424,7 +424,7 @@ class Bezier implements Entity {
     if (this.m_start.right) {
       const r0 = vec2.add(vec2.mul(this.start, 1 / 3), vec2.mul(q0, 2.00001 / 3));
       const r1 = vec2.add(vec2.mul(q0, 2 / 3), vec2.mul(p, 1 / 3));
-      this.m_start.right!.translate(vec2.sub(vec2.sub(r0, this.start), this.left));
+      this.m_start.setRight(vec2.sub(r0, this.start));
       return new Vertex({
         position: data.point,
         left: vec2.sub(r1, data.point),
@@ -433,7 +433,7 @@ class Bezier implements Entity {
     } else {
       const r0 = vec2.add(vec2.mul(p, 1 / 3), vec2.mul(q1, 2.00001 / 3));
       const r1 = vec2.add(vec2.mul(q1, 2 / 3), vec2.mul(this.end, 1 / 3));
-      this.m_end.left!.translate(vec2.sub(vec2.sub(r1, this.end), this.right));
+      this.m_start.setLeft(vec2.sub(r1, this.end));
       return new Vertex({
         position: data.point,
         left: vec2.sub(q0, data.point),
@@ -449,8 +449,8 @@ class Bezier implements Entity {
     const r0 = vec2.lerp(q0, q1, data.t);
     const r1 = vec2.lerp(q1, q2, data.t);
 
-    this.m_start.right!.translate(vec2.sub(vec2.sub(q0, this.start), this.left));
-    this.m_end.left!.translate(vec2.sub(vec2.sub(q2, this.end), this.right));
+    this.m_start.setRight(vec2.sub(q0, this.start));
+    this.m_end.setLeft(vec2.sub(q2, this.end));
     return new Vertex({
       position: data.point,
       left: vec2.sub(r0, data.point),
@@ -491,6 +491,7 @@ class Bezier implements Entity {
       return this;
     return undefined;
   }
+  public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
 }
 
 export default Bezier;
