@@ -10,18 +10,20 @@ import SelectionManager from '../selection';
 interface PenToolData {
   vertex?: Vertex;
   element?: Element;
+  overlay?: Element;
+  overlayLastVertex?: Vertex;
+  overlayVertex?: Vertex;
 }
 
 const onPenPointerDown = () => {
+  const pen = InputManager.tool.data as PenToolData;
   const entity = InputManager.hover.entity;
   const element = InputManager.hover.element;
   const bezier = entity && entity.type === 'bezier' ? (entity as Bezier) : undefined;
   const handle = entity && entity.type === 'handle' ? (entity as Handle) : undefined;
   const vertex = handle && handle.handleType === 'vertex' ? (handle.parent as Vertex) : undefined;
-  const pen = InputManager.tool.data as PenToolData;
-  let last: Vertex | null = null;
-  let penState = 'new' as PenState;
 
+  let penState = 'new' as PenState;
   if (vertex && element) {
     if (element.isOpenEnd(vertex.id)) {
       if (pen.element && element.id === pen.element.id) {
@@ -33,7 +35,13 @@ const onPenPointerDown = () => {
       }
     } else if (SelectionManager.has(element.id)) penState = 'sub';
   } else if (bezier && element && SelectionManager.has(element.id)) penState = 'add';
-  else penState = 'new';
+
+  if (pen.overlay) {
+    SceneManager.popRenderOverlay(pen.overlay.id);
+    pen.overlay = undefined;
+    pen.overlayLastVertex = undefined;
+    pen.overlayVertex = undefined;
+  }
 
   switch (penState) {
     case 'join': {
@@ -78,20 +86,20 @@ const onPenPointerDown = () => {
       vertex!.setRight(null);
       break;
     }
-    default: {
-      last = new Vertex({
+    case 'new': {
+      const v = new Vertex({
         position: pen.element
           ? vec2.sub(InputManager.scene.position, pen.element.position)
           : vec2.create()
       });
-      pen.vertex = last;
+      pen.vertex = v;
       if (!pen.element) {
         pen.element = new Element({
           position: InputManager.scene.position
         });
         SceneManager.add(pen.element);
       }
-      pen.element.pushVertex(last);
+      pen.element.pushVertex(v);
       SelectionManager.clear();
       SelectionManager.select(pen.element);
     }
@@ -146,7 +154,7 @@ const onPenPointerDown = () => {
         pen.element!.recalculate();
         break;
       }
-      default: {
+      case 'new': {
         if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
         setRight(InputManager.scene.delta);
         pen.element!.recalculate();
@@ -172,7 +180,7 @@ const onPenPointerDown = () => {
       }
       case 'angle':
       case 'start':
-      default:
+      case 'new':
     }
   }
 
@@ -181,5 +189,47 @@ const onPenPointerDown = () => {
     onPointerUp
   };
 };
+
+export function onPenPointerHover() {
+  const pen = InputManager.tool.data as PenToolData;
+  const hasOverlay = pen.overlay ? SceneManager.hasRenderOverlay(pen.overlay.id) : false;
+
+  if (pen.element && pen.vertex) {
+    if (
+      pen.overlay &&
+      pen.overlayVertex &&
+      pen.overlayLastVertex &&
+      vec2.equals(pen.overlayLastVertex.position, pen.vertex.position)
+    ) {
+      pen.overlayVertex.translate(
+        vec2.sub(
+          InputManager.scene.position,
+          vec2.add(pen.overlayVertex.position, pen.overlay.position)
+        )
+      );
+    } else {
+      console.log('regen');
+      if (hasOverlay) SceneManager.popRenderOverlay(pen.overlay!.id);
+      pen.overlayLastVertex = new Vertex({
+        position: pen.vertex.position,
+        left: pen.vertex.left?.position,
+        right: pen.vertex.right?.position
+      });
+      pen.overlayVertex = new Vertex({
+        position: vec2.sub(InputManager.scene.position, pen.element.position)
+      });
+      pen.overlay = new Element({
+        position: pen.element.position,
+        vertices: [pen.overlayLastVertex, pen.overlayVertex]
+      });
+    }
+    if (!hasOverlay) SceneManager.pushRenderOverlay(pen.overlay);
+    SceneManager.render();
+  } else if (hasOverlay) {
+    SceneManager.popRenderOverlay(pen.overlay!.id);
+    pen.overlay = undefined;
+    pen.overlayVertex = undefined;
+  }
+}
 
 export default onPenPointerDown;

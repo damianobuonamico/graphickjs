@@ -284,6 +284,8 @@ abstract class InputManager {
     if (this.m_moving && !this.m_abort) {
       this.tool.onPointerMove();
       SceneManager.render();
+    } else if (!this.down) {
+      this.tool.onPointerHover();
     }
 
     this.m_listeners.pointermove(e);

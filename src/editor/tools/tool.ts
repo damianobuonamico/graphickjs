@@ -1,6 +1,7 @@
 import InputManager from '../input';
+import SceneManager from '../scene';
 import onPanPointerDown from './pan';
-import onPenPointerDown from './pen';
+import onPenPointerDown, { onPenPointerHover } from './pen';
 import onPolygonPointerDown from './polygon';
 import onSelectPointerDown from './select';
 import onZoomPointerDown from './zoom';
@@ -30,6 +31,9 @@ class ToolState {
     pan: {},
     zoom: {}
   };
+  private m_hovers: Partial<ToolMap<() => void>> = {
+    pen: onPenPointerHover
+  };
 
   private m_setTool: (tool: Tool) => void;
   private m_onPointerMove: (() => void) | undefined;
@@ -58,6 +62,7 @@ class ToolState {
     this.m_last = this.m_active;
     this.m_active = tool;
     this.m_setTool(tool);
+    SceneManager.clearRenderOverlays();
   }
 
   public get data() {
@@ -93,6 +98,10 @@ class ToolState {
 
   public onPointerMove() {
     if (this.m_onPointerMove) this.m_onPointerMove();
+  }
+
+  public onPointerHover() {
+    if (this.m_hovers[this.m_active]) this.m_hovers[this.m_active]!();
   }
 
   public onPointerUp(abort: boolean) {

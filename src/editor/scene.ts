@@ -183,6 +183,10 @@ abstract class SceneManager {
     this.m_renderOverlays.set(entity.id, entity);
   }
 
+  public static hasRenderOverlay(id: string) {
+    return this.m_renderOverlays.has(id);
+  }
+
   public static popRenderOverlay(id?: string) {
     if (!id) {
       let order = Array.from(this.m_renderOverlays.keys());
@@ -192,7 +196,10 @@ abstract class SceneManager {
   }
 
   public static clearRenderOverlays() {
-    this.m_renderOverlays.clear();
+    if (this.m_renderOverlays.size) {
+      this.m_renderOverlays.clear();
+      this.render();
+    }
   }
 }
 

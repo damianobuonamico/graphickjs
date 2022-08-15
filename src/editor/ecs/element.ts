@@ -2,6 +2,7 @@ import { doesBoxIntersectsBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../history';
 import { Renderer } from '../renderer';
+import Canvas2D from '../renderer/2D/canvas2d';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
 import Bezier from './bezier';
@@ -211,7 +212,6 @@ class Element implements Entity {
   }
 
   public concat(element: Element) {
-    console.log(element);
     element.forEach((vertex) => {
       vertex.translate(vec2.sub((vertex.parent as Element).position, this.m_position));
       this.pushVertex(vertex, false);
