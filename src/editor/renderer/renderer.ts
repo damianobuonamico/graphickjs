@@ -78,6 +78,10 @@ abstract class Renderer {
   public static endOutline() {
     this.m_canvas.endOutline();
   }
+
+  public static draw(drawable: Drawable) {
+    this.m_canvas.draw(drawable);
+  }
 }
 
 export default Renderer;

@@ -59,8 +59,8 @@ abstract class SceneManager {
     requestAnimationFrame(() => {
       Renderer.beginFrame();
       this.m_ecs.render();
-      SelectionManager.render();
-      this.m_renderOverlays.forEach((entity) => entity.render());
+      // TEMP: remove overlay rendering from selectionmanager
+      SelectionManager.render(() => this.m_renderOverlays.forEach((entity) => entity.render()));
       Renderer.endFrame();
     });
   }

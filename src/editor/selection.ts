@@ -50,11 +50,12 @@ abstract class SelectionManager {
     this.m_temp.forEach((entity) => callback(entity));
   }
 
-  public static render() {
+  public static render(overlay?: () => void) {
     Renderer.beginOutline();
     this.forEach((entity) => {
       Renderer.outline(entity);
     });
+    if (overlay) overlay();
     Renderer.endOutline();
   }
 }

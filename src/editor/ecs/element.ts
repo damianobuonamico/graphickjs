@@ -253,11 +253,12 @@ class Element implements Entity {
   }
 
   public getOutlineDrawable(useWebGL = false): Drawable {
-    return {
-      operations: this.getDrawable(useWebGL).operations.filter(
-        (op) => op.type !== 'stroke' && op.type !== 'begin'
-      )
-    };
+    // return {
+    //   operations: this.getDrawable(useWebGL).operations.filter(
+    //     (op) => op.type !== 'stroke' && op.type !== 'begin'
+    //   )
+    // };
+    return this.getDrawable(useWebGL);
   }
 
   public isOpenEnd(id: string): boolean {

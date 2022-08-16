@@ -23,7 +23,9 @@ class Canvas2D implements Canvas {
     move: this.move.bind(this),
     linear: this.line.bind(this),
     quadratic: this.quadratic.bind(this),
-    cubic: this.cubic.bind(this)
+    cubic: this.cubic.bind(this),
+    circle: this.circle.bind(this),
+    rect: this.crect.bind(this)
   };
 
   constructor() {
@@ -151,6 +153,19 @@ class Canvas2D implements Canvas {
     this.m_ctx.lineTo(operation.data[0][0], operation.data[0][1]);
   }
 
+  private circle(operation: ShapeDrawOp) {
+    this.m_ctx.arc(operation.data[0][0], operation.data[0][1], operation.data[1], 0, Math.PI * 2);
+  }
+
+  private crect(operation: ShapeDrawOp) {
+    this.m_ctx.rect(
+      operation.data[0][0] - operation.data[1],
+      operation.data[0][1] - operation.data[1],
+      2 * operation.data[1],
+      2 * operation.data[1]
+    );
+  }
+
   private quadratic(operation: BezierDrawOp) {
     this.m_ctx.quadraticCurveTo(
       operation.data[0][0],
@@ -171,7 +186,7 @@ class Canvas2D implements Canvas {
     );
   }
 
-  private draw(drawable: Drawable) {
+  public draw(drawable: Drawable) {
     drawable.operations.forEach((operation) => {
       (this.m_drawOpRegister as any)[operation.type](operation);
     });
@@ -216,6 +231,7 @@ class Canvas2D implements Canvas {
 
   public beginOutline() {
     this.m_ctx.strokeStyle = 'rgba(49, 239, 284, 1.0)';
+    this.m_ctx.fillStyle = 'rgba(49, 239, 284, 1.0)';
     this.m_ctx.lineWidth = 2 / SceneManager.viewport.zoom;
     this.begin();
   }

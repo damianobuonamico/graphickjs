@@ -1,6 +1,7 @@
 import { vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../renderer';
+import SceneManager from '../scene';
 import Handle from './handle';
 
 class Vertex implements VertexEntity {
@@ -55,27 +56,59 @@ class Vertex implements VertexEntity {
 
   delete() {}
 
+  public getDrawable(useWebGL = false): Drawable {
+    if (useWebGL) {
+      return { operations: [{ type: 'geometry' }] };
+    } else {
+      const drawable: Drawable = { operations: [{ type: 'begin' }] };
+      if (this.m_left) {
+        drawable.operations.push({
+          type: 'circle',
+          data: [vec2.add(this.m_left.position, this.position), 3 / SceneManager.viewport.zoom]
+        });
+      }
+
+      if (this.m_right) {
+        drawable.operations.push({
+          type: 'circle',
+          data: [vec2.add(this.m_right.position, this.position), 3 / SceneManager.viewport.zoom]
+        });
+      }
+
+      drawable.operations.push({
+        type: 'rect',
+        data: [this.position, 4 / SceneManager.viewport.zoom]
+      });
+
+      drawable.operations.push({ type: 'fill' });
+      drawable.operations.push({ type: 'begin' });
+
+      if (this.m_left && this.m_right) {
+        drawable.operations.push({
+          type: 'move',
+          data: [vec2.add(this.m_left.position, this.position)]
+        });
+        drawable.operations.push({
+          type: 'linear',
+          data: [vec2.add(this.m_right.position, this.position)]
+        });
+      } else if (this.m_left || this.m_right) {
+        drawable.operations.push({
+          type: 'move',
+          data: [vec2.add((this.m_left || this.m_right)!.position, this.position)]
+        });
+        drawable.operations.push({
+          type: 'linear',
+          data: [this.position]
+        });
+      }
+      drawable.operations.push({ type: 'stroke' });
+      return drawable;
+    }
+  }
+
   render() {
-    Renderer.rect({
-      pos: this.position,
-      size: [4, 4],
-      color: [1.0, 0.0, 1.0, 1.0],
-      centered: true
-    });
-    if (this.m_left)
-      Renderer.rect({
-        pos: vec2.add(this.m_left.position, this.position),
-        size: [4, 4],
-        color: [1.0, 0.0, 0.0, 1.0],
-        centered: true
-      });
-    if (this.m_right)
-      Renderer.rect({
-        pos: vec2.add(this.m_right.position, this.position),
-        size: [4, 4],
-        color: [1.0, 0.0, 0.0, 1.0],
-        centered: true
-      });
+    Renderer.draw(this.getDrawable());
   }
 
   public toJSON(duplicate = false) {

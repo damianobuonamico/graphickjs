@@ -26,6 +26,7 @@ interface Canvas {
     transform?: mat4;
   }): void;
   element(element: Entity): void;
+  draw(drawable: Drawable): void;
 
   beginOutline(): void;
   outline(entity: Entity): void;
@@ -47,7 +48,12 @@ interface PathDrawOp {
   type: 'stroke' | 'fill' | 'begin' | 'close';
 }
 
-type DrawOp = GeometryDrawOp | BezierDrawOp | PathDrawOp;
+interface ShapeDrawOp {
+  type: 'circle' | 'rect';
+  data: [vec2, number];
+}
+
+type DrawOp = GeometryDrawOp | BezierDrawOp | PathDrawOp | ShapeDrawOp;
 
 interface Drawable {
   operations: DrawOp[];
