@@ -127,14 +127,20 @@ const onVSelectPointerDown = () => {
           }
         }
       } else if (handle) {
+        if (abort) handle.clearTransform();
+        else handle.applyTransform();
       } else {
         if (abort) {
-          SelectionManager.forEach((entity) => {
-            entity.clearTransform();
+          SelectionManager.forEach((element) => {
+            (element as Element).selection.forEach((vertex) => {
+              vertex.clearTransform();
+            });
           });
-        } else if (draggingOccurred && SelectionManager.size) {
-          SelectionManager.forEach((entity) => {
-            entity.applyTransform();
+        } else if (draggingOccurred && element.selection.size) {
+          SelectionManager.forEach((element) => {
+            (element as Element).selection.forEach((vertex) => {
+              vertex.applyTransform();
+            });
           });
         }
       }

@@ -2,7 +2,6 @@ import { isPointInBox, vec2, vec4 } from '@math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../renderer';
 import SceneManager from '../scene';
-import Element from './element';
 import Handle from './handle';
 
 class Vertex implements VertexEntity {
@@ -79,8 +78,27 @@ class Vertex implements VertexEntity {
 
     const direction = vec2.unit(vec2.neg(handle.position));
     if (!vec2.equals(direction, [0, 0])) {
-      toMirror.position = vec2.mul(direction, vec2.len(toMirror.position!));
+      toMirror.translate(
+        vec2.sub(vec2.mul(direction, vec2.len(toMirror.position!)), toMirror.position),
+        true
+      );
     }
+  }
+
+  public applyMirroredTranslation(id: string) {
+    const isLeft = this.m_left && this.m_left.id === id;
+    const toMirror = isLeft ? this.m_right : this.m_left;
+    if (!toMirror) return;
+
+    toMirror.applyTransform(true);
+  }
+
+  public clearMirroredTranslation(id: string) {
+    const isLeft = this.m_left && this.m_left.id === id;
+    const toMirror = isLeft ? this.m_right : this.m_left;
+    if (!toMirror) return;
+
+    toMirror.clearTransform(true);
   }
 
   delete() {}
@@ -183,8 +201,12 @@ class Vertex implements VertexEntity {
     }
   }
 
-  public applyTransform() {}
-  public clearTransform() {}
+  public applyTransform() {
+    this.m_position.applyTransform();
+  }
+  public clearTransform() {
+    this.m_position.clearTransform();
+  }
 }
 
 export default Vertex;
