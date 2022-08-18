@@ -9,6 +9,7 @@ import Vertex from './ecs/vertex';
 import HistoryManager from './history';
 import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE, ZOOM_MAX, ZOOM_MIN } from '@utils/constants';
 import SelectionManager from './selection';
+import InputManager from './input';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -50,8 +51,18 @@ abstract class SceneManager {
 
   public static delete(selected: Entity | true) {
     (selected === true ? SelectionManager.entities : [selected]).forEach((entity) => {
-      entity.parent.delete(entity);
-      SelectionManager.deselect(entity.id);
+      if (
+        entity.type === 'element' &&
+        InputManager.tool.isVertex &&
+        (entity as Element).selection.size < (entity as Element).vertexCount - 1
+      ) {
+        (entity as Element).selection.forEach((vertex) => {
+          entity.delete(vertex);
+        });
+      } else {
+        SelectionManager.deselect(entity.id);
+        entity.parent.delete(entity);
+      }
     });
   }
 
@@ -132,7 +143,7 @@ abstract class SceneManager {
     }
   }
 
-  private static fromObject(object: EntityObject) {
+  public static fromObject(object: EntityObject) {
     switch (object.type) {
       case 'artboard': {
         const artboard = new Artboard({ ...(object as ArtboardObject) });

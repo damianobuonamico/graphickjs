@@ -22,8 +22,8 @@ class Layer extends ECS implements Entity {
     this.remove(entity.id);
   }
 
-  public add(entity: Entity) {
-    super.add(entity);
+  public add(entity: Entity, skipRecordAction = false) {
+    super.add(entity, skipRecordAction);
     entity.parent = this;
   }
 

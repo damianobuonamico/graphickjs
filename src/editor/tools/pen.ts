@@ -99,7 +99,7 @@ const onPenPointerDown = () => {
         });
         SceneManager.add(pen.element);
       }
-      pen.element.pushVertex(v);
+      pen.element.push(v);
       SelectionManager.clear();
       SelectionManager.select(pen.element);
     }
@@ -173,7 +173,7 @@ const onPenPointerDown = () => {
       }
       case 'sub': {
         if (vec2.len(InputManager.client.delta) < 10 / SceneManager.viewport.zoom)
-          element!.removeVertex(vertex!.id);
+          element!.delete(vertex!, true);
         pen.element = undefined;
         pen.vertex = undefined;
         break;
@@ -208,7 +208,6 @@ export function onPenPointerHover() {
         )
       );
     } else {
-      console.log('regen');
       if (hasOverlay) SceneManager.popRenderOverlay(pen.overlay!.id);
       pen.overlayLastVertex = new Vertex({
         position: pen.vertex.position,

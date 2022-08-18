@@ -7,6 +7,7 @@ import SceneManager from '../scene';
 import SelectionManager, { ElementSelectionManager } from '../selection';
 import Bezier from './bezier';
 import Transform from './components/transform';
+import Layer from './layer';
 import Vertex from './vertex';
 
 class Element implements Entity {
@@ -15,6 +16,7 @@ class Element implements Entity {
   public readonly selection = new ElementSelectionManager(this);
   public parent: Entity;
 
+  private m_order: string[] = [];
   private m_vertices: Map<string, Vertex> = new Map();
   private m_curves: Map<string, Bezier> = new Map();
   private m_closed: boolean;
@@ -57,13 +59,14 @@ class Element implements Entity {
   }
 
   public get vertexCount() {
-    return this.m_vertices.size;
+    return this.m_order.length;
   }
 
   public set vertices(vertices: Vertex[]) {
+    this.m_order.length = 0;
     this.m_vertices.clear();
     vertices.forEach((vertex) => {
-      this.pushVertex(vertex, false);
+      this.push(vertex, false);
     });
     this.generateCurves();
   }
@@ -109,7 +112,7 @@ class Element implements Entity {
       type: this.type,
       closed: this.m_closed,
       position: vec2.clone(this.m_position),
-      vertices: Array.from(this.m_vertices.values()).map((vertex) => vertex.toJSON(duplicate))
+      vertices: this.m_order.map((id) => this.m_vertices.get(id)!.toJSON(duplicate))
     };
   }
 
@@ -117,7 +120,7 @@ class Element implements Entity {
     if (!doesBoxIntersectsBox(box, this.boundingBox)) return false;
     box = [vec2.sub(box[0], this.m_position), vec2.sub(box[1], this.m_position)];
     if (
-      this.m_vertices.size < 2 &&
+      this.vertexCount < 2 &&
       isPointInBox(Array.from(this.vertices.values())[0].position, box, 5)
     )
       return true;
@@ -164,17 +167,81 @@ class Element implements Entity {
     }
   }
 
-  public delete(entity: Entity) {
-    if (!this.m_vertices.has(entity.id)) return;
-    HistoryManager.record({
-      fn: () => {
-        this.m_vertices.delete(entity.id);
-      },
-      undo: () => {
-        this.m_vertices.set(entity.id, entity as unknown as Vertex);
-        entity.parent = this;
+  public push(vertex: Vertex, generateCurves = true, index: number = this.m_order.length) {
+    this.m_vertices.set(vertex.id, vertex);
+    this.m_order.splice(index, 0, vertex.id);
+    vertex.parent = this;
+    if (generateCurves) this.generateCurves();
+  }
+
+  private splice(id: string, generateCurves = true, index: number = this.m_order.indexOf(id)) {
+    this.m_vertices.delete(id);
+    this.m_order.splice(index, 1);
+    if (generateCurves) this.generateCurves();
+  }
+
+  // TODO: fix deleting multiple vertices in the middle of an element
+  public delete(vertex: Vertex, keepClosed = false) {
+    if (!this.m_vertices.has(vertex.id)) return;
+    const index = this.m_order.indexOf(vertex.id);
+    const backup = [...this.m_order];
+    const wasClosed = this.m_closed;
+    if (this.m_order.length < 3) {
+      this.selection.all();
+      SceneManager.delete(this);
+      return;
+    }
+
+    if (keepClosed || this.isOpenEnd(vertex.id)) {
+      HistoryManager.record({
+        fn: () => {
+          this.m_order.splice(index, 1);
+          this.m_vertices.delete(vertex.id);
+          this.generateCurves();
+        },
+        undo: () => {
+          this.m_vertices.set(vertex.id, vertex);
+          this.generateCurves(backup);
+        }
+      });
+    } else {
+      if (!this.m_closed && this.m_order.length < 4) {
+        this.selection.all();
+        SceneManager.delete(this);
+        return;
       }
-    });
+
+      let newElement: Element | undefined = undefined;
+      HistoryManager.record({
+        fn: () => {
+          this.m_closed = false;
+          let before = this.m_order.slice(0, index);
+          let after = this.m_order.slice(index + 1, this.m_order.length);
+          if (wasClosed) {
+            this.generateCurves(after.concat(before));
+          } else {
+            if (before.length === 1) [before, after] = [after, before];
+            const object = this.toJSON(true);
+            object.vertices = after.map((id) => this.m_vertices.get(id)!.toJSON());
+            newElement = SceneManager.fromObject(object) as Element;
+            if (newElement.vertexCount > 1) (this.parent as Layer).add(newElement, true);
+            this.generateCurves(before);
+          }
+        },
+        undo: () => {
+          this.m_closed = wasClosed;
+          this.m_vertices.set(vertex.id, vertex);
+          if (!wasClosed && newElement) {
+            newElement.forEach((v) => {
+              this.m_vertices.set(v.id, v);
+              v.parent = this;
+            });
+            if (newElement.vertexCount > 1) SceneManager.remove(newElement, true);
+          }
+          this.generateCurves(backup);
+        }
+      });
+    }
   }
 
   public applyTransform() {
@@ -197,14 +264,14 @@ class Element implements Entity {
     this.m_transform.clear();
   }
 
-  public generateCurves(ids: string[] = Array.from(this.m_vertices.keys())) {
-    const vertices = new Map<string, Vertex>();
+  public generateCurves(ids: string[] = this.m_order) {
     const curves = new Map<string, Bezier>();
+    const vertices = new Map<string, Vertex>();
 
     let last: Vertex | null = null;
     ids.forEach((id) => {
       const vertex = this.m_vertices.get(id)!;
-      vertices.set(id, vertex);
+      vertices.set(vertex.id, vertex);
       if (last) {
         const bezier = new Bezier({ start: last, end: vertex });
         curves.set(bezier.id, bezier);
@@ -215,13 +282,14 @@ class Element implements Entity {
 
     if (this.m_closed) {
       const bezier = new Bezier({
-        start: vertices.get(ids[ids.length - 1])!,
-        end: vertices.get(ids[0])!
+        start: this.m_vertices.get(ids[ids.length - 1])!,
+        end: this.m_vertices.get(ids[0])!
       });
       curves.set(bezier.id, bezier);
       bezier.parent = this;
     }
 
+    this.m_order = [...ids];
     this.m_vertices = vertices;
     this.m_curves = curves;
   }
@@ -233,13 +301,13 @@ class Element implements Entity {
       vertex.setLeft(right);
       vertex.setRight(left);
     });
-    this.generateCurves(Array.from(this.m_vertices.keys()).reverse());
+    this.generateCurves(this.m_order.reverse());
   }
 
   public concat(element: Element) {
     element.forEach((vertex) => {
       vertex.translate(vec2.sub((vertex.parent as Element).position, this.m_position));
-      this.pushVertex(vertex, false);
+      this.push(vertex, false);
     });
     this.generateCurves();
     SceneManager.delete(element);
@@ -248,11 +316,9 @@ class Element implements Entity {
   public splitCurve(bezier: Bezier, position: vec2) {
     if (!this.m_curves.has(bezier.id)) return;
     position = vec2.sub(position, this.m_position);
-    const order = Array.from(this.m_vertices.keys());
     const vertex = bezier.split(position);
-    this.pushVertex(vertex, false);
-    order.splice(order.indexOf(bezier.getStart().id) + 1, 0, vertex.id);
-    this.generateCurves(order);
+    this.push(vertex, false, this.m_order.indexOf(bezier.getStart().id) + 1);
+    this.generateCurves();
     SelectionManager.clear();
     SelectionManager.select(this);
     return vertex;
@@ -287,35 +353,18 @@ class Element implements Entity {
   }
 
   public isOpenEnd(id: string): boolean {
-    let open = false;
-    if (!this.m_closed) {
-      let order = Array.from(this.m_vertices.keys());
-      if (order[0] === id || order[order.length - 1] === id) open = true;
-    }
-    return open;
+    if (!this.m_closed && (this.m_order[0] === id || this.m_order[this.m_order.length - 1] === id))
+      return true;
+    return false;
   }
 
   public isFirstVertex(id: string): boolean {
-    let order = Array.from(this.m_vertices.keys());
-    if (order[0] === id) return true;
+    if (this.m_order[0] === id) return true;
     return false;
   }
 
   public close() {
     this.m_closed = true;
-  }
-
-  public pushVertex(vertex: Vertex, generateCurves = true) {
-    this.m_vertices.set(vertex.id, vertex);
-    vertex.parent = this;
-    if (generateCurves) this.generateCurves();
-  }
-
-  public removeVertex(id: string) {
-    const order = Array.from(this.m_vertices.keys());
-    const index = order.indexOf(id);
-    order.splice(index, 1);
-    this.generateCurves(order);
   }
 }
 

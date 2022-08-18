@@ -33,7 +33,7 @@ abstract class HistoryManager {
     const action = this.m_redoStack.pop();
     if (!action) return;
     console.time('redo');
-    action.forEach((entry) => entry.fn());
+    action.reverse().forEach((entry) => entry.fn());
     this.m_undoStack.push(action);
     console.timeEnd('redo');
   }

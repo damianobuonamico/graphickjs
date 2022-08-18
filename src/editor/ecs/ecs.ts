@@ -19,12 +19,17 @@ class ECS {
     this.m_children.set(entity.id, entity);
   }
 
-  private splice(id: string, index?: number) {
+  private splice(id: string, index: number = this.m_order.indexOf(id)) {
     this.m_children.delete(id);
-    this.m_order.splice(index || this.m_order.indexOf(id), 1);
+    this.m_order.splice(index, 1);
   }
 
-  public add(entity: Entity) {
+  public add(entity: Entity, skipRecordAction = false) {
+    if (skipRecordAction) {
+      this.push(entity);
+      return;
+    }
+
     HistoryManager.record({
       fn: () => {
         this.push(entity);
