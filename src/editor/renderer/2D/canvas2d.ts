@@ -25,7 +25,9 @@ class Canvas2D implements Canvas {
     quadratic: this.quadratic.bind(this),
     cubic: this.cubic.bind(this),
     circle: this.circle.bind(this),
-    rect: this.crect.bind(this)
+    rect: this.crect.bind(this),
+    strokecolor: this.strokeColor.bind(this),
+    fillcolor: this.fillColor.bind(this)
   };
 
   constructor() {
@@ -186,6 +188,18 @@ class Canvas2D implements Canvas {
     );
   }
 
+  private strokeColor(operation: ColorDrawOp) {
+    this.m_ctx.strokeStyle = `rgba(${operation.data[0] * 255}, ${operation.data[1] * 255}, ${
+      operation.data[2] * 255
+    }, ${operation.data[3]})`;
+  }
+
+  private fillColor(operation: ColorDrawOp) {
+    this.m_ctx.fillStyle = `rgba(${operation.data[0] * 255}, ${operation.data[1] * 255}, ${
+      operation.data[2] * 255
+    }, ${operation.data[3]})`;
+  }
+
   public draw(drawable: Drawable) {
     drawable.operations.forEach((operation) => {
       (this.m_drawOpRegister as any)[operation.type](operation);
@@ -242,7 +256,8 @@ class Canvas2D implements Canvas {
     const transform = (entity as Element).transform;
     this.m_ctx.transform(1, 0, 0, 1, position[0] + transform[12], position[1] + transform[13]);
     this.draw((entity as Element).getOutlineDrawable(false));
-    (entity as Element).forEach((vertex) => vertex.render());
+    if (InputManager.tool.isVertex)
+      (entity as Element).forEach((vertex, selected) => vertex.render(selected));
     this.m_ctx.restore();
     this.m_stats.entity();
   }

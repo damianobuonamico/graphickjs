@@ -4,6 +4,7 @@ import onPanPointerDown from './pan';
 import onPenPointerDown, { onPenPointerHover } from './pen';
 import onPolygonPointerDown from './polygon';
 import onSelectPointerDown from './select';
+import onVSelectPointerDown from './vselect';
 import onZoomPointerDown from './zoom';
 
 class ToolState {
@@ -13,9 +14,7 @@ class ToolState {
 
   private m_callbacks: ToolMap<() => PointerDownReturn> = {
     select: onSelectPointerDown,
-    vselect: () => {
-      return {};
-    },
+    vselect: onVSelectPointerDown,
     pen: onPenPointerDown,
     rectangle: () => onPolygonPointerDown('rectangle'),
     ellipse: () => onPolygonPointerDown('ellipse'),
@@ -34,6 +33,8 @@ class ToolState {
   private m_hovers: Partial<ToolMap<() => void>> = {
     pen: onPenPointerHover
   };
+
+  private m_vertexTools = { vselect: true, pen: true };
 
   private m_setTool: (tool: Tool) => void;
   private m_onPointerMove: (() => void) | undefined;
@@ -63,6 +64,10 @@ class ToolState {
     this.m_active = tool;
     this.m_setTool(tool);
     SceneManager.clearRenderOverlays();
+  }
+
+  public get isVertex() {
+    return this.m_vertexTools.hasOwnProperty(this.active);
   }
 
   public get data() {

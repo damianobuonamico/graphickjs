@@ -36,6 +36,7 @@ class Layer extends ECS implements Entity {
   }
 
   public applyTransform() {}
+  public clearTransform() {}
 }
 
 export default Layer;

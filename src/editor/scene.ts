@@ -162,8 +162,12 @@ abstract class SceneManager {
     }
   }
 
-  public static getEntityAt(position: vec2, threshold = 5 / SceneManager.viewport.zoom) {
-    return this.m_ecs.getEntityAt(position, threshold);
+  public static getEntityAt(
+    position: vec2,
+    lowerLevel = false,
+    threshold = 5 / SceneManager.viewport.zoom
+  ) {
+    return this.m_ecs.getEntityAt(position, lowerLevel, threshold);
   }
 
   public static getEntitiesIn(box: Box, lowerLevel = false) {
@@ -196,10 +200,8 @@ abstract class SceneManager {
   }
 
   public static clearRenderOverlays() {
-    if (this.m_renderOverlays.size) {
-      this.m_renderOverlays.clear();
-      this.render();
-    }
+    this.m_renderOverlays.clear();
+    this.render();
   }
 }
 

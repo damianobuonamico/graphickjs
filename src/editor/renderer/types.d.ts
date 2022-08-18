@@ -53,7 +53,12 @@ interface ShapeDrawOp {
   data: [vec2, number];
 }
 
-type DrawOp = GeometryDrawOp | BezierDrawOp | PathDrawOp | ShapeDrawOp;
+interface ColorDrawOp {
+  type: 'strokecolor' | 'fillcolor';
+  data: vec4;
+}
+
+type DrawOp = GeometryDrawOp | BezierDrawOp | PathDrawOp | ShapeDrawOp | ColorDrawOp;
 
 interface Drawable {
   operations: DrawOp[];

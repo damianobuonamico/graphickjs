@@ -46,6 +46,7 @@ class Artboard extends ECS implements Entity {
   }
 
   public applyTransform() {}
+  public clearTransform() {}
 }
 
 export default Artboard;

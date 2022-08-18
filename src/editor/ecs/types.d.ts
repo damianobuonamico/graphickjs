@@ -7,11 +7,12 @@ interface Entity {
 
   translate(delta: vec2): void;
   applyTransform(): void;
+  clearTransform(): void;
   delete(entity: Entity): void;
 
   render(): void;
   toJSON(duplicate?: boolean): EntityObject;
-  getEntityAt(position: vec2, zoom: number): Entity | undefined;
+  getEntityAt(position: vec2, lowerLevel: boolean, zoom: number): Entity | undefined;
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean): void;
 }
 

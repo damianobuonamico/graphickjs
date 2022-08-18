@@ -30,7 +30,6 @@ const onSelectPointerDown = () => {
       SelectionManager.clear();
       entities.forEach((entity) => {
         const duplicate = SceneManager.duplicate(entity);
-        console.log(duplicate);
         if (duplicate) SelectionManager.select(duplicate);
       });
     }
@@ -50,11 +49,8 @@ const onSelectPointerDown = () => {
         SelectionManager.forEach((entity) => {
           entity.translate(InputManager.scene.movement);
         });
-        return;
       }
-    }
-
-    if (rect.element) {
+    } else if (rect.element) {
       rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
       SelectionManager.temp(SceneManager.getEntitiesIn(rect.element.boundingBox));
     }
@@ -66,7 +62,12 @@ const onSelectPointerDown = () => {
       SceneManager.popRenderOverlay(rect.element.id);
       rect.element = undefined;
     }
-    if (draggingOccurred && SelectionManager.size && !abort) {
+    
+    if (abort) {
+      SelectionManager.forEach((entity) => {
+        entity.clearTransform();
+      });
+    } else if (draggingOccurred && SelectionManager.size) {
       SelectionManager.forEach((entity) => {
         entity.applyTransform();
       });

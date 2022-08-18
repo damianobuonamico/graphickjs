@@ -7,7 +7,7 @@ abstract class Renderer {
 
   public static debugging: boolean = true;
   public static debug: DebugState = {
-    box: false
+    box: true
   };
 
   public static get canvas() {

@@ -270,7 +270,7 @@ abstract class InputManager {
 
     this.setPointer(e);
 
-    this.hover.entity = SceneManager.getEntityAt(this.scene.position);
+    this.hover.entity = SceneManager.getEntityAt(this.scene.position, this.tool.isVertex);
 
     if (!this.m_moving && this.down) {
       if (

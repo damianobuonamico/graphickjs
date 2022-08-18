@@ -1,7 +1,8 @@
-import { vec2 } from '@math';
+import { isPointInBox, vec2, vec4 } from '@math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../renderer';
 import SceneManager from '../scene';
+import Element from './element';
 import Handle from './handle';
 
 class Vertex implements VertexEntity {
@@ -50,65 +51,110 @@ class Vertex implements VertexEntity {
     return true;
   }
 
+  public get boundingBox() {
+    let min: vec2 = [0, 0];
+    let max: vec2 = [0, 0];
+
+    if (this.m_left) {
+      min = vec2.min(min, this.m_left.position);
+      max = vec2.max(max, this.m_left.position);
+    }
+    if (this.m_right) {
+      min = vec2.min(min, this.m_right.position);
+      max = vec2.max(max, this.m_right.position);
+    }
+
+    return [vec2.add(min, this.position), vec2.add(max, this.position)] as Box;
+  }
+
   public translate(delta: vec2) {
     this.m_position.translate(delta);
   }
 
+  public mirrorTranslation(id: string) {
+    const isLeft = this.m_left && this.m_left.id === id;
+    const handle = isLeft ? this.m_left! : this.m_right!;
+    const toMirror = isLeft ? this.m_right : this.m_left;
+    if (!toMirror) return;
+
+    const direction = vec2.unit(vec2.neg(handle.position));
+    if (!vec2.equals(direction, [0, 0])) {
+      toMirror.position = vec2.mul(direction, vec2.len(toMirror.position!));
+    }
+  }
+
   delete() {}
 
-  public getDrawable(useWebGL = false): Drawable {
+  public getDrawable(selected: boolean, useWebGL = false): Drawable {
+    // TODO: optimize operations batching by color
     if (useWebGL) {
       return { operations: [{ type: 'geometry' }] };
     } else {
       const drawable: Drawable = { operations: [{ type: 'begin' }] };
-      if (this.m_left) {
+      if (selected) {
+        if (this.m_left) {
+          drawable.operations.push({
+            type: 'circle',
+            data: [vec2.add(this.m_left.position, this.position), 3 / SceneManager.viewport.zoom]
+          });
+        }
+
+        if (this.m_right) {
+          drawable.operations.push({
+            type: 'circle',
+            data: [vec2.add(this.m_right.position, this.position), 3 / SceneManager.viewport.zoom]
+          });
+        }
+
         drawable.operations.push({
-          type: 'circle',
-          data: [vec2.add(this.m_left.position, this.position), 3 / SceneManager.viewport.zoom]
+          type: 'rect',
+          data: [this.position, 4 / SceneManager.viewport.zoom]
+        });
+
+        drawable.operations.push({ type: 'fill' });
+        drawable.operations.push({ type: 'begin' });
+
+        if (this.m_left) {
+          drawable.operations.push({
+            type: 'move',
+            data: [vec2.add(this.m_left.position, this.position)]
+          });
+          drawable.operations.push({
+            type: 'linear',
+            data: [this.position]
+          });
+        }
+
+        if (this.m_right) {
+          drawable.operations.push({
+            type: 'move',
+            data: [vec2.add(this.m_right.position, this.position)]
+          });
+          drawable.operations.push({
+            type: 'linear',
+            data: [this.position]
+          });
+        }
+      } else {
+        drawable.operations.push({
+          type: 'rect',
+          data: [this.position, 3 / SceneManager.viewport.zoom]
+        });
+        drawable.operations.push({ type: 'fillcolor', data: vec4.fromValues(1, 1, 1, 1) });
+        drawable.operations.push({ type: 'fill' });
+        drawable.operations.push({
+          type: 'fillcolor',
+          data: vec4.fromValues(49 / 255, 239 / 255, 284 / 255, 1)
         });
       }
 
-      if (this.m_right) {
-        drawable.operations.push({
-          type: 'circle',
-          data: [vec2.add(this.m_right.position, this.position), 3 / SceneManager.viewport.zoom]
-        });
-      }
-
-      drawable.operations.push({
-        type: 'rect',
-        data: [this.position, 4 / SceneManager.viewport.zoom]
-      });
-
-      drawable.operations.push({ type: 'fill' });
-      drawable.operations.push({ type: 'begin' });
-
-      if (this.m_left && this.m_right) {
-        drawable.operations.push({
-          type: 'move',
-          data: [vec2.add(this.m_left.position, this.position)]
-        });
-        drawable.operations.push({
-          type: 'linear',
-          data: [vec2.add(this.m_right.position, this.position)]
-        });
-      } else if (this.m_left || this.m_right) {
-        drawable.operations.push({
-          type: 'move',
-          data: [vec2.add((this.m_left || this.m_right)!.position, this.position)]
-        });
-        drawable.operations.push({
-          type: 'linear',
-          data: [this.position]
-        });
-      }
       drawable.operations.push({ type: 'stroke' });
       return drawable;
     }
   }
 
-  render() {
-    Renderer.draw(this.getDrawable());
+  render(selected?: boolean) {
+    Renderer.draw(this.getDrawable(!!selected));
   }
 
   public toJSON(duplicate = false) {
@@ -121,20 +167,24 @@ class Vertex implements VertexEntity {
     };
   }
 
-  public getEntityAt(position: vec2, threshold: number = 0) {
-    let toReturn = undefined;
-    [this.m_position, this.m_left, this.m_right].forEach((handle) => {
-      if (handle) {
-        const result = handle.getEntityAt(position, threshold);
-        if (result) toReturn = result;
-      }
-    });
-    return toReturn;
+  public getEntityAt(position: vec2, lowerLevel = false, threshold: number = 0) {
+    if (this.m_position.getEntityAt(position, lowerLevel, threshold)) return this.m_position;
+    position = vec2.sub(position, this.position);
+    if (lowerLevel && this.m_left && this.m_left.getEntityAt(position, lowerLevel, threshold))
+      return this.m_left;
+    if (lowerLevel && this.m_right && this.m_right.getEntityAt(position, lowerLevel, threshold))
+      return this.m_right;
+    return undefined;
   }
 
-  public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
+  public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean): void {
+    if (isPointInBox(this.position, box)) {
+      entities.add(this);
+    }
+  }
 
   public applyTransform() {}
+  public clearTransform() {}
 }
 
 export default Vertex;

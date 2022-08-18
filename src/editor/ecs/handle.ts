@@ -1,5 +1,8 @@
 import { isPointInCircle, vec2 } from '@math';
 import { nanoid } from 'nanoid';
+import InputManager from '../input';
+import Element from './element';
+import Vertex from './vertex';
 
 class Handle implements Entity {
   public readonly id: string;
@@ -33,18 +36,22 @@ class Handle implements Entity {
     return true;
   }
 
-  public translate(delta: vec2) {
+  public translate(delta: vec2, lockMirror = false) {
     vec2.add(this.m_position, delta, true);
+    if (!lockMirror && this.m_type === 'bezier' && !InputManager.keys.alt)
+      (this.parent as Vertex).mirrorTranslation(this.id);
+    (this.parent.parent as Element).recalculate();
   }
 
   render() {}
   delete() {}
   applyTransform() {}
+  public clearTransform() {}
   public toJSON() {
     return {} as HandleObject;
   }
 
-  public getEntityAt(position: vec2, threshold: number = 0) {
+  public getEntityAt(position: vec2, lowerLevel = true, threshold: number = 0) {
     if (isPointInCircle(position, this.m_position, threshold)) return this;
     return undefined;
   }

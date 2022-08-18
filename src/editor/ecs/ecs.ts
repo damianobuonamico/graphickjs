@@ -77,11 +77,12 @@ class ECS {
     });
   }
 
-  public getEntityAt(position: vec2, threshold: number = 0) {
+  public getEntityAt(position: vec2, lowerLevel = false, threshold: number = 0) {
+    // Increase iterations when zoomed in
     let toReturn: Entity | undefined = undefined;
     this.forEachReversed((entity) => {
       if (!toReturn) {
-        const result = entity.getEntityAt(position, threshold);
+        const result = entity.getEntityAt(position, lowerLevel, threshold);
         if (result) toReturn = result;
       }
     });

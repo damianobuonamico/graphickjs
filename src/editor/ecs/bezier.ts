@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import Handle from './handle';
 import Vertex from './vertex';
 import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
+import Element from './element';
 
 interface BezierPointDistance {
   t: number;
@@ -476,14 +477,27 @@ class Bezier implements Entity {
     return this.call(this.getLinearDrawOp, this.getQuadraticDrawOp, this.getCubicDrawOp);
   }
 
-  public translate() {}
-  public applyTransform() {}
+  public translate(delta: vec2) {
+    this.m_start.translate(delta);
+    this.m_end.translate(delta);
+  }
+
+  public applyTransform() {
+    this.m_start.applyTransform();
+    this.m_end.applyTransform();
+  }
+
+  public clearTransform() {
+    this.m_start.clearTransform();
+    this.m_end.clearTransform();
+  }
+
   public delete() {}
   public render() {}
   public toJSON() {
     return {} as BezierObject;
   }
-  public getEntityAt(position: vec2, threshold: number = 0) {
+  public getEntityAt(position: vec2, lowerLevel = false, threshold: number = 0) {
     if (
       isPointInBox(position, this.boundingBox, threshold) &&
       this.distanceTo(position) <= threshold

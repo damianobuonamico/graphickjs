@@ -4,7 +4,7 @@ import HistoryManager from '../history';
 import { Renderer } from '../renderer';
 import Canvas2D from '../renderer/2D/canvas2d';
 import SceneManager from '../scene';
-import SelectionManager from '../selection';
+import SelectionManager, { ElementSelectionManager } from '../selection';
 import Bezier from './bezier';
 import Transform from './components/transform';
 import Vertex from './vertex';
@@ -12,6 +12,7 @@ import Vertex from './vertex';
 class Element implements Entity {
   public readonly id: string;
   public readonly type: Entity['type'] = 'element';
+  public readonly selection = new ElementSelectionManager(this);
   public parent: Entity;
 
   private m_vertices: Map<string, Vertex> = new Map();
@@ -41,6 +42,22 @@ class Element implements Entity {
       max = vec2.max(max, box[1]);
     });
     return [vec2.add(min, this.m_position), vec2.add(max, this.m_position)] as Box;
+  }
+
+  public get largeBoundingBox() {
+    const box = this.boundingBox;
+    let min: vec2 = vec2.sub(box[0], this.m_position);
+    let max: vec2 = vec2.sub(box[1], this.m_position);
+    this.m_vertices.forEach((vertex) => {
+      const vertexBox = vertex.boundingBox;
+      min = vec2.min(min, vertexBox[0]);
+      max = vec2.max(max, vertexBox[1]);
+    });
+    return [vec2.add(min, this.m_position), vec2.add(max, this.m_position)] as Box;
+  }
+
+  public get vertexCount() {
+    return this.m_vertices.size;
   }
 
   public set vertices(vertices: Vertex[]) {
@@ -82,8 +99,8 @@ class Element implements Entity {
     Renderer.element(this);
   }
 
-  public forEach(callback: (vertex: Vertex) => void) {
-    this.m_vertices.forEach((vertex) => callback(vertex));
+  public forEach(callback: (vertex: Vertex, selected?: boolean) => void) {
+    this.m_vertices.forEach((vertex) => callback(vertex, this.selection.has(vertex.id)));
   }
 
   public toJSON(duplicate = false) {
@@ -113,20 +130,20 @@ class Element implements Entity {
     return curves.some((segment) => segment.intersectsBox(box));
   }
 
-  public getEntityAt(position: vec2, threshold: number = 0) {
-    if (isPointInBox(position, this.boundingBox, threshold)) {
+  public getEntityAt(position: vec2, lowerLevel = false, threshold: number = 0) {
+    if (isPointInBox(position, lowerLevel ? this.largeBoundingBox : this.boundingBox, threshold)) {
       position = vec2.sub(position, this.m_position);
       let toReturn: Entity | undefined = undefined;
       this.m_vertices.forEach((vertex) => {
         if (!toReturn) {
-          const result = vertex.getEntityAt(position, threshold);
+          const result = vertex.getEntityAt(position, lowerLevel, threshold);
           if (result) toReturn = result;
         }
       });
       if (!toReturn) {
         this.m_curves.forEach((bezier) => {
           if (!toReturn) {
-            const result = bezier.getEntityAt(position, threshold);
+            const result = bezier.getEntityAt(position, lowerLevel, threshold);
             if (result) toReturn = result;
           }
         });
@@ -138,6 +155,10 @@ class Element implements Entity {
 
   public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel = false) {
     if (lowerLevel) {
+      box = [vec2.sub(box[0], this.m_position), vec2.sub(box[1], this.m_position)];
+      this.m_vertices.forEach((vertex) => {
+        vertex.getEntitiesIn(box, entities);
+      });
     } else if (this.intersects(box)) {
       entities.add(this);
     }
@@ -170,6 +191,10 @@ class Element implements Entity {
       });
       this.m_transform.clear();
     }
+  }
+
+  public clearTransform() {
+    this.m_transform.clear();
   }
 
   public generateCurves(ids: string[] = Array.from(this.m_vertices.keys())) {
