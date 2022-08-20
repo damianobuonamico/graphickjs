@@ -1,7 +1,9 @@
+import { isObject } from '@/utils/utils';
 import Element from './ecs/element';
 import Vertex from './ecs/vertex';
 import InputManager from './input';
 import { Renderer } from './renderer';
+import SceneManager from './scene';
 
 class ElementSelectionManager {
   private m_selected: Map<string, Vertex> = new Map();
@@ -69,6 +71,10 @@ class ElementSelectionManager {
   public forEach(callback: (vertex: Vertex) => void) {
     this.m_selected.forEach((vertex) => callback(vertex));
     this.m_temp.forEach((vertex) => callback(vertex));
+  }
+
+  public get() {
+    return Array.from(this.m_selected.values());
   }
 }
 
@@ -151,6 +157,44 @@ abstract class SelectionManager {
     });
     if (overlay) overlay();
     Renderer.endOutline();
+  }
+
+  public static all() {
+    SceneManager.forEach((entity) => {
+      // TODO: Register selectable entities here
+      if (entity.type === 'element') {
+        this.select(entity);
+      }
+    });
+  }
+
+  public static get() {
+    return Array.from(this.m_selected.values()).map((entity) => {
+      if (entity.type === 'element') {
+        return { element: entity, vertices: (entity as Element).selection.get() };
+      }
+      return entity;
+    }) as SelectionBackup;
+  }
+
+  public static restore(selection: SelectionBackup) {
+    this.clear();
+    selection.forEach((entity) => {
+      console.log(entity);
+      if (entity.hasOwnProperty('element') && entity.hasOwnProperty('vertices')) {
+        console.log(entity);
+        const e = (entity as any).element as Entity;
+        if (e.type === 'element') {
+          (entity as any).vertices.forEach((vertex: Vertex) => {
+            (e as Element).selection.select(vertex);
+          });
+        } else {
+          this.select(e, false);
+        }
+      } else {
+        this.select(entity as Entity, false);
+      }
+    });
   }
 }
 

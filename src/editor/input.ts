@@ -43,7 +43,6 @@ abstract class InputManager {
       keydown: () => {},
       keyup: () => {},
       resize: () => {},
-      unload: () => {},
       pointerdown: () => {},
       pointermove: () => {},
       pointerup: () => {},
@@ -126,7 +125,6 @@ abstract class InputManager {
 
     this.addListener('resize', this.onResize.bind(this));
     this.addListener('contextmenu', (e: UIEvent) => e.preventDefault(), Renderer.canvas);
-    this.addListener('unload', this.onUnload.bind(this));
     this.addListener('wheel', this.onWheel.bind(this), window, { passive: false });
   }
 
@@ -333,10 +331,6 @@ abstract class InputManager {
     Renderer.resize();
     SceneManager.render();
     this.m_listeners.resize(e);
-  }
-
-  private static onUnload(e: Event) {
-    this.m_listeners.unload(e);
   }
 
   private static onWheel(e: WheelEvent) {

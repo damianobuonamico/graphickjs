@@ -1,5 +1,6 @@
 import { isPointInBox, vec2, vec4 } from '@math';
 import { nanoid } from 'nanoid';
+import HistoryManager from '../history';
 import { Renderer } from '../renderer';
 import SceneManager from '../scene';
 import Handle from './handle';
@@ -28,22 +29,48 @@ class Vertex implements VertexEntity {
     return this.m_left;
   }
 
-  public setLeft(position?: vec2 | null) {
-    if (position) {
-      if (this.m_left) this.m_left.position = position;
-      else this.m_left = new Handle({ position, type: 'bezier', parent: this });
-    } else this.m_left = undefined;
+  public setLeft(position?: vec2 | null, skipRecordAction = false) {
+    if (skipRecordAction) {
+      if (position) {
+        if (this.m_left) this.m_left.position = position;
+        else this.m_left = new Handle({ position, type: 'bezier', parent: this });
+      } else this.m_left = undefined;
+      return;
+    }
+
+    const backup = this.m_left ? this.m_left.position : undefined;
+    HistoryManager.record({
+      fn: () => {
+        this.setLeft(position, true);
+      },
+      undo: () => {
+        this.setLeft(backup, true);
+      }
+    });
   }
 
   public get right() {
     return this.m_right;
   }
 
-  public setRight(position?: vec2 | null) {
-    if (position) {
-      if (this.m_right) this.m_right.position = position;
-      this.m_right = new Handle({ position, type: 'bezier', parent: this });
-    } else this.m_right = undefined;
+  public setRight(position?: vec2 | null, skipRecordAction = false) {
+    if (skipRecordAction) {
+      if (position) {
+        if (this.m_right) this.m_right.position = position;
+        this.m_right = new Handle({ position, type: 'bezier', parent: this });
+      } else this.m_right = undefined;
+      return;
+    }
+
+    const backup = this.m_right ? this.m_right.position : undefined;
+    HistoryManager.record({
+      fn: () => {
+        this.setRight(position, true);
+      },
+      undo: () => {
+        this.setRight(backup, true);
+      }
+    });
   }
 
   public get visible() {

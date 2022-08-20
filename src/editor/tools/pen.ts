@@ -3,6 +3,7 @@ import Bezier from '../ecs/bezier';
 import Element from '../ecs/element';
 import Handle from '../ecs/handle';
 import Vertex from '../ecs/vertex';
+import HistoryManager from '../history';
 import InputManager from '../input';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
@@ -36,6 +37,17 @@ const onPenPointerDown = () => {
     } else if (SelectionManager.has(element.id)) penState = 'sub';
   } else if (bezier && element && SelectionManager.has(element.id)) penState = 'add';
 
+  const backupPen: PenToolData = { ...pen };
+  const backupSelection: SelectionBackup = SelectionManager.get();
+
+  function restorePen() {
+    pen.vertex = backupPen.vertex;
+    pen.element = backupPen.element;
+    pen.overlay = backupPen.overlay;
+    pen.overlayVertex = backupPen.overlayVertex;
+    pen.overlayLastVertex = backupPen.overlayLastVertex;
+  }
+
   if (pen.overlay) {
     SceneManager.popRenderOverlay(pen.overlay.id);
     pen.overlay = undefined;
@@ -47,18 +59,32 @@ const onPenPointerDown = () => {
     case 'join': {
       if (!element!.isFirstVertex(vertex!.id)) element!.reverseCurves();
       pen.element!.concat(element!);
-      pen.vertex = vertex!;
-      SelectionManager.clear();
-      SelectionManager.select(pen.element!);
+      HistoryManager.record({
+        fn: () => {
+          pen.vertex = vertex;
+          SelectionManager.clear();
+          SelectionManager.select(pen.element!);
+        },
+        undo: () => {
+          restorePen();
+          SelectionManager.restore(backupSelection);
+        }
+      });
       break;
     }
     case 'close': {
       pen.element!.close();
-      pen.element!.generateCurves();
-      vertex!.setLeft(null);
-      pen.vertex = vertex;
-      SelectionManager.clear();
-      SelectionManager.select(pen.element!);
+      HistoryManager.record({
+        fn: () => {
+          pen.vertex = vertex;
+          SelectionManager.clear();
+          SelectionManager.select(pen.element!);
+        },
+        undo: () => {
+          restorePen();
+          SelectionManager.restore(backupSelection);
+        }
+      });
       break;
     }
     case 'sub': {
@@ -66,10 +92,17 @@ const onPenPointerDown = () => {
     }
     case 'add': {
       const vertex = element!.splitCurve(bezier!, InputManager.scene.position);
-      if (vertex) {
-        pen.element = element;
-        pen.vertex = vertex;
-      }
+      HistoryManager.record({
+        fn: () => {
+          if (vertex) {
+            pen.element = element;
+            pen.vertex = vertex;
+          }
+        },
+        undo: () => {
+          restorePen();
+        }
+      });
       break;
     }
     case 'angle': {
@@ -99,7 +132,7 @@ const onPenPointerDown = () => {
         });
         SceneManager.add(pen.element);
       }
-      pen.element.push(v);
+      pen.element.pushVertex(v);
       SelectionManager.clear();
       SelectionManager.select(pen.element);
     }

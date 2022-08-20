@@ -2,6 +2,7 @@ import { KEYS } from '@/utils/keys';
 import HistoryManager from './history';
 import { Renderer } from './renderer';
 import SceneManager from './scene';
+import SelectionManager from './selection';
 
 const actions: { [key: string]: ActionBinding } = {
   undo: {
@@ -19,6 +20,10 @@ const actions: { [key: string]: ActionBinding } = {
   toggleStatistics: {
     callback: () => (Renderer.debugging = !Renderer.debugging),
     shortcut: { key: KEYS.S, shift: true, alt: true }
+  },
+  all: {
+    callback: () => SelectionManager.all(),
+    shortcut: { key: KEYS.A, ctrl: true }
   }
 };
 

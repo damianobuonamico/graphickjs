@@ -167,7 +167,18 @@ class Element implements Entity {
     }
   }
 
-  public push(vertex: Vertex, generateCurves = true, index: number = this.m_order.length) {
+  public pushVertex(vertex: Vertex, generateCurves = true, index?: number) {
+    HistoryManager.record({
+      fn: () => {
+        this.push(vertex, generateCurves, index);
+      },
+      undo: () => {
+        this.splice(vertex.id, generateCurves);
+      }
+    });
+  }
+
+  private push(vertex: Vertex, generateCurves = true, index: number = this.m_order.length) {
     this.m_vertices.set(vertex.id, vertex);
     this.m_order.splice(index, 0, vertex.id);
     vertex.parent = this;
@@ -305,19 +316,33 @@ class Element implements Entity {
   }
 
   public concat(element: Element) {
-    element.forEach((vertex) => {
-      vertex.translate(vec2.sub((vertex.parent as Element).position, this.m_position));
-      this.push(vertex, false);
+    const backup = [...this.m_order];
+    HistoryManager.record({
+      fn: () => {
+        element.forEach((vertex) => {
+          vertex.translate(vec2.sub(element.position, this.m_position));
+          this.push(vertex, false);
+        });
+        this.generateCurves();
+        (element.parent as Layer).remove(element.id, true);
+      },
+      undo: () => {
+        element.forEach((vertex) => {
+          vertex.translate(vec2.sub(this.m_position, element.position));
+          this.splice(vertex.id, false);
+          vertex.parent = element;
+        });
+        (element.parent as Layer).add(element, true);
+        this.generateCurves(backup);
+      }
     });
-    this.generateCurves();
-    SceneManager.delete(element);
   }
 
   public splitCurve(bezier: Bezier, position: vec2) {
     if (!this.m_curves.has(bezier.id)) return;
     position = vec2.sub(position, this.m_position);
     const vertex = bezier.split(position);
-    this.push(vertex, false, this.m_order.indexOf(bezier.getStart().id) + 1);
+    this.pushVertex(vertex, false, this.m_order.indexOf(bezier.getStart().id) + 1);
     this.generateCurves();
     SelectionManager.clear();
     SelectionManager.select(this);
@@ -364,7 +389,16 @@ class Element implements Entity {
   }
 
   public close() {
-    this.m_closed = true;
+    HistoryManager.record({
+      fn: () => {
+        this.m_closed = true;
+        this.generateCurves();
+      },
+      undo: () => {
+        this.m_closed = false;
+        this.generateCurves();
+      }
+    });
   }
 }
 

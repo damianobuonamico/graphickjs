@@ -214,6 +214,21 @@ abstract class SceneManager {
     this.m_renderOverlays.clear();
     this.render();
   }
+
+  public static forEach(callback: (entity: Entity) => any) {
+    function forEachECS(entity: Entity) {
+      callback(entity);
+      if (entity.type !== 'element' && 'forEach' in entity) {
+        (entity as any).forEach((e: Entity) => {
+          forEachECS(e);
+        });
+      }
+    }
+
+    this.m_ecs.forEach((entity) => {
+      forEachECS(entity);
+    });
+  }
 }
 
 export default SceneManager;

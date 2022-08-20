@@ -47,7 +47,6 @@ interface Listeners {
   keydown: (e: KeyboardEvent) => void;
   keyup: (e: KeyboardEvent) => void;
   resize: (e: UIEvent) => void;
-  unload: (e: Event) => void;
   pointerdown: (e: PointerEvent) => void;
   pointermove: (e: PointerEvent) => void;
   pointerup: (e: PointerEvent) => void;
@@ -68,3 +67,5 @@ interface ActionBinding {
   callback(): void;
   shortcut?: KeyBinding;
 }
+
+type SelectionBackup = (Entity | { entity: Entity; vertices: Entity[] })[];
