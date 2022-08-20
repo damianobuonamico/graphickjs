@@ -9,7 +9,8 @@ import Vertex from './vertex';
 class Handle implements Entity {
   public readonly id: string;
   public readonly type: Entity['type'] = 'handle';
-  public parent: Entity;
+
+  public parent: Vertex;
 
   private readonly m_type: HandleOptions['type'];
 
@@ -18,14 +19,14 @@ class Handle implements Entity {
 
   constructor({ position, type, parent }: HandleOptions) {
     this.id = nanoid();
-    this.parent = parent;
+    this.parent = parent as any as Vertex;
     this.m_position = position;
     this.m_type = type;
     this.m_transform = new SimpleTransform();
   }
 
-  public get handleType() {
-    return this.m_type;
+  public get visible() {
+    return true;
   }
 
   public get position() {
@@ -36,53 +37,91 @@ class Handle implements Entity {
     this.m_position = vec2.clone(position);
   }
 
-  public get visible() {
-    return true;
+  public get staticPosition(): vec2 {
+    return this.m_position;
+  }
+
+  public get handleType() {
+    return this.m_type;
+  }
+
+  public move(delta: vec2) {
+    HistoryManager.record({
+      fn: () => {
+        vec2.add(this.m_position, delta, true);
+      },
+      undo: () => {
+        vec2.sub(this.m_position, delta, true);
+      }
+    });
+  }
+
+  public moveTo(position: vec2) {
+    const backup = vec2.clone(this.m_position);
+
+    HistoryManager.record({
+      fn: () => {
+        this.position = position;
+      },
+      undo: () => {
+        this.m_position = backup;
+      }
+    });
   }
 
   public translate(delta: vec2, lockMirror = false) {
     this.m_transform.translate(delta);
+
     if (!lockMirror && this.m_type === 'bezier' && !InputManager.keys.alt)
-      (this.parent as Vertex).mirrorTranslation(this.id);
-    (this.parent.parent as Element).recalculate();
+      this.parent.mirrorTranslation(this.id);
+
+    this.parent.parent.recalculate();
   }
 
-  render() {}
-  delete() {}
   public applyTransform(lockMirror = false) {
     const backup = vec2.clone(this.m_position);
     const transformed = vec2.add(this.m_position, this.m_transform.vec2);
+
     if (!vec2.equals(transformed, backup)) {
       HistoryManager.record({
         fn: () => {
           this.m_position = transformed;
-          (this.parent.parent as Element).recalculate();
+          this.parent.parent.recalculate();
         },
         undo: () => {
           this.m_position = backup;
-          (this.parent.parent as Element).recalculate();
+          this.parent.parent.recalculate();
         }
       });
-      if (!lockMirror && this.m_type === 'bezier')
-        (this.parent as Vertex).applyMirroredTranslation(this.id);
+
+      if (!lockMirror && this.m_type === 'bezier') this.parent.applyMirroredTranslation(this.id);
+
       this.m_transform.clear();
     }
   }
+
   public clearTransform(lockMirror = false) {
     this.m_transform.clear();
-    if (!lockMirror && this.m_type === 'bezier')
-      (this.parent as Vertex).clearMirroredTranslation(this.id);
-    (this.parent.parent as Element).recalculate();
-  }
-  public toJSON() {
-    return {} as HandleObject;
+
+    if (!lockMirror && this.m_type === 'bezier') this.parent.clearMirroredTranslation(this.id);
+
+    this.parent.parent.recalculate();
   }
 
   public getEntityAt(position: vec2, lowerLevel = true, threshold: number = 0) {
     if (isPointInCircle(position, this.m_position, threshold)) return this;
     return undefined;
   }
+
   public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
+
+  public delete() {}
+
+  public render() {}
+
+  public toJSON() {
+    return {} as HandleObject;
+  }
 }
 
 export default Handle;

@@ -4,16 +4,22 @@ interface Entity {
 
   parent: Entity;
   visible: boolean;
+  position: vec2;
 
+  move(delta: vec2): void;
+  moveTo(position: vec2): void;
   translate(delta: vec2): void;
   applyTransform(): void;
   clearTransform(): void;
+
+  getEntityAt(position: vec2, lowerLevel: boolean, zoom: number): Entity | undefined;
+  getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean): void;
+
   delete(entity: Entity): void;
 
   render(): void;
+
   toJSON(duplicate?: boolean): EntityObject;
-  getEntityAt(position: vec2, lowerLevel: boolean, zoom: number): Entity | undefined;
-  getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean): void;
 }
 
 type EntityObject = ArtboardObject | LayerObject | ElementObject | VertexObject | HandleObject;
@@ -73,7 +79,7 @@ type HandleType = 'vertex' | 'bezier';
 interface HandleOptions {
   position: vec2;
   type: HandleType;
-  parent: Entity;
+  parent: VertexEntity;
 }
 
 interface HandleObject extends GenericEntityObject {}

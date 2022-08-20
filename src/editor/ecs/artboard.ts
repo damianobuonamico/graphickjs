@@ -6,29 +6,48 @@ import ECS from './ecs';
 class Artboard extends ECS implements Entity {
   public readonly id: string;
   public readonly type: Entity['type'] = 'artboard';
+
   public parent: Entity;
 
+  private m_position: vec2;
   private m_size: vec2;
 
   constructor({ id = nanoid(), size }: ArtboardOptions) {
     super();
     this.id = id;
     this.m_size = size;
+    this.m_position = vec2.create();
   }
 
   public get visible() {
     return true;
   }
 
+  public get position() {
+    return this.m_position;
+  }
+
+  public set position(position: vec2) {
+    this.m_position = vec2.clone(position);
+  }
+
+  public move() {}
+
+  public moveTo() {}
+
   public translate() {}
 
-  public delete(entity: Entity) {
-    this.remove(entity.id);
-  }
+  public applyTransform() {}
+
+  public clearTransform() {}
 
   public add(entity: Entity) {
     super.add(entity);
     entity.parent = this;
+  }
+
+  public delete(entity: Entity) {
+    this.remove(entity.id);
   }
 
   public render() {
@@ -44,9 +63,6 @@ class Artboard extends ECS implements Entity {
       children: this.map((entity) => entity.toJSON(duplicate))
     };
   }
-
-  public applyTransform() {}
-  public clearTransform() {}
 }
 
 export default Artboard;

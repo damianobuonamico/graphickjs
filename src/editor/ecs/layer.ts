@@ -5,6 +5,7 @@ import ECS from './ecs';
 class Layer extends ECS implements Entity {
   public readonly id: string;
   public readonly type: Entity['type'] = 'layer';
+
   public parent: Entity;
 
   constructor({ id = nanoid() }: LayerOptions) {
@@ -16,15 +17,27 @@ class Layer extends ECS implements Entity {
     return true;
   }
 
+  public get position() {
+    return vec2.create();
+  }
+
+  public move() {}
+
+  public moveTo() {}
+
   public translate() {}
 
-  public delete(entity: Entity) {
-    this.remove(entity.id);
-  }
+  public applyTransform() {}
+
+  public clearTransform() {}
 
   public add(entity: Entity, skipRecordAction = false) {
     super.add(entity, skipRecordAction);
     entity.parent = this;
+  }
+
+  public delete(entity: Entity) {
+    this.remove(entity.id);
   }
 
   public toJSON(duplicate = false) {
@@ -34,9 +47,6 @@ class Layer extends ECS implements Entity {
       children: this.map((entity) => entity.toJSON(duplicate))
     };
   }
-
-  public applyTransform() {}
-  public clearTransform() {}
 }
 
 export default Layer;
