@@ -25,6 +25,7 @@ const onPenPointerDown = () => {
   const vertex = handle && handle.handleType === 'vertex' ? (handle.parent as Vertex) : undefined;
 
   let penState = 'new' as PenState;
+
   if (vertex && element) {
     if (element.isOpenEnd(vertex.id)) {
       if (pen.element && element.id === pen.element.id) {
@@ -59,10 +60,13 @@ const onPenPointerDown = () => {
   switch (penState) {
     case 'join': {
       if (!element!.isFirstVertex(vertex!.id)) element!.reverseCurves();
+
       pen.element!.concat(element!);
+
       HistoryManager.record({
         fn: () => {
           pen.vertex = vertex;
+
           SelectionManager.clear();
           SelectionManager.select(pen.element!);
         },
@@ -71,14 +75,17 @@ const onPenPointerDown = () => {
           SelectionManager.restore(backupSelection);
         }
       });
+
       break;
     }
     case 'close': {
       element!.close();
+
       HistoryManager.record({
         fn: () => {
           pen.element = element;
           pen.vertex = vertex;
+
           SelectionManager.clear();
           SelectionManager.select(pen.element!);
         },
@@ -87,42 +94,67 @@ const onPenPointerDown = () => {
           SelectionManager.restore(backupSelection);
         }
       });
+
       break;
     }
     case 'sub': {
       break;
     }
     case 'add': {
-      // const vertex = element!.splitCurve(bezier!, InputManager.scene.position);
-      // HistoryManager.record({
-      //   fn: () => {
-      //     if (vertex) {
-      //       pen.element = element;
-      //       pen.vertex = vertex;
+      const vertex = element!.splitCurve(bezier!, InputManager.scene.position);
 
-      //       SelectionManager.clear();
-      //       SelectionManager.select(element!);
-      //     }
-      //   },
-      //   undo: () => {
-      //     restorePen();
-      //     SelectionManager.restore(backupSelection);
-      //   }
-      // });
+      HistoryManager.record({
+        fn: () => {
+          if (vertex) {
+            pen.element = element;
+            pen.vertex = vertex;
+
+            SelectionManager.clear();
+            SelectionManager.select(element!);
+          }
+        },
+        undo: () => {
+          restorePen();
+          SelectionManager.restore(backupSelection);
+        }
+      });
+
       break;
     }
     case 'angle': {
-      // pen.vertex = vertex!;
-      // vertex!.setRight(null);
+      vertex!.setRight(null);
+
+      HistoryManager.record({
+        fn: () => {
+          pen.element = element;
+          pen.vertex = vertex;
+        },
+        undo: () => {
+          restorePen();
+        }
+      });
+
       break;
     }
     case 'start': {
-      // pen.element = element!;
-      // pen.vertex = vertex!;
-      // if (element!.isFirstVertex(vertex!.id)) element!.reverseCurves();
-      // SelectionManager.clear();
-      // SelectionManager.select(element!);
-      // vertex!.setRight(null);
+      if (element!.isFirstVertex(vertex!.id)) element!.reverseCurves();
+
+      vertex!.setRight(null);
+
+      HistoryManager.record({
+        fn: () => {
+          pen.element = element;
+          pen.vertex = vertex;
+
+          SelectionManager.clear();
+          SelectionManager.select(element!);
+        },
+        undo: () => {
+          restorePen();
+          SelectionManager.restore(backupSelection);
+        }
+      });
+
       break;
     }
     case 'new': {
@@ -163,14 +195,17 @@ const onPenPointerDown = () => {
 
   function setRight(position?: vec2, recordHandleCreation = false) {
     if (!pen.vertex) return;
+
     if (!pen.vertex.right) {
       pen.vertex.setRight(position || vec2.create(), true);
+
       if (recordHandleCreation) {
         const v = pen.vertex;
         const backup = pen.vertex.right;
+
         HistoryManager.record({
           fn: () => {
-            v.setRight(backup, true );
+            v.setRight(backup, true);
           },
           undo: () => {
             v.setRight(undefined, true);
@@ -182,11 +217,14 @@ const onPenPointerDown = () => {
 
   function setLeft(position?: vec2, recordHandleCreation = false) {
     if (!pen.vertex) return;
+
     if (!pen.vertex.left) {
       pen.vertex.setLeft(position || vec2.create(), true);
+
       if (recordHandleCreation) {
         const v = pen.vertex;
         const backup = pen.vertex.left;
+
         HistoryManager.record({
           fn: () => {
             v.setLeft(backup, true);
@@ -207,37 +245,45 @@ const onPenPointerDown = () => {
       case 'sub':
         break;
       case 'add': {
-        // setRight(InputManager.scene.delta);
-        // if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
-        // pen.element!.recalculate();
+        setRight(InputManager.scene.delta);
+
+        if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
+
         break;
       }
       case 'close':
       case 'join': {
         setLeft(vec2.neg(InputManager.scene.delta), true);
+
         if (!InputManager.keys.alt && right) {
           const direction = vec2.unit(InputManager.scene.delta);
+
           if (!vec2.equals(direction, [0, 0])) {
             setRight(vec2.mul(direction, vec2.len(pen.vertex!.right?.position!)), true);
           }
         }
+
         break;
       }
       case 'start':
       case 'angle': {
-        // setRight(InputManager.scene.delta);
-        // if (!InputManager.keys.alt && left) {
-        //   const direction = vec2.unit(vec2.neg(InputManager.scene.delta));
-        //   if (!vec2.equals(direction, [0, 0])) {
-        //     setLeft(vec2.mul(direction, vec2.len(pen.vertex!.left?.position!)));
-        //   }
-        // }
-        // pen.element!.recalculate();
+        setRight(InputManager.scene.delta, true);
+
+        if (!InputManager.keys.alt && left) {
+          const direction = vec2.unit(vec2.neg(InputManager.scene.delta));
+
+          if (!vec2.equals(direction, [0, 0])) {
+            setLeft(vec2.mul(direction, vec2.len(pen.vertex!.left?.position!)), true);
+          }
+        }
+
         break;
       }
       case 'new': {
         if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
+
         setRight(InputManager.scene.delta);
+
         break;
       }
     }
@@ -257,17 +303,28 @@ const onPenPointerDown = () => {
           fn: () => {
             pen.element = undefined;
             pen.vertex = undefined;
+
             onPenPointerHover();
           },
           undo: () => {}
         });
+
         break;
       }
       case 'sub': {
-        // if (vec2.len(InputManager.client.delta) < 10 / SceneManager.viewport.zoom)
-        //   element!.delete(vertex!, true);
-        // pen.element = undefined;
-        // pen.vertex = undefined;
+        if (vec2.len(InputManager.client.delta) < 10 / SceneManager.viewport.zoom)
+          element!.delete(vertex!, true);
+
+        HistoryManager.record({
+          fn: () => {
+            pen.element = undefined;
+            pen.vertex = undefined;
+          },
+          undo: () => {
+            restorePen();
+            SelectionManager.restore(backupSelection);
+          }
+        });
         break;
       }
       case 'angle':
@@ -279,6 +336,7 @@ const onPenPointerDown = () => {
           },
           undo: () => {}
         });
+
         break;
       }
     }
@@ -303,6 +361,9 @@ export function onPenPointerHover() {
       pen.overlayLastVertex &&
       vec2.equals(pen.overlayLastVertex.position, pen.vertex.position)
     ) {
+      pen.overlayLastVertex.setLeft(pen.vertex.left?.position, true);
+      pen.overlayLastVertex.setRight(pen.vertex.right?.position, true);
+
       pen.overlayVertex.translate(
         vec2.sub(
           InputManager.scene.position,
@@ -311,23 +372,29 @@ export function onPenPointerHover() {
       );
     } else {
       if (hasOverlay) SceneManager.popRenderOverlay(pen.overlay!.id);
+
       pen.overlayLastVertex = new Vertex({
         position: pen.vertex.position,
         left: pen.vertex.left?.position,
         right: pen.vertex.right?.position
       });
+
       pen.overlayVertex = new Vertex({
         position: vec2.sub(InputManager.scene.position, pen.element.position)
       });
+
       pen.overlay = new Element({
         position: pen.element.position,
         vertices: [pen.overlayLastVertex, pen.overlayVertex]
       });
     }
+
     if (!hasOverlay) SceneManager.pushRenderOverlay(pen.overlay);
+
     SceneManager.render();
   } else if (hasOverlay) {
     SceneManager.popRenderOverlay(pen.overlay!.id);
+
     pen.overlay = undefined;
     pen.overlayVertex = undefined;
   }
