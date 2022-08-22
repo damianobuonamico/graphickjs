@@ -227,18 +227,28 @@ class Element implements Entity {
     this.m_order = [...ids];
     this.m_vertices = vertices;
     this.m_curves = curves;
+
+    this.recalculate(false);
   }
 
   public reverseCurves() {
+    // TODO: fix reverseCurves causing history problems
     this.m_vertices.forEach((vertex) => {
-      const left = vertex.left?.position;
-      const right = vertex.right?.position;
+      const left = vertex.left;
+      const right = vertex.right;
 
       vertex.setLeft(right);
       vertex.setRight(left);
     });
 
-    this.generateCurves(this.m_order.reverse());
+    HistoryManager.record({
+      fn: () => {
+        this.generateCurves(this.m_order.reverse());
+      },
+      undo: () => {
+        this.generateCurves(this.m_order.reverse());
+      }
+    });
   }
 
   public concat(element: Element) {
@@ -275,11 +285,7 @@ class Element implements Entity {
 
     const vertex = bezier.split(position);
 
-    this.pushVertex(vertex, false, this.m_order.indexOf(bezier.getStart().id) + 1);
-    this.generateCurves();
-
-    SelectionManager.clear();
-    SelectionManager.select(this);
+    this.pushVertex(vertex, true, this.m_order.indexOf(bezier.getStart().id) + 1);
 
     return vertex;
   }

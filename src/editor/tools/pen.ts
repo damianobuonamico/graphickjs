@@ -48,12 +48,13 @@ const onPenPointerDown = () => {
     pen.overlayLastVertex = backupPen.overlayLastVertex;
   }
 
-  if (pen.overlay) {
-    SceneManager.popRenderOverlay(pen.overlay.id);
-    pen.overlay = undefined;
-    pen.overlayLastVertex = undefined;
-    pen.overlayVertex = undefined;
-  }
+  HistoryManager.beginSequence();
+
+  if (pen.overlay) SceneManager.popRenderOverlay(pen.overlay!.id);
+
+  pen.overlay = undefined;
+  pen.overlayLastVertex = undefined;
+  pen.overlayVertex = undefined;
 
   switch (penState) {
     case 'join': {
@@ -73,9 +74,10 @@ const onPenPointerDown = () => {
       break;
     }
     case 'close': {
-      pen.element!.close();
+      element!.close();
       HistoryManager.record({
         fn: () => {
+          pen.element = element;
           pen.vertex = vertex;
           SelectionManager.clear();
           SelectionManager.select(pen.element!);
@@ -91,32 +93,36 @@ const onPenPointerDown = () => {
       break;
     }
     case 'add': {
-      const vertex = element!.splitCurve(bezier!, InputManager.scene.position);
-      HistoryManager.record({
-        fn: () => {
-          if (vertex) {
-            pen.element = element;
-            pen.vertex = vertex;
-          }
-        },
-        undo: () => {
-          restorePen();
-        }
-      });
+      // const vertex = element!.splitCurve(bezier!, InputManager.scene.position);
+      // HistoryManager.record({
+      //   fn: () => {
+      //     if (vertex) {
+      //       pen.element = element;
+      //       pen.vertex = vertex;
+
+      //       SelectionManager.clear();
+      //       SelectionManager.select(element!);
+      //     }
+      //   },
+      //   undo: () => {
+      //     restorePen();
+      //     SelectionManager.restore(backupSelection);
+      //   }
+      // });
       break;
     }
     case 'angle': {
-      pen.vertex = vertex!;
-      vertex!.setRight(null);
+      // pen.vertex = vertex!;
+      // vertex!.setRight(null);
       break;
     }
     case 'start': {
-      pen.element = element!;
-      pen.vertex = vertex!;
-      if (element!.isFirstVertex(vertex!.id)) element!.reverseCurves();
-      SelectionManager.clear();
-      SelectionManager.select(element!);
-      vertex!.setRight(null);
+      // pen.element = element!;
+      // pen.vertex = vertex!;
+      // if (element!.isFirstVertex(vertex!.id)) element!.reverseCurves();
+      // SelectionManager.clear();
+      // SelectionManager.select(element!);
+      // vertex!.setRight(null);
       break;
     }
     case 'new': {
@@ -125,29 +131,72 @@ const onPenPointerDown = () => {
           ? vec2.sub(InputManager.scene.position, pen.element.position)
           : vec2.create()
       });
-      pen.vertex = v;
+
       if (!pen.element) {
         pen.element = new Element({
           position: InputManager.scene.position
         });
+
         SceneManager.add(pen.element);
       }
-      pen.element.pushVertex(v);
-      SelectionManager.clear();
-      SelectionManager.select(pen.element);
+
+      const e = pen.element;
+
+      e.pushVertex(v);
+
+      HistoryManager.record({
+        fn: () => {
+          pen.element = e;
+          pen.vertex = v;
+          SelectionManager.clear();
+          SelectionManager.select(e);
+        },
+        undo: () => {
+          restorePen();
+          SelectionManager.restore(backupSelection);
+        }
+      });
+
+      break;
     }
   }
 
-  function setRight(position?: vec2) {
+  function setRight(position?: vec2, recordHandleCreation = false) {
     if (!pen.vertex) return;
-    if (!pen.vertex.right) pen.vertex.setRight(position || vec2.create());
-    else if (position) pen.vertex.right!.position = position;
+    if (!pen.vertex.right) {
+      pen.vertex.setRight(position || vec2.create(), true);
+      if (recordHandleCreation) {
+        const v = pen.vertex;
+        const backup = pen.vertex.right;
+        HistoryManager.record({
+          fn: () => {
+            v.setRight(backup, true );
+          },
+          undo: () => {
+            v.setRight(undefined, true);
+          }
+        });
+      }
+    } else if (position) pen.vertex.right!.translateTo(position);
   }
 
-  function setLeft(position?: vec2) {
+  function setLeft(position?: vec2, recordHandleCreation = false) {
     if (!pen.vertex) return;
-    if (!pen.vertex.left) pen.vertex.setLeft(position || vec2.create());
-    else if (position) pen.vertex.left!.position = position;
+    if (!pen.vertex.left) {
+      pen.vertex.setLeft(position || vec2.create(), true);
+      if (recordHandleCreation) {
+        const v = pen.vertex;
+        const backup = pen.vertex.left;
+        HistoryManager.record({
+          fn: () => {
+            v.setLeft(backup, true);
+          },
+          undo: () => {
+            v.setLeft(undefined, true);
+          }
+        });
+      }
+    } else if (position) pen.vertex.left!.translateTo(position);
   }
 
   const left = !!(pen.vertex && pen.vertex.left);
@@ -158,63 +207,83 @@ const onPenPointerDown = () => {
       case 'sub':
         break;
       case 'add': {
-        setRight(InputManager.scene.delta);
-        if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
-        pen.element!.recalculate();
+        // setRight(InputManager.scene.delta);
+        // if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
+        // pen.element!.recalculate();
         break;
       }
       case 'close':
       case 'join': {
-        setLeft(vec2.neg(InputManager.scene.delta));
+        setLeft(vec2.neg(InputManager.scene.delta), true);
         if (!InputManager.keys.alt && right) {
           const direction = vec2.unit(InputManager.scene.delta);
           if (!vec2.equals(direction, [0, 0])) {
-            setRight(vec2.mul(direction, vec2.len(pen.vertex!.right?.position!)));
+            setRight(vec2.mul(direction, vec2.len(pen.vertex!.right?.position!)), true);
           }
         }
-        pen.element!.recalculate();
         break;
       }
       case 'start':
       case 'angle': {
-        setRight(InputManager.scene.delta);
-        if (!InputManager.keys.alt && left) {
-          const direction = vec2.unit(vec2.neg(InputManager.scene.delta));
-          if (!vec2.equals(direction, [0, 0])) {
-            setLeft(vec2.mul(direction, vec2.len(pen.vertex!.left?.position!)));
-          }
-        }
-        pen.element!.recalculate();
+        // setRight(InputManager.scene.delta);
+        // if (!InputManager.keys.alt && left) {
+        //   const direction = vec2.unit(vec2.neg(InputManager.scene.delta));
+        //   if (!vec2.equals(direction, [0, 0])) {
+        //     setLeft(vec2.mul(direction, vec2.len(pen.vertex!.left?.position!)));
+        //   }
+        // }
+        // pen.element!.recalculate();
         break;
       }
       case 'new': {
         if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
         setRight(InputManager.scene.delta);
-        pen.element!.recalculate();
+        break;
       }
     }
   }
 
   function onPointerUp() {
+    if (pen.vertex) {
+      if (pen.vertex.left) pen.vertex.left.applyTransform();
+      if (pen.vertex.right) pen.vertex.right.applyTransform();
+    }
+
     switch (penState) {
       case 'close':
       case 'join':
       case 'add': {
-        pen.element = undefined;
-        pen.vertex = undefined;
+        HistoryManager.record({
+          fn: () => {
+            pen.element = undefined;
+            pen.vertex = undefined;
+            onPenPointerHover();
+          },
+          undo: () => {}
+        });
         break;
       }
       case 'sub': {
-        if (vec2.len(InputManager.client.delta) < 10 / SceneManager.viewport.zoom)
-          element!.delete(vertex!, true);
-        pen.element = undefined;
-        pen.vertex = undefined;
+        // if (vec2.len(InputManager.client.delta) < 10 / SceneManager.viewport.zoom)
+        //   element!.delete(vertex!, true);
+        // pen.element = undefined;
+        // pen.vertex = undefined;
         break;
       }
       case 'angle':
       case 'start':
-      case 'new':
+      case 'new': {
+        HistoryManager.record({
+          fn: () => {
+            onPenPointerHover();
+          },
+          undo: () => {}
+        });
+        break;
+      }
     }
+
+    HistoryManager.endSequence();
   }
 
   return {

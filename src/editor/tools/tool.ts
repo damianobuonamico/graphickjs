@@ -64,6 +64,7 @@ class ToolState {
     this.m_active = tool;
     this.m_setTool(tool);
     SceneManager.clearRenderOverlays();
+    this.onPointerHover();
   }
 
   public get isVertex() {

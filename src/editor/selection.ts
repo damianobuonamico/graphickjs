@@ -180,9 +180,7 @@ abstract class SelectionManager {
   public static restore(selection: SelectionBackup) {
     this.clear();
     selection.forEach((entity) => {
-      console.log(entity);
       if (entity.hasOwnProperty('element') && entity.hasOwnProperty('vertices')) {
-        console.log(entity);
         const e = (entity as any).element as Entity;
         if (e.type === 'element') {
           (entity as any).vertices.forEach((vertex: Vertex) => {

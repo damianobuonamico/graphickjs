@@ -20,8 +20,8 @@ class Vertex implements VertexEntity {
     this.id = id;
     this.m_position = new Handle({ position, type: 'vertex', parent: this });
 
-    if (left) this.setLeft(left);
-    if (right) this.setRight(right);
+    if (left) this.setLeft(left, true);
+    if (right) this.setRight(right, true);
   }
 
   public get visible() {
@@ -114,7 +114,12 @@ class Vertex implements VertexEntity {
     toMirror.clearTransform(true);
   }
 
-  public setLeft(position?: vec2 | null, skipRecordAction = false) {
+  public setLeft(position?: vec2 | null | Handle, skipRecordAction = false) {
+    if (position instanceof Handle) {
+      this.m_left = position;
+      return;
+    }
+
     if (skipRecordAction) {
       if (position) {
         if (this.m_left) this.m_left.position = position;
@@ -136,7 +141,12 @@ class Vertex implements VertexEntity {
     });
   }
 
-  public setRight(position?: vec2 | null, skipRecordAction = false) {
+  public setRight(position?: vec2 | null | Handle, skipRecordAction = false) {
+    if (position instanceof Handle) {
+      this.m_right = position;
+      return;
+    }
+
     if (skipRecordAction) {
       if (position) {
         if (this.m_right) this.m_right.position = position;
