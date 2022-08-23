@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import HistoryManager from '../history';
 import { Renderer } from '../renderer';
 import SceneManager from '../scene';
-import SelectionManager, { ElementSelectionManager } from '../selection';
+import { ElementSelectionManager } from '../selection';
 import Bezier from './bezier';
 import Transform from './components/transform';
 import Layer from './layer';

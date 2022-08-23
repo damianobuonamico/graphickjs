@@ -257,75 +257,214 @@ class Bezier implements Entity {
 
     return { t: 0, point: vec, distance: 0 };
   }
-  private getBezierClosestTo({
+  private getQuadraticClosestTo({
     position,
     iterations
   }: {
     position: vec2;
     iterations: number;
   }): BezierPointDistance {
-    const LUT: BezierPointDistance[] = [];
-    const size = this.size;
-    const subdivisions = Math.max(Math.floor((size[0] + size[1]) / 50), 10);
+    const A = this.start;
+    const B = this.center;
+    const C = this.end;
 
-    let minID: number = 0;
-    let min: BezierPointDistance = {
+    let a = 0;
+    let b = 0;
+    let c = 0;
+    let d = 0;
+
+    for (let i = 0; i < 2; i++) {
+      a +=
+        4 * Math.pow(A[i], 2) -
+        16 * A[i] * B[i] +
+        8 * A[i] * C[i] +
+        16 * Math.pow(B[i], 2) -
+        16 * B[i] * C[i] +
+        4 * Math.pow(C[i], 2);
+
+      b +=
+        -12 * Math.pow(A[i], 2) +
+        36 * A[i] * B[i] -
+        12 * A[i] * C[i] -
+        24 * Math.pow(B[i], 2) +
+        12 * B[i] * C[i];
+
+      c +=
+        12 * Math.pow(A[i], 2) -
+        24 * A[i] * B[i] +
+        4 * A[i] * C[i] -
+        4 * A[i] * position[i] +
+        8 * Math.pow(B[i], 2) +
+        8 * B[i] * position[i] -
+        4 * C[i] * position[i];
+
+      d +=
+        -4 * Math.pow(A[i], 2) + 4 * A[i] * B[i] + 4 * A[i] * position[i] - 4 * B[i] * position[i];
+    }
+
+    let t: BezierPointDistance = {
       t: 0,
-      point: [0, 0],
-      distance: Infinity
+      point: A,
+      distance: vec2.sqrDist(A, position)
     };
 
-    for (let t = 0; t <= subdivisions; t++) {
-      const point = this.getPoint(t / subdivisions);
-      const distance = vec2.dist(position, point);
+    for (let i = 0; i <= iterations; i++) {
+      let x = i / iterations;
 
-      LUT.push({ t: t / subdivisions, distance, point });
+      for (let i = 0; i < 5; i++) {
+        x =
+          x -
+          (a * Math.pow(x, 3) + b * Math.pow(x, 2) + c * x + d) /
+            (3 * a * Math.pow(x, 2) + 2 * b * x + c);
+      }
 
-      if (distance < min.distance) {
-        min = LUT[t];
-        minID = t;
+      if (x < 0 || x > 1) continue;
+
+      const point = this.getQuadraticPoint({ t: x });
+      const dist = vec2.sqrDist(point, position);
+
+      if (dist < t.distance) {
+        t.t = x;
+        t.point = point;
+        t.distance = dist;
       }
     }
 
-    let start = LUT[minID];
-    let end: BezierPointDistance;
+    t.distance = Math.sqrt(t.distance);
 
-    if (minID === subdivisions) end = LUT[minID - 1];
-    else if (minID === 0) end = LUT[1];
-    else end = LUT[minID + 1].distance < LUT[minID - 1].distance ? LUT[minID + 1] : LUT[minID - 1];
+    return t;
+  }
+  private getCubicClosestTo({
+    position,
+    iterations
+  }: {
+    position: vec2;
+    iterations: number;
+  }): BezierPointDistance {
+    const A = this.start;
+    const B = this.left;
+    const C = this.right;
+    const D = this.end;
 
-    const midT = (start.t + end.t) / 2;
-    const midPoint = this.getPoint(midT);
+    let a = 0;
+    let b = 0;
+    let c = 0;
+    let d = 0;
+    let e = 0;
+    let f = 0;
 
-    let mid: BezierPointDistance = {
-      t: midT,
-      point: midPoint,
-      distance: vec2.dist(midPoint, position)
-    };
+    for (let i = 0; i < 2; i++) {
+      a +=
+        6 * Math.pow(A[i], 2) -
+        36 * A[i] * B[i] +
+        36 * A[i] * C[i] -
+        12 * A[i] * D[i] +
+        54 * Math.pow(B[i], 2) -
+        108 * B[i] * C[i] +
+        36 * B[i] * D[i] +
+        54 * Math.pow(C[i], 2) -
+        36 * C[i] * D[i] +
+        6 * Math.pow(D[i], 2);
 
-    for (let i = 0; i < iterations; i++) {
-      if (start.distance > end.distance) start = end;
+      b +=
+        -30 * Math.pow(A[i], 2) +
+        150 * A[i] * B[i] -
+        120 * A[i] * C[i] +
+        30 * A[i] * D[i] -
+        180 * Math.pow(B[i], 2) +
+        270 * B[i] * C[i] -
+        60 * B[i] * D[i] -
+        90 * Math.pow(C[i], 2) +
+        30 * C[i] * D[i];
 
-      end = mid;
+      c +=
+        60 * Math.pow(A[i], 2) -
+        240 * A[i] * B[i] +
+        144 * A[i] * C[i] -
+        24 * A[i] * D[i] +
+        216 * Math.pow(B[i], 2) -
+        216 * B[i] * C[i] +
+        24 * B[i] * D[i] +
+        36 * Math.pow(C[i], 2);
 
-      const t = (start.t * end.distance + end.t * start.distance) / (start.distance + end.distance);
-      const point = this.getPoint(t);
-      const distance = vec2.dist(point, position);
+      d +=
+        -60 * Math.pow(A[i], 2) +
+        180 * A[i] * B[i] -
+        72 * A[i] * C[i] +
+        6 * A[i] * D[i] +
+        6 * A[i] * position[i] -
+        108 * Math.pow(B[i], 2) +
+        54 * B[i] * C[i] -
+        18 * B[i] * position[i] +
+        18 * C[i] * position[i] -
+        6 * D[i] * position[i];
 
-      mid = { t, point, distance };
+      e +=
+        30 * Math.pow(A[i], 2) -
+        60 * A[i] * B[i] +
+        12 * A[i] * C[i] -
+        12 * A[i] * position[i] +
+        18 * Math.pow(B[i], 2) +
+        24 * B[i] * position[i] -
+        12 * C[i] * position[i];
+
+      f +=
+        -6 * Math.pow(A[i], 2) + 6 * A[i] * B[i] + 6 * A[i] * position[i] - 6 * B[i] * position[i];
     }
 
-    return mid;
+    let t: BezierPointDistance = {
+      t: 0,
+      point: A,
+      distance: vec2.sqrDist(A, position)
+    };
+
+    for (let i = 0; i <= iterations; i++) {
+      let x = i / iterations;
+
+      for (let i = 0; i < 5; i++) {
+        x =
+          x -
+          (a * Math.pow(x, 5) +
+            b * Math.pow(x, 4) +
+            c * Math.pow(x, 3) +
+            d * Math.pow(x, 2) +
+            e * x +
+            f) /
+            (5 * a * Math.pow(x, 4) +
+              4 * b * Math.pow(x, 3) +
+              3 * c * Math.pow(x, 2) +
+              2 * d * x +
+              e);
+      }
+
+      if (x < 0 || x > 1) continue;
+
+      const point = this.getCubicPoint({ t: x });
+      const dist = vec2.sqrDist(point, position);
+
+      if (dist < t.distance) {
+        t.t = x;
+        t.point = point;
+        t.distance = dist;
+      }
+    }
+
+    t.distance = Math.sqrt(t.distance);
+
+    return t;
   }
-  private closestTo(position: vec2, iterations = 2): vec2 {
-    return this.call(this.getLinearClosestTo, this.getBezierClosestTo, this.getBezierClosestTo, {
+  private closestTo(position: vec2, iterations = 4): vec2 {
+    return this.call(this.getLinearClosestTo, this.getQuadraticClosestTo, this.getCubicClosestTo, {
       position,
       iterations
     }).point;
   }
 
-  public distanceTo(position: vec2, iterations = 2): number {
-    return vec2.dist(position, this.closestTo(position, iterations));
+  public distanceTo(position: vec2, iterations = 8): number {
+    return this.call(this.getLinearClosestTo, this.getQuadraticClosestTo, this.getCubicClosestTo, {
+      position,
+      iterations
+    }).distance;
   }
 
   private getLinearLineIntersections({ line }: { line: Box }): number[] {
@@ -487,7 +626,7 @@ class Bezier implements Entity {
     return new Vertex({ position: this.getLinearClosestTo({ position }).point });
   }
   private quadraticSplit({ position }: { position: vec2 }): Vertex {
-    const data = this.getBezierClosestTo({ position, iterations: 2 });
+    const data = this.getQuadraticClosestTo({ position, iterations: 2 });
     const p1 = this.center;
     const q0 = vec2.lerp(this.start, p1, data.t);
     const q1 = vec2.lerp(p1, this.end, data.t);
@@ -518,7 +657,7 @@ class Bezier implements Entity {
     }
   }
   private cubicSplit({ position }: { position: vec2 }): Vertex {
-    const data = this.getBezierClosestTo({ position, iterations: 2 });
+    const data = this.getCubicClosestTo({ position, iterations: 2 });
     const q0 = vec2.lerp(this.start, this.left, data.t);
     const q1 = vec2.lerp(this.left, this.right, data.t);
     const q2 = vec2.lerp(this.right, this.end, data.t);

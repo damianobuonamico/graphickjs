@@ -194,6 +194,7 @@ export function distance(a: ReadonlyVec2, b: ReadonlyVec2): number {
     y = b[1] - a[1];
   return Math.hypot(x, y);
 }
+
 /**
  * Calculates the squared euclidian distance between two vec2's
  *
@@ -207,7 +208,7 @@ export function squaredDistance(a: ReadonlyVec2, b: ReadonlyVec2): number {
   return x * x + y * y;
 }
 
-/*
+/**
  * Performs a linear interpolation between two vec2's
  *
  * @param {ReadonlyVec2} a the first operand
@@ -219,7 +220,7 @@ export function lerp(a: ReadonlyVec2, b: ReadonlyVec2, t: number): vec2 {
   return add(a, mul(sub(b, a), t));
 }
 
-/*
+/**
  * Negates a vec2
  *
  * @param {ReadonlyVec2} a the vector
@@ -232,7 +233,7 @@ export function negate(a: ReadonlyVec2, self: boolean = false): vec2 {
   return out;
 }
 
-/*
+/**
  * Returns the unit vector of a given vec2
  *
  * @param {ReadonlyVec2} a the vector
@@ -242,6 +243,17 @@ export function unit(a: ReadonlyVec2, self: boolean = false): vec2 {
   const out = self ? a : clone(a);
   div(out, length(out), true);
   return out;
+}
+
+/**
+ * Calculates the dot product of two vec2's
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2} b the second operand
+ * @returns {Number} dot product of a and b
+ */
+export function dot(a: ReadonlyVec2, b: ReadonlyVec2): number {
+  return a[0] * b[0] + a[1] * b[1];
 }
 
 /**
