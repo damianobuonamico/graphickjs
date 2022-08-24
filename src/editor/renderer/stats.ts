@@ -23,7 +23,9 @@ class CanvasStats {
   private m_maxMemory = 0;
 
   constructor() {
-    this.m_maxMemory = round((performance as any).memory.jsHeapSizeLimit / 1048576, 2);
+    this.m_maxMemory = (performance as any).memory
+      ? round((performance as any).memory.jsHeapSizeLimit / 1048576, 2)
+      : 0;
   }
 
   public get entities() {
@@ -98,7 +100,9 @@ class CanvasStats {
     if (time > this.m_prevTime + 200) {
       this.m_renderTime = round(time - this.m_beginTime, 2);
       this.m_fps = round(1000 / this.m_renderTime, 2);
-      this.m_memory = round((performance as any).memory.usedJSHeapSize / 1048576, 2);
+      this.m_memory = (performance as any).memory
+        ? round((performance as any).memory.usedJSHeapSize / 1048576, 2)
+        : 0;
 
       this.m_max = Math.max(this.m_max, this.m_fps);
       this.m_min = Math.min(this.m_min, this.m_fps);
