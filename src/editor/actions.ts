@@ -24,6 +24,10 @@ const actions: { [key: string]: ActionBinding } = {
   all: {
     callback: () => SelectionManager.all(),
     shortcut: { key: KEYS.A, ctrl: true }
+  },
+  import: {
+    callback: () => SceneManager.import(),
+    shortcut: { key: KEYS.I, ctrl: true }
   }
 };
 

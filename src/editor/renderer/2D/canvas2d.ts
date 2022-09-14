@@ -216,6 +216,8 @@ class Canvas2D implements Canvas {
     const position = (element as Element).position;
     const transform = (element as Element).transform;
     this.m_ctx.transform(1, 0, 0, 1, position[0] + transform[12], position[1] + transform[13]);
+    // Debug
+    this.m_ctx.fillStyle = 'rgb(50, 50, 50)';
     this.draw((element as Element).getDrawable(false));
     if (Renderer.debugging && Renderer.debug.box) {
       if (

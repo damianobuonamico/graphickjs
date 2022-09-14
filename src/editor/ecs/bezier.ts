@@ -255,7 +255,7 @@ class Bezier implements Entity {
     else if (param > 1) vec = this.end;
     else vec = vec2.add(this.start, [param * c, param * d]);
 
-    return { t: 0, point: vec, distance: 0 };
+    return { t: 0, point: vec, distance: vec2.dist(position, vec) };
   }
   private getQuadraticClosestTo({
     position,

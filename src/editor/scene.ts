@@ -10,6 +10,8 @@ import HistoryManager from './history';
 import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE, ZOOM_MAX, ZOOM_MIN } from '@utils/constants';
 import SelectionManager from './selection';
 import InputManager from './input';
+import { fileDialog } from '@/utils/file';
+import { parseSVGPath } from '@/utils/svg';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -124,7 +126,7 @@ abstract class SceneManager {
         if (entity) this.m_ecs.add(entity);
       });
     } else {
-      const artboard = new Artboard({ size: [600, 400] });
+      const artboard = new Artboard({ size: [1920, 1080] });
       this.m_layer = new Layer({});
       const element = new Element({
         position: [100, 100],
@@ -227,6 +229,125 @@ abstract class SceneManager {
 
     this.m_ecs.forEach((entity) => {
       forEachECS(entity);
+    });
+  }
+
+  public static import() {
+    function importPath(node: SVGPathElement) {
+      const path = node.getAttribute('d');
+
+      if (!path) return;
+
+      const element = new Element({ position: vec2.create() });
+      const length = path.length;
+      const indices = [];
+
+      let i = 0;
+
+      for (let i = 0; i < length; i++) {
+        if (/[a-zA-Z]/.test(path[i])) indices.push(i);
+      }
+
+      let last: Vertex | null = null;
+
+      for (let i = 0; i < indices.length; i++) {
+        const data = path.slice(indices[i] + 1, indices[i + 1] ?? path.length).split(',');
+
+        switch (path[indices[i]]) {
+          case 'M':
+          case 'm':
+            element.position = vec2.fromValues(parseFloat(data[0]), parseFloat(data[1]));
+            break;
+          case 'L':
+          case 'l':
+            last = new Vertex({
+              position: vec2.fromValues(parseFloat(data[0]), parseFloat(data[1]))
+            });
+            element.pushVertex(last);
+            break;
+          case 'C':
+          case 'c':
+            if (last) last.setRight(vec2.fromValues(parseFloat(data[0]), parseFloat(data[1])));
+            last = new Vertex({
+              position: vec2.fromValues(parseFloat(data[4]), parseFloat(data[5])),
+              left: vec2.fromValues(parseFloat(data[2]), parseFloat(data[3]))
+            });
+            element.pushVertex(last);
+            break;
+          case 'Z':
+          case 'z':
+            element.close();
+            break;
+        }
+      }
+
+      SceneManager.add(element);
+    }
+
+    function importNode(node: Node) {
+      const type = node.nodeName.toLowerCase();
+
+      switch (type) {
+        case '#text':
+        case 'g':
+          break;
+        case 'path': {
+          const path = (node as SVGPathElement).getAttribute('d');
+
+          if (!path) break;
+
+          const indices = [];
+
+          for (let i = 0; i < path.length; i++) {
+            if (path[i] === 'z' || path[i] === 'Z') {
+              indices.push(i);
+            }
+          }
+
+          if (indices.length) {
+            for (let i = 0; i < indices.length; i++) {
+              const element = parseSVGPath(path.substring(indices[i - 1] || 0, indices[i] + 1));
+
+              SceneManager.add(element);
+              SelectionManager.select(element);
+            }
+          } else {
+            const element = parseSVGPath(path);
+
+            SceneManager.add(element);
+            SelectionManager.select(element);
+          }
+
+          break;
+        }
+      }
+
+      node.childNodes.forEach((child) => {
+        importNode(child);
+      });
+    }
+
+    fileDialog({ accept: ['.svg'] }).then((value) => {
+      const file = (value as FileList)[0];
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        if (!reader.result) return;
+
+        const parser = new DOMParser();
+        const svg = parser
+          .parseFromString((reader.result as string).trim(), 'image/svg+xml')
+          .getElementsByTagName('svg')[0];
+
+        HistoryManager.beginSequence();
+        SelectionManager.clear();
+        importNode(svg);
+        this.render();
+        HistoryManager.endSequence();
+      };
+
+      reader.readAsText(file);
     });
   }
 }

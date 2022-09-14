@@ -97,6 +97,10 @@ class Element implements Entity {
     return this.m_order.length;
   }
 
+  public get lastVertex() {
+    return this.m_vertices.get(this.m_order[this.m_order.length - 1])!;
+  }
+
   public get transform() {
     return this.m_transform.mat4;
   }
@@ -301,17 +305,28 @@ class Element implements Entity {
     return false;
   }
 
-  public close() {
-    HistoryManager.record({
-      fn: () => {
-        this.m_closed = true;
-        this.generateCurves();
-      },
-      undo: () => {
-        this.m_closed = false;
-        this.generateCurves();
-      }
-    });
+  public close(mergeThreshold: number = 1e-4) {
+    if (this.vertexCount < 3) return;
+
+    const first = this.m_vertices.get(this.m_order[0])!;
+    const last = this.m_vertices.get(this.m_order[this.m_order.length - 1])!;
+
+    if (vec2.sqrDist(first.position, last.position) < Math.pow(mergeThreshold, 2)) {
+      if (last.left) first.setLeft(last.left.position);
+      this.delete(last, true);
+    }
+
+    if (this.m_order[0])
+      HistoryManager.record({
+        fn: () => {
+          this.m_closed = true;
+          this.generateCurves();
+        },
+        undo: () => {
+          this.m_closed = false;
+          this.generateCurves();
+        }
+      });
   }
 
   private push(vertex: Vertex, generateCurves = true, index: number = this.m_order.length) {
@@ -495,6 +510,7 @@ class Element implements Entity {
 
         if (this.m_closed) drawable.operations.push({ type: 'close' });
 
+        drawable.operations.push({ type: 'fill' });
         drawable.operations.push({ type: 'stroke' });
 
         return drawable;
@@ -503,7 +519,7 @@ class Element implements Entity {
   }
 
   public getOutlineDrawable(useWebGL = false): Drawable {
-    return this.getDrawable(useWebGL);
+    return { operations: this.getDrawable(useWebGL).operations.filter((op) => op.type !== 'fill') };
   }
 
   public toJSON(duplicate = false) {

@@ -257,6 +257,17 @@ export function dot(a: ReadonlyVec2, b: ReadonlyVec2): number {
 }
 
 /**
+ * Calculates the angle between two vec2's
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2} b the second operand
+ * @returns {Number} angle between a and b
+ */
+export function angle(a: ReadonlyVec2, b: ReadonlyVec2): number {
+  return Math.sign(a[0] * b[1] - a[1] * b[0]) * Math.acos(dot(a, b) / (len(a) * len(b)));
+}
+
+/**
  * Alias for {@link vec2.subtract}
  * @function
  */
