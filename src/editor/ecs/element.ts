@@ -9,6 +9,8 @@ import Bezier from './bezier';
 import Transform from './components/transform';
 import Layer from './layer';
 import Vertex from './vertex';
+import Fill from './components/fill';
+import Stroke from './components/stroke';
 
 class Element implements Entity {
   public readonly id: string;
@@ -23,16 +25,45 @@ class Element implements Entity {
   private m_closed: boolean;
   private m_position: vec2;
   private m_transform: Transform;
+  private m_stroke: string | null = null;
+  private m_fill: string | null = null;
 
   private m_cache: Cache = new Cache();
   private cached = this.m_cache.cached.bind(this.m_cache);
 
-  constructor({ id = nanoid(), position, vertices, closed = false }: ElementOptions) {
+  constructor({ id = nanoid(), position, vertices, closed = false, stroke, fill }: ElementOptions) {
     this.id = id;
     this.m_closed = closed;
     this.m_position = position;
     this.m_transform = new Transform();
+
     if (vertices) this.vertices = vertices as any as Vertex[];
+
+    if (stroke) {
+      if (SceneManager.assets.has(stroke, 'stroke')) {
+        const s = SceneManager.assets.get(stroke, 'stroke');
+        s!.addParent(this);
+        this.m_stroke = stroke;
+      } else {
+        const s = new Stroke({});
+        SceneManager.assets.set(s);
+        s.addParent(this);
+        this.m_stroke = s.id;
+      }
+    }
+
+    if (fill) {
+      if (SceneManager.assets.has(fill, 'fill')) {
+        const f = SceneManager.assets.get(fill, 'fill')!;
+        f.addParent(this);
+        this.m_fill = fill;
+      } else {
+        const f = new Fill({});
+        SceneManager.assets.set(f);
+        f.addParent(this);
+        this.m_fill = f.id;
+      }
+    }
   }
 
   public get visible() {
@@ -486,6 +517,22 @@ class Element implements Entity {
     }
   }
 
+  public deleteSelf() {
+    const stroke = this.m_stroke ? SceneManager.assets.get(this.m_stroke, 'stroke') : null;
+    const fill = this.m_fill ? SceneManager.assets.get(this.m_fill, 'fill') : null;
+
+    HistoryManager.record({
+      fn: () => {
+        if (stroke) stroke.deleteParent(this);
+        if (fill) fill.deleteParent(this);
+      },
+      undo: () => {
+        if (stroke) stroke.addParent(this);
+        if (fill) fill.addParent(this);
+      }
+    });
+  }
+
   public render() {
     Renderer.element(this);
   }
@@ -510,8 +557,23 @@ class Element implements Entity {
 
         if (this.m_closed) drawable.operations.push({ type: 'close' });
 
-        drawable.operations.push({ type: 'fill' });
-        drawable.operations.push({ type: 'stroke' });
+        if (this.m_fill) {
+          drawable.operations.push({
+            type: 'fillcolor',
+            data: SceneManager.assets.get(this.m_fill, 'fill').color
+          });
+
+          drawable.operations.push({ type: 'fill' });
+        }
+
+        if (this.m_stroke) {
+          drawable.operations.push({
+            type: 'strokecolor',
+            data: SceneManager.assets.get(this.m_stroke, 'stroke').color
+          });
+
+          drawable.operations.push({ type: 'stroke' });
+        }
 
         return drawable;
       }
@@ -519,17 +581,35 @@ class Element implements Entity {
   }
 
   public getOutlineDrawable(useWebGL = false): Drawable {
-    return { operations: this.getDrawable(useWebGL).operations.filter((op) => op.type !== 'fill') };
+    const ops = this.getDrawable(useWebGL).operations.filter(
+      (op) =>
+        op.type !== 'fill' &&
+        op.type !== 'stroke' &&
+        op.type !== 'strokecolor' &&
+        op.type !== 'fillcolor'
+    );
+
+    ops.push({ type: 'stroke' });
+
+    return {
+      operations: ops
+    };
   }
 
   public toJSON(duplicate = false) {
-    return {
+    const obj: ElementObject = {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
-      closed: this.m_closed,
       position: vec2.clone(this.m_position),
       vertices: this.m_order.map((id) => this.m_vertices.get(id)!.toJSON(duplicate))
     };
+
+    if (this.m_closed) obj.closed = true;
+
+    if (this.m_stroke) obj.stroke = this.m_stroke;
+    if (this.m_fill) obj.fill = this.m_fill;
+
+    return obj;
   }
 }
 

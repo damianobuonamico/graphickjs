@@ -348,6 +348,11 @@
   dependencies:
     classnames "*"
 
+"@types/colornames@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@types/colornames/-/colornames-1.1.2.tgz#8c5ae67ce6dc45c76b4cabcd2887b31d783651e1"
+  integrity sha512-tq8AZME3IzZDtW/xpgk6EjqMCtIy5c8/YthsRDSkfj10O8y7QNpD5A22GQf5ziB4OaX7u1jtWu5werbjAKFleQ==
+
 "@types/node@^18.0.6":
   version "18.0.6"
   resolved "https://registry.npmjs.org/@types/node/-/node-18.0.6.tgz"
@@ -498,6 +503,11 @@ color-name@^1.1.4:
   version "1.1.4"
   resolved "https://registry.npmjs.org/color-name/-/color-name-1.1.4.tgz"
   integrity sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==
+
+colornames@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/colornames/-/colornames-1.1.1.tgz#f8889030685c7c4ff9e2a559f5077eb76a816f96"
+  integrity sha512-/pyV40IrsdulWv+wFPmERh9k/mjsPZ64yUMDmWrtj/k1nmgrzzIENWKdaVKyBbvFdQWqkcaRxr+polCo3VMe7A==
 
 convert-source-map@^1.7.0:
   version "1.8.0"

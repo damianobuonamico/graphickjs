@@ -122,8 +122,8 @@ function arcToBeziers(angleStart: number, angleExtent: number) {
   return beziers;
 }
 
-export function parseSVGPath(path: string, offset?: vec2) {
-  const pather = new SVGPather(new Element({ position: vec2.create() }));
+export function parseSVGPath(path: string, stroke?: string, fill?: string, offset?: vec2) {
+  const pather = new SVGPather(new Element({ position: vec2.create(), stroke, fill }));
 
   // Normalize the path
   path = path
@@ -426,6 +426,8 @@ export function parseSVGPath(path: string, offset?: vec2) {
               vec2.add(beziers[i][t], center, true);
             }
           }
+
+          if (!beziers.length) break;
 
           // Replace last bezier's point with end point to avoid errors
           beziers[beziers.length - 1][2] = position;

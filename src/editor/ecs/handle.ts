@@ -79,7 +79,7 @@ class Handle implements Entity {
   }
 
   public translateTo(position: vec2, lockMirror = false) {
-  this.m_transform.translate(vec2.sub(position, this.position));
+    this.m_transform.translate(vec2.sub(position, this.position));
 
     if (!lockMirror && this.m_type === 'bezier' && !InputManager.keys.alt)
       this.parent.mirrorTranslation(this.id);
@@ -125,6 +125,8 @@ class Handle implements Entity {
   public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
 
   public delete() {}
+
+  public deleteSelf() {}
 
   public render() {}
 

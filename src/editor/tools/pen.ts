@@ -1,4 +1,5 @@
 import { vec2 } from '@math';
+import { nanoid } from 'nanoid';
 import Bezier from '../ecs/bezier';
 import Element from '../ecs/element';
 import Handle from '../ecs/handle';
@@ -166,7 +167,9 @@ const onPenPointerDown = () => {
 
       if (!pen.element) {
         pen.element = new Element({
-          position: InputManager.scene.position
+          position: InputManager.scene.position,
+          stroke: nanoid(),
+          fill: nanoid()
         });
 
         SceneManager.add(pen.element);

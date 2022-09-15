@@ -16,6 +16,7 @@ interface Entity {
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean): void;
 
   delete(entity: Entity): void;
+  deleteSelf(): void;
 
   render(): void;
 
@@ -52,11 +53,16 @@ interface ElementOptions {
   position: vec2;
   vertices?: VertexEntity[];
   closed?: boolean;
+  stroke?: string;
+  fill?: string;
 }
 
 interface ElementObject extends GenericEntityObject {
   position: vec2;
   vertices: VertexObject[];
+  closed?: boolean;
+  stroke?: string;
+  fill?: string;
 }
 
 interface VertexEntity extends Entity {}

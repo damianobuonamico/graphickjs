@@ -7,11 +7,20 @@ import Layer from './ecs/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/vertex';
 import HistoryManager from './history';
-import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE, ZOOM_MAX, ZOOM_MIN } from '@utils/constants';
+import {
+  LOCAL_STORAGE_KEY,
+  LOCAL_STORAGE_KEY_ASSETS,
+  LOCAL_STORAGE_KEY_STATE,
+  ZOOM_MAX,
+  ZOOM_MIN
+} from '@utils/constants';
 import SelectionManager from './selection';
 import InputManager from './input';
 import { fileDialog } from '@/utils/file';
 import { parseSVGPath } from '@/utils/svg';
+import Stroke from './ecs/components/stroke';
+import Fill from './ecs/components/fill';
+import AssetsManager from './ecs/assets';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -20,6 +29,8 @@ abstract class SceneManager {
   private static m_layer: Layer;
 
   public static viewport: ViewportState;
+
+  public static assets: AssetsManager = new AssetsManager();
 
   public static init() {
     this.load();
@@ -64,6 +75,7 @@ abstract class SceneManager {
       } else {
         SelectionManager.deselect(entity.id);
         entity.parent.delete(entity);
+        entity.deleteSelf();
       }
     });
   }
@@ -105,11 +117,13 @@ abstract class SceneManager {
         stringifyReplacer
       )
     );
+    localStorage.setItem(LOCAL_STORAGE_KEY_ASSETS, JSON.stringify(this.assets, stringifyReplacer));
   }
 
   public static load() {
     const state = localStorage.getItem(LOCAL_STORAGE_KEY_STATE);
     const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const assets = localStorage.getItem(LOCAL_STORAGE_KEY_ASSETS);
 
     this.m_ecs = new ECS();
 
@@ -118,6 +132,10 @@ abstract class SceneManager {
       zoom: 1,
       rotation: 0
     });
+
+    if (assets) {
+      this.assets.load(JSON.parse(assets) as AssetsObject);
+    }
 
     if (data) {
       const parsed = JSON.parse(data) as EntityObject[];
@@ -169,6 +187,7 @@ abstract class SceneManager {
           const vertex = this.fromObject(obj);
           if (vertex) vertices.push(vertex as Vertex);
         });
+
         return new Element({ ...{ ...(object as ElementObject), vertices } });
       case 'vertex':
         return new Vertex({ ...(object as VertexObject) });
@@ -233,68 +252,47 @@ abstract class SceneManager {
   }
 
   public static import() {
-    function importPath(node: SVGPathElement) {
-      const path = node.getAttribute('d');
-
-      if (!path) return;
-
-      const element = new Element({ position: vec2.create() });
-      const length = path.length;
-      const indices = [];
-
-      let i = 0;
-
-      for (let i = 0; i < length; i++) {
-        if (/[a-zA-Z]/.test(path[i])) indices.push(i);
-      }
-
-      let last: Vertex | null = null;
-
-      for (let i = 0; i < indices.length; i++) {
-        const data = path.slice(indices[i] + 1, indices[i + 1] ?? path.length).split(',');
-
-        switch (path[indices[i]]) {
-          case 'M':
-          case 'm':
-            element.position = vec2.fromValues(parseFloat(data[0]), parseFloat(data[1]));
-            break;
-          case 'L':
-          case 'l':
-            last = new Vertex({
-              position: vec2.fromValues(parseFloat(data[0]), parseFloat(data[1]))
-            });
-            element.pushVertex(last);
-            break;
-          case 'C':
-          case 'c':
-            if (last) last.setRight(vec2.fromValues(parseFloat(data[0]), parseFloat(data[1])));
-            last = new Vertex({
-              position: vec2.fromValues(parseFloat(data[4]), parseFloat(data[5])),
-              left: vec2.fromValues(parseFloat(data[2]), parseFloat(data[3]))
-            });
-            element.pushVertex(last);
-            break;
-          case 'Z':
-          case 'z':
-            element.close();
-            break;
-        }
-      }
-
-      SceneManager.add(element);
-    }
+    let stroke: Stroke | null;
+    let fill: Fill | null;
 
     function importNode(node: Node) {
       const type = node.nodeName.toLowerCase();
 
       switch (type) {
         case '#text':
+          break;
         case 'g':
+          const s = (node as SVGGElement).getAttribute('stroke');
+          const f = (node as SVGGElement).getAttribute('fill');
+
+          if (s) {
+            stroke = new Stroke({ color: s });
+            SceneManager.assets.set(stroke);
+          } else stroke = null;
+
+          if (f) {
+            fill = new Fill({ color: f });
+            SceneManager.assets.set(fill);
+          } else fill = null;
+
           break;
         case 'path': {
           const path = (node as SVGPathElement).getAttribute('d');
 
           if (!path) break;
+
+          const s = (node as SVGGElement).getAttribute('stroke');
+          const f = (node as SVGGElement).getAttribute('fill');
+
+          if (s) {
+            stroke = new Stroke({ color: s });
+            SceneManager.assets.set(stroke);
+          }
+
+          if (f) {
+            fill = new Fill({ color: f });
+            SceneManager.assets.set(fill);
+          }
 
           const indices = [];
 
@@ -306,13 +304,17 @@ abstract class SceneManager {
 
           if (indices.length) {
             for (let i = 0; i < indices.length; i++) {
-              const element = parseSVGPath(path.substring(indices[i - 1] || 0, indices[i] + 1));
+              const element = parseSVGPath(
+                path.substring(indices[i - 1] || 0, indices[i] + 1),
+                stroke?.id,
+                fill?.id
+              );
 
               SceneManager.add(element);
               SelectionManager.select(element);
             }
           } else {
-            const element = parseSVGPath(path);
+            const element = parseSVGPath(path, stroke?.id, fill?.id);
 
             SceneManager.add(element);
             SelectionManager.select(element);

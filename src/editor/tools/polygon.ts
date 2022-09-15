@@ -5,12 +5,19 @@ import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
 import HistoryManager from '../history';
+import { nanoid } from 'nanoid';
 
 const onPolygonPointerDown = (tool: Tool) => {
   let size = vec2.create();
 
   let vertices = createVertices(tool, size);
-  const element = new Element({ position: InputManager.scene.position, vertices, closed: true });
+  const element = new Element({
+    position: InputManager.scene.position,
+    vertices,
+    closed: true,
+    stroke: nanoid(),
+    fill: nanoid()
+  });
   SceneManager.add(element);
 
   function onKey(e: KeyboardEvent) {

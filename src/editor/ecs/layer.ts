@@ -40,6 +40,8 @@ class Layer extends ECS implements Entity {
     this.remove(entity.id);
   }
 
+  public deleteSelf() {}
+
   public toJSON(duplicate = false) {
     return {
       id: duplicate ? nanoid() : this.id,

@@ -10,6 +10,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/classnames": "^2.3.1",
+    "@types/colornames": "^1.1.2",
     "@types/node": "^18.0.6",
     "autoprefixer": "^10.4.7",
     "postcss": "^8.4.14",
@@ -20,6 +21,7 @@
     "vite-plugin-string": "^1.1.2"
   },
   "dependencies": {
+    "colornames": "^1.1.1",
     "nanoid": "^4.0.0",
     "solid-js": "^1.4.7"
   },

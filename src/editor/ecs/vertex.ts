@@ -188,6 +188,8 @@ class Vertex implements VertexEntity {
 
   public delete() {}
 
+  public deleteSelf() {}
+
   public render(selected?: boolean) {
     Renderer.draw(this.getDrawable(!!selected));
   }

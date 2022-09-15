@@ -692,6 +692,8 @@ class Bezier implements Entity {
 
   public delete() {}
 
+  public deleteSelf() {}
+
   public render() {}
 
   private getLinearDrawOp() {

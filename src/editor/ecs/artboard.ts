@@ -49,6 +49,8 @@ class Artboard extends ECS implements Entity {
   public delete(entity: Entity) {
     this.remove(entity.id);
   }
+  
+  public deleteSelf() {}
 
   public render() {
     Renderer.rect({ pos: [0, 0], size: this.m_size, color: [1.0, 1.0, 1.0, 1.0] });
