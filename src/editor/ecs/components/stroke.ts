@@ -3,7 +3,7 @@ import Color from '@utils/color';
 import { nanoid } from 'nanoid';
 import Element from '../element';
 
-class Stroke {
+class Stroke implements Stroke {
   public readonly id: string;
 
   public style: 'solid' | number[] | null = 'solid';
@@ -11,8 +11,8 @@ class Stroke {
   public cap: CanvasLineCap = 'butt';
   public corner: CanvasLineJoin = 'miter';
   public miterLimit: number = 10;
+  public color: Color;
 
-  private m_color: Color;
   private m_parents: Set<Element> = new Set();
 
   constructor({
@@ -30,11 +30,7 @@ class Stroke {
     this.cap = cap;
     this.corner = corner;
     this.miterLimit = miterLimit;
-    this.m_color = new Color(color);
-  }
-
-  public get color() {
-    return this.m_color.vec4;
+    this.color = new Color(color);
   }
 
   public addParent(parent: Element) {
@@ -52,7 +48,7 @@ class Stroke {
   public toJSON(duplicate = false) {
     const obj: StrokeOptions = {
       id: duplicate ? nanoid() : this.id,
-      color: this.color
+      color: this.color.vec4
     };
 
     if (this.style !== 'solid') obj.style = this.style;

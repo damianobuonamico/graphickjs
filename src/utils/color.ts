@@ -1,4 +1,4 @@
-import { vec4 } from '@math';
+import { vec2, vec4 } from '@math';
 import colorNames from 'colornames';
 
 class Color {
@@ -43,6 +43,11 @@ class Color {
 
   public get vec4() {
     return vec4.clone(this.m_value);
+  }
+
+  public equals(color: vec4 | string | Color) {
+    if (color instanceof Color) return vec4.equals(this.m_value, color.m_value);
+    return vec4.equals(this.m_value, new Color(color).m_value);
   }
 }
 

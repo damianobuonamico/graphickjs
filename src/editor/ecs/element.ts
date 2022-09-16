@@ -40,28 +40,40 @@ class Element implements Entity {
     if (vertices) this.vertices = vertices as any as Vertex[];
 
     if (stroke) {
-      if (SceneManager.assets.has(stroke, 'stroke')) {
-        const s = SceneManager.assets.get(stroke, 'stroke');
-        s!.addParent(this);
-        this.m_stroke = stroke;
+      if (typeof stroke === 'string') {
+        if (SceneManager.assets.has(stroke, 'stroke')) {
+          const s = SceneManager.assets.get(stroke, 'stroke');
+          s!.addParent(this);
+          this.m_stroke = stroke;
+        } else {
+          const s = new Stroke({});
+          SceneManager.assets.set(s);
+          s.addParent(this);
+          this.m_stroke = s.id;
+        }
       } else {
-        const s = new Stroke({});
-        SceneManager.assets.set(s);
-        s.addParent(this);
-        this.m_stroke = s.id;
+        this.m_stroke = stroke.id;
+        (stroke as any).addParent(this);
+        if (!SceneManager.assets.has(stroke.id, 'stroke')) SceneManager.assets.set(stroke as any);
       }
     }
 
     if (fill) {
-      if (SceneManager.assets.has(fill, 'fill')) {
-        const f = SceneManager.assets.get(fill, 'fill')!;
-        f.addParent(this);
-        this.m_fill = fill;
+      if (typeof fill === 'string') {
+        if (SceneManager.assets.has(fill, 'fill')) {
+          const f = SceneManager.assets.get(fill, 'fill')!;
+          f.addParent(this);
+          this.m_fill = fill;
+        } else {
+          const f = new Fill({});
+          SceneManager.assets.set(f);
+          f.addParent(this);
+          this.m_fill = f.id;
+        }
       } else {
-        const f = new Fill({});
-        SceneManager.assets.set(f);
-        f.addParent(this);
-        this.m_fill = f.id;
+        this.m_fill = fill.id;
+        (fill as any).addParent(this);
+        if (!SceneManager.assets.has(fill.id, 'stroke')) SceneManager.assets.set(fill as any);
       }
     }
   }
@@ -337,7 +349,12 @@ class Element implements Entity {
   }
 
   public close(mergeThreshold: number = 1e-4) {
-    if (this.vertexCount < 3) return;
+    // Check if there are at least 2 vertices
+    if (this.vertexCount < 2) return;
+
+    // Check if the element is a line segment
+    if (this.m_curves.size === 1 && this.m_curves.values().next().value.bezierType === 'linear')
+      return;
 
     const first = this.m_vertices.get(this.m_order[0])!;
     const last = this.m_vertices.get(this.m_order[this.m_order.length - 1])!;
@@ -560,7 +577,7 @@ class Element implements Entity {
         if (this.m_fill) {
           drawable.operations.push({
             type: 'fillcolor',
-            data: SceneManager.assets.get(this.m_fill, 'fill').color
+            data: SceneManager.assets.get(this.m_fill, 'fill').color.vec4
           });
 
           drawable.operations.push({ type: 'fill' });
@@ -569,7 +586,7 @@ class Element implements Entity {
         if (this.m_stroke) {
           drawable.operations.push({
             type: 'strokecolor',
-            data: SceneManager.assets.get(this.m_stroke, 'stroke').color
+            data: SceneManager.assets.get(this.m_stroke, 'stroke').color.vec4
           });
 
           drawable.operations.push({ type: 'stroke' });

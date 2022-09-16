@@ -53,8 +53,8 @@ interface ElementOptions {
   position: vec2;
   vertices?: VertexEntity[];
   closed?: boolean;
-  stroke?: string;
-  fill?: string;
+  stroke?: string | Stroke;
+  fill?: string | Fill;
 }
 
 interface ElementObject extends GenericEntityObject {

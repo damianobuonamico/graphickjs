@@ -71,6 +71,10 @@ class Bezier implements Entity {
     });
   }
 
+  public get bezierType() {
+    return this.m_type;
+  }
+
   get extrema() {
     return this.cached<vec2[]>('extrema', () => {
       const roots = this.getRoots();

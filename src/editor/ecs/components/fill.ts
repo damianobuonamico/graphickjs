@@ -3,22 +3,18 @@ import Color from '@utils/color';
 import { nanoid } from 'nanoid';
 import Element from '../element';
 
-class Fill {
+class Fill implements Fill {
   public readonly id: string;
 
   public style: 'solid';
+  public color: Color;
 
-  private m_color: Color;
   private m_parents: Set<Element> = new Set();
 
   constructor({ id = nanoid(), style = 'solid', color = [1, 1, 1, 1] }: FillOptions) {
     this.id = id;
     this.style = style;
-    this.m_color = new Color(color);
-  }
-
-  public get color() {
-    return this.m_color.vec4;
+    this.color = new Color(color);
   }
 
   public addParent(parent: Element) {
@@ -36,7 +32,7 @@ class Fill {
   public toJSON(duplicate = false) {
     const obj: FillOptions = {
       id: duplicate ? nanoid() : this.id,
-      color: this.color
+      color: this.color.vec4
     };
 
     if (this.style !== 'solid') obj.style = this.style;

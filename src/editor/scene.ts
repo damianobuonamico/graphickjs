@@ -17,10 +17,13 @@ import {
 import SelectionManager from './selection';
 import InputManager from './input';
 import { fileDialog } from '@/utils/file';
-import { parseSVGPath } from '@/utils/svg';
 import Stroke from './ecs/components/stroke';
 import Fill from './ecs/components/fill';
 import AssetsManager from './ecs/assets';
+import { parseSVG } from '@/utils/svg';
+
+// DEV
+import tigerSvg from '@utils/svg/demo';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -161,6 +164,9 @@ abstract class SceneManager {
 
       this.m_ecs.add(artboard);
     }
+
+    // DEV
+    parseSVG(tigerSvg);
   }
 
   public static fromObject(object: EntityObject) {
@@ -252,105 +258,131 @@ abstract class SceneManager {
   }
 
   public static import() {
-    let stroke: Stroke | null;
-    let fill: Fill | null;
+    fileDialog({ accept: ['.svg'], multiple: true }).then((files) => {
+      if (!files.length) return;
 
-    function importNode(node: Node) {
-      const type = node.nodeName.toLowerCase();
-
-      switch (type) {
-        case '#text':
-          break;
-        case 'g':
-          const s = (node as SVGGElement).getAttribute('stroke');
-          const f = (node as SVGGElement).getAttribute('fill');
-
-          if (s) {
-            stroke = new Stroke({ color: s });
-            SceneManager.assets.set(stroke);
-          } else stroke = null;
-
-          if (f) {
-            fill = new Fill({ color: f });
-            SceneManager.assets.set(fill);
-          } else fill = null;
-
-          break;
-        case 'path': {
-          const path = (node as SVGPathElement).getAttribute('d');
-
-          if (!path) break;
-
-          const s = (node as SVGGElement).getAttribute('stroke');
-          const f = (node as SVGGElement).getAttribute('fill');
-
-          if (s) {
-            stroke = new Stroke({ color: s });
-            SceneManager.assets.set(stroke);
-          }
-
-          if (f) {
-            fill = new Fill({ color: f });
-            SceneManager.assets.set(fill);
-          }
-
-          const indices = [];
-
-          for (let i = 0; i < path.length; i++) {
-            if (path[i] === 'z' || path[i] === 'Z') {
-              indices.push(i);
-            }
-          }
-
-          if (indices.length) {
-            for (let i = 0; i < indices.length; i++) {
-              const element = parseSVGPath(
-                path.substring(indices[i - 1] || 0, indices[i] + 1),
-                stroke?.id,
-                fill?.id
-              );
-
-              SceneManager.add(element);
-              SelectionManager.select(element);
-            }
-          } else {
-            const element = parseSVGPath(path, stroke?.id, fill?.id);
-
-            SceneManager.add(element);
-            SelectionManager.select(element);
-          }
-
-          break;
-        }
-      }
-
-      node.childNodes.forEach((child) => {
-        importNode(child);
-      });
-    }
-
-    fileDialog({ accept: ['.svg'] }).then((value) => {
-      const file = (value as FileList)[0];
-
+      // Setup file reader and use it for each file
       const reader = new FileReader();
 
       reader.onload = () => {
-        if (!reader.result) return;
+        if (!reader.result || typeof reader.result !== 'string') return;
 
-        const parser = new DOMParser();
-        const svg = parser
-          .parseFromString((reader.result as string).trim(), 'image/svg+xml')
-          .getElementsByTagName('svg')[0];
-
-        HistoryManager.beginSequence();
-        SelectionManager.clear();
-        importNode(svg);
-        this.render();
-        HistoryManager.endSequence();
+        parseSVG(reader.result);
       };
 
-      reader.readAsText(file);
+      HistoryManager.beginSequence();
+      SelectionManager.clear();
+
+      Array.from(files).forEach((file) => {
+        reader.readAsText(file);
+      });
+
+      HistoryManager.endSequence();
+      this.render();
     });
+    // let stroke: Stroke | null;
+    // let fill: Fill | null;
+
+    // function importNode(node: Node) {
+    //   const type = node.nodeName.toLowerCase();
+
+    //   switch (type) {
+    //     case '#text':
+    //       break;
+    //     case 'g':
+    //       const s = (node as SVGGElement).getAttribute('stroke');
+    //       const sw = (node as SVGGElement).getAttribute('stroke-width');
+    //       const f = (node as SVGGElement).getAttribute('fill');
+
+    //       if (s) {
+    //         stroke = new Stroke({ color: s });
+    //         if (sw) {
+    //           stroke.width = parseFloat(sw);
+    //         }
+    //         SceneManager.assets.set(stroke);
+    //       } else stroke = null;
+
+    //       if (f) {
+    //         fill = new Fill({ color: f });
+    //         SceneManager.assets.set(fill);
+    //       } else fill = null;
+
+    //       break;
+    //     case 'path': {
+    //       const path = (node as SVGPathElement).getAttribute('d');
+
+    //       if (!path) break;
+
+    //       const s = (node as SVGGElement).getAttribute('stroke');
+    //       const f = (node as SVGGElement).getAttribute('fill');
+
+    //       if (s) {
+    //         stroke = new Stroke({ color: s });
+    //         SceneManager.assets.set(stroke);
+    //       }
+
+    //       if (f) {
+    //         fill = new Fill({ color: f });
+    //         SceneManager.assets.set(fill);
+    //       }
+
+    //       const indices = [];
+
+    //       for (let i = 0; i < path.length; i++) {
+    //         if (path[i] === 'z' || path[i] === 'Z') {
+    //           indices.push(i);
+    //         }
+    //       }
+
+    //       if (indices.length) {
+    //         for (let i = 0; i < indices.length; i++) {
+    //           const element = parseSVGPath(
+    //             path.substring(indices[i - 1] || 0, indices[i] + 1),
+    //             stroke?.id,
+    //             fill?.id
+    //           );
+
+    //           SceneManager.add(element);
+    //           SelectionManager.select(element);
+    //         }
+    //       } else {
+    //         const element = parseSVGPath(path, stroke?.id, fill?.id);
+
+    //         SceneManager.add(element);
+    //         SelectionManager.select(element);
+    //       }
+
+    //       break;
+    //     }
+    //   }
+
+    //   node.childNodes.forEach((child) => {
+    //     importNode(child);
+    //   });
+    // }
+
+    // fileDialog({ accept: ['.svg'] }).then((value) => {
+    //   const file = (value as FileList)[0];
+
+    //   const reader = new FileReader();
+
+    //   reader.onload = () => {
+    //     if (!reader.result) return;
+
+    //     const parser = new DOMParser();
+    //     const svg = parser
+    //       .parseFromString((reader.result as string).trim(), 'image/svg+xml')
+    //       .getElementsByTagName('svg')[0];
+
+    //     HistoryManager.beginSequence();
+    //     SelectionManager.clear();
+    //     importNode(svg);
+    //     this.render();
+    //     HistoryManager.endSequence();
+    //   };
+
+    //   reader.readAsText(file);
+    // });
   }
 }
 

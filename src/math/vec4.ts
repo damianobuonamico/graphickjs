@@ -39,3 +39,14 @@ export function fromValues(x: number, y: number, z: number, w: number): vec4 {
   out[3] = w;
   return out;
 }
+
+/**
+ * Checks if two vectors are equal
+ *
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {boolean} out
+ */
+export function equals(a: ReadonlyVec4, b: ReadonlyVec4): boolean {
+  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
+}

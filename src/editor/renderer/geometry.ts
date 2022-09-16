@@ -59,3 +59,38 @@ function createEllipseVertices(size: vec2, centered: boolean): Vertex[] {
     })
   ];
 }
+
+export function arcToBeziers(angleStart: number, angleExtent: number) {
+  const numSegments = Math.floor((Math.abs(angleExtent) * 2.0) / Math.PI); // (angleExtent / 90deg)
+
+  const angleIncrement = angleExtent / numSegments;
+
+  // The length of each control point vector is given by the following formula.
+  const controlLength =
+    ((4.0 / 3.0) * Math.sin(angleIncrement / 2.0)) / (1.0 + Math.cos(angleIncrement / 2.0));
+
+  const beziers: [vec2, vec2, vec2][] = [];
+
+  for (let i = 0; i < numSegments; i++) {
+    let angle = angleStart + i * angleIncrement;
+
+    // Calculate the control vector at this angle
+    let d = [Math.cos(angle), Math.sin(angle)];
+
+    // First control point
+    const bezier = [[d[0] - controlLength * d[1], d[1] + controlLength * d[0]]];
+
+    // Second control point;
+    angle += angleIncrement;
+    d = [Math.cos(angle), Math.sin(angle)];
+
+    bezier.push([d[0] + controlLength * d[1], d[1] - controlLength * d[0]]);
+
+    // Endpoint of bezier
+    bezier.push([d[0], d[1]]);
+
+    beziers.push(bezier as [vec2, vec2, vec2]);
+  }
+
+  return beziers;
+}

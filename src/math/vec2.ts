@@ -268,6 +268,19 @@ export function angle(a: ReadonlyVec2, b: ReadonlyVec2): number {
 }
 
 /**
+ * Calculates the absolute value of a given vector
+ *
+ * @param {ReadonlyVec2} a vector
+ * @returns {vec2} a new 2D vector
+ */
+export function abs(a: ReadonlyVec2, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  out[0] = Math.abs(a[0]);
+  out[1] = Math.abs(a[1]);
+  return out;
+}
+
+/**
  * Alias for {@link vec2.subtract}
  * @function
  */
