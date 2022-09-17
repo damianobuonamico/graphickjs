@@ -16,7 +16,16 @@ class AssetsManager {
     if (asset instanceof Stroke) type = 'stroke';
     else if (asset instanceof Fill) type = 'fill';
 
-    if (type) this.m_assets[type].set(asset.id, asset as any);
+    if (type) {
+      HistoryManager.record({
+        fn: () => {
+          this.m_assets[type!].set(asset.id, asset as any);
+        },
+        undo: () => {
+          this.m_assets[type!].delete(asset.id);
+        }
+      });
+    }
   }
 
   public delete(id: string, type?: keyof typeof this.m_assets) {
