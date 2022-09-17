@@ -3,6 +3,7 @@ type Mode = 'designer' | 'publisher' | 'photo';
 interface State {
   mode: Mode;
   tool: Tool;
+  loading: boolean;
 }
 
 interface Action {

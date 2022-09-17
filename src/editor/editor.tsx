@@ -20,11 +20,14 @@ function getModePrimaryColor(mode: Mode) {
 const Editor: Component = () => {
   const [state, setState] = createStore<State>({
     mode: 'designer',
-    tool: 'select'
+    tool: 'select',
+    loading: true
   });
   const useWebGL = false;
   Renderer.init(useWebGL);
-  SceneManager.init();
+  SceneManager.init((loading) => {
+    setState({ loading });
+  });
 
   createEffect(() => {
     document.documentElement.style.setProperty('--primary-color', getModePrimaryColor(state.mode));
@@ -41,7 +44,11 @@ const Editor: Component = () => {
 
   return (
     <div class="w-screen h-screen bg-primary-700 grid grid-rows-title-bar">
-      <TitleBar mode={state.mode} setMode={(mode: Mode) => setState({ mode })} />
+      <TitleBar
+        mode={state.mode}
+        setMode={(mode: Mode) => setState({ mode })}
+        loading={state.loading}
+      />
       <div class="grid grid-cols-tool-bar">
         <ToolBar
           tools={[

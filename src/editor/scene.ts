@@ -28,14 +28,15 @@ import tigerSvg from '@utils/svg/demo';
 abstract class SceneManager {
   private static m_ecs: ECS;
   private static m_renderOverlays: Map<string, Entity> = new Map();
-
   private static m_layer: Layer;
 
   public static viewport: ViewportState;
-
   public static assets: AssetsManager = new AssetsManager();
 
-  public static init() {
+  public static setLoading: (loading: boolean) => void;
+
+  public static init(setLoading: (loading: boolean) => void) {
+    this.setLoading = setLoading;
     this.load();
     HistoryManager.clear();
   }
@@ -165,6 +166,8 @@ abstract class SceneManager {
       this.m_ecs.add(artboard);
     }
 
+    this.setLoading(false);
+
     // DEV
     // parseSVG(tigerSvg);
   }
@@ -258,8 +261,13 @@ abstract class SceneManager {
   }
 
   public static import() {
+    this.setLoading(true);
+    
     fileDialog({ accept: ['.svg'], multiple: true }).then((files) => {
-      if (!files.length) return;
+      if (!files.length) {
+        this.setLoading(false);
+        return;
+      }
 
       let current = 0;
 
@@ -278,6 +286,7 @@ abstract class SceneManager {
           if (current === files.length) {
             HistoryManager.endSequence();
             this.render();
+            this.setLoading(false);
           }
         };
 

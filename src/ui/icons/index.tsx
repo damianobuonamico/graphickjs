@@ -7,6 +7,7 @@ import CheckIcon from './CheckIcon';
 import ChevronRightIcon from './ChevronRightIcon';
 import CircleIcon from './CircleIcon';
 import HandIcon from './HandIcon';
+import LoadingIcon from './LoadingIcon';
 import PenIcon from './PenIcon';
 import PointerIcon from './PointerIcon';
 import PointerVertexIcon from './PointerVertexIcon';
@@ -20,6 +21,7 @@ export { CheckIcon };
 export { ChevronRightIcon };
 export { CircleIcon };
 export { HandIcon };
+export { LoadingIcon };
 export { PenIcon };
 export { PointerIcon };
 export { PointerVertexIcon };
@@ -42,6 +44,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <CircleIcon {...props} />;
     case 'hand':
       return <HandIcon {...props} />;
+    case 'loading':
+      return <LoadingIcon {...props} />;
     case 'pen':
       return <PenIcon {...props} />;
     case 'pointer':

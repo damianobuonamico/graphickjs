@@ -3,6 +3,7 @@ import FileMenu from '@menu/FileMenu';
 import { MenuItem } from '@menu/ControlledMenu';
 import { KEYS } from '@utils/keys';
 import actions from '@/editor/actions';
+import getIcon from '../icons';
 
 export function getModeComponent(mode: Mode, setMode: (mode: Mode) => void): MenuItem {
   switch (mode) {
@@ -39,7 +40,9 @@ export function getModeComponent(mode: Mode, setMode: (mode: Mode) => void): Men
   }
 }
 
-const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (props) => {
+const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void; loading: boolean }> = (
+  props
+) => {
   const [checked, setChecked] = createSignal(true);
 
   return (
@@ -48,7 +51,9 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (props) =
         items={[
           {
             label: '',
-            icon: getModeComponent(props.mode, props.setMode).icon,
+            icon: props.loading
+              ? getIcon('loading', { class: 'text-primary' })
+              : getModeComponent(props.mode, props.setMode).icon,
             submenu: [
               getModeComponent('designer', props.setMode),
               getModeComponent('publisher', props.setMode),
