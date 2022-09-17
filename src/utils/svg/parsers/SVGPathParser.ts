@@ -14,6 +14,7 @@ interface SVGPathHistory {
 class SVGPather {
   private m_element: Element;
   private m_cursor: vec2 = vec2.create();
+  private m_lastQuadratic: vec2 | null = null;
 
   constructor(element: Element) {
     this.m_element = element;
@@ -31,6 +32,11 @@ class SVGPather {
     return this.m_element.position;
   }
 
+  private setCursor(position: vec2) {
+    this.m_cursor = position;
+    this.m_lastQuadratic = null;
+  }
+
   public close() {
     this.m_element.close();
   }
@@ -38,36 +44,52 @@ class SVGPather {
   public moveTo(position: vec2) {
     this.m_element.position = position;
     this.m_element.pushVertex(new Vertex({ position: vec2.create() }));
-    this.m_cursor = position;
+    this.setCursor(position);
   }
 
   public lineTo(position: vec2) {
     this.m_element.pushVertex(new Vertex({ position: vec2.sub(position, this.position) }));
-    this.m_cursor = position;
+    this.setCursor(position);
   }
 
   public quadraticBezierTo(cp: vec2, position: vec2) {
     const last = this.m_element.lastVertex;
 
-    // Make control point if it differs from start and end points
-    if (!vec2.equals(position, cp) && !vec2.equals(vec2.add(last.position, this.position), cp))
-      last.setRight(vec2.sub(vec2.sub(cp, last.position), this.position));
+    // Check if control point if it differs from start and end points
+    if (vec2.equals(position, cp) || vec2.equals(vec2.add(last.position, this.position), cp)) {
+      this.lineTo(position);
+      return;
+    }
 
-    // Create end vertex
-    this.m_element.pushVertex(new Vertex({ position: vec2.sub(position, this.position) }));
-    this.m_cursor = position;
+    // Raise curve order from quadratic to cubic
+    const cp1 = vec2.add(this.m_cursor, vec2.mul(vec2.sub(cp, this.m_cursor), 2 / 3));
+    const cp2 = vec2.add(position, vec2.mul(vec2.sub(cp, position), 2 / 3));
+
+    this.cubicBezierTo(cp1, cp2, position);
+
+    this.m_lastQuadratic = cp;
   }
 
   public smoothQuadraticBezierTo(position: vec2, clearSmooth = false) {
     const last = this.m_element.lastVertex;
 
-    // Calculate control point through symmetry
-    if (!clearSmooth && last.left && !vec2.equals(last.left.position, vec2.create()))
-      last.setRight(vec2.neg(last.left.position));
+    // Check if there is something to mirror
+    if (clearSmooth || !last.left || vec2.equals(last.left.position, vec2.create())) {
+      this.lineTo(position);
+      return;
+    }
 
-    // Create end vertex
-    this.m_element.pushVertex(new Vertex({ position: vec2.sub(position, this.position) }));
-    this.m_cursor = position;
+    const cp = this.m_lastQuadratic
+      ? vec2.add(
+          vec2.add(
+            vec2.neg(vec2.sub(vec2.sub(this.m_lastQuadratic, last.position), this.position)),
+            last.position
+          ),
+          this.position
+        )
+      : vec2.add(vec2.add(vec2.neg(last.left.position), last.position), this.position);
+
+    this.quadraticBezierTo(cp, position);
   }
 
   public cubicBezierTo(cp1: vec2, cp2: vec2, position: vec2) {
@@ -84,7 +106,7 @@ class SVGPather {
     // Make second control point if it differs from start and end points
     if (!vec2.equals(position, cp2) && !vec2.equals(vec2.add(last.position, this.position), cp2))
       end.setLeft(vec2.sub(vec2.sub(cp2, end.position), this.position));
-    this.m_cursor = position;
+    this.setCursor(position);
   }
 
   public smoothCubicBezierTo(cp2: vec2, position: vec2, clearSmooth = false) {
@@ -101,7 +123,7 @@ class SVGPather {
     // Make second control point if it differs from start and end points
     if (!vec2.equals(position, cp2) && !vec2.equals(vec2.add(last.position, this.position), cp2))
       end.setLeft(vec2.sub(vec2.sub(cp2, end.position), this.position));
-    this.m_cursor = position;
+    this.setCursor(position);
   }
 
   public arcTo(
@@ -141,10 +163,6 @@ function parseSVGPath(node: SVGPathElement, attributes: SVGAttributesContainer) 
 
   // If path data is not provided, discard the node
   if (!d) return null;
-
-  const id = node.getAttribute('id');
-
-  if (id && id === 'path68') console.log('path', node);
 
   // Normalize and split path data in single instructions
   const instructions = d
@@ -194,7 +212,6 @@ function parseSVGPath(node: SVGPathElement, attributes: SVGAttributesContainer) 
     const op = instruction[0];
     const data = instruction.length > 1 ? instruction.substring(2).trim().split(' ') : [];
 
-    console.log(op, data);
     (SVGPathDataParsers[op.toLowerCase()] || SVGPathDataParsers.default)(pather, op, data, history);
 
     history.last = op;

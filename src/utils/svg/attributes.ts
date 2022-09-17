@@ -41,8 +41,6 @@ class SVGAttributesContainer {
       if (!this.fill || !this.fill.color.equals(fill)) shouldUpdateFill = true;
     }
 
-    console.log(shouldUpdateFill);
-
     if (shouldUpdateStroke) {
       if (stroke === 'none') this.m_strokes.push({ level: this.level, value: null });
       else
@@ -60,8 +58,6 @@ class SVGAttributesContainer {
           value: new Fill({ ...this.fill?.toJSON(), ...{ color: fill }, id: undefined })
         });
     }
-
-    console.log(this.fill?.id);
   }
 }
 

@@ -90,7 +90,7 @@ interface HandleOptions {
 
 interface HandleObject extends GenericEntityObject {}
 
-type BezierType = 'linear' | 'quadratic' | 'cubic';
+type BezierType = 'linear' | 'cubic';
 
 interface BezierOptions {
   start: VertexEntity;

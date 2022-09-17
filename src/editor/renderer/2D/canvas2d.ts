@@ -22,7 +22,6 @@ class Canvas2D implements Canvas {
     fill: this.fill.bind(this),
     move: this.move.bind(this),
     linear: this.line.bind(this),
-    quadratic: this.quadratic.bind(this),
     cubic: this.cubic.bind(this),
     circle: this.circle.bind(this),
     rect: this.crect.bind(this),
@@ -168,15 +167,6 @@ class Canvas2D implements Canvas {
     );
   }
 
-  private quadratic(operation: BezierDrawOp) {
-    this.m_ctx.quadraticCurveTo(
-      operation.data[0][0],
-      operation.data[0][1],
-      operation.data[1][0],
-      operation.data[1][1]
-    );
-  }
-
   private cubic(operation: BezierDrawOp) {
     this.m_ctx.bezierCurveTo(
       operation.data[0][0],
@@ -241,6 +231,7 @@ class Canvas2D implements Canvas {
       this.fill();
       this.stroke();
     }
+
     this.m_ctx.restore();
     this.m_stats.draw();
   }

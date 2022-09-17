@@ -60,7 +60,5 @@ export function parseSVGNodeChildren(node: Node, attributes: SVGAttributesContai
 function importSVGDocument(node: Node, attributes: SVGAttributesContainer) {
   parseSVGNodeChildren(node, attributes).forEach((entity) => {
     SceneManager.add(entity);
-
-    console.log(entity);
   });
 }
