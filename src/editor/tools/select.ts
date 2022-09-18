@@ -62,7 +62,7 @@ const onSelectPointerDown = () => {
       SceneManager.popRenderOverlay(rect.element.id);
       rect.element = undefined;
     }
-    
+
     if (abort) {
       SelectionManager.forEach((entity) => {
         entity.clearTransform();

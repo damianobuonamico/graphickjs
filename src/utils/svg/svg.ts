@@ -11,6 +11,7 @@ import parseSVGText from './parsers/SVGTextParser';
 export function parseSVG(svg: string) {
   // Convert string to SVG tree
   const parser = new DOMParser();
+  parser.parseFromString;
   const tree = parser.parseFromString(svg.trim(), 'image/svg+xml');
 
   const attributes = new SVGAttributesContainer();

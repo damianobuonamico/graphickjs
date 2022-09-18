@@ -1,6 +1,6 @@
 interface Entity {
   readonly id: string;
-  readonly type: 'artboard' | 'layer' | 'element' | 'vertex' | 'handle' | 'bezier';
+  readonly type: 'artboard' | 'layer' | 'element' | 'vertex' | 'handle' | 'bezier' | 'image';
 
   parent: Entity;
   visible: boolean;
@@ -98,3 +98,16 @@ interface BezierOptions {
 }
 
 interface BezierObject extends GenericEntityObject {}
+
+interface ImageOptions {
+  id?: string;
+  source: string;
+  position?: vec2;
+  size?: vec2;
+}
+
+interface ImageObject extends GenericEntityObject {
+  source: string;
+  position: vec2;
+  size: vec2;
+}

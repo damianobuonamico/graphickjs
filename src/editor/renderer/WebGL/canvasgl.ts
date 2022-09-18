@@ -222,6 +222,8 @@ class CanvasGL implements Canvas {
 
   public element(element: Entity) {}
 
+  public image() {}
+
   public beginOutline() {}
 
   public outline(entity: Entity) {}

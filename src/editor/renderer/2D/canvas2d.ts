@@ -5,6 +5,7 @@ import CanvasStats from '../stats';
 import Renderer from '../renderer';
 import InputManager from '@/editor/input';
 import SelectionManager from '@/editor/selection';
+import ImageEntity from '@/editor/ecs/image';
 
 class Canvas2D implements Canvas {
   private m_container: HTMLDivElement;
@@ -24,7 +25,8 @@ class Canvas2D implements Canvas {
     linear: this.line.bind(this),
     cubic: this.cubic.bind(this),
     circle: this.circle.bind(this),
-    rect: this.crect.bind(this),
+    crect: this.crect.bind(this),
+    rect: this.nrect.bind(this),
     strokecolor: this.strokeColor.bind(this),
     fillcolor: this.fillColor.bind(this)
   };
@@ -154,11 +156,20 @@ class Canvas2D implements Canvas {
     this.m_ctx.lineTo(operation.data[0][0], operation.data[0][1]);
   }
 
-  private circle(operation: ShapeDrawOp) {
+  private circle(operation: CenteredShapeDrawOp) {
     this.m_ctx.arc(operation.data[0][0], operation.data[0][1], operation.data[1], 0, Math.PI * 2);
   }
 
-  private crect(operation: ShapeDrawOp) {
+  private nrect(operation: ShapeDrawOp) {
+    this.m_ctx.rect(
+      operation.data[0][0],
+      operation.data[0][1],
+      operation.data[1][0],
+      operation.data[1][1]
+    );
+  }
+
+  private crect(operation: CenteredShapeDrawOp) {
     this.m_ctx.rect(
       operation.data[0][0] - operation.data[1],
       operation.data[0][1] - operation.data[1],
@@ -196,7 +207,7 @@ class Canvas2D implements Canvas {
     });
   }
 
-  public element(element: Entity) {
+  public element(element: Element) {
     this.m_stats.entity();
     if (!element.visible) return;
 
@@ -236,6 +247,18 @@ class Canvas2D implements Canvas {
     this.m_stats.draw();
   }
 
+  public image(image: ImageEntity) {
+    const transform = image.transform;
+
+    // TODO: Bilinar Filtering
+
+    this.m_ctx.drawImage(
+      image.source,
+      image.position[0] + transform[12],
+      image.position[1] + transform[13]
+    );
+  }
+
   public beginOutline() {
     this.m_ctx.strokeStyle = 'rgba(49, 239, 284, 1.0)';
     this.m_ctx.fillStyle = 'rgba(49, 239, 284, 1.0)';
@@ -249,7 +272,7 @@ class Canvas2D implements Canvas {
     const transform = (entity as Element).transform;
     this.m_ctx.transform(1, 0, 0, 1, position[0] + transform[12], position[1] + transform[13]);
     this.draw((entity as Element).getOutlineDrawable(false));
-    if (InputManager.tool.isVertex)
+    if (InputManager.tool.isVertex && entity.type === 'element')
       (entity as Element).forEach((vertex, selected) => vertex.render(selected));
     this.m_ctx.restore();
     this.m_stats.entity();

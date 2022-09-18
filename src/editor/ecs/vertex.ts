@@ -216,7 +216,7 @@ class Vertex implements VertexEntity {
         }
 
         drawable.operations.push({
-          type: 'rect',
+          type: 'crect',
           data: [this.position, 4 / SceneManager.viewport.zoom]
         });
 
@@ -246,7 +246,7 @@ class Vertex implements VertexEntity {
         }
       } else {
         drawable.operations.push({
-          type: 'rect',
+          type: 'crect',
           data: [this.position, 3 / SceneManager.viewport.zoom]
         });
         drawable.operations.push({ type: 'fillcolor', data: vec4.fromValues(1, 1, 1, 1) });

@@ -24,6 +24,7 @@ import { parseSVG } from '@/utils/svg';
 
 // DEV
 import tigerSvg from '@utils/svg/demo';
+import ImageEntity from './ecs/image';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -200,6 +201,8 @@ abstract class SceneManager {
         return new Element({ ...{ ...(object as ElementObject), vertices } });
       case 'vertex':
         return new Vertex({ ...(object as VertexObject) });
+      case 'image':
+        return new ImageEntity({ ...(object as ImageObject) });
     }
   }
 
@@ -262,8 +265,8 @@ abstract class SceneManager {
 
   public static import() {
     this.setLoading(true);
-    
-    fileDialog({ accept: ['.svg'], multiple: true }).then((files) => {
+
+    fileDialog({ accept: ['.svg', '.png'], multiple: true }).then((files) => {
       if (!files.length) {
         this.setLoading(false);
         return;
@@ -280,7 +283,10 @@ abstract class SceneManager {
         reader.onload = () => {
           if (!reader.result || typeof reader.result !== 'string') return;
 
-          parseSVG(reader.result);
+          if (file.type === 'image/svg+xml') parseSVG(reader.result);
+          else if (file.type === 'image/png')
+            SceneManager.add(new ImageEntity({ source: reader.result }));
+
           current++;
 
           if (current === files.length) {
@@ -290,7 +296,8 @@ abstract class SceneManager {
           }
         };
 
-        reader.readAsText(file);
+        if (file.type === 'image/svg+xml') reader.readAsText(file);
+        else if (file.type === 'image/png') reader.readAsDataURL(file);
       });
     });
   }

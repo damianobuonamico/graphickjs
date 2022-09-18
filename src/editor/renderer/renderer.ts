@@ -1,4 +1,5 @@
 import Element from '../ecs/element';
+import ImageEntity from '../ecs/image';
 import Canvas2D from './2D/canvas2d';
 import CanvasGL from './WebGL/canvasgl';
 
@@ -81,6 +82,10 @@ abstract class Renderer {
 
   public static draw(drawable: Drawable) {
     this.m_canvas.draw(drawable);
+  }
+
+  public static image(image: ImageEntity) {
+    this.m_canvas.image(image);
   }
 }
 

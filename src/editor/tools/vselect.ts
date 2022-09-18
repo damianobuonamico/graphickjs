@@ -16,7 +16,8 @@ interface SelectToolData {
 // TODO: curve selection
 const onVSelectPointerDown = () => {
   const entity = InputManager.hover.entity;
-  const element = InputManager.hover.element;
+  const el = InputManager.hover.element;
+  const element = el && el.type === 'element' ? (el as Element) : null;
   const bezier = entity && entity.type === 'bezier' ? (entity as Bezier) : undefined;
   const handle = entity && entity.type === 'handle' ? (entity as Handle) : undefined;
   const vertex = handle && handle.handleType === 'vertex' ? (handle.parent as Vertex) : undefined;

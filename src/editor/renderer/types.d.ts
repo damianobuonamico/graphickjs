@@ -27,6 +27,7 @@ interface Canvas {
   }): void;
   element(element: Entity): void;
   draw(drawable: Drawable): void;
+  image(image: Entity): void;
 
   beginOutline(): void;
   outline(entity: Entity): void;
@@ -49,7 +50,12 @@ interface PathDrawOp {
 }
 
 interface ShapeDrawOp {
-  type: 'circle' | 'rect';
+  type: 'rect';
+  data: [vec2, vec2];
+}
+
+interface CenteredShapeDrawOp {
+  type: 'circle' | 'crect';
   data: [vec2, number];
 }
 
@@ -58,7 +64,13 @@ interface ColorDrawOp {
   data: vec4;
 }
 
-type DrawOp = GeometryDrawOp | BezierDrawOp | PathDrawOp | ShapeDrawOp | ColorDrawOp;
+type DrawOp =
+  | GeometryDrawOp
+  | BezierDrawOp
+  | PathDrawOp
+  | ShapeDrawOp
+  | CenteredShapeDrawOp
+  | ColorDrawOp;
 
 interface Drawable {
   operations: DrawOp[];

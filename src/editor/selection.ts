@@ -162,7 +162,7 @@ abstract class SelectionManager {
   public static all() {
     SceneManager.forEach((entity) => {
       // TODO: Register selectable entities here
-      if (entity.type === 'element') {
+      if (entity.type === 'element' || entity.type === 'image') {
         this.select(entity);
       }
     });
