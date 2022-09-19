@@ -264,9 +264,9 @@ abstract class SceneManager {
   }
 
   public static import() {
-    this.setLoading(true);
-
     fileDialog({ accept: ['.svg', '.png'], multiple: true }).then((files) => {
+      this.setLoading(true);
+
       if (!files.length) {
         this.setLoading(false);
         return;
