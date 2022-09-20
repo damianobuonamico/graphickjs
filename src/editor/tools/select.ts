@@ -1,6 +1,6 @@
 import { BUTTONS } from '@/utils/keys';
 import { vec2 } from '@math';
-import Element from '../ecs/element';
+import Element from '../ecs/entities/element';
 import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
@@ -47,7 +47,7 @@ const onSelectPointerDown = () => {
       if (SelectionManager.size) {
         draggingOccurred = true;
         SelectionManager.forEach((entity) => {
-          entity.translate(InputManager.scene.movement);
+          entity.transform.translate(InputManager.scene.movement);
         });
       }
     } else if (rect.element) {
@@ -65,11 +65,11 @@ const onSelectPointerDown = () => {
 
     if (abort) {
       SelectionManager.forEach((entity) => {
-        entity.clearTransform();
+        entity.transform.clear();
       });
     } else if (draggingOccurred && SelectionManager.size) {
       SelectionManager.forEach((entity) => {
-        entity.applyTransform();
+        entity.transform.apply();
       });
     } else if (element && SelectionManager.has(element.id) && !elementIsAddedToSelection) {
       if (InputManager.keys.shift) {

@@ -1,5 +1,5 @@
-import Element from '../ecs/element';
-import ImageEntity from '../ecs/image';
+import Element from '../ecs/entities/element';
+import ImageMedia from '../ecs/entities/image';
 import Canvas2D from './2D/canvas2d';
 import CanvasGL from './WebGL/canvasgl';
 
@@ -8,7 +8,7 @@ abstract class Renderer {
 
   public static debugging: boolean = true;
   public static debug: DebugState = {
-    box: false
+    box: true
   };
 
   public static get canvas() {
@@ -84,7 +84,7 @@ abstract class Renderer {
     this.m_canvas.draw(drawable);
   }
 
-  public static image(image: ImageEntity) {
+  public static image(image: ImageMedia) {
     this.m_canvas.image(image);
   }
 }

@@ -24,6 +24,19 @@ export function fromValues(x: number, y: number): vec2 {
 /**
  * Creates a new vec2 initialized with values from an existing vector
  *
+ * @param {vec2} out the receiving vector
+ * @param {ReadonlyVec2} a the source vector
+ * @returns {vec2} out
+ */
+export function copy(out: vec2, a: ReadonlyVec2): vec2 {
+  out[0] = a[0];
+  out[1] = a[1];
+  return out;
+}
+
+/**
+ * Creates a new vec2 initialized with values from an existing vector
+ *
  * @param {ReadonlyVec2} a vector to clone
  * @returns {vec2} a new 2D vector
  */

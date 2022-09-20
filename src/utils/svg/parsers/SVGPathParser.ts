@@ -1,5 +1,5 @@
-import Element from '@/editor/ecs/element';
-import Vertex from '@/editor/ecs/vertex';
+import Element from '@/editor/ecs/entities/element';
+import Vertex from '@/editor/ecs/entities/vertex';
 import { arcToBeziers } from '@/editor/renderer/geometry';
 import { vec2 } from '@/math';
 import { MATH_TWO_PI } from '@/utils/constants';
@@ -53,7 +53,7 @@ class SVGPather {
   }
 
   public quadraticBezierTo(cp: vec2, position: vec2) {
-    const last = this.m_element.lastVertex;
+    const last = this.m_element.last;
 
     // Check if control point if it differs from start and end points
     if (vec2.equals(position, cp) || vec2.equals(vec2.add(last.position, this.position), cp)) {
@@ -71,7 +71,7 @@ class SVGPather {
   }
 
   public smoothQuadraticBezierTo(position: vec2, clearSmooth = false) {
-    const last = this.m_element.lastVertex;
+    const last = this.m_element.last;
 
     // Check if there is something to mirror
     if (clearSmooth || !last.left || vec2.equals(last.left.position, vec2.create())) {
@@ -93,7 +93,7 @@ class SVGPather {
   }
 
   public cubicBezierTo(cp1: vec2, cp2: vec2, position: vec2) {
-    const last = this.m_element.lastVertex;
+    const last = this.m_element.last;
 
     // Make first control point if it differs from start and end points
     if (!vec2.equals(position, cp1) && !vec2.equals(vec2.add(last.position, this.position), cp1))
@@ -110,7 +110,7 @@ class SVGPather {
   }
 
   public smoothCubicBezierTo(cp2: vec2, position: vec2, clearSmooth = false) {
-    const last = this.m_element.lastVertex;
+    const last = this.m_element.last;
 
     // Calculate first control point through symmetry
     if (!clearSmooth && last.left && !vec2.equals(last.left.position, vec2.create()))

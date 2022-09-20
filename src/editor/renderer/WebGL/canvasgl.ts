@@ -1,4 +1,4 @@
-import Element from '@editor/ecs/element';
+import Element from '@/editor/ecs/entities/element';
 import SceneManager from '@/editor/scene';
 import { vec2, mat4, vec3 } from '@math';
 import { createVertices } from '../geometry';

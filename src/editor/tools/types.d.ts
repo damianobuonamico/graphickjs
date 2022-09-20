@@ -2,10 +2,10 @@ type PenState = 'new' | 'join' | 'close' | 'sub' | 'add' | 'angle' | 'start';
 
 interface PenToolData {
   element?: Entity;
-  vertex?: Entity;
+  vertex?: VertexEntity;
   overlay?: Entity;
-  overlayLastVertex?: Entity;
-  overlayVertex?: Entity;
+  overlayLastVertex?: VertexEntity;
+  overlayVertex?: VertexEntity;
 }
 
 interface SelectToolData {

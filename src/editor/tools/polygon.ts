@@ -1,6 +1,6 @@
 import { KEYS } from '@utils/keys';
 import { vec2 } from '@math';
-import Element from '../ecs/element';
+import Element from '../ecs/entities/element';
 import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';

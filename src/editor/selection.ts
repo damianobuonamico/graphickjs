@@ -1,13 +1,13 @@
 import { isObject } from '@/utils/utils';
-import Element from './ecs/element';
-import Vertex from './ecs/vertex';
+import Element from './ecs/entities/element';
+import Vertex from './ecs/entities/vertex';
 import InputManager from './input';
 import { Renderer } from './renderer';
 import SceneManager from './scene';
 
 class ElementSelectionManager {
-  private m_selected: Map<string, Vertex> = new Map();
-  private m_temp: Map<string, Vertex> = new Map();
+  private m_selected: Map<string, VertexEntity> = new Map();
+  private m_temp: Map<string, VertexEntity> = new Map();
   private m_parent: Element;
 
   constructor(parent: Element) {
@@ -27,7 +27,7 @@ class ElementSelectionManager {
   }
 
   public get full() {
-    return this.m_selected.size === this.m_parent.vertexCount;
+    return this.m_selected.size === this.m_parent.length;
   }
 
   public has(id: string) {
@@ -40,7 +40,7 @@ class ElementSelectionManager {
     SelectionManager.deselect(this.m_parent.id, false);
   }
 
-  public select(vertex: Vertex) {
+  public select(vertex: VertexEntity) {
     this.m_selected.set(vertex.id, vertex);
     if (!SelectionManager.has(this.m_parent.id)) SelectionManager.select(this.m_parent, false);
   }
@@ -68,7 +68,7 @@ class ElementSelectionManager {
     this.m_temp.clear();
   }
 
-  public forEach(callback: (vertex: Vertex) => void) {
+  public forEach(callback: (vertex: VertexEntity) => void) {
     this.m_selected.forEach((vertex) => callback(vertex));
     this.m_temp.forEach((vertex) => callback(vertex));
   }

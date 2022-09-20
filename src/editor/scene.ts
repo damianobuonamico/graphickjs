@@ -1,11 +1,11 @@
 import { fillObject, stringifyReplacer } from '@utils/utils';
 import { clamp, round, vec2 } from '@math';
-import Artboard from './ecs/artboard';
+import Artboard from './ecs/entities/artboard';
 import ECS from './ecs/ecs';
-import Element from './ecs/element';
-import Layer from './ecs/layer';
+import Element from './ecs/entities/element';
+import Layer from './ecs/entities/layer';
 import { Renderer } from './renderer';
-import Vertex from './ecs/vertex';
+import Vertex from './ecs/entities/vertex';
 import HistoryManager from './history';
 import {
   LOCAL_STORAGE_KEY,
@@ -24,7 +24,8 @@ import { parseSVG } from '@/utils/svg';
 
 // DEV
 import tigerSvg from '@utils/svg/demo';
-import ImageEntity from './ecs/image';
+import ImageMedia from './ecs/entities/image';
+import Demo from './ecs/entities/demo';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -72,7 +73,7 @@ abstract class SceneManager {
       if (
         entity.type === 'element' &&
         InputManager.tool.isVertex &&
-        (entity as Element).selection.size < (entity as Element).vertexCount - 1
+        (entity as Element).selection.size < (entity as Element).length - 1
       ) {
         (entity as Element).selection.forEach((vertex) => {
           entity.delete(vertex);
@@ -110,6 +111,24 @@ abstract class SceneManager {
       vec2.mul(vec2.add(position, viewport.position), viewport.zoom, true),
       Renderer.canvasOffset,
       true
+    );
+  }
+
+  public static isVisible(entity: Entity) {
+    if (!Object.hasOwn(entity, 'boundingBox')) return true;
+
+    const box = (entity as MovableEntity).boundingBox;
+    const position = this.viewport.position;
+    const canvasSize = vec2.sub(
+      vec2.div(Renderer.size, this.viewport.zoom),
+      this.viewport.position
+    );
+
+    return (
+      box[1][0] >= -position[0] &&
+      box[0][0] <= canvasSize[0] &&
+      box[1][1] >= -position[1] &&
+      box[0][1] <= canvasSize[1]
     );
   }
 
@@ -169,11 +188,15 @@ abstract class SceneManager {
 
     this.setLoading(false);
 
+    //this.add(new Demo({}));
+
     // DEV
     // parseSVG(tigerSvg);
   }
 
   public static fromObject(object: EntityObject) {
+    if (!object) return;
+
     switch (object.type) {
       case 'artboard': {
         const artboard = new Artboard({ ...(object as ArtboardObject) });
@@ -202,7 +225,7 @@ abstract class SceneManager {
       case 'vertex':
         return new Vertex({ ...(object as VertexObject) });
       case 'image':
-        return new ImageEntity({ ...(object as ImageObject) });
+        return new ImageMedia({ ...(object as ImageObject) });
     }
   }
 
@@ -221,7 +244,7 @@ abstract class SceneManager {
   }
 
   public static duplicate(entity: Entity) {
-    const duplicate = this.fromObject(entity.toJSON(true));
+    const duplicate = this.fromObject(entity.asObject(true));
     if (!duplicate) return undefined;
     this.add(duplicate);
     return duplicate;
@@ -285,7 +308,7 @@ abstract class SceneManager {
 
           if (file.type === 'image/svg+xml') parseSVG(reader.result);
           else if (file.type === 'image/png')
-            SceneManager.add(new ImageEntity({ source: reader.result }));
+            SceneManager.add(new ImageMedia({ source: reader.result }));
 
           current++;
 

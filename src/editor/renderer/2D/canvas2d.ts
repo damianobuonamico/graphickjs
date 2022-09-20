@@ -1,11 +1,11 @@
-import Element from '@editor/ecs/element';
+import Element from '@/editor/ecs/entities/element';
 import SceneManager from '@editor/scene';
 import { vec2 } from '@math';
 import CanvasStats from '../stats';
 import Renderer from '../renderer';
 import InputManager from '@/editor/input';
 import SelectionManager from '@/editor/selection';
-import ImageEntity from '@/editor/ecs/image';
+import ImageMedia from '@/editor/ecs/entities/image';
 
 class Canvas2D implements Canvas {
   private m_container: HTMLDivElement;
@@ -209,14 +209,13 @@ class Canvas2D implements Canvas {
 
   public element(element: Element) {
     this.m_stats.entity();
-    if (!element.visible) return;
+    if (!SceneManager.isVisible(element)) return;
 
     this.m_ctx.save();
     this.m_ctx.strokeStyle = `rgba(0, 0, 0, 1.0)`;
     this.m_ctx.lineWidth = 1;
-    const position = (element as Element).position;
-    const transform = (element as Element).transform;
-    this.m_ctx.transform(1, 0, 0, 1, position[0] + transform[12], position[1] + transform[13]);
+    const position = element.transform.position;
+    this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
     // Debug
     this.m_ctx.fillStyle = 'rgb(50, 50, 50)';
     this.draw((element as Element).getDrawable(false));
@@ -247,16 +246,12 @@ class Canvas2D implements Canvas {
     this.m_stats.draw();
   }
 
-  public image(image: ImageEntity) {
-    const transform = image.transform;
+  public image(image: ImageMedia) {
+    const position = image.transform.position;
 
     // TODO: Bilinar Filtering
 
-    this.m_ctx.drawImage(
-      image.source,
-      image.position[0] + transform[12],
-      image.position[1] + transform[13]
-    );
+    this.m_ctx.drawImage(image.source, position[0], position[1]);
   }
 
   public beginOutline() {
@@ -268,9 +263,10 @@ class Canvas2D implements Canvas {
 
   public outline(entity: Entity) {
     this.m_ctx.save();
-    const position = (entity as Element).position;
-    const transform = (entity as Element).transform;
-    this.m_ctx.transform(1, 0, 0, 1, position[0] + transform[12], position[1] + transform[13]);
+    if (entity.type !== 'demo') {
+      const position = (entity as Element).transform.position;
+      this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
+    }
     this.draw((entity as Element).getOutlineDrawable(false));
     if (InputManager.tool.isVertex && entity.type === 'element')
       (entity as Element).forEach((vertex, selected) => vertex.render(selected));

@@ -1,16 +1,16 @@
 import { vec2 } from '@math';
 import { nanoid } from 'nanoid';
-import Bezier from '../ecs/bezier';
-import Element from '../ecs/element';
-import Handle from '../ecs/handle';
-import Vertex from '../ecs/vertex';
+import Bezier from '../ecs/entities/bezier';
+import Element from '../ecs/entities/element';
+import Handle from '../ecs/entities/handle';
+import Vertex from '../ecs/entities/vertex';
 import HistoryManager from '../history';
 import InputManager from '../input';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
 
 interface PenToolData {
-  vertex?: Vertex;
+  vertex?: VertexEntity;
   element?: Element;
   overlay?: Element;
   overlayLastVertex?: Vertex;
@@ -20,7 +20,8 @@ interface PenToolData {
 const onPenPointerDown = () => {
   const pen = InputManager.tool.data as PenToolData;
   const entity = InputManager.hover.entity;
-  const element = InputManager.hover.element;
+  const el = InputManager.hover.element;
+  const element = el && el.type === 'element' ? (el as Element) : undefined;
   const bezier = entity && entity.type === 'bezier' ? (entity as Bezier) : undefined;
   const handle = entity && entity.type === 'handle' ? (entity as Handle) : undefined;
   const vertex = handle && handle.handleType === 'vertex' ? (handle.parent as Vertex) : undefined;
@@ -60,7 +61,7 @@ const onPenPointerDown = () => {
 
   switch (penState) {
     case 'join': {
-      if (!element!.isFirstVertex(vertex!.id)) element!.reverseCurves();
+      if (!element!.isFirstVertex(vertex!.id)) element!.reverse();
 
       pen.element!.concat(element!);
 
@@ -102,7 +103,7 @@ const onPenPointerDown = () => {
       break;
     }
     case 'add': {
-      const vertex = element!.splitCurve(bezier!, InputManager.scene.position);
+      const vertex = element!.split(bezier!, InputManager.scene.position);
 
       HistoryManager.record({
         fn: () => {
@@ -138,7 +139,7 @@ const onPenPointerDown = () => {
       break;
     }
     case 'start': {
-      if (element!.isFirstVertex(vertex!.id)) element!.reverseCurves();
+      if (element!.isFirstVertex(vertex!.id)) element!.reverse();
 
       vertex!.setRight(null);
 
@@ -161,7 +162,7 @@ const onPenPointerDown = () => {
     case 'new': {
       const v = new Vertex({
         position: pen.element
-          ? vec2.sub(InputManager.scene.position, pen.element.position)
+          ? vec2.sub(InputManager.scene.position, pen.element.transform.position)
           : vec2.create()
       });
 
@@ -177,7 +178,7 @@ const onPenPointerDown = () => {
 
       const e = pen.element;
 
-      e.pushVertex(v);
+      e.push(v);
 
       HistoryManager.record({
         fn: () => {
@@ -215,7 +216,7 @@ const onPenPointerDown = () => {
           }
         });
       }
-    } else if (position) pen.vertex.right!.translateTo(position);
+    } else if (position) pen.vertex.right!.transform.translation = position;
   }
 
   function setLeft(position?: vec2, recordHandleCreation = false) {
@@ -237,7 +238,7 @@ const onPenPointerDown = () => {
           }
         });
       }
-    } else if (position) pen.vertex.left!.translateTo(position);
+    } else if (position) pen.vertex.left!.transform.translation = position;
   }
 
   const left = !!(pen.vertex && pen.vertex.left);
@@ -262,7 +263,7 @@ const onPenPointerDown = () => {
           const direction = vec2.unit(InputManager.scene.delta);
 
           if (!vec2.equals(direction, [0, 0])) {
-            setRight(vec2.mul(direction, vec2.len(pen.vertex!.right?.position!)), true);
+            setRight(vec2.mul(direction, vec2.len(pen.vertex!.right?.transform.position!)), true);
           }
         }
 
@@ -276,7 +277,7 @@ const onPenPointerDown = () => {
           const direction = vec2.unit(vec2.neg(InputManager.scene.delta));
 
           if (!vec2.equals(direction, [0, 0])) {
-            setLeft(vec2.mul(direction, vec2.len(pen.vertex!.left?.position!)), true);
+            setLeft(vec2.mul(direction, vec2.len(pen.vertex!.left?.transform.position!)), true);
           }
         }
 
@@ -294,8 +295,8 @@ const onPenPointerDown = () => {
 
   function onPointerUp() {
     if (pen.vertex) {
-      if (pen.vertex.left) pen.vertex.left.applyTransform();
-      if (pen.vertex.right) pen.vertex.right.applyTransform();
+      if (pen.vertex.left) pen.vertex.left.transform.apply();
+      if (pen.vertex.right) pen.vertex.right.transform.apply();
     }
 
     switch (penState) {
@@ -364,13 +365,13 @@ export function onPenPointerHover() {
       pen.overlayLastVertex &&
       vec2.equals(pen.overlayLastVertex.position, pen.vertex.position)
     ) {
-      pen.overlayLastVertex.setLeft(pen.vertex.left?.position, true);
-      pen.overlayLastVertex.setRight(pen.vertex.right?.position, true);
+      pen.overlayLastVertex.setLeft(pen.vertex.left?.transform.position, true);
+      pen.overlayLastVertex.setRight(pen.vertex.right?.transform.position, true);
 
-      pen.overlayVertex.translate(
+      pen.overlayVertex.transform.translate(
         vec2.sub(
           InputManager.scene.position,
-          vec2.add(pen.overlayVertex.position, pen.overlay.position)
+          vec2.add(pen.overlayVertex.position, pen.overlay.transform.position)
         )
       );
     } else {
@@ -378,16 +379,16 @@ export function onPenPointerHover() {
 
       pen.overlayLastVertex = new Vertex({
         position: pen.vertex.position,
-        left: pen.vertex.left?.position,
-        right: pen.vertex.right?.position
+        left: pen.vertex.left?.transform.position,
+        right: pen.vertex.right?.transform.position
       });
 
       pen.overlayVertex = new Vertex({
-        position: vec2.sub(InputManager.scene.position, pen.element.position)
+        position: vec2.sub(InputManager.scene.position, pen.element.transform.position)
       });
 
       pen.overlay = new Element({
-        position: pen.element.position,
+        position: pen.element.transform.position,
         vertices: [pen.overlayLastVertex, pen.overlayVertex]
       });
     }

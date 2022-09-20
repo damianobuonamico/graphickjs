@@ -1,7 +1,7 @@
 import SceneManager from '@/editor/scene';
 import Color from '@utils/color';
 import { nanoid } from 'nanoid';
-import Element from '../element';
+import Element from '../entities/element';
 
 class Fill implements Fill {
   public readonly id: string;

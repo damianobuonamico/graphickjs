@@ -1,6 +1,6 @@
 import { GEOMETRY_CIRCLE_RATIO } from '@utils/constants';
 import { vec2 } from '@math';
-import Vertex from '../ecs/vertex';
+import Vertex from '../ecs/entities/vertex';
 
 export function createVertices(
   type: string,

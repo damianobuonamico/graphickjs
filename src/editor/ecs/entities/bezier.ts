@@ -1,74 +1,52 @@
 import Cache from '@utils/cache';
-import { doesBoxIntersectsBox, getLinesFromBox, isPointInBox, vec2 } from '@math';
+import { doesBoxIntersectBox, getLinesFromBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import Handle from './handle';
 import Vertex from './vertex';
 import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import Element from './element';
 
-interface BezierPointDistance {
-  t: number;
-  distance: number;
-  point: vec2;
-}
+class Bezier implements BezierEntity {
+  readonly id: string;
+  readonly type: EntityType = 'bezier';
+  readonly start: VertexEntity;
+  readonly end: VertexEntity;
 
-class Bezier implements Entity {
-  public readonly id: string;
-  public readonly type: Entity['type'] = 'bezier';
-
-  public parent: Element;
-
-  private m_start: Vertex;
-  private m_end: Vertex;
+  parent: ElementEntity;
 
   private m_cache: Cache = new Cache();
   private cached = this.m_cache.cached.bind(this.m_cache);
 
   constructor({ start, end }: BezierOptions) {
     this.id = nanoid();
-    this.m_start = start as Vertex;
-    this.m_end = end as Vertex;
+    this.start = start;
+    this.end = end;
   }
 
-  public get visible() {
-    return true;
+  get p0(): vec2 {
+    return this.start.position;
   }
 
-  public get position() {
-    return this.start;
+  get p1(): vec2 {
+    return this.start.right ? vec2.add(this.p0, this.start.right.transform.position) : this.p0;
   }
 
-  public get start() {
-    return this.m_start.position;
+  get p2(): vec2 {
+    return this.end.left ? vec2.add(this.p3, this.end.left.transform.position) : this.p3;
   }
 
-  private get left() {
-    return this.m_start.right ? vec2.add(this.start, this.m_start.right.position) : this.start;
+  get p3(): vec2 {
+    return this.end.position;
   }
 
-  private get right() {
-    return this.m_end.left ? vec2.add(this.end, this.m_end.left.position) : this.end;
-  }
-
-  public get end() {
-    return this.m_end.position;
-  }
-
-  private get m_type() {
+  get bezierType(): BezierType {
     return this.cached<BezierType>('type', () => {
-      let type: BezierType = 'linear';
-
-      if (this.m_start.right || this.m_end.left) type = 'cubic';
-
-      return type;
+      if (this.start.right || this.end.left) return 'cubic';
+      return 'linear';
     });
   }
 
-  public get bezierType() {
-    return this.m_type;
-  }
-
-  get extrema() {
+  get extrema(): vec2[] {
     return this.cached<vec2[]>('extrema', () => {
       const roots = this.getRoots();
       const extrema: vec2[] = [];
@@ -81,7 +59,7 @@ class Bezier implements Entity {
     });
   }
 
-  get boundingBox() {
+  get boundingBox(): Box {
     return this.cached<Box>('boundingBox', () => {
       const extrema = this.extrema;
 
@@ -102,65 +80,35 @@ class Bezier implements Entity {
     return vec2.sub(box[1], box[0]);
   }
 
-  public move(delta: vec2) {
-    this.m_start.move(delta);
-    this.m_end.move(delta);
-  }
-
-  public moveTo() {}
-
-  public translate(delta: vec2) {
-    this.m_start.translate(delta);
-    this.m_end.translate(delta);
-  }
-
-  public applyTransform() {
-    this.m_start.applyTransform();
-    this.m_end.applyTransform();
-  }
-
-  public clearTransform() {
-    this.m_start.clearTransform();
-    this.m_end.clearTransform();
-  }
-
-  public getStart() {
-    return this.m_start;
-  }
-
-  public getEnd() {
-    return this.m_end;
-  }
-
-  public recalculate() {
-    this.m_cache.clear();
-  }
-
   private call<T>(
     linearFn: (...args: any) => T,
     cubicFn: (...args: any) => T,
     args?: { [key: string]: any }
   ): T {
-    if (this.m_type === 'linear') return linearFn.bind(this)(args);
+    if (this.bezierType === 'linear') return linearFn.bind(this)(args);
     else return cubicFn.bind(this)(args);
   }
 
-  private getLinearPoint({ t = 0 }) {
-    return vec2.add(vec2.mul(this.start, 1 - t), vec2.mul(this.end, t));
+  recalculate(): void {
+    this.m_cache.clear();
   }
-  private getCubicPoint({ t = 0 }) {
+
+  private getLinearPoint({ t = 0 }): vec2 {
+    return vec2.add(vec2.mul(this.p0, 1 - t), vec2.mul(this.p3, t));
+  }
+  private getCubicPoint({ t = 0 }): vec2 {
     return vec2.add(
       vec2.add(
         vec2.add(
-          vec2.mul(this.start, Math.pow(1 - t, 3)),
-          vec2.mul(this.left, 3 * t * Math.pow(1 - t, 2))
+          vec2.mul(this.p0, Math.pow(1 - t, 3)),
+          vec2.mul(this.p1, 3 * t * Math.pow(1 - t, 2))
         ),
-        vec2.mul(this.right, 3 * Math.pow(t, 2) * (1 - t))
+        vec2.mul(this.p2, 3 * Math.pow(t, 2) * (1 - t))
       ),
-      vec2.mul(this.end, Math.pow(t, 3))
+      vec2.mul(this.p3, Math.pow(t, 3))
     );
   }
-  public getPoint(t: number) {
+  getPoint(t: number): vec2 {
     return this.call(this.getLinearPoint, this.getCubicPoint, {
       t
     });
@@ -170,10 +118,10 @@ class Bezier implements Entity {
     return [0, 1];
   }
   private getCubicRoots(): number[] {
-    const a = this.start;
-    const b = this.left;
-    const c = this.right;
-    const d = this.end;
+    const a = this.p0;
+    const b = this.p1;
+    const c = this.p2;
+    const d = this.p3;
 
     const roots: number[] = [0, 1];
 
@@ -203,13 +151,13 @@ class Bezier implements Entity {
 
     return roots;
   }
-  private getRoots(): number[] {
+  getRoots(): number[] {
     return this.call(this.getLinearRoots, this.getCubicRoots);
   }
 
   private getLinearClosestTo({ position }: { position: vec2 }): BezierPointDistance {
-    const [a, b] = vec2.sub(position, this.start) as number[];
-    const [c, d] = vec2.sub(this.end, this.start) as number[];
+    const [a, b] = vec2.sub(position, this.p0);
+    const [c, d] = vec2.sub(this.p3, this.p0);
 
     const dot = a * c + b * d;
     const lenSquare = c * c + d * d;
@@ -219,9 +167,9 @@ class Bezier implements Entity {
     if (lenSquare !== 0) param = dot / lenSquare;
 
     let vec: vec2;
-    if (param < 0) vec = this.start;
-    else if (param > 1) vec = this.end;
-    else vec = vec2.add(this.start, [param * c, param * d]);
+    if (param < 0) vec = this.p0;
+    else if (param > 1) vec = this.p3;
+    else vec = vec2.add(this.p0, [param * c, param * d]);
 
     return { t: 0, point: vec, distance: vec2.dist(position, vec) };
   }
@@ -232,10 +180,10 @@ class Bezier implements Entity {
     position: vec2;
     iterations: number;
   }): BezierPointDistance {
-    const A = this.start;
-    const B = this.left;
-    const C = this.right;
-    const D = this.end;
+    const A = this.p0;
+    const B = this.p1;
+    const C = this.p2;
+    const D = this.p3;
 
     let a = 0;
     let b = 0;
@@ -344,14 +292,14 @@ class Bezier implements Entity {
 
     return t;
   }
-  private closestTo(position: vec2, iterations = 4): vec2 {
+  getClosestTo(position: vec2, iterations: number = 4): vec2 {
     return this.call(this.getLinearClosestTo, this.getCubicClosestTo, {
       position,
       iterations
     }).point;
   }
 
-  public distanceTo(position: vec2, iterations = 8): number {
+  getDistanceTo(position: vec2, iterations: number = 8): number {
     return this.call(this.getLinearClosestTo, this.getCubicClosestTo, {
       position,
       iterations
@@ -364,38 +312,38 @@ class Bezier implements Entity {
     let roots: number[] = [];
 
     if (Math.abs(m) === Infinity) {
-      roots.push((line[0][0] - this.start[0]) / (this.end[0] - this.start[0]));
+      roots.push((line[0][0] - this.p0[0]) / (this.p3[0] - this.p0[0]));
     } else {
       roots.push(
-        (m * line[0][0] - line[0][1] + this.start[1] - m * this.start[0]) /
-          (m * (this.end[0] - this.start[0]) + this.start[1] - this.end[1])
+        (m * line[0][0] - line[0][1] + this.p0[1] - m * this.p0[0]) /
+          (m * (this.p3[0] - this.p0[0]) + this.p0[1] - this.p3[1])
       );
     }
 
     return roots.filter((root) => 0 <= root && root <= 1);
   }
   private getCubicLineIntersections({ line }: { line: Box }): number[] {
-    const left = this.left;
-    const right = this.right;
+    const left = this.p1;
+    const right = this.p2;
     const m = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]);
 
     let a: number, b: number, c: number, d: number;
     let roots: number[] = [];
 
     if (Math.abs(m) === Infinity) {
-      a = -this.start[0] + 3 * left[0] - 3 * right[0] + this.end[0];
-      b = 3 * this.start[0] - 6 * left[0] + 3 * right[0];
-      c = -3 * this.start[0] + 3 * left[0];
-      d = this.start[0] - line[0][0];
+      a = -this.p0[0] + 3 * left[0] - 3 * right[0] + this.p3[0];
+      b = 3 * this.p0[0] - 6 * left[0] + 3 * right[0];
+      c = -3 * this.p0[0] + 3 * left[0];
+      d = this.p0[0] - line[0][0];
     } else {
       a =
-        m * (-this.start[0] + 3 * left[0] - 3 * right[0] + this.end[0]) +
-        1 * (this.start[1] - 3 * left[1] + 3 * right[1] - this.end[1]);
+        m * (-this.p0[0] + 3 * left[0] - 3 * right[0] + this.p3[0]) +
+        1 * (this.p0[1] - 3 * left[1] + 3 * right[1] - this.p3[1]);
       b =
-        m * (3 * this.start[0] - 6 * left[0] + 3 * right[0]) +
-        1 * (-3 * this.start[1] + 6 * left[1] - 3 * right[1]);
-      c = m * (-3 * this.start[0] + 3 * left[0]) + 1 * (3 * this.start[1] - 3 * left[1]);
-      d = m * (this.start[0] - line[0][0]) - this.start[1] + line[0][1];
+        m * (3 * this.p0[0] - 6 * left[0] + 3 * right[0]) +
+        1 * (-3 * this.p0[1] + 6 * left[1] - 3 * right[1]);
+      c = m * (-3 * this.p0[0] + 3 * left[0]) + 1 * (3 * this.p0[1] - 3 * left[1]);
+      d = m * (this.p0[0] - line[0][0]) - this.p0[1] + line[0][1];
     }
 
     // If the cubic bezier is an approximation of a quadratic curve, ignore the third degree term
@@ -440,11 +388,11 @@ class Bezier implements Entity {
 
     return roots.map((root) => (root -= b / (3 * a))).filter((root) => 0 <= root && root <= 1);
   }
-  public getLineIntersections(line: Box) {
+  private getLineIntersections(line: Box): number[] {
     return this.call(this.getLinearLineIntersections, this.getCubicLineIntersections, { line });
   }
 
-  public getLineIntersectionPoints(line: Box) {
+  getLineIntersectionPoints(line: Box): vec2[] {
     return this.getLineIntersections(line)
       .map((point) => this.getPoint(point))
       .filter((point) =>
@@ -456,23 +404,7 @@ class Bezier implements Entity {
       );
   }
 
-  public intersectsLine(line: Box): boolean {
-    if (!doesBoxIntersectsBox(line, this.boundingBox)) return false;
-    return this.getLineIntersections(line).length > 0;
-  }
-
-  private getBoxIntersections(box: Box) {
-    const lines = getLinesFromBox(box);
-    const points: number[] = [];
-
-    for (const line of lines) {
-      points.push(...this.getLineIntersections(line));
-    }
-
-    return points;
-  }
-
-  public getBoxIntersectionPoints(box: Box) {
+  getBoxIntersectionPoints(box: Box): vec2[] {
     const lines = getLinesFromBox(box);
     const points: vec2[] = [];
 
@@ -483,26 +415,31 @@ class Bezier implements Entity {
     return points;
   }
 
-  public intersectsBox(box: Box) {
-    if (!doesBoxIntersectsBox(box, this.boundingBox)) return false;
-    if (isPointInBox(this.start, box)) return true;
+  intersectsLine(line: Box): boolean {
+    if (!doesBoxIntersectBox(line, this.boundingBox)) return false;
+    return this.getLineIntersections(line).length > 0;
+  }
+
+  intersectsBox(box: Box): boolean {
+    if (!doesBoxIntersectBox(box, this.boundingBox)) return false;
+    if (isPointInBox(this.p0, box)) return true;
 
     return this.getBoxIntersectionPoints(box).length > 0;
   }
 
-  private linearSplit({ position }: { position: vec2 }): Vertex {
+  private linearSplit({ position }: { position: vec2 }): VertexEntity {
     return new Vertex({ position: this.getLinearClosestTo({ position }).point });
   }
-  private cubicSplit({ position }: { position: vec2 }): Vertex {
+  private cubicSplit({ position }: { position: vec2 }): VertexEntity {
     const data = this.getCubicClosestTo({ position, iterations: 2 });
-    const q0 = vec2.lerp(this.start, this.left, data.t);
-    const q1 = vec2.lerp(this.left, this.right, data.t);
-    const q2 = vec2.lerp(this.right, this.end, data.t);
+    const q0 = vec2.lerp(this.p0, this.p1, data.t);
+    const q1 = vec2.lerp(this.p1, this.p2, data.t);
+    const q2 = vec2.lerp(this.p2, this.p3, data.t);
     const r0 = vec2.lerp(q0, q1, data.t);
     const r1 = vec2.lerp(q1, q2, data.t);
 
-    this.m_start.setRight(vec2.sub(q0, this.start));
-    this.m_end.setLeft(vec2.sub(q2, this.end));
+    this.start.setRight(vec2.sub(q0, this.p0));
+    this.end.setLeft(vec2.sub(q2, this.p3));
 
     return new Vertex({
       position: data.point,
@@ -510,43 +447,53 @@ class Bezier implements Entity {
       right: vec2.sub(r1, data.point)
     });
   }
-  public split(position: vec2) {
+  split(position: vec2): VertexEntity {
     return this.call(this.linearSplit, this.cubicSplit, {
       position
     });
   }
 
-  public getEntityAt(position: vec2, lowerLevel = false, threshold: number = 0) {
+  destroy(): void {}
+
+  getEntityAt(
+    position: vec2,
+    lowerLevel: boolean = false,
+    threshold: number = 0
+  ): Entity | undefined {
     if (
       isPointInBox(position, this.boundingBox, threshold) &&
-      this.distanceTo(position) <= threshold
+      this.getDistanceTo(position) <= threshold
     )
       return this;
     return undefined;
   }
 
-  public getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
+  getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel: boolean = false): void {}
 
-  public delete() {}
-
-  public deleteSelf() {}
-
-  public render() {}
-
-  private getLinearDrawOp() {
-    return { type: this.m_type, data: [this.end] };
+  private getLinearDrawable(): Drawable {
+    return { operations: [{ type: this.bezierType, data: [this.p3] }] };
   }
-  private getCubicDrawOp() {
-    return { type: this.m_type, data: [this.left, this.right, this.end] };
+  private getCubicDrawable(): Drawable {
+    return { operations: [{ type: this.bezierType, data: [this.p1, this.p2, this.p3] }] };
   }
-  public getDrawOp() {
-    return this.cached('getDrawOp', () => {
-      return this.call(this.getLinearDrawOp, this.getCubicDrawOp);
+  getDrawable(useWebGL: boolean = false): Drawable {
+    return this.cached<Drawable>('getDrawable', () => {
+      return this.call(this.getLinearDrawable, this.getCubicDrawable);
     });
   }
 
-  public toJSON() {
-    return {} as BezierObject;
+  getOutlineDrawable(useWebGL: boolean = false): Drawable {
+    return { operations: [] };
+  }
+
+  render(): void {}
+
+  asObject(duplicate: boolean = false): BezierObject {
+    return { id: duplicate ? nanoid() : this.id, type: this.type };
+  }
+
+  toJSON(): BezierObject {
+    return this.asObject(false);
   }
 }
 

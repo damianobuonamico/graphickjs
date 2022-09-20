@@ -1,9 +1,9 @@
 import { BUTTONS } from '@utils/keys';
 import { vec2 } from '@math';
-import Bezier from '../ecs/bezier';
-import Element from '../ecs/element';
-import Handle from '../ecs/handle';
-import Vertex from '../ecs/vertex';
+import Bezier from '../ecs/entities/bezier';
+import Element from '../ecs/entities/element';
+import Handle from '../ecs/entities/handle';
+import Vertex from '../ecs/entities/vertex';
 import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
@@ -68,15 +68,15 @@ const onVSelectPointerDown = () => {
     if (element) {
       if (handle && !vertex) {
         if (InputManager.keys.space) {
-          handle.parent.translate(InputManager.scene.movement);
+          handle.parent.transform.translate(InputManager.scene.movement);
         } else {
-          handle.translate(InputManager.scene.movement);
+          handle.transform.translate(InputManager.scene.movement);
         }
       } else {
         SelectionManager.forEach((element) => {
           if ((element as Element).selection.size) {
             (element as Element).selection.forEach((vertex) => {
-              vertex.translate(InputManager.scene.movement);
+              vertex.transform.translate(InputManager.scene.movement);
             });
           }
         });
@@ -110,13 +110,13 @@ const onVSelectPointerDown = () => {
         if (abort) {
           SelectionManager.forEach((element) => {
             (element as Element).selection.forEach((vertex) => {
-              vertex.clearTransform();
+              vertex.transform.clear();
             });
           });
         } else if (draggingOccurred && element.selection.size) {
           SelectionManager.forEach((element) => {
             (element as Element).selection.forEach((vertex) => {
-              vertex.applyTransform();
+              vertex.transform.apply();
             });
           });
         } else if (element.selection.has(vertex.id) && !elementIsAddedToSelection) {
@@ -128,19 +128,19 @@ const onVSelectPointerDown = () => {
           }
         }
       } else if (handle) {
-        if (abort) handle.clearTransform();
-        else handle.applyTransform();
+        if (abort) handle.transform.clear();
+        else handle.transform.apply();
       } else {
         if (abort) {
           SelectionManager.forEach((element) => {
             (element as Element).selection.forEach((vertex) => {
-              vertex.clearTransform();
+              vertex.transform.clear();
             });
           });
         } else if (draggingOccurred && element.selection.size) {
           SelectionManager.forEach((element) => {
             (element as Element).selection.forEach((vertex) => {
-              vertex.applyTransform();
+              vertex.transform.apply();
             });
           });
         }

@@ -35,6 +35,6 @@ export function isPointInCircle(point: vec2, center: vec2, radius: number): bool
   );
 }
 
-export function doesBoxIntersectsBox(a: Box, b: Box): boolean {
+export function doesBoxIntersectBox(a: Box, b: Box): boolean {
   return b[1][0] >= a[0][0] && a[1][0] >= b[0][0] && b[1][1] >= a[0][1] && a[1][1] >= b[0][1];
 }

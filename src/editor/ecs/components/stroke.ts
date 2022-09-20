@@ -1,7 +1,7 @@
 import SceneManager from '@/editor/scene';
 import Color from '@utils/color';
 import { nanoid } from 'nanoid';
-import Element from '../element';
+import Element from '../entities/element';
 
 class Stroke implements Stroke {
   public readonly id: string;
