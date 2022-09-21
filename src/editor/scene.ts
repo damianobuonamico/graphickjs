@@ -68,18 +68,26 @@ abstract class SceneManager {
     (entity.parent as unknown as ECS).remove(entity.id, skipRecordAction);
   }
 
-  public static delete(selected: Entity | true) {
+  public static delete(selected: Entity | true, forceObject = false) {
     (selected === true ? SelectionManager.entities : [selected]).forEach((entity) => {
       if (
+        !forceObject &&
         entity.type === 'element' &&
         InputManager.tool.isVertex &&
         (entity as Element).selection.size < (entity as Element).length - 1
       ) {
-        (entity as Element).selection.forEach((vertex) => {
-          (entity as Element).delete(vertex);
-        });
+        (entity as Element).delete(true, false);
       } else {
-        SelectionManager.deselect(entity.id);
+        const backupSelection = (entity as Element).selection?.get();
+        HistoryManager.record({
+          fn: () => {
+            SelectionManager.deselect(entity.id);
+          },
+          undo: () => {
+            SelectionManager.select(entity);
+            if (backupSelection) (entity as Element).selection?.restore(backupSelection);
+          }
+        });
         (entity.parent as ECSEntity).delete(entity);
         entity.destroy();
       }

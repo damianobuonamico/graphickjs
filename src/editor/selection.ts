@@ -76,6 +76,13 @@ class ElementSelectionManager {
   public get() {
     return Array.from(this.m_selected.values());
   }
+
+  public restore(selection: VertexEntity[]) {
+    this.clear();
+    selection.forEach((vertex) => {
+      this.select(vertex);
+    });
+  }
 }
 
 abstract class SelectionManager {
@@ -183,9 +190,7 @@ abstract class SelectionManager {
       if (entity.hasOwnProperty('element') && entity.hasOwnProperty('vertices')) {
         const e = (entity as any).element as Entity;
         if (e.type === 'element') {
-          (entity as any).vertices.forEach((vertex: Vertex) => {
-            (e as Element).selection.select(vertex);
-          });
+          (e as Element).selection.restore((entity as any).vertices);
         } else {
           this.select(e, false);
         }

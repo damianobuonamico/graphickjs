@@ -20,6 +20,8 @@ interface ElementEntity extends TransformableEntity {
   isOpenEnd(id: string): boolean;
   isFirstVertex(id: string): boolean;
   intersects(box: Box): boolean;
+
+  delete(vertex: VertexEntity | boolean, keepClosed?: boolean): void;
 }
 
 interface ElementOptions {

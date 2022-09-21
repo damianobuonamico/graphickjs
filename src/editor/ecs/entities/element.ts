@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import HistoryManager from '../../history';
 import { Renderer } from '../../renderer';
 import SceneManager from '../../scene';
-import { ElementSelectionManager } from '../../selection';
+import SelectionManager, { ElementSelectionManager } from '../../selection';
 import Bezier from './bezier';
 import { Transform } from '../components/transform';
 import Layer from './layer';
@@ -351,88 +351,94 @@ class Element implements ElementEntity {
     return Array.from(this.m_curves.values()).some((segment) => segment.intersectsBox(box));
   }
 
-  delete(vertex: VertexEntity, keepClosed = false): void {
-    if (!this.m_vertices.has(vertex.id)) return;
-
-    const index = this.m_order.indexOf(vertex.id);
-    const backup = [...this.m_order];
-    const wasClosed = this.m_closed;
-
+  delete(vertex: VertexEntity | true, keepClosed = true): void {
     if (this.m_order.length < 3) {
-      this.selection.all();
-      SceneManager.delete(this);
-
+      SceneManager.delete(this, true);
       return;
     }
 
-    if (keepClosed || this.isOpenEnd(vertex.id)) {
-      HistoryManager.record({
-        fn: () => {
-          this.m_order.splice(index, 1);
-          this.m_vertices.delete(vertex.id);
+    const vertices = vertex === true ? this.selection.entities : [vertex];
+    const indices = vertices.map((vertex) => this.m_order.indexOf(vertex.id)).sort();
 
-          this.regenerate();
-        },
-        undo: () => {
-          this.m_vertices.set(vertex.id, vertex);
+    let fragments: string[][] = [];
 
-          this.regenerate(backup);
-        }
-      });
-    } else {
-      if (!this.m_closed && this.m_order.length < 4) {
-        this.selection.all();
-        SceneManager.delete(this);
+    for (let i = 0; i < indices.length; i++) {
+      let prev = i < 1 ? -1 : indices[i - 1];
+      if (prev !== indices[i] - 1) fragments.push(this.m_order.slice(prev + 1, indices[i]));
+    }
+
+    if (indices[indices.length - 1] < this.m_order.length - 1) {
+      fragments.push(this.m_order.slice(indices[indices.length - 1] + 1));
+    }
+
+    if (this.m_closed) {
+      if (keepClosed) {
+        const order: string[] = [];
+        const backup = [...this.m_order];
+
+        fragments.forEach((fragment) => {
+          order.push(...fragment);
+        });
+
+        const vertices = this.m_order
+          .filter((id) => order.indexOf(id) === -1)
+          .map((id) => this.m_vertices.get(id));
+
+        HistoryManager.record({
+          fn: () => {
+            this.regenerate(order);
+          },
+          undo: () => {
+            vertices.forEach((vertex) => {
+              if (vertex) this.pushVertex(vertex, false);
+            });
+            this.selection.restore(vertices as VertexEntity[]);
+            this.regenerate(backup);
+          }
+        });
 
         return;
-      }
-
-      let newElement: Element | undefined = undefined;
-
-      HistoryManager.record({
-        fn: () => {
-          this.m_closed = false;
-
-          let before = this.m_order.slice(0, index);
-          let after = this.m_order.slice(index + 1, this.m_order.length);
-
-          if (wasClosed) {
-            this.regenerate(after.concat(before));
-          } else {
-            if (before.length === 1) [before, after] = [after, before];
-
-            const object = this.asObject(true);
-
-            object.vertices = after.map(
-              (id) => this.m_vertices.get(id)!.asObject() as VertexObject
-            );
-            newElement = SceneManager.fromObject(object) as Element;
-
-            if (newElement.length > 1) (this.parent as Layer).add(newElement, true);
-
-            this.regenerate(before);
-          }
-
-          this.recalculate(false);
-        },
-        undo: () => {
-          this.m_closed = wasClosed;
-
-          this.m_vertices.set(vertex.id, vertex);
-
-          if (!wasClosed && newElement) {
-            newElement.forEach((v) => {
-              this.m_vertices.set(v.id, v);
-              v.parent = this;
-            });
-
-            if (newElement.length > 1) SceneManager.remove(newElement, true);
-          }
-
-          this.regenerate(backup);
+      } else {
+        if (
+          fragments[0][0] === this.m_order[0] &&
+          fragments[fragments.length - 1][fragments[fragments.length - 1].length - 1] ===
+            this.m_order[this.m_order.length - 1]
+        ) {
+          const last = fragments.pop();
+          if (last) fragments[0] = last.concat(fragments[0]);
         }
-      });
+      }
     }
+
+    const elements: Element[] = [];
+
+    for (let i = 0; i < fragments.length; i++) {
+      fragments[i] = fragments[i].filter((id) => id != undefined);
+      if (fragments[i].length > 1) {
+        const element = new Element({
+          vertices: fragments[i].map((id) => this.m_vertices.get(id)!),
+          position: this.transform.staticPosition,
+          stroke: this.m_stroke ?? undefined,
+          fill: this.m_fill ?? undefined
+        });
+        SceneManager.add(element);
+        elements.push(element);
+      }
+    }
+
+    SceneManager.delete(this, true);
+
+    HistoryManager.record({
+      fn: () => {
+        elements.forEach((element) => {
+          element.forEach((vertex) => (vertex.parent = element));
+        });
+        this.selection.clear();
+      },
+      undo: () => {
+        this.forEach((vertex) => (vertex.parent = this));
+      }
+    });
   }
 
   destroy(): void {
