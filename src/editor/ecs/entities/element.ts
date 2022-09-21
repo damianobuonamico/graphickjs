@@ -371,7 +371,7 @@ class Element implements ElementEntity {
       fragments.push(this.m_order.slice(indices[indices.length - 1] + 1));
     }
 
-    if (this.m_closed) {
+    if (this.m_closed || keepClosed) {
       if (keepClosed) {
         const order: string[] = [];
         const backup = [...this.m_order];

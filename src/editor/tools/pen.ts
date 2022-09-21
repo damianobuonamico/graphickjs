@@ -249,22 +249,26 @@ const onPenPointerDown = () => {
   const right = !!(pen.vertex && pen.vertex.right);
 
   function onPointerMove() {
+    let delta = InputManager.keys.shift
+      ? vec2.snap(InputManager.scene.delta)
+      : InputManager.scene.delta;
+
     switch (penState) {
       case 'sub':
         break;
       case 'add': {
-        setRight(InputManager.scene.delta);
+        setRight(delta);
 
-        if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
+        if (!InputManager.keys.alt) setLeft(vec2.neg(delta));
 
         break;
       }
       case 'close':
       case 'join': {
-        setLeft(vec2.neg(InputManager.scene.delta), true);
+        setLeft(vec2.neg(delta), true);
 
         if (!InputManager.keys.alt && right) {
-          const direction = vec2.unit(InputManager.scene.delta);
+          const direction = vec2.unit(delta);
 
           if (!vec2.equals(direction, [0, 0])) {
             setRight(vec2.mul(direction, vec2.len(pen.vertex!.transform.right)), true);
@@ -275,10 +279,10 @@ const onPenPointerDown = () => {
       }
       case 'start':
       case 'angle': {
-        setRight(InputManager.scene.delta, true);
+        setRight(delta, true);
 
         if (!InputManager.keys.alt && left) {
-          const direction = vec2.unit(vec2.neg(InputManager.scene.delta));
+          const direction = vec2.unit(vec2.neg(delta));
 
           if (!vec2.equals(direction, [0, 0])) {
             setLeft(vec2.mul(direction, vec2.len(pen.vertex!.transform.left)), true);
@@ -288,9 +292,9 @@ const onPenPointerDown = () => {
         break;
       }
       case 'new': {
-        if (!InputManager.keys.alt) setLeft(vec2.neg(InputManager.scene.delta));
+        if (!InputManager.keys.alt) setLeft(vec2.neg(delta));
 
-        setRight(InputManager.scene.delta);
+        setRight(delta);
 
         break;
       }

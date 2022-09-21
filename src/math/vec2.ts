@@ -277,19 +277,37 @@ export function dot(a: ReadonlyVec2, b: ReadonlyVec2): number {
  * @returns {Number} angle between a and b
  */
 export function angle(a: ReadonlyVec2, b: ReadonlyVec2): number {
-  return Math.sign(a[0] * b[1] - a[1] * b[0]) * Math.acos(dot(a, b) / (len(a) * len(b)));
+  return Math.atan2(b[1] - a[1], b[0] - a[0]);
 }
 
 /**
  * Calculates the absolute value of a given vector
  *
  * @param {ReadonlyVec2} a vector
- * @returns {vec2} a new 2D vector
+ * @returns {vec2} out
  */
 export function abs(a: ReadonlyVec2, self: boolean = false): vec2 {
   const out = self ? a : create();
   out[0] = Math.abs(a[0]);
   out[1] = Math.abs(a[1]);
+  return out;
+}
+
+/**
+ * Snaps the input vector to regular angle increments
+ *
+ * @param {ReadonlyVec2} a
+ * @param {number} intervals angle increments
+ * @returns {vec2} out
+ */
+export function snap(a: ReadonlyVec2, intervals: number = 8, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  const increment = (Math.PI * 2) / intervals;
+  let ang = Math.round(Math.atan2(0 - a[1], 1 - a[0]) / increment) * increment;
+  let len = length(a);
+  out[0] = -Math.cos(ang);
+  out[1] = -Math.sin(ang);
+  mul(out, len, true);
   return out;
 }
 

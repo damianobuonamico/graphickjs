@@ -70,14 +70,21 @@ const onVSelectPointerDown = () => {
         if (InputManager.keys.space) {
           handle.parent.transform.translate(InputManager.scene.movement);
         } else {
+          let value = vec2.sub(
+            InputManager.scene.position,
+            vec2.add(handle.parent.transform.position, handle.parent.parent.transform.position)
+          );
+
+          if (InputManager.keys.shift) vec2.snap(value, undefined, true);
+
           if (handle.id === handle.parent.left?.id)
             handle.parent.transform.translateLeft(
-              InputManager.scene.movement,
+              vec2.sub(value, handle.parent.transform.left),
               InputManager.keys.alt
             );
           else
             handle.parent.transform.translateRight(
-              InputManager.scene.movement,
+              vec2.sub(value, handle.parent.transform.right),
               InputManager.keys.alt
             );
         }

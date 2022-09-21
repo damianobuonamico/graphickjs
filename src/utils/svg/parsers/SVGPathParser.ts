@@ -425,10 +425,17 @@ function parseSVGPathA(pather: SVGPather, op: string, data: string[]) {
       (rotated[1] - transformedCenter[1]) / radius[1]
     ];
 
-    const angleStart = vec2.angle([1, 0], v);
+    function calculateAngle(a: vec2, b: vec2) {
+      return (
+        Math.sign(a[0] * b[1] - a[1] * b[0]) *
+        Math.acos(vec2.dot(a, b) / (vec2.len(a) * vec2.len(b)))
+      );
+    }
+
+    const angleStart = calculateAngle([1, 0], v);
 
     let angleExtent =
-      vec2.angle(v, [
+      calculateAngle(v, [
         (-rotated[0] - transformedCenter[0]) / radius[0],
         (-rotated[1] - transformedCenter[1]) / radius[1]
       ]) % MATH_TWO_PI;
