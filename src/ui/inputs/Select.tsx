@@ -1,7 +1,5 @@
 import { JSX, Component, Show, createSignal, createEffect } from 'solid-js';
 import { vec2 } from '@math';
-import { classNames } from '@utils/utils';
-import getIcon from '@icons';
 import Button, { ButtonVariant } from './Button';
 import { ControlledMenu } from '../menu';
 
@@ -42,7 +40,7 @@ const Select: Component<{
   });
 
   createEffect(() => {
-    if (props.onChange) props.onChange(current().id);
+    if (props.onChange && active()) props.onChange(current().id);
   });
 
   return (
@@ -74,11 +72,7 @@ const Select: Component<{
         {props.menuButton.arrow && (
           <div class="w-0 h-0 self-end translate-y-[-9px]">
             <svg class="text-primary-500" height="5" width="5">
-              <polygon
-                fill={'currentColor'}
-                points="5,0 0,5 5,5"
-                class="triangle"
-              />
+              <polygon fill={'currentColor'} points="5,0 0,5 5,5" class="triangle" />
             </svg>
           </div>
         )}

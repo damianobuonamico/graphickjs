@@ -1,4 +1,4 @@
-export interface KeyBinding {
+interface KeyBinding {
   key: string | string[];
   shift?: boolean | null;
   alt?: boolean | null;
@@ -6,6 +6,9 @@ export interface KeyBinding {
   platform?: boolean;
 }
 
-export type ClassNameValue = string | number | boolean | undefined | null;
-export type ClassNameMapping = { [key: string]: any };
-export type ClassNameArgument = ClassNameValue | ClassNameMapping | ClassNameArgument[];
+type ClassNameValue = string | number | boolean | undefined | null;
+type ClassNameMapping = { [key: string]: any };
+type ClassNameArgument =
+  | ClassNameValue
+  | ClassNameMapping
+  | ClassNameArgument[];

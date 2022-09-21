@@ -1,31 +1,32 @@
-import { Component, For, JSX, Match, Switch } from 'solid-js';
-import { Tool } from '@editor/types';
+import { Component, createEffect, For, JSX } from 'solid-js';
 import { Button } from '@inputs';
 import {
   CircleIcon,
+  HandIcon,
   PenIcon,
   PointerIcon,
   PointerVertexIcon,
-  RectangleIcon
+  RectangleIcon,
+  ZoomIcon
 } from '@icons';
 import Select from '../inputs/Select';
 
-interface ToolData {
-  icon: JSX.Element;
-}
-
-export function getToolData(tool: Tool): ToolData {
+export function getToolIcon(tool: Tool): JSX.Element {
   switch (tool) {
     case 'vselect':
-      return { icon: <PointerVertexIcon /> };
+      return <PointerVertexIcon />;
     case 'pen':
-      return { icon: <PenIcon /> };
+      return <PenIcon />;
     case 'rectangle':
-      return { icon: <RectangleIcon /> };
+      return <RectangleIcon />;
     case 'ellipse':
-      return { icon: <CircleIcon /> };
+      return <CircleIcon />;
+    case 'pan':
+      return <HandIcon />;
+    case 'zoom':
+      return <ZoomIcon />;
     default:
-      return { icon: <PointerIcon /> };
+      return <PointerIcon />;
   }
 }
 
@@ -44,7 +45,7 @@ const ToolBar: Component<{
             <Select
               menuButton={{ variant: 'tool', arrow: true }}
               options={tool.map((tool) => {
-                return { id: tool, label: getToolData(tool).icon };
+                return { id: tool, label: getToolIcon(tool) };
               })}
               position={'right'}
               onClick={(current: string) => props.setTool(current as Tool)}
@@ -58,7 +59,7 @@ const ToolBar: Component<{
               variant={'tool'}
               onClick={() => props.setTool(tool)}
             >
-              {getToolData(tool).icon}
+              {getToolIcon(tool)}
             </Button>
           )
         }

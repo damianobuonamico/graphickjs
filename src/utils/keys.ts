@@ -1,5 +1,3 @@
-import { KeyBinding } from './types';
-
 export const isDarwin = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
 export const isWindows = /^Win/.test(window.navigator.platform);
 
@@ -13,8 +11,8 @@ export const KEYS = {
   DELETE: 'Delete',
   BACKSPACE: 'Backspace',
   SPACEBAR: ' ',
-  META: isDarwin ? 'metaKey' : 'ctrlKey',
-  META_KEY: isDarwin ? 'Meta' : 'Control',
+  CTRL: isDarwin ? 'metaKey' : 'ctrlKey',
+  CTRL_KEY: isDarwin ? 'Meta' : 'Control',
   PLATFORM: isDarwin ? 'ctrlKey' : 'metaKey',
   PLATFORM_KEY: isDarwin ? 'Control' : 'Meta',
   SHIFT: 'Shift',

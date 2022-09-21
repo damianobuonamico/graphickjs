@@ -333,12 +333,25 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@rollup/pluginutils@^4.1.0":
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/@rollup/pluginutils/-/pluginutils-4.2.1.tgz#e6c6c3aba0744edce3fb2074922d3776c0af2a6d"
+  integrity sha512-iKnFXr7NkdZAIHiIWE+BX5ULi/ucVFYWD6TbAV+rZctiRTY2PL6tsIKhoIOaoskiWAkgu+VsbXgUVDNLHf+InQ==
+  dependencies:
+    estree-walker "^2.0.1"
+    picomatch "^2.2.2"
+
 "@types/classnames@^2.3.1":
   version "2.3.1"
   resolved "https://registry.npmjs.org/@types/classnames/-/classnames-2.3.1.tgz"
   integrity sha512-zeOWb0JGBoVmlQoznvqXbE0tEC/HONsnoUNH19Hc96NFsTAwTXbTqb8FMYkru1F/iqp7a18Ws3nWJvtA1sHD1A==
   dependencies:
     classnames "*"
+
+"@types/colornames@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@types/colornames/-/colornames-1.1.2.tgz#8c5ae67ce6dc45c76b4cabcd2887b31d783651e1"
+  integrity sha512-tq8AZME3IzZDtW/xpgk6EjqMCtIy5c8/YthsRDSkfj10O8y7QNpD5A22GQf5ziB4OaX7u1jtWu5werbjAKFleQ==
 
 "@types/node@^18.0.6":
   version "18.0.6"
@@ -490,6 +503,11 @@ color-name@^1.1.4:
   version "1.1.4"
   resolved "https://registry.npmjs.org/color-name/-/color-name-1.1.4.tgz"
   integrity sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==
+
+colornames@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/colornames/-/colornames-1.1.1.tgz#f8889030685c7c4ff9e2a559f5077eb76a816f96"
+  integrity sha512-/pyV40IrsdulWv+wFPmERh9k/mjsPZ64yUMDmWrtj/k1nmgrzzIENWKdaVKyBbvFdQWqkcaRxr+polCo3VMe7A==
 
 convert-source-map@^1.7.0:
   version "1.8.0"
@@ -674,6 +692,11 @@ escape-string-regexp@^1.0.5:
   version "1.0.5"
   resolved "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.5.tgz"
   integrity sha512-vbRorB5FUQWvla16U8R/qgaFIya2qGzwDrNmCZuYKrbdSUMG6I1ZCGQRefkRVhuOkIGVne7BQ35DSfo1qvJqFg==
+
+estree-walker@^2.0.1:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/estree-walker/-/estree-walker-2.0.2.tgz#52f010178c2a4c117a7757cfe942adb7d2da4cac"
+  integrity sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==
 
 fast-glob@^3.2.11:
   version "3.2.11"
@@ -883,7 +906,7 @@ picocolors@^1.0.0:
   resolved "https://registry.npmjs.org/picocolors/-/picocolors-1.0.0.tgz"
   integrity sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==
 
-picomatch@^2.0.4, picomatch@^2.2.1, picomatch@^2.3.1:
+picomatch@^2.0.4, picomatch@^2.2.1, picomatch@^2.2.2, picomatch@^2.3.1:
   version "2.3.1"
   resolved "https://registry.npmjs.org/picomatch/-/picomatch-2.3.1.tgz"
   integrity sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==
@@ -1112,6 +1135,13 @@ vite-plugin-solid@^2.3.0:
     babel-preset-solid "^1.4.6"
     merge-anything "^5.0.2"
     solid-refresh "^0.4.1"
+
+vite-plugin-string@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/vite-plugin-string/-/vite-plugin-string-1.1.2.tgz#c577fc4488e5caa829f5e6ea76bf9a1c6c0ae01b"
+  integrity sha512-QMzsMAR4Vpw4DdCPNypVxKOkthtYIKNk8aR7U10kC/uMogf5tKsq5o8+lB9FtEu3XlSuym3On071zlUBP14yaw==
+  dependencies:
+    "@rollup/pluginutils" "^4.1.0"
 
 vite@^3.0.0:
   version "3.0.2"

@@ -2,12 +2,10 @@ import { Component, createSignal } from 'solid-js';
 import FileMenu from '@menu/FileMenu';
 import { MenuItem } from '@menu/ControlledMenu';
 import { KEYS } from '@utils/keys';
-import { Mode } from '@editor/types';
+import actions from '@/editor/actions';
+import getIcon from '../icons';
 
-export function getModeComponent(
-  mode: Mode,
-  setMode: (mode: Mode) => void
-): MenuItem {
+export function getModeComponent(mode: Mode, setMode: (mode: Mode) => void): MenuItem {
   switch (mode) {
     case 'photo':
       return {
@@ -42,7 +40,7 @@ export function getModeComponent(
   }
 }
 
-const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
+const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void; loading: boolean }> = (
   props
 ) => {
   const [checked, setChecked] = createSignal(true);
@@ -53,7 +51,9 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
         items={[
           {
             label: '',
-            icon: getModeComponent(props.mode, props.setMode).icon,
+            icon: props.loading
+              ? getIcon('loading', { class: 'text-primary' })
+              : getModeComponent(props.mode, props.setMode).icon,
             submenu: [
               getModeComponent('designer', props.setMode),
               getModeComponent('publisher', props.setMode),
@@ -101,7 +101,6 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
                 label: 'Auto Save',
                 key: KEYS.A,
                 disabled: true,
-                checkbox: true,
                 checked: checked(),
                 callback: () => {
                   setChecked(!checked());
@@ -114,14 +113,14 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void }> = (
             key: KEYS.E,
             submenu: [
               {
+                ...actions.undo,
                 label: 'Undo',
-                key: KEYS.U,
-                shortcut: { key: KEYS.Z, ctrl: true }
+                key: KEYS.U
               },
               {
+                ...actions.redo,
                 label: 'Redo',
-                key: KEYS.R,
-                shortcut: { key: KEYS.Z, ctrl: true, shift: true }
+                key: KEYS.R
               },
               {
                 label: 'separator',

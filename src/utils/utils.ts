@@ -1,4 +1,4 @@
-import { ClassNameArgument } from './types';
+import { KEYS } from './keys';
 
 export function classNames(...args: ClassNameArgument[]) {
   const classes: string[] = [];
@@ -33,4 +33,73 @@ export function classNames(...args: ClassNameArgument[]) {
   }
 
   return classes.join(' ');
+}
+
+export function isObject(value: any) {
+  if (
+    !(typeof value === 'object' && value !== null) ||
+    Object.prototype.toString.call(value) != '[object Object]'
+  ) {
+    return false;
+  }
+  if (Object.getPrototypeOf(value) === null) {
+    return true;
+  }
+  let proto = value;
+  while (Object.getPrototypeOf(proto) !== null) {
+    proto = Object.getPrototypeOf(proto);
+  }
+  return Object.getPrototypeOf(value) === proto;
+}
+
+export function cloneObject(object: { [key: string]: any }) {
+  const obj: { [key: string]: any } = {};
+  Object.entries(object).forEach(([key, value]) => {
+    if (!isObject(value) || value === null) {
+      obj[key] = value;
+    } else {
+      obj[key] === cloneObject(value);
+    }
+  });
+  return obj;
+}
+
+export function fillObject<T>(object: { [key: string]: any }, schema: { [key: string]: any }) {
+  const incomplete = cloneObject(object);
+
+  Object.entries(schema).forEach(([key, value]) => {
+    if (!incomplete[key]) {
+      if (isObject(value)) incomplete[key] = cloneObject(value);
+      else incomplete[key] = value;
+    } else if (isObject(incomplete[key])) incomplete[key] = fillObject(incomplete[key], value);
+  });
+
+  return incomplete as T;
+}
+
+export function isInputLike(
+  target: Element | EventTarget | null
+): target is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLSpanElement {
+  return (
+    (target instanceof HTMLElement && target.dataset.type === 'wysiwyg') ||
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target instanceof HTMLSpanElement
+  );
+}
+
+export function isShortcut(e: KeyboardEvent, shortcut: KeyBinding): boolean {
+  if (e.key.toLowerCase() !== shortcut.key.toString().toLowerCase()) return false;
+  if (!!shortcut.ctrl !== (e as any)[KEYS.CTRL]) return false;
+  if (!!shortcut.shift !== e.shiftKey) return false;
+  if (!!shortcut.alt !== e.altKey) return false;
+  return true;
+}
+
+export function stringifyReplacer(key: string, value: any) {
+  if (value instanceof Float32Array) {
+    return Array.apply([], value as unknown as unknown[]);
+  }
+  return value;
 }

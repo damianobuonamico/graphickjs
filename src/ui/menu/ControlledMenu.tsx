@@ -1,17 +1,10 @@
-import {
-  Component,
-  createSignal,
-  For,
-  onCleanup,
-  onMount,
-  JSX
-} from 'solid-js';
+import { Component, createSignal, For, onCleanup, onMount, JSX } from 'solid-js';
 import { Button } from '@inputs';
 import { CheckIcon } from '@icons';
 import Menu from './Menu';
 import { KEYS, getShortcutString } from '@utils/keys';
 import MenuKeyCallback from './menuKeyCallback';
-import { KeyBinding } from '@utils/types';
+import SceneManager from '@/editor/scene';
 
 export interface MenuItem {
   label: string;
@@ -73,7 +66,10 @@ const ControlledMenu: Component<{
 
   const onClick = (item: MenuItem) => {
     if (!item || item.disabled) return;
-    if (item.callback) item.callback();
+    if (item.callback) {
+      item.callback();
+      SceneManager.render();
+    }
     props.onClose(true);
   };
 
@@ -104,10 +100,7 @@ const ControlledMenu: Component<{
             if (!props.items[i].disabled) {
               setActive(i);
               setTimeout(
-                () =>
-                  window.dispatchEvent(
-                    new KeyboardEvent('keydown', { key: KEYS.ARROW_RIGHT })
-                  ),
+                () => window.dispatchEvent(new KeyboardEvent('keydown', { key: KEYS.ARROW_RIGHT })),
                 25
               );
             }
@@ -121,8 +114,7 @@ const ControlledMenu: Component<{
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (props.keyCallback)
-      props.keyCallback.register(() => processKey(e), props.level || 0);
+    if (props.keyCallback) props.keyCallback.register(() => processKey(e), props.level || 0);
   };
 
   onMount(() => {
@@ -143,7 +135,7 @@ const ControlledMenu: Component<{
 
   return (
     <div
-      class="fixed bg-primary-800 shadow-md rounded border-primary-600 border"
+      class="fixed bg-primary-800 shadow-md rounded border-primary-600 border z-10"
       style={{ left: `${props.anchor[0]}px`, top: `${props.anchor[1]}px` }}
       ref={menuRef}
     >
@@ -154,9 +146,7 @@ const ControlledMenu: Component<{
               {item.label === 'separator' ? (
                 <div
                   class="w-full h-[1px] my-1 bg-primary-600"
-                  onMouseOver={
-                    props.setActiveOnHover ? () => setActive(index()) : () => {}
-                  }
+                  onMouseOver={props.setActiveOnHover ? () => setActive(index()) : () => {}}
                 />
               ) : item.submenu && item.submenu.length ? (
                 <Menu
@@ -170,9 +160,7 @@ const ControlledMenu: Component<{
                   items={item.submenu}
                   isSubMenu={true}
                   active={active() === index()}
-                  onHover={
-                    props.setActiveOnHover ? () => setActive(index()) : () => {}
-                  }
+                  onHover={props.setActiveOnHover ? () => setActive(index()) : () => {}}
                   onClose={(propagate: boolean) => {
                     setActive(-1);
                     if (propagate) {
@@ -187,9 +175,7 @@ const ControlledMenu: Component<{
                 <Button
                   variant={typeof item.label === 'string' ? 'menu' : 'tool'}
                   onClick={() => onClick(item)}
-                  onHover={
-                    props.setActiveOnHover ? () => setActive(index()) : () => {}
-                  }
+                  onHover={props.setActiveOnHover ? () => setActive(index()) : () => {}}
                   leftIcon={item.checked ? <CheckIcon /> : item.icon}
                   active={active() === index() || item.active}
                   disabled={item.disabled}
@@ -199,9 +185,7 @@ const ControlledMenu: Component<{
                       {(props.alt && item.key && typeof item.label === 'string'
                         ? calculateAltLabel(item.label, item.key)
                         : false) || item.label}
-                      <span class="text-primary-500 ml-6">
-                        {getShortcutString(item.shortcut)}
-                      </span>
+                      <span class="text-primary-500 ml-6">{getShortcutString(item.shortcut)}</span>
                     </div>
                   ) : (
                     (props.alt && item.key && typeof item.label === 'string'
