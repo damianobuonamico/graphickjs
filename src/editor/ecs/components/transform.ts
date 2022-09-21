@@ -1,5 +1,6 @@
 import HistoryManager from '@editor/history';
 import { vec2 } from '@math';
+import Handle from '../entities/handle';
 
 class TransformNumberValue implements TransformComponentValue<number> {
   private m_value;
@@ -215,4 +216,134 @@ class Transform implements TransformComponent {
   }
 }
 
-export { SimpleTransform, Transform };
+class VertexTransform implements VertexTransformComponent {
+  private m_vertex: VertexEntity;
+
+  constructor(vertex: VertexEntity) {
+    this.m_vertex = vertex;
+  }
+
+  private get m_position(): SimpleTransformComponent {
+    return this.m_vertex.position.transform;
+  }
+
+  private get m_left(): SimpleTransformComponent | undefined {
+    return this.m_vertex.left?.transform;
+  }
+
+  private get m_right(): SimpleTransformComponent | undefined {
+    return this.m_vertex.right?.transform;
+  }
+
+  get position(): vec2 {
+    return this.m_position.position;
+  }
+
+  set position(value: vec2) {
+    this.m_position.position = value;
+  }
+
+  get staticPosition(): vec2 {
+    return this.m_position.staticPosition;
+  }
+
+  set translation(value: vec2) {
+    this.m_position.translation = value;
+  }
+
+  move(delta: vec2) {
+    this.m_position.move(delta);
+  }
+
+  translate(delta: vec2): void {
+    this.m_position.translate(delta);
+  }
+
+  get left(): vec2 {
+    return this.m_left ? this.m_left.position : vec2.create();
+  }
+
+  set left(value: vec2) {
+    if (this.m_left) {
+      this.m_left.position = value;
+    } else {
+      this.m_vertex.left = new Handle({ position: value, type: 'bezier', parent: this.m_vertex });
+    }
+  }
+
+  get staticLeft(): vec2 {
+    return this.m_left ? this.m_left.staticPosition : vec2.create();
+  }
+
+  set translationLeft(value: vec2) {
+    if (this.m_left) {
+      this.m_left.translation = value;
+    }
+  }
+
+  moveLeft(delta: vec2) {
+    this.m_left?.move(delta);
+  }
+
+  translateLeft(delta: vec2, lockMirror: boolean = false): void {
+    this.m_left?.translate(delta);
+
+    if (!lockMirror && this.m_right) {
+      const direction = vec2.unit(vec2.neg(this.left));
+      if (!vec2.equals(direction, [0, 0])) {
+        this.translateRight(vec2.sub(vec2.mul(direction, vec2.len(this.right!)), this.right), true);
+      }
+    }
+  }
+
+  get right(): vec2 {
+    return this.m_right ? this.m_right.position : vec2.create();
+  }
+
+  set right(value: vec2) {
+    if (this.m_right) {
+      this.m_right.position = value;
+    } else {
+      this.m_vertex.right = new Handle({ position: value, type: 'bezier', parent: this.m_vertex });
+    }
+  }
+
+  get staticRight(): vec2 {
+    return this.m_right ? this.m_right.staticPosition : vec2.create();
+  }
+
+  set translationRight(value: vec2) {
+    if (this.m_right) {
+      this.m_right.translation = value;
+    }
+  }
+
+  moveRight(delta: vec2) {
+    this.m_right?.move(delta);
+  }
+
+  translateRight(delta: vec2, lockMirror: boolean = false): void {
+    this.m_right?.translate(delta);
+
+    if (!lockMirror && this.m_left) {
+      const direction = vec2.unit(vec2.neg(this.right));
+      if (!vec2.equals(direction, [0, 0])) {
+        this.translateLeft(vec2.sub(vec2.mul(direction, vec2.len(this.left!)), this.left), true);
+      }
+    }
+  }
+
+  apply(): void {
+    this.m_position.apply();
+    this.m_left?.apply();
+    this.m_right?.apply();
+  }
+
+  clear(): void {
+    this.m_position.clear();
+    this.m_left?.clear();
+    this.m_right?.clear();
+  }
+}
+
+export { SimpleTransform, Transform, VertexTransform };

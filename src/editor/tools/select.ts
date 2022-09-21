@@ -47,7 +47,7 @@ const onSelectPointerDown = () => {
       if (SelectionManager.size) {
         draggingOccurred = true;
         SelectionManager.forEach((entity) => {
-          entity.transform.translate(InputManager.scene.movement);
+          (entity as Element).transform.translate(InputManager.scene.movement);
         });
       }
     } else if (rect.element) {
@@ -65,11 +65,11 @@ const onSelectPointerDown = () => {
 
     if (abort) {
       SelectionManager.forEach((entity) => {
-        entity.transform.clear();
+        (entity as Element).transform.clear();
       });
     } else if (draggingOccurred && SelectionManager.size) {
       SelectionManager.forEach((entity) => {
-        entity.transform.apply();
+        (entity as Element).transform.apply();
       });
     } else if (element && SelectionManager.has(element.id) && !elementIsAddedToSelection) {
       if (InputManager.keys.shift) {

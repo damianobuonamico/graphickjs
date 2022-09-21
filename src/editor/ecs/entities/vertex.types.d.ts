@@ -1,17 +1,12 @@
 interface VertexEntity extends Entity {
-  position: vec2;
+  parent: ElementEntity;
+
+  position: HandleEntity;
   left: HandleEntity | undefined;
   right: HandleEntity | undefined;
 
-  transform: SimpleTransformComponent;
+  transform: VertexTransformComponent;
   boundingBox: Box;
-
-  setLeft(position?: vec2 | HandleEntity | null, skipRecordAction?: boolean): void;
-  setRight(position?: vec2 | HandleEntity | null, skipRecordAction?: boolean): void;
-
-  mirrorTranslation(id: string): void;
-  applyMirroredTranslation(id: string): void;
-  clearMirroredTranslation(id: string): void;
 
   render(selected?: boolean): void;
 }

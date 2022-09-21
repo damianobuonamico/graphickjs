@@ -8,7 +8,7 @@ abstract class Renderer {
 
   public static debugging: boolean = true;
   public static debug: DebugState = {
-    box: true
+    box: false
   };
 
   public static get canvas() {
@@ -72,8 +72,8 @@ abstract class Renderer {
     this.m_canvas.beginOutline();
   }
 
-  public static outline(entity: Entity) {
-    this.m_canvas.outline(entity);
+  public static outline(entity: Entity, skipVertices: boolean = false) {
+    this.m_canvas.outline(entity, skipVertices);
   }
 
   public static endOutline() {

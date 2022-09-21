@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import HistoryManager from '../../history';
 import { Renderer } from '../../renderer';
 import SceneManager from '../../scene';
+import { VertexTransform } from '../components/transform';
 import Element from './element';
 import Handle from './handle';
 
@@ -11,6 +12,7 @@ class Vertex implements VertexEntity {
   readonly type: EntityType = 'vertex';
 
   parent: ElementEntity;
+  transform: VertexTransformComponent;
 
   private m_position: HandleEntity;
   private m_left?: HandleEntity;
@@ -20,24 +22,32 @@ class Vertex implements VertexEntity {
     this.id = id;
     this.m_position = new Handle({ position, type: 'vertex', parent: this });
 
-    if (left) this.setLeft(left, true);
-    if (right) this.setRight(right, true);
+    if (left) this.left = new Handle({ position: left, type: 'bezier', parent: this });
+    if (right) this.right = new Handle({ position: right, type: 'bezier', parent: this });
+
+    this.transform = new VertexTransform(this);
   }
 
-  get position(): vec2 {
-    return this.m_position.transform.position;
+  get position(): HandleEntity {
+    return this.m_position;
   }
 
   get left(): HandleEntity | undefined {
     return this.m_left;
   }
 
+  set left(handle: HandleEntity | undefined) {
+    this.m_left = handle;
+    this.parent?.recalculate();
+  }
+
   get right(): HandleEntity | undefined {
     return this.m_right;
   }
 
-  get transform(): SimpleTransformComponent {
-    return this.m_position.transform;
+  set right(handle: HandleEntity | undefined) {
+    this.m_right = handle;
+    this.parent?.recalculate();
   }
 
   get boundingBox(): Box {
@@ -45,96 +55,16 @@ class Vertex implements VertexEntity {
     let max: vec2 = [0, 0];
 
     if (this.m_left) {
-      min = vec2.min(min, this.m_left.transform.position);
-      max = vec2.max(max, this.m_left.transform.position);
+      min = vec2.min(min, this.transform.left);
+      max = vec2.max(max, this.transform.left);
     }
 
     if (this.m_right) {
-      min = vec2.min(min, this.m_right.transform.position);
-      max = vec2.max(max, this.m_right.transform.position);
+      min = vec2.min(min, this.transform.right);
+      max = vec2.max(max, this.transform.right);
     }
 
-    return [vec2.add(min, this.position), vec2.add(max, this.position)] as Box;
-  }
-
-  setLeft(position?: vec2 | HandleEntity | null, skipRecordAction: boolean = false): void {
-    if (position instanceof Handle) {
-      this.m_left = position;
-      return;
-    }
-
-    if (skipRecordAction) {
-      if (position) {
-        if (this.m_left) this.m_left.transform.position = position as vec2;
-        else this.m_left = new Handle({ position: position as vec2, type: 'bezier', parent: this });
-      } else this.m_left = undefined;
-      return;
-    }
-
-    const backup = this.m_left?.transform.position;
-
-    HistoryManager.record({
-      fn: () => {
-        this.setLeft(position, true);
-      },
-      undo: () => {
-        this.setLeft(backup, true);
-      }
-    });
-  }
-
-  setRight(position?: vec2 | HandleEntity | null, skipRecordAction: boolean = false): void {
-    if (position instanceof Handle) {
-      this.m_right = position;
-      return;
-    }
-
-    if (skipRecordAction) {
-      if (position) {
-        if (this.m_right) this.m_right.transform.position = position as vec2;
-        this.m_right = new Handle({ position: position as vec2, type: 'bezier', parent: this });
-      } else this.m_right = undefined;
-      return;
-    }
-
-    const backup = this.m_right ? this.m_right.transform.position : undefined;
-
-    HistoryManager.record({
-      fn: () => {
-        this.setRight(position, true);
-      },
-      undo: () => {
-        this.setRight(backup, true);
-      }
-    });
-  }
-
-  mirrorTranslation(id: string): void {
-    // const isLeft = this.m_left && this.m_left.id === id;
-    // const handle = isLeft ? this.m_left! : this.m_right!;
-    // const toMirror = isLeft ? this.m_right : this.m_left;
-    // if (!toMirror) return;
-    // const direction = vec2.unit(vec2.neg(handle.position));
-    // if (!vec2.equals(direction, [0, 0])) {
-    //   toMirror.translate(
-    //     vec2.sub(vec2.mul(direction, vec2.len(toMirror.position!)), toMirror.position),
-    //     true
-    //   );
-    // }
-  }
-
-  applyMirroredTranslation(id: string): void {
-    // const isLeft = this.m_left && this.m_left.id === id;
-    // const toMirror = isLeft ? this.m_right : this.m_left;
-    // if (!toMirror) return;
-    // toMirror.applyTransform(true);
-  }
-
-  clearMirroredTranslation(id: string): void {
-    // const isLeft = this.m_left && this.m_left.id === id;
-    // const toMirror = isLeft ? this.m_right : this.m_left;
-    // if (!toMirror) return;
-    // toMirror.clearTransform(true);
+    return [vec2.add(min, this.transform.position), vec2.add(max, this.transform.position)] as Box;
   }
 
   destroy(): void {}
@@ -146,7 +76,7 @@ class Vertex implements VertexEntity {
   ): Entity | undefined {
     if (this.m_position.getEntityAt(position, lowerLevel, threshold)) return this.m_position;
 
-    position = vec2.sub(position, this.position);
+    position = vec2.sub(position, this.transform.position);
 
     if (lowerLevel && this.m_left && this.m_left.getEntityAt(position, lowerLevel, threshold))
       return this.m_left;
@@ -158,7 +88,7 @@ class Vertex implements VertexEntity {
   }
 
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {
-    if (isPointInBox(this.position, box)) entities.add(this);
+    if (isPointInBox(this.transform.position, box)) entities.add(this);
   }
 
   getDrawable(useWebGL: boolean = false, selected: boolean = false): Drawable {
@@ -172,7 +102,7 @@ class Vertex implements VertexEntity {
           drawable.operations.push({
             type: 'circle',
             data: [
-              vec2.add(this.m_left.transform.position, this.position),
+              vec2.add(this.m_left.transform.position, this.transform.position),
               3 / SceneManager.viewport.zoom
             ]
           });
@@ -182,7 +112,7 @@ class Vertex implements VertexEntity {
           drawable.operations.push({
             type: 'circle',
             data: [
-              vec2.add(this.m_right.transform.position, this.position),
+              vec2.add(this.m_right.transform.position, this.transform.position),
               3 / SceneManager.viewport.zoom
             ]
           });
@@ -190,7 +120,7 @@ class Vertex implements VertexEntity {
 
         drawable.operations.push({
           type: 'crect',
-          data: [this.position, 4 / SceneManager.viewport.zoom]
+          data: [this.transform.position, 4 / SceneManager.viewport.zoom]
         });
 
         drawable.operations.push({ type: 'fill' });
@@ -199,28 +129,28 @@ class Vertex implements VertexEntity {
         if (this.m_left) {
           drawable.operations.push({
             type: 'move',
-            data: [vec2.add(this.m_left.transform.position, this.position)]
+            data: [vec2.add(this.m_left.transform.position, this.transform.position)]
           });
           drawable.operations.push({
             type: 'linear',
-            data: [this.position]
+            data: [this.transform.position]
           });
         }
 
         if (this.m_right) {
           drawable.operations.push({
             type: 'move',
-            data: [vec2.add(this.m_right.transform.position, this.position)]
+            data: [vec2.add(this.m_right.transform.position, this.transform.position)]
           });
           drawable.operations.push({
             type: 'linear',
-            data: [this.position]
+            data: [this.transform.position]
           });
         }
       } else {
         drawable.operations.push({
           type: 'crect',
-          data: [this.position, 3 / SceneManager.viewport.zoom]
+          data: [this.transform.position, 3 / SceneManager.viewport.zoom]
         });
         drawable.operations.push({ type: 'fillcolor', data: vec4.fromValues(1, 1, 1, 1) });
         drawable.operations.push({ type: 'fill' });
@@ -247,9 +177,9 @@ class Vertex implements VertexEntity {
     return {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
-      position: this.position,
-      left: this.m_left?.transform.position,
-      right: this.m_right?.transform.position
+      position: this.transform.position,
+      left: this.m_left ? this.transform.left : undefined,
+      right: this.m_right ? this.transform.right : undefined
     };
   }
 

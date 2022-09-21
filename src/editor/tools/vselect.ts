@@ -70,7 +70,16 @@ const onVSelectPointerDown = () => {
         if (InputManager.keys.space) {
           handle.parent.transform.translate(InputManager.scene.movement);
         } else {
-          handle.transform.translate(InputManager.scene.movement);
+          if (handle.id === handle.parent.left?.id)
+            handle.parent.transform.translateLeft(
+              InputManager.scene.movement,
+              InputManager.keys.alt
+            );
+          else
+            handle.parent.transform.translateRight(
+              InputManager.scene.movement,
+              InputManager.keys.alt
+            );
         }
       } else {
         SelectionManager.forEach((element) => {
@@ -128,8 +137,8 @@ const onVSelectPointerDown = () => {
           }
         }
       } else if (handle) {
-        if (abort) handle.transform.clear();
-        else handle.transform.apply();
+        if (abort) handle.parent.transform.clear();
+        else handle.parent.transform.apply();
       } else {
         if (abort) {
           SelectionManager.forEach((element) => {

@@ -24,19 +24,19 @@ class Bezier implements BezierEntity {
   }
 
   get p0(): vec2 {
-    return this.start.position;
+    return this.start.transform.position;
   }
 
   get p1(): vec2 {
-    return this.start.right ? vec2.add(this.p0, this.start.right.transform.position) : this.p0;
+    return this.start.right ? vec2.add(this.p0, this.start.transform.right) : this.p0;
   }
 
   get p2(): vec2 {
-    return this.end.left ? vec2.add(this.p3, this.end.left.transform.position) : this.p3;
+    return this.end.left ? vec2.add(this.p3, this.end.transform.left) : this.p3;
   }
 
   get p3(): vec2 {
-    return this.end.position;
+    return this.end.transform.position;
   }
 
   get bezierType(): BezierType {
@@ -438,8 +438,8 @@ class Bezier implements BezierEntity {
     const r0 = vec2.lerp(q0, q1, data.t);
     const r1 = vec2.lerp(q1, q2, data.t);
 
-    this.start.setRight(vec2.sub(q0, this.p0));
-    this.end.setLeft(vec2.sub(q2, this.p3));
+    this.start.transform.right = vec2.sub(q0, this.p0);
+    this.end.transform.left = vec2.sub(q2, this.p3);
 
     return new Vertex({
       position: data.point,

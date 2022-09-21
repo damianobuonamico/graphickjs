@@ -261,14 +261,14 @@ class Canvas2D implements Canvas {
     this.begin();
   }
 
-  public outline(entity: Entity) {
+  public outline(entity: Entity, skipVertices: boolean = false) {
     this.m_ctx.save();
     if (entity.type !== 'demo') {
       const position = (entity as Element).transform.position;
       this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
     }
     this.draw((entity as Element).getOutlineDrawable(false));
-    if (InputManager.tool.isVertex && entity.type === 'element')
+    if (!skipVertices && InputManager.tool.isVertex && entity.type === 'element')
       (entity as Element).forEach((vertex, selected) => vertex.render(selected));
     this.m_ctx.restore();
     this.m_stats.entity();

@@ -72,3 +72,26 @@ interface TransformComponent {
   clear(): void;
   apply(): void;
 }
+
+interface VertexTransformComponent {
+  position: vec2;
+  staticPosition: vec2;
+  translation: vec2;
+  move(delta: vec2): void;
+  translate(delta: vec2): void;
+
+  left: vec2;
+  staticLeft: vec2;
+  translationLeft: vec2;
+  moveLeft(delta: vec2): void;
+  translateLeft(delta: vec2, lockMirror?: boolean): void;
+
+  right: vec2;
+  staticRight: vec2;
+  translationRight: vec2;
+  moveRight(delta: vec2): void;
+  translateRight(delta: vec2, lockMirror?: boolean): void;
+
+  clear(): void;
+  apply(): void;
+}

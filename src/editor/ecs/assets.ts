@@ -10,21 +10,25 @@ class AssetsManager {
 
   constructor() {}
 
-  public set(asset: Stroke | Fill) {
+  public set(asset: Stroke | Fill, skipRecordHistory: boolean = false) {
     let type: keyof typeof this.m_assets | null = null;
 
     if (asset instanceof Stroke) type = 'stroke';
     else if (asset instanceof Fill) type = 'fill';
 
     if (type) {
-      HistoryManager.record({
-        fn: () => {
-          this.m_assets[type!].set(asset.id, asset as any);
-        },
-        undo: () => {
-          this.m_assets[type!].delete(asset.id);
-        }
-      });
+      if (skipRecordHistory) {
+        this.m_assets[type!].set(asset.id, asset as any);
+      } else {
+        HistoryManager.record({
+          fn: () => {
+            this.m_assets[type!].set(asset.id, asset as any);
+          },
+          undo: () => {
+            this.m_assets[type!].delete(asset.id);
+          }
+        });
+      }
     }
   }
 

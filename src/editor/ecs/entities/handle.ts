@@ -17,9 +17,9 @@ class Handle implements HandleEntity {
 
   constructor({ position, type, parent }: HandleOptions) {
     this.id = nanoid();
-    this.type = type;
+    this.handleType = type;
     this.parent = parent;
-    this.transform = new SimpleTransform(position);
+    this.transform = new SimpleTransform(position, () => this.parent.parent.recalculate());
   }
 
   get boundingBox(): Box {

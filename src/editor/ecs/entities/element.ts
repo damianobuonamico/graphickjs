@@ -26,14 +26,24 @@ class Element implements ElementEntity {
   private m_closed: boolean;
   private m_stroke: string | null = null;
   private m_fill: string | null = null;
+  private m_recordHistory: boolean;
 
   private m_cache: Cache = new Cache();
   private cached = this.m_cache.cached.bind(this.m_cache);
 
-  constructor({ id = nanoid(), vertices, position, closed = false, stroke, fill }: ElementOptions) {
+  constructor({
+    id = nanoid(),
+    vertices,
+    position,
+    closed = false,
+    stroke,
+    fill,
+    recordHistory = true
+  }: ElementOptions) {
     this.id = id;
     this.m_closed = closed;
     this.transform = new Transform(position, undefined, undefined, () => this.recalculate());
+    this.m_recordHistory = recordHistory;
 
     if (vertices) this.vertices = vertices;
 
@@ -46,14 +56,15 @@ class Element implements ElementEntity {
           this.m_stroke = stroke;
         } else {
           const s = new Stroke({});
-          SceneManager.assets.set(s);
+          SceneManager.assets.set(s, !this.m_recordHistory);
           s.addParent(this);
           this.m_stroke = s.id;
         }
       } else {
         this.m_stroke = stroke.id;
         (stroke as any).addParent(this);
-        if (!SceneManager.assets.has(stroke.id, 'stroke')) SceneManager.assets.set(stroke as any);
+        if (!SceneManager.assets.has(stroke.id, 'stroke'))
+          SceneManager.assets.set(stroke as any, !this.m_recordHistory);
       }
     }
 
@@ -65,14 +76,15 @@ class Element implements ElementEntity {
           this.m_fill = fill;
         } else {
           const f = new Fill({});
-          SceneManager.assets.set(f);
+          SceneManager.assets.set(f, !this.m_recordHistory);
           f.addParent(this);
           this.m_fill = f.id;
         }
       } else {
         this.m_fill = fill.id;
         (fill as any).addParent(this);
-        if (!SceneManager.assets.has(fill.id, 'stroke')) SceneManager.assets.set(fill as any);
+        if (!SceneManager.assets.has(fill.id, 'stroke'))
+          SceneManager.assets.set(fill as any, !this.m_recordHistory);
       }
     }
   }
@@ -125,7 +137,7 @@ class Element implements ElementEntity {
     this.m_vertices.clear();
 
     vertices.forEach((vertex) => {
-      this.push(vertex, false);
+      this.pushVertex(vertex, false);
     });
 
     this.regenerate();
@@ -205,21 +217,26 @@ class Element implements ElementEntity {
   }
 
   reverse(): void {
-    // TODO: fix reverseCurves causing history problems
-    this.m_vertices.forEach((vertex) => {
-      const left = vertex.left;
-      const right = vertex.right;
-
-      vertex.setLeft(right);
-      vertex.setRight(left);
-    });
-
     HistoryManager.record({
       fn: () => {
         this.regenerate(this.m_order.reverse());
+        this.m_vertices.forEach((vertex) => {
+          const left = vertex.left;
+          const right = vertex.right;
+
+          vertex.left = right;
+          vertex.right = left;
+        });
       },
       undo: () => {
         this.regenerate(this.m_order.reverse());
+        this.m_vertices.forEach((vertex) => {
+          const left = vertex.left;
+          const right = vertex.right;
+
+          vertex.left = right;
+          vertex.right = left;
+        });
       }
     });
   }
@@ -227,12 +244,15 @@ class Element implements ElementEntity {
   concat(element: ElementEntity): void {
     const backup = [...this.m_order];
 
+    element.forEach((vertex) => {
+      vertex.transform.move(
+        vec2.sub(element.transform.staticPosition, this.transform.staticPosition)
+      );
+    });
+
     HistoryManager.record({
       fn: () => {
         element.forEach((vertex) => {
-          vertex.transform.translate(
-            vec2.sub(element.transform.staticPosition, this.transform.staticPosition)
-          );
           this.pushVertex(vertex, false);
         });
 
@@ -241,11 +261,7 @@ class Element implements ElementEntity {
       },
       undo: () => {
         element.forEach((vertex) => {
-          vertex.transform.translate(
-            vec2.sub(this.transform.staticPosition, element.transform.staticPosition)
-          );
           this.spliceVertex(vertex.id, false);
-
           vertex.parent = element;
         });
 
@@ -289,8 +305,10 @@ class Element implements ElementEntity {
     const first = this.m_vertices.get(this.m_order[0])!;
     const last = this.m_vertices.get(this.m_order[this.m_order.length - 1])!;
 
-    if (vec2.sqrDist(first.position, last.position) < Math.pow(mergeThreshold, 2)) {
-      if (last.left) first.setLeft(last.left.transform.position);
+    if (
+      vec2.sqrDist(first.transform.position, last.transform.position) < Math.pow(mergeThreshold, 2)
+    ) {
+      if (last.left) first.transform.left = last.transform.left;
       this.delete(last, true);
     }
 
@@ -324,7 +342,10 @@ class Element implements ElementEntity {
 
     box = [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], this.transform.position)];
 
-    if (this.length < 2 && isPointInBox(Array.from(this.vertices.values())[0].position, box, 5))
+    if (
+      this.length < 2 &&
+      isPointInBox(Array.from(this.vertices.values())[0].transform.position, box, 5)
+    )
       return true;
 
     return Array.from(this.m_curves.values()).some((segment) => segment.intersectsBox(box));
@@ -418,16 +439,21 @@ class Element implements ElementEntity {
     const stroke = this.m_stroke ? SceneManager.assets.get(this.m_stroke, 'stroke') : null;
     const fill = this.m_fill ? SceneManager.assets.get(this.m_fill, 'fill') : null;
 
-    HistoryManager.record({
-      fn: () => {
-        if (stroke) stroke.deleteParent(this);
-        if (fill) fill.deleteParent(this);
-      },
-      undo: () => {
-        if (stroke) stroke.addParent(this);
-        if (fill) fill.addParent(this);
-      }
-    });
+    if (this.m_recordHistory) {
+      HistoryManager.record({
+        fn: () => {
+          if (stroke) stroke.deleteParent(this);
+          if (fill) fill.deleteParent(this);
+        },
+        undo: () => {
+          if (stroke) stroke.addParent(this);
+          if (fill) fill.addParent(this);
+        }
+      });
+    } else {
+      if (stroke) stroke.deleteParent(this);
+      if (fill) fill.deleteParent(this);
+    }
   }
 
   getEntityAt(position: vec2, lowerLevel: boolean, threshold: number): Entity | undefined {

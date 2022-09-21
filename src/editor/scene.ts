@@ -76,12 +76,12 @@ abstract class SceneManager {
         (entity as Element).selection.size < (entity as Element).length - 1
       ) {
         (entity as Element).selection.forEach((vertex) => {
-          entity.delete(vertex);
+          (entity as Element).delete(vertex);
         });
       } else {
         SelectionManager.deselect(entity.id);
-        entity.parent.delete(entity);
-        entity.deleteSelf();
+        (entity.parent as ECSEntity).delete(entity);
+        entity.destroy();
       }
     });
   }
@@ -91,7 +91,11 @@ abstract class SceneManager {
       Renderer.beginFrame();
       this.m_ecs.render();
       // TEMP: remove overlay rendering from selectionmanager
-      SelectionManager.render(() => this.m_renderOverlays.forEach((entity) => entity.render()));
+      SelectionManager.render(() =>
+        this.m_renderOverlays.forEach((entity) => {
+          Renderer.outline(entity, true);
+        })
+      );
       Renderer.endFrame();
     });
   }

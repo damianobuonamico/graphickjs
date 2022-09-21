@@ -30,7 +30,7 @@ interface Canvas {
   image(image: Entity): void;
 
   beginOutline(): void;
-  outline(entity: Entity): void;
+  outline(entity: Entity, skipVertices?: boolean): void;
   endOutline(): void;
 
   debugging(): void;

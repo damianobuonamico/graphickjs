@@ -29,6 +29,7 @@ interface ElementOptions {
   closed?: boolean;
   stroke?: string | Stroke;
   fill?: string | Fill;
+  recordHistory?: boolean;
 }
 
 interface ElementObject extends GenericEntityObject {
