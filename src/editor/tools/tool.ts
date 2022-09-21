@@ -95,7 +95,8 @@ class ToolState {
   }
 
   public onPointerDown() {
-    if (this.m_last !== this.m_active) this.m_data[this.m_last] = {};
+    if (this.m_last !== this.m_active && this.m_active !== 'pan' && this.m_active !== 'zoom')
+      this.m_data[this.m_last] = {};
     const callbacks = this.m_callbacks[this.m_active]();
     this.m_onPointerMove = callbacks.onPointerMove;
     this.m_onPointerUp = callbacks.onPointerUp;
