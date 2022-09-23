@@ -1,8 +1,11 @@
 import InputManager from '../input';
 import SceneManager from '../scene';
+import SelectionManager from '../selection';
 import onPanPointerDown from './pan';
 import onPenPointerDown, { onPenPointerHover } from './pen';
 import onPolygonPointerDown from './polygon';
+import onRotatePointerDown from './rotate';
+import onScalePointerDown from './scale';
 import onSelectPointerDown from './select';
 import onVSelectPointerDown from './vselect';
 import onZoomPointerDown from './zoom';
@@ -19,7 +22,9 @@ class ToolState {
     rectangle: () => onPolygonPointerDown('rectangle'),
     ellipse: () => onPolygonPointerDown('ellipse'),
     pan: onPanPointerDown,
-    zoom: onZoomPointerDown
+    zoom: onZoomPointerDown,
+    scale: onScalePointerDown,
+    rotate: onRotatePointerDown
   };
   private m_data: ToolMap<ToolData> = {
     select: {},
@@ -28,7 +33,9 @@ class ToolState {
     rectangle: {},
     ellipse: {},
     pan: {},
-    zoom: {}
+    zoom: {},
+    scale: {},
+    rotate: {}
   };
   private m_hovers: Partial<ToolMap<() => void>> = {
     pen: onPenPointerHover
@@ -65,6 +72,7 @@ class ToolState {
     this.m_setTool(tool);
     SceneManager.clearRenderOverlays();
     this.onPointerHover();
+    SelectionManager.calculateRenderOverlay();
   }
 
   public get isVertex() {
@@ -94,9 +102,13 @@ class ToolState {
     this.m_data[this.m_active] = {};
   }
 
-  public onPointerDown() {
-    if (this.m_last !== this.m_active) this.m_data[this.m_last] = {};
-    const callbacks = this.m_callbacks[this.m_active]();
+  public onPointerDown(override?: 'scale' | 'rotate') {
+    let active = this.m_active;
+
+    if (override && (override === 'scale' || override === 'rotate')) active = override;
+
+    if (this.m_last !== active) this.m_data[this.m_last] = {};
+    const callbacks = this.m_callbacks[active]();
     this.m_onPointerMove = callbacks.onPointerMove;
     this.m_onPointerUp = callbacks.onPointerUp;
     this.m_onKey = callbacks.onKey;

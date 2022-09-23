@@ -55,6 +55,13 @@ interface SimpleTransformComponent {
   apply(): void;
 }
 
+interface UntrackedSimpleTransformComponent {
+  position: vec2;
+  move(delta: vec2): void;
+
+  mat3: mat3;
+}
+
 interface TransformComponent {
   origin: vec2;
 
@@ -71,6 +78,21 @@ interface TransformComponent {
 
   clear(): void;
   apply(): void;
+}
+
+interface UntrackedTransformComponent {
+  origin: vec2;
+
+  position: vec2;
+  staticPosition: vec2;
+  translation: vec2;
+  move(delta: vec2): void;
+
+  rotation: number;
+
+  scale: vec2;
+
+  mat3: mat3;
 }
 
 interface VertexTransformComponent {

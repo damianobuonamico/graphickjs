@@ -80,6 +80,21 @@ class Bezier implements BezierEntity {
     return vec2.sub(box[1], box[0]);
   }
 
+  get clockwise(): boolean {
+    return this.cached<boolean>('clockwise', () => {
+      let sum = 0;
+      let last = this.getPoint(0);
+
+      for (let i = 1; i <= 100; i++) {
+        const point = this.getPoint(i / 100);
+        sum += (point[0] - last[0]) * (point[1] + last[1]);
+        last = point;
+      }
+
+      return sum >= 0;
+    });
+  }
+
   private call<T>(
     linearFn: (...args: any) => T,
     cubicFn: (...args: any) => T,
@@ -388,7 +403,7 @@ class Bezier implements BezierEntity {
 
     return roots.map((root) => (root -= b / (3 * a))).filter((root) => 0 <= root && root <= 1);
   }
-  private getLineIntersections(line: Box): number[] {
+  public getLineIntersections(line: Box): number[] {
     return this.call(this.getLinearLineIntersections, this.getCubicLineIntersections, { line });
   }
 

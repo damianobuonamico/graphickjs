@@ -42,6 +42,8 @@ const onSelectPointerDown = () => {
     SceneManager.pushRenderOverlay(rect.element);
   }
 
+  SelectionManager.calculateRenderOverlay();
+
   function onPointerMove() {
     if ((element && SelectionManager.has(element.id)) || InputManager.keys.alt) {
       if (SelectionManager.size) {
@@ -54,6 +56,8 @@ const onSelectPointerDown = () => {
       rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
       SelectionManager.temp(SceneManager.getEntitiesIn(rect.element.boundingBox));
     }
+
+    SelectionManager.calculateRenderOverlay();
   }
 
   function onPointerUp(abort?: boolean) {
@@ -79,6 +83,8 @@ const onSelectPointerDown = () => {
         SelectionManager.select(element);
       }
     }
+
+    SelectionManager.calculateRenderOverlay();
   }
 
   return {

@@ -207,6 +207,27 @@ class Canvas2D implements Canvas {
     });
   }
 
+  public entity(entity: Entity) {
+    if (entity.type === 'element') {
+      this.element(entity as Element);
+      return;
+    }
+
+    this.m_ctx.save();
+
+    const drawable = entity.getDrawable(false);
+    const transform = (entity as MovableEntity).transform;
+
+    if (transform) {
+      const position = transform.position;
+      this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
+    }
+
+    this.draw(drawable);
+
+    this.m_ctx.restore();
+  }
+
   public element(element: Element) {
     this.m_stats.entity();
     if (!SceneManager.isVisible(element)) return;
@@ -263,10 +284,8 @@ class Canvas2D implements Canvas {
 
   public outline(entity: Entity, skipVertices: boolean = false) {
     this.m_ctx.save();
-    if (entity.type !== 'demo') {
-      const position = (entity as Element).transform.position;
-      this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
-    }
+    const position = (entity as Element).transform.position;
+    this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
     this.draw((entity as Element).getOutlineDrawable(false));
     if (!skipVertices && InputManager.tool.isVertex && entity.type === 'element')
       (entity as Element).forEach((vertex, selected) => vertex.render(selected));

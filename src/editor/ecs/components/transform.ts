@@ -158,6 +158,34 @@ class SimpleTransform implements SimpleTransformComponent {
   }
 }
 
+class UntrackedSimpleTransform implements UntrackedSimpleTransformComponent {
+  private m_position: vec2;
+
+  private m_callback: (() => void) | undefined;
+
+  constructor(position?: vec2, callback?: () => void) {
+    this.m_position = position ?? vec2.create();
+
+    this.m_callback = callback;
+  }
+
+  get position() {
+    return vec2.clone(this.m_position);
+  }
+
+  set position(value: vec2) {
+    vec2.copy(this.m_position, value);
+  }
+
+  move(delta: vec2) {
+    vec2.add(this.m_position, delta, true);
+  }
+
+  get mat3() {
+    return [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  }
+}
+
 class Transform implements TransformComponent {
   origin: vec2;
 
@@ -213,6 +241,60 @@ class Transform implements TransformComponent {
 
   apply() {
     this.m_position.apply();
+  }
+}
+
+class UntrackedTransform implements UntrackedTransformComponent {
+  origin: vec2;
+
+  private m_position: vec2;
+  private m_translation: vec2 = vec2.create();
+  private m_rotation: number;
+  private m_scale: vec2;
+
+  private m_callback: (() => void) | undefined;
+
+  constructor(position?: vec2, rotation?: number, scale?: vec2, callback?: () => void) {
+    this.m_position = position ?? vec2.create();
+    this.m_rotation = rotation ?? 0;
+    this.m_scale = scale ?? vec2.create();
+
+    this.m_callback = callback;
+  }
+
+  get position() {
+    return vec2.add(this.m_position, this.m_translation);
+  }
+
+  set position(value: vec2) {
+    vec2.copy(this.m_position, value);
+    if (this.m_callback) this.m_callback();
+  }
+
+  get staticPosition() {
+    return vec2.clone(this.m_position);
+  }
+
+  set translation(value: vec2) {
+    vec2.copy(this.m_translation, value);
+    if (this.m_callback) this.m_callback();
+  }
+
+  move(delta: vec2) {
+    vec2.add(this.m_position, delta, true);
+    if (this.m_callback) this.m_callback();
+  }
+
+  get rotation() {
+    return this.m_rotation;
+  }
+
+  get scale() {
+    return vec2.clone(this.m_scale);
+  }
+
+  get mat3() {
+    return [0, 0, 0, 0, 0, 0, 0, 0, 0];
   }
 }
 
@@ -346,4 +428,10 @@ class VertexTransform implements VertexTransformComponent {
   }
 }
 
-export { SimpleTransform, Transform, VertexTransform };
+export {
+  SimpleTransform,
+  Transform,
+  UntrackedSimpleTransform,
+  UntrackedTransform,
+  VertexTransform
+};

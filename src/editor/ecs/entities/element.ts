@@ -11,6 +11,7 @@ import Layer from './layer';
 import Vertex from './vertex';
 import Fill from '../components/fill';
 import Stroke from '../components/stroke';
+import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 
 class Element implements ElementEntity {
   readonly id: string;
@@ -27,6 +28,7 @@ class Element implements ElementEntity {
   private m_stroke: string | null = null;
   private m_fill: string | null = null;
   private m_recordHistory: boolean;
+  private m_fillRule: 'even-odd' | 'non-zero' = 'non-zero';
 
   private m_cache: Cache = new Cache();
   private cached = this.m_cache.cached.bind(this.m_cache);
@@ -476,6 +478,37 @@ class Element implements ElementEntity {
         this.m_curves.forEach((bezier) => {
           if (!toReturn) toReturn = bezier.getEntityAt(position, lowerLevel, threshold) ?? toReturn;
         });
+      }
+
+      if (this.m_fill && !toReturn) {
+        // TODO: add closing segment in non closed elements
+        if (this.m_fillRule === 'even-odd') {
+          let intersections = 0;
+
+          this.m_curves.forEach((bezier) => {
+            const points = bezier.getLineIntersectionPoints([position, [Infinity, position[1]]]);
+            intersections += points.length;
+          });
+
+          if (intersections % 2 !== 0) toReturn = this;
+        } else {
+          let count = 0;
+
+          this.m_curves.forEach((bezier) => {
+            bezier.getLineIntersections([position, [Infinity, position[1]]]).forEach((t) => {
+              if (bezier.getPoint(t)[0] > position[0]) {
+                if (
+                  bezier.getPoint(t - GEOMETRY_MAX_INTERSECTION_ERROR)[1] <
+                  bezier.getPoint(t + GEOMETRY_MAX_INTERSECTION_ERROR)[1]
+                )
+                  count++;
+                else count--;
+              }
+            });
+          });
+
+          if (count !== 0) toReturn = this;
+        }
       }
 
       return toReturn;

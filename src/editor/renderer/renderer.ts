@@ -64,6 +64,10 @@ abstract class Renderer {
     this.m_canvas.rect({ pos, size, centered, color, transform });
   }
 
+  public static entity(entity: Entity) {
+    this.m_canvas.entity(entity);
+  }
+
   public static element(element: Element) {
     this.m_canvas.element(element);
   }

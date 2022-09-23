@@ -25,25 +25,26 @@ import { parseSVG } from '@/utils/svg';
 // DEV
 import tigerSvg from '@utils/svg/demo';
 import ImageMedia from './ecs/entities/image';
-import Demo from './ecs/entities/demo';
+import OverlayState from './overlays';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
   private static m_renderOverlays: Map<string, Entity> = new Map();
   private static m_layer: Layer;
 
-  public static viewport: ViewportState;
-  public static assets: AssetsManager = new AssetsManager();
+  static viewport: ViewportState;
+  static assets: AssetsManager = new AssetsManager();
+  static overlays: OverlayState = new OverlayState();
 
-  public static setLoading: (loading: boolean) => void;
+  static setLoading: (loading: boolean) => void;
 
-  public static init(setLoading: (loading: boolean) => void) {
+  static init(setLoading: (loading: boolean) => void) {
     this.setLoading = setLoading;
     this.load();
     HistoryManager.clear();
   }
 
-  public static set zoom(value: number | [number, vec2]) {
+  static set zoom(value: number | [number, vec2]) {
     const isArray = Array.isArray(value);
     const zoom = round(clamp(isArray ? value[0] : value, ZOOM_MIN, ZOOM_MAX), 4);
     if (isArray) {
@@ -56,19 +57,19 @@ abstract class SceneManager {
     this.viewport.zoom = zoom;
   }
 
-  public static get(id: string) {
+  static get(id: string) {
     return this.m_ecs.get(id);
   }
 
-  public static add(entity: Entity) {
+  static add(entity: Entity) {
     this.m_layer.add(entity);
   }
 
-  public static remove(entity: Entity, skipRecordAction = false) {
+  static remove(entity: Entity, skipRecordAction = false) {
     (entity.parent as unknown as ECS).remove(entity.id, skipRecordAction);
   }
 
-  public static delete(selected: Entity | true, forceObject = false) {
+  static delete(selected: Entity | true, forceObject = false) {
     (selected === true ? SelectionManager.entities : [selected]).forEach((entity) => {
       if (
         !forceObject &&
@@ -92,23 +93,26 @@ abstract class SceneManager {
         entity.destroy();
       }
     });
+    SelectionManager.calculateRenderOverlay();
   }
 
-  public static render() {
+  static render() {
     requestAnimationFrame(() => {
       Renderer.beginFrame();
       this.m_ecs.render();
       // TEMP: remove overlay rendering from selectionmanager
-      SelectionManager.render(() =>
-        this.m_renderOverlays.forEach((entity) => {
-          Renderer.outline(entity, true);
-        })
-      );
+      SelectionManager.render();
+      this.m_renderOverlays.forEach((entity) => {
+        if (entity.type === 'element') {
+          Renderer.outline(entity);
+        } else entity.render();
+      });
+      this.overlays.render();
       Renderer.endFrame();
     });
   }
 
-  public static clientToScene(position: vec2, override: Partial<ViewportState> = {}) {
+  static clientToScene(position: vec2, override: Partial<ViewportState> = {}) {
     const viewport = fillObject<ViewportState>(override, this.viewport);
     return vec2.sub(
       vec2.div(vec2.sub(position, Renderer.canvasOffset), viewport.zoom, true),
@@ -117,7 +121,7 @@ abstract class SceneManager {
     );
   }
 
-  public static sceneToClient(position: vec2, override: Partial<ViewportState> = {}) {
+  static sceneToClient(position: vec2, override: Partial<ViewportState> = {}) {
     const viewport = fillObject<ViewportState>(override, this.viewport);
     return vec2.add(
       vec2.mul(vec2.add(position, viewport.position), viewport.zoom, true),
@@ -126,7 +130,7 @@ abstract class SceneManager {
     );
   }
 
-  public static isVisible(entity: Entity) {
+  static isVisible(entity: Entity) {
     if (!Object.hasOwn(entity, 'boundingBox')) return true;
 
     const box = (entity as MovableEntity).boundingBox;
@@ -144,7 +148,7 @@ abstract class SceneManager {
     );
   }
 
-  public static save() {
+  static save() {
     localStorage.setItem(LOCAL_STORAGE_KEY_STATE, JSON.stringify(this.viewport, stringifyReplacer));
     localStorage.setItem(
       LOCAL_STORAGE_KEY,
@@ -156,7 +160,7 @@ abstract class SceneManager {
     localStorage.setItem(LOCAL_STORAGE_KEY_ASSETS, JSON.stringify(this.assets, stringifyReplacer));
   }
 
-  public static load() {
+  static load() {
     const state = localStorage.getItem(LOCAL_STORAGE_KEY_STATE);
     const data = localStorage.getItem(LOCAL_STORAGE_KEY);
     const assets = localStorage.getItem(LOCAL_STORAGE_KEY_ASSETS);
@@ -206,7 +210,7 @@ abstract class SceneManager {
     // parseSVG(tigerSvg);
   }
 
-  public static fromObject(object: EntityObject) {
+  static fromObject(object: EntityObject) {
     if (!object) return;
 
     switch (object.type) {
@@ -241,36 +245,39 @@ abstract class SceneManager {
     }
   }
 
-  public static getEntityAt(
+  static getEntityAt(
     position: vec2,
     lowerLevel = false,
     threshold = 5 / SceneManager.viewport.zoom
   ) {
-    return this.m_ecs.getEntityAt(position, lowerLevel, threshold);
+    return (
+      this.overlays.getEntityAt(position, lowerLevel, threshold) ??
+      this.m_ecs.getEntityAt(position, lowerLevel, threshold)
+    );
   }
 
-  public static getEntitiesIn(box: Box, lowerLevel = false) {
+  static getEntitiesIn(box: Box, lowerLevel = false) {
     const entities = new Set<Entity>();
     this.m_ecs.getEntitiesIn(box, entities, lowerLevel);
     return entities;
   }
 
-  public static duplicate(entity: Entity) {
+  static duplicate(entity: Entity) {
     const duplicate = this.fromObject(entity.asObject(true));
     if (!duplicate) return undefined;
     this.add(duplicate);
     return duplicate;
   }
 
-  public static pushRenderOverlay(entity: Entity) {
+  static pushRenderOverlay(entity: Entity) {
     this.m_renderOverlays.set(entity.id, entity);
   }
 
-  public static hasRenderOverlay(id: string) {
+  static hasRenderOverlay(id: string) {
     return this.m_renderOverlays.has(id);
   }
 
-  public static popRenderOverlay(id?: string) {
+  static popRenderOverlay(id?: string) {
     if (!id) {
       let order = Array.from(this.m_renderOverlays.keys());
       id = order[order.length - 1];
@@ -278,12 +285,12 @@ abstract class SceneManager {
     this.m_renderOverlays.delete(id);
   }
 
-  public static clearRenderOverlays() {
+  static clearRenderOverlays() {
     this.m_renderOverlays.clear();
     this.render();
   }
 
-  public static forEach(callback: (entity: Entity) => any) {
+  static forEach(callback: (entity: Entity) => any) {
     function forEachECS(entity: Entity) {
       callback(entity);
       if (entity.type !== 'element' && 'forEach' in entity) {
@@ -298,7 +305,7 @@ abstract class SceneManager {
     });
   }
 
-  public static import() {
+  static import() {
     fileDialog({ accept: ['.svg', '.png'], multiple: true }).then((files) => {
       this.setLoading(true);
 

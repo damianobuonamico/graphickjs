@@ -1,8 +1,11 @@
+import { vec2 } from '@/math';
 import { isObject } from '@/utils/utils';
 import Element from './ecs/entities/element';
+import Manipulator from './ecs/entities/manipulator';
 import Vertex from './ecs/entities/vertex';
 import InputManager from './input';
 import { Renderer } from './renderer';
+import { createVertices } from './renderer/geometry';
 import SceneManager from './scene';
 
 class ElementSelectionManager {
@@ -14,70 +17,70 @@ class ElementSelectionManager {
     this.m_parent = parent;
   }
 
-  public get size() {
+  get size() {
     return this.m_selected.size + this.m_temp.size;
   }
 
-  public get ids() {
+  get ids() {
     return Array.from(this.m_selected.keys()).concat(Array.from(this.m_temp.keys()));
   }
 
-  public get entities() {
+  get entities() {
     return Array.from(this.m_selected.values()).concat(Array.from(this.m_temp.values()));
   }
 
-  public get full() {
+  get full() {
     return this.m_selected.size === this.m_parent.length;
   }
 
-  public has(id: string) {
+  has(id: string) {
     return this.m_selected.has(id) || this.m_temp.has(id);
   }
 
-  public clear() {
+  clear() {
     this.m_selected.clear();
     this.m_temp.clear();
     SelectionManager.deselect(this.m_parent.id, false);
   }
 
-  public select(vertex: VertexEntity) {
+  select(vertex: VertexEntity) {
     this.m_selected.set(vertex.id, vertex);
     if (!SelectionManager.has(this.m_parent.id)) SelectionManager.select(this.m_parent, false);
   }
 
-  public deselect(id: string) {
+  deselect(id: string) {
     this.m_selected.delete(id);
     if (this.m_selected.size === 0) SelectionManager.deselect(this.m_parent.id);
   }
 
-  public all() {
+  all() {
     this.m_parent.forEach((vertex) => {
       this.select(vertex);
     });
   }
 
-  public temp(vertices: Set<Vertex>) {
+  temp(vertices: Set<Vertex>) {
     this.m_temp.clear();
     vertices.forEach((vertex) => {
       this.m_temp.set(vertex.id, vertex);
     });
   }
 
-  public sync() {
+  sync() {
     this.m_temp.forEach((vertex) => this.select(vertex));
     this.m_temp.clear();
   }
 
-  public forEach(callback: (vertex: VertexEntity) => void) {
+  forEach(callback: (vertex: VertexEntity) => void) {
     this.m_selected.forEach((vertex) => callback(vertex));
     this.m_temp.forEach((vertex) => callback(vertex));
   }
 
-  public get() {
+  get() {
     return Array.from(this.m_selected.values());
   }
 
-  public restore(selection: VertexEntity[]) {
+  restore(selection: VertexEntity[]) {
     this.clear();
     selection.forEach((vertex) => {
       this.select(vertex);
@@ -88,24 +91,41 @@ class ElementSelectionManager {
 abstract class SelectionManager {
   private static m_selected: Map<string, Entity> = new Map();
   private static m_temp: Map<string, Entity> = new Map();
+  private static m_renderOverlay: Manipulator = new Manipulator();
 
-  public static get size() {
+  static get size() {
     return this.m_selected.size + this.m_temp.size;
   }
 
-  public static get ids() {
+  static get ids() {
     return Array.from(this.m_selected.keys()).concat(Array.from(this.m_temp.keys()));
   }
 
-  public static get entities() {
+  static get entities() {
     return Array.from(this.m_selected.values()).concat(Array.from(this.m_temp.values()));
   }
 
-  public static has(id: string) {
+  static get boundingBox(): Box {
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.m_selected.forEach((element) => {
+      const box = (element as MovableEntity).boundingBox;
+
+      if (box) {
+        min = vec2.min(min, box[0]);
+        max = vec2.max(max, box[1]);
+      }
+    });
+
+    return [min, max];
+  }
+
+  static has(id: string) {
     return this.m_selected.has(id) || this.m_temp.has(id);
   }
 
-  public static clear() {
+  static clear() {
     [this.m_selected, this.m_temp].forEach((map) => {
       map.forEach((entity) => {
         if (entity.type === 'element') (entity as Element).selection.clear();
@@ -114,14 +134,14 @@ abstract class SelectionManager {
     });
   }
 
-  public static select(entity: Entity, selectVertices = true) {
+  static select(entity: Entity, selectVertices = true) {
     this.m_selected.set(entity.id, entity);
     if (selectVertices && entity.type === 'element') {
       (entity as Element).selection.all();
     }
   }
 
-  public static deselect(id: string, deselectVertices = true) {
+  static deselect(id: string, deselectVertices = true) {
     if (deselectVertices) {
       const entity = this.m_selected.get(id);
       if (entity && entity.type === 'element') {
@@ -131,14 +151,14 @@ abstract class SelectionManager {
     this.m_selected.delete(id);
   }
 
-  public static temp(entities: Set<Entity>) {
+  static temp(entities: Set<Entity>) {
     this.m_temp.clear();
     entities.forEach((entity) => {
       this.m_temp.set(entity.id, entity);
     });
   }
 
-  public static sync(syncVertices = false) {
+  static sync(syncVertices = false) {
     if (syncVertices) {
       this.m_temp.forEach((entity) => {
         if (entity.type === 'element') {
@@ -152,12 +172,12 @@ abstract class SelectionManager {
     this.m_temp.clear();
   }
 
-  public static forEach(callback: (entity: Entity) => void) {
+  static forEach(callback: (entity: Entity) => void) {
     this.m_selected.forEach((entity) => callback(entity));
     this.m_temp.forEach((entity) => callback(entity));
   }
 
-  public static render(overlay?: () => void) {
+  static render(overlay?: () => void) {
     Renderer.beginOutline();
     this.forEach((entity) => {
       Renderer.outline(entity);
@@ -166,7 +186,7 @@ abstract class SelectionManager {
     Renderer.endOutline();
   }
 
-  public static all() {
+  static all() {
     SceneManager.forEach((entity) => {
       // TODO: Register selectable entities here
       if (entity.type === 'element' || entity.type === 'image') {
@@ -175,7 +195,7 @@ abstract class SelectionManager {
     });
   }
 
-  public static get() {
+  static get() {
     return Array.from(this.m_selected.values()).map((entity) => {
       if (entity.type === 'element') {
         return { element: entity, vertices: (entity as Element).selection.get() };
@@ -184,8 +204,9 @@ abstract class SelectionManager {
     }) as SelectionBackup;
   }
 
-  public static restore(selection: SelectionBackup) {
+  static restore(selection: SelectionBackup) {
     this.clear();
+
     selection.forEach((entity) => {
       if (entity.hasOwnProperty('element') && entity.hasOwnProperty('vertices')) {
         const e = (entity as any).element as Entity;
@@ -198,6 +219,11 @@ abstract class SelectionManager {
         this.select(entity as Entity, false);
       }
     });
+  }
+
+  static calculateRenderOverlay() {
+    if (!this.m_selected.size) this.m_renderOverlay.set(null);
+    else this.m_renderOverlay.set(this.boundingBox);
   }
 }
 
