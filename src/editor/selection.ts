@@ -1,4 +1,5 @@
-import { vec2 } from '@/math';
+import { vec2, vec3 } from '@/math';
+import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { isObject } from '@/utils/utils';
 import Element from './ecs/entities/element';
 import Manipulator from './ecs/entities/manipulator';
@@ -91,7 +92,8 @@ class ElementSelectionManager {
 abstract class SelectionManager {
   private static m_selected: Map<string, Entity> = new Map();
   private static m_temp: Map<string, Entity> = new Map();
-  private static m_renderOverlay: Manipulator = new Manipulator();
+  private static m_angle: number | null = null;
+  public static manipulator: Manipulator = new Manipulator();
 
   static get size() {
     return this.m_selected.size + this.m_temp.size;
@@ -105,18 +107,54 @@ abstract class SelectionManager {
     return Array.from(this.m_selected.values()).concat(Array.from(this.m_temp.values()));
   }
 
+  static get angle(): number | null {
+    let sameAngle = true;
+    let angle: number | null = null;
+
+    this.m_selected.forEach((entity) => {
+      if (angle === null) angle = (entity as TransformableEntity).transform.rotation ?? 0;
+      else if (sameAngle && angle !== (entity as TransformableEntity).transform.rotation)
+        sameAngle = false;
+    });
+
+    return sameAngle ? angle : null;
+  }
+
   static get boundingBox(): Box {
+    // TODO: Cache
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
+    const angle = this.angle;
 
-    this.m_selected.forEach((element) => {
-      const box = (element as MovableEntity).boundingBox;
+    if (angle) {
+      this.m_selected.forEach((entity) => {
+        if (entity.type !== 'element' || (entity as Element).length > 1) {
+          const box = (entity as TransformableEntity).rotatedBoundingBox;
 
-      if (box) {
-        min = vec2.min(min, box[0]);
-        max = vec2.max(max, box[1]);
-      }
-    });
+          box.forEach((point) => {
+            const rotated = vec2.rotate(point, [0, 0], -angle);
+            vec2.min(min, rotated, true);
+            vec2.max(max, rotated, true);
+          });
+        }
+      });
+
+      const rMin = vec2.rotate(min, [0, 0], angle);
+      const rMax = vec2.rotate(max, [0, 0], angle);
+
+      const mid = vec2.div(vec2.add(rMin, rMax), 2);
+
+      return [vec2.rotate(rMin, mid, -angle), vec2.rotate(rMax, mid, -angle)];
+    } else {
+      this.m_selected.forEach((entity) => {
+        const box = (entity as MovableEntity).boundingBox;
+
+        if (box) {
+          vec2.min(min, box[0], true);
+          vec2.max(max, box[1], true);
+        }
+      });
+    }
 
     return [min, max];
   }
@@ -222,8 +260,10 @@ abstract class SelectionManager {
   }
 
   static calculateRenderOverlay() {
-    if (!this.m_selected.size) this.m_renderOverlay.set(null);
-    else this.m_renderOverlay.set(this.boundingBox);
+    if (!this.m_selected.size) this.manipulator.set(null);
+    else {
+      this.manipulator.set(this.boundingBox, this.angle ?? 0);
+    }
   }
 }
 

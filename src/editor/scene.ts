@@ -131,8 +131,6 @@ abstract class SceneManager {
   }
 
   static isVisible(entity: Entity) {
-    if (!Object.hasOwn(entity, 'boundingBox')) return true;
-
     const box = (entity as MovableEntity).boundingBox;
     const position = this.viewport.position;
     const canvasSize = vec2.sub(
@@ -210,6 +208,7 @@ abstract class SceneManager {
     // parseSVG(tigerSvg);
   }
 
+  // TODO: refactor and add transform
   static fromObject(object: EntityObject) {
     if (!object) return;
 

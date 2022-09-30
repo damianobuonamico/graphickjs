@@ -24,6 +24,13 @@ class Artboard extends ECS implements ArtboardEntity {
     return [this.transform.position, vec2.add(this.transform.position, this.m_size, true)];
   }
 
+  public get staticBoundingBox(): Box {
+    return [
+      this.transform.staticPosition,
+      vec2.add(this.transform.staticPosition, this.m_size, true)
+    ];
+  }
+
   public get size() {
     return vec2.clone(this.m_size);
   }

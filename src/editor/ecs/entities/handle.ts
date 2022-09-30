@@ -26,6 +26,10 @@ class Handle implements HandleEntity {
     return [this.transform.position, this.transform.position];
   }
 
+  get staticBoundingBox(): Box {
+    return [this.transform.staticPosition, this.transform.staticPosition];
+  }
+
   destroy(): void {}
 
   getEntityAt(

@@ -18,7 +18,7 @@ class GenericHandle implements Entity {
   constructor({ type, id = nanoid(), position }: { type: string; id?: string; position?: vec2 }) {
     this.handleType = type;
     this.id = id;
-    this.m_radius = type === 'rotate' ? 6 : 3;
+    this.m_radius = type === 'rotate' ? 9 : 3;
     this.transform = new UntrackedSimpleTransform(position);
   }
 
@@ -105,6 +105,7 @@ class Manipulator implements ManipulatorEntity {
 
   private m_size: vec2 = vec2.create();
   private m_lastCalculatedSize: vec2 = vec2.create();
+  private m_lastCalculatedPosition: vec2 = vec2.create();
   private m_active: boolean = false;
   private m_handles: TransformHandles<GenericHandle> = {
     n: new GenericHandle({ type: 'scale', id: 'scale-n' }),
@@ -142,20 +143,23 @@ class Manipulator implements ManipulatorEntity {
     rsw: (size: vec2) => [0, size[1]],
     rse: (size: vec2) => size
   };
-
   private m_offsets: Partial<TransformHandles<vec2>> = {
-    rn: [0, -3],
-    rs: [0, 3],
-    re: [3, 0],
-    rw: [-3, 0],
-    rnw: [-3, -3],
-    rne: [3, -3],
-    rsw: [-3, 3],
-    rse: [3, 3]
+    rn: [0, -6],
+    rs: [0, 6],
+    re: [6, 0],
+    rw: [-6, 0],
+    rnw: [-6, -6],
+    rne: [6, -6],
+    rsw: [-6, 6],
+    rse: [6, 6]
   };
 
   constructor() {
     this.transform = new UntrackedTransform();
+  }
+
+  get boundingBox(): Box {
+    return [this.transform.position, vec2.add(this.transform.position, this.m_lastCalculatedSize)];
   }
 
   get active() {
@@ -169,13 +173,13 @@ class Manipulator implements ManipulatorEntity {
       this.m_handles[key as HandleKey].transform.position =
         this.m_positions[key as HandleKey](size);
       if (this.m_handles[key as HandleKey].handleType === 'rotate')
-        this.m_handles[key as HandleKey].transform.move(
+        this.m_handles[key as HandleKey].transform.translate(
           vec2.div(this.m_offsets[key as HandleKey] ?? [0, 0], SceneManager.viewport.zoom)
         );
     });
   }
 
-  set(box: Box | null): void {
+  set(box: Box | null, angle: number = 0): void {
     if (!box) {
       this.m_active = false;
       return;
@@ -183,6 +187,8 @@ class Manipulator implements ManipulatorEntity {
 
     this.m_active = true;
     this.transform.position = box[0];
+    this.transform.rotation = angle;
+    this.m_lastCalculatedPosition = box[0];
     this.m_size = vec2.sub(box[1], box[0]);
 
     this.setHandles();
@@ -200,6 +206,9 @@ class Manipulator implements ManipulatorEntity {
   ): Entity | undefined {
     if (!this.active) return undefined;
     position = vec2.sub(position, this.transform.position);
+
+    if (this.transform.rotation !== 0)
+      position = vec2.rotate(position, vec2.div(this.m_size, 2), -this.transform.rotation);
 
     let toReturn: Entity | undefined;
 
@@ -249,12 +258,15 @@ class Manipulator implements ManipulatorEntity {
     ];
 
     if (vec2.equals(newSize, this.m_size)) {
-      this.transform.translation = vec2.create();
+      this.transform.position = this.m_lastCalculatedPosition;
       if (!vec2.equals(this.m_size, this.m_lastCalculatedSize)) {
         this.setHandles();
       }
     } else {
-      this.transform.translation = vec2.div(vec2.sub(this.m_size, newSize), 2);
+      this.transform.position = vec2.add(
+        this.m_lastCalculatedPosition,
+        vec2.div(vec2.sub(this.m_size, newSize), 2)
+      );
       this.setHandles(newSize);
     }
 

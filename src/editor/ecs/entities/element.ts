@@ -1,5 +1,5 @@
 import Cache from '@utils/cache';
-import { doesBoxIntersectBox, isPointInBox, vec2 } from '@math';
+import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../../history';
 import { Renderer } from '../../renderer';
@@ -37,6 +37,7 @@ class Element implements ElementEntity {
     id = nanoid(),
     vertices,
     position,
+    rotation,
     closed = false,
     stroke,
     fill,
@@ -44,7 +45,7 @@ class Element implements ElementEntity {
   }: ElementOptions) {
     this.id = id;
     this.m_closed = closed;
-    this.transform = new Transform(position, undefined, undefined, () => this.recalculate());
+    this.transform = new Transform(position, rotation, undefined, () => this.recalculate());
     this.m_recordHistory = recordHistory;
 
     if (vertices) this.vertices = vertices;
@@ -93,15 +94,84 @@ class Element implements ElementEntity {
 
   get boundingBox(): Box {
     return this.cached<Box>('boundingBox', () => {
+      if (this.transform.rotation === 0) return this.unrotatedBoundingBox;
+
+      const box = this.unrotatedBoundingBox;
+      const angle = this.transform.rotation;
+      const origin = vec2.div(vec2.add(box[0], box[1]), 2);
+      const center = vec2.sub(origin, this.transform.position);
+
+      let min: vec2 = [Infinity, Infinity];
+      let max: vec2 = [-Infinity, -Infinity];
+
+      this.m_curves.forEach((bezier) => {
+        const extrema = bezier.getRotatedExtrema(center, angle);
+
+        extrema.forEach((point) => {
+          vec2.min(min, point, true);
+          vec2.max(max, point, true);
+        });
+      });
+
+      return [vec2.add(min, this.transform.position), vec2.add(max, this.transform.position)];
+    });
+  }
+
+  get staticBoundingBox(): Box {
+    return this.cached<Box>('staticBoundingBox', () => {
       let min: vec2 = [Infinity, Infinity];
       let max: vec2 = [-Infinity, -Infinity];
 
       this.m_curves.forEach((bezier) => {
         const box = bezier.boundingBox;
 
-        min = vec2.min(min, box[0]);
-        max = vec2.max(max, box[1]);
+        vec2.min(min, box[0], true);
+        vec2.max(max, box[1], true);
       });
+
+      return [
+        vec2.add(min, this.transform.staticPosition),
+        vec2.add(max, this.transform.staticPosition)
+      ];
+    });
+  }
+
+  get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+    return this.cached<[vec2, vec2, vec2, vec2]>('rotatedBoundingBox', () => {
+      const box = this.unrotatedBoundingBox;
+      if (this.transform.rotation === 0)
+        return [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]];
+
+      const angle = this.transform.rotation;
+      const origin = vec2.div(vec2.add(box[0], box[1]), 2);
+
+      return [
+        vec2.rotate(box[0], origin, angle),
+        vec2.rotate([box[1][0], box[0][1]], origin, angle),
+        vec2.rotate(box[1], origin, angle),
+        vec2.rotate([box[0][0], box[1][1]], origin, angle)
+      ];
+    });
+  }
+
+  get unrotatedBoundingBox(): Box {
+    return this.cached<Box>('unrotatedBoundingBox', () => {
+      let min: vec2 = [Infinity, Infinity];
+      let max: vec2 = [-Infinity, -Infinity];
+
+      if (this.m_curves.size) {
+        this.m_curves.forEach((bezier) => {
+          const box = bezier.boundingBox;
+
+          vec2.min(min, box[0], true);
+          vec2.max(max, box[1], true);
+        });
+      } else {
+        this.m_vertices.forEach((vertex) => {
+          vec2.min(min, vertex.transform.position, true);
+          vec2.max(max, vertex.transform.position, true);
+        });
+      }
 
       return [vec2.add(min, this.transform.position), vec2.add(max, this.transform.position)];
     });
@@ -246,10 +316,40 @@ class Element implements ElementEntity {
   concat(element: ElementEntity): void {
     const backup = [...this.m_order];
 
+    const box = this.unrotatedBoundingBox;
+    const mid = vec2.div(
+      vec2.add(
+        vec2.sub(box[0], this.transform.position),
+        vec2.sub(box[1], this.transform.position)
+      ),
+      2
+    );
+    const angle = this.transform.rotation;
+
+    const box1 = element.unrotatedBoundingBox;
+    const mid1 = vec2.div(
+      vec2.add(
+        vec2.sub(box1[0], element.transform.position),
+        vec2.sub(box1[1], element.transform.position)
+      ),
+      2
+    );
+    const angle1 = element.transform.rotation;
+
     element.forEach((vertex) => {
-      vertex.transform.move(
-        vec2.sub(element.transform.staticPosition, this.transform.staticPosition)
+      vertex.transform.position = vec2.rotate(
+        vec2.add(
+          vec2.rotate(vertex.transform.position, mid1, angle1),
+          vec2.sub(element.transform.staticPosition, this.transform.staticPosition)
+        ),
+        mid,
+        -angle
       );
+
+      if (vertex.left)
+        vertex.transform.left = vec2.rotate(vertex.transform.left, [0, 0], angle1 - angle);
+      if (vertex.right)
+        vertex.transform.right = vec2.rotate(vertex.transform.right, [0, 0], angle1 - angle);
     });
 
     HistoryManager.record({
@@ -271,10 +371,32 @@ class Element implements ElementEntity {
         this.regenerate(backup);
       }
     });
+
+    const box2 = this.unrotatedBoundingBox;
+    const mid2 = vec2.div(
+      vec2.add(
+        vec2.sub(box2[0], this.transform.position),
+        vec2.sub(box2[1], this.transform.position)
+      ),
+      2
+    );
+
+    this.transform.translate(
+      vec2.sub(
+        vec2.rotate([0, 0], mid, this.transform.rotation),
+        vec2.rotate([0, 0], mid2, this.transform.rotation)
+      )
+    );
   }
 
   split(bezier: BezierEntity, position: vec2): VertexEntity | void {
     if (!this.m_curves.has(bezier.id)) return;
+
+    if (this.transform.rotation !== 0) {
+      const box = this.unrotatedBoundingBox;
+      const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+      position = vec2.rotate(position, mid, -this.transform.rotation);
+    }
 
     position = vec2.sub(position, this.transform.position);
 
@@ -314,6 +436,9 @@ class Element implements ElementEntity {
       this.delete(last, true);
     }
 
+    const box = this.unrotatedBoundingBox;
+    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+
     if (this.m_order[0]) {
       HistoryManager.record({
         fn: () => {
@@ -326,6 +451,16 @@ class Element implements ElementEntity {
         }
       });
     }
+
+    const box1 = this.unrotatedBoundingBox;
+    const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+
+    this.transform.translate(
+      vec2.sub(
+        vec2.rotate([0, 0], mid, this.transform.rotation),
+        vec2.rotate([0, 0], mid1, this.transform.rotation)
+      )
+    );
   }
 
   isOpenEnd(id: string): boolean {
@@ -340,24 +475,58 @@ class Element implements ElementEntity {
   }
 
   intersects(box: Box): boolean {
-    if (!doesBoxIntersectBox(box, this.boundingBox)) return false;
+    const angle = this.transform.rotation;
 
-    box = [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], this.transform.position)];
+    if (angle === 0) {
+      if (!doesBoxIntersectBox(box, this.boundingBox)) return false;
 
-    if (
-      this.length < 2 &&
-      isPointInBox(Array.from(this.vertices.values())[0].transform.position, box, 5)
-    )
-      return true;
+      box = [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], this.transform.position)];
 
-    return Array.from(this.m_curves.values()).some((segment) => segment.intersectsBox(box));
+      if (
+        this.length < 2 &&
+        isPointInBox(Array.from(this.m_vertices.values())[0].transform.position, box, 5)
+      )
+        return true;
+
+      return Array.from(this.m_curves.values()).some((segment) => segment.intersectsBox(box));
+    } else {
+      const unrotatedBox = this.unrotatedBoundingBox;
+      const mid = vec2.div(vec2.add(unrotatedBox[0], unrotatedBox[1]), 2);
+
+      if (!doesBoxIntersectRotatedBox(box, unrotatedBox, this.transform.rotation)) return false;
+
+      const position = this.transform.position;
+      const rotated = [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]].map(
+        (point) => vec2.sub(vec2.rotate(point, mid, -angle), position)
+      );
+
+      rotated.push(rotated[0]);
+
+      const rects: Box[] = [];
+
+      for (let i = 0; i < rotated.length - 1; i++) {
+        rects.push([rotated[i], rotated[i + 1]]);
+      }
+
+      box = [vec2.sub(box[0], position), vec2.sub(box[1], position)];
+      vec2.sub(mid, position, true);
+
+      return Array.from(this.m_curves.values()).some((segment) => {
+        if (isPointInBox(vec2.rotate(segment.p0, mid, angle), box)) return true;
+        return rects.some((rect) => segment.intersectsLine(rect));
+      });
+    }
   }
 
   delete(vertex: VertexEntity | true, keepClosed = true): void {
+    // TODO: handle rotation
     if (this.m_order.length < 3) {
       SceneManager.delete(this, true);
       return;
     }
+
+    const box = this.unrotatedBoundingBox;
+    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
 
     const vertices = vertex === true ? this.selection.entities : [vertex];
     const indices = vertices.map((vertex) => this.m_order.indexOf(vertex.id)).sort();
@@ -420,9 +589,18 @@ class Element implements ElementEntity {
         const element = new Element({
           vertices: fragments[i].map((id) => this.m_vertices.get(id)!),
           position: this.transform.staticPosition,
+          rotation: this.transform.staticRotation,
           stroke: this.m_stroke ?? undefined,
           fill: this.m_fill ?? undefined
         });
+        const box1 = element.unrotatedBoundingBox;
+        const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+        element.transform.translate(
+          vec2.sub(
+            vec2.rotate([0, 0], mid, this.transform.staticRotation),
+            vec2.rotate([0, 0], mid1, this.transform.staticRotation)
+          )
+        );
         SceneManager.add(element);
         elements.push(element);
       }
@@ -465,7 +643,21 @@ class Element implements ElementEntity {
   }
 
   getEntityAt(position: vec2, lowerLevel: boolean, threshold: number): Entity | undefined {
-    if (isPointInBox(position, lowerLevel ? this.largeBoundingBox : this.boundingBox, threshold)) {
+    const angle = this.transform.rotation;
+    const box = this.unrotatedBoundingBox;
+    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+
+    if (angle !== 0) {
+      position = vec2.rotate(position, mid, -this.transform.rotation);
+    }
+
+    if (
+      isPointInBox(
+        position,
+        lowerLevel ? this.largeBoundingBox : this.unrotatedBoundingBox,
+        threshold
+      )
+    ) {
       position = vec2.sub(position, this.transform.position);
 
       let toReturn: Entity | undefined = undefined;
@@ -481,12 +673,14 @@ class Element implements ElementEntity {
       }
 
       if (this.m_fill && !toReturn) {
+        const rect: Box = [position, [Infinity, position[1]]];
+
         // TODO: add closing segment in non closed elements
         if (this.m_fillRule === 'even-odd') {
           let intersections = 0;
 
           this.m_curves.forEach((bezier) => {
-            const points = bezier.getLineIntersectionPoints([position, [Infinity, position[1]]]);
+            const points = bezier.getLineIntersectionPoints(rect);
             intersections += points.length;
           });
 
@@ -495,7 +689,7 @@ class Element implements ElementEntity {
           let count = 0;
 
           this.m_curves.forEach((bezier) => {
-            bezier.getLineIntersections([position, [Infinity, position[1]]]).forEach((t) => {
+            bezier.getLineIntersections(rect).forEach((t) => {
               if (bezier.getPoint(t)[0] > position[0]) {
                 if (
                   bezier.getPoint(t - GEOMETRY_MAX_INTERSECTION_ERROR)[1] <
@@ -519,10 +713,15 @@ class Element implements ElementEntity {
 
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean): void {
     if (lowerLevel) {
-      box = [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], this.transform.position)];
+      const position = this.transform.position;
+
+      box = [vec2.sub(box[0], position), vec2.sub(box[1], position)];
+      const unrotatedBox = this.unrotatedBoundingBox;
+      const mid = vec2.sub(vec2.div(vec2.add(unrotatedBox[0], unrotatedBox[1]), 2), position);
+      const angle = this.transform.rotation;
 
       this.m_vertices.forEach((vertex) => {
-        vertex.getEntitiesIn(box, entities);
+        vertex.getEntitiesIn(box, entities, true, angle, mid);
       });
     } else if (this.intersects(box)) entities.add(this);
   }
@@ -594,7 +793,7 @@ class Element implements ElementEntity {
     const obj: ElementObject = {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
-      position: this.transform.position,
+      position: this.transform.staticPosition,
       vertices: this.m_order.map(
         (id) => this.m_vertices.get(id)!.asObject(duplicate) as VertexObject
       )

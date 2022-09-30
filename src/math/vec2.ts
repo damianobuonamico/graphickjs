@@ -124,6 +124,16 @@ export function length(a: ReadonlyVec2): number {
 }
 
 /**
+ * Calculates the squared length of a vec2
+ *
+ * @param {ReadonlyVec2} a vector to calculate squared length of
+ * @returns {Number} length of a
+ */
+export function squaredLength(a: ReadonlyVec2): number {
+  return a[0] * a[0] + a[1] * a[1];
+}
+
+/**
  * Joins an array of vectors into a single vector
  *
  * @param {vec2[]} a vector to negate
@@ -284,12 +294,28 @@ export function angle(a: ReadonlyVec2, b: ReadonlyVec2): number {
  * Calculates the absolute value of a given vector
  *
  * @param {ReadonlyVec2} a vector
- * @returns {vec2} a new 2D vector
+ * @returns {vec2} out
  */
 export function abs(a: ReadonlyVec2, self: boolean = false): vec2 {
   const out = self ? a : create();
   out[0] = Math.abs(a[0]);
   out[1] = Math.abs(a[1]);
+  return out;
+}
+
+/**
+ * Calculates the absolute value of a given vector
+ *
+ * @param {ReadonlyVec2} a point to rotate
+ * @param {ReadonlyVec2} b center of rotation
+ * @param {Number} t angle of rotation
+ * @returns {vec2} out
+ */
+export function rotate(a: vec2, b: vec2, t: number, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  const coefficients = sub(a, b);
+  out[0] = b[0] + coefficients[0] * Math.cos(t) - coefficients[1] * Math.sin(t);
+  out[1] = b[1] + coefficients[0] * Math.sin(t) + coefficients[1] * Math.cos(t);
   return out;
 }
 
@@ -334,3 +360,9 @@ export const neg = negate;
  * @function
  */
 export const len = length;
+
+/**
+ * Alias for {@link vec2.squaredLength}
+ * @function
+ */
+export const sqrLen = squaredLength;

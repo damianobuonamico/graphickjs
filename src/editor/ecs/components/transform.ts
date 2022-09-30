@@ -21,14 +21,36 @@ class TransformNumberValue implements TransformComponentValue<number> {
     return this.m_value;
   }
 
+  tempGet() {
+    return this.m_delta;
+  }
+
   set(value: number) {
-    this.m_value = value;
-    if (this.m_callback) this.m_callback();
+    const backup = this.m_value;
+
+    HistoryManager.record({
+      fn: () => {
+        this.m_value = value;
+        if (this.m_callback) this.m_callback();
+      },
+      undo: () => {
+        this.m_value = backup;
+        if (this.m_callback) this.m_callback();
+      }
+    });
   }
 
   add(delta: number) {
-    this.m_value += delta;
-    if (this.m_callback) this.m_callback();
+    HistoryManager.record({
+      fn: () => {
+        this.m_value += delta;
+        if (this.m_callback) this.m_callback();
+      },
+      undo: () => {
+        this.m_value -= delta;
+        if (this.m_callback) this.m_callback();
+      }
+    });
   }
 
   translate(delta: number) {
@@ -37,8 +59,12 @@ class TransformNumberValue implements TransformComponentValue<number> {
   }
 
   apply() {
-    this.m_value += this.m_delta;
-    this.clear();
+    const transformed = this.get();
+
+    if (transformed !== this.m_value) {
+      this.set(transformed);
+      this.clear();
+    }
   }
 
   clear() {
@@ -64,6 +90,10 @@ class TransformVec2Value implements TransformComponentValue<vec2> {
 
   staticGet() {
     return vec2.clone(this.m_value);
+  }
+
+  tempGet() {
+    return vec2.clone(this.m_delta);
   }
 
   set(value: vec2) {
@@ -125,23 +155,27 @@ class SimpleTransform implements SimpleTransformComponent {
     return this.m_position.get();
   }
 
-  get staticPosition() {
-    return this.m_position.staticGet();
-  }
-
   set position(value: vec2) {
     this.m_position.set(value);
   }
 
-  set translation(value: vec2) {
-    this.translate(vec2.sub(value, this.position));
+  get staticPosition() {
+    return this.m_position.staticGet();
   }
 
-  move(delta: vec2) {
-    this.m_position.add(delta);
+  get tempPosition() {
+    return this.m_position.tempGet();
+  }
+
+  set tempPosition(value: vec2) {
+    this.tempTranslate(vec2.sub(value, this.position));
   }
 
   translate(delta: vec2) {
+    this.m_position.add(delta);
+  }
+
+  tempTranslate(delta: vec2) {
     this.m_position.translate(delta);
   }
 
@@ -165,7 +199,6 @@ class UntrackedSimpleTransform implements UntrackedSimpleTransformComponent {
 
   constructor(position?: vec2, callback?: () => void) {
     this.m_position = position ?? vec2.create();
-
     this.m_callback = callback;
   }
 
@@ -175,10 +208,12 @@ class UntrackedSimpleTransform implements UntrackedSimpleTransformComponent {
 
   set position(value: vec2) {
     vec2.copy(this.m_position, value);
+    if (this.m_callback) this.m_callback();
   }
 
-  move(delta: vec2) {
+  translate(delta: vec2) {
     vec2.add(this.m_position, delta, true);
+    if (this.m_callback) this.m_callback();
   }
 
   get mat3() {
@@ -203,28 +238,56 @@ class Transform implements TransformComponent {
     return this.m_position.get();
   }
 
-  get staticPosition() {
-    return this.m_position.staticGet();
-  }
-
   set position(value: vec2) {
     this.m_position.set(value);
   }
 
-  set translation(value: vec2) {
-    this.translate(vec2.sub(value, this.position));
+  get staticPosition() {
+    return this.m_position.staticGet();
   }
 
-  move(delta: vec2) {
-    this.m_position.add(delta);
+  get tempPosition() {
+    return this.m_position.tempGet();
+  }
+
+  set tempPosition(value: vec2) {
+    this.tempTranslate(vec2.sub(value, this.position));
   }
 
   translate(delta: vec2) {
+    this.m_position.add(delta);
+  }
+
+  tempTranslate(delta: vec2) {
     this.m_position.translate(delta);
   }
 
   get rotation() {
     return this.m_rotation.get();
+  }
+
+  set rotation(value: number) {
+    this.m_rotation.set(value);
+  }
+
+  get staticRotation() {
+    return this.m_rotation.staticGet();
+  }
+
+  get tempRotation() {
+    return this.m_rotation.tempGet();
+  }
+
+  set tempRotation(value: number) {
+    this.tempRotate(value - this.rotation);
+  }
+
+  rotate(delta: number) {
+    this.m_rotation.add(delta);
+  }
+
+  tempRotate(delta: number) {
+    this.m_rotation.translate(delta);
   }
 
   get scale() {
@@ -237,10 +300,12 @@ class Transform implements TransformComponent {
 
   clear() {
     this.m_position.clear();
+    this.m_rotation.clear();
   }
 
   apply() {
     this.m_position.apply();
+    this.m_rotation.apply();
   }
 }
 
@@ -248,7 +313,6 @@ class UntrackedTransform implements UntrackedTransformComponent {
   origin: vec2;
 
   private m_position: vec2;
-  private m_translation: vec2 = vec2.create();
   private m_rotation: number;
   private m_scale: vec2;
 
@@ -263,7 +327,7 @@ class UntrackedTransform implements UntrackedTransformComponent {
   }
 
   get position() {
-    return vec2.add(this.m_position, this.m_translation);
+    return vec2.clone(this.m_position);
   }
 
   set position(value: vec2) {
@@ -271,22 +335,23 @@ class UntrackedTransform implements UntrackedTransformComponent {
     if (this.m_callback) this.m_callback();
   }
 
-  get staticPosition() {
-    return vec2.clone(this.m_position);
-  }
-
-  set translation(value: vec2) {
-    vec2.copy(this.m_translation, value);
-    if (this.m_callback) this.m_callback();
-  }
-
-  move(delta: vec2) {
+  translate(delta: vec2) {
     vec2.add(this.m_position, delta, true);
     if (this.m_callback) this.m_callback();
   }
 
   get rotation() {
     return this.m_rotation;
+  }
+
+  set rotation(value: number) {
+    this.m_rotation = value;
+    if (this.m_callback) this.m_callback();
+  }
+
+  rotate(delta: number) {
+    this.m_rotation += delta;
+    if (this.m_callback) this.m_callback();
   }
 
   get scale() {
@@ -329,16 +394,20 @@ class VertexTransform implements VertexTransformComponent {
     return this.m_position.staticPosition;
   }
 
-  set translation(value: vec2) {
-    this.m_position.translation = value;
+  get tempPosition() {
+    return this.m_position.tempPosition;
   }
 
-  move(delta: vec2) {
-    this.m_position.move(delta);
+  set tempPosition(value: vec2) {
+    this.m_position.tempPosition = value;
   }
 
-  translate(delta: vec2): void {
+  translate(delta: vec2) {
     this.m_position.translate(delta);
+  }
+
+  tempTranslate(delta: vec2): void {
+    this.m_position.tempTranslate(delta);
   }
 
   get left(): vec2 {
@@ -357,23 +426,30 @@ class VertexTransform implements VertexTransformComponent {
     return this.m_left ? this.m_left.staticPosition : vec2.create();
   }
 
-  set translationLeft(value: vec2) {
+  get tempLeft() {
+    return this.m_left ? this.m_left.tempPosition : vec2.create();
+  }
+
+  set tempLeft(value: vec2) {
     if (this.m_left) {
-      this.m_left.translation = value;
+      this.m_left.tempPosition = value;
     }
   }
 
-  moveLeft(delta: vec2) {
-    this.m_left?.move(delta);
+  translateLeft(delta: vec2) {
+    this.m_left?.translate(delta);
   }
 
-  translateLeft(delta: vec2, lockMirror: boolean = false): void {
-    this.m_left?.translate(delta);
+  tempTranslateLeft(delta: vec2, lockMirror: boolean = false): void {
+    this.m_left?.tempTranslate(delta);
 
     if (!lockMirror && this.m_right) {
       const direction = vec2.unit(vec2.neg(this.left));
       if (!vec2.equals(direction, [0, 0])) {
-        this.translateRight(vec2.sub(vec2.mul(direction, vec2.len(this.right!)), this.right), true);
+        this.tempTranslateRight(
+          vec2.sub(vec2.mul(direction, vec2.len(this.right!)), this.right),
+          true
+        );
       }
     }
   }
@@ -394,23 +470,30 @@ class VertexTransform implements VertexTransformComponent {
     return this.m_right ? this.m_right.staticPosition : vec2.create();
   }
 
-  set translationRight(value: vec2) {
+  get tempRight() {
+    return this.m_right ? this.m_right.tempPosition : vec2.create();
+  }
+
+  set tempRight(value: vec2) {
     if (this.m_right) {
-      this.m_right.translation = value;
+      this.m_right.tempPosition = value;
     }
   }
 
-  moveRight(delta: vec2) {
-    this.m_right?.move(delta);
+  translateRight(delta: vec2) {
+    this.m_right?.translate(delta);
   }
 
-  translateRight(delta: vec2, lockMirror: boolean = false): void {
-    this.m_right?.translate(delta);
+  tempTranslateRight(delta: vec2, lockMirror: boolean = false): void {
+    this.m_right?.tempTranslate(delta);
 
     if (!lockMirror && this.m_left) {
       const direction = vec2.unit(vec2.neg(this.right));
       if (!vec2.equals(direction, [0, 0])) {
-        this.translateLeft(vec2.sub(vec2.mul(direction, vec2.len(this.left!)), this.left), true);
+        this.tempTranslateLeft(
+          vec2.sub(vec2.mul(direction, vec2.len(this.left!)), this.left),
+          true
+        );
       }
     }
   }

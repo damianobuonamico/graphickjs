@@ -27,6 +27,7 @@ interface ElementEntity extends TransformableEntity {
 interface ElementOptions {
   id?: string;
   position: vec2;
+  rotation?: number;
   vertices?: VertexEntity[];
   closed?: boolean;
   stroke?: string | Stroke;

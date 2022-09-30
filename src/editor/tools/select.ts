@@ -49,7 +49,7 @@ const onSelectPointerDown = () => {
       if (SelectionManager.size) {
         draggingOccurred = true;
         SelectionManager.forEach((entity) => {
-          (entity as Element).transform.translate(InputManager.scene.movement);
+          (entity as Element).transform.tempTranslate(InputManager.scene.movement);
         });
       }
     } else if (rect.element) {

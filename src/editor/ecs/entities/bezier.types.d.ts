@@ -17,6 +17,8 @@ interface BezierEntity extends Entity {
 
   getPoint(t: number): vec2;
   getRoots(): number[];
+  getRotatedRoots(origin: vec2, angle: number): number[];
+  getRotatedExtrema(origin: vec2, angle: number): vec2[];
   getClosestTo(position: vec2, iterations: number): vec2;
   getDistanceTo(position: vec2, iterations: number): number;
   getLineIntersections(line: Box): number[];

@@ -36,3 +36,26 @@ export function fromValues(x: number, y: number, z: number): vec3 {
   out[2] = z;
   return out;
 }
+
+/**
+ * Subtracts vector b from vector a
+ *
+ * @param {ReadonlyVec3} a the first operand
+ * @param {ReadonlyVec3 | number} b the second operand
+ * @param {boolean} self is a the receiving vector
+ * @returns {vec3} out
+ */
+export function subtract(a: ReadonlyVec3, b: ReadonlyVec3 | number, self: boolean = false): vec3 {
+  const out = self ? a : create();
+  const [b0, b1, b2] = typeof b === 'number' ? [b, b, b] : [b[0], b[1], b[2]];
+  out[0] = a[0] - b0;
+  out[1] = a[1] - b1;
+  out[2] = a[2] - b2;
+  return out;
+}
+
+/**
+ * Alias for {@link vec2.subtract}
+ * @function
+ */
+export const sub = subtract;

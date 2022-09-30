@@ -87,7 +87,19 @@ class Vertex implements VertexEntity {
     return undefined;
   }
 
-  getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {
+  getEntitiesIn(
+    box: Box,
+    entities: Set<Entity>,
+    lowerLevel: boolean | undefined = true,
+    angle: number = 0,
+    center?: vec2
+  ): void {
+    if (angle !== 0 && center) {
+      if (isPointInBox(vec2.rotate(this.transform.position, center, angle), box))
+        entities.add(this);
+      return;
+    }
+
     if (isPointInBox(this.transform.position, box)) entities.add(this);
   }
 

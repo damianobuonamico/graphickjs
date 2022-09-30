@@ -33,6 +33,7 @@ interface Fill {
 interface TransformComponentValue<T> {
   get(): T;
   staticGet(): T;
+  tempGet(): T;
 
   set(value: T): void;
   add(delta: T): void;
@@ -45,9 +46,9 @@ interface TransformComponentValue<T> {
 interface SimpleTransformComponent {
   position: vec2;
   staticPosition: vec2;
-  translation: vec2;
-  move(delta: vec2): void;
+  tempPosition: vec2;
   translate(delta: vec2): void;
+  tempTranslate(delta: vec2): void;
 
   mat3: mat3;
 
@@ -57,7 +58,7 @@ interface SimpleTransformComponent {
 
 interface UntrackedSimpleTransformComponent {
   position: vec2;
-  move(delta: vec2): void;
+  translate(delta: vec2): void;
 
   mat3: mat3;
 }
@@ -67,10 +68,15 @@ interface TransformComponent {
 
   position: vec2;
   staticPosition: vec2;
-  move(delta: vec2): void;
+  tempPosition: vec2;
   translate(delta: vec2): void;
+  tempTranslate(delta: vec2): void;
 
   rotation: number;
+  staticRotation: number;
+  tempRotation: number;
+  rotate(delta: number): void;
+  tempRotate(delta: number): void;
 
   scale: vec2;
 
@@ -84,11 +90,10 @@ interface UntrackedTransformComponent {
   origin: vec2;
 
   position: vec2;
-  staticPosition: vec2;
-  translation: vec2;
-  move(delta: vec2): void;
+  translate(delta: vec2): void;
 
   rotation: number;
+  rotate(delta: number): void;
 
   scale: vec2;
 
@@ -98,21 +103,21 @@ interface UntrackedTransformComponent {
 interface VertexTransformComponent {
   position: vec2;
   staticPosition: vec2;
-  translation: vec2;
-  move(delta: vec2): void;
+  tempPosition: vec2;
   translate(delta: vec2): void;
+  tempTranslate(delta: vec2): void;
 
   left: vec2;
   staticLeft: vec2;
-  translationLeft: vec2;
-  moveLeft(delta: vec2): void;
-  translateLeft(delta: vec2, lockMirror?: boolean): void;
+  tempLeft: vec2;
+  translateLeft(delta: vec2): void;
+  tempTranslateLeft(delta: vec2, lockMirror?: boolean): void;
 
   right: vec2;
   staticRight: vec2;
-  translationRight: vec2;
-  moveRight(delta: vec2): void;
-  translateRight(delta: vec2, lockMirror?: boolean): void;
+  tempRight: vec2;
+  translateRight(delta: vec2): void;
+  tempTranslateRight(delta: vec2, lockMirror?: boolean): void;
 
   clear(): void;
   apply(): void;
