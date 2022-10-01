@@ -406,14 +406,36 @@ export function onPenPointerHover() {
   const hasOverlay = pen.overlay ? SceneManager.hasRenderOverlay(pen.overlay.id) : false;
 
   if (pen.element && pen.vertex) {
+    const box = pen.element.unrotatedBoundingBox;
+    const mid = vec2.div(
+      vec2.add(
+        vec2.sub(box[0], pen.element.transform.position),
+        vec2.sub(box[1], pen.element.transform.position)
+      ),
+      2
+    );
+
     if (
       pen.overlay &&
       pen.overlayVertex &&
       pen.overlayLastVertex &&
-      vec2.equals(pen.overlayLastVertex.transform.position, pen.vertex.transform.position)
+      vec2.equals(
+        pen.overlayLastVertex.transform.position,
+        vec2.rotate(pen.vertex.transform.position, mid, pen.element.transform.rotation)
+      )
     ) {
-      if (pen.vertex.left) pen.overlayLastVertex.transform.tempLeft = pen.vertex.transform.left;
-      if (pen.vertex.right) pen.overlayLastVertex.transform.tempRight = pen.vertex.transform.right;
+      if (pen.vertex.left)
+        pen.overlayLastVertex.transform.tempLeft = vec2.rotate(
+          pen.vertex.transform.left,
+          [0, 0],
+          pen.element.transform.rotation
+        );
+      if (pen.vertex.right)
+        pen.overlayLastVertex.transform.tempRight = vec2.rotate(
+          pen.vertex.transform.right,
+          [0, 0],
+          pen.element.transform.rotation
+        );
 
       pen.overlayVertex.transform.tempTranslate(
         vec2.sub(
@@ -425,9 +447,13 @@ export function onPenPointerHover() {
       if (hasOverlay) SceneManager.popRenderOverlay(pen.overlay!.id);
 
       pen.overlayLastVertex = new Vertex({
-        position: pen.vertex.transform.position,
-        left: pen.vertex.left?.transform.position,
-        right: pen.vertex.right?.transform.position
+        position: vec2.rotate(pen.vertex.transform.position, mid, pen.element.transform.rotation),
+        left: pen.vertex.left
+          ? vec2.rotate(pen.vertex.transform.left, [0, 0], pen.element.transform.rotation)
+          : undefined,
+        right: pen.vertex.right
+          ? vec2.rotate(pen.vertex.transform.right, [0, 0], pen.element.transform.rotation)
+          : undefined
       });
 
       pen.overlayVertex = new Vertex({
