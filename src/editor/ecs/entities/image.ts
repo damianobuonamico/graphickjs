@@ -1,7 +1,8 @@
+import HistoryManager from '@/editor/history';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@/math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
-import { Transform } from '../components/transform';
+import { Transform, TransformVec2Value } from '../components/transform';
 import Layer from './layer';
 
 class ImageMedia implements ImageEntity {
@@ -13,25 +14,28 @@ class ImageMedia implements ImageEntity {
 
   private m_data: string;
   private m_source = new Image();
-  private m_size: vec2 = vec2.create();
+  private m_size: TransformVec2Value = new TransformVec2Value();
+  public reflect: [boolean, boolean] = [false, false];
+  private wasLastNegative: [boolean, boolean] = [false, false];
 
   constructor({ id = nanoid(), source, position, size }: ImageOptions) {
     this.id = id;
-    this.transform = new Transform(position);
+    this.transform = new Transform(position, undefined, (magnitude, origin, temp, apply) =>
+      this.scale(magnitude, origin, temp, apply)
+    );
 
     this.m_data = source;
     this.m_source.src = source;
 
     this.m_source.onload = () => {
-      this.m_size =
-        size && !vec2.equals(size, vec2.create())
-          ? size
-          : vec2.fromValues(this.m_source.width, this.m_source.height);
+      HistoryManager.skipNext();
+      if (size && !vec2.equals(size, vec2.create())) this.m_size.set(size);
+      else this.m_size.set([this.m_source.width, this.m_source.height]);
     };
   }
 
   get size(): vec2 {
-    return vec2.clone(this.m_size);
+    return this.m_size.get();
   }
 
   get source(): HTMLImageElement {
@@ -55,7 +59,10 @@ class ImageMedia implements ImageEntity {
   }
 
   get staticBoundingBox(): Box {
-    return [this.transform.staticPosition, vec2.add(this.transform.staticPosition, this.m_size)];
+    return [
+      this.transform.staticPosition,
+      vec2.add(this.transform.staticPosition, this.m_size.staticGet())
+    ];
   }
 
   get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
@@ -71,7 +78,55 @@ class ImageMedia implements ImageEntity {
   }
 
   get unrotatedBoundingBox(): Box {
-    return [this.transform.position, vec2.add(this.transform.position, this.m_size)];
+    return [this.transform.position, vec2.add(this.transform.position, this.m_size.get())];
+  }
+
+  private scale(
+    magnitude: vec2,
+    origin: vec2 = this.transform.origin,
+    temp = false,
+    apply?: boolean
+  ) {
+    if (apply === true) {
+      this.m_size.apply();
+      this.wasLastNegative = [false, false];
+      return;
+    } else if (apply === false) {
+      this.m_size.clear();
+      this.wasLastNegative = [false, false];
+      return;
+    }
+
+    origin = vec2.add(origin, this.transform.position);
+
+    const box = this.staticBoundingBox;
+    const scaled = [vec2.scale(box[0], origin, magnitude), vec2.scale(box[1], origin, magnitude)];
+    const size = vec2.sub(scaled[1], scaled[0]);
+
+    if (size[0] < 0) {
+      if (!this.wasLastNegative[0]) this.reflect[0] = !this.reflect[0];
+      this.wasLastNegative[0] = true;
+    } else {
+      if (this.wasLastNegative[0]) this.reflect[0] = !this.reflect[0];
+      this.wasLastNegative[0] = false;
+    }
+    if (size[1] < 0) {
+      if (!this.wasLastNegative[1]) this.reflect[1] = !this.reflect[1];
+      this.wasLastNegative[1] = true;
+    } else {
+      if (this.wasLastNegative[1]) this.reflect[1] = !this.reflect[1];
+      this.wasLastNegative[1] = false;
+    }
+
+    const position = vec2.min(scaled[0], scaled[1]);
+
+    if (temp) {
+      this.transform.tempPosition = position;
+      this.m_size.translate(vec2.sub(vec2.abs(size), this.m_size.get()));
+    } else {
+      this.transform.position = position;
+      this.m_size.set(vec2.abs(size));
+    }
   }
 
   destroy(): void {}
@@ -97,13 +152,13 @@ class ImageMedia implements ImageEntity {
   getDrawable(useWebGL = false): Drawable {
     // TODO: refactor rendering
     return {
-      operations: [{ type: 'rect', data: [[0, 0], this.m_size] }, { type: 'stroke' }]
+      operations: [{ type: 'rect', data: [[0, 0], this.m_size.get()] }, { type: 'stroke' }]
     };
   }
 
   getOutlineDrawable(useWebGL = false): Drawable {
     return {
-      operations: [{ type: 'rect', data: [[0, 0], this.m_size] }, { type: 'stroke' }]
+      operations: [{ type: 'rect', data: [[0, 0], this.m_size.get()] }, { type: 'stroke' }]
     };
   }
 

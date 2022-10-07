@@ -298,7 +298,15 @@ class Canvas2D implements Canvas {
     this.m_ctx.rotate(image.transform.rotation);
     this.m_ctx.translate(-translation[0], -translation[1]);
 
-    this.m_ctx.drawImage(image.source, 0, 0);
+    this.m_ctx.scale(image.reflect[0] ? -1 : 1, image.reflect[1] ? -1 : 1);
+
+    this.m_ctx.drawImage(
+      image.source,
+      0,
+      0,
+      (image.reflect[0] ? -1 : 1) * image.size[0],
+      (image.reflect[1] ? -1 : 1) * image.size[1]
+    );
 
     this.m_ctx.restore();
 

@@ -226,12 +226,25 @@ class Transform implements TransformComponent {
 
   private m_position: TransformVec2Value;
   private m_rotation: TransformNumberValue;
-  private m_scale: TransformVec2Value;
 
-  constructor(position?: vec2, rotation?: number, scale?: vec2, callback?: () => void) {
+  private m_scaleFn: (magnitude: vec2, origin: vec2, temp?: boolean, apply?: boolean) => void;
+
+  constructor(
+    position?: vec2,
+    rotation?: number,
+    scaleFn?: (magnitude: vec2, origin: vec2, temp?: boolean, apply?: boolean) => void,
+    callback?: () => void
+  ) {
     this.m_position = new TransformVec2Value(position, callback);
     this.m_rotation = new TransformNumberValue(rotation, callback);
-    this.m_scale = new TransformVec2Value(scale, callback);
+    this.m_scaleFn = scaleFn
+      ? callback
+        ? (magnitude, origin, temp, apply) => {
+            scaleFn(magnitude, origin, temp, apply);
+            callback();
+          }
+        : scaleFn
+      : () => {};
   }
 
   get position() {
@@ -290,8 +303,12 @@ class Transform implements TransformComponent {
     this.m_rotation.translate(delta);
   }
 
-  get scale() {
-    return this.m_scale.get();
+  scale(magnitude: vec2) {
+    this.m_scaleFn(magnitude, this.origin);
+  }
+
+  tempScale(magnitude: vec2) {
+    this.m_scaleFn(magnitude, this.origin, true);
   }
 
   get mat3() {
@@ -301,11 +318,13 @@ class Transform implements TransformComponent {
   clear() {
     this.m_position.clear();
     this.m_rotation.clear();
+    this.m_scaleFn([0, 0], [0, 0], undefined, false);
   }
 
   apply() {
     this.m_position.apply();
     this.m_rotation.apply();
+    this.m_scaleFn([0, 0], [0, 0], undefined, true);
   }
 }
 
@@ -314,14 +333,12 @@ class UntrackedTransform implements UntrackedTransformComponent {
 
   private m_position: vec2;
   private m_rotation: number;
-  private m_scale: vec2;
 
   private m_callback: (() => void) | undefined;
 
   constructor(position?: vec2, rotation?: number, scale?: vec2, callback?: () => void) {
     this.m_position = position ?? vec2.create();
     this.m_rotation = rotation ?? 0;
-    this.m_scale = scale ?? vec2.create();
 
     this.m_callback = callback;
   }
@@ -352,10 +369,6 @@ class UntrackedTransform implements UntrackedTransformComponent {
   rotate(delta: number) {
     this.m_rotation += delta;
     if (this.m_callback) this.m_callback();
-  }
-
-  get scale() {
-    return vec2.clone(this.m_scale);
   }
 
   get mat3() {
@@ -511,7 +524,10 @@ class VertexTransform implements VertexTransformComponent {
   }
 }
 
+// TODO: Refactor values
 export {
+  TransformNumberValue,
+  TransformVec2Value,
   SimpleTransform,
   Transform,
   UntrackedSimpleTransform,

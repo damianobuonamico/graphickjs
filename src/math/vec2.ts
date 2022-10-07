@@ -304,7 +304,7 @@ export function abs(a: ReadonlyVec2, self: boolean = false): vec2 {
 }
 
 /**
- * Calculates the absolute value of a given vector
+ * Rotates a given vector
  *
  * @param {ReadonlyVec2} a point to rotate
  * @param {ReadonlyVec2} b center of rotation
@@ -317,6 +317,18 @@ export function rotate(a: vec2, b: vec2, t: number, self: boolean = false): vec2
   out[0] = b[0] + coefficients[0] * Math.cos(t) - coefficients[1] * Math.sin(t);
   out[1] = b[1] + coefficients[0] * Math.sin(t) + coefficients[1] * Math.cos(t);
   return out;
+}
+
+/**
+ * Scales a given vector
+ *
+ * @param {ReadonlyVec2} a point to scale
+ * @param {ReadonlyVec2} b center of scale
+ * @param {ReadonlyVec2 | Number} t magnitude of scale
+ * @returns {vec2} out
+ */
+export function scale(a: vec2, b: vec2, t: vec2 | number, self: boolean = false): vec2 {
+  return add(mul(sub(a, b, self), t, self), b, self);
 }
 
 /**

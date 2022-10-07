@@ -78,7 +78,8 @@ interface TransformComponent {
   rotate(delta: number): void;
   tempRotate(delta: number): void;
 
-  scale: vec2;
+  scale(magnitude: vec2): void;
+  tempScale(magnitude: vec2): void;
 
   mat3: mat3;
 
@@ -94,8 +95,6 @@ interface UntrackedTransformComponent {
 
   rotation: number;
   rotate(delta: number): void;
-
-  scale: vec2;
 
   mat3: mat3;
 }

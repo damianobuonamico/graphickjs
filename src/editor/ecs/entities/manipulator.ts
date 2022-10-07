@@ -237,38 +237,16 @@ class Manipulator implements ManipulatorEntity {
     const size = vec2.mul(this.m_size, SceneManager.viewport.zoom);
     const isBoxSmall = [size[0] < 30, size[1] < 30];
 
-    let newSize = vec2.clone(this.m_size);
-
-    if (size[0] < 16) {
-      newSize[0] = 16 / SceneManager.viewport.zoom;
-    }
-    if (size[1] < 16) {
-      newSize[1] = 16 / SceneManager.viewport.zoom;
-    }
-
     const ops: DrawOp[] = [
       {
         type: 'rect',
-        data: [[0, 0], newSize]
+        data: [[0, 0], this.m_size]
       },
       {
         type: 'stroke'
       },
       { type: 'begin' }
     ];
-
-    if (vec2.equals(newSize, this.m_size)) {
-      this.transform.position = this.m_lastCalculatedPosition;
-      if (!vec2.equals(this.m_size, this.m_lastCalculatedSize)) {
-        this.setHandles();
-      }
-    } else {
-      this.transform.position = vec2.add(
-        this.m_lastCalculatedPosition,
-        vec2.div(vec2.sub(this.m_size, newSize), 2)
-      );
-      this.setHandles(newSize);
-    }
 
     Object.entries(this.m_handles).forEach(([key, handle]: [string, GenericHandle]) => {
       if (handle.handleType !== 'rotate') {

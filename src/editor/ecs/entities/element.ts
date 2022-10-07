@@ -45,7 +45,12 @@ class Element implements ElementEntity {
   }: ElementOptions) {
     this.id = id;
     this.m_closed = closed;
-    this.transform = new Transform(position, rotation, undefined, () => this.recalculate());
+    this.transform = new Transform(
+      position,
+      rotation,
+      (magnitude, origin, temp, apply) => this.scale(magnitude, origin, temp, apply),
+      () => this.recalculate()
+    );
     this.m_recordHistory = recordHistory;
 
     if (vertices) this.vertices = vertices;
@@ -239,6 +244,35 @@ class Element implements ElementEntity {
 
     if (regenerate) this.regenerate();
     else this.recalculate(false);
+  }
+
+  private scale(
+    magnitude: vec2,
+    origin: vec2 = this.transform.origin,
+    temp = false,
+    apply?: boolean
+  ) {
+    if (apply === true) {
+      this.m_vertices.forEach((vertex) => vertex.transform.apply());
+    } else if (apply === false) {
+      this.m_vertices.forEach((vertex) => vertex.transform.clear());
+    } else if (temp) {
+      this.m_vertices.forEach((vertex) => {
+        vertex.transform.tempPosition = vec2.scale(
+          vertex.transform.staticPosition,
+          origin,
+          magnitude
+        );
+        vertex.transform.tempLeft = vec2.scale(vertex.transform.staticLeft, [0, 0], magnitude);
+        vertex.transform.tempRight = vec2.scale(vertex.transform.staticRight, [0, 0], magnitude);
+      });
+    } else {
+      this.m_vertices.forEach((vertex) => {
+        vertex.transform.position = vec2.scale(vertex.transform.staticPosition, origin, magnitude);
+        vertex.transform.left = vec2.scale(vertex.transform.staticLeft, [0, 0], magnitude);
+        vertex.transform.right = vec2.scale(vertex.transform.staticRight, [0, 0], magnitude);
+      });
+    }
   }
 
   recalculate(propagate: boolean = true): void {

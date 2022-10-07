@@ -52,7 +52,6 @@ const onRotatePointerDown = () => {
     if (abort) {
       entities.forEach((entity) => entity.transform.clear());
     } else {
-      console.log('apply');
       entities.forEach((entity) => entity.transform.apply());
     }
   }
