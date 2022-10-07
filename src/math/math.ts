@@ -13,6 +13,11 @@ export function map(t: number, __min: number, __max: number, min: number, max: n
   return ((t - __min) * (max - min)) / (__max - __min) + min;
 }
 
+export function snap(t: number, intervals: number = 8) {
+  const increment = (Math.PI * 2) / intervals;
+  return Math.round(t / increment) * increment;
+}
+
 export function getLinesFromBox(box: Box): Box[] {
   return [
     [box[0], [box[1][0], box[0][1]]],
