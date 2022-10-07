@@ -107,8 +107,11 @@ class ToolState {
 
     if (override && (override === 'scale' || override === 'rotate')) active = override;
 
-    if (this.m_last !== active) this.m_data[this.m_last] = {};
+    if (this.m_last !== active && active !== 'pan' && active !== 'zoom')
+      this.m_data[this.m_last] = {};
+
     const callbacks = this.m_callbacks[active]();
+
     this.m_onPointerMove = callbacks.onPointerMove;
     this.m_onPointerUp = callbacks.onPointerUp;
     this.m_onKey = callbacks.onKey;

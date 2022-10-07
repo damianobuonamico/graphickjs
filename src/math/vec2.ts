@@ -286,7 +286,8 @@ export function dot(a: ReadonlyVec2, b: ReadonlyVec2): number {
  * @param {ReadonlyVec2} b the second operand
  * @returns {Number} angle between a and b
  */
-export function angle(a: ReadonlyVec2, b: ReadonlyVec2): number {
+export function angle(a: ReadonlyVec2, b: ReadonlyVec2, clamp: boolean = false): number {
+  if (clamp) return Math.atan2(b[1] - a[1], b[0] - a[0]);
   return Math.sign(a[0] * b[1] - a[1] * b[0]) * Math.acos(dot(a, b) / (len(a) * len(b)));
 }
 
@@ -329,6 +330,24 @@ export function rotate(a: vec2, b: vec2, t: number, self: boolean = false): vec2
  */
 export function scale(a: vec2, b: vec2, t: vec2 | number, self: boolean = false): vec2 {
   return add(mul(sub(a, b, self), t, self), b, self);
+}
+
+/**
+ * Snaps the input vector to regular angle increments
+ *
+ * @param {ReadonlyVec2} a
+ * @param {number} intervals angle increments
+ * @returns {vec2} out
+ */
+export function snap(a: ReadonlyVec2, intervals: number = 8, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  const increment = (Math.PI * 2) / intervals;
+  let ang = Math.round(angle(a, [0, 1], true) / increment) * increment;
+  let len = length(a);
+  out[0] = -Math.cos(ang);
+  out[1] = -Math.sin(ang);
+  mul(out, len, true);
+  return out;
 }
 
 /**

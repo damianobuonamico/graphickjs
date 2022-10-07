@@ -289,10 +289,14 @@ const onPenPointerDown = () => {
   const right = !!(pen.vertex && pen.vertex.right);
 
   function onPointerMove() {
+    const unrotatedDelta = InputManager.keys.shift
+      ? vec2.snap(InputManager.scene.delta)
+      : InputManager.scene.delta;
+
     const delta =
       pen.element && pen.element.transform.rotation !== 0
-        ? vec2.rotate(InputManager.scene.delta, [0, 0], -pen.element.transform.rotation)
-        : InputManager.scene.delta;
+        ? vec2.rotate(unrotatedDelta, [0, 0], -pen.element.transform.rotation)
+        : unrotatedDelta;
 
     switch (penState) {
       case 'sub':

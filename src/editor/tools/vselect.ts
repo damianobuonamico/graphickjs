@@ -92,15 +92,22 @@ const onVSelectPointerDown = () => {
         } else {
           const angle = handle.parent.parent.transform.rotation;
 
+          let value = vec2.sub(
+            InputManager.scene.position,
+            vec2.add(handle.parent.transform.position, handle.parent.parent.transform.position)
+          );
+
+          if (InputManager.keys.shift) vec2.snap(value, undefined, true);
+
           if (angle === 0) {
             if (handle.id === handle.parent.left?.id)
               handle.parent.transform.tempTranslateLeft(
-                InputManager.scene.movement,
+                vec2.sub(value, handle.parent.transform.left),
                 InputManager.keys.alt
               );
             else
               handle.parent.transform.tempTranslateRight(
-                InputManager.scene.movement,
+                vec2.sub(value, handle.parent.transform.right),
                 InputManager.keys.alt
               );
           } else {
@@ -109,7 +116,7 @@ const onVSelectPointerDown = () => {
 
             const p = vec2.rotate([0, 0], mid, angle);
 
-            const movement = vec2.rotate(InputManager.scene.movement, [0, 0], -angle);
+            const movement = vec2.rotate(value, [0, 0], -angle);
 
             if (handle.id === handle.parent.left?.id)
               handle.parent.transform.tempTranslateLeft(movement, InputManager.keys.alt);

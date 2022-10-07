@@ -1,7 +1,6 @@
 import { vec2 } from '@/math';
 import { Transform } from '../ecs/components/transform';
 import InputManager from '../input';
-import { Renderer } from '../renderer';
 import SelectionManager from '../selection';
 
 const onRotatePointerDown = () => {
@@ -33,6 +32,7 @@ const onRotatePointerDown = () => {
 
   function onPointerMove() {
     const angle = vec2.angle(start, vec2.sub(InputManager.scene.position, origin));
+    console.log(angle);
 
     entities.forEach((entity) => {
       const entityBox = entity.staticBoundingBox;
