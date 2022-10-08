@@ -1,4 +1,5 @@
 interface VertexEntity extends Entity {
+  selectable: false;
   parent: ElementEntity;
 
   position: HandleEntity;

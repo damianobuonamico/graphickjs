@@ -9,6 +9,7 @@ import Vertex from './vertex';
 class Handle implements HandleEntity {
   readonly id: string;
   readonly type: EntityType = 'handle';
+  readonly selectable = false;
   readonly handleType: HandleType;
 
   // TODO: check formatting in each entity file

@@ -1,6 +1,7 @@
 interface ElementEntity extends TransformableEntity {
-  // selection: ElementSelectionManagerComponent
   parent: LayerEntity;
+  selectable: true;
+
   largeBoundingBox: Box;
 
   length: number;

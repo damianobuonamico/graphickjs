@@ -12,6 +12,7 @@ type EntityType =
 interface Entity {
   readonly id: string;
   readonly type: EntityType;
+  readonly selectable: boolean;
 
   parent: Entity;
 

@@ -1,4 +1,6 @@
 interface ArtboardEntity extends MovableEntity, ECSEntity {
+  selectable: false;
+
   size: vec2;
 }
 

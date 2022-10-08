@@ -121,7 +121,6 @@ abstract class SelectionManager {
   }
 
   static get boundingBox(): Box {
-    // TODO: Cache
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
     const angle = this.angle;
@@ -226,10 +225,7 @@ abstract class SelectionManager {
 
   static all() {
     SceneManager.forEach((entity) => {
-      // TODO: Register selectable entities here
-      if (entity.type === 'element' || entity.type === 'image') {
-        this.select(entity);
-      }
+      if (entity.selectable) this.select(entity);
     });
   }
 

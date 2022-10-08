@@ -1,4 +1,6 @@
 interface BezierEntity extends Entity {
+  selectable: false;
+
   start: VertexEntity;
   end: VertexEntity;
 

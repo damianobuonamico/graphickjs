@@ -10,6 +10,7 @@ import Handle from './handle';
 class Vertex implements VertexEntity {
   readonly id: string;
   readonly type: EntityType = 'vertex';
+  readonly selectable = false;
 
   parent: ElementEntity;
   transform: VertexTransformComponent;

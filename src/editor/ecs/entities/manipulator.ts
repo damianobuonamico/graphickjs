@@ -9,6 +9,7 @@ class GenericHandle implements Entity {
   transform: UntrackedSimpleTransform;
   boundingBox: Box;
   readonly id: string;
+  readonly selectable = false;
   type: EntityType = 'generichandle';
   parent: Entity;
   handleType: string;
@@ -99,6 +100,7 @@ type HandleKey = keyof TransformHandles<null>;
 class Manipulator implements ManipulatorEntity {
   readonly id: string = nanoid();
   readonly type: EntityType = 'manipulator';
+  readonly selectable = false;
 
   parent: Entity;
   transform: UntrackedTransformComponent;

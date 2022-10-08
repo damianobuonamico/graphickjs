@@ -1,4 +1,6 @@
-interface LayerEntity extends ECSEntity {}
+interface LayerEntity extends ECSEntity {
+  selectable: false;
+}
 
 interface LayerOptions {
   id?: string;

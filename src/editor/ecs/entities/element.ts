@@ -16,6 +16,7 @@ import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 class Element implements ElementEntity {
   readonly id: string;
   readonly type: EntityType = 'element';
+  readonly selectable = true;
   readonly selection = new ElementSelectionManager(this);
 
   parent: Layer;
@@ -218,6 +219,16 @@ class Element implements ElementEntity {
     });
 
     this.regenerate();
+  }
+
+  private get m_closingCurve(): Bezier {
+    return this.cached<Bezier>('closingCurve', () => {
+      const curves = Array.from(this.m_curves.values());
+      return new Bezier({
+        start: new Vertex({ position: curves[curves.length - 1].p3 }),
+        end: new Vertex({ position: curves[0].p0 })
+      });
+    });
   }
 
   private pushVertex(
@@ -553,7 +564,6 @@ class Element implements ElementEntity {
   }
 
   delete(vertex: VertexEntity | true, keepClosed = true): void {
-    // TODO: handle rotation
     if (this.m_order.length < 3) {
       SceneManager.delete(this, true);
       return;
@@ -709,7 +719,6 @@ class Element implements ElementEntity {
       if (this.m_fill && !toReturn) {
         const rect: Box = [position, [Infinity, position[1]]];
 
-        // TODO: add closing segment in non closed elements
         if (this.m_fillRule === 'even-odd') {
           let intersections = 0;
 
@@ -718,11 +727,17 @@ class Element implements ElementEntity {
             intersections += points.length;
           });
 
+          if (!this.m_closed)
+            intersections += this.m_closingCurve.getLineIntersectionPoints(rect).length;
+
           if (intersections % 2 !== 0) toReturn = this;
         } else {
           let count = 0;
 
-          this.m_curves.forEach((bezier) => {
+          const curves = Array.from(this.m_curves.values());
+          if (!this.m_closed) curves.push(this.m_closingCurve);
+
+          curves.forEach((bezier) => {
             bezier.getLineIntersections(rect).forEach((t) => {
               if (bezier.getPoint(t)[0] > position[0]) {
                 if (

@@ -7,6 +7,7 @@ import ECS from '../ecs';
 class Artboard extends ECS implements ArtboardEntity {
   public readonly id: string;
   public readonly type: EntityType = 'artboard';
+  readonly selectable = false;
 
   public parent: Entity;
   public transform: SimpleTransformComponent;

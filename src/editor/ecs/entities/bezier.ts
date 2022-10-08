@@ -9,6 +9,7 @@ import Element from './element';
 class Bezier implements BezierEntity {
   readonly id: string;
   readonly type: EntityType = 'bezier';
+  readonly selectable = false;
   readonly start: VertexEntity;
   readonly end: VertexEntity;
 

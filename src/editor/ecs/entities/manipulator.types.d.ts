@@ -1,4 +1,6 @@
 interface ManipulatorEntity extends Entity {
+  selectable: false;
+
   transform: UntrackedTransformComponent;
   boundingBox: Box;
   active: boolean;

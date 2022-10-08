@@ -8,6 +8,7 @@ import Layer from './layer';
 class ImageMedia implements ImageEntity {
   readonly id: string;
   readonly type: EntityType = 'image';
+  readonly selectable = true;
 
   parent: Layer;
   transform: TransformComponent;
