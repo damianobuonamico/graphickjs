@@ -222,7 +222,7 @@ class UntrackedSimpleTransform implements UntrackedSimpleTransformComponent {
 }
 
 class Transform implements TransformComponent {
-  origin: vec2;
+  origin: vec2 = [0, 0];
 
   private m_position: TransformVec2Value;
   private m_rotation: TransformNumberValue;

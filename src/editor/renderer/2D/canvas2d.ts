@@ -296,17 +296,21 @@ class Canvas2D implements Canvas {
     this.m_ctx.save();
     this.m_ctx.transform(1, 0, 0, 1, position[0] + translation[0], position[1] + translation[1]);
     this.m_ctx.rotate(image.transform.rotation);
+
+    this.m_ctx.scale(image.reflect[0] === 1 ? -1 : 1, image.reflect[1] === 1 ? -1 : 1);
     this.m_ctx.translate(-translation[0], -translation[1]);
 
-    this.m_ctx.scale(image.reflect[0] ? -1 : 1, image.reflect[1] ? -1 : 1);
+    this.m_ctx.translate(image.transform.origin[0], image.transform.origin[1]);
+    this.m_ctx.scale(image.magnitude[0], image.magnitude[1]);
+    this.m_ctx.translate(-image.transform.origin[0], -image.transform.origin[1]);
+    this.m_ctx.drawImage(image.source, 0, 0, image.size[0], image.size[1]);
 
-    this.m_ctx.drawImage(
-      image.source,
-      0,
-      0,
-      (image.reflect[0] ? -1 : 1) * image.size[0],
-      (image.reflect[1] ? -1 : 1) * image.size[1]
-    );
+    for (const point of image.points) {
+      this.begin();
+      this.circle({ type: 'circle', data: [point, 3] });
+      this.fill();
+      this.close();
+    }
 
     this.m_ctx.restore();
 

@@ -16,8 +16,7 @@ class ImageMedia implements ImageEntity {
   private m_data: string;
   private m_source = new Image();
   private m_size: TransformVec2Value = new TransformVec2Value();
-  public reflect: [boolean, boolean] = [false, false];
-  private wasLastNegative: [boolean, boolean] = [false, false];
+  private m_reflect: TransformVec2Value = new TransformVec2Value([0, 0]);
 
   constructor({ id = nanoid(), source, position, size }: ImageOptions) {
     this.id = id;
@@ -30,8 +29,11 @@ class ImageMedia implements ImageEntity {
 
     this.m_source.onload = () => {
       HistoryManager.skipNext();
-      if (size && !vec2.equals(size, vec2.create())) this.m_size.set(size);
-      else this.m_size.set([this.m_source.width, this.m_source.height]);
+      if (size && !vec2.equals(size, vec2.create())) {
+        this.m_size.set(size);
+      } else {
+        this.m_size.set([this.m_source.width, this.m_source.height]);
+      }
     };
   }
 
@@ -79,7 +81,23 @@ class ImageMedia implements ImageEntity {
   }
 
   get unrotatedBoundingBox(): Box {
-    return [this.transform.position, vec2.add(this.transform.position, this.m_size.get())];
+    const origin = vec2.add(this.transform.origin, this.transform.position);
+    const box = [
+      vec2.scale(this.transform.position, origin, this.magnitude),
+      vec2.scale(vec2.add(this.transform.position, this.m_size.get()), origin, this.magnitude)
+    ];
+    return [vec2.min(box[0], box[1]), vec2.max(box[0], box[1])];
+  }
+
+  public points: vec2[] = [];
+
+  private m_magnitude: vec2 = [1, 1];
+  public get magnitude() {
+    return this.m_magnitude;
+  }
+
+  public get reflect() {
+    return this.m_reflect.get();
   }
 
   private scale(
@@ -89,44 +107,27 @@ class ImageMedia implements ImageEntity {
     apply?: boolean
   ) {
     if (apply === true) {
-      this.m_size.apply();
-      this.wasLastNegative = [false, false];
+      const box = this.unrotatedBoundingBox;
+      this.transform.position = box[0];
+      this.m_size.set(vec2.sub(box[1], box[0]));
+
+      const reflect = this.m_reflect.get();
+      if (this.magnitude[0] < 0) reflect[0] = reflect[0] === 0 ? 1 : 0;
+      if (this.magnitude[1] < 0) reflect[1] = reflect[1] === 0 ? 1 : 0;
+      this.m_reflect.set(reflect);
+
+      this.m_magnitude = [1, 1];
       return;
     } else if (apply === false) {
-      this.m_size.clear();
-      this.wasLastNegative = [false, false];
+      this.m_magnitude = [1, 1];
       return;
     }
 
-    origin = vec2.add(origin, this.transform.position);
-
-    const box = this.staticBoundingBox;
-    const scaled = [vec2.scale(box[0], origin, magnitude), vec2.scale(box[1], origin, magnitude)];
-    const size = vec2.sub(scaled[1], scaled[0]);
-
-    if (size[0] < 0) {
-      if (!this.wasLastNegative[0]) this.reflect[0] = !this.reflect[0];
-      this.wasLastNegative[0] = true;
-    } else {
-      if (this.wasLastNegative[0]) this.reflect[0] = !this.reflect[0];
-      this.wasLastNegative[0] = false;
-    }
-    if (size[1] < 0) {
-      if (!this.wasLastNegative[1]) this.reflect[1] = !this.reflect[1];
-      this.wasLastNegative[1] = true;
-    } else {
-      if (this.wasLastNegative[1]) this.reflect[1] = !this.reflect[1];
-      this.wasLastNegative[1] = false;
-    }
-
-    const position = vec2.min(scaled[0], scaled[1]);
-
     if (temp) {
-      this.transform.tempPosition = position;
-      this.m_size.translate(vec2.sub(vec2.abs(size), this.m_size.get()));
+      this.m_magnitude = magnitude;
     } else {
-      this.transform.position = position;
-      this.m_size.set(vec2.abs(size));
+      this.m_magnitude = magnitude;
+      this.scale([0, 0], undefined, false, true);
     }
   }
 
@@ -152,14 +153,30 @@ class ImageMedia implements ImageEntity {
 
   getDrawable(useWebGL = false): Drawable {
     // TODO: refactor rendering
+    const box = this.unrotatedBoundingBox;
+
     return {
-      operations: [{ type: 'rect', data: [[0, 0], this.m_size.get()] }, { type: 'stroke' }]
+      operations: [
+        {
+          type: 'rect',
+          data: [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], box[0])]
+        },
+        { type: 'stroke' }
+      ]
     };
   }
 
   getOutlineDrawable(useWebGL = false): Drawable {
+    const box = this.unrotatedBoundingBox;
+
     return {
-      operations: [{ type: 'rect', data: [[0, 0], this.m_size.get()] }, { type: 'stroke' }]
+      operations: [
+        {
+          type: 'rect',
+          data: [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], box[0])]
+        },
+        { type: 'stroke' }
+      ]
     };
   }
 

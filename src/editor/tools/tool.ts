@@ -130,7 +130,10 @@ class ToolState {
   }
 
   public onKey(e: KeyboardEvent) {
-    if (this.m_onKey) this.m_onKey(e);
+    if (this.m_onKey) {
+      this.m_onKey(e);
+      SceneManager.render();
+    }
   }
 }
 

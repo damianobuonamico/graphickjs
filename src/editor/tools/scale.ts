@@ -1,4 +1,5 @@
 import { vec2 } from '@/math';
+import { KEYS } from '@/utils/keys';
 import InputManager from '../input';
 import SelectionManager from '../selection';
 
@@ -31,19 +32,24 @@ const onScalePointerDown = () => {
   let center = vec2.clone(mid);
 
   const size = vec2.sub(box[1], box[0]);
+  let axial = false;
 
   switch (entity.id) {
     case 'scale-n':
       center = midpoints[2];
+      axial = true;
       break;
     case 'scale-s':
       center = midpoints[0];
+      axial = true;
       break;
     case 'scale-e':
       center = midpoints[3];
+      axial = true;
       break;
     case 'scale-w':
       center = midpoints[1];
+      axial = true;
       break;
     case 'scale-nw':
       center = rotated[2];
@@ -64,6 +70,12 @@ const onScalePointerDown = () => {
     vec2.rotate(center, mid, -(SelectionManager.angle || 0))
   );
 
+  function onKey(e: KeyboardEvent) {
+    if (e.key === KEYS.SHIFT) {
+      onPointerMove();
+    }
+  }
+
   function onPointerMove() {
     const magnitude = vec2.div(
       vec2.sub(
@@ -82,6 +94,22 @@ const onScalePointerDown = () => {
       case 'scale-w':
         magnitude[1] = 1;
         break;
+    }
+
+    if (InputManager.keys.shift) {
+      if (axial) {
+        if (magnitude[0] === 1) {
+          magnitude[0] = magnitude[1];
+        } else if (magnitude[1] === 1) {
+          magnitude[1] = magnitude[0];
+        }
+      } else {
+        if (magnitude[0] > magnitude[1]) {
+          magnitude[0] = magnitude[1];
+        } else {
+          magnitude[1] = magnitude[0];
+        }
+      }
     }
 
     SelectionManager.forEach((entity) => {
@@ -121,6 +149,7 @@ const onScalePointerDown = () => {
   }
 
   return {
+    onKey,
     onPointerMove,
     onPointerUp
   };
