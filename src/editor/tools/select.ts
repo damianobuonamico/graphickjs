@@ -44,13 +44,24 @@ const onSelectPointerDown = () => {
 
   SelectionManager.calculateRenderOverlay();
 
+  let last = InputManager.scene.position;
+
   function onPointerMove() {
     if ((element && SelectionManager.has(element.id)) || InputManager.keys.alt) {
       if (SelectionManager.size) {
+        let current = InputManager.scene.position;
+
+        if (InputManager.keys.shift)
+          current = vec2.add(InputManager.scene.origin, vec2.snap(InputManager.scene.delta));
+
+        const movement = vec2.sub(current, last);
+
         draggingOccurred = true;
         SelectionManager.forEach((entity) => {
-          (entity as Element).transform.tempTranslate(InputManager.scene.movement);
+          (entity as Element).transform.tempTranslate(movement);
         });
+
+        last = current;
       }
     } else if (rect.element) {
       rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);

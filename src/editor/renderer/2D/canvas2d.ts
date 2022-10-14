@@ -263,6 +263,15 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.restore();
 
+    for (const point of element.points) {
+      console.log(point);
+      this.m_ctx.fillStyle = 'rgb(250, 50, 50)';
+      this.begin();
+      this.circle({ type: 'circle', data: [point, 20] });
+      this.fill();
+      this.close();
+    }
+
     if (Renderer.debugging && Renderer.debug.box) {
       if (
         (InputManager.hover.element && InputManager.hover.element.id === element.id) ||

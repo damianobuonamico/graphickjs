@@ -257,17 +257,21 @@ class Element implements ElementEntity {
     else this.recalculate(false);
   }
 
+  public points: vec2[] = [];
+
   private scale(
     magnitude: vec2,
     origin: vec2 = this.transform.origin,
     temp = false,
     apply?: boolean
   ) {
+    // magnitude = vec2.rotate(magnitude, [1, 1], -this.transform.rotation);
     if (apply === true) {
       this.m_vertices.forEach((vertex) => vertex.transform.apply());
     } else if (apply === false) {
       this.m_vertices.forEach((vertex) => vertex.transform.clear());
     } else if (temp) {
+      // this.points = [[0, 0], origin, vec2.add(origin, vec2.mul(vec2.sub(magnitude, 1), 100))];
       this.m_vertices.forEach((vertex) => {
         vertex.transform.tempPosition = vec2.scale(
           vertex.transform.staticPosition,
@@ -727,7 +731,7 @@ class Element implements ElementEntity {
             intersections += points.length;
           });
 
-          if (!this.m_closed)
+          if (!this.m_closed && this.length > 1)
             intersections += this.m_closingCurve.getLineIntersectionPoints(rect).length;
 
           if (intersections % 2 !== 0) toReturn = this;
@@ -735,7 +739,7 @@ class Element implements ElementEntity {
           let count = 0;
 
           const curves = Array.from(this.m_curves.values());
-          if (!this.m_closed) curves.push(this.m_closingCurve);
+          if (!this.m_closed && this.length > 1) curves.push(this.m_closingCurve);
 
           curves.forEach((bezier) => {
             bezier.getLineIntersections(rect).forEach((t) => {

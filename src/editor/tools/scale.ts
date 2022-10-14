@@ -79,6 +79,7 @@ const onScalePointerDown = () => {
 
   let backup = center;
 
+  // TODO: Fix multiple elements scaling with different rotation
   function onPointerMove() {
     if (InputManager.keys.alt) center = mid;
     else center = backup;
@@ -126,6 +127,7 @@ const onScalePointerDown = () => {
       const box1 = (entity as TransformableEntity).unrotatedBoundingBox;
       const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
       (entity as TransformableEntity).transform.origin = vec2.sub(
+        // center,
         vec2.rotate(center, mid1, -(entity as TransformableEntity).transform.rotation),
         (entity as TransformableEntity).transform.position
       );

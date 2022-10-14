@@ -27,6 +27,7 @@ class TransformNumberValue implements TransformComponentValue<number> {
 
   set(value: number) {
     const backup = this.m_value;
+    if (backup === value) return;
 
     HistoryManager.record({
       fn: () => {
@@ -41,6 +42,8 @@ class TransformNumberValue implements TransformComponentValue<number> {
   }
 
   add(delta: number) {
+    if (delta === 0) return;
+
     HistoryManager.record({
       fn: () => {
         this.m_value += delta;
@@ -98,6 +101,7 @@ class TransformVec2Value implements TransformComponentValue<vec2> {
 
   set(value: vec2) {
     const backup = vec2.clone(this.m_value);
+    if (vec2.equals(backup, value)) return;
 
     HistoryManager.record({
       fn: () => {
@@ -112,6 +116,8 @@ class TransformVec2Value implements TransformComponentValue<vec2> {
   }
 
   add(delta: vec2) {
+    if (vec2.equals(delta, [0, 0])) return;
+
     HistoryManager.record({
       fn: () => {
         vec2.add(this.m_value, delta, true);

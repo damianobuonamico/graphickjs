@@ -63,6 +63,8 @@ const onVSelectPointerDown = () => {
     SceneManager.pushRenderOverlay(rect.element);
   }
 
+  let last = InputManager.scene.position;
+
   function onPointerMove() {
     draggingOccurred = true;
     if (element) {
@@ -91,10 +93,20 @@ const onVSelectPointerDown = () => {
           }
         } else {
           const angle = handle.parent.parent.transform.rotation;
+          const box = handle.parent.parent.unrotatedBoundingBox;
+          const mid = vec2.div(vec2.add(box[0], box[1]), 2);
 
-          let value = vec2.sub(
-            InputManager.scene.position,
-            vec2.add(handle.parent.transform.position, handle.parent.parent.transform.position)
+          let value = vec2.rotate(
+            vec2.sub(
+              InputManager.scene.position,
+              vec2.rotate(
+                vec2.add(handle.parent.transform.position, handle.parent.parent.transform.position),
+                mid,
+                angle
+              )
+            ),
+            [0, 0],
+            -angle
           );
 
           if (InputManager.keys.shift) vec2.snap(value, undefined, true);
@@ -111,16 +123,18 @@ const onVSelectPointerDown = () => {
                 InputManager.keys.alt
               );
           } else {
-            const box = handle.parent.parent.unrotatedBoundingBox;
-            const mid = vec2.div(vec2.add(box[0], box[1]), 2);
-
             const p = vec2.rotate([0, 0], mid, angle);
 
-            const movement = vec2.rotate(value, [0, 0], -angle);
-
             if (handle.id === handle.parent.left?.id)
-              handle.parent.transform.tempTranslateLeft(movement, InputManager.keys.alt);
-            else handle.parent.transform.tempTranslateRight(movement, InputManager.keys.alt);
+              handle.parent.transform.tempTranslateLeft(
+                vec2.sub(value, handle.parent.transform.left),
+                InputManager.keys.alt
+              );
+            else
+              handle.parent.transform.tempTranslateRight(
+                vec2.sub(value, handle.parent.transform.right),
+                InputManager.keys.alt
+              );
 
             const box1 = handle.parent.parent.unrotatedBoundingBox;
             const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
@@ -131,13 +145,22 @@ const onVSelectPointerDown = () => {
           }
         }
       } else {
+        let current = InputManager.scene.position;
+
+        if (InputManager.keys.shift)
+          current = vec2.add(InputManager.scene.origin, vec2.snap(InputManager.scene.delta));
+
+        const movement = vec2.sub(current, last);
+
+        draggingOccurred = true;
+
         SelectionManager.forEach((element) => {
           const angle = (element as Element).transform.rotation;
 
           if (angle === 0) {
             if ((element as Element).selection.size) {
               (element as Element).selection.forEach((vertex) => {
-                vertex.transform.tempTranslate(InputManager.scene.movement);
+                vertex.transform.tempTranslate(movement);
               });
             }
           } else {
@@ -146,11 +169,11 @@ const onVSelectPointerDown = () => {
 
             const p = vec2.rotate([0, 0], mid, angle);
 
-            const movement = vec2.rotate(InputManager.scene.movement, [0, 0], -angle);
+            const mov = vec2.rotate(movement, [0, 0], -angle);
 
             if ((element as Element).selection.size) {
               (element as Element).selection.forEach((vertex) => {
-                vertex.transform.tempTranslate(movement);
+                vertex.transform.tempTranslate(mov);
               });
             }
 
@@ -162,6 +185,8 @@ const onVSelectPointerDown = () => {
             (element as Element).transform.tempTranslate(vec2.sub(p, p1));
           }
         });
+
+        last = current;
       }
     } else if (rect.element) {
       draggingOccurred = false;

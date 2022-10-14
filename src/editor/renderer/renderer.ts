@@ -6,9 +6,9 @@ import CanvasGL from './WebGL/canvasgl';
 abstract class Renderer {
   private static m_canvas: Canvas;
 
-  public static debugging: boolean = true;
+  public static debugging: boolean = false;
   public static debug: DebugState = {
-    box: false
+    box: true
   };
 
   public static get canvas() {

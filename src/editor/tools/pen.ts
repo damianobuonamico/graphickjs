@@ -337,6 +337,7 @@ const onPenPointerDown = () => {
         break;
       }
       case 'new': {
+        // TODO: if space key is held down, the entire vertex should move
         if (!InputManager.keys.alt) setLeft(vec2.neg(delta));
 
         setRight(delta);
