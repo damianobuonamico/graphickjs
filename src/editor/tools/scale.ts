@@ -71,12 +71,18 @@ const onScalePointerDown = () => {
   );
 
   function onKey(e: KeyboardEvent) {
-    if (e.key === KEYS.SHIFT) {
+    if (e.key === KEYS.SHIFT || e.key === KEYS.ALT) {
+      e.preventDefault();
       onPointerMove();
     }
   }
 
+  let backup = center;
+
   function onPointerMove() {
+    if (InputManager.keys.alt) center = mid;
+    else center = backup;
+
     const magnitude = vec2.div(
       vec2.sub(
         vec2.rotate(InputManager.scene.position, mid, -(SelectionManager.angle || 0)),
@@ -84,6 +90,10 @@ const onScalePointerDown = () => {
       ),
       dist
     );
+
+    if (InputManager.keys.alt) {
+      vec2.mul(magnitude, 2, true);
+    }
 
     switch (entity!.id) {
       case 'scale-n':
