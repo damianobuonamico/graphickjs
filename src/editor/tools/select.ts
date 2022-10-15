@@ -1,3 +1,4 @@
+import { GEOMETRY_MAX_ERROR } from '@/utils/constants';
 import { BUTTONS } from '@/utils/keys';
 import { vec2 } from '@math';
 import Element from '../ecs/entities/element';
@@ -44,24 +45,65 @@ const onSelectPointerDown = () => {
 
   SelectionManager.calculateRenderOverlay();
 
-  let last = InputManager.scene.position;
-
   function onPointerMove() {
     if ((element && SelectionManager.has(element.id)) || InputManager.keys.alt) {
       if (SelectionManager.size) {
-        let current = InputManager.scene.position;
+        let delta = InputManager.scene.delta;
 
-        if (InputManager.keys.shift)
-          current = vec2.add(InputManager.scene.origin, vec2.snap(InputManager.scene.delta));
+        const box = SelectionManager.staticBoundingBox;
+        vec2.add(box[0], delta, true);
+        vec2.add(box[1], delta, true);
+        const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+        box.push(mid);
 
-        const movement = vec2.sub(current, last);
+        const THRESH = 4 / SceneManager.viewport.zoom;
+
+        let snappingDelta = [THRESH * 2, THRESH * 2];
+
+        // TODO: preserve shift snapping direction
+
+        SceneManager.forEach((entity) => {
+          if (SceneManager.isVisible(entity) && !SelectionManager.ids.includes(entity.id)) {
+            const entityBox = (entity as MovableEntity).boundingBox;
+            entityBox.push(vec2.div(vec2.add(entityBox[0], entityBox[1]), 2));
+
+            for (let axis = 0; axis < 2; axis++) {
+              for (let side1 = 0; side1 < 3; side1++) {
+                for (let side = 0; side < 3; side++) {
+                  let dist = entityBox[side][axis] - box[side1][axis];
+                  if (Math.abs(dist) < THRESH && Math.abs(dist) < Math.abs(snappingDelta[axis])) {
+                    snappingDelta[axis] = dist;
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        let snappedDelta = vec2.clone(delta);
+
+        for (let axis = 0; axis < 2; axis++) {
+          if (
+            Math.abs(snappingDelta[axis]) < THRESH &&
+            Math.abs(snappingDelta[axis]) > GEOMETRY_MAX_ERROR
+          ) {
+            delta[axis] += snappingDelta[axis];
+            snappedDelta[axis] = delta[axis];
+          }
+        }
+
+        // TODO: prefere horizontal/vertical snapping
+        if (InputManager.keys.shift) vec2.snap(delta, undefined, true);
+
+        if (delta[1] === 0) delta[0] = snappedDelta[0];
+        if (delta[0] === 0) delta[1] = snappedDelta[1];
 
         draggingOccurred = true;
         SelectionManager.forEach((entity) => {
-          (entity as Element).transform.tempTranslate(movement);
+          (entity as Element).transform.tempTranslate(
+            vec2.sub(delta, (entity as Element).transform.tempPosition)
+          );
         });
-
-        last = current;
       }
     } else if (rect.element) {
       rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);

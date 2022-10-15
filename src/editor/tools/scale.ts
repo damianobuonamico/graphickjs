@@ -12,7 +12,7 @@ const onScalePointerDown = () => {
       onPointerUp: () => {}
     };
 
-  const box = SelectionManager.boundingBox;
+  const box = SelectionManager.unrotatedBoundingBox;
   const mid = vec2.div(vec2.add(box[0], box[1]), 2);
 
   const rotated = [

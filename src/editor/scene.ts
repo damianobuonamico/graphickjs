@@ -132,6 +132,8 @@ abstract class SceneManager {
 
   static isVisible(entity: Entity) {
     const box = (entity as MovableEntity).boundingBox;
+    if (!box) return false;
+
     const position = this.viewport.position;
     const canvasSize = vec2.sub(
       vec2.div(Renderer.size, this.viewport.zoom),

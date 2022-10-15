@@ -24,7 +24,7 @@ const onRotatePointerDown = () => {
       entities.push(entity as TransformableEntity);
   });
 
-  const box = SelectionManager.boundingBox;
+  const box = SelectionManager.unrotatedBoundingBox;
   const origin = vec2.div(vec2.add(box[0], box[1]), 2);
   const start = vec2.sub(InputManager.scene.position, origin);
 

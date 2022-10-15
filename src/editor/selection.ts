@@ -123,6 +123,43 @@ abstract class SelectionManager {
   static get boundingBox(): Box {
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
+
+    this.m_selected.forEach((entity) => {
+      if (entity.type !== 'element' || (entity as Element).length > 1) {
+        const box = (entity as TransformableEntity).boundingBox;
+
+        box.forEach((point) => {
+          vec2.min(min, point, true);
+          vec2.max(max, point, true);
+        });
+      }
+    });
+
+    return [min, max];
+  }
+
+  static get staticBoundingBox(): Box {
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.m_selected.forEach((entity) => {
+      if (entity.type !== 'element' || (entity as Element).length > 1) {
+        const box = (entity as TransformableEntity).boundingBox;
+
+        box.forEach((point) => {
+          const p = vec2.sub(point, (entity as TransformableEntity).transform.tempPosition);
+          vec2.min(min, p, true);
+          vec2.max(max, p, true);
+        });
+      }
+    });
+
+    return [min, max];
+  }
+
+  static get unrotatedBoundingBox(): Box {
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
     const angle = this.angle;
 
     if (angle) {
@@ -258,7 +295,7 @@ abstract class SelectionManager {
   static calculateRenderOverlay() {
     if (!this.m_selected.size) this.manipulator.set(null);
     else {
-      this.manipulator.set(this.boundingBox, this.angle ?? 0);
+      this.manipulator.set(this.unrotatedBoundingBox, this.angle ?? 0);
     }
   }
 }

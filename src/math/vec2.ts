@@ -1,3 +1,5 @@
+import { GEOMETRY_MAX_ERROR } from '@/utils/constants';
+
 /**
  * Creates a new, empty vec2
  *
@@ -344,8 +346,12 @@ export function snap(a: ReadonlyVec2, intervals: number = 8, self: boolean = fal
   const increment = (Math.PI * 2) / intervals;
   let ang = Math.round(angle(a, [0, 1], true) / increment) * increment;
   let len = length(a);
-  out[0] = -Math.cos(ang);
-  out[1] = -Math.sin(ang);
+  let cos = Math.cos(ang);
+  let sin = Math.sin(ang);
+  if (Math.abs(sin) < GEOMETRY_MAX_ERROR) sin = 0;
+  if (Math.abs(cos) < GEOMETRY_MAX_ERROR) cos = 0;
+  out[0] = -cos;
+  out[1] = -sin;
   mul(out, len, true);
   return out;
 }
