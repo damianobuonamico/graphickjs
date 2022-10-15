@@ -1,4 +1,6 @@
 interface ImageEntity extends TransformableEntity {
+  selectable: true;
+
   size: vec2;
   source: HTMLImageElement;
 }

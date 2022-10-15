@@ -1,4 +1,6 @@
 interface HandleEntity extends MovableEntity {
+  selectable: false;
+
   handleType: HandleType;
 }
 

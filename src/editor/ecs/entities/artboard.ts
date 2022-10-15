@@ -7,6 +7,7 @@ import ECS from '../ecs';
 class Artboard extends ECS implements ArtboardEntity {
   public readonly id: string;
   public readonly type: EntityType = 'artboard';
+  readonly selectable = false;
 
   public parent: Entity;
   public transform: SimpleTransformComponent;
@@ -22,6 +23,13 @@ class Artboard extends ECS implements ArtboardEntity {
 
   public get boundingBox(): Box {
     return [this.transform.position, vec2.add(this.transform.position, this.m_size, true)];
+  }
+
+  public get staticBoundingBox(): Box {
+    return [
+      this.transform.staticPosition,
+      vec2.add(this.transform.staticPosition, this.m_size, true)
+    ];
   }
 
   public get size() {

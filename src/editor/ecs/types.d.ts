@@ -6,11 +6,13 @@ type EntityType =
   | 'handle'
   | 'bezier'
   | 'image'
-  | 'demo';
+  | 'manipulator'
+  | 'generichandle';
 
 interface Entity {
   readonly id: string;
   readonly type: EntityType;
+  readonly selectable: boolean;
 
   parent: Entity;
 
@@ -31,11 +33,15 @@ interface Entity {
 interface MovableEntity extends Entity {
   transform: SimpleTransformComponent;
   boundingBox: Box;
+  staticBoundingBox: Box;
 }
 
 interface TransformableEntity extends Entity {
   transform: TransformComponent;
   boundingBox: Box;
+  staticBoundingBox: Box;
+  rotatedBoundingBox: [vec2, vec2, vec2, vec2];
+  unrotatedBoundingBox: Box;
 }
 
 interface ECSEntity extends Entity {

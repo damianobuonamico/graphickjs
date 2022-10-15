@@ -1,4 +1,5 @@
 interface VertexEntity extends Entity {
+  selectable: false;
   parent: ElementEntity;
 
   position: HandleEntity;
@@ -7,6 +8,14 @@ interface VertexEntity extends Entity {
 
   transform: VertexTransformComponent;
   boundingBox: Box;
+
+  getEntitiesIn(
+    box: Box,
+    entities: Set<Entity>,
+    lowerLevel?: boolean,
+    angle?: number,
+    center?: vec2
+  ): void;
 
   render(selected?: boolean): void;
 }

@@ -22,6 +22,8 @@ interface ToolMap<T> {
   ellipse: T;
   pan: T;
   zoom: T;
+  scale: T;
+  rotate: T;
 }
 
 type Tool = keyof ToolMap<any>;

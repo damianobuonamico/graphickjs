@@ -3,7 +3,7 @@ import { vec2 } from '@math';
 import Vertex from '../ecs/entities/vertex';
 
 export function createVertices(
-  type: string,
+  type: 'rectangle' | 'ellipse',
   size: vec2 = [0, 0],
   perfect: boolean = false,
   centered: boolean = false

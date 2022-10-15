@@ -207,6 +207,41 @@ class Canvas2D implements Canvas {
     });
   }
 
+  public entity(entity: Entity) {
+    if (entity.type === 'element') {
+      this.element(entity as Element);
+      return;
+    }
+
+    this.m_ctx.save();
+
+    const drawable = entity.getDrawable(false);
+
+    if ((entity as MovableEntity).transform) {
+      const position = (entity as MovableEntity).transform.position;
+      if ((entity as TransformableEntity).transform.rotation) {
+        const boundingBox = (entity as MovableEntity).boundingBox;
+        const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
+        const translation = vec2.sub(mid, position);
+        this.m_ctx.transform(
+          1,
+          0,
+          0,
+          1,
+          position[0] + translation[0],
+          position[1] + translation[1]
+        );
+        this.m_ctx.rotate((entity as TransformableEntity).transform.rotation);
+        this.m_ctx.translate(-translation[0], -translation[1]);
+      } else {
+        this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
+      }
+    }
+    this.draw(drawable);
+
+    this.m_ctx.restore();
+  }
+
   public element(element: Element) {
     this.m_stats.entity();
     if (!SceneManager.isVisible(element)) return;
@@ -214,11 +249,29 @@ class Canvas2D implements Canvas {
     this.m_ctx.save();
     this.m_ctx.strokeStyle = `rgba(0, 0, 0, 1.0)`;
     this.m_ctx.lineWidth = 1;
+    const boundingBox = element.unrotatedBoundingBox;
     const position = element.transform.position;
-    this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
+    const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
+    const translation = vec2.sub(mid, position);
+    this.m_ctx.transform(1, 0, 0, 1, position[0] + translation[0], position[1] + translation[1]);
+    this.m_ctx.rotate(element.transform.rotation);
+    // if (element.transform.rotation !== 0) console.log(element.transform.rotation);
+    this.m_ctx.translate(-translation[0], -translation[1]);
     // Debug
     this.m_ctx.fillStyle = 'rgb(50, 50, 50)';
     this.draw((element as Element).getDrawable(false));
+
+    this.m_ctx.restore();
+
+    for (const point of element.points) {
+      console.log(point);
+      this.m_ctx.fillStyle = 'rgb(250, 50, 50)';
+      this.begin();
+      this.circle({ type: 'circle', data: [point, 20] });
+      this.fill();
+      this.close();
+    }
+
     if (Renderer.debugging && Renderer.debug.box) {
       if (
         (InputManager.hover.element && InputManager.hover.element.id === element.id) ||
@@ -232,26 +285,61 @@ class Canvas2D implements Canvas {
       }
       const box = (element as Element).boundingBox;
       this.begin();
-      this.m_ctx.rect(
-        box[0][0] - position[0],
-        box[0][1] - position[1],
-        box[1][0] - box[0][0],
-        box[1][1] - box[0][1]
-      );
+      this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
       this.fill();
       this.stroke();
     }
-
-    this.m_ctx.restore();
     this.m_stats.draw();
   }
 
   public image(image: ImageMedia) {
+    if (!SceneManager.isVisible(image)) return;
+    this.m_stats.draw();
+    const boundingBox = image.unrotatedBoundingBox;
     const position = image.transform.position;
+    const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
+    const translation = vec2.sub(mid, position);
 
     // TODO: Bilinar Filtering
 
-    this.m_ctx.drawImage(image.source, position[0], position[1]);
+    this.m_ctx.save();
+    this.m_ctx.transform(1, 0, 0, 1, position[0] + translation[0], position[1] + translation[1]);
+    this.m_ctx.rotate(image.transform.rotation);
+
+    this.m_ctx.scale(image.reflect[0] === 1 ? -1 : 1, image.reflect[1] === 1 ? -1 : 1);
+    this.m_ctx.translate(-translation[0], -translation[1]);
+
+    this.m_ctx.translate(image.transform.origin[0], image.transform.origin[1]);
+    this.m_ctx.scale(image.magnitude[0], image.magnitude[1]);
+    this.m_ctx.translate(-image.transform.origin[0], -image.transform.origin[1]);
+    this.m_ctx.drawImage(image.source, 0, 0, image.size[0], image.size[1]);
+
+    for (const point of image.points) {
+      this.begin();
+      this.circle({ type: 'circle', data: [point, 3] });
+      this.fill();
+      this.close();
+    }
+
+    this.m_ctx.restore();
+
+    if (Renderer.debugging && Renderer.debug.box) {
+      if (
+        (InputManager.hover.element && InputManager.hover.element.id === image.id) ||
+        SelectionManager.has(image.id)
+      ) {
+        this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.2)';
+        this.m_ctx.strokeStyle = 'rgb(220, 20, 60)';
+      } else {
+        this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
+        this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
+      }
+      const box = image.boundingBox;
+      this.begin();
+      this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
+      this.fill();
+      this.stroke();
+    }
   }
 
   public beginOutline() {
@@ -263,9 +351,25 @@ class Canvas2D implements Canvas {
 
   public outline(entity: Entity, skipVertices: boolean = false) {
     this.m_ctx.save();
-    if (entity.type !== 'demo') {
+    if ((entity as MovableEntity).transform) {
       const position = (entity as Element).transform.position;
-      this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
+      if ((entity as TransformableEntity).transform.rotation) {
+        const boundingBox = (entity as TransformableEntity).unrotatedBoundingBox;
+        const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
+        const translation = vec2.sub(mid, position);
+        this.m_ctx.transform(
+          1,
+          0,
+          0,
+          1,
+          position[0] + translation[0],
+          position[1] + translation[1]
+        );
+        this.m_ctx.rotate((entity as TransformableEntity).transform.rotation);
+        this.m_ctx.translate(-translation[0], -translation[1]);
+      } else {
+        this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
+      }
     }
     this.draw((entity as Element).getOutlineDrawable(false));
     if (!skipVertices && InputManager.tool.isVertex && entity.type === 'element')

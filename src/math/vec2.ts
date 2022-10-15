@@ -1,3 +1,5 @@
+import { GEOMETRY_MAX_ERROR } from '@/utils/constants';
+
 /**
  * Creates a new, empty vec2
  *
@@ -121,6 +123,16 @@ export function length(a: ReadonlyVec2): number {
   var x = a[0],
     y = a[1];
   return Math.hypot(x, y);
+}
+
+/**
+ * Calculates the squared length of a vec2
+ *
+ * @param {ReadonlyVec2} a vector to calculate squared length of
+ * @returns {Number} length of a
+ */
+export function squaredLength(a: ReadonlyVec2): number {
+  return a[0] * a[0] + a[1] * a[1];
 }
 
 /**
@@ -276,7 +288,8 @@ export function dot(a: ReadonlyVec2, b: ReadonlyVec2): number {
  * @param {ReadonlyVec2} b the second operand
  * @returns {Number} angle between a and b
  */
-export function angle(a: ReadonlyVec2, b: ReadonlyVec2): number {
+export function angle(a: ReadonlyVec2, b: ReadonlyVec2, clamp: boolean = false): number {
+  if (clamp) return Math.atan2(b[1] - a[1], b[0] - a[0]);
   return Math.sign(a[0] * b[1] - a[1] * b[0]) * Math.acos(dot(a, b) / (len(a) * len(b)));
 }
 
@@ -284,12 +297,62 @@ export function angle(a: ReadonlyVec2, b: ReadonlyVec2): number {
  * Calculates the absolute value of a given vector
  *
  * @param {ReadonlyVec2} a vector
- * @returns {vec2} a new 2D vector
+ * @returns {vec2} out
  */
 export function abs(a: ReadonlyVec2, self: boolean = false): vec2 {
   const out = self ? a : create();
   out[0] = Math.abs(a[0]);
   out[1] = Math.abs(a[1]);
+  return out;
+}
+
+/**
+ * Rotates a given vector
+ *
+ * @param {ReadonlyVec2} a point to rotate
+ * @param {ReadonlyVec2} b center of rotation
+ * @param {Number} t angle of rotation
+ * @returns {vec2} out
+ */
+export function rotate(a: vec2, b: vec2, t: number, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  const coefficients = sub(a, b);
+  out[0] = b[0] + coefficients[0] * Math.cos(t) - coefficients[1] * Math.sin(t);
+  out[1] = b[1] + coefficients[0] * Math.sin(t) + coefficients[1] * Math.cos(t);
+  return out;
+}
+
+/**
+ * Scales a given vector
+ *
+ * @param {ReadonlyVec2} a point to scale
+ * @param {ReadonlyVec2} b center of scale
+ * @param {ReadonlyVec2 | Number} t magnitude of scale
+ * @returns {vec2} out
+ */
+export function scale(a: vec2, b: vec2, t: vec2 | number, self: boolean = false): vec2 {
+  return add(mul(sub(a, b, self), t, self), b, self);
+}
+
+/**
+ * Snaps the input vector to regular angle increments
+ *
+ * @param {ReadonlyVec2} a
+ * @param {number} intervals angle increments
+ * @returns {vec2} out
+ */
+export function snap(a: ReadonlyVec2, intervals: number = 8, self: boolean = false): vec2 {
+  const out = self ? a : create();
+  const increment = (Math.PI * 2) / intervals;
+  let ang = Math.round(angle(a, [0, 1], true) / increment) * increment;
+  let len = length(a);
+  let cos = Math.cos(ang);
+  let sin = Math.sin(ang);
+  if (Math.abs(sin) < GEOMETRY_MAX_ERROR) sin = 0;
+  if (Math.abs(cos) < GEOMETRY_MAX_ERROR) cos = 0;
+  out[0] = -cos;
+  out[1] = -sin;
+  mul(out, len, true);
   return out;
 }
 
@@ -334,3 +397,9 @@ export const neg = negate;
  * @function
  */
 export const len = length;
+
+/**
+ * Alias for {@link vec2.squaredLength}
+ * @function
+ */
+export const sqrLen = squaredLength;

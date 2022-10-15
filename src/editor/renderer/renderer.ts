@@ -6,9 +6,9 @@ import CanvasGL from './WebGL/canvasgl';
 abstract class Renderer {
   private static m_canvas: Canvas;
 
-  public static debugging: boolean = true;
+  public static debugging: boolean = false;
   public static debug: DebugState = {
-    box: false
+    box: true
   };
 
   public static get canvas() {
@@ -62,6 +62,10 @@ abstract class Renderer {
     transform?: mat4;
   }) {
     this.m_canvas.rect({ pos, size, centered, color, transform });
+  }
+
+  public static entity(entity: Entity) {
+    this.m_canvas.entity(entity);
   }
 
   public static element(element: Element) {

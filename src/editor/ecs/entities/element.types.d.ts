@@ -1,6 +1,7 @@
 interface ElementEntity extends TransformableEntity {
-  // selection: ElementSelectionManagerComponent
   parent: LayerEntity;
+  selectable: true;
+
   largeBoundingBox: Box;
 
   length: number;
@@ -27,6 +28,7 @@ interface ElementEntity extends TransformableEntity {
 interface ElementOptions {
   id?: string;
   position: vec2;
+  rotation?: number;
   vertices?: VertexEntity[];
   closed?: boolean;
   stroke?: string | Stroke;

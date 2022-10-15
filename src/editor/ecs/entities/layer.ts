@@ -4,6 +4,7 @@ import ECS from '../ecs';
 class Layer extends ECS implements LayerEntity {
   readonly id: string;
   readonly type: EntityType = 'layer';
+  readonly selectable = false;
 
   parent: ArtboardEntity;
 

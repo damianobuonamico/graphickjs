@@ -251,7 +251,9 @@ abstract class InputManager {
 
     // this.lockCursor();
 
-    this.tool.onPointerDown();
+    const hover = this.hover.entity;
+
+    this.tool.onPointerDown(hover && hover.type === 'generichandle' && (hover as any).handleType);
     this.m_listeners.pointerdown(e);
 
     SceneManager.render();

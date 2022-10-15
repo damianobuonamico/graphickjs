@@ -9,6 +9,7 @@ import Element from './element';
 class Bezier implements BezierEntity {
   readonly id: string;
   readonly type: EntityType = 'bezier';
+  readonly selectable = false;
   readonly start: VertexEntity;
   readonly end: VertexEntity;
 
@@ -78,6 +79,21 @@ class Bezier implements BezierEntity {
   get size(): vec2 {
     const box = this.boundingBox;
     return vec2.sub(box[1], box[0]);
+  }
+
+  get clockwise(): boolean {
+    return this.cached<boolean>('clockwise', () => {
+      let sum = 0;
+      let last = this.getPoint(0);
+
+      for (let i = 1; i <= 100; i++) {
+        const point = this.getPoint(i / 100);
+        sum += (point[0] - last[0]) * (point[1] + last[1]);
+        last = point;
+      }
+
+      return sum >= 0;
+    });
   }
 
   private call<T>(
@@ -153,6 +169,60 @@ class Bezier implements BezierEntity {
   }
   getRoots(): number[] {
     return this.call(this.getLinearRoots, this.getCubicRoots);
+  }
+
+  private getRotatedCubicRoots({ origin, angle }: { origin: vec2; angle: number }): number[] {
+    const a = vec2.rotate(this.p0, origin, angle);
+    const b = vec2.rotate(this.p1, origin, angle);
+    const c = vec2.rotate(this.p2, origin, angle);
+    const d = vec2.rotate(this.p3, origin, angle);
+
+    const roots: number[] = [0, 1];
+
+    for (let i = 0; i < 2; i++) {
+      const sqrtDelta = Math.sqrt(
+        Math.pow(b[i], 2) +
+          Math.pow(c[i], 2) -
+          a[i] * c[i] +
+          a[i] * d[i] -
+          b[i] * c[i] -
+          b[i] * d[i]
+      );
+
+      if (sqrtDelta === undefined) continue;
+
+      const num = -a[i] + 2 * b[i] - c[i];
+      const den = -a[i] + 3 * b[i] - 3 * c[i] + d[i];
+      const t1 = (num + sqrtDelta) / den;
+
+      if (t1 > 0 && t1 < 1) roots.push(t1);
+      if (sqrtDelta === 0) continue;
+
+      const t2 = (num - sqrtDelta) / den;
+
+      if (t2 > 0 && t2 < 1) roots.push(t2);
+    }
+
+    return roots;
+  }
+  getRotatedRoots(origin: vec2, angle: number): number[] {
+    return this.call(this.getLinearRoots, this.getRotatedCubicRoots, {
+      origin,
+      angle
+    });
+  }
+
+  getRotatedExtrema(origin: vec2, angle: number): vec2[] {
+    return this.cached<vec2[]>(`extrema-${angle}`, () => {
+      const roots = this.getRotatedRoots(origin, angle);
+      const extrema: vec2[] = [];
+
+      for (const root of roots) {
+        extrema.push(vec2.rotate(this.getPoint(root), origin, angle));
+      }
+
+      return extrema;
+    });
   }
 
   private getLinearClosestTo({ position }: { position: vec2 }): BezierPointDistance {
@@ -388,7 +458,7 @@ class Bezier implements BezierEntity {
 
     return roots.map((root) => (root -= b / (3 * a))).filter((root) => 0 <= root && root <= 1);
   }
-  private getLineIntersections(line: Box): number[] {
+  public getLineIntersections(line: Box): number[] {
     return this.call(this.getLinearLineIntersections, this.getCubicLineIntersections, { line });
   }
 
@@ -416,8 +486,14 @@ class Bezier implements BezierEntity {
   }
 
   intersectsLine(line: Box): boolean {
-    if (!doesBoxIntersectBox(line, this.boundingBox)) return false;
-    return this.getLineIntersections(line).length > 0;
+    if (
+      !doesBoxIntersectBox(
+        [vec2.min(line[0], line[1]), vec2.max(line[0], line[1])],
+        this.boundingBox
+      )
+    )
+      return false;
+    return this.getLineIntersectionPoints(line).length > 0;
   }
 
   intersectsBox(box: Box): boolean {

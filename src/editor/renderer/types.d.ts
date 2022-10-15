@@ -25,6 +25,7 @@ interface Canvas {
     color: vec4;
     transform?: mat4;
   }): void;
+  entity(entity: Entity): void;
   element(element: Entity): void;
   draw(drawable: Drawable): void;
   image(image: Entity): void;

@@ -171,7 +171,7 @@ class CanvasGL implements Canvas {
     );
 
     this.geometry(
-      vec2.join(vertices.map((vertex) => vertex.position)),
+      vec2.join(vertices.map((vertex) => vertex.transform.position)),
       new Uint16Array([0, 1, 2, 2, 3, 0]),
       mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0)),
       transform || mat4.create(),
@@ -219,6 +219,8 @@ class CanvasGL implements Canvas {
       this.m_frameBuffer.render();
     }
   }
+
+  public entity(element: Entity) {}
 
   public element(element: Entity) {}
 

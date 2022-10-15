@@ -1,4 +1,6 @@
 interface BezierEntity extends Entity {
+  selectable: false;
+
   start: VertexEntity;
   end: VertexEntity;
 
@@ -11,13 +13,17 @@ interface BezierEntity extends Entity {
   extrema: vec2[];
   boundingBox: Box;
   size: vec2;
+  clockwise: boolean;
 
   recalculate(): void;
 
   getPoint(t: number): vec2;
   getRoots(): number[];
+  getRotatedRoots(origin: vec2, angle: number): number[];
+  getRotatedExtrema(origin: vec2, angle: number): vec2[];
   getClosestTo(position: vec2, iterations: number): vec2;
   getDistanceTo(position: vec2, iterations: number): number;
+  getLineIntersections(line: Box): number[];
   getLineIntersectionPoints(line: Box): vec2[];
   getBoxIntersectionPoints(box: Box): vec2[];
 

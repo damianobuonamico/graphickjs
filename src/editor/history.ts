@@ -3,6 +3,7 @@ abstract class HistoryManager {
   private static m_redoStack: Action[][] = [];
   private static m_join = false;
   private static m_sequence: Action[] | null = null;
+  private static m_skip = false;
 
   private static push(actions: Action[]) {
     this.m_undoStack.push(actions);
@@ -11,13 +12,20 @@ abstract class HistoryManager {
 
   public static record(actions: Action | Action[]) {
     if (!Array.isArray(actions)) actions = [actions];
+
     actions.forEach((action) => {
       action.fn();
     });
+
+    if (this.m_skip) {
+      this.m_skip = false;
+      return;
+    }
+
     if (this.m_sequence) {
       this.m_sequence.push(...actions);
     } else {
-      if (this.m_join === false) {
+      if (this.m_join === false || !this.m_undoStack.length) {
         this.push(actions);
         this.m_join = true;
         setTimeout(() => {
@@ -63,6 +71,10 @@ abstract class HistoryManager {
   public static endSequence() {
     if (this.m_sequence && this.m_sequence.length) this.push(this.m_sequence);
     this.m_sequence = null;
+  }
+
+  public static skipNext() {
+    this.m_skip = true;
   }
 }
 
