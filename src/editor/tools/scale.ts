@@ -13,7 +13,7 @@ const onScalePointerDown = () => {
     };
 
   const box = SelectionManager.unrotatedBoundingBox;
-  const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+  const mid = vec2.mid(box[0], box[1]);
 
   const rotated = [
     vec2.rotate(box[0], mid, SelectionManager.angle || 0),
@@ -23,10 +23,10 @@ const onScalePointerDown = () => {
   ];
 
   const midpoints = [
-    vec2.div(vec2.add(rotated[0], rotated[1]), 2),
-    vec2.div(vec2.add(rotated[1], rotated[2]), 2),
-    vec2.div(vec2.add(rotated[2], rotated[3]), 2),
-    vec2.div(vec2.add(rotated[3], rotated[0]), 2)
+    vec2.mid(rotated[0], rotated[1]),
+    vec2.mid(rotated[1], rotated[2]),
+    vec2.mid(rotated[2], rotated[3]),
+    vec2.mid(rotated[3], rotated[0])
   ];
 
   let center = vec2.clone(mid);
@@ -93,7 +93,7 @@ const onScalePointerDown = () => {
     );
 
     if (InputManager.keys.alt) {
-      vec2.mul(magnitude, 2, true);
+      vec2.mulS(magnitude, 2, magnitude);
     }
 
     switch (entity!.id) {
@@ -125,7 +125,7 @@ const onScalePointerDown = () => {
 
     SelectionManager.forEach((entity) => {
       const box1 = (entity as TransformableEntity).unrotatedBoundingBox;
-      const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+      const mid1 = vec2.mid(box1[0], box1[1]);
       (entity as TransformableEntity).transform.origin = vec2.sub(
         // center,
         vec2.rotate(center, mid1, -(entity as TransformableEntity).transform.rotation),
@@ -135,7 +135,7 @@ const onScalePointerDown = () => {
       (entity as TransformableEntity).transform.tempScale(magnitude);
 
       const box2 = (entity as TransformableEntity).unrotatedBoundingBox;
-      const mid2 = vec2.div(vec2.add(box2[0], box2[1]), 2);
+      const mid2 = vec2.mid(box2[0], box2[1]);
 
       (entity as TransformableEntity).transform.tempTranslate(
         vec2.sub(

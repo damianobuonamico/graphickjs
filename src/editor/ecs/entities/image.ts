@@ -50,12 +50,12 @@ class ImageMedia implements ImageEntity {
 
     const vertices = this.rotatedBoundingBox;
 
-    let min = [Infinity, Infinity];
-    let max = [-Infinity, -Infinity];
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
 
     vertices.forEach((vertex) => {
-      vec2.min(min, vertex, true);
-      vec2.max(max, vertex, true);
+      vec2.min(min, vertex, min);
+      vec2.max(max, vertex, max);
     });
 
     return [min, max];
@@ -71,7 +71,7 @@ class ImageMedia implements ImageEntity {
   get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
     const box = this.unrotatedBoundingBox;
     const angle = this.transform.rotation;
-    const center = vec2.div(vec2.add(box[0], box[1]), 2);
+    const center = vec2.mid(box[0], box[1]);
     return [
       vec2.rotate(box[0], center, angle),
       vec2.rotate([box[1][0], box[0][1]], center, angle),
@@ -135,7 +135,7 @@ class ImageMedia implements ImageEntity {
 
   getEntityAt(position: vec2, lowerLevel: boolean, threshold: number): Entity | undefined {
     const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const mid = vec2.mid(box[0], box[1]);
     if (this.transform.rotation !== 0)
       position = vec2.rotate(position, mid, -this.transform.rotation);
     if (isPointInBox(position, box, threshold)) return this;

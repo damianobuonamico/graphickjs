@@ -61,7 +61,7 @@ class CanvasGL implements Canvas {
       value[0] * this.m_options.resolution,
       value[1] * this.m_options.resolution
     );
-    this.m_frameBuffer.size = vec2.mul(value, this.m_options.resolution);
+    this.m_frameBuffer.size = vec2.mulS(value, this.m_options.resolution);
   }
 
   public setup(canvas: HTMLCanvasElement) {
@@ -161,7 +161,7 @@ class CanvasGL implements Canvas {
     transform?: mat4;
   }) {
     size = typeof size === 'number' ? [size, size] : size;
-    if (centered) vec2.mul(size, 0.5, true);
+    if (centered) vec2.mulS(size, 0.5, size);
 
     const vertices = createVertices(
       'rectangle',
@@ -171,7 +171,7 @@ class CanvasGL implements Canvas {
     );
 
     this.geometry(
-      vec2.join(vertices.map((vertex) => vertex.transform.position)),
+      Float32Array.from(vertices.map((vertex) => vertex.transform.position).flat()),
       new Uint16Array([0, 1, 2, 2, 3, 0]),
       mat4.fromTranslation(vec3.fromValues(pos[0], pos[1], 0)),
       transform || mat4.create(),

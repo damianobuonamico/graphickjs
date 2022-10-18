@@ -65,8 +65,8 @@ class SVGPather {
     }
 
     // Raise curve order from quadratic to cubic
-    const cp1 = vec2.add(this.m_cursor, vec2.mul(vec2.sub(cp, this.m_cursor), 2 / 3));
-    const cp2 = vec2.add(position, vec2.mul(vec2.sub(cp, position), 2 / 3));
+    const cp1 = vec2.add(this.m_cursor, vec2.mulS(vec2.sub(cp, this.m_cursor), 2 / 3));
+    const cp2 = vec2.add(position, vec2.mulS(vec2.sub(cp, position), 2 / 3));
 
     this.cubicBezierTo(cp1, cp2, position);
 
@@ -151,9 +151,9 @@ class SVGPather {
 
     for (let i = 0; i < beziers.length; i++) {
       for (let t = 0; t < 3; t++) {
-        vec2.mul(beziers[i][t], radius, true);
+        vec2.mul(beziers[i][t], radius, beziers[i][t]);
         // rotate(angle)
-        vec2.add(beziers[i][t], center, true);
+        vec2.add(beziers[i][t], center, beziers[i][t]);
       }
     }
 
@@ -253,7 +253,7 @@ const SVGPathDataParsers: {
 function parseSVGPathM(pather: SVGPather, op: string, data: string[], history: SVGPathHistory) {
   for (let i = 0; i < data.length; i += 2) {
     const position: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
-    if (op === 'm') vec2.add(position, pather.cursor, true);
+    if (op === 'm') vec2.add(position, pather.cursor, position);
 
     // Add a point only if the next operation is not another move operation or a close operation
     if (history.next) {
@@ -275,7 +275,7 @@ function parseSVGPathZ(pather: SVGPather) {
 function parseSVGPathL(pather: SVGPather, op: string, data: string[]) {
   for (let i = 0; i < data.length; i += 2) {
     const position: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
-    if (op === 'l') vec2.add(position, pather.cursor, true);
+    if (op === 'l') vec2.add(position, pather.cursor, position);
 
     pather.lineTo(position);
   }
@@ -284,7 +284,7 @@ function parseSVGPathL(pather: SVGPather, op: string, data: string[]) {
 function parseSVGPathH(pather: SVGPather, op: string, data: string[]) {
   for (let i = 0; i < data.length; i++) {
     const position: vec2 = [parseFloat(data[i]), 0];
-    if (op === 'h') vec2.add(position, pather.cursor, true);
+    if (op === 'h') vec2.add(position, pather.cursor, position);
     else position[1] = pather.cursor[1];
 
     pather.lineTo(position);
@@ -294,7 +294,7 @@ function parseSVGPathH(pather: SVGPather, op: string, data: string[]) {
 function parseSVGPathV(pather: SVGPather, op: string, data: string[]) {
   for (let i = 0; i < data.length; i++) {
     const position: vec2 = [0, parseFloat(data[i])];
-    if (op === 'v') vec2.add(position, pather.cursor, true);
+    if (op === 'v') vec2.add(position, pather.cursor, position);
     else position[0] = pather.cursor[0];
 
     pather.lineTo(position);
@@ -308,9 +308,9 @@ function parseSVGPathC(pather: SVGPather, op: string, data: string[]) {
     const position: vec2 = [parseFloat(data[i + 4]), parseFloat(data[i + 5])];
 
     if (op === 'c') {
-      vec2.add(cp1, pather.cursor, true);
-      vec2.add(cp2, pather.cursor, true);
-      vec2.add(position, pather.cursor, true);
+      vec2.add(cp1, pather.cursor, cp1);
+      vec2.add(cp2, pather.cursor, cp2);
+      vec2.add(position, pather.cursor, position);
     }
 
     pather.cubicBezierTo(cp1, cp2, position);
@@ -323,8 +323,8 @@ function parseSVGPathS(pather: SVGPather, op: string, data: string[], history: S
     const position: vec2 = [parseFloat(data[i + 2]), parseFloat(data[i + 3])];
 
     if (op === 's') {
-      vec2.add(cp2, pather.cursor, true);
-      vec2.add(position, pather.cursor, true);
+      vec2.add(cp2, pather.cursor, cp2);
+      vec2.add(position, pather.cursor, position);
     }
 
     pather.smoothCubicBezierTo(cp2, position, history.last?.toLowerCase() === 'a');
@@ -337,8 +337,8 @@ function parseSVGPathQ(pather: SVGPather, op: string, data: string[]) {
     const position: vec2 = [parseFloat(data[i + 2]), parseFloat(data[i + 3])];
 
     if (op === 'q') {
-      vec2.add(cp, pather.cursor, true);
-      vec2.add(position, pather.cursor, true);
+      vec2.add(cp, pather.cursor, cp);
+      vec2.add(position, pather.cursor, position);
     }
 
     pather.quadraticBezierTo(cp, position);
@@ -348,7 +348,7 @@ function parseSVGPathQ(pather: SVGPather, op: string, data: string[]) {
 function parseSVGPathT(pather: SVGPather, op: string, data: string[], history: SVGPathHistory) {
   for (let i = 0; i < data.length; i += 2) {
     const position: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
-    if (op === 't') vec2.add(position, pather.cursor, true);
+    if (op === 't') vec2.add(position, pather.cursor, position);
 
     pather.smoothQuadraticBezierTo(position, history.last?.toLowerCase() === 'a');
   }
@@ -357,7 +357,7 @@ function parseSVGPathT(pather: SVGPather, op: string, data: string[], history: S
 function parseSVGPathA(pather: SVGPather, op: string, data: string[]) {
   for (let i = 0; i < data.length; i += 7) {
     const position: vec2 = [parseFloat(data[i + 5]), parseFloat(data[i + 6])];
-    if (op === 'a') vec2.add(position, pather.cursor, true);
+    if (op === 'a') vec2.add(position, pather.cursor, position);
 
     // Get absolute value of the radius
     const radius = vec2.abs([parseFloat(data[i + 0]), parseFloat(data[i + 1])]);
@@ -382,10 +382,13 @@ function parseSVGPathA(pather: SVGPather, op: string, data: string[]) {
     const sinAngle = Math.sin(angle);
 
     // Midpoint of the line between the current position and the end point
-    const mid = vec2.div(vec2.sub(pather.cursor, position), 2);
+    const mid = vec2.divS(vec2.sub(pather.cursor, position), 2);
 
     // Rotated midpoint vector
-    const rotated = [cosAngle * mid[0] + sinAngle * mid[1], -sinAngle * mid[0] + cosAngle * mid[1]];
+    const rotated: vec2 = [
+      cosAngle * mid[0] + sinAngle * mid[1],
+      -sinAngle * mid[0] + cosAngle * mid[1]
+    ];
 
     let radiusSq = vec2.mul(radius, radius);
     const rotatedSq = vec2.mul(rotated, rotated);
@@ -395,7 +398,7 @@ function parseSVGPathA(pather: SVGPather, op: string, data: string[]) {
     if (radiusCheck > 0.99999) {
       const radiusScale = Math.sqrt(radiusCheck) * 1.00001;
 
-      vec2.mul(radius, radiusScale, true);
+      vec2.mulS(radius, radiusScale, radius);
       radiusSq = vec2.mul(radius, radius);
     }
 
@@ -413,14 +416,14 @@ function parseSVGPathA(pather: SVGPather, op: string, data: string[]) {
     ];
 
     // Compute the center poinr
-    const s = vec2.div(vec2.add(pather.cursor, position), 2);
-    const center = [
+    const s = vec2.mid(pather.cursor, position);
+    const center: vec2 = [
       s[0] + (cosAngle * transformedCenter[0] - sinAngle * transformedCenter[1]),
       s[1] + (sinAngle * transformedCenter[0] + cosAngle * transformedCenter[1])
     ];
 
     // Vector between center and start point
-    const v = [
+    const v: vec2 = [
       (rotated[0] - transformedCenter[0]) / radius[0],
       (rotated[1] - transformedCenter[1]) / radius[1]
     ];

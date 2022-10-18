@@ -56,13 +56,13 @@ class Vertex implements VertexEntity {
     let max: vec2 = [0, 0];
 
     if (this.m_left) {
-      min = vec2.min(min, this.transform.left);
-      max = vec2.max(max, this.transform.left);
+      vec2.min(min, this.transform.left, min);
+      vec2.max(max, this.transform.left, max);
     }
 
     if (this.m_right) {
-      min = vec2.min(min, this.transform.right);
-      max = vec2.max(max, this.transform.right);
+      vec2.min(min, this.transform.right, min);
+      vec2.max(max, this.transform.right, max);
     }
 
     return [vec2.add(min, this.transform.position), vec2.add(max, this.transform.position)] as Box;

@@ -114,20 +114,28 @@ abstract class SceneManager {
 
   static clientToScene(position: vec2, override: Partial<ViewportState> = {}) {
     const viewport = fillObject<ViewportState>(override, this.viewport);
-    return vec2.sub(
-      vec2.div(vec2.sub(position, Renderer.canvasOffset), viewport.zoom, true),
+    const scene = vec2.create();
+
+    vec2.sub(
+      vec2.divS(vec2.sub(position, Renderer.canvasOffset, scene), viewport.zoom, scene),
       viewport.position,
-      true
+      scene
     );
+
+    return scene;
   }
 
   static sceneToClient(position: vec2, override: Partial<ViewportState> = {}) {
     const viewport = fillObject<ViewportState>(override, this.viewport);
-    return vec2.add(
-      vec2.mul(vec2.add(position, viewport.position), viewport.zoom, true),
+    const client = vec2.create();
+
+    vec2.add(
+      vec2.mulS(vec2.add(position, viewport.position, client), viewport.zoom, client),
       Renderer.canvasOffset,
-      true
+      client
     );
+
+    return client;
   }
 
   static isVisible(entity: Entity) {
@@ -135,10 +143,8 @@ abstract class SceneManager {
     if (!box) return false;
 
     const position = this.viewport.position;
-    const canvasSize = vec2.sub(
-      vec2.div(Renderer.size, this.viewport.zoom),
-      this.viewport.position
-    );
+    const canvasSize = vec2.divS(Renderer.size, this.viewport.zoom);
+    vec2.sub(canvasSize, this.viewport.position, canvasSize);
 
     return (
       box[1][0] >= -position[0] &&

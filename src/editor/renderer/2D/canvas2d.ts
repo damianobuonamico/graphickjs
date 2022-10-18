@@ -116,7 +116,7 @@ class Canvas2D implements Canvas {
     transform?: mat4;
   }) {
     size = typeof size === 'number' ? [size, size] : size;
-    const translate = centered ? vec2.mul(size, 0.5) : vec2.create();
+    const translate = centered ? vec2.mulS(size, 0.5) : vec2.create();
 
     this.m_ctx.save();
 
@@ -221,7 +221,7 @@ class Canvas2D implements Canvas {
       const position = (entity as MovableEntity).transform.position;
       if ((entity as TransformableEntity).transform.rotation) {
         const boundingBox = (entity as MovableEntity).boundingBox;
-        const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
+        const mid = vec2.mid(boundingBox[0], boundingBox[1]);
         const translation = vec2.sub(mid, position);
         this.m_ctx.transform(
           1,
@@ -251,7 +251,7 @@ class Canvas2D implements Canvas {
     this.m_ctx.lineWidth = 1;
     const boundingBox = element.unrotatedBoundingBox;
     const position = element.transform.position;
-    const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
+    const mid = vec2.mid(boundingBox[0], boundingBox[1]);
     const translation = vec2.sub(mid, position);
     this.m_ctx.transform(1, 0, 0, 1, position[0] + translation[0], position[1] + translation[1]);
     this.m_ctx.rotate(element.transform.rotation);
@@ -297,7 +297,7 @@ class Canvas2D implements Canvas {
     this.m_stats.draw();
     const boundingBox = image.unrotatedBoundingBox;
     const position = image.transform.position;
-    const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
+    const mid = vec2.mid(boundingBox[0], boundingBox[1]);
     const translation = vec2.sub(mid, position);
 
     // TODO: Bilinar Filtering
@@ -355,7 +355,7 @@ class Canvas2D implements Canvas {
       const position = (entity as Element).transform.position;
       if ((entity as TransformableEntity).transform.rotation) {
         const boundingBox = (entity as TransformableEntity).unrotatedBoundingBox;
-        const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
+        const mid = vec2.mid(boundingBox[0], boundingBox[1]);
         const translation = vec2.sub(mid, position);
         this.m_ctx.transform(
           1,

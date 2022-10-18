@@ -165,7 +165,7 @@ const onPenPointerDown = () => {
     }
     case 'new': {
       const box = pen.element?.unrotatedBoundingBox;
-      const mid = box && vec2.div(vec2.add(box[0], box[1]), 2);
+      const mid = box && vec2.mid(box[0], box[1]);
       const angle = pen.element?.transform.rotation;
 
       const v = new Vertex({
@@ -194,7 +194,7 @@ const onPenPointerDown = () => {
       e.push(v);
 
       const box1 = e.unrotatedBoundingBox;
-      const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+      const mid1 = vec2.mid(box1[0], box1[1]);
 
       if (box && mid && !!angle) {
         e.transform.translate(
@@ -223,7 +223,7 @@ const onPenPointerDown = () => {
     if (!pen.vertex) return;
 
     const box = pen.element!.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const mid = vec2.mid(box[0], box[1]);
     const angle = pen.element!.transform.rotation;
 
     if (!pen.vertex.left) {
@@ -245,7 +245,7 @@ const onPenPointerDown = () => {
     } else if (position) pen.vertex.transform.tempLeft = position;
 
     const box1 = pen.element!.unrotatedBoundingBox;
-    const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+    const mid1 = vec2.mid(box1[0], box1[1]);
 
     pen.element!.transform.tempTranslate(
       vec2.sub(vec2.rotate([0, 0], mid, angle), vec2.rotate([0, 0], mid1, angle))
@@ -256,7 +256,7 @@ const onPenPointerDown = () => {
     if (!pen.vertex) return;
 
     const box = pen.element!.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const mid = vec2.mid(box[0], box[1]);
     const angle = pen.element!.transform.rotation;
 
     if (!pen.vertex.right) {
@@ -278,7 +278,7 @@ const onPenPointerDown = () => {
     } else if (position) pen.vertex.transform.tempRight = position;
 
     const box1 = pen.element!.unrotatedBoundingBox;
-    const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+    const mid1 = vec2.mid(box1[0], box1[1]);
 
     pen.element!.transform.tempTranslate(
       vec2.sub(vec2.rotate([0, 0], mid, angle), vec2.rotate([0, 0], mid1, angle))
@@ -316,7 +316,7 @@ const onPenPointerDown = () => {
           const direction = vec2.unit(delta);
 
           if (!vec2.equals(direction, [0, 0])) {
-            setRight(vec2.mul(direction, vec2.len(pen.vertex!.transform.right)), true);
+            setRight(vec2.mulS(direction, vec2.len(pen.vertex!.transform.right)), true);
           }
         }
 
@@ -330,7 +330,7 @@ const onPenPointerDown = () => {
           const direction = vec2.unit(vec2.neg(delta));
 
           if (!vec2.equals(direction, [0, 0])) {
-            setLeft(vec2.mul(direction, vec2.len(pen.vertex!.transform.left)), true);
+            setLeft(vec2.mulS(direction, vec2.len(pen.vertex!.transform.left)), true);
           }
         }
 
@@ -412,12 +412,9 @@ export function onPenPointerHover() {
 
   if (pen.element && pen.vertex) {
     const box = pen.element.unrotatedBoundingBox;
-    const mid = vec2.div(
-      vec2.add(
-        vec2.sub(box[0], pen.element.transform.position),
-        vec2.sub(box[1], pen.element.transform.position)
-      ),
-      2
+    const mid = vec2.mid(
+      vec2.sub(box[0], pen.element.transform.position),
+      vec2.sub(box[1], pen.element.transform.position)
     );
 
     if (

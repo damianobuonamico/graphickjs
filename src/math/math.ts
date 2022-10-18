@@ -66,9 +66,9 @@ export function doesBoxIntersectRotatedBox(a: Box, b: Box, angle: number): boole
     return true;
   }
 
-  const center = vec2.div(vec2.add(b[0], b[1]), 2);
+  const center = vec2.mid(b[0], b[1]);
 
-  const vertices = [a[0], [a[1][0], a[0][1]], a[1], [a[0][0], a[1][1]]];
+  const vertices: vec2[] = [a[0], [a[1][0], a[0][1]], a[1], [a[0][0], a[1][1]]];
   const rotated = [
     vec2.rotate(b[0], center, angle),
     vec2.rotate([b[1][0], b[0][1]], center, angle),
@@ -89,10 +89,10 @@ export function doesBoxIntersectRotatedBox(a: Box, b: Box, angle: number): boole
   const rotatedOrigin = vec2.create();
 
   for (let i = 0; i < 2; ++i) {
-    vec2.div(axis[i], vec2.sqrLen(axis[i]), true);
+    vec2.divS(axis[i], vec2.sqrLen(axis[i]), axis[i]);
     origin[i] = vec2.dot(vertices[0], axis[i]);
 
-    vec2.div(rotatedAxis[i], vec2.sqrLen(rotatedAxis[i]), true);
+    vec2.divS(rotatedAxis[i], vec2.sqrLen(rotatedAxis[i]), rotatedAxis[i]);
     rotatedOrigin[i] = vec2.dot(rotated[0], rotatedAxis[i]);
   }
 

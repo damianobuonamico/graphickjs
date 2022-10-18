@@ -110,18 +110,18 @@ class Bezier implements BezierEntity {
   }
 
   private getLinearPoint({ t = 0 }): vec2 {
-    return vec2.add(vec2.mul(this.p0, 1 - t), vec2.mul(this.p3, t));
+    return vec2.add(vec2.mulS(this.p0, 1 - t), vec2.mulS(this.p3, t));
   }
   private getCubicPoint({ t = 0 }): vec2 {
     return vec2.add(
       vec2.add(
         vec2.add(
-          vec2.mul(this.p0, Math.pow(1 - t, 3)),
-          vec2.mul(this.p1, 3 * t * Math.pow(1 - t, 2))
+          vec2.mulS(this.p0, Math.pow(1 - t, 3)),
+          vec2.mulS(this.p1, 3 * t * Math.pow(1 - t, 2))
         ),
-        vec2.mul(this.p2, 3 * Math.pow(t, 2) * (1 - t))
+        vec2.mulS(this.p2, 3 * Math.pow(t, 2) * (1 - t))
       ),
-      vec2.mul(this.p3, Math.pow(t, 3))
+      vec2.mulS(this.p3, Math.pow(t, 3))
     );
   }
   getPoint(t: number): vec2 {

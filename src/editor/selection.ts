@@ -129,8 +129,8 @@ abstract class SelectionManager {
         const box = (entity as TransformableEntity).boundingBox;
 
         box.forEach((point) => {
-          vec2.min(min, point, true);
-          vec2.max(max, point, true);
+          vec2.min(min, point, min);
+          vec2.max(max, point, max);
         });
       }
     });
@@ -148,8 +148,8 @@ abstract class SelectionManager {
 
         box.forEach((point) => {
           const p = vec2.sub(point, (entity as TransformableEntity).transform.tempPosition);
-          vec2.min(min, p, true);
-          vec2.max(max, p, true);
+          vec2.min(min, p, min);
+          vec2.max(max, p, max);
         });
       }
     });
@@ -169,8 +169,8 @@ abstract class SelectionManager {
 
           box.forEach((point) => {
             const rotated = vec2.rotate(point, [0, 0], -angle);
-            vec2.min(min, rotated, true);
-            vec2.max(max, rotated, true);
+            vec2.min(min, rotated, min);
+            vec2.max(max, rotated, max);
           });
         }
       });
@@ -178,7 +178,7 @@ abstract class SelectionManager {
       const rMin = vec2.rotate(min, [0, 0], angle);
       const rMax = vec2.rotate(max, [0, 0], angle);
 
-      const mid = vec2.div(vec2.add(rMin, rMax), 2);
+      const mid = vec2.mid(rMin, rMax);
 
       return [vec2.rotate(rMin, mid, -angle), vec2.rotate(rMax, mid, -angle)];
     } else {
@@ -186,8 +186,8 @@ abstract class SelectionManager {
         const box = (entity as MovableEntity).boundingBox;
 
         if (box) {
-          vec2.min(min, box[0], true);
-          vec2.max(max, box[1], true);
+          vec2.min(min, box[0], min);
+          vec2.max(max, box[1], max);
         }
       });
     }

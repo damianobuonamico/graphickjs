@@ -120,18 +120,18 @@ class TransformVec2Value implements TransformComponentValue<vec2> {
 
     HistoryManager.record({
       fn: () => {
-        vec2.add(this.m_value, delta, true);
+        vec2.add(this.m_value, delta, this.m_value);
         if (this.m_callback) this.m_callback();
       },
       undo: () => {
-        vec2.sub(this.m_value, delta, true);
+        vec2.sub(this.m_value, delta, this.m_value);
         if (this.m_callback) this.m_callback();
       }
     });
   }
 
   translate(delta: vec2) {
-    vec2.add(this.m_delta, delta, true);
+    vec2.add(this.m_delta, delta, this.m_delta);
     if (this.m_callback) this.m_callback();
   }
 
@@ -218,7 +218,7 @@ class UntrackedSimpleTransform implements UntrackedSimpleTransformComponent {
   }
 
   translate(delta: vec2) {
-    vec2.add(this.m_position, delta, true);
+    vec2.add(this.m_position, delta, this.m_position);
     if (this.m_callback) this.m_callback();
   }
 
@@ -359,7 +359,7 @@ class UntrackedTransform implements UntrackedTransformComponent {
   }
 
   translate(delta: vec2) {
-    vec2.add(this.m_position, delta, true);
+    vec2.add(this.m_position, delta, this.m_position);
     if (this.m_callback) this.m_callback();
   }
 
@@ -466,7 +466,7 @@ class VertexTransform implements VertexTransformComponent {
       const direction = vec2.unit(vec2.neg(this.left));
       if (!vec2.equals(direction, [0, 0])) {
         this.tempTranslateRight(
-          vec2.sub(vec2.mul(direction, vec2.len(this.right!)), this.right),
+          vec2.sub(vec2.mulS(direction, vec2.len(this.right!)), this.right),
           true
         );
       }
@@ -510,7 +510,7 @@ class VertexTransform implements VertexTransformComponent {
       const direction = vec2.unit(vec2.neg(this.right));
       if (!vec2.equals(direction, [0, 0])) {
         this.tempTranslateLeft(
-          vec2.sub(vec2.mul(direction, vec2.len(this.left!)), this.left),
+          vec2.sub(vec2.mulS(direction, vec2.len(this.left!)), this.left),
           true
         );
       }

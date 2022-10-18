@@ -9,7 +9,7 @@ export function createVertices(
   centered: boolean = false
 ) {
   size = [size[0], perfect ? (Math.sign(size[1]) || 1) * Math.abs(size[0]) : size[1]];
-  size = centered ? vec2.mul(size, 2) : size;
+  size = centered ? vec2.mulS(size, 2) : size;
   switch (type) {
     case 'rectangle':
       return createRectangleVertices(size, centered);
@@ -21,7 +21,7 @@ export function createVertices(
 }
 
 function createRectangleVertices(size: vec2, centered: boolean) {
-  const half = vec2.mul(size, 0.5);
+  const half = vec2.mulS(size, 0.5);
   const translate: vec2 = centered ? half : [0, 0];
 
   return [

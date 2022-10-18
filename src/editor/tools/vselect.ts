@@ -76,7 +76,7 @@ const onVSelectPointerDown = () => {
             handle.parent.transform.tempTranslate(InputManager.scene.movement);
           } else {
             const box = handle.parent.parent.unrotatedBoundingBox;
-            const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+            const mid = vec2.mid(box[0], box[1]);
 
             const p = vec2.rotate([0, 0], mid, angle);
 
@@ -85,7 +85,7 @@ const onVSelectPointerDown = () => {
             handle.parent.transform.tempTranslate(movement);
 
             const box1 = handle.parent.parent.unrotatedBoundingBox;
-            const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+            const mid1 = vec2.mid(box1[0], box1[1]);
 
             const p1 = vec2.rotate([0, 0], mid1, angle);
 
@@ -94,7 +94,7 @@ const onVSelectPointerDown = () => {
         } else {
           const angle = handle.parent.parent.transform.rotation;
           const box = handle.parent.parent.unrotatedBoundingBox;
-          const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+          const mid = vec2.mid(box[0], box[1]);
 
           let value = vec2.rotate(
             vec2.sub(
@@ -109,7 +109,7 @@ const onVSelectPointerDown = () => {
             -angle
           );
 
-          if (InputManager.keys.shift) vec2.snap(value, undefined, true);
+          if (InputManager.keys.shift) vec2.snap(value, undefined, value);
 
           if (angle === 0) {
             if (handle.id === handle.parent.left?.id)
@@ -137,7 +137,7 @@ const onVSelectPointerDown = () => {
               );
 
             const box1 = handle.parent.parent.unrotatedBoundingBox;
-            const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+            const mid1 = vec2.mid(box1[0], box1[1]);
 
             const p1 = vec2.rotate([0, 0], mid1, angle);
 
@@ -165,7 +165,7 @@ const onVSelectPointerDown = () => {
             }
           } else {
             const box = (element as Element).unrotatedBoundingBox;
-            const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+            const mid = vec2.mid(box[0], box[1]);
 
             const p = vec2.rotate([0, 0], mid, angle);
 
@@ -178,7 +178,7 @@ const onVSelectPointerDown = () => {
             }
 
             const box1 = (element as Element).unrotatedBoundingBox;
-            const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+            const mid1 = vec2.mid(box1[0], box1[1]);
 
             const p1 = vec2.rotate([0, 0], mid1, angle);
 

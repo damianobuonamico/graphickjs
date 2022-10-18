@@ -25,7 +25,7 @@ const onRotatePointerDown = () => {
   });
 
   const box = SelectionManager.unrotatedBoundingBox;
-  const origin = vec2.div(vec2.add(box[0], box[1]), 2);
+  const origin = vec2.mid(box[0], box[1]);
   const start = vec2.sub(InputManager.scene.position, origin);
 
   let lastAngle = vec2.angle(start, vec2.sub(InputManager.scene.position, origin));
@@ -37,7 +37,7 @@ const onRotatePointerDown = () => {
 
     entities.forEach((entity) => {
       const entityBox = entity.staticBoundingBox;
-      const mid = vec2.div(vec2.add(entityBox[0], entityBox[1]), 2);
+      const mid = vec2.mid(entityBox[0], entityBox[1]);
       const rotated = vec2.rotate(mid, origin, angle);
 
       entity.transform.clear();

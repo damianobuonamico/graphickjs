@@ -264,7 +264,7 @@ abstract class InputManager {
     this.client.position = vec2.fromValues(e.clientX, e.clientY);
     this.client.delta = vec2.sub(this.client.position, this.client.origin);
 
-    this.scene.movement = vec2.div(this.client.movement, SceneManager.viewport.zoom);
+    this.scene.movement = vec2.divS(this.client.movement, SceneManager.viewport.zoom);
     this.scene.position = SceneManager.clientToScene(this.client.position);
     this.scene.delta = vec2.sub(this.scene.position, this.scene.origin);
 

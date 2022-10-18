@@ -104,7 +104,7 @@ class Element implements ElementEntity {
 
       const box = this.unrotatedBoundingBox;
       const angle = this.transform.rotation;
-      const origin = vec2.div(vec2.add(box[0], box[1]), 2);
+      const origin = vec2.mid(box[0], box[1]);
       const center = vec2.sub(origin, this.transform.position);
 
       let min: vec2 = [Infinity, Infinity];
@@ -114,8 +114,8 @@ class Element implements ElementEntity {
         const extrema = bezier.getRotatedExtrema(center, angle);
 
         extrema.forEach((point) => {
-          vec2.min(min, point, true);
-          vec2.max(max, point, true);
+          vec2.min(min, point, min);
+          vec2.max(max, point, max);
         });
       });
 
@@ -131,8 +131,8 @@ class Element implements ElementEntity {
       this.m_curves.forEach((bezier) => {
         const box = bezier.boundingBox;
 
-        vec2.min(min, box[0], true);
-        vec2.max(max, box[1], true);
+        vec2.min(min, box[0], min);
+        vec2.max(max, box[1], max);
       });
 
       return [
@@ -149,7 +149,7 @@ class Element implements ElementEntity {
         return [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]];
 
       const angle = this.transform.rotation;
-      const origin = vec2.div(vec2.add(box[0], box[1]), 2);
+      const origin = vec2.divS(vec2.add(box[0], box[1]), 2);
 
       return [
         vec2.rotate(box[0], origin, angle),
@@ -169,13 +169,13 @@ class Element implements ElementEntity {
         this.m_curves.forEach((bezier) => {
           const box = bezier.boundingBox;
 
-          vec2.min(min, box[0], true);
-          vec2.max(max, box[1], true);
+          vec2.min(min, box[0], min);
+          vec2.max(max, box[1], max);
         });
       } else {
         this.m_vertices.forEach((vertex) => {
-          vec2.min(min, vertex.transform.position, true);
-          vec2.max(max, vertex.transform.position, true);
+          vec2.min(min, vertex.transform.position, min);
+          vec2.max(max, vertex.transform.position, max);
         });
       }
 
@@ -366,22 +366,16 @@ class Element implements ElementEntity {
     const backup = [...this.m_order];
 
     const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(
-      vec2.add(
-        vec2.sub(box[0], this.transform.position),
-        vec2.sub(box[1], this.transform.position)
-      ),
-      2
+    const mid = vec2.mid(
+      vec2.sub(box[0], this.transform.position),
+      vec2.sub(box[1], this.transform.position)
     );
     const angle = this.transform.rotation;
 
     const box1 = element.unrotatedBoundingBox;
-    const mid1 = vec2.div(
-      vec2.add(
-        vec2.sub(box1[0], element.transform.position),
-        vec2.sub(box1[1], element.transform.position)
-      ),
-      2
+    const mid1 = vec2.mid(
+      vec2.sub(box1[0], element.transform.position),
+      vec2.sub(box1[1], element.transform.position)
     );
     const angle1 = element.transform.rotation;
 
@@ -422,12 +416,9 @@ class Element implements ElementEntity {
     });
 
     const box2 = this.unrotatedBoundingBox;
-    const mid2 = vec2.div(
-      vec2.add(
-        vec2.sub(box2[0], this.transform.position),
-        vec2.sub(box2[1], this.transform.position)
-      ),
-      2
+    const mid2 = vec2.mid(
+      vec2.sub(box2[0], this.transform.position),
+      vec2.sub(box2[1], this.transform.position)
     );
 
     this.transform.translate(
@@ -443,7 +434,7 @@ class Element implements ElementEntity {
 
     if (this.transform.rotation !== 0) {
       const box = this.unrotatedBoundingBox;
-      const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+      const mid = vec2.mid(box[0], box[1]);
       position = vec2.rotate(position, mid, -this.transform.rotation);
     }
 
@@ -486,7 +477,7 @@ class Element implements ElementEntity {
     }
 
     const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const mid = vec2.mid(box[0], box[1]);
 
     if (this.m_order[0]) {
       HistoryManager.record({
@@ -502,7 +493,7 @@ class Element implements ElementEntity {
     }
 
     const box1 = this.unrotatedBoundingBox;
-    const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+    const mid1 = vec2.mid(box1[0], box1[1]);
 
     this.transform.translate(
       vec2.sub(
@@ -540,13 +531,13 @@ class Element implements ElementEntity {
       return Array.from(this.m_curves.values()).some((segment) => segment.intersectsBox(box));
     } else {
       const unrotatedBox = this.unrotatedBoundingBox;
-      const mid = vec2.div(vec2.add(unrotatedBox[0], unrotatedBox[1]), 2);
+      const mid = vec2.mid(unrotatedBox[0], unrotatedBox[1]);
 
       if (!doesBoxIntersectRotatedBox(box, unrotatedBox, this.transform.rotation)) return false;
 
       const position = this.transform.position;
-      const rotated = [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]].map(
-        (point) => vec2.sub(vec2.rotate(point, mid, -angle), position)
+      const rotated: vec2[] = [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]].map(
+        (point) => vec2.sub(vec2.rotate(point as vec2, mid, -angle), position)
       );
 
       rotated.push(rotated[0]);
@@ -558,7 +549,7 @@ class Element implements ElementEntity {
       }
 
       box = [vec2.sub(box[0], position), vec2.sub(box[1], position)];
-      vec2.sub(mid, position, true);
+      vec2.sub(mid, position, mid);
 
       return Array.from(this.m_curves.values()).some((segment) => {
         if (isPointInBox(vec2.rotate(segment.p0, mid, angle), box)) return true;
@@ -574,7 +565,7 @@ class Element implements ElementEntity {
     }
 
     const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const mid = vec2.mid(box[0], box[1]);
 
     const vertices = vertex === true ? this.selection.entities : [vertex];
     const indices = vertices.map((vertex) => this.m_order.indexOf(vertex.id)).sort();
@@ -642,7 +633,7 @@ class Element implements ElementEntity {
           fill: this.m_fill ?? undefined
         });
         const box1 = element.unrotatedBoundingBox;
-        const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+        const mid1 = vec2.mid(box1[0], box1[1]);
         element.transform.translate(
           vec2.sub(
             vec2.rotate([0, 0], mid, this.transform.staticRotation),
@@ -693,7 +684,7 @@ class Element implements ElementEntity {
   getEntityAt(position: vec2, lowerLevel: boolean, threshold: number): Entity | undefined {
     const angle = this.transform.rotation;
     const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const mid = vec2.mid(box[0], box[1]);
 
     if (angle !== 0) {
       position = vec2.rotate(position, mid, -this.transform.rotation);
@@ -770,7 +761,7 @@ class Element implements ElementEntity {
 
       box = [vec2.sub(box[0], position), vec2.sub(box[1], position)];
       const unrotatedBox = this.unrotatedBoundingBox;
-      const mid = vec2.sub(vec2.div(vec2.add(unrotatedBox[0], unrotatedBox[1]), 2), position);
+      const mid = vec2.sub(vec2.mid(unrotatedBox[0], unrotatedBox[1]), position);
       const angle = this.transform.rotation;
 
       this.m_vertices.forEach((vertex) => {
