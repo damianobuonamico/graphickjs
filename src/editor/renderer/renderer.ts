@@ -1,7 +1,6 @@
 import Element from '../ecs/entities/element';
 import ImageMedia from '../ecs/entities/image';
 import Canvas2D from './2D/canvas2d';
-import CanvasGL from './WebGL/canvasgl';
 
 abstract class Renderer {
   private static m_canvas: Canvas;
@@ -27,8 +26,8 @@ abstract class Renderer {
     this.m_canvas.container = div;
   }
 
-  public static init(useWebGL = true) {
-    this.m_canvas = useWebGL ? new CanvasGL() : new Canvas2D();
+  public static init() {
+    this.m_canvas = new Canvas2D();
   }
 
   public static setup(canvas: HTMLCanvasElement) {
