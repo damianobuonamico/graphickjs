@@ -3,6 +3,7 @@ import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } f
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
 import { Transform, TransformVec2Value } from '../components/transform';
+import { RectTransform } from '../components/transforms';
 import Layer from './layer';
 
 class ImageMedia implements ImageEntity {
@@ -12,6 +13,7 @@ class ImageMedia implements ImageEntity {
 
   parent: Layer;
   transform: TransformComponent;
+  transforms: RectTransform;
 
   private m_data: string;
   private m_source = new Image();
@@ -20,9 +22,10 @@ class ImageMedia implements ImageEntity {
 
   constructor({ id = nanoid(), source, position, size }: ImageOptions) {
     this.id = id;
-    this.transform = new Transform(position, undefined, (magnitude, origin, temp, apply) =>
-      this.scale(magnitude, origin, temp, apply)
-    );
+    // this.transform = new Transform(position, undefined, (magnitude, origin, temp, apply) =>
+    //   this.scale(magnitude, origin, temp, apply)
+    // );
+    this.transform = new RectTransform(position, 0, size);
 
     this.m_data = source;
     this.m_source.src = source;
@@ -46,6 +49,7 @@ class ImageMedia implements ImageEntity {
   }
 
   get boundingBox(): Box {
+    return this.transform.boundingBox;
     if (this.transform.rotation === 0) return this.unrotatedBoundingBox;
 
     const vertices = this.rotatedBoundingBox;
@@ -62,6 +66,7 @@ class ImageMedia implements ImageEntity {
   }
 
   get staticBoundingBox(): Box {
+    return this.transform.staticBoundingBox;
     return [
       this.transform.staticPosition,
       vec2.add(this.transform.staticPosition, this.m_size.staticGet())
@@ -69,6 +74,7 @@ class ImageMedia implements ImageEntity {
   }
 
   get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+    return this.transform.rotatedBoundingBox;
     const box = this.unrotatedBoundingBox;
     const angle = this.transform.rotation;
     const center = vec2.mid(box[0], box[1]);
@@ -81,6 +87,7 @@ class ImageMedia implements ImageEntity {
   }
 
   get unrotatedBoundingBox(): Box {
+    return this.transform.unrotatedBoundingBox;
     const origin = vec2.add(this.transform.origin, this.transform.position);
     const box = [
       vec2.scale(this.transform.position, origin, this.magnitude),
@@ -173,7 +180,7 @@ class ImageMedia implements ImageEntity {
       operations: [
         {
           type: 'rect',
-          data: [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], box[0])]
+          data: [vec2.sub(box[0], this.transform.staticPosition), vec2.sub(box[1], box[0])]
         },
         { type: 'stroke' }
       ]

@@ -124,25 +124,27 @@ const onScalePointerDown = () => {
     }
 
     SelectionManager.forEach((entity) => {
-      const box1 = (entity as TransformableEntity).unrotatedBoundingBox;
-      const mid1 = vec2.mid(box1[0], box1[1]);
-      (entity as TransformableEntity).transform.origin = vec2.sub(
-        // center,
-        vec2.rotate(center, mid1, -(entity as TransformableEntity).transform.rotation),
-        (entity as TransformableEntity).transform.position
-      );
+      // const box1 = (entity as TransformableEntity).unrotatedBoundingBox;
+      // const mid1 = vec2.mid(box1[0], box1[1]);
+
+      (entity as TransformableEntity).transform.origin = center;
+      // (entity as TransformableEntity).transform.origin = vec2.sub(
+      //   // center,
+      //   vec2.rotate(center, mid1, -(entity as TransformableEntity).transform.rotation),
+      //   (entity as TransformableEntity).transform.position
+      // );
 
       (entity as TransformableEntity).transform.tempScale(magnitude);
 
-      const box2 = (entity as TransformableEntity).unrotatedBoundingBox;
-      const mid2 = vec2.mid(box2[0], box2[1]);
+      // const box2 = (entity as TransformableEntity).unrotatedBoundingBox;
+      // const mid2 = vec2.mid(box2[0], box2[1]);
 
-      (entity as TransformableEntity).transform.tempTranslate(
-        vec2.sub(
-          vec2.rotate([0, 0], mid1, (entity as TransformableEntity).transform.rotation),
-          vec2.rotate([0, 0], mid2, (entity as TransformableEntity).transform.rotation)
-        )
-      );
+      // (entity as TransformableEntity).transform.tempTranslate(
+      //   vec2.sub(
+      //     vec2.rotate([0, 0], mid1, (entity as TransformableEntity).transform.rotation),
+      //     vec2.rotate([0, 0], mid2, (entity as TransformableEntity).transform.rotation)
+      //   )
+      // );
     });
 
     SelectionManager.calculateRenderOverlay();

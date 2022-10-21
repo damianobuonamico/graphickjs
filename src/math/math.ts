@@ -1,4 +1,9 @@
+import { MATH_EPSILON } from '@/utils/constants';
 import { vec2 } from '.';
+
+export function equals(a: number, b: number) {
+  return Math.abs(a - b) <= MATH_EPSILON * Math.max(1, Math.abs(a), Math.abs(b));
+}
 
 export function clamp(t: number, min: number, max: number) {
   return Math.min(Math.max(min, t), max);

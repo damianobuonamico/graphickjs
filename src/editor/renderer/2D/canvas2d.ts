@@ -293,33 +293,17 @@ class Canvas2D implements Canvas {
   }
 
   public image(image: ImageMedia) {
+    // TODO: Bilinar Filtering
     if (!SceneManager.isVisible(image)) return;
     this.m_stats.draw();
-    const boundingBox = image.unrotatedBoundingBox;
-    const position = image.transform.position;
-    const mid = vec2.mid(boundingBox[0], boundingBox[1]);
-    const translation = vec2.sub(mid, position);
-
-    // TODO: Bilinar Filtering
 
     this.m_ctx.save();
-    this.m_ctx.transform(1, 0, 0, 1, position[0] + translation[0], position[1] + translation[1]);
-    this.m_ctx.rotate(image.transform.rotation);
 
-    this.m_ctx.scale(image.reflect[0] === 1 ? -1 : 1, image.reflect[1] === 1 ? -1 : 1);
-    this.m_ctx.translate(-translation[0], -translation[1]);
-
-    this.m_ctx.translate(image.transform.origin[0], image.transform.origin[1]);
-    this.m_ctx.scale(image.magnitude[0], image.magnitude[1]);
-    this.m_ctx.translate(-image.transform.origin[0], -image.transform.origin[1]);
-    this.m_ctx.drawImage(image.source, 0, 0, image.size[0], image.size[1]);
-
-    for (const point of image.points) {
-      this.begin();
-      this.circle({ type: 'circle', data: [point, 3] });
-      this.fill();
-      this.close();
-    }
+    console.time('matrix');
+    const matrix = image.transform.mat3;
+    console.timeEnd('matrix');
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
+    this.m_ctx.drawImage(image.source, 0, 0, ...image.transform.size);
 
     this.m_ctx.restore();
 

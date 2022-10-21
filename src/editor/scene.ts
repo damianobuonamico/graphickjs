@@ -42,6 +42,48 @@ abstract class SceneManager {
     this.setLoading = setLoading;
     this.load();
     HistoryManager.clear();
+
+    // const N = 100000;
+    // const M = 100;
+
+    // let t1 = 0,
+    //   t2 = 0;
+
+    // const v1 = new Vec2Value();
+    // const v2 = new Vec2ValueTemp();
+
+    // const temp = vec2.create();
+
+    // for (let j = 0; j < M; j++) {
+    //   let t = performance.now();
+    //   for (let i = 0; i < N; i++) {
+    //     v1.get();
+    //   }
+    //   t1 += performance.now() - t;
+
+    //   t = performance.now();
+    //   for (let i = 0; i < N; i++) {
+    //     v2.get(temp);
+    //   }
+    //   t2 += performance.now() - t;
+    // }
+
+    // for (let j = 0; j < M; j++) {
+    //   let t = performance.now();
+    //   for (let i = 0; i < N; i++) {
+    //     v2.get(temp);
+    //   }
+    //   t2 += performance.now() - t;
+
+    //   t = performance.now();
+    //   for (let i = 0; i < N; i++) {
+    //     v1.get();
+    //   }
+    //   t1 += performance.now() - t;
+    // }
+
+    // console.log('DISABLED', t1 / M);
+    // console.log('ENABLED', t2 / M);
   }
 
   static set zoom(value: number | [number, vec2]) {
