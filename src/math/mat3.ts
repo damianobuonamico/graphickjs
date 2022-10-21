@@ -4,6 +4,8 @@
  * @module mat3
  */
 
+import { vec2 } from '.';
+
 /**
  * Creates a new identity mat3
  *
@@ -228,7 +230,7 @@ export function multiply(a: ReadonlyMat3, b: ReadonlyMat3, out: mat3 = create())
  * This is equivalent to (but much faster than):
  *
  *     mat3.identity(dest);
- *     mat3.translate(dest, dest, vec);
+ *     mat3.translate(dest, vec, dest);
  *
  * @param {mat3} out mat3 receiving operation result
  * @param {ReadonlyVec2} v Translation vector
@@ -244,6 +246,128 @@ export function fromTranslation(v: ReadonlyVec2, out: mat3 = create()): mat3 {
   out[6] = 0;
   out[7] = 0;
   out[8] = 1;
+  return out;
+}
+
+/**
+ * Creates a matrix from transform properties
+ * This is equivalent to (but much faster than):
+ *
+ *     mat3.identity(dest);
+ *     mat3.translate(dest, vec, dest);
+ *     mat3.rotate(dest, rad, dest);
+ *     mat3.scale(dest, vec, dest);
+ *
+ * @param {ReadonlyVec2} position Translation vector
+ * @param {Number} rotation Rotation radians
+ * @param {ReadonlyVec2} scale Scale vector
+ * @param {ReadonlyVec2} staticPosition Static position vector used to calculate the center of transforms
+ * @param {ReadonlyVec2} center Center of rotation
+ * @param {ReadonlyVec2} origin Origin of scale
+ * @param {mat3} out mat3 receiving operation result
+ * @returns {mat3} out
+ */
+export function fromTranslationRotationScale(
+  position: ReadonlyVec2,
+  rotation: number,
+  scale: ReadonlyVec2,
+  staticPosition: ReadonlyVec2,
+  center: ReadonlyVec2,
+  origin: ReadonlyVec2,
+  out: mat3 = create()
+): mat3 {
+  const sin = Math.sin(rotation),
+    cos = Math.cos(rotation);
+  const x1 = origin[0] - center[0],
+    y1 = origin[1] - center[1];
+  const x2 = scale[0],
+    y2 = scale[1];
+  const a11 = cos * x2,
+    a12 = -sin * y2,
+    a13 = cos * x1 - sin * y1 + center[0] - staticPosition[0] + position[0];
+  const a21 = sin * x2,
+    a22 = cos * y2,
+    a23 = sin * x1 + cos * y1 + center[1] - staticPosition[1] + position[1];
+  const x3 = staticPosition[0] - origin[0],
+    y3 = staticPosition[1] - origin[1];
+
+  out[0] = a11;
+  out[1] = a12;
+  out[2] = a11 * x3 + a12 * y3 + a13;
+  out[3] = a21;
+  out[4] = a22;
+  out[5] = a21 * x3 + a22 * y3 + a23;
+  out[6] = 0;
+  out[7] = 0;
+  out[8] = 1;
+
+  return out;
+}
+
+/**
+ * Creates a matrix from transform properties
+ * This is equivalent to (but much faster than):
+ *
+ *     mat3.identity(dest);
+ *     mat3.translate(dest, vec, dest);
+ *     mat3.rotate(dest, rad, dest);
+ *     mat3.scale(dest, vec, dest);
+ *     mat3.scale(dest, vec, dest);
+ *
+ * @param {ReadonlyVec2} position Translation vector
+ * @param {Number} rotation Rotation radians
+ * @param {ReadonlyVec2} scale Scale vector
+ * @param {ReadonlyVec2} reflection Reflection vector
+ * @param {ReadonlyVec2} staticPosition Static position vector used to calculate the center of transforms
+ * @param {ReadonlyVec2} center Center of rotation
+ * @param {ReadonlyVec2} origin Origin of scale
+ * @param {mat3} out mat3 receiving operation result
+ * @returns {mat3} out
+ */
+export function fromTranslationRotationScaleReflection(
+  position: ReadonlyVec2,
+  rotation: number,
+  scale: ReadonlyVec2,
+  reflection: ReadonlyVec2,
+  staticPosition: ReadonlyVec2,
+  center: ReadonlyVec2,
+  origin: ReadonlyVec2,
+  out: mat3 = create()
+): mat3 {
+  const sin = Math.sin(rotation),
+    cos = Math.cos(rotation);
+  const x1 = origin[0] - center[0],
+    y1 = origin[1] - center[1];
+  const x2 = scale[0],
+    y2 = scale[1];
+  const x3 = center[0] - origin[0],
+    y3 = center[1] - origin[1];
+  const x4 = Math.sign(reflection[0]),
+    y4 = Math.sign(reflection[1]);
+  const x5 = staticPosition[0] - center[0],
+    y5 = staticPosition[1] - center[1];
+  let a11 = cos * x2,
+    a12 = -sin * y2,
+    a13 = cos * x1 - sin * y1 + center[0] - staticPosition[0] + position[0] + a11 * x3 + a12 * y3;
+  let a21 = sin * x2,
+    a22 = cos * y2,
+    a23 = sin * x1 + cos * y1 + center[1] - staticPosition[1] + position[1] + a21 * x3 + a22 * y3;
+
+  a11 *= x4;
+  a12 *= y4;
+  a21 *= x4;
+  a22 *= y4;
+
+  out[0] = a11;
+  out[1] = a12;
+  out[2] = a11 * x5 + a12 * y5 + a13;
+  out[3] = a21;
+  out[4] = a22;
+  out[5] = a21 * x5 + a22 * y5 + a23;
+  out[6] = 0;
+  out[7] = 0;
+  out[8] = 1;
+
   return out;
 }
 

@@ -234,33 +234,15 @@ export class RectTransform {
   }
 
   get mat3() {
-    const position = this.m_translation.get();
-    const staticPosition = this.m_translation.getStatic();
-
-    const center = this.center;
-    const origin = this.origin;
-
-    const rotation = this.m_rotation.get();
-
-    // Translate
-    const matrix = mat3.fromTranslation(position);
-
-    // Rotate
-    mat3.translate(matrix, vec2.sub(center, staticPosition), matrix);
-    mat3.rotate(matrix, rotation, matrix);
-    mat3.translate(matrix, vec2.sub(staticPosition, center), matrix);
-
-    // Scale
-    mat3.translate(matrix, vec2.sub(origin, staticPosition), matrix);
-    mat3.scale(matrix, this.m_scale, matrix);
-    mat3.translate(matrix, vec2.sub(staticPosition, origin), matrix);
-
-    // Reflect
-    mat3.translate(matrix, vec2.sub(center, staticPosition), matrix);
-    mat3.scale(matrix, this.m_reflection.get(), matrix);
-    mat3.translate(matrix, vec2.sub(staticPosition, center), matrix);
-
-    return matrix;
+    return mat3.fromTranslationRotationScaleReflection(
+      this.m_translation.get(),
+      this.m_rotation.get(),
+      this.m_scale,
+      this.m_reflection.get(),
+      this.m_translation.getStatic(),
+      this.center,
+      this.origin
+    );
   }
 
   set position(value: vec2) {

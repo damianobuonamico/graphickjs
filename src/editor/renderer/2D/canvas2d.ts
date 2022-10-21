@@ -299,9 +299,7 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.save();
 
-    console.time('matrix');
     const matrix = image.transform.mat3;
-    console.timeEnd('matrix');
     this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
     this.m_ctx.drawImage(image.source, 0, 0, ...image.transform.size);
 
