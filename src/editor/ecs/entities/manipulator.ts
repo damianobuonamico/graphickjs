@@ -188,6 +188,8 @@ class Manipulator implements ManipulatorEntity {
     }
 
     this.m_active = true;
+
+    this.transform.center = vec2.mid(box[0], box[1]);
     this.transform.position = box[0];
     this.transform.rotation = angle;
     this.m_lastCalculatedPosition = box[0];

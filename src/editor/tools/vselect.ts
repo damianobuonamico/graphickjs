@@ -75,7 +75,7 @@ const onVSelectPointerDown = () => {
           if (angle === 0) {
             handle.parent.transform.tempTranslate(InputManager.scene.movement);
           } else {
-            const box = handle.parent.parent.unrotatedBoundingBox;
+            const box = handle.parent.parent.transform.unrotatedBoundingBox;
             const mid = vec2.mid(box[0], box[1]);
 
             const p = vec2.rotate([0, 0], mid, angle);
@@ -84,7 +84,7 @@ const onVSelectPointerDown = () => {
 
             handle.parent.transform.tempTranslate(movement);
 
-            const box1 = handle.parent.parent.unrotatedBoundingBox;
+            const box1 = handle.parent.parent.transform.unrotatedBoundingBox;
             const mid1 = vec2.mid(box1[0], box1[1]);
 
             const p1 = vec2.rotate([0, 0], mid1, angle);
@@ -93,7 +93,7 @@ const onVSelectPointerDown = () => {
           }
         } else {
           const angle = handle.parent.parent.transform.rotation;
-          const box = handle.parent.parent.unrotatedBoundingBox;
+          const box = handle.parent.parent.transform.unrotatedBoundingBox;
           const mid = vec2.mid(box[0], box[1]);
 
           let value = vec2.rotate(
@@ -136,7 +136,7 @@ const onVSelectPointerDown = () => {
                 InputManager.keys.alt
               );
 
-            const box1 = handle.parent.parent.unrotatedBoundingBox;
+            const box1 = handle.parent.parent.transform.unrotatedBoundingBox;
             const mid1 = vec2.mid(box1[0], box1[1]);
 
             const p1 = vec2.rotate([0, 0], mid1, angle);
@@ -164,7 +164,7 @@ const onVSelectPointerDown = () => {
               });
             }
           } else {
-            const box = (element as Element).unrotatedBoundingBox;
+            const box = (element as Element).transform.unrotatedBoundingBox;
             const mid = vec2.mid(box[0], box[1]);
 
             const p = vec2.rotate([0, 0], mid, angle);
@@ -177,7 +177,7 @@ const onVSelectPointerDown = () => {
               });
             }
 
-            const box1 = (element as Element).unrotatedBoundingBox;
+            const box1 = (element as Element).transform.unrotatedBoundingBox;
             const mid1 = vec2.mid(box1[0], box1[1]);
 
             const p1 = vec2.rotate([0, 0], mid1, angle);
@@ -191,7 +191,7 @@ const onVSelectPointerDown = () => {
     } else if (rect.element) {
       draggingOccurred = false;
       rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
-      const box = rect.element.boundingBox;
+      const box = rect.element.transform.boundingBox;
       const entities = SceneManager.getEntitiesIn(box);
       entities.forEach((entity) => {
         if (entity.type === 'element') {

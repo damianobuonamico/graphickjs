@@ -1,10 +1,9 @@
 import Cache from '@utils/cache';
 import { doesBoxIntersectBox, getLinesFromBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
-import Handle from './handle';
 import Vertex from './vertex';
 import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
-import Element from './element';
+import { UntrackedSimpleTransform } from '../components/transform';
 
 class Bezier implements BezierEntity {
   readonly id: string;
@@ -14,6 +13,7 @@ class Bezier implements BezierEntity {
   readonly end: VertexEntity;
 
   parent: ElementEntity;
+  transform: UntrackedSimpleTransformComponent;
 
   private m_cache: Cache = new Cache();
   private cached = this.m_cache.cached.bind(this.m_cache);
@@ -22,6 +22,7 @@ class Bezier implements BezierEntity {
     this.id = nanoid();
     this.start = start;
     this.end = end;
+    this.transform = new UntrackedSimpleTransform();
   }
 
   get p0(): vec2 {
@@ -41,39 +42,39 @@ class Bezier implements BezierEntity {
   }
 
   get bezierType(): BezierType {
-    return this.cached<BezierType>('type', () => {
-      if (this.start.right || this.end.left) return 'cubic';
-      return 'linear';
-    });
+    // return this.cached<BezierType>('type', () => {
+    if (this.start.right || this.end.left) return 'cubic';
+    return 'linear';
+    // });
   }
 
   get extrema(): vec2[] {
-    return this.cached<vec2[]>('extrema', () => {
-      const roots = this.getRoots();
-      const extrema: vec2[] = [];
+    // return this.cached<vec2[]>('extrema', () => {
+    const roots = this.getRoots();
+    const extrema: vec2[] = [];
 
-      for (const root of roots) {
-        extrema.push(this.getPoint(root));
-      }
+    for (const root of roots) {
+      extrema.push(this.getPoint(root));
+    }
 
-      return extrema;
-    });
+    return extrema;
+    // });
   }
 
   get boundingBox(): Box {
-    return this.cached<Box>('boundingBox', () => {
-      const extrema = this.extrema;
+    // return this.cached<Box>('boundingBox', () => {
+    const extrema = this.extrema;
 
-      let min: vec2 = [Infinity, Infinity];
-      let max: vec2 = [-Infinity, -Infinity];
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
 
-      for (const point of extrema) {
-        min = vec2.min(min, point);
-        max = vec2.max(max, point);
-      }
+    for (const point of extrema) {
+      min = vec2.min(min, point);
+      max = vec2.max(max, point);
+    }
 
-      return [min, max];
-    });
+    return [min, max];
+    // });
   }
 
   get size(): vec2 {
@@ -82,18 +83,18 @@ class Bezier implements BezierEntity {
   }
 
   get clockwise(): boolean {
-    return this.cached<boolean>('clockwise', () => {
-      let sum = 0;
-      let last = this.getPoint(0);
+    // return this.cached<boolean>('clockwise', () => {
+    let sum = 0;
+    let last = this.getPoint(0);
 
-      for (let i = 1; i <= 100; i++) {
-        const point = this.getPoint(i / 100);
-        sum += (point[0] - last[0]) * (point[1] + last[1]);
-        last = point;
-      }
+    for (let i = 1; i <= 100; i++) {
+      const point = this.getPoint(i / 100);
+      sum += (point[0] - last[0]) * (point[1] + last[1]);
+      last = point;
+    }
 
-      return sum >= 0;
-    });
+    return sum >= 0;
+    // });
   }
 
   private call<T>(
@@ -213,16 +214,16 @@ class Bezier implements BezierEntity {
   }
 
   getRotatedExtrema(origin: vec2, angle: number): vec2[] {
-    return this.cached<vec2[]>(`extrema-${angle}`, () => {
-      const roots = this.getRotatedRoots(origin, angle);
-      const extrema: vec2[] = [];
+    // return this.cached<vec2[]>(`extrema-${angle}`, () => {
+    const roots = this.getRotatedRoots(origin, angle);
+    const extrema: vec2[] = [];
 
-      for (const root of roots) {
-        extrema.push(vec2.rotate(this.getPoint(root), origin, angle));
-      }
+    for (const root of roots) {
+      extrema.push(vec2.rotate(this.getPoint(root), origin, angle));
+    }
 
-      return extrema;
-    });
+    return extrema;
+    // });
   }
 
   private getLinearClosestTo({ position }: { position: vec2 }): BezierPointDistance {
@@ -553,9 +554,9 @@ class Bezier implements BezierEntity {
     return { operations: [{ type: this.bezierType, data: [this.p1, this.p2, this.p3] }] };
   }
   getDrawable(useWebGL: boolean = false): Drawable {
-    return this.cached<Drawable>('getDrawable', () => {
-      return this.call(this.getLinearDrawable, this.getCubicDrawable);
-    });
+    // return this.cached<Drawable>('getDrawable', () => {
+    return this.call(this.getLinearDrawable, this.getCubicDrawable);
+    // });
   }
 
   getOutlineDrawable(useWebGL: boolean = false): Drawable {

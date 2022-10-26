@@ -164,7 +164,7 @@ const onPenPointerDown = () => {
       break;
     }
     case 'new': {
-      const box = pen.element?.unrotatedBoundingBox;
+      const box = pen.element?.transform.unrotatedBoundingBox;
       const mid = box && vec2.mid(box[0], box[1]);
       const angle = pen.element?.transform.rotation;
 
@@ -193,7 +193,7 @@ const onPenPointerDown = () => {
 
       e.push(v);
 
-      const box1 = e.unrotatedBoundingBox;
+      const box1 = e.transform.unrotatedBoundingBox;
       const mid1 = vec2.mid(box1[0], box1[1]);
 
       if (box && mid && !!angle) {
@@ -222,7 +222,7 @@ const onPenPointerDown = () => {
   function setLeft(position?: vec2, recordHandleCreation = false) {
     if (!pen.vertex) return;
 
-    const box = pen.element!.unrotatedBoundingBox;
+    const box = pen.element!.transform.unrotatedBoundingBox;
     const mid = vec2.mid(box[0], box[1]);
     const angle = pen.element!.transform.rotation;
 
@@ -244,7 +244,7 @@ const onPenPointerDown = () => {
       }
     } else if (position) pen.vertex.transform.tempLeft = position;
 
-    const box1 = pen.element!.unrotatedBoundingBox;
+    const box1 = pen.element!.transform.unrotatedBoundingBox;
     const mid1 = vec2.mid(box1[0], box1[1]);
 
     pen.element!.transform.tempTranslate(
@@ -255,7 +255,7 @@ const onPenPointerDown = () => {
   function setRight(position?: vec2, recordHandleCreation = false) {
     if (!pen.vertex) return;
 
-    const box = pen.element!.unrotatedBoundingBox;
+    const box = pen.element!.transform.unrotatedBoundingBox;
     const mid = vec2.mid(box[0], box[1]);
     const angle = pen.element!.transform.rotation;
 
@@ -277,7 +277,7 @@ const onPenPointerDown = () => {
       }
     } else if (position) pen.vertex.transform.tempRight = position;
 
-    const box1 = pen.element!.unrotatedBoundingBox;
+    const box1 = pen.element!.transform.unrotatedBoundingBox;
     const mid1 = vec2.mid(box1[0], box1[1]);
 
     pen.element!.transform.tempTranslate(
@@ -411,7 +411,7 @@ export function onPenPointerHover() {
   const hasOverlay = pen.overlay ? SceneManager.hasRenderOverlay(pen.overlay.id) : false;
 
   if (pen.element && pen.vertex) {
-    const box = pen.element.unrotatedBoundingBox;
+    const box = pen.element.transform.unrotatedBoundingBox;
     const mid = vec2.mid(
       vec2.sub(box[0], pen.element.transform.position),
       vec2.sub(box[1], pen.element.transform.position)

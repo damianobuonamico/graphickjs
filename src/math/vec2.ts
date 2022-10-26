@@ -356,6 +356,19 @@ export function abs(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
 }
 
 /**
+ * Calculates the sign of each component of a given vec2
+ *
+ * @param {ReadonlyVec2} a vector
+ * @param {vec2} out the receiving vector
+ * @returns {vec2} out
+ */
+export function sign(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
+  out[0] = Math.sign(a[0]);
+  out[1] = Math.sign(a[1]);
+  return out;
+}
+
+/**
  * Returns the midpoint of two vec2's
  *
  * @param {ReadonlyVec2} a first vector
@@ -476,8 +489,8 @@ export function scale(a: vec2, b: vec2, t: vec2, out: vec2 = [0, 0]): vec2 {
  * @returns {vec2} out
  */
 export function transformMat3(a: ReadonlyVec2, m: ReadonlyMat3, out: vec2 = [0, 0]): vec2 {
-  out[0] = m[0] * a[0] + m[3] * a[1] + m[6];
-  out[1] = m[1] * a[0] + m[4] * a[1] + m[7];
+  out[0] = m[0] * a[0] + m[1] * a[1] + m[2];
+  out[1] = m[3] * a[0] + m[4] * a[1] + m[5];
   return out;
 }
 

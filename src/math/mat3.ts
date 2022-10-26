@@ -185,6 +185,45 @@ export function transpose(a: ReadonlyMat3, out: mat3 = create()): mat3 {
 }
 
 /**
+ * Inverts a mat3
+ *
+ * @param {ReadonlyMat3} a the source matrix
+ * @param {mat3} out the receiving matrix
+ * @returns {mat3} out
+ */
+export function invert(a: ReadonlyMat3, out: mat3 = create()): mat3 | null {
+  let a00 = a[0],
+    a01 = a[1],
+    a02 = a[2];
+  let a10 = a[3],
+    a11 = a[4],
+    a12 = a[5];
+  let a20 = a[6],
+    a21 = a[7],
+    a22 = a[8];
+
+  let b01 = a22 * a11 - a12 * a21;
+  let b11 = -a22 * a10 + a12 * a20;
+  let b21 = a21 * a10 - a11 * a20;
+
+  let det = a00 * b01 + a01 * b11 + a02 * b21;
+  if (!det) return null;
+
+  det = 1.0 / det;
+  out[0] = b01 * det;
+  out[1] = (-a22 * a01 + a02 * a21) * det;
+  out[2] = (a12 * a01 - a02 * a11) * det;
+  out[3] = b11 * det;
+  out[4] = (a22 * a00 - a02 * a20) * det;
+  out[5] = (-a12 * a00 + a02 * a10) * det;
+  out[6] = b21 * det;
+  out[7] = (-a21 * a00 + a01 * a20) * det;
+  out[8] = (a11 * a00 - a01 * a10) * det;
+
+  return out;
+}
+
+/**
  * Multiplies two mat3's
  *
  * @param {ReadonlyMat3} a the first operand
@@ -246,6 +285,46 @@ export function fromTranslation(v: ReadonlyVec2, out: mat3 = create()): mat3 {
   out[6] = 0;
   out[7] = 0;
   out[8] = 1;
+  return out;
+}
+
+/**
+ * Creates a matrix from transform properties
+ * This is equivalent to (but much faster than):
+ *
+ *     mat3.identity(dest);
+ *     mat3.translate(dest, vec, dest);
+ *     mat3.rotate(dest, rad, dest);
+ *
+ * @param {ReadonlyVec2} position Translation vector
+ * @param {Number} rotation Rotation radians
+ * @param {ReadonlyVec2} staticPosition Static position vector used to calculate the center of transforms
+ * @param {ReadonlyVec2} center Center of rotation
+ * @param {mat3} out mat3 receiving operation result
+ * @returns {mat3} out
+ */
+export function fromTranslationRotation(
+  position: ReadonlyVec2,
+  rotation: number,
+  staticPosition: ReadonlyVec2,
+  center: ReadonlyVec2,
+  out: mat3 = create()
+): mat3 {
+  const sin = Math.sin(rotation),
+    cos = Math.cos(rotation);
+  const x = staticPosition[0] - center[0],
+    y = staticPosition[1] - center[1];
+
+  out[0] = cos;
+  out[1] = -sin;
+  out[2] = cos * x + -sin * y + position[0] + center[0] - staticPosition[0];
+  out[3] = sin;
+  out[4] = cos;
+  out[5] = sin * x + cos * y + position[1] + center[1] - staticPosition[1];
+  out[6] = 0;
+  out[7] = 0;
+  out[8] = 1;
+
   return out;
 }
 

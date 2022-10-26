@@ -8,17 +8,11 @@ class HoverState {
     let entity = this.entity;
 
     if (!entity) return undefined;
-    while (
-      entity.type !== 'element' &&
-      entity.type !== 'image' &&
-      entity.type !== 'demo' &&
-      entity.parent
-    ) {
+    while (entity.type !== 'element' && entity.type !== 'image' && entity.parent) {
       entity = entity.parent;
     }
 
-    if (entity.type === 'element' || entity.type === 'image' || entity.type === 'demo')
-      return entity as Element | ImageMedia;
+    if (entity.type === 'element' || entity.type === 'image') return entity as Element | ImageMedia;
 
     return undefined;
   }

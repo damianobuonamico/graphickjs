@@ -64,15 +64,18 @@ const onSelectPointerDown = () => {
 
         SceneManager.forEach((entity) => {
           if (SceneManager.isVisible(entity) && !SelectionManager.ids.includes(entity.id)) {
-            const entityBox = (entity as MovableEntity).boundingBox;
-            entityBox.push(vec2.mid(entityBox[0], entityBox[1]));
+            const entityBox = (entity.transform as TransformComponent).boundingBox;
 
-            for (let axis = 0; axis < 2; axis++) {
-              for (let side1 = 0; side1 < 3; side1++) {
-                for (let side = 0; side < 3; side++) {
-                  let dist = entityBox[side][axis] - box[side1][axis];
-                  if (Math.abs(dist) < THRESH && Math.abs(dist) < Math.abs(snappingDelta[axis])) {
-                    snappingDelta[axis] = dist;
+            if (entityBox) {
+              entityBox.push(vec2.mid(entityBox[0], entityBox[1]));
+
+              for (let axis = 0; axis < 2; axis++) {
+                for (let side1 = 0; side1 < 3; side1++) {
+                  for (let side = 0; side < 3; side++) {
+                    let dist = entityBox[side][axis] - box[side1][axis];
+                    if (Math.abs(dist) < THRESH && Math.abs(dist) < Math.abs(snappingDelta[axis])) {
+                      snappingDelta[axis] = dist;
+                    }
                   }
                 }
               }
@@ -101,13 +104,13 @@ const onSelectPointerDown = () => {
         draggingOccurred = true;
         SelectionManager.forEach((entity) => {
           (entity as Element).transform.tempTranslate(
-            vec2.sub(delta, (entity as Element).transform.tempPosition)
+            vec2.sub(delta, (entity as Element).transform.positionDelta)
           );
         });
       }
     } else if (rect.element) {
       rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
-      SelectionManager.temp(SceneManager.getEntitiesIn(rect.element.boundingBox));
+      SelectionManager.temp(SceneManager.getEntitiesIn(rect.element.transform.boundingBox));
     }
 
     SelectionManager.calculateRenderOverlay();

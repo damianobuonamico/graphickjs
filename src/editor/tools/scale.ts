@@ -15,11 +15,13 @@ const onScalePointerDown = () => {
   const box = SelectionManager.unrotatedBoundingBox;
   const mid = vec2.mid(box[0], box[1]);
 
+  const angle = SelectionManager.angle;
+
   const rotated = [
-    vec2.rotate(box[0], mid, SelectionManager.angle || 0),
-    vec2.rotate([box[1][0], box[0][1]], mid, SelectionManager.angle || 0),
-    vec2.rotate(box[1], mid, SelectionManager.angle || 0),
-    vec2.rotate([box[0][0], box[1][1]], mid, SelectionManager.angle || 0)
+    vec2.rotate(box[0], mid, angle || 0),
+    vec2.rotate([box[1][0], box[0][1]], mid, angle || 0),
+    vec2.rotate(box[1], mid, angle || 0),
+    vec2.rotate([box[0][0], box[1][1]], mid, angle || 0)
   ];
 
   const midpoints = [
@@ -31,7 +33,6 @@ const onScalePointerDown = () => {
 
   let center = vec2.clone(mid);
 
-  const size = vec2.sub(box[1], box[0]);
   let axial = false;
 
   switch (entity.id) {
@@ -66,8 +67,8 @@ const onScalePointerDown = () => {
   }
 
   const dist = vec2.sub(
-    vec2.rotate(InputManager.scene.position, mid, -(SelectionManager.angle || 0)),
-    vec2.rotate(center, mid, -(SelectionManager.angle || 0))
+    vec2.rotate(InputManager.scene.position, mid, -(angle || 0)),
+    vec2.rotate(center, mid, -(angle || 0))
   );
 
   function onKey(e: KeyboardEvent) {
@@ -79,15 +80,15 @@ const onScalePointerDown = () => {
 
   let backup = center;
 
-  // TODO: Fix multiple elements scaling with different rotation
+  // TODO: Fix rotated image + element scaling
   function onPointerMove() {
     if (InputManager.keys.alt) center = mid;
     else center = backup;
 
     const magnitude = vec2.div(
       vec2.sub(
-        vec2.rotate(InputManager.scene.position, mid, -(SelectionManager.angle || 0)),
-        vec2.rotate(center, mid, -(SelectionManager.angle || 0))
+        vec2.rotate(InputManager.scene.position, mid, -(angle || 0)),
+        vec2.rotate(center, mid, -(angle || 0))
       ),
       dist
     );
@@ -124,27 +125,10 @@ const onScalePointerDown = () => {
     }
 
     SelectionManager.forEach((entity) => {
-      // const box1 = (entity as TransformableEntity).unrotatedBoundingBox;
-      // const mid1 = vec2.mid(box1[0], box1[1]);
-
-      (entity as TransformableEntity).transform.origin = center;
-      // (entity as TransformableEntity).transform.origin = vec2.sub(
-      //   // center,
-      //   vec2.rotate(center, mid1, -(entity as TransformableEntity).transform.rotation),
-      //   (entity as TransformableEntity).transform.position
-      // );
-
-      (entity as TransformableEntity).transform.tempScale(magnitude);
-
-      // const box2 = (entity as TransformableEntity).unrotatedBoundingBox;
-      // const mid2 = vec2.mid(box2[0], box2[1]);
-
-      // (entity as TransformableEntity).transform.tempTranslate(
-      //   vec2.sub(
-      //     vec2.rotate([0, 0], mid1, (entity as TransformableEntity).transform.rotation),
-      //     vec2.rotate([0, 0], mid2, (entity as TransformableEntity).transform.rotation)
-      //   )
-      // );
+      if ((entity.transform as RectTransformComponent).tempScale) {
+        (entity.transform as RectTransformComponent).origin = center;
+        (entity.transform as RectTransformComponent).tempScale(magnitude, angle === null);
+      }
     });
 
     SelectionManager.calculateRenderOverlay();
@@ -153,11 +137,11 @@ const onScalePointerDown = () => {
   function onPointerUp(abort?: boolean) {
     if (abort) {
       SelectionManager.forEach((entity) => {
-        (entity as MovableEntity).transform.clear();
+        (entity.transform as TransformComponent).clear();
       });
     } else {
       SelectionManager.forEach((entity) => {
-        (entity as MovableEntity).transform.apply();
+        (entity.transform as TransformComponent).apply();
       });
     }
   }

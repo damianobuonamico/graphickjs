@@ -1,70 +1,62 @@
-import HistoryManager from '@editor/history';
-import { vec2 } from '@math';
+import HistoryManager from '@/editor/history';
+import { equals, mat3, vec2 } from '@/math';
 import Handle from '../entities/handle';
 
-class TransformNumberValue implements TransformComponentValue<number> {
-  private m_value;
-  private m_delta: number = 0;
+export class FloatValue implements TransformComponentValue<number> {
+  private m_value: number;
+  private m_delta = 0;
 
-  private m_callback: (() => void) | undefined;
-
-  constructor(value?: number, callback?: () => void) {
-    this.m_value = value ?? 0;
-    this.m_callback = callback;
+  constructor(value: number = 0) {
+    this.m_value = value;
   }
 
   get() {
     return this.m_value + this.m_delta;
   }
 
-  staticGet() {
+  getStatic() {
     return this.m_value;
   }
 
-  tempGet() {
+  getDelta() {
     return this.m_delta;
   }
 
   set(value: number) {
     const backup = this.m_value;
-    if (backup === value) return;
+    if (equals(this.m_value, value)) return;
 
     HistoryManager.record({
       fn: () => {
         this.m_value = value;
-        if (this.m_callback) this.m_callback();
       },
       undo: () => {
         this.m_value = backup;
-        if (this.m_callback) this.m_callback();
       }
     });
   }
 
   add(delta: number) {
-    if (delta === 0) return;
+    if (equals(delta, 0)) return;
 
     HistoryManager.record({
       fn: () => {
         this.m_value += delta;
-        if (this.m_callback) this.m_callback();
       },
       undo: () => {
         this.m_value -= delta;
-        if (this.m_callback) this.m_callback();
       }
     });
   }
 
-  translate(delta: number) {
-    this.m_delta += delta;
-    if (this.m_callback) this.m_callback();
+  tempAdd(value: number) {
+    this.m_delta += value;
   }
 
   apply() {
     const transformed = this.get();
 
-    if (transformed !== this.m_value) {
+    if (!equals(transformed, this.m_value)) {
       this.set(transformed);
       this.clear();
     }
@@ -72,30 +64,26 @@ class TransformNumberValue implements TransformComponentValue<number> {
 
   clear() {
     this.m_delta = 0;
-    if (this.m_callback) this.m_callback();
   }
 }
 
-class TransformVec2Value implements TransformComponentValue<vec2> {
+export class Vec2Value implements TransformComponentValue<vec2> {
   private m_value: vec2;
-  private m_delta: vec2 = vec2.create();
+  private m_delta = vec2.create();
 
-  private m_callback: (() => void) | undefined;
-
-  constructor(value?: vec2, callback?: () => void) {
-    this.m_value = value ? vec2.clone(value) : vec2.create();
-    this.m_callback = callback;
+  constructor(value: vec2 = [0, 0]) {
+    this.m_value = vec2.clone(value);
   }
 
   get() {
     return vec2.add(this.m_value, this.m_delta);
   }
 
-  staticGet() {
+  getStatic() {
     return vec2.clone(this.m_value);
   }
 
-  tempGet() {
+  getDelta() {
     return vec2.clone(this.m_delta);
   }
 
@@ -106,11 +94,9 @@ class TransformVec2Value implements TransformComponentValue<vec2> {
     HistoryManager.record({
       fn: () => {
         vec2.copy(this.m_value, value);
-        if (this.m_callback) this.m_callback();
       },
       undo: () => {
         vec2.copy(this.m_value, backup);
-        if (this.m_callback) this.m_callback();
       }
     });
   }
@@ -121,18 +107,15 @@ class TransformVec2Value implements TransformComponentValue<vec2> {
     HistoryManager.record({
       fn: () => {
         vec2.add(this.m_value, delta, this.m_value);
-        if (this.m_callback) this.m_callback();
       },
       undo: () => {
         vec2.sub(this.m_value, delta, this.m_value);
-        if (this.m_callback) this.m_callback();
       }
     });
   }
 
-  translate(delta: vec2) {
-    vec2.add(this.m_delta, delta, this.m_delta);
-    if (this.m_callback) this.m_callback();
+  tempAdd(value: vec2) {
+    vec2.add(this.m_delta, value, this.m_delta);
   }
 
   apply() {
@@ -145,143 +128,28 @@ class TransformVec2Value implements TransformComponentValue<vec2> {
   }
 
   clear() {
-    vec2.copy(this.m_delta, [0, 0]);
-    if (this.m_callback) this.m_callback();
+    vec2.zero(this.m_delta);
   }
 }
 
-class SimpleTransform implements SimpleTransformComponent {
-  private m_position: TransformVec2Value;
+class Transform implements BaseTransformComponent {
+  protected m_translation: Vec2Value;
+  protected m_rotation: FloatValue;
 
-  constructor(position?: vec2, callback?: () => void) {
-    this.m_position = new TransformVec2Value(position, callback);
+  constructor(position: vec2 = [0, 0], rotation: number = 0) {
+    this.m_translation = new Vec2Value(position);
+    this.m_rotation = new FloatValue(rotation);
   }
 
-  get position() {
-    return this.m_position.get();
-  }
-
-  set position(value: vec2) {
-    this.m_position.set(value);
-  }
-
-  get staticPosition() {
-    return this.m_position.staticGet();
-  }
-
-  get tempPosition() {
-    return this.m_position.tempGet();
-  }
-
-  set tempPosition(value: vec2) {
-    this.tempTranslate(vec2.sub(value, this.position));
-  }
-
-  translate(delta: vec2) {
-    this.m_position.add(delta);
-  }
-
-  tempTranslate(delta: vec2) {
-    this.m_position.translate(delta);
-  }
-
-  get mat3() {
-    return [0, 0, 0, 0, 0, 0, 0, 0, 0];
-  }
-
-  clear() {
-    this.m_position.clear();
-  }
-
-  apply() {
-    this.m_position.apply();
-  }
-}
-
-class UntrackedSimpleTransform implements UntrackedSimpleTransformComponent {
-  private m_position: vec2;
-
-  private m_callback: (() => void) | undefined;
-
-  constructor(position?: vec2, callback?: () => void) {
-    this.m_position = position ?? vec2.create();
-    this.m_callback = callback;
-  }
-
-  get position() {
-    return vec2.clone(this.m_position);
+  get position(): vec2 {
+    return this.m_translation.get();
   }
 
   set position(value: vec2) {
-    vec2.copy(this.m_position, value);
-    if (this.m_callback) this.m_callback();
+    this.m_translation.set(value);
   }
 
-  translate(delta: vec2) {
-    vec2.add(this.m_position, delta, this.m_position);
-    if (this.m_callback) this.m_callback();
-  }
-
-  get mat3() {
-    return [0, 0, 0, 0, 0, 0, 0, 0, 0];
-  }
-}
-
-class Transform implements TransformComponent {
-  origin: vec2 = [0, 0];
-
-  private m_position: TransformVec2Value;
-  private m_rotation: TransformNumberValue;
-
-  private m_scaleFn: (magnitude: vec2, origin: vec2, temp?: boolean, apply?: boolean) => void;
-
-  constructor(
-    position?: vec2,
-    rotation?: number,
-    scaleFn?: (magnitude: vec2, origin: vec2, temp?: boolean, apply?: boolean) => void,
-    callback?: () => void
-  ) {
-    this.m_position = new TransformVec2Value(position, callback);
-    this.m_rotation = new TransformNumberValue(rotation, callback);
-    this.m_scaleFn = scaleFn
-      ? callback
-        ? (magnitude, origin, temp, apply) => {
-            scaleFn(magnitude, origin, temp, apply);
-            callback();
-          }
-        : scaleFn
-      : () => {};
-  }
-
-  get position() {
-    return this.m_position.get();
-  }
-
-  set position(value: vec2) {
-    this.m_position.set(value);
-  }
-
-  get staticPosition() {
-    return this.m_position.staticGet();
-  }
-
-  get tempPosition() {
-    return this.m_position.tempGet();
-  }
-
-  set tempPosition(value: vec2) {
-    this.tempTranslate(vec2.sub(value, this.position));
-  }
-
-  translate(delta: vec2) {
-    this.m_position.add(delta);
-  }
-
-  tempTranslate(delta: vec2) {
-    this.m_position.translate(delta);
-  }
-
-  get rotation() {
+  get rotation(): number {
     return this.m_rotation.get();
   }
 
@@ -289,100 +157,554 @@ class Transform implements TransformComponent {
     this.m_rotation.set(value);
   }
 
-  get staticRotation() {
-    return this.m_rotation.staticGet();
+  get staticPosition(): vec2 {
+    return this.m_translation.getStatic();
   }
 
-  get tempRotation() {
-    return this.m_rotation.tempGet();
+  get staticRotation(): number {
+    return this.m_rotation.getStatic();
   }
 
-  set tempRotation(value: number) {
-    this.tempRotate(value - this.rotation);
+  get positionDelta(): vec2 {
+    return this.m_translation.getDelta();
+  }
+
+  get rotationDelta(): number {
+    return this.m_rotation.getDelta();
+  }
+
+  tempTranslate(delta: vec2) {
+    this.m_translation.tempAdd(delta);
+  }
+
+  tempRotate(delta: number) {
+    this.m_rotation.tempAdd(delta);
+  }
+
+  translate(delta: vec2) {
+    this.m_translation.add(delta);
   }
 
   rotate(delta: number) {
     this.m_rotation.add(delta);
   }
 
-  tempRotate(delta: number) {
-    this.m_rotation.translate(delta);
-  }
-
-  scale(magnitude: vec2) {
-    this.m_scaleFn(magnitude, this.origin);
-  }
-
-  tempScale(magnitude: vec2) {
-    this.m_scaleFn(magnitude, this.origin, true);
-  }
-
-  get mat3() {
-    return [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  apply() {
+    this.m_translation.apply();
+    this.m_rotation.apply();
   }
 
   clear() {
-    this.m_position.clear();
+    this.m_translation.clear();
     this.m_rotation.clear();
-    this.m_scaleFn([0, 0], [0, 0], undefined, false);
-  }
-
-  apply() {
-    this.m_position.apply();
-    this.m_rotation.apply();
-    this.m_scaleFn([0, 0], [0, 0], undefined, true);
   }
 }
 
-class UntrackedTransform implements UntrackedTransformComponent {
-  origin: vec2;
+class UntrackedBaseTransform implements UntrackedBaseTransformComponent {
+  protected m_translation: vec2;
+  protected m_rotation: number;
 
-  private m_position: vec2;
-  private m_rotation: number;
-
-  private m_callback: (() => void) | undefined;
-
-  constructor(position?: vec2, rotation?: number, scale?: vec2, callback?: () => void) {
-    this.m_position = position ?? vec2.create();
-    this.m_rotation = rotation ?? 0;
-
-    this.m_callback = callback;
+  constructor(position: vec2 = [0, 0], rotation: number = 0) {
+    this.m_translation = vec2.clone(position);
+    this.m_rotation = rotation;
   }
 
-  get position() {
-    return vec2.clone(this.m_position);
+  get position(): vec2 {
+    return vec2.clone(this.m_translation);
   }
 
   set position(value: vec2) {
-    vec2.copy(this.m_position, value);
-    if (this.m_callback) this.m_callback();
+    vec2.copy(this.m_translation, value);
   }
 
-  translate(delta: vec2) {
-    vec2.add(this.m_position, delta, this.m_position);
-    if (this.m_callback) this.m_callback();
-  }
-
-  get rotation() {
+  get rotation(): number {
     return this.m_rotation;
   }
 
   set rotation(value: number) {
     this.m_rotation = value;
-    if (this.m_callback) this.m_callback();
+  }
+
+  get mat3(): mat3 {
+    return mat3.fromTranslationRotation(
+      this.m_translation,
+      this.m_rotation,
+      this.m_translation,
+      this.m_translation
+    );
+  }
+
+  translate(delta: vec2) {
+    vec2.add(this.m_translation, delta, this.m_translation);
   }
 
   rotate(delta: number) {
     this.m_rotation += delta;
-    if (this.m_callback) this.m_callback();
-  }
-
-  get mat3() {
-    return [0, 0, 0, 0, 0, 0, 0, 0, 0];
   }
 }
 
-class VertexTransform implements VertexTransformComponent {
+export class RectTransform extends Transform implements RectTransformComponent {
+  private m_scale = vec2.fromValues(1, 1);
+  private m_reflection: Vec2Value;
+
+  private m_origin = vec2.create();
+  private m_size = vec2.create();
+
+  constructor(
+    position: vec2 = [0, 0],
+    rotation: number = 0,
+    size: vec2 = [0, 0],
+    reflect: vec2 = [1, 1]
+  ) {
+    super(position, rotation);
+    this.m_size = vec2.clone(size);
+    this.m_reflection = new Vec2Value(reflect);
+  }
+
+  get size(): vec2 {
+    const box = this.unrotatedBoundingBox;
+    return vec2.sub(box[1], box[0]);
+  }
+
+  set size(value: vec2) {
+    const backup = vec2.clone(this.m_size);
+    if (vec2.equals(backup, value)) return;
+
+    HistoryManager.record({
+      fn: () => {
+        vec2.copy(this.m_size, value);
+      },
+      undo: () => {
+        vec2.copy(this.m_size, backup);
+      }
+    });
+  }
+
+  get scaling(): vec2 {
+    return vec2.clone(this.m_scale);
+  }
+
+  set scaling(value: vec2) {
+    vec2.copy(this.m_scale, value);
+  }
+
+  get reflection(): vec2 {
+    return vec2.sign(this.m_reflection.get());
+  }
+
+  set reflection(value: vec2) {
+    this.m_reflection.set(vec2.sign(value, value));
+  }
+
+  get origin() {
+    return vec2.clone(this.m_origin);
+  }
+
+  set origin(value: vec2) {
+    vec2.rotate(value, this.center, -this.m_rotation.get(), this.m_origin);
+  }
+
+  get staticSize(): vec2 {
+    return vec2.clone(this.m_size);
+  }
+
+  get center(): vec2 {
+    return this.getCenter();
+  }
+
+  get staticBoundingBox(): Box {
+    const position = this.m_translation.getStatic();
+    return [position, vec2.add(position, this.m_size)];
+  }
+
+  get unrotatedBoundingBox(): Box {
+    const position = this.m_translation.getStatic();
+    const box: Box = [position, vec2.add(position, this.m_size)];
+
+    if (!vec2.exactEquals(this.m_scale, [1, 1])) {
+      vec2.scale(box[0], this.m_origin, this.m_scale, box[0]);
+      vec2.scale(box[1], this.m_origin, this.m_scale, box[1]);
+    }
+
+    const delta = this.m_translation.getDelta();
+
+    vec2.add(box[0], delta, box[0]);
+    vec2.add(box[1], delta, box[1]);
+
+    return [vec2.min(box[0], box[1]), vec2.max(box[0], box[1])];
+  }
+
+  get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+    const box = this.unrotatedBoundingBox;
+    const angle = this.m_rotation.get();
+    const center = this.getCenter();
+
+    return [
+      vec2.rotate(box[0], center, angle),
+      vec2.rotate([box[1][0], box[0][1]], center, angle),
+      vec2.rotate(box[1], center, angle),
+      vec2.rotate([box[0][0], box[1][1]], center, angle)
+    ];
+  }
+
+  get boundingBox(): Box {
+    if (this.m_rotation.get() === 0) return this.unrotatedBoundingBox;
+
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.rotatedBoundingBox.forEach((point) => {
+      vec2.min(min, point, min);
+      vec2.max(max, point, max);
+    });
+
+    return [min, max];
+  }
+
+  get mat3() {
+    return mat3.fromTranslationRotationScaleReflection(
+      this.m_translation.get(),
+      this.m_rotation.get(),
+      this.m_scale,
+      this.m_reflection.get(),
+      this.m_translation.getStatic(),
+      this.getCenter(),
+      this.m_origin
+    );
+  }
+
+  private getCenter(position: vec2 = this.m_translation.getStatic(), size: vec2 = this.m_size) {
+    const semiSize = vec2.divS(size, 2);
+    return vec2.add(position, semiSize, semiSize);
+  }
+
+  transform(point: vec2) {
+    if (this.m_rotation.get() === 0 && vec2.exactEquals(this.m_scale, [1, 1])) return point;
+    return vec2.transformMat3(point, this.mat3);
+  }
+
+  tempScale(magnitude: vec2, normalizeRotation: boolean = false) {
+    vec2.copy(this.m_scale, magnitude);
+  }
+
+  scale(magnitude: vec2, normalizeRotation: boolean = false) {
+    this.tempScale(magnitude, normalizeRotation);
+    this.apply();
+  }
+
+  apply() {
+    super.apply();
+
+    const box = this.unrotatedBoundingBox;
+    const size = vec2.sub(box[1], box[0]);
+
+    const position = vec2.rotate([0, 0], this.getCenter(), this.m_rotation.get());
+    vec2.sub(
+      position,
+      vec2.rotate([0, 0], this.getCenter(box[0], size), this.m_rotation.get()),
+      position
+    );
+    vec2.add(position, box[0], position);
+
+    const reflection = this.m_reflection.get();
+    if (this.m_scale[0] < 0) reflection[0] = reflection[0] === 1 ? -1 : 1;
+    if (this.m_scale[1] < 0) reflection[1] = reflection[1] === 1 ? -1 : 1;
+    this.m_reflection.set(reflection);
+
+    this.m_translation.set(position);
+    this.size = size;
+    vec2.set(this.m_scale, 1, 1);
+  }
+
+  clear() {
+    super.clear();
+    vec2.set(this.m_scale, 1, 1);
+  }
+}
+
+export class ElementTransform extends Transform implements ElementTransformComponent {
+  private m_parent: ElementEntity;
+
+  private m_scale = vec2.fromValues(1, 1);
+  private m_origin = vec2.create();
+
+  constructor(parent: ElementEntity, position: vec2 = [0, 0], rotation: number = 0) {
+    super(position, rotation);
+    this.m_parent = parent;
+  }
+
+  get origin() {
+    return vec2.clone(this.m_origin);
+  }
+
+  set origin(value: vec2) {
+    vec2.rotate(value, this.dynamicCenter, -this.m_rotation.get(), this.m_origin);
+  }
+
+  get dynamicCenter() {
+    const box = this.unrotatedBoundingBox;
+    const center = vec2.add(box[0], box[1]);
+    vec2.divS(center, 2, center);
+
+    return center;
+  }
+
+  get center() {
+    const box = this.staticBoundingBox;
+    const center = vec2.add(box[0], box[1]);
+    vec2.divS(center, 2, center);
+
+    return center;
+  }
+
+  get staticBoundingBox(): Box {
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.m_parent.forEachBezier((bezier) => {
+      const box = bezier.boundingBox;
+      vec2.min(min, box[0], min);
+      vec2.max(max, box[1], max);
+    });
+
+    if (vec2.exactEquals(min, [Infinity, Infinity])) {
+      this.m_parent.forEach((vertex) => {
+        vec2.min(min, vertex.transform.staticPosition, min);
+        vec2.max(max, vertex.transform.staticPosition, max);
+      });
+    }
+
+    const position = this.m_translation.getStatic();
+
+    return [vec2.add(min, position, min), vec2.add(max, position, max)];
+  }
+
+  get unrotatedBoundingBox(): Box {
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.m_parent.forEachBezier((bezier) => {
+      const box = bezier.boundingBox;
+      vec2.min(min, box[0], min);
+      vec2.max(max, box[1], max);
+    });
+
+    if (vec2.exactEquals(min, [Infinity, Infinity])) {
+      this.m_parent.forEach((vertex) => {
+        vec2.min(min, vertex.transform.position, min);
+        vec2.max(max, vertex.transform.position, max);
+      });
+    }
+
+    const position = this.m_translation.get();
+
+    return [vec2.add(min, position, min), vec2.add(max, position, max)];
+  }
+
+  get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+    const box = this.unrotatedBoundingBox;
+    const angle = this.m_rotation.get();
+
+    const points: [vec2, vec2, vec2, vec2] = [
+      box[0],
+      [box[1][0], box[0][1]],
+      box[1],
+      [box[0][0], box[1][1]]
+    ];
+
+    if (angle === 0) return points;
+
+    const center = this.dynamicCenter;
+
+    return [
+      vec2.rotate(points[0], center, angle, points[0]),
+      vec2.rotate(points[1], center, angle, points[1]),
+      vec2.rotate(points[2], center, angle, points[2]),
+      vec2.rotate(points[3], center, angle, points[3])
+    ];
+  }
+
+  get boundingBox(): Box {
+    const angle = this.m_rotation.get();
+    const box = this.unrotatedBoundingBox;
+
+    if (angle === 0) return box;
+
+    const center = this.dynamicCenter;
+    const position = this.m_translation.get();
+
+    vec2.sub(center, position, center);
+
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.m_parent.forEachBezier((bezier) => {
+      const extrema = bezier.getRotatedExtrema(center, angle);
+      extrema.forEach((point) => {
+        vec2.min(min, point, min);
+        vec2.max(max, point, max);
+      });
+    });
+
+    if (vec2.exactEquals(min, [Infinity, Infinity])) {
+      this.m_parent.forEach((vertex) => {
+        vec2.min(min, vertex.transform.position, min);
+        vec2.max(max, vertex.transform.position, max);
+      });
+    }
+
+    return [vec2.add(min, position, min), vec2.add(max, position, max)];
+  }
+
+  get largeBoundingBox(): Box {
+    const box = this.boundingBox;
+    const position = this.m_translation.get();
+
+    let min: vec2 = vec2.sub(box[0], position);
+    let max: vec2 = vec2.sub(box[1], position);
+
+    this.m_parent.forEach((vertex) => {
+      const vertexBox = vertex.boundingBox;
+
+      vec2.min(min, vertexBox[0], min);
+      vec2.max(max, vertexBox[1], max);
+    });
+
+    return [vec2.add(min, position, min), vec2.add(max, position, max)];
+  }
+
+  get mat3() {
+    return mat3.fromTranslationRotation(
+      this.m_translation.get(),
+      this.m_rotation.get(),
+      this.m_translation.getStatic(),
+      this.center
+    );
+  }
+
+  transform(point: vec2): vec2 {
+    const angle = this.m_rotation.get();
+    if (angle === 0) return vec2.add(point, this.m_translation.get());
+
+    const rotated = vec2.rotate(point, this.dynamicCenter, angle);
+    vec2.add(rotated, this.m_translation.get(), rotated);
+
+    return rotated;
+  }
+
+  tempScale(magnitude: vec2, normalizeRotation: boolean = false) {
+    const v1 = this.transform([0, 0]);
+    const origin = vec2.sub(this.m_origin, this.m_translation.get());
+    const rotation = this.m_rotation.get();
+
+    this.m_parent.forEach((vertex) => {
+      const position = vertex.transform.staticPosition;
+      const left = vertex.transform.staticLeft;
+      const right = vertex.transform.staticRight;
+
+      if (normalizeRotation) {
+        vec2.rotate(position, origin, rotation, position);
+        vec2.rotate(left, [0, 0], rotation, left);
+        vec2.rotate(right, [0, 0], rotation, right);
+      }
+
+      vec2.scale(position, origin, magnitude, position);
+      vec2.scale(left, [0, 0], magnitude, left);
+      vec2.scale(right, [0, 0], magnitude, right);
+
+      if (normalizeRotation) {
+        vec2.rotate(position, origin, -rotation, position);
+        vec2.rotate(left, [0, 0], -rotation, left);
+        vec2.rotate(right, [0, 0], -rotation, right);
+      }
+
+      vertex.transform.tempPosition = position;
+      vertex.transform.tempLeft = left;
+      vertex.transform.tempRight = right;
+    });
+
+    const v2 = this.transform([0, 0]);
+
+    this.m_translation.tempAdd(vec2.sub(v1, v2, v2));
+  }
+
+  scale(magnitude: vec2, normalizeRotation: boolean = false) {
+    this.tempScale(magnitude, normalizeRotation);
+    this.apply();
+  }
+
+  apply() {
+    super.apply();
+    this.m_parent.forEach((vertex) => {
+      vertex.transform.apply();
+    });
+
+    vec2.set(this.m_scale, 1, 1);
+  }
+
+  clear() {
+    super.clear();
+    this.m_parent.forEach((vertex) => vertex.transform.clear());
+
+    vec2.set(this.m_scale, 1, 1);
+  }
+}
+
+export class SimpleTransform implements SimpleTransformComponent {
+  private m_translation: Vec2Value;
+
+  constructor(position: vec2) {
+    this.m_translation = new Vec2Value(position);
+  }
+
+  get position(): vec2 {
+    return this.m_translation.get();
+  }
+
+  set position(value: vec2) {
+    this.m_translation.set(value);
+  }
+
+  get staticPosition(): vec2 {
+    return this.m_translation.getStatic();
+  }
+
+  get positionDelta(): vec2 {
+    return this.m_translation.getDelta();
+  }
+
+  set positionDelta(value: vec2) {
+    const current = this.m_translation.getDelta();
+    this.m_translation.tempAdd(vec2.sub(value, current, current));
+  }
+
+  set tempPosition(value: vec2) {
+    const current = this.m_translation.get();
+    this.m_translation.tempAdd(vec2.sub(value, current, current));
+  }
+
+  get mat3(): mat3 {
+    return mat3.fromTranslation(this.m_translation.get());
+  }
+
+  tempTranslate(delta: vec2) {
+    this.m_translation.tempAdd(delta);
+  }
+
+  translate(delta: vec2) {
+    this.m_translation.add(delta);
+  }
+
+  apply() {
+    this.m_translation.apply();
+  }
+
+  clear() {
+    this.m_translation.clear();
+  }
+}
+
+export class VertexTransform implements VertexTransformComponent {
   private m_vertex: VertexEntity;
 
   constructor(vertex: VertexEntity) {
@@ -409,28 +731,8 @@ class VertexTransform implements VertexTransformComponent {
     this.m_position.position = value;
   }
 
-  get staticPosition(): vec2 {
-    return this.m_position.staticPosition;
-  }
-
-  get tempPosition() {
-    return this.m_position.tempPosition;
-  }
-
-  set tempPosition(value: vec2) {
-    this.m_position.tempPosition = value;
-  }
-
-  translate(delta: vec2) {
-    this.m_position.translate(delta);
-  }
-
-  tempTranslate(delta: vec2): void {
-    this.m_position.tempTranslate(delta);
-  }
-
   get left(): vec2 {
-    return this.m_left ? this.m_left.position : vec2.create();
+    return this.m_left ? this.m_left.position : [0, 0];
   }
 
   set left(value: vec2) {
@@ -441,25 +743,75 @@ class VertexTransform implements VertexTransformComponent {
     }
   }
 
-  get staticLeft(): vec2 {
-    return this.m_left ? this.m_left.staticPosition : vec2.create();
+  get right(): vec2 {
+    return this.m_right ? this.m_right.position : [0, 0];
   }
 
-  get tempLeft() {
-    return this.m_left ? this.m_left.tempPosition : vec2.create();
-  }
-
-  set tempLeft(value: vec2) {
-    if (this.m_left) {
-      this.m_left.tempPosition = value;
+  set right(value: vec2) {
+    if (this.m_right) {
+      this.m_right.position = value;
+    } else {
+      this.m_vertex.right = new Handle({ position: value, type: 'bezier', parent: this.m_vertex });
     }
   }
 
-  translateLeft(delta: vec2) {
-    this.m_left?.translate(delta);
+  get staticPosition(): vec2 {
+    return this.m_position.staticPosition;
   }
 
-  tempTranslateLeft(delta: vec2, lockMirror: boolean = false): void {
+  get staticLeft(): vec2 {
+    return this.m_left ? this.m_left.staticPosition : [0, 0];
+  }
+
+  get staticRight(): vec2 {
+    return this.m_right ? this.m_right.staticPosition : [0, 0];
+  }
+
+  get positionDelta(): vec2 {
+    return this.m_position.positionDelta;
+  }
+
+  set positionDelta(value: vec2) {
+    this.m_position.positionDelta = value;
+  }
+
+  get leftDelta(): vec2 {
+    return this.m_left ? this.m_left.positionDelta : [0, 0];
+  }
+
+  set leftDelta(value: vec2) {
+    if (this.m_left) this.m_left.positionDelta = value;
+  }
+
+  get rightDelta(): vec2 {
+    return this.m_right ? this.m_right.positionDelta : [0, 0];
+  }
+
+  set rightDelta(value: vec2) {
+    if (this.m_right) this.m_right.positionDelta = value;
+  }
+
+  set tempPosition(value: vec2) {
+    this.m_position.tempPosition = value;
+  }
+
+  set tempLeft(value: vec2) {
+    if (this.m_left) this.m_left.tempPosition = value;
+  }
+
+  set tempRight(value: vec2) {
+    if (this.m_right) this.m_right.tempPosition = value;
+  }
+
+  get mat3(): mat3 {
+    return mat3.fromTranslation(this.m_position.position);
+  }
+
+  tempTranslate(delta: vec2): void {
+    this.m_position.tempTranslate(delta);
+  }
+
+  tempTranslateLeft(delta: vec2, lockMirror?: boolean | undefined): void {
     this.m_left?.tempTranslate(delta);
 
     if (!lockMirror && this.m_right) {
@@ -473,37 +825,7 @@ class VertexTransform implements VertexTransformComponent {
     }
   }
 
-  get right(): vec2 {
-    return this.m_right ? this.m_right.position : vec2.create();
-  }
-
-  set right(value: vec2) {
-    if (this.m_right) {
-      this.m_right.position = value;
-    } else {
-      this.m_vertex.right = new Handle({ position: value, type: 'bezier', parent: this.m_vertex });
-    }
-  }
-
-  get staticRight(): vec2 {
-    return this.m_right ? this.m_right.staticPosition : vec2.create();
-  }
-
-  get tempRight() {
-    return this.m_right ? this.m_right.tempPosition : vec2.create();
-  }
-
-  set tempRight(value: vec2) {
-    if (this.m_right) {
-      this.m_right.tempPosition = value;
-    }
-  }
-
-  translateRight(delta: vec2) {
-    this.m_right?.translate(delta);
-  }
-
-  tempTranslateRight(delta: vec2, lockMirror: boolean = false): void {
+  tempTranslateRight(delta: vec2, lockMirror?: boolean | undefined): void {
     this.m_right?.tempTranslate(delta);
 
     if (!lockMirror && this.m_left) {
@@ -515,6 +837,18 @@ class VertexTransform implements VertexTransformComponent {
         );
       }
     }
+  }
+
+  translate(delta: vec2): void {
+    this.m_position.translate(delta);
+  }
+
+  translateLeft(delta: vec2): void {
+    this.m_left?.translate(delta);
+  }
+
+  translateRight(delta: vec2): void {
+    this.m_right?.translate(delta);
   }
 
   apply(): void {
@@ -530,13 +864,79 @@ class VertexTransform implements VertexTransformComponent {
   }
 }
 
-// TODO: Refactor values
-export {
-  TransformNumberValue,
-  TransformVec2Value,
-  SimpleTransform,
-  Transform,
-  UntrackedSimpleTransform,
-  UntrackedTransform,
-  VertexTransform
-};
+export class UntrackedTransform
+  extends UntrackedBaseTransform
+  implements UntrackedTransformComponent
+{
+  private m_center = vec2.create();
+
+  constructor(position?: vec2, rotation?: number) {
+    super(position, rotation);
+  }
+
+  get center(): vec2 {
+    return vec2.clone(this.m_center);
+  }
+
+  set center(value: vec2) {
+    vec2.copy(this.m_center, value);
+  }
+
+  get staticBoundingBox(): Box {
+    return [this.m_translation, this.m_translation];
+  }
+
+  get unrotatedBoundingBox(): Box {
+    return [this.m_translation, this.m_translation];
+  }
+
+  get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+    return [this.m_translation, this.m_translation, this.m_translation, this.m_translation];
+  }
+
+  get boundingBox(): Box {
+    return [this.m_translation, this.m_translation];
+  }
+
+  get mat3(): mat3 {
+    return mat3.fromTranslationRotation(
+      this.m_translation,
+      this.m_rotation,
+      this.m_translation,
+      this.m_center
+    );
+  }
+
+  transform(point: vec2): vec2 {
+    if (this.m_rotation === 0) return vec2.add(point, this.m_translation);
+
+    const rotated = vec2.rotate(point, this.center, this.m_rotation);
+    vec2.add(rotated, this.m_translation, rotated);
+
+    return rotated;
+  }
+}
+
+export class UntrackedSimpleTransform implements UntrackedSimpleTransformComponent {
+  private m_translation: vec2;
+
+  constructor(position: vec2 = [0, 0]) {
+    this.m_translation = vec2.clone(position);
+  }
+
+  get position(): vec2 {
+    return vec2.clone(this.m_translation);
+  }
+
+  set position(value: vec2) {
+    vec2.copy(this.m_translation, value);
+  }
+
+  get mat3(): mat3 {
+    return mat3.fromTranslation(this.m_translation);
+  }
+
+  translate(delta: vec2) {
+    vec2.add(this.m_translation, delta, this.m_translation);
+  }
+}

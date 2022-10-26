@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import { UntrackedSimpleTransform } from '../components/transform';
 import ECS from '../ecs';
 
 class Layer extends ECS implements LayerEntity {
@@ -7,10 +8,12 @@ class Layer extends ECS implements LayerEntity {
   readonly selectable = false;
 
   parent: ArtboardEntity;
+  transform: UntrackedSimpleTransformComponent;
 
   constructor({ id = nanoid() }: LayerOptions) {
     super();
     this.id = id;
+    this.transform = new UntrackedSimpleTransform();
   }
 
   add(entity: Entity, skipRecordAction: boolean = false) {

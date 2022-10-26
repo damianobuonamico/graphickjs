@@ -2,8 +2,6 @@ interface ElementEntity extends TransformableEntity {
   parent: LayerEntity;
   selectable: true;
 
-  largeBoundingBox: Box;
-
   length: number;
   last: VertexEntity;
   vertices: VertexEntity[];
@@ -12,6 +10,7 @@ interface ElementEntity extends TransformableEntity {
   regenerate(ids?: string[]): void;
   reverse(): void;
   forEach(callback: (vertex: VertexEntity, selected?: boolean) => void): void;
+  forEachBezier(callback: (bezier: BezierEntity) => void): void;
 
   concat(element: ElementEntity): void;
   split(bezier: BezierEntity, position: vec2): VertexEntity | void;

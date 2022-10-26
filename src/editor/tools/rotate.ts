@@ -1,6 +1,6 @@
 import { snap, vec2 } from '@/math';
 import { Transform } from '../ecs/components/transform';
-import { RectTransform } from '../ecs/components/transforms';
+import { RectTransform } from '../ecs/components/transform';
 import InputManager from '../input';
 import SelectionManager from '../selection';
 
@@ -18,12 +18,7 @@ const onRotatePointerDown = () => {
   console.log(entity.id);
 
   SelectionManager.forEach((entity) => {
-    if (
-      ((entity as TransformableEntity).transform &&
-        (entity as TransformableEntity).transform instanceof Transform) ||
-      (entity as TransformableEntity).transform instanceof RectTransform
-    )
-      entities.push(entity as TransformableEntity);
+    if ((entity as TransformableEntity).transform) entities.push(entity as TransformableEntity);
   });
 
   const box = SelectionManager.unrotatedBoundingBox;
@@ -38,13 +33,11 @@ const onRotatePointerDown = () => {
     if (InputManager.keys.shift) angle = snap(angle);
 
     entities.forEach((entity) => {
-      // const entityBox = entity.staticBoundingBox;
-      // const mid = vec2.mid(entityBox[0], entityBox[1]);
-      // const rotated = vec2.rotate(mid, origin, angle);
+      const center = entity.transform.center;
 
       entity.transform.clear();
-      // entity.transform.tempTranslate(vec2.sub(rotated, mid));
       entity.transform.tempRotate(angle);
+      entity.transform.tempTranslate(vec2.sub(vec2.rotate(center, origin, angle), center, center));
     });
 
     SelectionManager.manipulator.transform.rotate(angle - (lastAngle || 0));
@@ -57,6 +50,8 @@ const onRotatePointerDown = () => {
     } else {
       entities.forEach((entity) => entity.transform.apply());
     }
+
+    SelectionManager.calculateRenderOverlay();
   }
 
   return {

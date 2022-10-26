@@ -6,6 +6,7 @@ import Renderer from '../renderer';
 import InputManager from '@/editor/input';
 import SelectionManager from '@/editor/selection';
 import ImageMedia from '@/editor/ecs/entities/image';
+import { RectTransform } from '@/editor/ecs/components/transform';
 
 class Canvas2D implements Canvas {
   private m_container: HTMLDivElement;
@@ -215,29 +216,10 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.save();
 
-    const drawable = entity.getDrawable(false);
+    const matrix = entity.transform.mat3;
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
 
-    if ((entity as MovableEntity).transform) {
-      const position = (entity as MovableEntity).transform.position;
-      if ((entity as TransformableEntity).transform.rotation) {
-        const boundingBox = (entity as MovableEntity).boundingBox;
-        const mid = vec2.mid(boundingBox[0], boundingBox[1]);
-        const translation = vec2.sub(mid, position);
-        this.m_ctx.transform(
-          1,
-          0,
-          0,
-          1,
-          position[0] + translation[0],
-          position[1] + translation[1]
-        );
-        this.m_ctx.rotate((entity as TransformableEntity).transform.rotation);
-        this.m_ctx.translate(-translation[0], -translation[1]);
-      } else {
-        this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
-      }
-    }
-    this.draw(drawable);
+    this.draw(entity.getDrawable(false));
 
     this.m_ctx.restore();
   }
@@ -248,29 +230,23 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.save();
     this.m_ctx.strokeStyle = `rgba(0, 0, 0, 1.0)`;
-    this.m_ctx.lineWidth = 1;
-    const boundingBox = element.unrotatedBoundingBox;
-    const position = element.transform.position;
-    const mid = vec2.mid(boundingBox[0], boundingBox[1]);
-    const translation = vec2.sub(mid, position);
-    this.m_ctx.transform(1, 0, 0, 1, position[0] + translation[0], position[1] + translation[1]);
-    this.m_ctx.rotate(element.transform.rotation);
-    // if (element.transform.rotation !== 0) console.log(element.transform.rotation);
-    this.m_ctx.translate(-translation[0], -translation[1]);
-    // Debug
+    this.m_ctx.lineWidth = 5;
+
+    const matrix = element.transform.mat3;
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
+
     this.m_ctx.fillStyle = 'rgb(50, 50, 50)';
     this.draw((element as Element).getDrawable(false));
 
-    this.m_ctx.restore();
-
     for (const point of element.points) {
-      console.log(point);
       this.m_ctx.fillStyle = 'rgb(250, 50, 50)';
       this.begin();
       this.circle({ type: 'circle', data: [point, 20] });
       this.fill();
       this.close();
     }
+
+    this.m_ctx.restore();
 
     if (Renderer.debugging && Renderer.debug.box) {
       if (
@@ -283,7 +259,7 @@ class Canvas2D implements Canvas {
         this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
         this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
       }
-      const box = (element as Element).boundingBox;
+      const box = (element as Element).transform.boundingBox;
       this.begin();
       this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
       this.fill();
@@ -301,7 +277,7 @@ class Canvas2D implements Canvas {
 
     const matrix = image.transform.mat3;
     this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
-    this.m_ctx.drawImage(image.source, 0, 0, ...image.transform.size);
+    this.m_ctx.drawImage(image.source, 0, 0, ...image.transform.staticSize);
 
     this.m_ctx.restore();
 
@@ -316,7 +292,7 @@ class Canvas2D implements Canvas {
         this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
         this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
       }
-      const box = image.boundingBox;
+      const box = image.transform.boundingBox;
       this.begin();
       this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
       this.fill();
@@ -333,30 +309,19 @@ class Canvas2D implements Canvas {
 
   public outline(entity: Entity, skipVertices: boolean = false) {
     this.m_ctx.save();
-    if ((entity as MovableEntity).transform) {
-      const position = (entity as Element).transform.position;
-      if ((entity as TransformableEntity).transform.rotation) {
-        const boundingBox = (entity as TransformableEntity).unrotatedBoundingBox;
-        const mid = vec2.mid(boundingBox[0], boundingBox[1]);
-        const translation = vec2.sub(mid, position);
-        this.m_ctx.transform(
-          1,
-          0,
-          0,
-          1,
-          position[0] + translation[0],
-          position[1] + translation[1]
-        );
-        this.m_ctx.rotate((entity as TransformableEntity).transform.rotation);
-        this.m_ctx.translate(-translation[0], -translation[1]);
-      } else {
-        this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
-      }
-    }
+
+    const matrix = entity.transform.mat3;
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
+
     this.draw((entity as Element).getOutlineDrawable(false));
     if (!skipVertices && InputManager.tool.isVertex && entity.type === 'element')
       (entity as Element).forEach((vertex, selected) => vertex.render(selected));
+
     this.m_ctx.restore();
+
+    if ((entity as MovableEntity).transform instanceof RectTransform) {
+      this.stroke();
+    }
     this.m_stats.entity();
   }
 

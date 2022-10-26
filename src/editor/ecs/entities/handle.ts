@@ -20,7 +20,7 @@ class Handle implements HandleEntity {
     this.id = nanoid();
     this.handleType = type;
     this.parent = parent;
-    this.transform = new SimpleTransform(position, () => this.parent.parent.recalculate());
+    this.transform = new SimpleTransform(position);
   }
 
   get boundingBox(): Box {

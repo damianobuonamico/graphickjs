@@ -15,6 +15,11 @@ interface Entity {
   readonly selectable: boolean;
 
   parent: Entity;
+  transform:
+    | TransformComponent
+    | SimpleTransformComponent
+    | UntrackedTransformComponent
+    | UntrackedSimpleTransformComponent;
 
   destroy(): void;
 
@@ -38,10 +43,6 @@ interface MovableEntity extends Entity {
 
 interface TransformableEntity extends Entity {
   transform: TransformComponent;
-  boundingBox: Box;
-  staticBoundingBox: Box;
-  rotatedBoundingBox: [vec2, vec2, vec2, vec2];
-  unrotatedBoundingBox: Box;
 }
 
 interface ECSEntity extends Entity {
