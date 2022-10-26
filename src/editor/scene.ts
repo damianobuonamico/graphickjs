@@ -313,7 +313,7 @@ abstract class SceneManager {
   }
 
   static import() {
-    fileDialog({ accept: ['.svg', '.png'], multiple: true }).then((files) => {
+    fileDialog({ accept: ['.svg', '.png', '.jpg', '.jpeg'], multiple: true }).then((files) => {
       this.setLoading(true);
 
       if (!files.length) {
@@ -333,7 +333,7 @@ abstract class SceneManager {
           if (!reader.result || typeof reader.result !== 'string') return;
 
           if (file.type === 'image/svg+xml') parseSVG(reader.result);
-          else if (file.type === 'image/png')
+          else if (file.type === 'image/png' || file.type === 'image/jpeg')
             SceneManager.add(new ImageMedia({ source: reader.result }));
 
           current++;
@@ -346,7 +346,8 @@ abstract class SceneManager {
         };
 
         if (file.type === 'image/svg+xml') reader.readAsText(file);
-        else if (file.type === 'image/png') reader.readAsDataURL(file);
+        else if (file.type === 'image/png' || file.type === 'image/jpeg')
+          reader.readAsDataURL(file);
       });
     });
   }
