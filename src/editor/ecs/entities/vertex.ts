@@ -1,34 +1,10 @@
-import { Cache } from '@/utils/cache';
+import { Cache, VertexCache } from '@/editor/ecs/components/cache';
 import { isPointInBox, vec2, vec4 } from '@math';
 import { nanoid } from 'nanoid';
-import HistoryManager from '../../history';
 import { Renderer } from '../../renderer';
 import SceneManager from '../../scene';
 import { VertexTransform } from '../components/transform';
-import Element from './element';
 import Handle from './handle';
-
-class VertexCache {
-  private m_caches: [Cache | { pause: false }, Cache | { pause: false }, Cache | { pause: false }] =
-    [{ pause: false }, { pause: false }, { pause: false }];
-
-  constructor() {}
-
-  set pause(value: boolean) {
-    this.m_caches[0].pause = value;
-    this.m_caches[1].pause = value;
-    this.m_caches[2].pause = value;
-  }
-
-  set parentCache(cache: Cache) {
-    this.m_caches[2] = cache;
-  }
-
-  register(cache: Cache) {
-    this.m_caches[1] = this.m_caches[0];
-    this.m_caches[0] = cache;
-  }
-}
 
 class Vertex implements VertexEntity {
   readonly id: string;
@@ -61,7 +37,7 @@ class Vertex implements VertexEntity {
 
   set parent(parent: ElementEntity) {
     this.m_parent = parent;
-    this.m_cache.parentCache = parent.cache;
+    this.m_cache.parentCache = parent.cache as Cache;
   }
 
   get position(): HandleEntity {

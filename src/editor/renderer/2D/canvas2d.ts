@@ -231,7 +231,7 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.save();
     this.m_ctx.strokeStyle = `rgba(0, 0, 0, 1.0)`;
-    this.m_ctx.lineWidth = 1 ;
+    this.m_ctx.lineWidth = 1;
 
     const matrix = element.transform.mat3;
     this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);

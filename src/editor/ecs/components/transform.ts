@@ -1,6 +1,6 @@
 import HistoryManager from '@/editor/history';
 import { equals, mat3, vec2 } from '@/math';
-import { Cache } from '@/utils/cache';
+import { Cache } from '@/editor/ecs/components/cache';
 import Debugger from '@/utils/debugger';
 import Handle from '../entities/handle';
 
@@ -466,7 +466,7 @@ export class RectTransform extends Transform implements RectTransformComponent {
   }
 
   get unrotatedBoundingBox(): Box {
-    const position = this.m_translation.getStatic();
+    const position = this.m_translation.get();
     const box: Box = [position, vec2.add(position, this.m_size)];
 
     if (!vec2.exactEquals(this.m_scale, [1, 1])) {
@@ -474,17 +474,29 @@ export class RectTransform extends Transform implements RectTransformComponent {
       vec2.scale(box[1], this.m_origin, this.m_scale, box[1]);
     }
 
-    const delta = this.m_translation.getDelta();
-
-    vec2.add(box[0], delta, box[0]);
-    vec2.add(box[1], delta, box[1]);
-
     return [vec2.min(box[0], box[1]), vec2.max(box[0], box[1])];
   }
 
   get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
-    const box = this.unrotatedBoundingBox;
+    const position = this.m_translation.getStatic();
+    const unrotatedBox: Box = [position, vec2.add(position, this.m_size)];
+
+    if (!vec2.exactEquals(this.m_scale, [1, 1])) {
+      vec2.scale(unrotatedBox[0], this.m_origin, this.m_scale, unrotatedBox[0]);
+      vec2.scale(unrotatedBox[1], this.m_origin, this.m_scale, unrotatedBox[1]);
+    }
+
     const angle = this.m_rotation.get();
+    const delta = vec2.rotate(this.m_translation.getDelta(), [0, 0], -angle);
+
+    vec2.add(unrotatedBox[0], delta, unrotatedBox[0]);
+    vec2.add(unrotatedBox[1], delta, unrotatedBox[1]);
+
+    const box = [
+      vec2.min(unrotatedBox[0], unrotatedBox[1]),
+      vec2.max(unrotatedBox[0], unrotatedBox[1])
+    ];
+
     const center = this.getCenter();
 
     return [
@@ -567,6 +579,14 @@ export class RectTransform extends Transform implements RectTransformComponent {
   clear() {
     super.clear();
     vec2.set(this.m_scale, 1, 1);
+  }
+
+  asObject() {
+    return {
+      position: this.position,
+      rotation: this.rotation,
+      reflection: this.reflection
+    };
   }
 }
 
@@ -663,13 +683,13 @@ export class ElementTransform extends Transform implements ElementTransformCompo
 
   get unrotatedBoundingBox(): Box {
     Debugger.time('uBox');
-    const value = this.m_cache.cached(
+    const box = this.m_cache.cached(
       'unrotatedBoundingBox',
       this.onUnrotatedBoundingBoxCacheMiss.bind(this)
     );
 
     Debugger.timeEnd('uBox');
-    return value;
+    return box;
   }
 
   get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
@@ -678,9 +698,9 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     const angle = this.m_rotation.get();
 
     const points: [vec2, vec2, vec2, vec2] = [
-      box[0],
+      vec2.clone(box[0]),
       [box[1][0], box[0][1]],
-      box[1],
+      vec2.clone(box[1]),
       [box[0][0], box[1][1]]
     ];
 
@@ -699,9 +719,7 @@ export class ElementTransform extends Transform implements ElementTransformCompo
 
   private onBoundingBoxCacheMiss(): Box {
     const angle = this.m_rotation.get();
-    const box = this.unrotatedBoundingBox;
-
-    if (angle === 0) return box;
+    if (angle === 0) return this.unrotatedBoundingBox;
 
     const center = this.dynamicCenter;
     const position = this.m_translation.get();
@@ -847,6 +865,13 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     this.m_parent.forEach((vertex) => vertex.transform.clear());
 
     vec2.set(this.m_scale, 1, 1);
+  }
+
+  asObject() {
+    return {
+      position: this.position,
+      rotation: this.rotation
+    };
   }
 }
 

@@ -15,8 +15,6 @@ interface BezierEntity extends Entity {
   size: vec2;
   clockwise: boolean;
 
-  recalculate(): void;
-
   getPoint(t: number): vec2;
   getRoots(): number[];
   getRotatedRoots(origin: vec2, angle: number): number[];

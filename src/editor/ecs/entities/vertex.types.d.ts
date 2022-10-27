@@ -9,7 +9,7 @@ interface VertexEntity extends Entity {
   transform: VertexTransformComponent;
   boundingBox: Box;
 
-  registerCache(cache: any): void;
+  registerCache(cache: CacheComponent): void;
 
   getEntitiesIn(
     box: Box,

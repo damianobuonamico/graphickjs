@@ -1,4 +1,4 @@
-import { Cache } from '@utils/cache';
+import { Cache } from '@/editor/ecs/components/cache';
 import { doesBoxIntersectBox, getLinesFromBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import Vertex from './vertex';

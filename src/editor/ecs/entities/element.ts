@@ -1,4 +1,4 @@
-import { Cache } from '@utils/cache';
+import { Cache, ElementCache } from '@/editor/ecs/components/cache';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../../history';
@@ -13,28 +13,6 @@ import Stroke from '../components/stroke';
 import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { ElementTransform } from '../components/transform';
 import Debugger from '@/utils/debugger';
-
-class ElementCache {
-  private m_caches: [Cache, Cache];
-
-  cached: <T>(id: string, callback: () => T, zoom?: number) => T;
-  clear: () => void;
-
-  constructor() {
-    this.m_caches = [new Cache(), new Cache()];
-    this.cached = this.m_caches[0].cached.bind(this.m_caches[0]);
-    this.clear = this.m_caches[0].clear.bind(this.m_caches[0]);
-  }
-
-  set pause(value: boolean) {
-    this.m_caches[0].pause = value;
-    this.m_caches[1].pause = value;
-  }
-
-  get last() {
-    return this.m_caches[1];
-  }
-}
 
 class Element implements ElementEntity {
   readonly id: string;
@@ -59,6 +37,7 @@ class Element implements ElementEntity {
   constructor({
     id = nanoid(),
     vertices,
+    transform,
     position,
     rotation,
     closed = false,
@@ -68,7 +47,12 @@ class Element implements ElementEntity {
   }: ElementOptions) {
     this.id = id;
     this.m_closed = closed;
-    this.transform = new ElementTransform(this, this.m_cache.last, position, rotation);
+    this.transform = new ElementTransform(
+      this,
+      this.m_cache.last,
+      transform?.position || position,
+      transform?.rotation || rotation
+    );
     this.m_recordHistory = recordHistory;
 
     if (vertices) this.vertices = vertices;
@@ -181,11 +165,6 @@ class Element implements ElementEntity {
   }
 
   public points: vec2[] = [];
-
-  recalculate(propagate: boolean = true): void {
-    this.m_cache.clear();
-    if (propagate) this.m_curves.forEach((bezier) => bezier.recalculate());
-  }
 
   regenerate(ids: string[] = this.m_order): void {
     const curves = new Map<string, BezierEntity>();
@@ -429,7 +408,7 @@ class Element implements ElementEntity {
       const unrotatedBox = this.transform.unrotatedBoundingBox;
       const mid = vec2.mid(unrotatedBox[0], unrotatedBox[1]);
 
-      if (!doesBoxIntersectRotatedBox(box, unrotatedBox, this.transform.rotation)) return false;
+      if (!doesBoxIntersectRotatedBox(box, unrotatedBox, angle)) return false;
 
       const position = this.transform.position;
       const rotated: vec2[] = [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]].map(
@@ -734,7 +713,7 @@ class Element implements ElementEntity {
     const obj: ElementObject = {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
-      position: this.transform.staticPosition,
+      transform: this.transform.asObject(),
       vertices: this.m_order.map(
         (id) => this.m_vertices.get(id)!.asObject(duplicate) as VertexObject
       )

@@ -12,17 +12,18 @@ class ImageMedia implements ImageEntity {
 
   parent: Layer;
   transform: RectTransformComponent;
-  transforms: RectTransform;
 
   private m_data: string;
   private m_source = new Image();
 
-  constructor({ id = nanoid(), source, position, size }: ImageOptions) {
+  constructor({ id = nanoid(), source, position, transform, size }: ImageOptions) {
     this.id = id;
-    // this.transform = new Transform(position, undefined, (magnitude, origin, temp, apply) =>
-    //   this.scale(magnitude, origin, temp, apply)
-    // );
-    this.transform = new RectTransform(position, 0, size);
+    this.transform = new RectTransform(
+      transform?.position || position,
+      transform?.rotation,
+      size,
+      transform?.reflection
+    );
 
     this.m_data = source;
     this.m_source.src = source;
@@ -104,7 +105,7 @@ class ImageMedia implements ImageEntity {
     return {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
-      position: this.transform.position,
+      transform: this.transform.asObject(),
       size: this.size,
       source: this.m_data
     };

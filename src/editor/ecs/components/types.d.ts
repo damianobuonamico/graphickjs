@@ -88,6 +88,8 @@ interface RectTransformComponent extends TransformComponent {
   tempScale(delta: vec2, correctRotation: boolean): void;
 
   scale(delta: vec2): void;
+
+  asObject(): TransformComponentObject;
 }
 
 interface ElementTransformComponent extends TransformComponent {
@@ -100,6 +102,8 @@ interface ElementTransformComponent extends TransformComponent {
   tempScale(delta: vec2): void;
 
   scale(delta: vec2): void;
+
+  asObject(): TransformComponentObject;
 }
 
 interface SimpleTransformComponent {
@@ -170,4 +174,17 @@ interface UntrackedSimpleTransformComponent {
   translate(delta: vec2): void;
 
   readonly mat3: mat3;
+}
+
+interface CacheComponent {
+  pause: boolean;
+
+  cached<T>(id: string, callback: () => T): T;
+  clear(): void;
+}
+
+interface TransformComponentObject {
+  position?: vec2;
+  rotation?: number;
+  reflection?: vec2;
 }

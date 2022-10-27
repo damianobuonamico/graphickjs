@@ -1,11 +1,7 @@
-import { Cache } from '@/utils/cache';
+import { Cache } from '@/editor/ecs/components/cache';
 import { isPointInCircle, vec2 } from '@math';
 import { nanoid } from 'nanoid';
-import HistoryManager from '../../history';
-import InputManager from '../../input';
 import { SimpleTransform } from '../components/transform';
-import Element from './element';
-import Vertex from './vertex';
 
 class Handle implements HandleEntity {
   readonly id: string;
@@ -13,7 +9,6 @@ class Handle implements HandleEntity {
   readonly selectable = false;
   readonly handleType: HandleType;
 
-  // TODO: check formatting in each entity file
   parent: VertexEntity;
   transform: SimpleTransform;
 
