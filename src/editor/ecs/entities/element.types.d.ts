@@ -2,6 +2,8 @@ interface ElementEntity extends TransformableEntity {
   parent: LayerEntity;
   selectable: true;
 
+  readonly cache: any;
+
   length: number;
   last: VertexEntity;
   vertices: VertexEntity[];

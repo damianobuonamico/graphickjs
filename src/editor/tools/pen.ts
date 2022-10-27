@@ -168,15 +168,19 @@ const onPenPointerDown = () => {
       const mid = box && vec2.mid(box[0], box[1]);
       const angle = pen.element?.transform.rotation;
 
+      const delta =
+        pen.element &&
+        vec2.sub(
+          angle === 0
+            ? InputManager.scene.position
+            : vec2.rotate(InputManager.scene.position, mid!, -(angle || 0)),
+          pen.element.transform.position
+        );
+
+      // if (InputManager.keys.shift && delta) vec2.snap(delta, 8, delta);
+
       const v = new Vertex({
-        position: pen.element
-          ? vec2.sub(
-              angle === 0
-                ? InputManager.scene.position
-                : vec2.rotate(InputManager.scene.position, mid!, -(angle || 0)),
-              pen.element.transform.position
-            )
-          : vec2.create()
+        position: delta || vec2.create()
       });
 
       if (!pen.element) {

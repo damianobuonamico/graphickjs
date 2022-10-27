@@ -158,7 +158,7 @@ const onVSelectPointerDown = () => {
           const angle = (element as Element).transform.rotation;
 
           if (angle === 0) {
-            if ((element as Element).selection.size) {
+            if ((element as Element).selection && (element as Element).selection.size) {
               (element as Element).selection.forEach((vertex) => {
                 vertex.transform.tempTranslate(movement);
               });

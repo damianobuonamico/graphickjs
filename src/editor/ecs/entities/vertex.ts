@@ -1,3 +1,4 @@
+import { Cache } from '@/utils/cache';
 import { isPointInBox, vec2, vec4 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../../history';
@@ -7,26 +8,60 @@ import { VertexTransform } from '../components/transform';
 import Element from './element';
 import Handle from './handle';
 
+class VertexCache {
+  private m_caches: [Cache | { pause: false }, Cache | { pause: false }, Cache | { pause: false }] =
+    [{ pause: false }, { pause: false }, { pause: false }];
+
+  constructor() {}
+
+  set pause(value: boolean) {
+    this.m_caches[0].pause = value;
+    this.m_caches[1].pause = value;
+    this.m_caches[2].pause = value;
+  }
+
+  set parentCache(cache: Cache) {
+    this.m_caches[2] = cache;
+  }
+
+  register(cache: Cache) {
+    this.m_caches[1] = this.m_caches[0];
+    this.m_caches[0] = cache;
+  }
+}
+
 class Vertex implements VertexEntity {
   readonly id: string;
   readonly type: EntityType = 'vertex';
   readonly selectable = false;
 
-  parent: ElementEntity;
+  private m_parent: ElementEntity;
   transform: VertexTransformComponent;
 
   private m_position: HandleEntity;
   private m_left?: HandleEntity;
   private m_right?: HandleEntity;
 
+  private m_cache: VertexCache = new VertexCache();
+
   constructor({ id = nanoid(), position, left, right }: VertexOptions) {
     this.id = id;
     this.m_position = new Handle({ position, type: 'vertex', parent: this });
+    this.m_position.setCache(this.m_cache as any as Cache);
 
     if (left) this.left = new Handle({ position: left, type: 'bezier', parent: this });
     if (right) this.right = new Handle({ position: right, type: 'bezier', parent: this });
 
     this.transform = new VertexTransform(this);
+  }
+
+  get parent() {
+    return this.m_parent;
+  }
+
+  set parent(parent: ElementEntity) {
+    this.m_parent = parent;
+    this.m_cache.parentCache = parent.cache;
   }
 
   get position(): HandleEntity {
@@ -39,7 +74,8 @@ class Vertex implements VertexEntity {
 
   set left(handle: HandleEntity | undefined) {
     this.m_left = handle;
-    this.parent?.recalculate();
+    handle?.setCache(this.m_cache as any as Cache);
+    this.m_cache.pause = true;
   }
 
   get right(): HandleEntity | undefined {
@@ -48,7 +84,8 @@ class Vertex implements VertexEntity {
 
   set right(handle: HandleEntity | undefined) {
     this.m_right = handle;
-    this.parent?.recalculate();
+    handle?.setCache(this.m_cache as any as Cache);
+    this.m_cache.pause = true;
   }
 
   get boundingBox(): Box {
@@ -66,6 +103,10 @@ class Vertex implements VertexEntity {
     }
 
     return [vec2.add(min, this.transform.position), vec2.add(max, this.transform.position)] as Box;
+  }
+
+  registerCache(cache: Cache): void {
+    this.m_cache.register(cache);
   }
 
   destroy(): void {}

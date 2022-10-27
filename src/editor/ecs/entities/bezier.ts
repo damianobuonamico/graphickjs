@@ -1,9 +1,10 @@
-import Cache from '@utils/cache';
+import { Cache } from '@utils/cache';
 import { doesBoxIntersectBox, getLinesFromBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import Vertex from './vertex';
 import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { UntrackedSimpleTransform } from '../components/transform';
+import Debugger from '@/utils/debugger';
 
 class Bezier implements BezierEntity {
   readonly id: string;
@@ -12,17 +13,26 @@ class Bezier implements BezierEntity {
   readonly start: VertexEntity;
   readonly end: VertexEntity;
 
-  parent: ElementEntity;
+  private m_parent: ElementEntity;
   transform: UntrackedSimpleTransformComponent;
 
   private m_cache: Cache = new Cache();
-  private cached = this.m_cache.cached.bind(this.m_cache);
 
   constructor({ start, end }: BezierOptions) {
     this.id = nanoid();
     this.start = start;
+    this.start.registerCache(this.m_cache);
     this.end = end;
+    this.end.registerCache(this.m_cache);
     this.transform = new UntrackedSimpleTransform();
+  }
+
+  get parent() {
+    return this.m_parent;
+  }
+
+  set parent(parent: ElementEntity) {
+    this.m_parent = parent;
   }
 
   get p0(): vec2 {
@@ -42,14 +52,11 @@ class Bezier implements BezierEntity {
   }
 
   get bezierType(): BezierType {
-    // return this.cached<BezierType>('type', () => {
     if (this.start.right || this.end.left) return 'cubic';
     return 'linear';
-    // });
   }
 
-  get extrema(): vec2[] {
-    // return this.cached<vec2[]>('extrema', () => {
+  private onExtremaCacheMiss(): vec2[] {
     const roots = this.getRoots();
     const extrema: vec2[] = [];
 
@@ -58,11 +65,17 @@ class Bezier implements BezierEntity {
     }
 
     return extrema;
-    // });
   }
 
-  get boundingBox(): Box {
-    // return this.cached<Box>('boundingBox', () => {
+  get extrema(): vec2[] {
+    Debugger.time('extr');
+    const extrema = this.m_cache.cached('extrema', this.onExtremaCacheMiss.bind(this));
+    Debugger.timeEnd('extr');
+
+    return extrema;
+  }
+
+  private onBoundingBoxCacheMiss(): Box {
     const extrema = this.extrema;
 
     let min: vec2 = [Infinity, Infinity];
@@ -74,7 +87,13 @@ class Bezier implements BezierEntity {
     }
 
     return [min, max];
-    // });
+  }
+
+  get boundingBox(): Box {
+    Debugger.time('bbBox');
+    const box = this.m_cache.cached('boundingBox', this.onBoundingBoxCacheMiss.bind(this));
+    Debugger.timeEnd('bbBox');
+    return box;
   }
 
   get size(): vec2 {
@@ -82,8 +101,7 @@ class Bezier implements BezierEntity {
     return vec2.sub(box[1], box[0]);
   }
 
-  get clockwise(): boolean {
-    // return this.cached<boolean>('clockwise', () => {
+  private onClockwiseCacheMiss(): boolean {
     let sum = 0;
     let last = this.getPoint(0);
 
@@ -94,7 +112,13 @@ class Bezier implements BezierEntity {
     }
 
     return sum >= 0;
-    // });
+  }
+
+  get clockwise(): boolean {
+    Debugger.time('clock');
+    const value = this.m_cache.cached('clockwise', this.onClockwiseCacheMiss.bind(this));
+    Debugger.timeEnd('clock');
+    return value;
   }
 
   private call<T>(
@@ -213,8 +237,7 @@ class Bezier implements BezierEntity {
     });
   }
 
-  getRotatedExtrema(origin: vec2, angle: number): vec2[] {
-    // return this.cached<vec2[]>(`extrema-${angle}`, () => {
+  private onRotatedExtremaCacheMiss(origin: vec2, angle: number) {
     const roots = this.getRotatedRoots(origin, angle);
     const extrema: vec2[] = [];
 
@@ -222,6 +245,16 @@ class Bezier implements BezierEntity {
       extrema.push(vec2.rotate(this.getPoint(root), origin, angle));
     }
 
+    return extrema;
+  }
+
+  getRotatedExtrema(origin: vec2, angle: number): vec2[] {
+    Debugger.time('rExtr');
+    const extrema = this.m_cache.cached(
+      `extrema-${angle}`,
+      this.onRotatedExtremaCacheMiss.bind(this, origin, angle)
+    );
+    Debugger.timeEnd('rExtr');
     return extrema;
     // });
   }
@@ -554,8 +587,11 @@ class Bezier implements BezierEntity {
     return { operations: [{ type: this.bezierType, data: [this.p1, this.p2, this.p3] }] };
   }
   getDrawable(useWebGL: boolean = false): Drawable {
+    Debugger.time('bDrwb');
     // return this.cached<Drawable>('getDrawable', () => {
-    return this.call(this.getLinearDrawable, this.getCubicDrawable);
+    const value = this.call(this.getLinearDrawable, this.getCubicDrawable);
+    Debugger.timeEnd('bDrwb');
+    return value;
     // });
   }
 

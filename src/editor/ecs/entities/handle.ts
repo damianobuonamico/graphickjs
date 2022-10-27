@@ -1,3 +1,4 @@
+import { Cache } from '@/utils/cache';
 import { isPointInCircle, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../../history';
@@ -14,7 +15,7 @@ class Handle implements HandleEntity {
 
   // TODO: check formatting in each entity file
   parent: VertexEntity;
-  transform: SimpleTransformComponent;
+  transform: SimpleTransform;
 
   constructor({ position, type, parent }: HandleOptions) {
     this.id = nanoid();
@@ -29,6 +30,10 @@ class Handle implements HandleEntity {
 
   get staticBoundingBox(): Box {
     return [this.transform.staticPosition, this.transform.staticPosition];
+  }
+
+  setCache(cache: Cache) {
+    this.transform.cache = cache;
   }
 
   destroy(): void {}

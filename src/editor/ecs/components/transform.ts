@@ -1,5 +1,7 @@
 import HistoryManager from '@/editor/history';
 import { equals, mat3, vec2 } from '@/math';
+import { Cache } from '@/utils/cache';
+import Debugger from '@/utils/debugger';
 import Handle from '../entities/handle';
 
 export class FloatValue implements TransformComponentValue<number> {
@@ -64,6 +66,79 @@ export class FloatValue implements TransformComponentValue<number> {
 
   clear() {
     this.m_delta = 0;
+  }
+}
+
+export class CachedFloatValue implements TransformComponentValue<number> {
+  private m_value: number;
+  private m_delta = 0;
+  private m_cache: Cache;
+
+  constructor(cache: Cache, value: number = 0) {
+    this.m_value = value;
+    this.m_cache = cache;
+  }
+
+  get() {
+    return this.m_value + this.m_delta;
+  }
+
+  getStatic() {
+    return this.m_value;
+  }
+
+  getDelta() {
+    return this.m_delta;
+  }
+
+  set(value: number) {
+    const backup = this.m_value;
+    if (equals(this.m_value, value)) return;
+
+    HistoryManager.record({
+      fn: () => {
+        this.m_value = value;
+        this.m_cache.pause = true;
+      },
+      undo: () => {
+        this.m_value = backup;
+        this.m_cache.pause = true;
+      }
+    });
+  }
+
+  add(delta: number) {
+    if (equals(delta, 0)) return;
+
+    HistoryManager.record({
+      fn: () => {
+        this.m_value += delta;
+        this.m_cache.pause = true;
+      },
+      undo: () => {
+        this.m_value -= delta;
+        this.m_cache.pause = true;
+      }
+    });
+  }
+
+  tempAdd(value: number) {
+    this.m_delta += value;
+    this.m_cache.pause = true;
+  }
+
+  apply() {
+    const transformed = this.get();
+
+    if (!equals(transformed, this.m_value)) {
+      this.set(transformed);
+      this.clear();
+    }
+  }
+
+  clear() {
+    this.m_delta = 0;
+    this.m_cache.pause = true;
   }
 }
 
@@ -132,13 +207,86 @@ export class Vec2Value implements TransformComponentValue<vec2> {
   }
 }
 
-class Transform implements BaseTransformComponent {
-  protected m_translation: Vec2Value;
-  protected m_rotation: FloatValue;
+export class CachedVec2Value implements TransformComponentValue<vec2> {
+  private m_value: vec2;
+  private m_delta = vec2.create();
+  private m_cache: Cache;
 
-  constructor(position: vec2 = [0, 0], rotation: number = 0) {
-    this.m_translation = new Vec2Value(position);
-    this.m_rotation = new FloatValue(rotation);
+  constructor(cache: Cache, value: vec2 = [0, 0]) {
+    this.m_value = vec2.clone(value);
+    this.m_cache = cache;
+  }
+
+  get() {
+    return vec2.add(this.m_value, this.m_delta);
+  }
+
+  getStatic() {
+    return vec2.clone(this.m_value);
+  }
+
+  getDelta() {
+    return vec2.clone(this.m_delta);
+  }
+
+  set(value: vec2) {
+    const backup = vec2.clone(this.m_value);
+    if (vec2.equals(backup, value)) return;
+
+    HistoryManager.record({
+      fn: () => {
+        vec2.copy(this.m_value, value);
+        this.m_cache.pause = true;
+      },
+      undo: () => {
+        vec2.copy(this.m_value, backup);
+        this.m_cache.pause = true;
+      }
+    });
+  }
+
+  add(delta: vec2) {
+    if (vec2.equals(delta, [0, 0])) return;
+
+    HistoryManager.record({
+      fn: () => {
+        vec2.add(this.m_value, delta, this.m_value);
+        this.m_cache.pause = true;
+      },
+      undo: () => {
+        vec2.sub(this.m_value, delta, this.m_value);
+        this.m_cache.pause = true;
+      }
+    });
+  }
+
+  tempAdd(value: vec2) {
+    vec2.add(this.m_delta, value, this.m_delta);
+    this.m_cache.pause = true;
+  }
+
+  apply() {
+    const transformed = this.get();
+
+    if (!vec2.equals(transformed, this.m_value)) {
+      this.set(transformed);
+      this.clear();
+    }
+  }
+
+  clear() {
+    vec2.zero(this.m_delta);
+    this.m_cache.pause = true;
+  }
+}
+
+class Transform implements BaseTransformComponent {
+  protected m_translation: TransformComponentValue<vec2>;
+  protected m_rotation: TransformComponentValue<number>;
+
+  constructor(position: vec2 = [0, 0], rotation: number = 0, cache?: Cache) {
+    this.m_translation = cache ? new CachedVec2Value(cache, position) : new Vec2Value(position);
+    this.m_rotation = cache ? new CachedFloatValue(cache, rotation) : new FloatValue(rotation);
   }
 
   get position(): vec2 {
@@ -424,13 +572,15 @@ export class RectTransform extends Transform implements RectTransformComponent {
 
 export class ElementTransform extends Transform implements ElementTransformComponent {
   private m_parent: ElementEntity;
+  private m_cache: Cache;
 
   private m_scale = vec2.fromValues(1, 1);
   private m_origin = vec2.create();
 
-  constructor(parent: ElementEntity, position: vec2 = [0, 0], rotation: number = 0) {
-    super(position, rotation);
+  constructor(parent: ElementEntity, cache: Cache, position: vec2 = [0, 0], rotation: number = 0) {
+    super(position, rotation, cache);
     this.m_parent = parent;
+    this.m_cache = cache;
   }
 
   get origin() {
@@ -457,7 +607,7 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     return center;
   }
 
-  get staticBoundingBox(): Box {
+  private onStaticBoundingBoxCacheMiss(): Box {
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
 
@@ -479,7 +629,17 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     return [vec2.add(min, position, min), vec2.add(max, position, max)];
   }
 
-  get unrotatedBoundingBox(): Box {
+  get staticBoundingBox(): Box {
+    Debugger.time('sBox');
+    const box = this.m_cache.cached(
+      'staticBoundingBox',
+      this.onStaticBoundingBoxCacheMiss.bind(this)
+    );
+    Debugger.timeEnd('sBox');
+    return box;
+  }
+
+  private onUnrotatedBoundingBoxCacheMiss(): Box {
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
 
@@ -501,7 +661,19 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     return [vec2.add(min, position, min), vec2.add(max, position, max)];
   }
 
+  get unrotatedBoundingBox(): Box {
+    Debugger.time('uBox');
+    const value = this.m_cache.cached(
+      'unrotatedBoundingBox',
+      this.onUnrotatedBoundingBoxCacheMiss.bind(this)
+    );
+
+    Debugger.timeEnd('uBox');
+    return value;
+  }
+
   get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+    Debugger.time('rBox');
     const box = this.unrotatedBoundingBox;
     const angle = this.m_rotation.get();
 
@@ -515,6 +687,7 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     if (angle === 0) return points;
 
     const center = this.dynamicCenter;
+    Debugger.timeEnd('rBox');
 
     return [
       vec2.rotate(points[0], center, angle, points[0]),
@@ -524,7 +697,7 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     ];
   }
 
-  get boundingBox(): Box {
+  private onBoundingBoxCacheMiss(): Box {
     const angle = this.m_rotation.get();
     const box = this.unrotatedBoundingBox;
 
@@ -556,7 +729,14 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     return [vec2.add(min, position, min), vec2.add(max, position, max)];
   }
 
-  get largeBoundingBox(): Box {
+  get boundingBox(): Box {
+    Debugger.time('bBox');
+    const value = this.m_cache.cached('boundingBox', this.onBoundingBoxCacheMiss.bind(this));
+    Debugger.timeEnd('bBox');
+    return value;
+  }
+
+  private onLargeBoundingBoxCacheMiss(): Box {
     const box = this.boundingBox;
     const position = this.m_translation.get();
 
@@ -573,13 +753,32 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     return [vec2.add(min, position, min), vec2.add(max, position, max)];
   }
 
-  get mat3() {
+  get largeBoundingBox(): Box {
+    Debugger.time('lBox');
+    const box = this.m_cache.cached(
+      'largeBoundingBox',
+      this.onLargeBoundingBoxCacheMiss.bind(this)
+    );
+    Debugger.timeEnd('lBox');
+
+    return box;
+  }
+
+  private onMat3CacheMiss() {
     return mat3.fromTranslationRotation(
       this.m_translation.get(),
       this.m_rotation.get(),
       this.m_translation.getStatic(),
       this.center
     );
+  }
+
+  get mat3() {
+    Debugger.time('mat3');
+    const matrix = this.m_cache.cached('mat3', this.onMat3CacheMiss.bind(this));
+    Debugger.timeEnd('mat3');
+
+    return matrix;
   }
 
   transform(point: vec2): vec2 {
@@ -626,6 +825,7 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     const v2 = this.transform([0, 0]);
 
     this.m_translation.tempAdd(vec2.sub(v1, v2, v2));
+    this.m_cache.pause = true;
   }
 
   scale(magnitude: vec2, normalizeRotation: boolean = false) {
@@ -651,7 +851,7 @@ export class ElementTransform extends Transform implements ElementTransformCompo
 }
 
 export class SimpleTransform implements SimpleTransformComponent {
-  private m_translation: Vec2Value;
+  private m_translation: TransformComponentValue<vec2>;
 
   constructor(position: vec2) {
     this.m_translation = new Vec2Value(position);
@@ -693,6 +893,10 @@ export class SimpleTransform implements SimpleTransformComponent {
 
   translate(delta: vec2) {
     this.m_translation.add(delta);
+  }
+
+  set cache(cache: Cache) {
+    this.m_translation = new CachedVec2Value(cache, this.m_translation.get());
   }
 
   apply() {

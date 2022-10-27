@@ -1,4 +1,4 @@
-import Cache from '@utils/cache';
+import { Cache } from '@utils/cache';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../../history';
@@ -12,6 +12,29 @@ import Fill from '../components/fill';
 import Stroke from '../components/stroke';
 import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { ElementTransform } from '../components/transform';
+import Debugger from '@/utils/debugger';
+
+class ElementCache {
+  private m_caches: [Cache, Cache];
+
+  cached: <T>(id: string, callback: () => T, zoom?: number) => T;
+  clear: () => void;
+
+  constructor() {
+    this.m_caches = [new Cache(), new Cache()];
+    this.cached = this.m_caches[0].cached.bind(this.m_caches[0]);
+    this.clear = this.m_caches[0].clear.bind(this.m_caches[0]);
+  }
+
+  set pause(value: boolean) {
+    this.m_caches[0].pause = value;
+    this.m_caches[1].pause = value;
+  }
+
+  get last() {
+    return this.m_caches[1];
+  }
+}
 
 class Element implements ElementEntity {
   readonly id: string;
@@ -31,8 +54,7 @@ class Element implements ElementEntity {
   private m_recordHistory: boolean;
   private m_fillRule: 'even-odd' | 'non-zero' = 'non-zero';
 
-  private m_cache: Cache = new Cache();
-  private cached = this.m_cache.cached.bind(this.m_cache);
+  private m_cache: ElementCache = new ElementCache();
 
   constructor({
     id = nanoid(),
@@ -46,7 +68,7 @@ class Element implements ElementEntity {
   }: ElementOptions) {
     this.id = id;
     this.m_closed = closed;
-    this.transform = new ElementTransform(this, position, rotation);
+    this.transform = new ElementTransform(this, this.m_cache.last, position, rotation);
     this.m_recordHistory = recordHistory;
 
     if (vertices) this.vertices = vertices;
@@ -112,14 +134,24 @@ class Element implements ElementEntity {
     this.regenerate();
   }
 
-  private get m_closingCurve(): Bezier {
-    // return this.cached<Bezier>('closingCurve', () => {
+  get cache() {
+    return this.m_cache as any as Cache;
+  }
+
+  private onClosingCurveCacheMiss(): Bezier {
+    // 31
     const curves = Array.from(this.m_curves.values());
     return new Bezier({
       start: new Vertex({ position: curves[curves.length - 1].p3 }),
       end: new Vertex({ position: curves[0].p0 })
     });
-    // });
+  }
+
+  private get m_closingCurve(): Bezier {
+    Debugger.time('cCurve');
+    const bezier = this.m_cache.cached('closingCurve', this.onClosingCurveCacheMiss.bind(this), 0);
+    Debugger.timeEnd('cCurve');
+    return bezier;
   }
 
   private pushVertex(
@@ -133,7 +165,7 @@ class Element implements ElementEntity {
     vertex.parent = this;
 
     if (regenerate) this.regenerate();
-    else this.recalculate(false);
+    else this.m_cache.pause = true;
   }
 
   private spliceVertex(
@@ -145,7 +177,7 @@ class Element implements ElementEntity {
     this.m_order.splice(index, 1);
 
     if (regenerate) this.regenerate();
-    else this.recalculate(false);
+    else this.m_cache.pause = true;
   }
 
   public points: vec2[] = [];
@@ -190,7 +222,7 @@ class Element implements ElementEntity {
     this.m_vertices = vertices;
     this.m_curves = curves;
 
-    this.recalculate(false);
+    this.m_cache.pause = true;
   }
 
   forEach(callback: (vertex: VertexEntity, selected?: boolean | undefined) => void): void {
@@ -634,47 +666,48 @@ class Element implements ElementEntity {
     } else if (this.intersects(box)) entities.add(this);
   }
 
-  getDrawable(useWebGL: boolean = false): Drawable {
-    // return this.cached<Drawable>(`getDrawable${useWebGL ? '-gl' : ''}`, () => {
-    if (useWebGL) {
-      return { operations: [{ type: 'geometry' }] };
-    } else {
-      const drawable: Drawable = { operations: [{ type: 'begin' }] };
+  private onGetDrawableCacheMiss(): Drawable {
+    const drawable: Drawable = { operations: [{ type: 'begin' }] };
 
-      let first = true;
+    let first = true;
 
-      this.m_curves.forEach((bezier) => {
-        if (first) {
-          drawable.operations.push({ type: 'move', data: [bezier.p0] });
-          first = false;
-        }
+    this.m_curves.forEach((bezier) => {
+      if (first) {
+        drawable.operations.push({ type: 'move', data: [bezier.p0] });
+        first = false;
+      }
 
-        drawable.operations.push(...bezier.getDrawable().operations);
+      drawable.operations.push(...bezier.getDrawable().operations);
+    });
+
+    if (this.m_closed) drawable.operations.push({ type: 'close' });
+
+    if (this.m_fill) {
+      drawable.operations.push({
+        type: 'fillcolor',
+        data: SceneManager.assets.get(this.m_fill, 'fill').color.vec4
       });
 
-      if (this.m_closed) drawable.operations.push({ type: 'close' });
-
-      if (this.m_fill) {
-        drawable.operations.push({
-          type: 'fillcolor',
-          data: SceneManager.assets.get(this.m_fill, 'fill').color.vec4
-        });
-
-        drawable.operations.push({ type: 'fill' });
-      }
-
-      if (this.m_stroke) {
-        drawable.operations.push({
-          type: 'strokecolor',
-          data: SceneManager.assets.get(this.m_stroke, 'stroke').color.vec4
-        });
-
-        drawable.operations.push({ type: 'stroke' });
-      }
-
-      return drawable;
+      drawable.operations.push({ type: 'fill' });
     }
-    // });
+
+    if (this.m_stroke) {
+      drawable.operations.push({
+        type: 'strokecolor',
+        data: SceneManager.assets.get(this.m_stroke, 'stroke').color.vec4
+      });
+
+      drawable.operations.push({ type: 'stroke' });
+    }
+
+    return drawable;
+  }
+
+  getDrawable(useWebGL: boolean = false): Drawable {
+    Debugger.time('drwb');
+    const drawable = this.m_cache.cached('drawable', this.onGetDrawableCacheMiss.bind(this));
+    Debugger.timeEnd('drwb');
+    return drawable;
   }
 
   getOutlineDrawable(useWebGL: boolean = false): Drawable {

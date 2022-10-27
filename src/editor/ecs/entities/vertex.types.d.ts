@@ -9,6 +9,8 @@ interface VertexEntity extends Entity {
   transform: VertexTransformComponent;
   boundingBox: Box;
 
+  registerCache(cache: any): void;
+
   getEntitiesIn(
     box: Box,
     entities: Set<Entity>,

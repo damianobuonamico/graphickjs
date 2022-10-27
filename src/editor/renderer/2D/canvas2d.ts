@@ -7,6 +7,7 @@ import InputManager from '@/editor/input';
 import SelectionManager from '@/editor/selection';
 import ImageMedia from '@/editor/ecs/entities/image';
 import { RectTransform } from '@/editor/ecs/components/transform';
+import Debugger from '@/utils/debugger';
 
 class Canvas2D implements Canvas {
   private m_container: HTMLDivElement;
@@ -230,7 +231,7 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.save();
     this.m_ctx.strokeStyle = `rgba(0, 0, 0, 1.0)`;
-    this.m_ctx.lineWidth = 5;
+    this.m_ctx.lineWidth = 1 ;
 
     const matrix = element.transform.mat3;
     this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
@@ -333,10 +334,11 @@ class Canvas2D implements Canvas {
     const width = 150;
     const lAlign = 5;
     const rAlign = 40;
+    const timers = Debugger.timers;
 
     this.m_ctx.setTransform(1, 0, 0, 1, this.size[0] - width, 0);
     this.m_ctx.fillStyle = 'rgba(0.0, 0.0, 0.0, 0.5)';
-    this.m_ctx.fillRect(0, 0, width, 170);
+    this.m_ctx.fillRect(0, 0, width, 170 + timers.size * 55);
 
     this.m_ctx.textAlign = 'left';
     this.m_ctx.font = 'bold 12px Helvetica,Arial,sans-serif';
@@ -368,6 +370,20 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.fillText('DRW:', lAlign, 155);
     this.m_ctx.fillText(`${this.m_stats.drawn}`, rAlign, 155);
+
+    let i = 0;
+
+    timers.forEach((timer, id) => {
+      this.m_ctx.fillText(id + ':', lAlign, 180 + 55 * i);
+      this.m_ctx.fillText(`${timer.value.toFixed(4)}ms`, rAlign + 10, 180 + 55 * i);
+      this.m_ctx.fillText(`${timer.entries}`, rAlign + 10, 195 + 55 * i);
+      this.m_ctx.fillText(
+        `${(timer.value / timer.entries).toFixed(4)}ms`,
+        rAlign + 10,
+        210 + 55 * i
+      );
+      i++;
+    });
   }
 }
 
