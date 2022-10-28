@@ -133,7 +133,7 @@ class Element implements ElementEntity {
 
   private get m_closingCurve(): Bezier {
     Debugger.time('cCurve');
-    const bezier = this.m_cache.cached('closingCurve', this.onClosingCurveCacheMiss.bind(this), 0);
+    const bezier = this.m_cache.cached('closingCurve', this.onClosingCurveCacheMiss.bind(this));
     Debugger.timeEnd('cCurve');
     return bezier;
   }

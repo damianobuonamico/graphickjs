@@ -74,7 +74,7 @@ class Canvas2D implements Canvas {
 
   setup(canvas: HTMLCanvasElement) {
     this.m_canvas = canvas;
-    this.m_ctx = canvas.getContext('2d')!;
+    this.m_ctx = canvas.getContext('2d', { alpha: false })!;
   }
 
   resize() {
@@ -238,6 +238,34 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.fillStyle = 'rgb(50, 50, 50)';
     this.draw((element as Element).getDrawable(false));
+
+    if (Renderer.debugging && Renderer.debug.box) {
+      if (
+        (InputManager.hover.element && InputManager.hover.element.id === element.id) ||
+        SelectionManager.has(element.id)
+      ) {
+        this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.2)';
+        this.m_ctx.strokeStyle = 'rgb(220, 20, 60)';
+      } else {
+        this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
+        this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
+      }
+      this.begin();
+      element.forEachBezier((b) => {
+        const box = b.boundingBox;
+        this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
+      });
+      const b = element.transform.unrotatedBoundingBox;
+      const box = b.map((p) => vec2.sub(p, element.transform.position));
+      this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
+      this.fill();
+      this.stroke();
+    }
+
+    this.m_ctx.restore();
+    this.m_ctx.save();
+
+    this.m_ctx.translate(...element.transform.position);
 
     for (const point of element.points) {
       this.m_ctx.fillStyle = 'rgb(250, 50, 50)';

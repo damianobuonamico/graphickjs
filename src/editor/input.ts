@@ -195,6 +195,8 @@ abstract class InputManager {
   }
 
   private static onKeyDown(e: KeyboardEvent) {
+    if (e.repeat) return;
+
     this.onKey(e);
 
     if (this.down) this.tool.onKey(e);

@@ -251,8 +251,9 @@ class Bezier implements BezierEntity {
   getRotatedExtrema(origin: vec2, angle: number): vec2[] {
     Debugger.time('rExtr');
     const extrema = this.m_cache.cached(
-      `extrema-${angle}`,
-      this.onRotatedExtremaCacheMiss.bind(this, origin, angle)
+      `extrema-${angle}-${origin[0]}-${origin[1]}`,
+      this.onRotatedExtremaCacheMiss.bind(this, origin, angle),
+      'extrema'
     );
     Debugger.timeEnd('rExtr');
     return extrema;

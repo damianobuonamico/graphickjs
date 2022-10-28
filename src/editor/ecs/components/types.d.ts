@@ -64,7 +64,7 @@ interface BaseTransformComponent {
 }
 
 interface TransformComponent extends BaseTransformComponent {
-  readonly center: vec2;
+  readonly staticCenter: vec2;
 
   readonly staticBoundingBox: Box;
   readonly unrotatedBoundingBox: Box;
@@ -95,13 +95,15 @@ interface RectTransformComponent extends TransformComponent {
 interface ElementTransformComponent extends TransformComponent {
   origin: vec2;
 
-  readonly dynamicCenter: vec2;
+  readonly center: vec2;
 
   readonly largeBoundingBox: Box;
 
   tempScale(delta: vec2): void;
 
   scale(delta: vec2): void;
+
+  keepCentered(center: vec2): void;
 
   asObject(): TransformComponentObject;
 }
@@ -179,7 +181,7 @@ interface UntrackedSimpleTransformComponent {
 interface CacheComponent {
   pause: boolean;
 
-  cached<T>(id: string, callback: () => T): T;
+  cached<T>(id: string, callback: () => T, genericId?: string): T;
   clear(): void;
 }
 
