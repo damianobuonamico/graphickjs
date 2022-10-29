@@ -112,8 +112,8 @@ abstract class SelectionManager {
     let angle: number | null = null;
 
     this.m_selected.forEach((entity) => {
-      if (angle === null) angle = (entity as TransformableEntity).transform.rotation ?? 0;
-      else if (sameAngle && angle !== (entity as TransformableEntity).transform.rotation)
+      if (angle === null) angle = (entity.transform as TransformComponent).rotation ?? 0;
+      else if (sameAngle && angle !== (entity.transform as TransformComponent).rotation)
         sameAngle = false;
     });
 
@@ -126,12 +126,14 @@ abstract class SelectionManager {
 
     this.m_selected.forEach((entity) => {
       if (entity.type !== 'element' || (entity as Element).length > 1) {
-        const box = (entity as TransformableEntity).boundingBox;
+        const box = (entity.transform as TransformComponent).boundingBox;
 
-        box.forEach((point) => {
-          vec2.min(min, point, true);
-          vec2.max(max, point, true);
-        });
+        if (box) {
+          box.forEach((point) => {
+            vec2.min(min, point, min);
+            vec2.max(max, point, max);
+          });
+        }
       }
     });
 
@@ -144,13 +146,15 @@ abstract class SelectionManager {
 
     this.m_selected.forEach((entity) => {
       if (entity.type !== 'element' || (entity as Element).length > 1) {
-        const box = (entity as TransformableEntity).boundingBox;
+        const box = (entity.transform as TransformComponent).boundingBox;
 
-        box.forEach((point) => {
-          const p = vec2.sub(point, (entity as TransformableEntity).transform.tempPosition);
-          vec2.min(min, p, true);
-          vec2.max(max, p, true);
-        });
+        if (box) {
+          box.forEach((point) => {
+            const p = vec2.sub(point, (entity.transform as TransformComponent).positionDelta);
+            vec2.min(min, p, min);
+            vec2.max(max, p, max);
+          });
+        }
       }
     });
 
@@ -165,34 +169,43 @@ abstract class SelectionManager {
     if (angle) {
       this.m_selected.forEach((entity) => {
         if (entity.type !== 'element' || (entity as Element).length > 1) {
-          const box = (entity as TransformableEntity).rotatedBoundingBox;
+          const box = (entity.transform as TransformComponent).rotatedBoundingBox;
 
-          box.forEach((point) => {
-            const rotated = vec2.rotate(point, [0, 0], -angle);
-            vec2.min(min, rotated, true);
-            vec2.max(max, rotated, true);
-          });
+          if (box) {
+            box.forEach((point) => {
+              const rotated = vec2.rotate(point, [0, 0], -angle);
+              vec2.min(min, rotated, min);
+              vec2.max(max, rotated, max);
+            });
+          }
         }
       });
 
       const rMin = vec2.rotate(min, [0, 0], angle);
       const rMax = vec2.rotate(max, [0, 0], angle);
 
-      const mid = vec2.div(vec2.add(rMin, rMax), 2);
+      const mid = vec2.mid(rMin, rMax);
 
       return [vec2.rotate(rMin, mid, -angle), vec2.rotate(rMax, mid, -angle)];
     } else {
       this.m_selected.forEach((entity) => {
-        const box = (entity as MovableEntity).boundingBox;
+        const box = (entity.transform as TransformComponent).boundingBox;
 
         if (box) {
-          vec2.min(min, box[0], true);
-          vec2.max(max, box[1], true);
+          vec2.min(min, box[0], min);
+          vec2.max(max, box[1], max);
         }
       });
     }
 
     return [min, max];
+  }
+
+  static calculateRenderOverlay() {
+    if (!this.m_selected.size) this.manipulator.set(null);
+    else {
+      this.manipulator.set(this.unrotatedBoundingBox, this.angle ?? 0);
+    }
   }
 
   static has(id: string) {
@@ -290,13 +303,6 @@ abstract class SelectionManager {
         this.select(entity as Entity, false);
       }
     });
-  }
-
-  static calculateRenderOverlay() {
-    if (!this.m_selected.size) this.manipulator.set(null);
-    else {
-      this.manipulator.set(this.unrotatedBoundingBox, this.angle ?? 0);
-    }
   }
 }
 

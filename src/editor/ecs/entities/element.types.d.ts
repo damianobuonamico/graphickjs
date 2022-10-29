@@ -2,16 +2,16 @@ interface ElementEntity extends TransformableEntity {
   parent: LayerEntity;
   selectable: true;
 
-  largeBoundingBox: Box;
+  readonly cache: CacheComponent;
 
   length: number;
   last: VertexEntity;
   vertices: VertexEntity[];
 
-  recalculate(propagate?: boolean): void;
   regenerate(ids?: string[]): void;
   reverse(): void;
   forEach(callback: (vertex: VertexEntity, selected?: boolean) => void): void;
+  forEachBezier(callback: (bezier: BezierEntity) => void): void;
 
   concat(element: ElementEntity): void;
   split(bezier: BezierEntity, position: vec2): VertexEntity | void;
@@ -27,7 +27,8 @@ interface ElementEntity extends TransformableEntity {
 
 interface ElementOptions {
   id?: string;
-  position: vec2;
+  transform?: TransformComponentObject;
+  position?: vec2;
   rotation?: number;
   vertices?: VertexEntity[];
   closed?: boolean;
@@ -37,7 +38,7 @@ interface ElementOptions {
 }
 
 interface ElementObject extends GenericEntityObject {
-  position: vec2;
+  transform: TransformComponentObject;
   vertices: VertexObject[];
   closed?: boolean;
   stroke?: string;

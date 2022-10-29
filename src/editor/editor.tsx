@@ -23,8 +23,7 @@ const Editor: Component = () => {
     tool: 'select',
     loading: true
   });
-  const useWebGL = false;
-  Renderer.init(useWebGL);
+  Renderer.init();
   SceneManager.init((loading) => {
     setState({ loading });
   });

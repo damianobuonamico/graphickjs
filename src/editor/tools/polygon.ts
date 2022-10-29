@@ -10,7 +10,7 @@ import { nanoid } from 'nanoid';
 const onPolygonPointerDown = (tool: Tool) => {
   let size = vec2.create();
 
-  let vertices = createVertices(tool, size);
+  let vertices = createVertices(tool as 'rectangle' | 'ellipse', size);
   const element = new Element({
     position: InputManager.scene.position,
     vertices,
@@ -23,7 +23,7 @@ const onPolygonPointerDown = (tool: Tool) => {
   function onKey(e: KeyboardEvent) {
     if (e.key === KEYS.SHIFT || e.key === KEYS.ALT) {
       e.preventDefault();
-      vertices = createVertices(tool, size, e.shiftKey, e.altKey);
+      vertices = createVertices(tool as 'rectangle' | 'ellipse', size, e.shiftKey, e.altKey);
       element.vertices = vertices;
     } else if (e.key === KEYS.ESCAPE) {
       SceneManager.remove(element, true);
@@ -33,7 +33,12 @@ const onPolygonPointerDown = (tool: Tool) => {
 
   function onPointerMove() {
     size = InputManager.scene.delta;
-    vertices = createVertices(tool, size, InputManager.keys.shift, InputManager.keys.alt);
+    vertices = createVertices(
+      tool as 'rectangle' | 'ellipse',
+      size,
+      InputManager.keys.shift,
+      InputManager.keys.alt
+    );
     element.vertices = vertices;
   }
 

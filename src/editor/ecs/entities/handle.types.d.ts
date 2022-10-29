@@ -2,6 +2,8 @@ interface HandleEntity extends MovableEntity {
   selectable: false;
 
   handleType: HandleType;
+
+  setCache(caches: CacheComponent): void;
 }
 
 type HandleType = 'vertex' | 'bezier';

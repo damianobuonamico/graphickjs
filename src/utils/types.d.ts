@@ -8,7 +8,4 @@ interface KeyBinding {
 
 type ClassNameValue = string | number | boolean | undefined | null;
 type ClassNameMapping = { [key: string]: any };
-type ClassNameArgument =
-  | ClassNameValue
-  | ClassNameMapping
-  | ClassNameArgument[];
+type ClassNameArgument = ClassNameValue | ClassNameMapping | ClassNameArgument[];

@@ -1,17 +1,18 @@
-import Cache from '@utils/cache';
+import { Cache, ElementCache } from '@/editor/ecs/components/cache';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import HistoryManager from '../../history';
 import { Renderer } from '../../renderer';
 import SceneManager from '../../scene';
-import SelectionManager, { ElementSelectionManager } from '../../selection';
+import { ElementSelectionManager } from '../../selection';
 import Bezier from './bezier';
-import { Transform } from '../components/transform';
 import Layer from './layer';
 import Vertex from './vertex';
 import Fill from '../components/fill';
 import Stroke from '../components/stroke';
 import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
+import { ElementTransform } from '../components/transform';
+import Debugger from '@/utils/debugger';
 
 class Element implements ElementEntity {
   readonly id: string;
@@ -20,7 +21,7 @@ class Element implements ElementEntity {
   readonly selection = new ElementSelectionManager(this);
 
   parent: Layer;
-  transform: TransformComponent;
+  transform: ElementTransform;
 
   private m_order: string[] = [];
   private m_vertices: Map<string, VertexEntity> = new Map();
@@ -31,12 +32,12 @@ class Element implements ElementEntity {
   private m_recordHistory: boolean;
   private m_fillRule: 'even-odd' | 'non-zero' = 'non-zero';
 
-  private m_cache: Cache = new Cache();
-  private cached = this.m_cache.cached.bind(this.m_cache);
+  private m_cache: ElementCache = new ElementCache();
 
   constructor({
     id = nanoid(),
     vertices,
+    transform,
     position,
     rotation,
     closed = false,
@@ -46,11 +47,11 @@ class Element implements ElementEntity {
   }: ElementOptions) {
     this.id = id;
     this.m_closed = closed;
-    this.transform = new Transform(
-      position,
-      rotation,
-      (magnitude, origin, temp, apply) => this.scale(magnitude, origin, temp, apply),
-      () => this.recalculate()
+    this.transform = new ElementTransform(
+      this,
+      this.m_cache.last,
+      transform?.position || position,
+      transform?.rotation || rotation
     );
     this.m_recordHistory = recordHistory;
 
@@ -98,110 +99,6 @@ class Element implements ElementEntity {
     }
   }
 
-  get boundingBox(): Box {
-    return this.cached<Box>('boundingBox', () => {
-      if (this.transform.rotation === 0) return this.unrotatedBoundingBox;
-
-      const box = this.unrotatedBoundingBox;
-      const angle = this.transform.rotation;
-      const origin = vec2.div(vec2.add(box[0], box[1]), 2);
-      const center = vec2.sub(origin, this.transform.position);
-
-      let min: vec2 = [Infinity, Infinity];
-      let max: vec2 = [-Infinity, -Infinity];
-
-      this.m_curves.forEach((bezier) => {
-        const extrema = bezier.getRotatedExtrema(center, angle);
-
-        extrema.forEach((point) => {
-          vec2.min(min, point, true);
-          vec2.max(max, point, true);
-        });
-      });
-
-      return [vec2.add(min, this.transform.position), vec2.add(max, this.transform.position)];
-    });
-  }
-
-  get staticBoundingBox(): Box {
-    return this.cached<Box>('staticBoundingBox', () => {
-      let min: vec2 = [Infinity, Infinity];
-      let max: vec2 = [-Infinity, -Infinity];
-
-      this.m_curves.forEach((bezier) => {
-        const box = bezier.boundingBox;
-
-        vec2.min(min, box[0], true);
-        vec2.max(max, box[1], true);
-      });
-
-      return [
-        vec2.add(min, this.transform.staticPosition),
-        vec2.add(max, this.transform.staticPosition)
-      ];
-    });
-  }
-
-  get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
-    return this.cached<[vec2, vec2, vec2, vec2]>('rotatedBoundingBox', () => {
-      const box = this.unrotatedBoundingBox;
-      if (this.transform.rotation === 0)
-        return [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]];
-
-      const angle = this.transform.rotation;
-      const origin = vec2.div(vec2.add(box[0], box[1]), 2);
-
-      return [
-        vec2.rotate(box[0], origin, angle),
-        vec2.rotate([box[1][0], box[0][1]], origin, angle),
-        vec2.rotate(box[1], origin, angle),
-        vec2.rotate([box[0][0], box[1][1]], origin, angle)
-      ];
-    });
-  }
-
-  get unrotatedBoundingBox(): Box {
-    return this.cached<Box>('unrotatedBoundingBox', () => {
-      let min: vec2 = [Infinity, Infinity];
-      let max: vec2 = [-Infinity, -Infinity];
-
-      if (this.m_curves.size) {
-        this.m_curves.forEach((bezier) => {
-          const box = bezier.boundingBox;
-
-          vec2.min(min, box[0], true);
-          vec2.max(max, box[1], true);
-        });
-      } else {
-        this.m_vertices.forEach((vertex) => {
-          vec2.min(min, vertex.transform.position, true);
-          vec2.max(max, vertex.transform.position, true);
-        });
-      }
-
-      return [vec2.add(min, this.transform.position), vec2.add(max, this.transform.position)];
-    });
-  }
-
-  get largeBoundingBox(): Box {
-    return this.cached<Box>('largeBoundingBox', () => {
-      const box = this.boundingBox;
-      const position = this.transform.position;
-
-      let min: vec2 = vec2.sub(box[0], position);
-      let max: vec2 = vec2.sub(box[1], position);
-
-      this.m_vertices.forEach((vertex) => {
-        const vertexBox = vertex.boundingBox;
-
-        min = vec2.min(min, vertexBox[0]);
-        max = vec2.max(max, vertexBox[1]);
-      });
-
-      return [vec2.add(min, position), vec2.add(max, position)];
-    });
-  }
-
   get length(): number {
     return this.m_order.length;
   }
@@ -221,14 +118,24 @@ class Element implements ElementEntity {
     this.regenerate();
   }
 
-  private get m_closingCurve(): Bezier {
-    return this.cached<Bezier>('closingCurve', () => {
-      const curves = Array.from(this.m_curves.values());
-      return new Bezier({
-        start: new Vertex({ position: curves[curves.length - 1].p3 }),
-        end: new Vertex({ position: curves[0].p0 })
-      });
+  get cache() {
+    return this.m_cache as any as Cache;
+  }
+
+  private onClosingCurveCacheMiss(): Bezier {
+    // 31
+    const curves = Array.from(this.m_curves.values());
+    return new Bezier({
+      start: new Vertex({ position: curves[curves.length - 1].p3 }),
+      end: new Vertex({ position: curves[0].p0 })
     });
+  }
+
+  private get m_closingCurve(): Bezier {
+    Debugger.time('cCurve');
+    const bezier = this.m_cache.cached('closingCurve', this.onClosingCurveCacheMiss.bind(this));
+    Debugger.timeEnd('cCurve');
+    return bezier;
   }
 
   private pushVertex(
@@ -242,7 +149,7 @@ class Element implements ElementEntity {
     vertex.parent = this;
 
     if (regenerate) this.regenerate();
-    else this.recalculate(false);
+    else this.m_cache.pause = true;
   }
 
   private spliceVertex(
@@ -254,46 +161,10 @@ class Element implements ElementEntity {
     this.m_order.splice(index, 1);
 
     if (regenerate) this.regenerate();
-    else this.recalculate(false);
+    else this.m_cache.pause = true;
   }
 
   public points: vec2[] = [];
-
-  private scale(
-    magnitude: vec2,
-    origin: vec2 = this.transform.origin,
-    temp = false,
-    apply?: boolean
-  ) {
-    // magnitude = vec2.rotate(magnitude, [1, 1], -this.transform.rotation);
-    if (apply === true) {
-      this.m_vertices.forEach((vertex) => vertex.transform.apply());
-    } else if (apply === false) {
-      this.m_vertices.forEach((vertex) => vertex.transform.clear());
-    } else if (temp) {
-      // this.points = [[0, 0], origin, vec2.add(origin, vec2.mul(vec2.sub(magnitude, 1), 100))];
-      this.m_vertices.forEach((vertex) => {
-        vertex.transform.tempPosition = vec2.scale(
-          vertex.transform.staticPosition,
-          origin,
-          magnitude
-        );
-        vertex.transform.tempLeft = vec2.scale(vertex.transform.staticLeft, [0, 0], magnitude);
-        vertex.transform.tempRight = vec2.scale(vertex.transform.staticRight, [0, 0], magnitude);
-      });
-    } else {
-      this.m_vertices.forEach((vertex) => {
-        vertex.transform.position = vec2.scale(vertex.transform.staticPosition, origin, magnitude);
-        vertex.transform.left = vec2.scale(vertex.transform.staticLeft, [0, 0], magnitude);
-        vertex.transform.right = vec2.scale(vertex.transform.staticRight, [0, 0], magnitude);
-      });
-    }
-  }
-
-  recalculate(propagate: boolean = true): void {
-    this.m_cache.clear();
-    if (propagate) this.m_curves.forEach((bezier) => bezier.recalculate());
-  }
 
   regenerate(ids: string[] = this.m_order): void {
     const curves = new Map<string, BezierEntity>();
@@ -330,11 +201,15 @@ class Element implements ElementEntity {
     this.m_vertices = vertices;
     this.m_curves = curves;
 
-    this.recalculate(false);
+    this.m_cache.pause = true;
   }
 
   forEach(callback: (vertex: VertexEntity, selected?: boolean | undefined) => void): void {
     this.m_vertices.forEach((vertex) => callback(vertex, this.selection.has(vertex.id)));
+  }
+
+  forEachBezier(callback: (bezier: BezierEntity) => void): void {
+    this.m_curves.forEach((curve) => callback(curve));
   }
 
   reverse(): void {
@@ -365,23 +240,17 @@ class Element implements ElementEntity {
   concat(element: ElementEntity): void {
     const backup = [...this.m_order];
 
-    const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(
-      vec2.add(
-        vec2.sub(box[0], this.transform.position),
-        vec2.sub(box[1], this.transform.position)
-      ),
-      2
+    const box = this.transform.unrotatedBoundingBox;
+    const mid = vec2.mid(
+      vec2.sub(box[0], this.transform.position),
+      vec2.sub(box[1], this.transform.position)
     );
     const angle = this.transform.rotation;
 
-    const box1 = element.unrotatedBoundingBox;
-    const mid1 = vec2.div(
-      vec2.add(
-        vec2.sub(box1[0], element.transform.position),
-        vec2.sub(box1[1], element.transform.position)
-      ),
-      2
+    const box1 = element.transform.unrotatedBoundingBox;
+    const mid1 = vec2.mid(
+      vec2.sub(box1[0], element.transform.position),
+      vec2.sub(box1[1], element.transform.position)
     );
     const angle1 = element.transform.rotation;
 
@@ -421,13 +290,10 @@ class Element implements ElementEntity {
       }
     });
 
-    const box2 = this.unrotatedBoundingBox;
-    const mid2 = vec2.div(
-      vec2.add(
-        vec2.sub(box2[0], this.transform.position),
-        vec2.sub(box2[1], this.transform.position)
-      ),
-      2
+    const box2 = this.transform.unrotatedBoundingBox;
+    const mid2 = vec2.mid(
+      vec2.sub(box2[0], this.transform.position),
+      vec2.sub(box2[1], this.transform.position)
     );
 
     this.transform.translate(
@@ -442,8 +308,8 @@ class Element implements ElementEntity {
     if (!this.m_curves.has(bezier.id)) return;
 
     if (this.transform.rotation !== 0) {
-      const box = this.unrotatedBoundingBox;
-      const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+      const box = this.transform.unrotatedBoundingBox;
+      const mid = vec2.mid(box[0], box[1]);
       position = vec2.rotate(position, mid, -this.transform.rotation);
     }
 
@@ -485,8 +351,8 @@ class Element implements ElementEntity {
       this.delete(last, true);
     }
 
-    const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const box = this.transform.unrotatedBoundingBox;
+    const mid = vec2.mid(box[0], box[1]);
 
     if (this.m_order[0]) {
       HistoryManager.record({
@@ -501,8 +367,8 @@ class Element implements ElementEntity {
       });
     }
 
-    const box1 = this.unrotatedBoundingBox;
-    const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+    const box1 = this.transform.unrotatedBoundingBox;
+    const mid1 = vec2.mid(box1[0], box1[1]);
 
     this.transform.translate(
       vec2.sub(
@@ -527,7 +393,7 @@ class Element implements ElementEntity {
     const angle = this.transform.rotation;
 
     if (angle === 0) {
-      if (!doesBoxIntersectBox(box, this.boundingBox)) return false;
+      if (!doesBoxIntersectBox(box, this.transform.boundingBox)) return false;
 
       box = [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], this.transform.position)];
 
@@ -539,14 +405,14 @@ class Element implements ElementEntity {
 
       return Array.from(this.m_curves.values()).some((segment) => segment.intersectsBox(box));
     } else {
-      const unrotatedBox = this.unrotatedBoundingBox;
-      const mid = vec2.div(vec2.add(unrotatedBox[0], unrotatedBox[1]), 2);
+      const unrotatedBox = this.transform.unrotatedBoundingBox;
+      const mid = vec2.mid(unrotatedBox[0], unrotatedBox[1]);
 
-      if (!doesBoxIntersectRotatedBox(box, unrotatedBox, this.transform.rotation)) return false;
+      if (!doesBoxIntersectRotatedBox(box, unrotatedBox, angle)) return false;
 
       const position = this.transform.position;
-      const rotated = [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]].map(
-        (point) => vec2.sub(vec2.rotate(point, mid, -angle), position)
+      const rotated: vec2[] = [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]].map(
+        (point) => vec2.sub(vec2.rotate(point as vec2, mid, -angle), position)
       );
 
       rotated.push(rotated[0]);
@@ -558,7 +424,7 @@ class Element implements ElementEntity {
       }
 
       box = [vec2.sub(box[0], position), vec2.sub(box[1], position)];
-      vec2.sub(mid, position, true);
+      vec2.sub(mid, position, mid);
 
       return Array.from(this.m_curves.values()).some((segment) => {
         if (isPointInBox(vec2.rotate(segment.p0, mid, angle), box)) return true;
@@ -573,8 +439,8 @@ class Element implements ElementEntity {
       return;
     }
 
-    const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const box = this.transform.unrotatedBoundingBox;
+    const mid = vec2.mid(box[0], box[1]);
 
     const vertices = vertex === true ? this.selection.entities : [vertex];
     const indices = vertices.map((vertex) => this.m_order.indexOf(vertex.id)).sort();
@@ -641,8 +507,8 @@ class Element implements ElementEntity {
           stroke: this.m_stroke ?? undefined,
           fill: this.m_fill ?? undefined
         });
-        const box1 = element.unrotatedBoundingBox;
-        const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
+        const box1 = element.transform.unrotatedBoundingBox;
+        const mid1 = vec2.mid(box1[0], box1[1]);
         element.transform.translate(
           vec2.sub(
             vec2.rotate([0, 0], mid, this.transform.staticRotation),
@@ -692,8 +558,8 @@ class Element implements ElementEntity {
 
   getEntityAt(position: vec2, lowerLevel: boolean, threshold: number): Entity | undefined {
     const angle = this.transform.rotation;
-    const box = this.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+    const box = this.transform.unrotatedBoundingBox;
+    const mid = vec2.mid(box[0], box[1]);
 
     if (angle !== 0) {
       position = vec2.rotate(position, mid, -this.transform.rotation);
@@ -702,7 +568,7 @@ class Element implements ElementEntity {
     if (
       isPointInBox(
         position,
-        lowerLevel ? this.largeBoundingBox : this.unrotatedBoundingBox,
+        lowerLevel ? this.transform.largeBoundingBox : this.transform.unrotatedBoundingBox,
         threshold
       )
     ) {
@@ -769,8 +635,8 @@ class Element implements ElementEntity {
       const position = this.transform.position;
 
       box = [vec2.sub(box[0], position), vec2.sub(box[1], position)];
-      const unrotatedBox = this.unrotatedBoundingBox;
-      const mid = vec2.sub(vec2.div(vec2.add(unrotatedBox[0], unrotatedBox[1]), 2), position);
+      const unrotatedBox = this.transform.unrotatedBoundingBox;
+      const mid = vec2.sub(vec2.mid(unrotatedBox[0], unrotatedBox[1]), position);
       const angle = this.transform.rotation;
 
       this.m_vertices.forEach((vertex) => {
@@ -779,47 +645,48 @@ class Element implements ElementEntity {
     } else if (this.intersects(box)) entities.add(this);
   }
 
-  getDrawable(useWebGL: boolean = false): Drawable {
-    return this.cached<Drawable>(`getDrawable${useWebGL ? '-gl' : ''}`, () => {
-      if (useWebGL) {
-        return { operations: [{ type: 'geometry' }] };
-      } else {
-        const drawable: Drawable = { operations: [{ type: 'begin' }] };
+  private onGetDrawableCacheMiss(): Drawable {
+    const drawable: Drawable = { operations: [{ type: 'begin' }] };
 
-        let first = true;
+    let first = true;
 
-        this.m_curves.forEach((bezier) => {
-          if (first) {
-            drawable.operations.push({ type: 'move', data: [bezier.p0] });
-            first = false;
-          }
-
-          drawable.operations.push(...bezier.getDrawable().operations);
-        });
-
-        if (this.m_closed) drawable.operations.push({ type: 'close' });
-
-        if (this.m_fill) {
-          drawable.operations.push({
-            type: 'fillcolor',
-            data: SceneManager.assets.get(this.m_fill, 'fill').color.vec4
-          });
-
-          drawable.operations.push({ type: 'fill' });
-        }
-
-        if (this.m_stroke) {
-          drawable.operations.push({
-            type: 'strokecolor',
-            data: SceneManager.assets.get(this.m_stroke, 'stroke').color.vec4
-          });
-
-          drawable.operations.push({ type: 'stroke' });
-        }
-
-        return drawable;
+    this.m_curves.forEach((bezier) => {
+      if (first) {
+        drawable.operations.push({ type: 'move', data: [bezier.p0] });
+        first = false;
       }
+
+      drawable.operations.push(...bezier.getDrawable().operations);
     });
+
+    if (this.m_closed) drawable.operations.push({ type: 'close' });
+
+    if (this.m_fill) {
+      drawable.operations.push({
+        type: 'fillcolor',
+        data: SceneManager.assets.get(this.m_fill, 'fill').color.vec4
+      });
+
+      drawable.operations.push({ type: 'fill' });
+    }
+
+    if (this.m_stroke) {
+      drawable.operations.push({
+        type: 'strokecolor',
+        data: SceneManager.assets.get(this.m_stroke, 'stroke').color.vec4
+      });
+
+      drawable.operations.push({ type: 'stroke' });
+    }
+
+    return drawable;
+  }
+
+  getDrawable(useWebGL: boolean = false): Drawable {
+    Debugger.time('drwb');
+    const drawable = this.m_cache.cached('drawable', this.onGetDrawableCacheMiss.bind(this));
+    Debugger.timeEnd('drwb');
+    return drawable;
   }
 
   getOutlineDrawable(useWebGL: boolean = false): Drawable {
@@ -846,7 +713,7 @@ class Element implements ElementEntity {
     const obj: ElementObject = {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
-      position: this.transform.staticPosition,
+      transform: this.transform.asObject(),
       vertices: this.m_order.map(
         (id) => this.m_vertices.get(id)!.asObject(duplicate) as VertexObject
       )

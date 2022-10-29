@@ -76,6 +76,10 @@ abstract class HistoryManager {
   public static skipNext() {
     this.m_skip = true;
   }
+
+  public static clearSkip() {
+    this.m_skip = false;
+  }
 }
 
 export default HistoryManager;

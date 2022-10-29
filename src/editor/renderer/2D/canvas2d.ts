@@ -6,6 +6,8 @@ import Renderer from '../renderer';
 import InputManager from '@/editor/input';
 import SelectionManager from '@/editor/selection';
 import ImageMedia from '@/editor/ecs/entities/image';
+import { RectTransform } from '@/editor/ecs/components/transform';
+import Debugger from '@/utils/debugger';
 
 class Canvas2D implements Canvas {
   private m_container: HTMLDivElement;
@@ -72,7 +74,7 @@ class Canvas2D implements Canvas {
 
   setup(canvas: HTMLCanvasElement) {
     this.m_canvas = canvas;
-    this.m_ctx = canvas.getContext('2d')!;
+    this.m_ctx = canvas.getContext('2d', { alpha: false })!;
   }
 
   resize() {
@@ -116,7 +118,7 @@ class Canvas2D implements Canvas {
     transform?: mat4;
   }) {
     size = typeof size === 'number' ? [size, size] : size;
-    const translate = centered ? vec2.mul(size, 0.5) : vec2.create();
+    const translate = centered ? vec2.mulS(size, 0.5) : vec2.create();
 
     this.m_ctx.save();
 
@@ -215,29 +217,10 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.save();
 
-    const drawable = entity.getDrawable(false);
+    const matrix = entity.transform.mat3;
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
 
-    if ((entity as MovableEntity).transform) {
-      const position = (entity as MovableEntity).transform.position;
-      if ((entity as TransformableEntity).transform.rotation) {
-        const boundingBox = (entity as MovableEntity).boundingBox;
-        const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
-        const translation = vec2.sub(mid, position);
-        this.m_ctx.transform(
-          1,
-          0,
-          0,
-          1,
-          position[0] + translation[0],
-          position[1] + translation[1]
-        );
-        this.m_ctx.rotate((entity as TransformableEntity).transform.rotation);
-        this.m_ctx.translate(-translation[0], -translation[1]);
-      } else {
-        this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
-      }
-    }
-    this.draw(drawable);
+    this.draw(entity.getDrawable(false));
 
     this.m_ctx.restore();
   }
@@ -249,28 +232,12 @@ class Canvas2D implements Canvas {
     this.m_ctx.save();
     this.m_ctx.strokeStyle = `rgba(0, 0, 0, 1.0)`;
     this.m_ctx.lineWidth = 1;
-    const boundingBox = element.unrotatedBoundingBox;
-    const position = element.transform.position;
-    const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
-    const translation = vec2.sub(mid, position);
-    this.m_ctx.transform(1, 0, 0, 1, position[0] + translation[0], position[1] + translation[1]);
-    this.m_ctx.rotate(element.transform.rotation);
-    // if (element.transform.rotation !== 0) console.log(element.transform.rotation);
-    this.m_ctx.translate(-translation[0], -translation[1]);
-    // Debug
+
+    const matrix = element.transform.mat3;
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
+
     this.m_ctx.fillStyle = 'rgb(50, 50, 50)';
     this.draw((element as Element).getDrawable(false));
-
-    this.m_ctx.restore();
-
-    for (const point of element.points) {
-      console.log(point);
-      this.m_ctx.fillStyle = 'rgb(250, 50, 50)';
-      this.begin();
-      this.circle({ type: 'circle', data: [point, 20] });
-      this.fill();
-      this.close();
-    }
 
     if (Renderer.debugging && Renderer.debug.box) {
       if (
@@ -283,7 +250,45 @@ class Canvas2D implements Canvas {
         this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
         this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
       }
-      const box = (element as Element).boundingBox;
+      this.begin();
+      element.forEachBezier((b) => {
+        const box = b.boundingBox;
+        this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
+      });
+      const b = element.transform.unrotatedBoundingBox;
+      const box = b.map((p) => vec2.sub(p, element.transform.position));
+      this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
+      this.fill();
+      this.stroke();
+    }
+
+    this.m_ctx.restore();
+    this.m_ctx.save();
+
+    this.m_ctx.translate(...element.transform.position);
+
+    for (const point of element.points) {
+      this.m_ctx.fillStyle = 'rgb(250, 50, 50)';
+      this.begin();
+      this.circle({ type: 'circle', data: [point, 20] });
+      this.fill();
+      this.close();
+    }
+
+    this.m_ctx.restore();
+
+    if (Renderer.debugging && Renderer.debug.box) {
+      if (
+        (InputManager.hover.element && InputManager.hover.element.id === element.id) ||
+        SelectionManager.has(element.id)
+      ) {
+        this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.2)';
+        this.m_ctx.strokeStyle = 'rgb(220, 20, 60)';
+      } else {
+        this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
+        this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
+      }
+      const box = (element as Element).transform.boundingBox;
       this.begin();
       this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
       this.fill();
@@ -293,33 +298,15 @@ class Canvas2D implements Canvas {
   }
 
   public image(image: ImageMedia) {
+    // TODO: Bilinar Filtering
     if (!SceneManager.isVisible(image)) return;
     this.m_stats.draw();
-    const boundingBox = image.unrotatedBoundingBox;
-    const position = image.transform.position;
-    const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
-    const translation = vec2.sub(mid, position);
-
-    // TODO: Bilinar Filtering
 
     this.m_ctx.save();
-    this.m_ctx.transform(1, 0, 0, 1, position[0] + translation[0], position[1] + translation[1]);
-    this.m_ctx.rotate(image.transform.rotation);
 
-    this.m_ctx.scale(image.reflect[0] === 1 ? -1 : 1, image.reflect[1] === 1 ? -1 : 1);
-    this.m_ctx.translate(-translation[0], -translation[1]);
-
-    this.m_ctx.translate(image.transform.origin[0], image.transform.origin[1]);
-    this.m_ctx.scale(image.magnitude[0], image.magnitude[1]);
-    this.m_ctx.translate(-image.transform.origin[0], -image.transform.origin[1]);
-    this.m_ctx.drawImage(image.source, 0, 0, image.size[0], image.size[1]);
-
-    for (const point of image.points) {
-      this.begin();
-      this.circle({ type: 'circle', data: [point, 3] });
-      this.fill();
-      this.close();
-    }
+    const matrix = image.transform.mat3;
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
+    this.m_ctx.drawImage(image.source, 0, 0, ...image.transform.staticSize);
 
     this.m_ctx.restore();
 
@@ -334,7 +321,7 @@ class Canvas2D implements Canvas {
         this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
         this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
       }
-      const box = image.boundingBox;
+      const box = image.transform.boundingBox;
       this.begin();
       this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
       this.fill();
@@ -351,30 +338,19 @@ class Canvas2D implements Canvas {
 
   public outline(entity: Entity, skipVertices: boolean = false) {
     this.m_ctx.save();
-    if ((entity as MovableEntity).transform) {
-      const position = (entity as Element).transform.position;
-      if ((entity as TransformableEntity).transform.rotation) {
-        const boundingBox = (entity as TransformableEntity).unrotatedBoundingBox;
-        const mid = vec2.div(vec2.add(boundingBox[0], boundingBox[1]), 2);
-        const translation = vec2.sub(mid, position);
-        this.m_ctx.transform(
-          1,
-          0,
-          0,
-          1,
-          position[0] + translation[0],
-          position[1] + translation[1]
-        );
-        this.m_ctx.rotate((entity as TransformableEntity).transform.rotation);
-        this.m_ctx.translate(-translation[0], -translation[1]);
-      } else {
-        this.m_ctx.transform(1, 0, 0, 1, position[0], position[1]);
-      }
-    }
+
+    const matrix = entity.transform.mat3;
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
+
     this.draw((entity as Element).getOutlineDrawable(false));
     if (!skipVertices && InputManager.tool.isVertex && entity.type === 'element')
       (entity as Element).forEach((vertex, selected) => vertex.render(selected));
+
     this.m_ctx.restore();
+
+    if ((entity as MovableEntity).transform instanceof RectTransform) {
+      this.stroke();
+    }
     this.m_stats.entity();
   }
 
@@ -386,10 +362,11 @@ class Canvas2D implements Canvas {
     const width = 150;
     const lAlign = 5;
     const rAlign = 40;
+    const timers = Debugger.timers;
 
     this.m_ctx.setTransform(1, 0, 0, 1, this.size[0] - width, 0);
     this.m_ctx.fillStyle = 'rgba(0.0, 0.0, 0.0, 0.5)';
-    this.m_ctx.fillRect(0, 0, width, 170);
+    this.m_ctx.fillRect(0, 0, width, 170 + timers.size * 55);
 
     this.m_ctx.textAlign = 'left';
     this.m_ctx.font = 'bold 12px Helvetica,Arial,sans-serif';
@@ -421,6 +398,20 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.fillText('DRW:', lAlign, 155);
     this.m_ctx.fillText(`${this.m_stats.drawn}`, rAlign, 155);
+
+    let i = 0;
+
+    timers.forEach((timer, id) => {
+      this.m_ctx.fillText(id + ':', lAlign, 180 + 55 * i);
+      this.m_ctx.fillText(`${timer.value.toFixed(4)}ms`, rAlign + 10, 180 + 55 * i);
+      this.m_ctx.fillText(`${timer.entries}`, rAlign + 10, 195 + 55 * i);
+      this.m_ctx.fillText(
+        `${(timer.value / timer.entries).toFixed(4)}ms`,
+        rAlign + 10,
+        210 + 55 * i
+      );
+      i++;
+    });
   }
 }
 

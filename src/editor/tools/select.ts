@@ -51,9 +51,9 @@ const onSelectPointerDown = () => {
         let delta = InputManager.scene.delta;
 
         const box = SelectionManager.staticBoundingBox;
-        vec2.add(box[0], delta, true);
-        vec2.add(box[1], delta, true);
-        const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+        vec2.add(box[0], delta, box[0]);
+        vec2.add(box[1], delta, box[1]);
+        const mid = vec2.mid(box[0], box[1]);
         box.push(mid);
 
         const THRESH = 4 / SceneManager.viewport.zoom;
@@ -64,15 +64,18 @@ const onSelectPointerDown = () => {
 
         SceneManager.forEach((entity) => {
           if (SceneManager.isVisible(entity) && !SelectionManager.ids.includes(entity.id)) {
-            const entityBox = (entity as MovableEntity).boundingBox;
-            entityBox.push(vec2.div(vec2.add(entityBox[0], entityBox[1]), 2));
+            const entityBox = (entity.transform as TransformComponent).boundingBox;
 
-            for (let axis = 0; axis < 2; axis++) {
-              for (let side1 = 0; side1 < 3; side1++) {
-                for (let side = 0; side < 3; side++) {
-                  let dist = entityBox[side][axis] - box[side1][axis];
-                  if (Math.abs(dist) < THRESH && Math.abs(dist) < Math.abs(snappingDelta[axis])) {
-                    snappingDelta[axis] = dist;
+            if (entityBox) {
+              entityBox.push(vec2.mid(entityBox[0], entityBox[1]));
+
+              for (let axis = 0; axis < 2; axis++) {
+                for (let side1 = 0; side1 < 3; side1++) {
+                  for (let side = 0; side < 3; side++) {
+                    let dist = entityBox[side][axis] - box[side1][axis];
+                    if (Math.abs(dist) < THRESH && Math.abs(dist) < Math.abs(snappingDelta[axis])) {
+                      snappingDelta[axis] = dist;
+                    }
                   }
                 }
               }
@@ -93,7 +96,7 @@ const onSelectPointerDown = () => {
         }
 
         // TODO: prefere horizontal/vertical snapping
-        if (InputManager.keys.shift) vec2.snap(delta, undefined, true);
+        if (InputManager.keys.shift) vec2.snap(delta, undefined, delta);
 
         if (delta[1] === 0) delta[0] = snappedDelta[0];
         if (delta[0] === 0) delta[1] = snappedDelta[1];
@@ -101,13 +104,13 @@ const onSelectPointerDown = () => {
         draggingOccurred = true;
         SelectionManager.forEach((entity) => {
           (entity as Element).transform.tempTranslate(
-            vec2.sub(delta, (entity as Element).transform.tempPosition)
+            vec2.sub(delta, (entity as Element).transform.positionDelta)
           );
         });
       }
     } else if (rect.element) {
       rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
-      SelectionManager.temp(SceneManager.getEntitiesIn(rect.element.boundingBox));
+      SelectionManager.temp(SceneManager.getEntitiesIn(rect.element.transform.boundingBox));
     }
 
     SelectionManager.calculateRenderOverlay();

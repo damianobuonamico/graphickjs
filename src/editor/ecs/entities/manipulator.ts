@@ -51,9 +51,9 @@ class GenericHandle implements Entity {
           data: [
             vec2.add(
               this.transform.position,
-              vec2.div([-this.m_radius, -this.m_radius], SceneManager.viewport.zoom)
+              vec2.divS([-this.m_radius, -this.m_radius], SceneManager.viewport.zoom)
             ),
-            vec2.div([this.m_radius * 2, this.m_radius * 2], SceneManager.viewport.zoom)
+            vec2.divS([this.m_radius * 2, this.m_radius * 2], SceneManager.viewport.zoom)
           ]
         },
         { type: 'stroke' }
@@ -176,7 +176,7 @@ class Manipulator implements ManipulatorEntity {
         this.m_positions[key as HandleKey](size);
       if (this.m_handles[key as HandleKey].handleType === 'rotate')
         this.m_handles[key as HandleKey].transform.translate(
-          vec2.div(this.m_offsets[key as HandleKey] ?? [0, 0], SceneManager.viewport.zoom)
+          vec2.divS(this.m_offsets[key as HandleKey] ?? [0, 0], SceneManager.viewport.zoom)
         );
     });
   }
@@ -188,6 +188,8 @@ class Manipulator implements ManipulatorEntity {
     }
 
     this.m_active = true;
+
+    this.transform.center = vec2.mid(box[0], box[1]);
     this.transform.position = box[0];
     this.transform.rotation = angle;
     this.m_lastCalculatedPosition = box[0];
@@ -210,11 +212,11 @@ class Manipulator implements ManipulatorEntity {
     position = vec2.sub(position, this.transform.position);
 
     if (this.transform.rotation !== 0)
-      position = vec2.rotate(position, vec2.div(this.m_size, 2), -this.transform.rotation);
+      position = vec2.rotate(position, vec2.divS(this.m_size, 2), -this.transform.rotation);
 
     let toReturn: Entity | undefined;
 
-    const size = vec2.mul(this.m_size, SceneManager.viewport.zoom);
+    const size = vec2.mulS(this.m_size, SceneManager.viewport.zoom);
     const isBoxSmall = [size[0] < 30, size[1] < 30];
 
     Object.entries(this.m_handles).forEach(([key, handle]: [string, GenericHandle]) => {
@@ -236,7 +238,7 @@ class Manipulator implements ManipulatorEntity {
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
 
   getDrawable(useWebGL: boolean = false): Drawable {
-    const size = vec2.mul(this.m_size, SceneManager.viewport.zoom);
+    const size = vec2.mulS(this.m_size, SceneManager.viewport.zoom);
     const isBoxSmall = [size[0] < 30, size[1] < 30];
 
     const ops: DrawOp[] = [

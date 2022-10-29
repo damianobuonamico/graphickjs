@@ -75,33 +75,22 @@ const onVSelectPointerDown = () => {
           if (angle === 0) {
             handle.parent.transform.tempTranslate(InputManager.scene.movement);
           } else {
-            const box = handle.parent.parent.unrotatedBoundingBox;
-            const mid = vec2.div(vec2.add(box[0], box[1]), 2);
-
-            const p = vec2.rotate([0, 0], mid, angle);
-
+            const center = (handle.parent.parent.transform as ElementTransformComponent).center;
             const movement = vec2.rotate(InputManager.scene.movement, [0, 0], -angle);
 
             handle.parent.transform.tempTranslate(movement);
-
-            const box1 = handle.parent.parent.unrotatedBoundingBox;
-            const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
-
-            const p1 = vec2.rotate([0, 0], mid1, angle);
-
-            handle.parent.parent.transform.tempTranslate(vec2.sub(p, p1));
+            (handle.parent.parent.transform as ElementTransformComponent).keepCentered(center);
           }
         } else {
           const angle = handle.parent.parent.transform.rotation;
-          const box = handle.parent.parent.unrotatedBoundingBox;
-          const mid = vec2.div(vec2.add(box[0], box[1]), 2);
+          const center = (handle.parent.parent.transform as ElementTransformComponent).center;
 
           let value = vec2.rotate(
             vec2.sub(
               InputManager.scene.position,
               vec2.rotate(
                 vec2.add(handle.parent.transform.position, handle.parent.parent.transform.position),
-                mid,
+                center,
                 angle
               )
             ),
@@ -109,7 +98,7 @@ const onVSelectPointerDown = () => {
             -angle
           );
 
-          if (InputManager.keys.shift) vec2.snap(value, undefined, true);
+          if (InputManager.keys.shift) vec2.snap(value, undefined, value);
 
           if (angle === 0) {
             if (handle.id === handle.parent.left?.id)
@@ -123,8 +112,6 @@ const onVSelectPointerDown = () => {
                 InputManager.keys.alt
               );
           } else {
-            const p = vec2.rotate([0, 0], mid, angle);
-
             if (handle.id === handle.parent.left?.id)
               handle.parent.transform.tempTranslateLeft(
                 vec2.sub(value, handle.parent.transform.left),
@@ -136,12 +123,7 @@ const onVSelectPointerDown = () => {
                 InputManager.keys.alt
               );
 
-            const box1 = handle.parent.parent.unrotatedBoundingBox;
-            const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
-
-            const p1 = vec2.rotate([0, 0], mid1, angle);
-
-            handle.parent.parent.transform.tempTranslate(vec2.sub(p, p1));
+            (handle.parent.parent.transform as ElementTransformComponent).keepCentered(center);
           }
         }
       } else {
@@ -158,17 +140,13 @@ const onVSelectPointerDown = () => {
           const angle = (element as Element).transform.rotation;
 
           if (angle === 0) {
-            if ((element as Element).selection.size) {
+            if ((element as Element).selection && (element as Element).selection.size) {
               (element as Element).selection.forEach((vertex) => {
                 vertex.transform.tempTranslate(movement);
               });
             }
           } else {
-            const box = (element as Element).unrotatedBoundingBox;
-            const mid = vec2.div(vec2.add(box[0], box[1]), 2);
-
-            const p = vec2.rotate([0, 0], mid, angle);
-
+            const center = (element as Element).transform.center;
             const mov = vec2.rotate(movement, [0, 0], -angle);
 
             if ((element as Element).selection.size) {
@@ -177,12 +155,7 @@ const onVSelectPointerDown = () => {
               });
             }
 
-            const box1 = (element as Element).unrotatedBoundingBox;
-            const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
-
-            const p1 = vec2.rotate([0, 0], mid1, angle);
-
-            (element as Element).transform.tempTranslate(vec2.sub(p, p1));
+            (element.transform as ElementTransformComponent).keepCentered(center);
           }
         });
 
@@ -191,7 +164,7 @@ const onVSelectPointerDown = () => {
     } else if (rect.element) {
       draggingOccurred = false;
       rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
-      const box = rect.element.boundingBox;
+      const box = rect.element.transform.boundingBox;
       const entities = SceneManager.getEntitiesIn(box);
       entities.forEach((entity) => {
         if (entity.type === 'element') {

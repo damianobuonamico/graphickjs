@@ -103,7 +103,9 @@ const onPenPointerDown = () => {
       break;
     }
     case 'add': {
+      const center = element!.transform.center;
       const vertex = element!.split(bezier!, InputManager.scene.position);
+      element!.transform.keepCentered(center);
 
       HistoryManager.record({
         fn: () => {
@@ -164,19 +166,22 @@ const onPenPointerDown = () => {
       break;
     }
     case 'new': {
-      const box = pen.element?.unrotatedBoundingBox;
-      const mid = box && vec2.div(vec2.add(box[0], box[1]), 2);
+      const center = pen.element?.transform.center;
       const angle = pen.element?.transform.rotation;
 
+      const delta =
+        pen.element &&
+        vec2.sub(
+          angle === 0
+            ? InputManager.scene.position
+            : vec2.rotate(InputManager.scene.position, center!, -(angle || 0)),
+          pen.element.transform.position
+        );
+
+      // if (InputManager.keys.shift && delta) vec2.snap(delta, 8, delta);
+
       const v = new Vertex({
-        position: pen.element
-          ? vec2.sub(
-              angle === 0
-                ? InputManager.scene.position
-                : vec2.rotate(InputManager.scene.position, mid!, -(angle || 0)),
-              pen.element.transform.position
-            )
-          : vec2.create()
+        position: delta || vec2.create()
       });
 
       if (!pen.element) {
@@ -193,14 +198,7 @@ const onPenPointerDown = () => {
 
       e.push(v);
 
-      const box1 = e.unrotatedBoundingBox;
-      const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
-
-      if (box && mid && !!angle) {
-        e.transform.translate(
-          vec2.sub(vec2.rotate([0, 0], mid, angle), vec2.rotate([0, 0], mid1, angle))
-        );
-      }
+      if (center) e.transform.keepCentered(center);
 
       HistoryManager.record({
         fn: () => {
@@ -222,9 +220,7 @@ const onPenPointerDown = () => {
   function setLeft(position?: vec2, recordHandleCreation = false) {
     if (!pen.vertex) return;
 
-    const box = pen.element!.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
-    const angle = pen.element!.transform.rotation;
+    const center = pen.element!.transform.center;
 
     if (!pen.vertex.left) {
       pen.vertex.transform.left = position || vec2.create();
@@ -244,20 +240,13 @@ const onPenPointerDown = () => {
       }
     } else if (position) pen.vertex.transform.tempLeft = position;
 
-    const box1 = pen.element!.unrotatedBoundingBox;
-    const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
-
-    pen.element!.transform.tempTranslate(
-      vec2.sub(vec2.rotate([0, 0], mid, angle), vec2.rotate([0, 0], mid1, angle))
-    );
+    pen.element!.transform.keepCentered(center);
   }
 
   function setRight(position?: vec2, recordHandleCreation = false) {
     if (!pen.vertex) return;
 
-    const box = pen.element!.unrotatedBoundingBox;
-    const mid = vec2.div(vec2.add(box[0], box[1]), 2);
-    const angle = pen.element!.transform.rotation;
+    const center = pen.element!.transform.center;
 
     if (!pen.vertex.right) {
       pen.vertex.transform.right = position || vec2.create();
@@ -277,12 +266,7 @@ const onPenPointerDown = () => {
       }
     } else if (position) pen.vertex.transform.tempRight = position;
 
-    const box1 = pen.element!.unrotatedBoundingBox;
-    const mid1 = vec2.div(vec2.add(box1[0], box1[1]), 2);
-
-    pen.element!.transform.tempTranslate(
-      vec2.sub(vec2.rotate([0, 0], mid, angle), vec2.rotate([0, 0], mid1, angle))
-    );
+    pen.element!.transform.keepCentered(center);
   }
 
   const left = !!(pen.vertex && pen.vertex.left);
@@ -316,7 +300,7 @@ const onPenPointerDown = () => {
           const direction = vec2.unit(delta);
 
           if (!vec2.equals(direction, [0, 0])) {
-            setRight(vec2.mul(direction, vec2.len(pen.vertex!.transform.right)), true);
+            setRight(vec2.mulS(direction, vec2.len(pen.vertex!.transform.right)), true);
           }
         }
 
@@ -330,7 +314,7 @@ const onPenPointerDown = () => {
           const direction = vec2.unit(vec2.neg(delta));
 
           if (!vec2.equals(direction, [0, 0])) {
-            setLeft(vec2.mul(direction, vec2.len(pen.vertex!.transform.left)), true);
+            setLeft(vec2.mulS(direction, vec2.len(pen.vertex!.transform.left)), true);
           }
         }
 
@@ -368,8 +352,12 @@ const onPenPointerDown = () => {
         break;
       }
       case 'sub': {
-        if (vec2.len(InputManager.client.delta) < 10 / SceneManager.viewport.zoom)
+        if (vec2.len(InputManager.client.delta) < 10 / SceneManager.viewport.zoom) {
+          const center = element!.transform.center;
           element!.delete(vertex!, true);
+
+          element!.transform.keepCentered(center);
+        }
 
         HistoryManager.record({
           fn: () => {
@@ -411,13 +399,10 @@ export function onPenPointerHover() {
   const hasOverlay = pen.overlay ? SceneManager.hasRenderOverlay(pen.overlay.id) : false;
 
   if (pen.element && pen.vertex) {
-    const box = pen.element.unrotatedBoundingBox;
-    const mid = vec2.div(
-      vec2.add(
-        vec2.sub(box[0], pen.element.transform.position),
-        vec2.sub(box[1], pen.element.transform.position)
-      ),
-      2
+    const box = pen.element.transform.unrotatedBoundingBox;
+    const mid = vec2.mid(
+      vec2.sub(box[0], pen.element.transform.position),
+      vec2.sub(box[1], pen.element.transform.position)
     );
 
     if (

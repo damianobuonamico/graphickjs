@@ -1,10 +1,7 @@
+import { Cache } from '@/editor/ecs/components/cache';
 import { isPointInCircle, vec2 } from '@math';
 import { nanoid } from 'nanoid';
-import HistoryManager from '../../history';
-import InputManager from '../../input';
 import { SimpleTransform } from '../components/transform';
-import Element from './element';
-import Vertex from './vertex';
 
 class Handle implements HandleEntity {
   readonly id: string;
@@ -12,15 +9,14 @@ class Handle implements HandleEntity {
   readonly selectable = false;
   readonly handleType: HandleType;
 
-  // TODO: check formatting in each entity file
   parent: VertexEntity;
-  transform: SimpleTransformComponent;
+  transform: SimpleTransform;
 
   constructor({ position, type, parent }: HandleOptions) {
     this.id = nanoid();
     this.handleType = type;
     this.parent = parent;
-    this.transform = new SimpleTransform(position, () => this.parent.parent.recalculate());
+    this.transform = new SimpleTransform(position);
   }
 
   get boundingBox(): Box {
@@ -29,6 +25,10 @@ class Handle implements HandleEntity {
 
   get staticBoundingBox(): Box {
     return [this.transform.staticPosition, this.transform.staticPosition];
+  }
+
+  setCache(cache: Cache) {
+    this.transform.cache = cache;
   }
 
   destroy(): void {}
