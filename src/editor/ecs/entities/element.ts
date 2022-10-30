@@ -22,13 +22,13 @@ class Element implements ElementEntity {
 
   parent: Layer;
   transform: ElementTransform;
+  fill: Fill | null;
+  stroke: Stroke | null;
 
   private m_order: string[] = [];
   private m_vertices: Map<string, VertexEntity> = new Map();
   private m_curves: Map<string, BezierEntity> = new Map();
   private m_closed: boolean;
-  private m_stroke: string | null = null;
-  private m_fill: string | null = null;
   private m_recordHistory: boolean;
   private m_fillRule: 'even-odd' | 'non-zero' = 'non-zero';
 
@@ -57,46 +57,8 @@ class Element implements ElementEntity {
 
     if (vertices) this.vertices = vertices;
 
-    // TODO: refactor
-    if (stroke) {
-      if (typeof stroke === 'string') {
-        if (SceneManager.assets.has(stroke, 'stroke')) {
-          const s = SceneManager.assets.get(stroke, 'stroke');
-          s!.addParent(this);
-          this.m_stroke = stroke;
-        } else {
-          const s = new Stroke({});
-          SceneManager.assets.set(s, !this.m_recordHistory);
-          s.addParent(this);
-          this.m_stroke = s.id;
-        }
-      } else {
-        this.m_stroke = stroke.id;
-        (stroke as any).addParent(this);
-        if (!SceneManager.assets.has(stroke.id, 'stroke'))
-          SceneManager.assets.set(stroke as any, !this.m_recordHistory);
-      }
-    }
-
-    if (fill) {
-      if (typeof fill === 'string') {
-        if (SceneManager.assets.has(fill, 'fill')) {
-          const f = SceneManager.assets.get(fill, 'fill')!;
-          f.addParent(this);
-          this.m_fill = fill;
-        } else {
-          const f = new Fill({});
-          SceneManager.assets.set(f, !this.m_recordHistory);
-          f.addParent(this);
-          this.m_fill = f.id;
-        }
-      } else {
-        this.m_fill = fill.id;
-        (fill as any).addParent(this);
-        if (!SceneManager.assets.has(fill.id, 'stroke'))
-          SceneManager.assets.set(fill as any, !this.m_recordHistory);
-      }
-    }
+    if (fill) this.fill = new Fill(fill);
+    if (stroke) this.stroke = new Stroke(stroke);
   }
 
   get length(): number {
@@ -123,7 +85,6 @@ class Element implements ElementEntity {
   }
 
   private onClosingCurveCacheMiss(): Bezier {
-    // 31
     const curves = Array.from(this.m_curves.values());
     return new Bezier({
       start: new Vertex({ position: curves[curves.length - 1].p3 }),
@@ -504,8 +465,8 @@ class Element implements ElementEntity {
           vertices: fragments[i].map((id) => this.m_vertices.get(id)!),
           position: this.transform.staticPosition,
           rotation: this.transform.staticRotation,
-          stroke: this.m_stroke ?? undefined,
-          fill: this.m_fill ?? undefined
+          fill: this.fill?.asObject(),
+          stroke: this.stroke?.asObject()
         });
         const box1 = element.transform.unrotatedBoundingBox;
         const mid1 = vec2.mid(box1[0], box1[1]);
@@ -535,26 +496,7 @@ class Element implements ElementEntity {
     });
   }
 
-  destroy(): void {
-    const stroke = this.m_stroke ? SceneManager.assets.get(this.m_stroke, 'stroke') : null;
-    const fill = this.m_fill ? SceneManager.assets.get(this.m_fill, 'fill') : null;
-
-    if (this.m_recordHistory) {
-      HistoryManager.record({
-        fn: () => {
-          if (stroke) stroke.deleteParent(this);
-          if (fill) fill.deleteParent(this);
-        },
-        undo: () => {
-          if (stroke) stroke.addParent(this);
-          if (fill) fill.addParent(this);
-        }
-      });
-    } else {
-      if (stroke) stroke.deleteParent(this);
-      if (fill) fill.deleteParent(this);
-    }
-  }
+  destroy(): void {}
 
   getEntityAt(position: vec2, lowerLevel: boolean, threshold: number): Entity | undefined {
     const angle = this.transform.rotation;
@@ -586,7 +528,7 @@ class Element implements ElementEntity {
         });
       }
 
-      if (this.m_fill && !toReturn) {
+      if (this.fill && !toReturn) {
         const rect: Box = [position, [Infinity, position[1]]];
 
         if (this.m_fillRule === 'even-odd') {
@@ -660,24 +602,8 @@ class Element implements ElementEntity {
     });
 
     if (this.m_closed) drawable.operations.push({ type: 'close' });
-
-    if (this.m_fill) {
-      drawable.operations.push({
-        type: 'fillcolor',
-        data: SceneManager.assets.get(this.m_fill, 'fill').color.vec4
-      });
-
-      drawable.operations.push({ type: 'fill' });
-    }
-
-    if (this.m_stroke) {
-      drawable.operations.push({
-        type: 'strokecolor',
-        data: SceneManager.assets.get(this.m_stroke, 'stroke').color.vec4
-      });
-
-      drawable.operations.push({ type: 'stroke' });
-    }
+    if (this.fill) drawable.operations.push({ type: 'fill' });
+    if (this.stroke) drawable.operations.push({ type: 'stroke' });
 
     return drawable;
   }
@@ -721,8 +647,8 @@ class Element implements ElementEntity {
 
     if (this.m_closed) obj.closed = true;
 
-    if (this.m_stroke) obj.stroke = this.m_stroke;
-    if (this.m_fill) obj.fill = this.m_fill;
+    if (this.fill) obj.fill = this.fill.asObject(duplicate);
+    if (this.stroke) obj.stroke = this.stroke.asObject(duplicate);
 
     return obj;
   }

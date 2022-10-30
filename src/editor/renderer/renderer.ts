@@ -5,7 +5,7 @@ import Canvas2D from './2D/canvas2d';
 abstract class Renderer {
   private static m_canvas: Canvas;
 
-  public static debugging: boolean = true;
+  public static debugging: boolean = false;
   public static debug: DebugState = {
     box: true
   };

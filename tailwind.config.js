@@ -1,8 +1,5 @@
 module.exports = {
-  content: [
-    './index.html',
-    './src/**/*.{js,ts,jsx,tsx,css,md,mdx,html,json,scss}'
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx,css,md,mdx,html,json,scss}'],
   darkMode: 'class',
   theme: {
     extend: {
@@ -39,7 +36,7 @@ module.exports = {
       },
       gridTemplateColumns: {
         'menu-item': '30px 1fr 30px',
-        'tool-bar': '2.5rem 1fr'
+        editor: '2.5rem 1fr 15rem'
       },
       gridTemplateRows: {
         'title-bar': '2rem 1fr'

@@ -1,52 +1,24 @@
-import SceneManager from '@/editor/scene';
-import Color from '@utils/color';
+import Color from '@/editor/ecs/components/color';
 import { nanoid } from 'nanoid';
-import Element from '../entities/element';
 
-class Stroke implements Stroke {
+class Stroke implements StrokeComponent {
   public readonly id: string;
 
-  public style: 'solid' | number[] | null = 'solid';
+  public style: StrokeComponent['style'];
   public width: number = 1;
   public cap: CanvasLineCap = 'butt';
   public corner: CanvasLineJoin = 'miter';
   public miterLimit: number = 10;
-  public color: Color;
+  public color: ColorComponent;
 
-  private m_parents: Set<Element> = new Set();
-
-  constructor({
-    id = nanoid(),
-    style = 'solid',
-    width = 1,
-    cap = 'butt',
-    corner = 'miter',
-    miterLimit = 10,
-    color = [0, 0, 0, 1]
-  }: StrokeOptions) {
+  constructor({ id = nanoid(), style = 'solid', color = [1, 1, 1, 1] }: StrokeOptions) {
     this.id = id;
     this.style = style;
-    this.width = width;
-    this.cap = cap;
-    this.corner = corner;
-    this.miterLimit = miterLimit;
     this.color = new Color(color);
   }
 
-  public addParent(parent: Element) {
-    this.m_parents.add(parent);
-  }
-
-  public deleteParent(parent: Element) {
-    this.m_parents.delete(parent);
-
-    if (this.m_parents.size === 0) {
-      SceneManager.assets.delete(this.id, 'stroke');
-    }
-  }
-
-  public toJSON(duplicate = false) {
-    const obj: StrokeOptions = {
+  public asObject(duplicate = false) {
+    const obj: StrokeComponentObject = {
       id: duplicate ? nanoid() : this.id,
       color: this.color.vec4
     };

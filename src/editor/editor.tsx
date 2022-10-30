@@ -5,6 +5,7 @@ import { CanvasDOM } from '@multimedia';
 import Renderer from './renderer/renderer';
 import SceneManager from './scene';
 import InputManager from './input';
+import { PropertiesPanel } from '@/ui/properties';
 
 function getModePrimaryColor(mode: Mode) {
   switch (mode) {
@@ -48,7 +49,7 @@ const Editor: Component = () => {
         setMode={(mode: Mode) => setState({ mode })}
         loading={state.loading}
       />
-      <div class="grid grid-cols-tool-bar">
+      <div class="grid grid-cols-editor">
         <ToolBar
           tools={[
             'select',
@@ -68,6 +69,7 @@ const Editor: Component = () => {
           }}
         />
         <CanvasDOM />
+        <PropertiesPanel />
       </div>
     </div>
   );

@@ -1,12 +1,10 @@
-import { vec2, vec3 } from '@/math';
-import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
-import { isObject } from '@/utils/utils';
+import { vec2 } from '@/math';
+import Fill from './ecs/components/fill';
+import Stroke from './ecs/components/stroke';
 import Element from './ecs/entities/element';
 import Manipulator from './ecs/entities/manipulator';
 import Vertex from './ecs/entities/vertex';
-import InputManager from './input';
 import { Renderer } from './renderer';
-import { createVertices } from './renderer/geometry';
 import SceneManager from './scene';
 
 class ElementSelectionManager {
@@ -92,8 +90,8 @@ class ElementSelectionManager {
 abstract class SelectionManager {
   private static m_selected: Map<string, Entity> = new Map();
   private static m_temp: Map<string, Entity> = new Map();
-  private static m_angle: number | null = null;
-  public static manipulator: Manipulator = new Manipulator();
+
+  static manipulator: Manipulator = new Manipulator();
 
   static get size() {
     return this.m_selected.size + this.m_temp.size;
@@ -226,6 +224,9 @@ abstract class SelectionManager {
     if (selectVertices && entity.type === 'element') {
       (entity as Element).selection.all();
     }
+
+    this.setFillProperty();
+    this.setStrokeProperty();
   }
 
   static deselect(id: string, deselectVertices = true) {
@@ -236,6 +237,60 @@ abstract class SelectionManager {
       }
     }
     this.m_selected.delete(id);
+
+    this.setFillProperty();
+    this.setStrokeProperty();
+  }
+
+  private static m_setFillProperty: (data: Partial<FillPropertyData>) => void = () => {};
+  private static m_setStrokeProperty: (data: Partial<StrokePropertyData>) => void = () => {};
+
+  static set setFillPropertyFn(fn: (data: Partial<FillPropertyData>) => void) {
+    this.m_setFillProperty = fn;
+  }
+
+  static set setStrokePropertyFn(fn: (data: Partial<StrokePropertyData>) => void) {
+    this.m_setStrokeProperty = fn;
+  }
+
+  private static setFillProperty() {
+    // TODO: Debounce
+    const fill: FillPropertyData = { active: false, mixed: false, fills: [] };
+
+    this.forEach((entity) => {
+      if (entity.type === 'element') {
+        if ((entity as Element).fill) {
+          if (!fill.fills[0]) {
+            fill.fills[0] = (entity as Element).fill!.color.hex;
+          } else if (!(entity as Element).fill!.color.equals(fill.fills[0])) {
+            fill.mixed = true;
+          }
+        }
+        fill.active = true;
+      }
+    });
+
+    this.m_setFillProperty(fill);
+  }
+
+  private static setStrokeProperty() {
+    // TODO: Debounce
+    const stroke: StrokePropertyData = { active: false, mixed: false, strokes: [] };
+
+    this.forEach((entity) => {
+      if (entity.type === 'element') {
+        if ((entity as Element).stroke) {
+          if (!stroke.strokes[0]) {
+            stroke.strokes[0] = (entity as Element).stroke!.color.hex;
+          } else if (!(entity as Element).stroke!.color.equals(stroke.strokes[0])) {
+            stroke.mixed = true;
+          }
+        }
+        stroke.active = true;
+      }
+    });
+
+    this.m_setStrokeProperty(stroke);
   }
 
   static temp(entities: Set<Entity>) {
@@ -303,6 +358,38 @@ abstract class SelectionManager {
         this.select(entity as Entity, false);
       }
     });
+  }
+
+  static setFill({ color }: { color?: string }) {
+    if (color) {
+      this.forEach((entity) => {
+        if (entity.type === 'element') {
+          if ((entity as Element).fill) {
+            (entity as Element).fill!.color.set(color);
+          } else {
+            (entity as Element).fill = new Fill({ color });
+          }
+        }
+      });
+      this.m_setFillProperty({ fills: [color] });
+      SceneManager.render();
+    }
+  }
+
+  static setStroke({ color }: { color?: string }) {
+    if (color) {
+      this.forEach((entity) => {
+        if (entity.type === 'element') {
+          if ((entity as Element).stroke) {
+            (entity as Element).stroke!.color.set(color);
+          } else {
+            (entity as Element).stroke = new Stroke({ color });
+          }
+        }
+      });
+      this.m_setStrokeProperty({ strokes: [color] });
+      SceneManager.render();
+    }
   }
 }
 

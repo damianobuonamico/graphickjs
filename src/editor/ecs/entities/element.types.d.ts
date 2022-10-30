@@ -32,8 +32,8 @@ interface ElementOptions {
   rotation?: number;
   vertices?: VertexEntity[];
   closed?: boolean;
-  stroke?: string | Stroke;
-  fill?: string | Fill;
+  fill?: FillComponentObject;
+  stroke?: StrokeComponentObject;
   recordHistory?: boolean;
 }
 
@@ -41,6 +41,6 @@ interface ElementObject extends GenericEntityObject {
   transform: TransformComponentObject;
   vertices: VertexObject[];
   closed?: boolean;
-  stroke?: string;
-  fill?: string;
+  fill?: FillComponentObject;
+  stroke?: StrokeComponentObject;
 }

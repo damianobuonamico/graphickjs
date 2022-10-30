@@ -1,7 +1,4 @@
-import Fill from '@/editor/ecs/components/fill';
-import Stroke from '@/editor/ecs/components/stroke';
 import SceneManager from '@/editor/scene';
-import Color from '../color';
 import SVGAttributesContainer from './attributes';
 import parseSVGG from './parsers/SVGGParser';
 import parseSVGPath from './parsers/SVGPathParser';

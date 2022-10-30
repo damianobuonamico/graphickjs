@@ -186,7 +186,7 @@ class Vertex implements VertexEntity {
         drawable.operations.push({ type: 'fill' });
         drawable.operations.push({
           type: 'fillcolor',
-          data: vec4.fromValues(49 / 255, 239 / 255, 284 / 255, 1)
+          data: vec4.fromValues(56 / 255, 195 / 255, 242 / 255, 1)
         });
       }
 

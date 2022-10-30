@@ -1,15 +1,11 @@
-import SceneManager from '@/editor/scene';
-import Color from '@utils/color';
+import Color from '@/editor/ecs/components/color';
 import { nanoid } from 'nanoid';
-import Element from '../entities/element';
 
-class Fill implements Fill {
+class Fill implements FillComponent {
   public readonly id: string;
 
-  public style: 'solid';
-  public color: Color;
-
-  private m_parents: Set<Element> = new Set();
+  public style: FillComponent['style'];
+  public color: ColorComponent;
 
   constructor({ id = nanoid(), style = 'solid', color = [1, 1, 1, 1] }: FillOptions) {
     this.id = id;
@@ -17,20 +13,8 @@ class Fill implements Fill {
     this.color = new Color(color);
   }
 
-  public addParent(parent: Element) {
-    this.m_parents.add(parent);
-  }
-
-  public deleteParent(parent: Element) {
-    this.m_parents.delete(parent);
-
-    if (this.m_parents.size === 0) {
-      SceneManager.assets.delete(this.id, 'fill');
-    }
-  }
-
-  public toJSON(duplicate = false) {
-    const obj: FillOptions = {
+  public asObject(duplicate = false) {
+    const obj: FillComponentObject = {
       id: duplicate ? nanoid() : this.id,
       color: this.color.vec4
     };

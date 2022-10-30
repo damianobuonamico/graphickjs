@@ -70,8 +70,3 @@ interface ActionBinding {
 }
 
 type SelectionBackup = (Entity | { entity: Entity; vertices: Entity[] })[];
-
-interface AssetsObject {
-  stroke: StrokeOptions[];
-  fill: FillOptions[];
-}

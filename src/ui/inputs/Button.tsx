@@ -2,12 +2,7 @@ import { classNames } from '@utils/utils';
 import { JSX, Component, Show } from 'solid-js';
 import getIcon from '../icons';
 
-export type ButtonVariant =
-  | 'file-menu'
-  | 'file-menu-icon'
-  | 'menu'
-  | 'menu-icon'
-  | 'tool';
+export type ButtonVariant = 'file-menu' | 'file-menu-icon' | 'menu' | 'menu-icon' | 'tool';
 
 const Button: Component<{
   children: string | number | JSX.Element;
@@ -74,7 +69,7 @@ const Button: Component<{
               'border-primary-600': props.active && !props.disabled,
               'border-transparent': !props.active || props.disabled
             },
-            { 'px-2': !isIcon },
+            { 'px-2 py-0.5': !isIcon },
             { 'w-[24px] h-[24px] items-center justify-center': isIcon },
             isFile
           ],
@@ -90,17 +85,13 @@ const Button: Component<{
     >
       <Show when={variant === 'menu' || props.leftIcon}>
         <div class="flex items-center justify-center h-full w-full">
-          {typeof props.leftIcon === 'string'
-            ? getIcon(props.leftIcon)
-            : props.leftIcon}
+          {typeof props.leftIcon === 'string' ? getIcon(props.leftIcon) : props.leftIcon}
         </div>
       </Show>
       {props.children}
       <Show when={variant === 'menu' || props.rightIcon}>
         <div class="flex items-center justify-center h-full w-full">
-          {typeof props.rightIcon === 'string'
-            ? getIcon(props.rightIcon)
-            : props.rightIcon}
+          {typeof props.rightIcon === 'string' ? getIcon(props.rightIcon) : props.rightIcon}
         </div>
       </Show>
     </button>

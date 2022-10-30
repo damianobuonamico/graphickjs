@@ -236,8 +236,10 @@ class Canvas2D implements Canvas {
     const matrix = element.transform.mat3;
     this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
 
-    this.m_ctx.fillStyle = 'rgb(50, 50, 50)';
-    this.draw((element as Element).getDrawable(false));
+    if (element.fill) this.m_ctx.fillStyle = element.fill.color.hex;
+    if (element.stroke) this.m_ctx.strokeStyle = element.stroke.color.hex;
+
+    this.draw(element.getDrawable(false));
 
     if (Renderer.debugging && Renderer.debug.box) {
       if (
@@ -330,8 +332,8 @@ class Canvas2D implements Canvas {
   }
 
   public beginOutline() {
-    this.m_ctx.strokeStyle = 'rgba(49, 239, 284, 1.0)';
-    this.m_ctx.fillStyle = 'rgba(49, 239, 284, 1.0)';
+    this.m_ctx.strokeStyle = 'rgba(56, 195, 242, 1.0)';
+    this.m_ctx.fillStyle = 'rgba(56, 195, 242, 1.0)';
     this.m_ctx.lineWidth = 2 / SceneManager.viewport.zoom;
     this.begin();
   }

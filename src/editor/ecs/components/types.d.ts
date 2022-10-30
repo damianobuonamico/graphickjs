@@ -8,14 +8,26 @@ interface StrokeOptions {
   color?: vec4 | string;
 }
 
-interface Stroke {
+interface StrokeComponentObject {
+  id?: string;
+  style?: 'solid' | number[] | null;
+  width?: number;
+  cap?: CanvasLineCap;
+  corner?: CanvasLineJoin;
+  miterLimit?: number;
+  color?: vec4;
+}
+
+interface StrokeComponent {
   id: string;
   style: 'solid' | number[] | null;
   width: number;
   cap: CanvasLineCap;
   corner: CanvasLineJoin;
   miterLimit: number;
-  color: vec4;
+  color: ColorComponent;
+
+  asObject(): StrokeComponentObject;
 }
 
 interface FillOptions {
@@ -24,10 +36,27 @@ interface FillOptions {
   color?: vec4 | string;
 }
 
-interface Fill {
+interface FillComponentObject {
+  id?: string;
+  style?: 'solid';
+  color?: vec4;
+}
+
+interface FillComponent {
   id: string;
   style: 'solid';
-  color: vec4;
+  color: ColorComponent;
+
+  asObject(): FillComponentObject;
+}
+
+interface ColorComponent {
+  readonly hex: string;
+  readonly vec4: vec4;
+
+  set(color: string): void;
+
+  equals(color: vec4 | string | ColorComponent): boolean;
 }
 
 interface TransformComponentValue<T> {

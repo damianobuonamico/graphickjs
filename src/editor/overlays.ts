@@ -28,7 +28,7 @@ class OverlayState {
     Renderer.draw({
       operations: [
         { type: 'fillcolor', data: [1.0, 1.0, 1.0, 1.0] },
-        { type: 'strokecolor', data: [49 / 255, 239 / 255, 284 / 255, 1] }
+        { type: 'strokecolor', data: [56 / 255, 195 / 255, 242 / 255, 1] }
       ]
     });
 

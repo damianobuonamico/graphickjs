@@ -7,19 +7,12 @@ import Layer from './ecs/entities/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/entities/vertex';
 import HistoryManager from './history';
-import {
-  LOCAL_STORAGE_KEY,
-  LOCAL_STORAGE_KEY_ASSETS,
-  LOCAL_STORAGE_KEY_STATE,
-  ZOOM_MAX,
-  ZOOM_MIN
-} from '@utils/constants';
+import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE, ZOOM_MAX, ZOOM_MIN } from '@utils/constants';
 import SelectionManager from './selection';
 import InputManager from './input';
 import { fileDialog } from '@/utils/file';
 import Stroke from './ecs/components/stroke';
 import Fill from './ecs/components/fill';
-import AssetsManager from './ecs/assets';
 import { parseSVG } from '@/utils/svg';
 
 // DEV
@@ -33,7 +26,6 @@ abstract class SceneManager {
   private static m_layer: Layer;
 
   static viewport: ViewportState;
-  static assets: AssetsManager = new AssetsManager();
   static overlays: OverlayState = new OverlayState();
 
   static setLoading: (loading: boolean) => void;
@@ -163,13 +155,11 @@ abstract class SceneManager {
         stringifyReplacer
       )
     );
-    localStorage.setItem(LOCAL_STORAGE_KEY_ASSETS, JSON.stringify(this.assets, stringifyReplacer));
   }
 
   static load() {
     const state = localStorage.getItem(LOCAL_STORAGE_KEY_STATE);
     const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const assets = localStorage.getItem(LOCAL_STORAGE_KEY_ASSETS);
 
     this.m_ecs = new ECS();
 
@@ -178,10 +168,6 @@ abstract class SceneManager {
       zoom: 1,
       rotation: 0
     });
-
-    if (assets) {
-      this.assets.load(JSON.parse(assets) as AssetsObject);
-    }
 
     if (data) {
       const parsed = JSON.parse(data) as EntityObject[];
