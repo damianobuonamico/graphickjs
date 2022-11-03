@@ -50,11 +50,21 @@ interface FillComponent {
   asObject(): FillComponentObject;
 }
 
+type ColorFormat = 'rgb' | 'hsb' | 'hex';
+
 interface ColorComponent {
   readonly hex: string;
+  readonly hsb: vec3;
   readonly vec4: vec4;
 
-  set(color: string): void;
+  alpha: number;
+
+  parse(color: string | vec3 | vec4, format?: ColorFormat): vec3 | vec4 | null;
+  tempSet(color: string | vec3 | vec4, format?: ColorFormat): void;
+  set(color: string | vec3 | vec4, format?: ColorFormat): void;
+
+  apply(): void;
+  clear(): void;
 
   equals(color: vec4 | string | ColorComponent): boolean;
 }

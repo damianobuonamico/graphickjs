@@ -1,5 +1,5 @@
 import { MATH_EPSILON } from '@/utils/constants';
-import { round as nRound } from './math';
+import { round as nRound, clamp as nClamp } from './math';
 
 /**
  * 2 Dimensional Vector
@@ -226,6 +226,26 @@ export function min(a: ReadonlyVec2, b: ReadonlyVec2, out: vec2 = [0, 0]): vec2 
 export function max(a: ReadonlyVec2, b: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
   out[0] = Math.max(a[0], b[0]);
   out[1] = Math.max(a[1], b[1]);
+  return out;
+}
+
+/**
+ * Clamps a vec2's between two values
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2} min the minimum value
+ * @param {ReadonlyVec2} max the maximum value
+ * @param {vec2} out the receiving vector
+ * @returns {vec2} out
+ */
+export function clamp(
+  a: ReadonlyVec2,
+  min: ReadonlyVec2,
+  max: ReadonlyVec2,
+  out: vec2 = [0, 0]
+): vec2 {
+  out[0] = nClamp(a[0], min[0], max[0]);
+  out[1] = nClamp(a[1], min[1], max[1]);
   return out;
 }
 

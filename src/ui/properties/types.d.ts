@@ -1,11 +1,11 @@
 interface FillPropertyData {
   active: boolean;
   mixed: boolean;
-  fills: string[];
+  fills: ColorComponent[];
 }
 
 interface StrokePropertyData {
   active: boolean;
   mixed: boolean;
-  strokes: string[];
+  strokes: ColorComponent[];
 }

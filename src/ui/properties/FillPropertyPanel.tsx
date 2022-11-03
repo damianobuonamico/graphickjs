@@ -1,3 +1,4 @@
+import Color from '@/editor/ecs/components/color';
 import SelectionManager from '@/editor/selection';
 import { Component, For, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
@@ -8,7 +9,7 @@ const FillPropertyPanel: Component<{}> = (props) => {
   const [fill, setFill] = createStore<FillPropertyData>({
     active: false,
     mixed: false,
-    fills: ['#FFFFFF']
+    fills: [new Color('#FFFFFF')]
   });
 
   SelectionManager.setFillPropertyFn = (data: Partial<FillPropertyData>) => setFill(data);
@@ -20,7 +21,10 @@ const FillPropertyPanel: Component<{}> = (props) => {
           {(item) => (
             <ColorPropertyValue
               value={item}
-              onChange={(color: string) => SelectionManager.setFill({ color })}
+              onInput={(color: string) =>
+                SelectionManager.setFill({ color, updateUI: false, commit: false })
+              }
+              onChange={() => SelectionManager.setFill({ commit: true })}
             ></ColorPropertyValue>
           )}
         </For>

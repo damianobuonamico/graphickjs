@@ -4,16 +4,28 @@ import { Component, For, JSX, Show } from 'solid-js';
 const PropertyValue: Component<{
   children: JSX.Element | JSX.Element[];
   rightPadding?: boolean;
+  fullWidth?: boolean;
+  class?: string;
+  correctTextPadding?: boolean[] | boolean;
 }> = (props) => {
   return (
-    <div class="border border-transparent hover:border-primary-500 rounded-sm w-fit select-none property-value flex">
+    <div
+      class={classNames(
+        'border border-transparent hover:border-primary-500 rounded-sm select-none property-value flex',
+        props.class,
+        { 'w-full': props.fullWidth, 'w-fit': !props.fullWidth }
+      )}
+    >
       {Array.isArray(props.children) ? (
         <For each={props.children}>
           {(item, index) => (
             <>
               <div
                 class={classNames('p-1.5 items-center flex', {
-                  'pr-0': props.rightPadding === false
+                  'pr-0': props.rightPadding === false,
+                  'pl-2': !(typeof props.correctTextPadding === 'boolean'
+                    ? props.correctTextPadding === false
+                    : props.correctTextPadding && props.correctTextPadding[index()] === false)
                 })}
               >
                 {item}
@@ -27,7 +39,9 @@ const PropertyValue: Component<{
       ) : (
         <div
           class={classNames('p-1.5 items-center flex', {
-            'pr-0': props.rightPadding === false
+            'pr-0': props.rightPadding === false,
+            'pl-2': props.correctTextPadding === true,
+            'w-full': props.fullWidth
           })}
         >
           {props.children}

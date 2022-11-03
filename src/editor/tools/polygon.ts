@@ -15,8 +15,8 @@ const onPolygonPointerDown = (tool: Tool) => {
     position: InputManager.scene.position,
     vertices,
     closed: true,
-    stroke: nanoid(),
-    fill: nanoid()
+    stroke: { color: [0, 0, 0, 1] },
+    fill: { color: [1, 1, 1, 0] }
   });
   SceneManager.add(element);
 

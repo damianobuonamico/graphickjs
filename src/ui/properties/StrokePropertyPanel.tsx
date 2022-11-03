@@ -1,3 +1,4 @@
+import Color from '@/editor/ecs/components/color';
 import SelectionManager from '@/editor/selection';
 import { Component, For, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
@@ -8,7 +9,7 @@ const StrokePropertyPanel: Component<{}> = (props) => {
   const [stroke, setStroke] = createStore<StrokePropertyData>({
     active: false,
     mixed: false,
-    strokes: ['#000000']
+    strokes: [new Color('#000000')]
   });
 
   SelectionManager.setStrokePropertyFn = (data: Partial<StrokePropertyData>) => setStroke(data);
@@ -20,7 +21,7 @@ const StrokePropertyPanel: Component<{}> = (props) => {
           {(item) => (
             <ColorPropertyValue
               value={item}
-              onChange={(color: string) => SelectionManager.setStroke({ color })}
+              onChange={(color: string) => SelectionManager.setStroke({ color, updateUI: false })}
             ></ColorPropertyValue>
           )}
         </For>

@@ -1,4 +1,6 @@
 import { vec2 } from '@/math';
+import { debounce } from 'debounce';
+import Color from './ecs/components/color';
 import Fill from './ecs/components/fill';
 import Stroke from './ecs/components/stroke';
 import Element from './ecs/entities/element';
@@ -225,8 +227,7 @@ abstract class SelectionManager {
       (entity as Element).selection.all();
     }
 
-    this.setFillProperty();
-    this.setStrokeProperty();
+    this.setProperties();
   }
 
   static deselect(id: string, deselectVertices = true) {
@@ -238,8 +239,7 @@ abstract class SelectionManager {
     }
     this.m_selected.delete(id);
 
-    this.setFillProperty();
-    this.setStrokeProperty();
+    this.setProperties();
   }
 
   private static m_setFillProperty: (data: Partial<FillPropertyData>) => void = () => {};
@@ -254,14 +254,13 @@ abstract class SelectionManager {
   }
 
   private static setFillProperty() {
-    // TODO: Debounce
     const fill: FillPropertyData = { active: false, mixed: false, fills: [] };
 
     this.forEach((entity) => {
       if (entity.type === 'element') {
         if ((entity as Element).fill) {
           if (!fill.fills[0]) {
-            fill.fills[0] = (entity as Element).fill!.color.hex;
+            fill.fills[0] = new Color((entity as Element).fill!.color.hex);
           } else if (!(entity as Element).fill!.color.equals(fill.fills[0])) {
             fill.mixed = true;
           }
@@ -274,14 +273,13 @@ abstract class SelectionManager {
   }
 
   private static setStrokeProperty() {
-    // TODO: Debounce
     const stroke: StrokePropertyData = { active: false, mixed: false, strokes: [] };
 
     this.forEach((entity) => {
       if (entity.type === 'element') {
         if ((entity as Element).stroke) {
           if (!stroke.strokes[0]) {
-            stroke.strokes[0] = (entity as Element).stroke!.color.hex;
+            stroke.strokes[0] = new Color((entity as Element).stroke!.color.hex);
           } else if (!(entity as Element).stroke!.color.equals(stroke.strokes[0])) {
             stroke.mixed = true;
           }
@@ -292,6 +290,13 @@ abstract class SelectionManager {
 
     this.m_setStrokeProperty(stroke);
   }
+
+  private static setPropertiesBody() {
+    this.setFillProperty();
+    this.setStrokeProperty();
+  }
+
+  private static setProperties = debounce(this.setPropertiesBody.bind(this), 2);
 
   static temp(entities: Set<Entity>) {
     this.m_temp.clear();
@@ -360,35 +365,91 @@ abstract class SelectionManager {
     });
   }
 
-  static setFill({ color }: { color?: string }) {
+  static setFill({
+    color,
+    updateUI = true,
+    commit = true
+  }: {
+    color?: string;
+    updateUI?: boolean;
+    commit?: boolean;
+  }) {
     if (color) {
+      if (commit) {
+        this.forEach((entity) => {
+          if (entity.type === 'element') {
+            if ((entity as Element).fill) {
+              (entity as Element).fill!.color.set(color);
+            } else {
+              (entity as Element).fill = new Fill({ color });
+            }
+          }
+        });
+      } else {
+        this.forEach((entity) => {
+          if (entity.type === 'element') {
+            if ((entity as Element).fill) {
+              (entity as Element).fill!.color.tempSet(color);
+            } else {
+              (entity as Element).fill = new Fill({ color });
+            }
+          }
+        });
+      }
+      if (updateUI) this.m_setFillProperty({ fills: [new Color(color)] });
+      SceneManager.render();
+    } else if (commit) {
       this.forEach((entity) => {
         if (entity.type === 'element') {
           if ((entity as Element).fill) {
-            (entity as Element).fill!.color.set(color);
-          } else {
-            (entity as Element).fill = new Fill({ color });
+            (entity as Element).fill!.color.apply();
           }
         }
       });
-      this.m_setFillProperty({ fills: [color] });
-      SceneManager.render();
     }
   }
 
-  static setStroke({ color }: { color?: string }) {
+  static setStroke({
+    color,
+    updateUI = true,
+    commit = true
+  }: {
+    color?: string;
+    updateUI?: boolean;
+    commit?: boolean;
+  }) {
     if (color) {
+      if (commit) {
+        this.forEach((entity) => {
+          if (entity.type === 'element') {
+            if ((entity as Element).stroke) {
+              (entity as Element).stroke!.color.set(color);
+            } else {
+              (entity as Element).stroke = new Stroke({ color });
+            }
+          }
+        });
+      } else {
+        this.forEach((entity) => {
+          if (entity.type === 'element') {
+            if ((entity as Element).stroke) {
+              (entity as Element).stroke!.color.tempSet(color);
+            } else {
+              (entity as Element).stroke = new Stroke({ color });
+            }
+          }
+        });
+      }
+      if (updateUI) this.m_setStrokeProperty({ strokes: [new Color(color)] });
+      SceneManager.render();
+    } else if (commit) {
       this.forEach((entity) => {
         if (entity.type === 'element') {
           if ((entity as Element).stroke) {
-            (entity as Element).stroke!.color.set(color);
-          } else {
-            (entity as Element).stroke = new Stroke({ color });
+            (entity as Element).stroke!.color.apply();
           }
         }
       });
-      this.m_setStrokeProperty({ strokes: [color] });
-      SceneManager.render();
     }
   }
 }

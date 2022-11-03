@@ -195,7 +195,7 @@ abstract class InputManager {
   }
 
   private static onKeyDown(e: KeyboardEvent) {
-    if (e.repeat) return;
+    if (e.repeat && e.key.toUpperCase() !== KEYS.Z.toUpperCase()) return;
 
     this.onKey(e);
 
