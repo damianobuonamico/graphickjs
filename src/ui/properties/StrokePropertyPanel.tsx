@@ -21,7 +21,10 @@ const StrokePropertyPanel: Component<{}> = (props) => {
           {(item) => (
             <ColorPropertyValue
               value={item}
-              onChange={(color: string) => SelectionManager.setStroke({ color, updateUI: false })}
+              onInput={(color: string) =>
+                SelectionManager.setStroke({ color, updateUI: false, commit: false })
+              }
+              onChange={() => SelectionManager.setStroke({ commit: true })}
             ></ColorPropertyValue>
           )}
         </For>

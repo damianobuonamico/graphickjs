@@ -186,6 +186,8 @@ function parseSVGPath(node: SVGPathElement, attributes: SVGAttributesContainer) 
     .replace(/ +/g, ' ')
     .split('\n');
 
+  console.log(attributes.stroke);
+
   const pather = new SVGPather(
     new Element({
       position: vec2.create(),

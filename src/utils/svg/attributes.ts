@@ -11,10 +11,18 @@ class SVGAttributesContainer {
   constructor() {}
 
   public get stroke() {
-    return this.m_strokes[this.m_strokes.length - 1].value;
+    return this.m_strokes[this.m_strokes.length - 1].value?.asObject();
   }
 
   public get fill() {
+    return this.m_fills[this.m_fills.length - 1].value?.asObject();
+  }
+
+  private get m_stroke() {
+    return this.m_strokes[this.m_strokes.length - 1].value;
+  }
+
+  private get m_fill() {
     return this.m_fills[this.m_fills.length - 1].value;
   }
 
@@ -34,11 +42,11 @@ class SVGAttributesContainer {
     let shouldUpdateFill = false;
 
     if (stroke) {
-      if (!this.stroke || !this.stroke.color.equals(stroke)) shouldUpdateStroke = true;
+      if (!this.m_stroke || !this.m_stroke.color.equals(stroke)) shouldUpdateStroke = true;
     }
 
     if (fill) {
-      if (!this.fill || !this.fill.color.equals(fill)) shouldUpdateFill = true;
+      if (!this.m_fill || !this.m_fill.color.equals(fill)) shouldUpdateFill = true;
     }
 
     if (shouldUpdateStroke) {
@@ -46,7 +54,7 @@ class SVGAttributesContainer {
       else
         this.m_strokes.push({
           level: this.level,
-          value: new Stroke({ ...this.stroke?.toJSON(), ...{ color: stroke }, id: undefined })
+          value: new Stroke({ ...this.m_stroke?.asObject(), ...{ color: stroke }, id: undefined })
         });
     }
 
@@ -55,7 +63,7 @@ class SVGAttributesContainer {
       else
         this.m_fills.push({
           level: this.level,
-          value: new Fill({ ...this.fill?.toJSON(), ...{ color: fill }, id: undefined })
+          value: new Fill({ ...this.m_fill?.asObject(), ...{ color: fill }, id: undefined })
         });
     }
   }
