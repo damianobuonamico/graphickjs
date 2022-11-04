@@ -1,0 +1,80 @@
+import SelectionManager from '@/editor/selection';
+import { classNames } from '@/utils/utils';
+import { Component, createEffect } from 'solid-js';
+import { EyeClosedIcon, EyeOpenIcon, MinusIcon, PlusIcon } from '../icons';
+import { Button } from '../inputs';
+import ColorPropertyValue from './ColorPropertyValue';
+import PropertyPanel from './PropertyPanel';
+import PropertyValue from './PropertyValue';
+
+const FillPropertyPanel: Component<{ component: GlobalComponent<FillComponent> }> = (props) => {
+  return (
+    <PropertyPanel
+      title="Fill"
+      controls={
+        props.component.mixed ? (
+          <Button
+            onClick={() =>
+              SelectionManager.setComponents(
+                {
+                  fill: {
+                    ...props.component.value,
+                    color: props.component.value.color.hex,
+                    visible: true
+                  }
+                },
+                { replace: true }
+              )
+            }
+          >
+            <PlusIcon />
+          </Button>
+        ) : undefined
+      }
+    >
+      {props.component.mixed ? (
+        <PropertyValue hoverEffect={false} class="text-primary-300">
+          Click + to replace mixed content
+        </PropertyValue>
+      ) : (
+        <div
+          class={classNames('flex justify-between', {
+            'text-primary-400': !props.component.value.visible
+          })}
+        >
+          <ColorPropertyValue
+            value={props.component.value.color}
+            onInput={(value, format) =>
+              SelectionManager.setComponents(
+                {
+                  fill: { color: value, format }
+                },
+                { commit: false }
+              )
+            }
+            onChange={() => SelectionManager.setComponents({ fill: {} }, { commit: true })}
+          ></ColorPropertyValue>
+          <div class="flex">
+            <Button
+              onClick={() =>
+                SelectionManager.setComponents(
+                  {
+                    fill: { visible: !props.component.value.visible }
+                  },
+                  {}
+                )
+              }
+            >
+              {props.component.value.visible ? <EyeOpenIcon /> : <EyeClosedIcon />}
+            </Button>
+            <Button>
+              <MinusIcon />
+            </Button>
+          </div>
+        </div>
+      )}
+    </PropertyPanel>
+  );
+};
+
+export default FillPropertyPanel;

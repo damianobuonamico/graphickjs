@@ -94,7 +94,7 @@ class Canvas2D implements Canvas {
   public beginFrame(): void {
     this.m_stats.begin();
     this.m_ctx.setTransform();
-    this.clear({ color: [0.09, 0.11, 0.13, 1.0] });
+    this.clear({ color: SceneManager.background.vec4 });
     this.m_ctx.scale(SceneManager.viewport.zoom, SceneManager.viewport.zoom);
     this.m_ctx.translate(SceneManager.viewport.position[0], SceneManager.viewport.position[1]);
     this.m_stats.clear();
@@ -236,10 +236,17 @@ class Canvas2D implements Canvas {
     const matrix = element.transform.mat3;
     this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
 
-    if (element.fill) this.m_ctx.fillStyle = element.fill.color.hex;
-    if (element.stroke) this.m_ctx.strokeStyle = element.stroke.color.hex;
-
     this.draw(element.getDrawable(false));
+
+    if (element.fill && element.fill.visible) {
+      this.m_ctx.fillStyle = element.fill.color.toString();
+      this.m_ctx.fill();
+    }
+
+    if (element.stroke && element.stroke.visible) {
+      this.m_ctx.strokeStyle = element.stroke.color.toString();
+      this.m_ctx.stroke();
+    }
 
     if (Renderer.debugging && Renderer.debug.box) {
       if (

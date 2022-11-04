@@ -19,6 +19,7 @@ import { parseSVG } from '@/utils/svg';
 import tigerSvg from '@utils/svg/demo';
 import ImageMedia from './ecs/entities/image';
 import OverlayState from './overlays';
+import Color from './ecs/components/color';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -27,6 +28,8 @@ abstract class SceneManager {
 
   static viewport: ViewportState;
   static overlays: OverlayState = new OverlayState();
+
+  static background = new Color([0.09, 0.11, 0.13, 1.0]);
 
   static setLoading: (loading: boolean) => void;
 

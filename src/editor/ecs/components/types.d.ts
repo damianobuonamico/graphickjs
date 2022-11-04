@@ -1,3 +1,28 @@
+interface ComponentCollection {
+  stroke?: GlobalComponent<StrokeComponent>;
+  fill?: GlobalComponent<FillComponent>;
+  background?: GlobalComponent<ColorComponent>;
+}
+
+interface PartialComponentCollection {
+  stroke?: {
+    color?: vec3 | vec4 | string;
+    format?: ColorFormat;
+    visible?: boolean;
+  };
+  fill?: {
+    color?: vec3 | vec4 | string;
+    format?: ColorFormat;
+    visible?: boolean;
+  };
+  background?: Partial<ColorComponent>;
+}
+
+interface GlobalComponent<T> {
+  value: T;
+  mixed: boolean;
+}
+
 interface StrokeOptions {
   id?: string;
   style?: 'solid' | number[] | null;
@@ -6,6 +31,7 @@ interface StrokeOptions {
   corner?: CanvasLineJoin;
   miterLimit?: number;
   color?: vec4 | string;
+  visible?: boolean;
 }
 
 interface StrokeComponentObject {
@@ -16,6 +42,7 @@ interface StrokeComponentObject {
   corner?: CanvasLineJoin;
   miterLimit?: number;
   color?: vec4;
+  visible?: boolean;
 }
 
 interface StrokeComponent {
@@ -26,6 +53,8 @@ interface StrokeComponent {
   corner: CanvasLineJoin;
   miterLimit: number;
   color: ColorComponent;
+  visible: boolean;
+  tempVisible: boolean;
 
   asObject(): StrokeComponentObject;
 }
@@ -34,18 +63,22 @@ interface FillOptions {
   id?: string;
   style?: 'solid';
   color?: vec4 | string;
+  visible?: boolean;
 }
 
 interface FillComponentObject {
   id?: string;
   style?: 'solid';
   color?: vec4;
+  visible?: boolean;
 }
 
 interface FillComponent {
   id: string;
   style: 'solid';
   color: ColorComponent;
+  visible: boolean;
+  tempVisible: boolean;
 
   asObject(): FillComponentObject;
 }
@@ -62,6 +95,7 @@ interface ColorComponent {
   parse(color: string | vec3 | vec4, format?: ColorFormat): vec3 | vec4 | null;
   tempSet(color: string | vec3 | vec4, format?: ColorFormat): void;
   set(color: string | vec3 | vec4, format?: ColorFormat): void;
+  toString(): string;
 
   apply(): void;
   clear(): void;

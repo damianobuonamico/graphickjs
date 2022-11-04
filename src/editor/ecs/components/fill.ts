@@ -1,4 +1,5 @@
 import Color from '@/editor/ecs/components/color';
+import HistoryManager from '@/editor/history';
 import { nanoid } from 'nanoid';
 
 class Fill implements FillComponent {
@@ -7,10 +8,18 @@ class Fill implements FillComponent {
   public style: FillComponent['style'];
   public color: ColorComponent;
 
-  constructor({ id = nanoid(), style = 'solid', color = [1, 1, 1, 1] }: FillOptions) {
+  private m_visible: boolean;
+
+  constructor({
+    id = nanoid(),
+    style = 'solid',
+    color = [1, 1, 1, 1],
+    visible = true
+  }: FillOptions) {
     this.id = id;
     this.style = style;
     this.color = new Color(color);
+    this.m_visible = visible;
   }
 
   public asObject(duplicate = false) {
@@ -20,8 +29,31 @@ class Fill implements FillComponent {
     };
 
     if (this.style !== 'solid') obj.style = this.style;
+    if (this.m_visible === false) obj.visible = false;
 
     return obj;
+  }
+
+  get visible() {
+    return this.m_visible;
+  }
+
+  set visible(value: boolean) {
+    const backup = this.m_visible;
+    if (value === backup) return;
+
+    HistoryManager.record({
+      fn: () => {
+        this.m_visible = value;
+      },
+      undo: () => {
+        this.m_visible = backup;
+      }
+    });
+  }
+
+  set tempVisible(value: boolean) {
+    this.m_visible = value;
   }
 }
 

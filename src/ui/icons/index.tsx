@@ -14,6 +14,10 @@ import PointerIcon from './PointerIcon';
 import PointerVertexIcon from './PointerVertexIcon';
 import RectangleIcon from './RectangleIcon';
 import ZoomIcon from './ZoomIcon';
+import PlusIcon from './PlusIcon';
+import MinusIcon from './MinusIcon';
+import EyeClosedIcon from './EyeClosedIcon';
+import EyeOpenIcon from './EyeOpenIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
@@ -21,10 +25,14 @@ export { AffinityPublisherLogoIcon };
 export { CheckIcon };
 export { ChevronRightIcon };
 export { CircleIcon };
+export { EyeClosedIcon };
 export { EyeDropperIcon };
+export { EyeOpenIcon };
 export { HandIcon };
 export { LoadingIcon };
+export { MinusIcon };
 export { PenIcon };
+export { PlusIcon };
 export { PointerIcon };
 export { PointerVertexIcon };
 export { RectangleIcon };
@@ -44,14 +52,22 @@ const getIcon = (name: string, props?: IconProps) => {
       return <ChevronRightIcon {...props} />;
     case 'circle':
       return <CircleIcon {...props} />;
+    case 'eyeClosed':
+      return <EyeClosedIcon {...props} />;
     case 'eyeDropper':
       return <EyeDropperIcon {...props} />;
+    case 'eyeOpen':
+      return <EyeOpenIcon {...props} />;
     case 'hand':
       return <HandIcon {...props} />;
     case 'loading':
       return <LoadingIcon {...props} />;
+    case 'minus':
+      return <MinusIcon {...props} />;
     case 'pen':
       return <PenIcon {...props} />;
+    case 'plus':
+      return <PlusIcon {...props} />;
     case 'pointer':
       return <PointerIcon {...props} />;
     case 'pointerVertex':

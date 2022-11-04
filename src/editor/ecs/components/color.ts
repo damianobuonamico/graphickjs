@@ -1,6 +1,6 @@
 import HistoryManager from '@/editor/history';
 import { HEX2RGB, HSB2RGB, RGB2HEX, RGB2HSB } from '@/utils/color';
-import { clamp, vec4 } from '@math';
+import { vec4 } from '@math';
 import * as colorNames from 'color-name';
 
 class Color implements ColorComponent {
@@ -34,6 +34,12 @@ class Color implements ColorComponent {
 
   public get vec4() {
     return vec4.clone(this.m_value);
+  }
+
+  toString() {
+    return `rgba(${this.m_value[0] * 255}, ${this.m_value[1] * 255}, ${this.m_value[2] * 255}, ${
+      this.m_value[3]
+    })`;
   }
 
   parse(color: string | vec3 | vec4, format: ColorFormat = 'rgb'): vec3 | vec4 | null {

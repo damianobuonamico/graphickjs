@@ -7,13 +7,18 @@ const PropertyValue: Component<{
   fullWidth?: boolean;
   class?: string;
   correctTextPadding?: boolean[] | boolean;
+  hoverEffect?: boolean;
 }> = (props) => {
   return (
     <div
       class={classNames(
-        'border border-transparent hover:border-primary-500 rounded-sm select-none property-value flex',
+        'border border-transparent rounded-sm property-value flex min-h-[32px]',
         props.class,
-        { 'w-full': props.fullWidth, 'w-fit': !props.fullWidth }
+        {
+          'w-full': props.fullWidth,
+          'w-fit': !props.fullWidth,
+          'hover:border-primary-500': props.hoverEffect !== false
+        }
       )}
     >
       {Array.isArray(props.children) ? (

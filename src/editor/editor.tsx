@@ -5,7 +5,7 @@ import { CanvasDOM } from '@multimedia';
 import Renderer from './renderer/renderer';
 import SceneManager from './scene';
 import InputManager from './input';
-import { PropertiesPanel } from '@/ui/properties';
+import { ComponentsPanel } from '@/ui/components';
 
 function getModePrimaryColor(mode: Mode) {
   switch (mode) {
@@ -69,7 +69,7 @@ const Editor: Component = () => {
           }}
         />
         <CanvasDOM />
-        <PropertiesPanel />
+        <ComponentsPanel />
       </div>
     </div>
   );

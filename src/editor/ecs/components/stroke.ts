@@ -1,4 +1,5 @@
 import Color from '@/editor/ecs/components/color';
+import HistoryManager from '@/editor/history';
 import { nanoid } from 'nanoid';
 
 class Stroke implements StrokeComponent {
@@ -11,10 +12,18 @@ class Stroke implements StrokeComponent {
   public miterLimit: number = 10;
   public color: ColorComponent;
 
-  constructor({ id = nanoid(), style = 'solid', color = [1, 1, 1, 1] }: StrokeOptions) {
+  private m_visible: boolean;
+
+  constructor({
+    id = nanoid(),
+    style = 'solid',
+    color = [1, 1, 1, 1],
+    visible = true
+  }: StrokeOptions) {
     this.id = id;
     this.style = style;
     this.color = new Color(color);
+    this.m_visible = visible;
   }
 
   public asObject(duplicate = false) {
@@ -28,8 +37,31 @@ class Stroke implements StrokeComponent {
     if (this.cap !== 'butt') obj.cap = this.cap;
     if (this.corner !== 'miter') obj.corner = this.corner;
     if (this.miterLimit !== 10) obj.miterLimit = this.miterLimit;
+    if (this.m_visible === false) obj.visible = false;
 
     return obj;
+  }
+
+  get visible() {
+    return this.m_visible;
+  }
+
+  set visible(value: boolean) {
+    const backup = this.m_visible;
+    if (value === backup) return;
+
+    HistoryManager.record({
+      fn: () => {
+        this.m_visible = value;
+      },
+      undo: () => {
+        this.m_visible = backup;
+      }
+    });
+  }
+
+  set tempVisible(value: boolean) {
+    this.m_visible = value;
   }
 }
 

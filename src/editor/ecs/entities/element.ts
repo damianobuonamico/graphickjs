@@ -14,6 +14,10 @@ import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { ElementTransform } from '../components/transform';
 import Debugger from '@/utils/debugger';
 
+export const isElement = (b: Entity): b is Element => {
+  return b.type === 'element';
+};
+
 class Element implements ElementEntity {
   readonly id: string;
   readonly type: EntityType = 'element';
@@ -602,8 +606,6 @@ class Element implements ElementEntity {
     });
 
     if (this.m_closed) drawable.operations.push({ type: 'close' });
-    if (this.fill) drawable.operations.push({ type: 'fill' });
-    if (this.stroke) drawable.operations.push({ type: 'stroke' });
 
     return drawable;
   }

@@ -56,7 +56,7 @@ const Button: Component<{
       onMouseLeave={props.onLeave}
       style={props.style}
       class={classNames(
-        'select-none flex items-center outline-none',
+        'flex items-center outline-none',
         {
           'cursor-default': props.disabled,
           'bg-primary-700': props.active && !props.disabled,
