@@ -7,19 +7,19 @@ import ColorPropertyValue from './ColorPropertyValue';
 import PropertyPanel from './PropertyPanel';
 import PropertyValue from './PropertyValue';
 
-const FillPropertyPanel: Component<{ component: GlobalComponent<FillComponent> }> = (props) => {
+const FillPropertyPanel: Component<{ component: FillComponentCollection }> = (props) => {
   return (
     <PropertyPanel
       title="Fill"
       controls={
-        props.component.mixed ? (
+        props.component.color.mixed ? (
           <Button
             onClick={() =>
               SelectionManager.setComponents(
                 {
                   fill: {
-                    ...props.component.value,
-                    color: props.component.value.color.hex,
+                    ...props.component,
+                    color: props.component.color.value.hex,
                     visible: true
                   }
                 },
@@ -32,18 +32,18 @@ const FillPropertyPanel: Component<{ component: GlobalComponent<FillComponent> }
         ) : undefined
       }
     >
-      {props.component.mixed ? (
+      {props.component.color.mixed ? (
         <PropertyValue hoverEffect={false} class="text-primary-300">
           Click + to replace mixed content
         </PropertyValue>
       ) : (
         <div
           class={classNames('flex justify-between', {
-            'text-primary-400': !props.component.value.visible
+            'text-primary-400': !props.component.color.visible
           })}
         >
           <ColorPropertyValue
-            value={props.component.value.color}
+            value={props.component.color.value}
             onInput={(value, format) =>
               SelectionManager.setComponents(
                 {
@@ -59,13 +59,13 @@ const FillPropertyPanel: Component<{ component: GlobalComponent<FillComponent> }
               onClick={() =>
                 SelectionManager.setComponents(
                   {
-                    fill: { visible: !props.component.value.visible }
+                    fill: { visible: !props.component.color.visible }
                   },
                   {}
                 )
               }
             >
-              {props.component.value.visible ? <EyeOpenIcon /> : <EyeClosedIcon />}
+              {props.component.color.visible ? <EyeOpenIcon /> : <EyeClosedIcon />}
             </Button>
             <Button>
               <MinusIcon />

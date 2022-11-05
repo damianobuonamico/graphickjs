@@ -328,22 +328,44 @@ abstract class SelectionManager {
           if (entity.fill) {
             if (!this.components.fill) {
               this.components.fill = {
-                mixed: false,
-                value: new Fill(entity.fill.asObject())
+                color: {
+                  mixed: false,
+                  visible: entity.fill.visible,
+                  value: new Color(entity.fill.color.vec4)
+                }
               };
-            } else if (!entity.fill.color.equals(this.components.fill.value.color)) {
-              this.components.fill.mixed = true;
+            } else if (
+              this.components.fill.color &&
+              !entity.fill.color.equals(this.components.fill.color.value)
+            ) {
+              this.components.fill.color.mixed = true;
             }
           }
 
           if (entity.stroke) {
             if (!this.components.stroke) {
               this.components.stroke = {
-                mixed: false,
-                value: new Stroke(entity.stroke.asObject())
+                color: {
+                  mixed: false,
+                  visible: entity.stroke.visible,
+                  value: new Color(entity.stroke.color.vec4)
+                },
+                width: {
+                  mixed: false,
+                  value: entity.stroke.width
+                },
+                corner: {
+                  mixed: false,
+                  value: entity.stroke.corner
+                }
               };
-            } else if (!entity.stroke.color.equals(this.components.stroke.value.color)) {
-              this.components.stroke.mixed = true;
+            } else {
+              if (!entity.stroke.color.equals(this.components.stroke.color.value))
+                this.components.stroke.color.mixed = true;
+              if (entity.stroke.width !== this.components.stroke.width.value)
+                this.components.stroke.width.mixed = true;
+              if (entity.stroke.corner !== this.components.stroke.corner.value)
+                this.components.stroke.corner.mixed = true;
             }
           }
         }
@@ -377,10 +399,10 @@ abstract class SelectionManager {
       });
 
       if (updateUI && this.components.fill) {
-        let updatedFill = { ...this.components.fill };
+        let updatedFill = { ...this.components.fill, color: { ...this.components.fill.color } };
 
-        if (replace) updatedFill.mixed = false;
-        if (fill.visible !== undefined) updatedFill.value.tempVisible = fill.visible;
+        if (replace) updatedFill.color.mixed = false;
+        if (fill.visible !== undefined) updatedFill.color.visible = fill.visible;
 
         this.components.fill = updatedFill;
       }
@@ -394,6 +416,8 @@ abstract class SelectionManager {
           if (entity.stroke) {
             if (stroke.visible !== undefined) entity.stroke.visible = stroke.visible;
             if (stroke.color) entity.stroke.color.tempSet(stroke.color, stroke.format);
+            if (stroke.width) entity.stroke.width = stroke.width;
+            if (stroke.corner) entity.stroke.corner = stroke.corner;
 
             if (commit) entity.stroke.color.apply();
           }
@@ -401,10 +425,15 @@ abstract class SelectionManager {
       });
 
       if (updateUI && this.components.stroke) {
-        let updatedStroke = { ...this.components.stroke };
+        let updatedStroke = {
+          ...this.components.stroke,
+          color: { ...this.components.stroke.color }
+        };
 
-        if (replace) updatedStroke.mixed = false;
-        if (stroke.visible !== undefined) updatedStroke.value.tempVisible = stroke.visible;
+        if (replace) updatedStroke.color.mixed = false;
+        if (stroke.visible !== undefined) updatedStroke.color.visible = stroke.visible;
+        if (stroke.width) updatedStroke.width = { value: stroke.width, mixed: false };
+        if (stroke.corner) updatedStroke.corner = { value: stroke.corner, mixed: false };
 
         this.components.stroke = updatedStroke;
       }

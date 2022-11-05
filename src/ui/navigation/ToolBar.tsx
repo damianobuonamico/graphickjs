@@ -9,7 +9,7 @@ import {
   RectangleIcon,
   ZoomIcon
 } from '@icons';
-import Select from '../inputs/Select';
+import MenuSelect from '../menu/MenuSelect';
 
 export function getToolIcon(tool: Tool): JSX.Element {
   switch (tool) {
@@ -42,7 +42,7 @@ const ToolBar: Component<{
           tool === 'separator' ? (
             <div class="w-6 h-[1px] bg-primary-600" />
           ) : Array.isArray(tool) ? (
-            <Select
+            <MenuSelect
               menuButton={{ variant: 'tool', arrow: true }}
               options={tool.map((tool) => {
                 return { id: tool, label: getToolIcon(tool) };

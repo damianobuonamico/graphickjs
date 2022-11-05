@@ -4,6 +4,7 @@ import getIcon from '../icons';
 
 export type ButtonVariant =
   | 'button'
+  | 'select-button'
   | 'file-menu'
   | 'file-menu-icon'
   | 'menu'
@@ -90,7 +91,7 @@ const Button: Component<{
         ],
         [
           'aspect-square w-8 h-8 rounded flex items-center justify-center hover:bg-primary-600',
-          { 'text-primary': props.active },
+          { 'text-primary': props.active && props.variant !== 'select-button' },
           isButton
         ]
       )}

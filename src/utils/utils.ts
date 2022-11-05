@@ -52,7 +52,7 @@ export function isObject(value: any) {
   return Object.getPrototypeOf(value) === proto;
 }
 
-export function cloneObject(object: { [key: string]: any }) {
+export function cloneObject<T>(object: { [key: string]: any }) {
   const obj: { [key: string]: any } = {};
   Object.entries(object).forEach(([key, value]) => {
     if (!isObject(value) || value === null) {
@@ -61,11 +61,11 @@ export function cloneObject(object: { [key: string]: any }) {
       obj[key] === cloneObject(value);
     }
   });
-  return obj;
+  return obj as T;
 }
 
 export function fillObject<T>(object: { [key: string]: any }, schema: { [key: string]: any }) {
-  const incomplete = cloneObject(object);
+  const incomplete = cloneObject<{ [key: string]: any }>(object);
 
   Object.entries(schema).forEach(([key, value]) => {
     if (!incomplete[key]) {

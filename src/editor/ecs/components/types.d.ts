@@ -1,7 +1,17 @@
 interface ComponentCollection {
-  stroke?: GlobalComponent<StrokeComponent>;
-  fill?: GlobalComponent<FillComponent>;
+  stroke?: StrokeComponentCollection;
+  fill?: FillComponentCollection;
   background?: GlobalComponent<ColorComponent>;
+}
+
+interface FillComponentCollection {
+  color: { value: ColorComponent; mixed: boolean; visible: boolean };
+}
+
+interface StrokeComponentCollection {
+  color: { value: ColorComponent; mixed: boolean; visible: boolean };
+  width: { value: number; mixed: boolean };
+  corner: { value: CanvasLineJoin; mixed: boolean };
 }
 
 interface PartialComponentCollection {
@@ -9,6 +19,8 @@ interface PartialComponentCollection {
     color?: vec3 | vec4 | string;
     format?: ColorFormat;
     visible?: boolean;
+    width?: number;
+    corner?: CanvasLineJoin;
   };
   fill?: {
     color?: vec3 | vec4 | string;

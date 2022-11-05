@@ -245,6 +245,11 @@ class Canvas2D implements Canvas {
 
     if (element.stroke && element.stroke.visible) {
       this.m_ctx.strokeStyle = element.stroke.color.toString();
+      this.m_ctx.lineJoin = element.stroke.corner;
+      this.m_ctx.lineWidth = element.stroke.width;
+      // TODO: inside/outside strokes
+      // this.m_ctx.clip();
+      // this.m_ctx.lineWidth *= 2;
       this.m_ctx.stroke();
     }
 

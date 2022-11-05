@@ -4,6 +4,7 @@ import { Component, For, JSX, Show } from 'solid-js';
 const PropertyValue: Component<{
   children: JSX.Element | JSX.Element[];
   rightPadding?: boolean;
+  disablePadding?: boolean;
   fullWidth?: boolean;
   class?: string;
   correctTextPadding?: boolean[] | boolean;
@@ -26,12 +27,16 @@ const PropertyValue: Component<{
           {(item, index) => (
             <>
               <div
-                class={classNames('p-1.5 items-center flex', {
-                  'pr-0': props.rightPadding === false,
-                  'pl-2': !(typeof props.correctTextPadding === 'boolean'
-                    ? props.correctTextPadding === false
-                    : props.correctTextPadding && props.correctTextPadding[index()] === false)
-                })}
+                class={classNames('items-center flex', [
+                  {
+                    'pr-0': props.rightPadding === false,
+                    'pl-2': !(typeof props.correctTextPadding === 'boolean'
+                      ? props.correctTextPadding === false
+                      : props.correctTextPadding && props.correctTextPadding[index()] === false)
+                  },
+                  'p-1.5',
+                  !props.disablePadding
+                ])}
               >
                 {item}
               </div>
@@ -43,11 +48,15 @@ const PropertyValue: Component<{
         </For>
       ) : (
         <div
-          class={classNames('p-1.5 items-center flex', {
-            'pr-0': props.rightPadding === false,
-            'pl-2': props.correctTextPadding === true,
-            'w-full': props.fullWidth
-          })}
+          class={classNames('items-center flex', [
+            {
+              'pr-0': props.rightPadding === false,
+              'pl-2': props.correctTextPadding === true,
+              'w-full': props.fullWidth
+            },
+            'p-1.5',
+            !props.disablePadding
+          ])}
         >
           {props.children}
         </div>

@@ -18,13 +18,21 @@ import PlusIcon from './PlusIcon';
 import MinusIcon from './MinusIcon';
 import EyeClosedIcon from './EyeClosedIcon';
 import EyeOpenIcon from './EyeOpenIcon';
+import BorderWidthIcon from './BorderWidthIcon';
+import CornerBevelIcon from './CornerBevelIcon';
+import CornerMiterIcon from './CornerMiterIcon';
+import CornerRoundIcon from './CornerRoundIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
 export { AffinityPublisherLogoIcon };
+export { BorderWidthIcon };
 export { CheckIcon };
 export { ChevronRightIcon };
 export { CircleIcon };
+export { CornerBevelIcon };
+export { CornerMiterIcon };
+export { CornerRoundIcon };
 export { EyeClosedIcon };
 export { EyeDropperIcon };
 export { EyeOpenIcon };
@@ -46,12 +54,20 @@ const getIcon = (name: string, props?: IconProps) => {
       return <AffinityPhotoLogoIcon {...props} />;
     case 'affinityPublisherLogo':
       return <AffinityPublisherLogoIcon {...props} />;
+    case 'borderWidth':
+      return <BorderWidthIcon {...props} />;
     case 'check':
       return <CheckIcon {...props} />;
     case 'chevronRight':
       return <ChevronRightIcon {...props} />;
     case 'circle':
       return <CircleIcon {...props} />;
+    case 'cornerBevel':
+      return <CornerBevelIcon {...props} />;
+    case 'cornerMiter':
+      return <CornerMiterIcon {...props} />;
+    case 'cornerRound':
+      return <CornerRoundIcon {...props} />;
     case 'eyeClosed':
       return <EyeClosedIcon {...props} />;
     case 'eyeDropper':
