@@ -14,7 +14,6 @@ const Slider: Component<{
   options: SelectOption[];
   optionsStyle?: JSX.CSSProperties;
 }> = (props) => {
-  console.log(props.value);
   return (
     <div class={classNames('flex', props.class)}>
       <For each={props.options}>

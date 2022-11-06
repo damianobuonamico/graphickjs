@@ -1,6 +1,6 @@
 import { Component, createEffect, onMount } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import { ToolBar, TitleBar } from '@navigation';
+import { ToolBar, TitleBar, Timeline } from '@navigation';
 import { CanvasDOM } from '@multimedia';
 import Renderer from './renderer/renderer';
 import SceneManager from './scene';
@@ -68,7 +68,10 @@ const Editor: Component = () => {
             InputManager.tool.current = tool;
           }}
         />
-        <CanvasDOM />
+        <div class="grow overflow-hidden z-0 grid grid-rows-timeline">
+          <CanvasDOM />
+          <Timeline />
+        </div>
         <ComponentsPanel />
       </div>
     </div>

@@ -8,6 +8,7 @@ import SelectionManager from '@/editor/selection';
 import ImageMedia from '@/editor/ecs/entities/image';
 import { RectTransform } from '@/editor/ecs/components/transform';
 import Debugger from '@/utils/debugger';
+import AnimationManager from '@/editor/animation';
 
 class Canvas2D implements Canvas {
   private m_container: HTMLDivElement;
@@ -389,7 +390,13 @@ class Canvas2D implements Canvas {
 
     this.m_ctx.fillStyle = this.m_stats.getColor(this.m_stats.fps[0]);
     this.m_ctx.fillText('FPS:', lAlign, 5);
-    this.m_ctx.fillText(`${this.m_stats.fps[0]}  [${this.m_stats.fps[1]} MS]`, rAlign, 5);
+    this.m_ctx.fillText(
+      `${AnimationManager.playing ? AnimationManager.fps : this.m_stats.fps[0]}  [${
+        this.m_stats.fps[1]
+      } MS]`,
+      rAlign,
+      5
+    );
 
     this.m_ctx.fillStyle = this.m_stats.getColor(this.m_stats.avg[0]);
     this.m_ctx.fillText('AVG:', lAlign, 30);

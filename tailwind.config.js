@@ -39,7 +39,8 @@ module.exports = {
         editor: '2.5rem 1fr 15rem'
       },
       gridTemplateRows: {
-        'title-bar': '2rem 1fr'
+        'title-bar': '2rem 1fr',
+        timeline: '1fr 5rem'
       }
     }
   },

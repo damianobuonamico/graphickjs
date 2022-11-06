@@ -22,6 +22,8 @@ import BorderWidthIcon from './BorderWidthIcon';
 import CornerBevelIcon from './CornerBevelIcon';
 import CornerMiterIcon from './CornerMiterIcon';
 import CornerRoundIcon from './CornerRoundIcon';
+import PauseIcon from './PauseIcon';
+import PlayIcon from './PlayIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
@@ -39,7 +41,9 @@ export { EyeOpenIcon };
 export { HandIcon };
 export { LoadingIcon };
 export { MinusIcon };
+export { PauseIcon };
 export { PenIcon };
+export { PlayIcon };
 export { PlusIcon };
 export { PointerIcon };
 export { PointerVertexIcon };
@@ -80,8 +84,12 @@ const getIcon = (name: string, props?: IconProps) => {
       return <LoadingIcon {...props} />;
     case 'minus':
       return <MinusIcon {...props} />;
+    case 'pause':
+      return <PauseIcon {...props} />;
     case 'pen':
       return <PenIcon {...props} />;
+    case 'play':
+      return <PlayIcon {...props} />;
     case 'plus':
       return <PlusIcon {...props} />;
     case 'pointer':

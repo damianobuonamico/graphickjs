@@ -20,6 +20,7 @@ import tigerSvg from '@utils/svg/demo';
 import ImageMedia from './ecs/entities/image';
 import OverlayState from './overlays';
 import Color from './ecs/components/color';
+import AnimationManager from './animation';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -37,6 +38,7 @@ abstract class SceneManager {
     this.setLoading = setLoading;
     this.load();
     HistoryManager.clear();
+    AnimationManager.renderFn = this.renderFn.bind(this);
   }
 
   static set zoom(value: number | [number, vec2]) {
@@ -91,20 +93,25 @@ abstract class SceneManager {
     SelectionManager.calculateRenderOverlay();
   }
 
-  static render() {
-    requestAnimationFrame(() => {
-      Renderer.beginFrame();
-      this.m_ecs.render();
-      // TEMP: remove overlay rendering from selectionmanager
-      SelectionManager.render();
-      this.m_renderOverlays.forEach((entity) => {
-        if (entity.type === 'element') {
-          Renderer.outline(entity);
-        } else entity.render();
-      });
-      this.overlays.render();
-      Renderer.endFrame();
+  private static renderFn() {
+    Renderer.beginFrame();
+    this.m_ecs.render();
+    SelectionManager.render();
+    this.m_renderOverlays.forEach((entity) => {
+      if (entity.type === 'element') {
+        Renderer.outline(entity);
+      } else entity.render();
     });
+    this.overlays.render();
+    Renderer.endFrame();
+  }
+
+  static render() {
+    AnimationManager.render();
+    // requestAnimationFrame(() => {
+    //   console.log(AnimationManager.playing);
+    //   this.renderFn;
+    // });
   }
 
   static clientToScene(position: vec2, override: Partial<ViewportState> = {}) {
