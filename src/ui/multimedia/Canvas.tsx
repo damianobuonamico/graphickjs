@@ -1,19 +1,24 @@
-import { Component, createEffect, onMount } from 'solid-js';
+import { Component, createEffect } from 'solid-js';
 import { Renderer } from '@renderer';
 
-const Canvas: Component = (props) => {
-  let ref: HTMLDivElement | undefined = undefined;
+const Canvas: Component = () => {
+  let canvas: HTMLCanvasElement | undefined;
 
   createEffect(() => {
-    if (ref) Renderer.container = ref;
+    if (canvas) {
+      Renderer.resize();
+      canvas.style.opacity = '1';
+    }
   });
 
   return (
-    <div class="flex grow overflow-hidden z-0" ref={ref}>
+    <div class="flex grow overflow-hidden first-line:z-0">
       <canvas
-        class="absolute"
+        class="absolute overflow-hidden"
         ref={(ref) => {
           if (ref !== null) Renderer.setup(ref);
+          ref.style.opacity = '0';
+          canvas = ref;
         }}
       />
     </div>

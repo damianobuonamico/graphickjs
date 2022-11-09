@@ -44,7 +44,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
     }
 
     if (alt()) {
-      for (let i = 0; i < props.items.length; i++) {
+      for (let i = 0, n = props.items.length; i < n; ++i) {
         if (props.items[i].key === e.key) {
           if (props.items[i].submenu && props.items[i].submenu!.length) {
             if (!props.items[i].disabled) {

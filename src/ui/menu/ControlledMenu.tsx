@@ -22,7 +22,7 @@ export type MenuItems = MenuItem[];
 
 export function calculateAltLabel(label: string, key: string) {
   var indices = [];
-  for (var i = 0; i < label.length; i++) {
+  for (var i = 0, n = label.length; i < n; ++i) {
     if (label[i].toLowerCase() == key[0]) indices.push(i);
   }
 
@@ -94,7 +94,7 @@ const ControlledMenu: Component<{
     }
 
     if (props.alt) {
-      for (let i = 0; i < props.items.length; i++) {
+      for (let i = 0, n = props.items.length; i < n; ++i) {
         if (props.items[i].key === e.key) {
           if (props.items[i].submenu && props.items[i].submenu!.length) {
             if (!props.items[i].disabled) {

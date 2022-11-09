@@ -38,9 +38,11 @@ const onSelectPointerDown = () => {
     rect.element = new Element({
       position: InputManager.scene.position,
       vertices: createVertices('rectangle', vec2.create()),
-      closed: true
+      closed: true,
+      stroke: { color: [56 / 255, 195 / 255, 242 / 255, 1], width: 2 / SceneManager.viewport.zoom },
+      fill: { color: [56 / 255, 195 / 255, 242 / 255, 0.2] }
     });
-    SceneManager.pushRenderOverlay(rect.element);
+    SceneManager.overlays.add({ entity: rect.element });
   }
 
   SelectionManager.calculateRenderOverlay();
@@ -119,7 +121,7 @@ const onSelectPointerDown = () => {
   function onPointerUp(abort?: boolean) {
     SelectionManager.sync();
     if (rect.element) {
-      SceneManager.popRenderOverlay(rect.element.id);
+      SceneManager.overlays.remove(rect.element.id);
       rect.element = undefined;
     }
 

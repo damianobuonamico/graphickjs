@@ -1,4 +1,4 @@
-import { Component, createEffect, onMount } from 'solid-js';
+import { Component, createEffect, onMount, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { ToolBar, TitleBar, Timeline } from '@navigation';
 import { CanvasDOM } from '@multimedia';
@@ -6,6 +6,7 @@ import Renderer from './renderer/renderer';
 import SceneManager from './scene';
 import InputManager from './input';
 import { ComponentsPanel } from '@/ui/components';
+import { classNames } from '@/utils/utils';
 
 function getModePrimaryColor(mode: Mode) {
   switch (mode) {
@@ -22,7 +23,8 @@ const Editor: Component = () => {
   const [state, setState] = createStore<State>({
     mode: 'designer',
     tool: 'select',
-    loading: true
+    loading: true,
+    timeline: true
   });
   Renderer.init();
   SceneManager.init((loading) => {
@@ -68,9 +70,16 @@ const Editor: Component = () => {
             InputManager.tool.current = tool;
           }}
         />
-        <div class="grow overflow-hidden z-0 grid grid-rows-timeline">
+        <div
+          class={classNames('grow overflow-hidden z-0 grid', {
+            'grid-rows-timeline-visible': state.timeline,
+            'grid-rows-timeline-hidden': !state.timeline
+          })}
+        >
           <CanvasDOM />
-          <Timeline />
+          <Show when={state.timeline}>
+            <Timeline />
+          </Show>
         </div>
         <ComponentsPanel />
       </div>

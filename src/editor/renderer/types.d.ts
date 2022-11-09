@@ -1,5 +1,4 @@
 interface Canvas {
-  container: HTMLDivElement;
   DOM: HTMLCanvasElement;
 
   size: vec2;
@@ -8,46 +7,76 @@ interface Canvas {
   setup(canvas: HTMLCanvasElement): void;
   resize(): void;
 
-  beginFrame(): void;
-  endFrame(): void;
+  beginFrame({
+    color,
+    zoom,
+    position,
+    stats
+  }: {
+    color?: string;
+    zoom?: number;
+    position?: vec2;
+    stats?: Stats;
+  }): void;
+  endFrame({ stats, debugging }: { stats?: Stats; debugging?: boolean }): void;
 
-  clear(...args: any): void;
-  rect({
-    pos,
+  debugRect({
+    position,
     size,
     centered,
-    color,
-    transform
+    color
   }: {
-    pos: vec2;
-    size: vec2 | number;
-    centered: boolean;
-    color: vec4;
-    transform?: mat4;
+    position: vec2;
+    size?: vec2 | number;
+    centered?: boolean;
+    color?: string;
   }): void;
-  entity(entity: Entity): void;
-  element(element: Entity): void;
+  debugCircle({
+    position,
+    radius,
+    color
+  }: {
+    position: vec2;
+    radius?: number;
+    color?: string;
+  }): void;
   draw(drawable: Drawable): void;
+
+  entity(entity: Entity, options?: { inheritStrokeWidth?: boolean }): void;
+  element(element: Entity, options?: { inheritStrokeWidth?: boolean }): void;
   image(image: Entity): void;
+  rectangle({
+    position,
+    size,
+    centered,
+    stroke,
+    fill
+  }: {
+    position: vec2;
+    size: vec2 | number;
+    centered?: boolean;
+    stroke?: string;
+    fill?: string;
+  }): void;
 
   beginOutline(): void;
   outline(entity: Entity, skipVertices?: boolean): void;
   endOutline(): void;
-
-  debugging(): void;
 }
 
 interface GeometryDrawOp {
   type: 'geometry';
+  data?: undefined;
 }
 
 interface BezierDrawOp {
-  type: BezierType | 'move';
+  type: 'lineTo' | 'cubicTo' | 'moveTo';
   data: vec2[];
 }
 
 interface PathDrawOp {
-  type: 'stroke' | 'fill' | 'begin' | 'close';
+  type: 'stroke' | 'fill' | 'beginPath' | 'closePath';
+  data?: undefined;
 }
 
 interface ShapeDrawOp {
@@ -56,13 +85,18 @@ interface ShapeDrawOp {
 }
 
 interface CenteredShapeDrawOp {
-  type: 'circle' | 'crect';
+  type: 'circle' | 'square';
   data: [vec2, number];
 }
 
 interface ColorDrawOp {
-  type: 'strokecolor' | 'fillcolor';
-  data: vec4;
+  type: 'strokeColor' | 'fillColor';
+  data: [string];
+}
+
+interface ParameterDrawOp {
+  type: 'strokeWidth';
+  data: [number];
 }
 
 type DrawOp =
@@ -71,7 +105,8 @@ type DrawOp =
   | PathDrawOp
   | ShapeDrawOp
   | CenteredShapeDrawOp
-  | ColorDrawOp;
+  | ColorDrawOp
+  | ParameterDrawOp;
 
 interface Drawable {
   operations: DrawOp[];
@@ -79,4 +114,9 @@ interface Drawable {
 
 interface DebugState {
   box: boolean;
+}
+
+interface Stats {
+  begin(): void;
+  end(): void;
 }

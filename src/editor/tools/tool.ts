@@ -70,8 +70,12 @@ class ToolState {
     this.m_last = this.m_active;
     this.m_active = tool;
     this.m_setTool(tool);
-    SceneManager.clearRenderOverlays();
+
+    SceneManager.overlays.clear();
+    SceneManager.render();
+
     this.onPointerHover();
+
     SelectionManager.calculateRenderOverlay();
   }
 

@@ -105,7 +105,7 @@ class Bezier implements BezierEntity {
     let sum = 0;
     let last = this.getPoint(0);
 
-    for (let i = 1; i <= 100; i++) {
+    for (let i = 1; i <= 100; ++i) {
       const point = this.getPoint(i / 100);
       sum += (point[0] - last[0]) * (point[1] + last[1]);
       last = point;
@@ -166,7 +166,7 @@ class Bezier implements BezierEntity {
 
     const roots: number[] = [0, 1];
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 2; ++i) {
       const sqrtDelta = Math.sqrt(
         Math.pow(b[i], 2) +
           Math.pow(c[i], 2) -
@@ -204,7 +204,7 @@ class Bezier implements BezierEntity {
 
     const roots: number[] = [0, 1];
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 2; ++i) {
       const sqrtDelta = Math.sqrt(
         Math.pow(b[i], 2) +
           Math.pow(c[i], 2) -
@@ -297,7 +297,7 @@ class Bezier implements BezierEntity {
     let e = 0;
     let f = 0;
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 2; ++i) {
       a +=
         6 * Math.pow(A[i], 2) -
         36 * A[i] * B[i] +
@@ -362,10 +362,10 @@ class Bezier implements BezierEntity {
       distance: vec2.sqrDist(A, position)
     };
 
-    for (let i = 0; i <= iterations; i++) {
+    for (let i = 0; i <= iterations; ++i) {
       let x = i / iterations;
 
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 5; ++i) {
         x =
           x -
           (a * Math.pow(x, 5) +
@@ -582,10 +582,10 @@ class Bezier implements BezierEntity {
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel: boolean = false): void {}
 
   private getLinearDrawable(): Drawable {
-    return { operations: [{ type: this.bezierType, data: [this.p3] }] };
+    return { operations: [{ type: 'lineTo', data: [this.p3] }] };
   }
   private getCubicDrawable(): Drawable {
-    return { operations: [{ type: this.bezierType, data: [this.p1, this.p2, this.p3] }] };
+    return { operations: [{ type: 'cubicTo', data: [this.p1, this.p2, this.p3] }] };
   }
   getDrawable(useWebGL: boolean = false): Drawable {
     Debugger.time('bDrwb');

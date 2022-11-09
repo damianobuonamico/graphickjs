@@ -55,12 +55,20 @@ const onVSelectPointerDown = () => {
     if (!InputManager.keys.shift) {
       SelectionManager.clear();
     }
+
     rect.element = new Element({
       position: InputManager.scene.position,
       vertices: createVertices('rectangle', vec2.create()),
-      closed: true
+      closed: true,
+      stroke: {
+        color: [56 / 255, 195 / 255, 242 / 255, 1],
+        width: 2 / SceneManager.viewport.zoom,
+        style: [3 / SceneManager.viewport.zoom, 3 / SceneManager.viewport.zoom]
+      },
+      fill: { color: [56 / 255, 195 / 255, 242 / 255, 0.2] }
     });
-    SceneManager.pushRenderOverlay(rect.element);
+
+    SceneManager.overlays.add({ entity: rect.element });
   }
 
   let last = InputManager.scene.position;
@@ -79,7 +87,10 @@ const onVSelectPointerDown = () => {
             const movement = vec2.rotate(InputManager.scene.movement, [0, 0], -angle);
 
             handle.parent.transform.tempTranslate(movement);
-            (handle.parent.parent.transform as ElementTransformComponent).keepCentered(center);
+            (handle.parent.parent.transform as ElementTransformComponent).keepCentered(
+              center,
+              true
+            );
           }
         } else {
           const angle = handle.parent.parent.transform.rotation;
@@ -123,7 +134,10 @@ const onVSelectPointerDown = () => {
                 InputManager.keys.alt
               );
 
-            (handle.parent.parent.transform as ElementTransformComponent).keepCentered(center);
+            (handle.parent.parent.transform as ElementTransformComponent).keepCentered(
+              center,
+              true
+            );
           }
         }
       } else {
@@ -155,7 +169,7 @@ const onVSelectPointerDown = () => {
               });
             }
 
-            (element.transform as ElementTransformComponent).keepCentered(center);
+            (element.transform as ElementTransformComponent).keepCentered(center, true);
           }
         });
 
@@ -181,7 +195,7 @@ const onVSelectPointerDown = () => {
   function onPointerUp(abort?: boolean) {
     SelectionManager.sync(true);
     if (rect.element) {
-      SceneManager.popRenderOverlay(rect.element.id);
+      SceneManager.overlays.remove(rect.element.id);
       rect.element = undefined;
     }
 

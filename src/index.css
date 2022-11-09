@@ -19,6 +19,10 @@
     @apply select-none;
   }
 
+  canvas {
+    transition: opacity 0.3s ease-in;
+  }
+
   ::-webkit-scrollbar {
     width: 7px;
     height: 7px;

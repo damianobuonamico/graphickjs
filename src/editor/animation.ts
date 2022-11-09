@@ -1,4 +1,5 @@
 import { round } from '@/math';
+import CanvasBackend2D from './renderer/2D/backend2d';
 
 abstract class AnimationManager {
   private static m_playing = false;
@@ -14,7 +15,28 @@ abstract class AnimationManager {
   private static m_currentFps = this.m_fps;
   private static m_started = false;
 
+  private static m_canvas: CanvasBackend2D;
+
   private static m_renderFn: () => void;
+
+  static set canvas(canvas: HTMLCanvasElement) {
+    this.m_canvas = new CanvasBackend2D();
+    this.m_canvas.setup(canvas);
+  }
+
+  static resize() {
+    this.m_canvas.resize();
+    this.m_canvas.debugRect({ position: [10, 10] });
+    this.m_canvas.draw({
+      operations: [
+        { type: 'beginPath' },
+        { type: 'moveTo', data: [[50, 50]] },
+        { type: 'lineTo', data: [[100, 50]] },
+        { type: 'stroke' },
+        { type: 'closePath' }
+      ]
+    });
+  }
 
   static get playing(): boolean {
     return this.m_playing;

@@ -509,8 +509,11 @@ export function scale(a: vec2, b: vec2, t: vec2, out: vec2 = [0, 0]): vec2 {
  * @returns {vec2} out
  */
 export function transformMat3(a: ReadonlyVec2, m: ReadonlyMat3, out: vec2 = [0, 0]): vec2 {
-  out[0] = m[0] * a[0] + m[1] * a[1] + m[2];
-  out[1] = m[3] * a[0] + m[4] * a[1] + m[5];
+  const x = a[0],
+    y = a[1];
+
+  out[0] = m[0] * x + m[1] * y + m[2];
+  out[1] = m[3] * x + m[4] * y + m[5];
   return out;
 }
 

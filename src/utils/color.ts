@@ -55,9 +55,6 @@ export function HEX2RGB(hex: string): vec3 | vec4 {
 
 export function RGB2HEX([r, g, b]: vec3): string {
   return (
-    '#' +
-    Math.round((1 << 24) + (((r * 255) << 16) + ((g * 255) << 8) + b * 255))
-      .toString(16)
-      .slice(1)
+    '#' + (((1 << 24) + (((r * 255) << 16) + ((g * 255) << 8) + b * 255)) | 0).toString(16).slice(1)
   );
 }

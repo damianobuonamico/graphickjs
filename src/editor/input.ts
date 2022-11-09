@@ -11,6 +11,7 @@ import SceneManager from './scene';
 import actions from './actions';
 import HoverState from './hover';
 import { ToolState } from './tools';
+import AnimationManager from './animation';
 
 abstract class InputManager {
   public static client: PointerCoord;
@@ -333,6 +334,7 @@ abstract class InputManager {
   //* Window Events
   private static onResize(e: UIEvent) {
     Renderer.resize();
+    AnimationManager.resize();
     SceneManager.render();
     this.m_listeners.resize(e);
   }

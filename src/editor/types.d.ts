@@ -4,6 +4,7 @@ interface State {
   mode: Mode;
   tool: Tool;
   loading: boolean;
+  timeline: boolean;
 }
 
 interface Action {

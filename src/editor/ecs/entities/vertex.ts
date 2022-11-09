@@ -121,78 +121,9 @@ class Vertex implements VertexEntity {
     if (isPointInBox(this.transform.position, box)) entities.add(this);
   }
 
+
   getDrawable(useWebGL: boolean = false, selected: boolean = false): Drawable {
-    // TODO: optimize operations batching by color
-    if (useWebGL) {
-      return { operations: [{ type: 'geometry' }] };
-    } else {
-      const drawable: Drawable = { operations: [{ type: 'begin' }] };
-      if (selected) {
-        if (this.m_left) {
-          drawable.operations.push({
-            type: 'circle',
-            data: [
-              vec2.add(this.m_left.transform.position, this.transform.position),
-              3 / SceneManager.viewport.zoom
-            ]
-          });
-        }
-
-        if (this.m_right) {
-          drawable.operations.push({
-            type: 'circle',
-            data: [
-              vec2.add(this.m_right.transform.position, this.transform.position),
-              3 / SceneManager.viewport.zoom
-            ]
-          });
-        }
-
-        drawable.operations.push({
-          type: 'crect',
-          data: [this.transform.position, 4 / SceneManager.viewport.zoom]
-        });
-
-        drawable.operations.push({ type: 'fill' });
-        drawable.operations.push({ type: 'begin' });
-
-        if (this.m_left) {
-          drawable.operations.push({
-            type: 'move',
-            data: [vec2.add(this.m_left.transform.position, this.transform.position)]
-          });
-          drawable.operations.push({
-            type: 'linear',
-            data: [this.transform.position]
-          });
-        }
-
-        if (this.m_right) {
-          drawable.operations.push({
-            type: 'move',
-            data: [vec2.add(this.m_right.transform.position, this.transform.position)]
-          });
-          drawable.operations.push({
-            type: 'linear',
-            data: [this.transform.position]
-          });
-        }
-      } else {
-        drawable.operations.push({
-          type: 'crect',
-          data: [this.transform.position, 3 / SceneManager.viewport.zoom]
-        });
-        drawable.operations.push({ type: 'fillcolor', data: vec4.fromValues(1, 1, 1, 1) });
-        drawable.operations.push({ type: 'fill' });
-        drawable.operations.push({
-          type: 'fillcolor',
-          data: vec4.fromValues(56 / 255, 195 / 255, 242 / 255, 1)
-        });
-      }
-
-      drawable.operations.push({ type: 'stroke' });
-      return drawable;
-    }
+    return { operations: [] };
   }
 
   getOutlineDrawable(useWebGL: boolean = false): Drawable {

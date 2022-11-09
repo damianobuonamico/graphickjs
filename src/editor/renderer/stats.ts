@@ -1,6 +1,6 @@
 import { round } from '@math';
 
-class CanvasStats {
+class CanvasStats implements Stats {
   private m_entities: number = 0;
   private m_drawn: number = 0;
 
@@ -85,6 +85,7 @@ class CanvasStats {
 
   public begin() {
     this.m_beginTime = (performance || Date).now();
+    this.clear();
   }
 
   public end() {

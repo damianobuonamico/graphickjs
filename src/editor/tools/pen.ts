@@ -53,7 +53,7 @@ const onPenPointerDown = () => {
 
   HistoryManager.beginSequence();
 
-  if (pen.overlay) SceneManager.popRenderOverlay(pen.overlay!.id);
+  if (pen.overlay) SceneManager.overlays.remove(pen.overlay!.id);
 
   pen.overlay = undefined;
   pen.overlayLastVertex = undefined;
@@ -187,8 +187,8 @@ const onPenPointerDown = () => {
       if (!pen.element) {
         pen.element = new Element({
           position: InputManager.scene.position,
-          stroke: nanoid(),
-          fill: nanoid()
+          stroke: { color: [0, 0, 0, 1] },
+          fill: {}
         });
 
         SceneManager.add(pen.element);
@@ -396,7 +396,7 @@ const onPenPointerDown = () => {
 
 export function onPenPointerHover() {
   const pen = InputManager.tool.data as PenToolData;
-  const hasOverlay = pen.overlay ? SceneManager.hasRenderOverlay(pen.overlay.id) : false;
+  const hasOverlay = pen.overlay ? SceneManager.overlays.has(pen.overlay.id) : false;
 
   if (pen.element && pen.vertex) {
     const box = pen.element.transform.unrotatedBoundingBox;
@@ -434,7 +434,7 @@ export function onPenPointerHover() {
         )
       );
     } else {
-      if (hasOverlay) SceneManager.popRenderOverlay(pen.overlay!.id);
+      if (hasOverlay) SceneManager.overlays.remove(pen.overlay!.id);
 
       pen.overlayLastVertex = new Vertex({
         position: vec2.rotate(pen.vertex.transform.position, mid, pen.element.transform.rotation),
@@ -452,15 +452,20 @@ export function onPenPointerHover() {
 
       pen.overlay = new Element({
         position: pen.element.transform.position,
-        vertices: [pen.overlayLastVertex, pen.overlayVertex]
+        vertices: [pen.overlayLastVertex, pen.overlayVertex],
+        stroke: {
+          color: [56 / 255, 195 / 255, 242 / 255, 1],
+          width: 1.5 / SceneManager.viewport.zoom
+        },
+        closed: false
       });
     }
 
-    if (!hasOverlay) SceneManager.pushRenderOverlay(pen.overlay);
+    if (!hasOverlay) SceneManager.overlays.add({ entity: pen.overlay });
 
     SceneManager.render();
   } else if (hasOverlay) {
-    SceneManager.popRenderOverlay(pen.overlay!.id);
+    SceneManager.overlays.remove(pen.overlay!.id);
 
     pen.overlay = undefined;
     pen.overlayVertex = undefined;

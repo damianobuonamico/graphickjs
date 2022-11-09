@@ -71,7 +71,7 @@ export function arcToBeziers(angleStart: number, angleExtent: number) {
 
   const beziers: [vec2, vec2, vec2][] = [];
 
-  for (let i = 0; i < numSegments; i++) {
+  for (let i = 0; i < numSegments; ++i) {
     let angle = angleStart + i * angleIncrement;
 
     // Calculate the control vector at this angle

@@ -198,7 +198,12 @@ class Manipulator implements ManipulatorEntity {
     this.setHandles();
 
     if (!SceneManager.overlays.has(this.id))
-      SceneManager.overlays.add({ entity: this, condition: () => this.active });
+      SceneManager.overlays.add({
+        entity: this,
+        condition: () => this.active,
+        interactive: true,
+        static: true
+      });
   }
 
   destroy(): void {}
@@ -249,7 +254,7 @@ class Manipulator implements ManipulatorEntity {
       {
         type: 'stroke'
       },
-      { type: 'begin' }
+      { type: 'beginPath' }
     ];
 
     Object.entries(this.m_handles).forEach(([key, handle]: [string, GenericHandle]) => {

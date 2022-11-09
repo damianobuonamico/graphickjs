@@ -40,7 +40,8 @@ module.exports = {
       },
       gridTemplateRows: {
         'title-bar': '2rem 1fr',
-        timeline: '1fr 5rem'
+        'timeline-visible': '1fr 20rem',
+        'timeline-hidden': '1fr'
       }
     }
   },

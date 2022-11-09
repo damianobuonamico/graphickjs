@@ -5,6 +5,10 @@ import { Renderer } from '../../renderer';
 import { RectTransform } from '../components/transform';
 import Layer from './layer';
 
+export const isImage = (b: Entity): b is ImageEntity => {
+  return b.type === 'image';
+};
+
 class ImageMedia implements ImageEntity {
   readonly id: string;
   readonly type: EntityType = 'image';
@@ -68,22 +72,9 @@ class ImageMedia implements ImageEntity {
     }
   }
 
-  getDrawable(useWebGL = false): Drawable {
-    // TODO: refactor rendering
-    const box = this.transform.unrotatedBoundingBox;
+  getDrawable = this.getOutlineDrawable;
 
-    return {
-      operations: [
-        {
-          type: 'rect',
-          data: [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], box[0])]
-        },
-        { type: 'stroke' }
-      ]
-    };
-  }
-
-  getOutlineDrawable(useWebGL = false): Drawable {
+  getOutlineDrawable(): Drawable {
     const box = this.transform.staticBoundingBox;
 
     return {
@@ -92,7 +83,6 @@ class ImageMedia implements ImageEntity {
           type: 'rect',
           data: [vec2.sub(box[0], this.transform.staticPosition), vec2.sub(box[1], box[0])]
         }
-        // { type: 'stroke' }
       ]
     };
   }

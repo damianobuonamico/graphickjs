@@ -69,8 +69,7 @@ class Artboard extends ECS implements ArtboardEntity {
   }
 
   public render() {
-    // TODO: refactor renderer
-    Renderer.rect({ pos: [0, 0], size: this.m_size, color: [1.0, 1.0, 1.0, 1.0] });
+    Renderer.rect({ position: [0, 0], size: this.m_size, fill: '#FFFFFF' });
     super.render();
   }
 

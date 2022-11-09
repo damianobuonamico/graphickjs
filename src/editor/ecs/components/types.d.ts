@@ -188,7 +188,7 @@ interface ElementTransformComponent extends TransformComponent {
 
   scale(delta: vec2): void;
 
-  keepCentered(center: vec2): void;
+  keepCentered(center: vec2, temp?: boolean): void;
 
   asObject(): TransformComponentObject;
 }

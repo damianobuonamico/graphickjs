@@ -384,7 +384,7 @@ class Element implements ElementEntity {
 
       const rects: Box[] = [];
 
-      for (let i = 0; i < rotated.length - 1; i++) {
+      for (let i = 0, n = rotated.length - 1; i < n; ++i) {
         rects.push([rotated[i], rotated[i + 1]]);
       }
 
@@ -412,7 +412,7 @@ class Element implements ElementEntity {
 
     let fragments: string[][] = [];
 
-    for (let i = 0; i < indices.length; i++) {
+    for (let i = 0, n = indices.length; i < n; ++i) {
       let prev = i < 1 ? -1 : indices[i - 1];
       if (prev !== indices[i] - 1) fragments.push(this.m_order.slice(prev + 1, indices[i]));
     }
@@ -462,7 +462,7 @@ class Element implements ElementEntity {
 
     const elements: Element[] = [];
 
-    for (let i = 0; i < fragments.length; i++) {
+    for (let i = 0, n = fragments.length; i < n; ++i) {
       fragments[i] = fragments[i].filter((id) => id != undefined);
       if (fragments[i].length > 1) {
         const element = new Element({
@@ -592,20 +592,20 @@ class Element implements ElementEntity {
   }
 
   private onGetDrawableCacheMiss(): Drawable {
-    const drawable: Drawable = { operations: [{ type: 'begin' }] };
+    const drawable: Drawable = { operations: [] };
 
     let first = true;
 
     this.m_curves.forEach((bezier) => {
       if (first) {
-        drawable.operations.push({ type: 'move', data: [bezier.p0] });
+        drawable.operations.push({ type: 'moveTo', data: [bezier.p0] });
         first = false;
       }
 
       drawable.operations.push(...bezier.getDrawable().operations);
     });
 
-    if (this.m_closed) drawable.operations.push({ type: 'close' });
+    if (this.m_closed) drawable.operations.push({ type: 'closePath' });
 
     return drawable;
   }
@@ -617,21 +617,7 @@ class Element implements ElementEntity {
     return drawable;
   }
 
-  getOutlineDrawable(useWebGL: boolean = false): Drawable {
-    const ops = this.getDrawable(useWebGL).operations.filter(
-      (op) =>
-        op.type !== 'fill' &&
-        op.type !== 'stroke' &&
-        op.type !== 'strokecolor' &&
-        op.type !== 'fillcolor'
-    );
-
-    ops.push({ type: 'stroke' });
-
-    return {
-      operations: ops
-    };
-  }
+  getOutlineDrawable = this.getDrawable;
 
   render(): void {
     Renderer.element(this);

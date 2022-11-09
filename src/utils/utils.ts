@@ -3,7 +3,7 @@ import { KEYS } from './keys';
 export function classNames(...args: ClassNameArgument[]) {
   const classes: string[] = [];
 
-  for (let i = 0; i < args.length; i++) {
+  for (let i = 0, n = args.length; i < n; ++i) {
     const arg = arguments[i];
     if (!arg) continue;
 

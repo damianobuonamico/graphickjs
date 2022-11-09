@@ -149,7 +149,7 @@ class SVGPather {
   ) {
     const beziers = arcToBeziers(angleStart, angleExtent);
 
-    for (let i = 0; i < beziers.length; i++) {
+    for (let i = 0, n = beziers.length; i < n; ++i) {
       for (let t = 0; t < 3; t++) {
         vec2.mul(beziers[i][t], radius, beziers[i][t]);
         // rotate(angle)
@@ -164,7 +164,7 @@ class SVGPather {
 
     this.m_cursor = beziers[beziers.length - 1][2];
 
-    for (let i = 0; i < beziers.length; i++) {
+    for (let i = 0, n = beziers.length; i < n; ++i) {
       this.cubicBezierTo(beziers[i][0], beziers[i][1], beziers[i][2]);
     }
   }
@@ -203,7 +203,7 @@ function parseSVGPath(node: SVGPathElement, attributes: SVGAttributesContainer) 
   };
 
   // Process each instruction
-  for (let i = 0; i < instructions.length; i++) {
+  for (let i = 0, n = instructions.length; i < n; ++i) {
     let instruction = instructions[i].trim();
 
     history.index = i;
@@ -215,7 +215,7 @@ function parseSVGPath(node: SVGPathElement, attributes: SVGAttributesContainer) 
     // Clear instructions from double dots
     let match = /\.\d*\.\d*/.exec(instruction);
     while (match) {
-      for (let i = 1; i < match![0].length; i++) {
+      for (let i = 1, n = match![0].length; i < n; ++i) {
         if (match[0][i] != '.') continue;
 
         instruction =
@@ -253,7 +253,7 @@ const SVGPathDataParsers: {
 };
 
 function parseSVGPathM(pather: SVGPather, op: string, data: string[], history: SVGPathHistory) {
-  for (let i = 0; i < data.length; i += 2) {
+  for (let i = 0, n = data.length; i < n; i += 2) {
     const position: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
     if (op === 'm') vec2.add(position, pather.cursor, position);
 
@@ -275,7 +275,7 @@ function parseSVGPathZ(pather: SVGPather) {
 }
 
 function parseSVGPathL(pather: SVGPather, op: string, data: string[]) {
-  for (let i = 0; i < data.length; i += 2) {
+  for (let i = 0, n = data.length; i < n; i += 2) {
     const position: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
     if (op === 'l') vec2.add(position, pather.cursor, position);
 
@@ -284,7 +284,7 @@ function parseSVGPathL(pather: SVGPather, op: string, data: string[]) {
 }
 
 function parseSVGPathH(pather: SVGPather, op: string, data: string[]) {
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0, n = data.length; i < n; ++i) {
     const position: vec2 = [parseFloat(data[i]), 0];
     if (op === 'h') vec2.add(position, pather.cursor, position);
     else position[1] = pather.cursor[1];
@@ -294,7 +294,7 @@ function parseSVGPathH(pather: SVGPather, op: string, data: string[]) {
 }
 
 function parseSVGPathV(pather: SVGPather, op: string, data: string[]) {
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0, n = data.length; i < n; ++i) {
     const position: vec2 = [0, parseFloat(data[i])];
     if (op === 'v') vec2.add(position, pather.cursor, position);
     else position[0] = pather.cursor[0];
@@ -304,7 +304,7 @@ function parseSVGPathV(pather: SVGPather, op: string, data: string[]) {
 }
 
 function parseSVGPathC(pather: SVGPather, op: string, data: string[]) {
-  for (let i = 0; i < data.length; i += 6) {
+  for (let i = 0, n = data.length; i < n; i += 6) {
     const cp1: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
     const cp2: vec2 = [parseFloat(data[i + 2]), parseFloat(data[i + 3])];
     const position: vec2 = [parseFloat(data[i + 4]), parseFloat(data[i + 5])];
@@ -320,7 +320,7 @@ function parseSVGPathC(pather: SVGPather, op: string, data: string[]) {
 }
 
 function parseSVGPathS(pather: SVGPather, op: string, data: string[], history: SVGPathHistory) {
-  for (let i = 0; i < data.length; i += 4) {
+  for (let i = 0, n = data.length; i < n; i += 4) {
     const cp2: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
     const position: vec2 = [parseFloat(data[i + 2]), parseFloat(data[i + 3])];
 
@@ -334,7 +334,7 @@ function parseSVGPathS(pather: SVGPather, op: string, data: string[], history: S
 }
 
 function parseSVGPathQ(pather: SVGPather, op: string, data: string[]) {
-  for (let i = 0; i < data.length; i += 4) {
+  for (let i = 0, n = data.length; i < n; i += 4) {
     const cp: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
     const position: vec2 = [parseFloat(data[i + 2]), parseFloat(data[i + 3])];
 
@@ -348,7 +348,7 @@ function parseSVGPathQ(pather: SVGPather, op: string, data: string[]) {
 }
 
 function parseSVGPathT(pather: SVGPather, op: string, data: string[], history: SVGPathHistory) {
-  for (let i = 0; i < data.length; i += 2) {
+  for (let i = 0, n = data.length; i < n; i += 2) {
     const position: vec2 = [parseFloat(data[i + 0]), parseFloat(data[i + 1])];
     if (op === 't') vec2.add(position, pather.cursor, position);
 
@@ -357,7 +357,7 @@ function parseSVGPathT(pather: SVGPather, op: string, data: string[], history: S
 }
 
 function parseSVGPathA(pather: SVGPather, op: string, data: string[]) {
-  for (let i = 0; i < data.length; i += 7) {
+  for (let i = 0, n = data.length; i < n; i += 7) {
     const position: vec2 = [parseFloat(data[i + 5]), parseFloat(data[i + 6])];
     if (op === 'a') vec2.add(position, pather.cursor, position);
 

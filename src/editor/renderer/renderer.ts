@@ -1,5 +1,3 @@
-import Element from '../ecs/entities/element';
-import ImageMedia from '../ecs/entities/image';
 import Canvas2D from './2D/canvas2d';
 
 abstract class Renderer {
@@ -9,6 +7,45 @@ abstract class Renderer {
   public static debug: DebugState = {
     box: true
   };
+
+  public static setup: Canvas['setup'];
+  public static resize: Canvas['resize'];
+  public static beginFrame: Canvas['beginFrame'];
+  public static debugRect: Canvas['debugRect'];
+  public static debugCircle: Canvas['debugCircle'];
+  public static draw: Canvas['draw'];
+  public static entity: Canvas['entity'];
+  public static element: Canvas['element'];
+  public static image: Canvas['image'];
+  public static rect: Canvas['rectangle'];
+  public static beginOutline: Canvas['beginOutline'];
+  public static outline: Canvas['outline'];
+  public static endOutline: Canvas['endOutline'];
+
+  public static init() {
+    this.m_canvas = new Canvas2D();
+    this.refresh();
+  }
+
+  public static refresh() {
+    this.bind(this.m_canvas);
+  }
+
+  private static bind(canvas: Canvas) {
+    this.setup = canvas.setup.bind(canvas);
+    this.resize = canvas.resize.bind(canvas);
+    this.beginFrame = canvas.beginFrame.bind(canvas);
+    this.debugRect = canvas.debugRect.bind(canvas);
+    this.debugCircle = canvas.debugCircle.bind(canvas);
+    this.draw = canvas.draw.bind(canvas);
+    this.entity = canvas.entity.bind(canvas);
+    this.element = canvas.element.bind(canvas);
+    this.image = canvas.image.bind(canvas);
+    this.rect = canvas.rectangle.bind(canvas);
+    this.beginOutline = canvas.beginOutline.bind(canvas);
+    this.outline = canvas.outline.bind(canvas);
+    this.endOutline = canvas.endOutline.bind(canvas);
+  }
 
   public static get canvas() {
     return this.m_canvas.DOM;
@@ -22,73 +59,8 @@ abstract class Renderer {
     return this.m_canvas.size;
   }
 
-  public static set container(div: HTMLDivElement) {
-    this.m_canvas.container = div;
-  }
-
-  public static init() {
-    this.m_canvas = new Canvas2D();
-  }
-
-  public static setup(canvas: HTMLCanvasElement) {
-    this.m_canvas.setup(canvas);
-  }
-
-  public static resize() {
-    this.m_canvas.resize();
-  }
-
-  public static beginFrame() {
-    this.m_canvas.beginFrame();
-  }
-
-  public static endFrame() {
-    this.m_canvas.endFrame();
-    if (this.debugging) this.m_canvas.debugging();
-  }
-
-  public static rect({
-    pos,
-    size,
-    color,
-    centered = false,
-    transform
-  }: {
-    pos: vec2;
-    size: vec2;
-    color: vec4;
-    centered?: boolean;
-    transform?: mat4;
-  }) {
-    this.m_canvas.rect({ pos, size, centered, color, transform });
-  }
-
-  public static entity(entity: Entity) {
-    this.m_canvas.entity(entity);
-  }
-
-  public static element(element: Element) {
-    this.m_canvas.element(element);
-  }
-
-  public static beginOutline() {
-    this.m_canvas.beginOutline();
-  }
-
-  public static outline(entity: Entity, skipVertices: boolean = false) {
-    this.m_canvas.outline(entity, skipVertices);
-  }
-
-  public static endOutline() {
-    this.m_canvas.endOutline();
-  }
-
-  public static draw(drawable: Drawable) {
-    this.m_canvas.draw(drawable);
-  }
-
-  public static image(image: ImageMedia) {
-    this.m_canvas.image(image);
+  static endFrame() {
+    this.m_canvas.endFrame({ debugging: this.debugging });
   }
 }
 

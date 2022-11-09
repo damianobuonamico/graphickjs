@@ -2,7 +2,7 @@ import { fillObject, stringifyReplacer } from '@utils/utils';
 import { clamp, round, vec2 } from '@math';
 import Artboard from './ecs/entities/artboard';
 import ECS from './ecs/ecs';
-import Element from './ecs/entities/element';
+import Element, { isElement } from './ecs/entities/element';
 import Layer from './ecs/entities/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/entities/vertex';
@@ -14,6 +14,7 @@ import { fileDialog } from '@/utils/file';
 import Stroke from './ecs/components/stroke';
 import Fill from './ecs/components/fill';
 import { parseSVG } from '@/utils/svg';
+import Stats from 'stats.js';
 
 // DEV
 import tigerSvg from '@utils/svg/demo';
@@ -24,7 +25,6 @@ import AnimationManager from './animation';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
-  private static m_renderOverlays: Map<string, Entity> = new Map();
   private static m_layer: Layer;
 
   static viewport: ViewportState;
@@ -39,6 +39,13 @@ abstract class SceneManager {
     this.load();
     HistoryManager.clear();
     AnimationManager.renderFn = this.renderFn.bind(this);
+
+    this.stats.showPanel(0);
+    setTimeout(() => {
+      Renderer.canvas.parentElement?.appendChild(this.stats.dom);
+      this.stats.dom.style.position = 'unset';
+      this.stats.dom.style.height = 'fit-content';
+    }, 100);
   }
 
   static set zoom(value: number | [number, vec2]) {
@@ -93,25 +100,28 @@ abstract class SceneManager {
     SelectionManager.calculateRenderOverlay();
   }
 
+  static stats = new Stats();
+
   private static renderFn() {
-    Renderer.beginFrame();
-    this.m_ecs.render();
-    SelectionManager.render();
-    this.m_renderOverlays.forEach((entity) => {
-      if (entity.type === 'element') {
-        Renderer.outline(entity);
-      } else entity.render();
+    this.stats.begin();
+    Renderer.beginFrame({
+      color: this.background.hex,
+      position: this.viewport.position,
+      zoom: this.viewport.zoom
     });
+
+    this.m_ecs.render();
+
+    SelectionManager.render();
+
     this.overlays.render();
+
     Renderer.endFrame();
+    this.stats.end();
   }
 
   static render() {
     AnimationManager.render();
-    // requestAnimationFrame(() => {
-    //   console.log(AnimationManager.playing);
-    //   this.renderFn;
-    // });
   }
 
   static clientToScene(position: vec2, override: Partial<ViewportState> = {}) {
@@ -270,27 +280,6 @@ abstract class SceneManager {
     if (!duplicate) return undefined;
     this.add(duplicate);
     return duplicate;
-  }
-
-  static pushRenderOverlay(entity: Entity) {
-    this.m_renderOverlays.set(entity.id, entity);
-  }
-
-  static hasRenderOverlay(id: string) {
-    return this.m_renderOverlays.has(id);
-  }
-
-  static popRenderOverlay(id?: string) {
-    if (!id) {
-      let order = Array.from(this.m_renderOverlays.keys());
-      id = order[order.length - 1];
-    }
-    this.m_renderOverlays.delete(id);
-  }
-
-  static clearRenderOverlays() {
-    this.m_renderOverlays.clear();
-    this.render();
   }
 
   static forEach(callback: (entity: Entity) => any) {
