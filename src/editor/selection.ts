@@ -309,6 +309,17 @@ abstract class SelectionManager {
     });
   }
 
+  static invert() {
+    if (!this.size) return this.all();
+
+    SceneManager.forEach((entity) => {
+      if (entity.selectable) {
+        if (this.has(entity.id)) this.deselect(entity.id);
+        else this.select(entity);
+      }
+    });
+  }
+
   static components: ComponentCollection = {};
   private static m_updateComponentsFn: (data: ComponentCollection) => void = () => {};
   private static updateComponents = debounce(this.updateComponentsBody.bind(this), 2);

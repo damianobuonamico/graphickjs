@@ -4,6 +4,16 @@ import { Cache } from '@/editor/ecs/components/cache';
 import Debugger from '@/utils/debugger';
 import Handle from '../entities/handle';
 
+export const isTransform = (
+  b:
+    | TransformComponent
+    | SimpleTransformComponent
+    | UntrackedTransformComponent
+    | UntrackedSimpleTransformComponent
+): b is TransformComponent => {
+  return b instanceof Transform || b instanceof UntrackedTransform;
+};
+
 export class FloatValue implements TransformComponentValue<number> {
   private m_value: number;
   private m_delta = 0;
@@ -1129,34 +1139,58 @@ export class UntrackedTransform
   extends UntrackedBaseTransform
   implements UntrackedTransformComponent
 {
-  private m_center = vec2.create();
+  private m_size: vec2;
 
-  constructor(position?: vec2, rotation?: number) {
+  constructor(position?: vec2, size?: vec2, rotation?: number) {
     super(position, rotation);
+    this.m_size = size ? vec2.clone(size) : vec2.create();
   }
 
   get center(): vec2 {
-    return vec2.clone(this.m_center);
+    const box = this.unrotatedBoundingBox;
+    return vec2.mid(box[0], box[1]);
   }
 
-  set center(value: vec2) {
-    vec2.copy(this.m_center, value);
+  get size() {
+    return vec2.clone(this.m_size);
+  }
+
+  set size(value: vec2) {
+    vec2.copy(this.m_size, value);
   }
 
   get staticBoundingBox(): Box {
-    return [this.m_translation, this.m_translation];
+    return this.unrotatedBoundingBox;
   }
 
   get unrotatedBoundingBox(): Box {
-    return [this.m_translation, this.m_translation];
+    return [this.m_translation, vec2.add(this.m_translation, this.m_size)];
   }
 
   get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
-    return [this.m_translation, this.m_translation, this.m_translation, this.m_translation];
+    const box = this.unrotatedBoundingBox;
+    const center = this.center;
+
+    return [
+      vec2.rotate(box[0], center, this.m_rotation),
+      vec2.rotate([box[1][0], box[0][1]], center, this.m_rotation),
+      vec2.rotate(box[1], center, this.m_rotation),
+      vec2.rotate([box[0][0], box[1][1]], center, this.m_rotation)
+    ];
   }
 
   get boundingBox(): Box {
-    return [this.m_translation, this.m_translation];
+    if (this.m_rotation === 0) return this.unrotatedBoundingBox;
+
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.rotatedBoundingBox.forEach((point) => {
+      vec2.min(min, point, min);
+      vec2.max(max, point, max);
+    });
+
+    return [min, max];
   }
 
   get mat3(): mat3 {
@@ -1164,7 +1198,7 @@ export class UntrackedTransform
       this.m_translation,
       this.m_rotation,
       this.m_translation,
-      this.m_center
+      this.center
     );
   }
 

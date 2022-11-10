@@ -25,6 +25,10 @@ const actions: { [key: string]: ActionBinding } = {
     callback: () => SelectionManager.all(),
     shortcut: { key: KEYS.A, ctrl: true }
   },
+  invert: {
+    callback: () => SelectionManager.invert(),
+    shortcut: { key: KEYS.I, ctrl: true, alt: true }
+  },
   import: {
     callback: () => SceneManager.import(),
     shortcut: { key: KEYS.I, ctrl: true }

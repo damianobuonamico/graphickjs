@@ -11,14 +11,24 @@ interface Canvas {
     color,
     zoom,
     position,
-    stats
+    stats,
+    debugging
   }: {
     color?: string;
     zoom?: number;
     position?: vec2;
-    stats?: Stats;
+    stats?: RendererStats;
+    debugging?: boolean;
   }): void;
-  endFrame({ stats, debugging }: { stats?: Stats; debugging?: boolean }): void;
+  endFrame({
+    stats,
+    debugging,
+    debug
+  }: {
+    stats?: RendererStats;
+    debugging?: boolean;
+    debug?: DebugState;
+  }): void;
 
   debugRect({
     position,
@@ -113,10 +123,29 @@ interface Drawable {
 }
 
 interface DebugState {
-  box: boolean;
+  entityBox: boolean;
+  segmentBox: boolean;
 }
 
-interface Stats {
+interface RendererStats {
+  ms: number[];
+  fps: number[];
+  memory: number[];
+
+  avgMs: number;
+  avgFps: number;
+  avgMemory: number;
+
+  minMs: number;
+  maxMs: number;
+  minFps: number;
+  maxFps: number;
+  minMemory: number;
+  maxMemory: number;
+
+  readonly availableMemory: number;
+  readonly hasMemoryStats: boolean;
+
   begin(): void;
   end(): void;
 }

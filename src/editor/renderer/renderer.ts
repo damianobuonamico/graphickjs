@@ -1,16 +1,19 @@
 import Canvas2D from './2D/canvas2d';
+import Stats from './stats';
 
 abstract class Renderer {
   private static m_canvas: Canvas;
 
-  public static debugging: boolean = false;
+  public static debugging: boolean = true;
   public static debug: DebugState = {
-    box: true
+    entityBox: true,
+    segmentBox: true
   };
+
+  public static stats: RendererStats = new Stats();
 
   public static setup: Canvas['setup'];
   public static resize: Canvas['resize'];
-  public static beginFrame: Canvas['beginFrame'];
   public static debugRect: Canvas['debugRect'];
   public static debugCircle: Canvas['debugCircle'];
   public static draw: Canvas['draw'];
@@ -31,10 +34,9 @@ abstract class Renderer {
     this.bind(this.m_canvas);
   }
 
-  private static bind(canvas: Canvas) {
+  static bind(canvas: Canvas) {
     this.setup = canvas.setup.bind(canvas);
     this.resize = canvas.resize.bind(canvas);
-    this.beginFrame = canvas.beginFrame.bind(canvas);
     this.debugRect = canvas.debugRect.bind(canvas);
     this.debugCircle = canvas.debugCircle.bind(canvas);
     this.draw = canvas.draw.bind(canvas);
@@ -59,8 +61,12 @@ abstract class Renderer {
     return this.m_canvas.size;
   }
 
+  static beginFrame(options: { color?: string; zoom?: number; position?: vec2 }) {
+    this.m_canvas.beginFrame({ ...options, debugging: this.debugging, stats: this.stats });
+  }
+
   static endFrame() {
-    this.m_canvas.endFrame({ debugging: this.debugging });
+    this.m_canvas.endFrame({ debugging: this.debugging, debug: this.debug, stats: this.stats });
   }
 }
 

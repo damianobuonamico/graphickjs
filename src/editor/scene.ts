@@ -14,7 +14,6 @@ import { fileDialog } from '@/utils/file';
 import Stroke from './ecs/components/stroke';
 import Fill from './ecs/components/fill';
 import { parseSVG } from '@/utils/svg';
-import Stats from 'stats.js';
 
 // DEV
 import tigerSvg from '@utils/svg/demo';
@@ -39,13 +38,6 @@ abstract class SceneManager {
     this.load();
     HistoryManager.clear();
     AnimationManager.renderFn = this.renderFn.bind(this);
-
-    this.stats.showPanel(0);
-    setTimeout(() => {
-      Renderer.canvas.parentElement?.appendChild(this.stats.dom);
-      this.stats.dom.style.position = 'unset';
-      this.stats.dom.style.height = 'fit-content';
-    }, 100);
   }
 
   static set zoom(value: number | [number, vec2]) {
@@ -100,10 +92,7 @@ abstract class SceneManager {
     SelectionManager.calculateRenderOverlay();
   }
 
-  static stats = new Stats();
-
   private static renderFn() {
-    this.stats.begin();
     Renderer.beginFrame({
       color: this.background.hex,
       position: this.viewport.position,
@@ -117,7 +106,6 @@ abstract class SceneManager {
     this.overlays.render();
 
     Renderer.endFrame();
-    this.stats.end();
   }
 
   static render() {

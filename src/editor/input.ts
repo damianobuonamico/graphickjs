@@ -205,6 +205,7 @@ abstract class InputManager {
     if (!this.down) {
       Object.values(actions).forEach((action) => {
         if (action.shortcut && isShortcut(e, action.shortcut)) {
+          e.preventDefault();
           action.callback();
           SceneManager.render();
           return;

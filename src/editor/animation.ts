@@ -7,10 +7,7 @@ abstract class AnimationManager {
   private static m_fps = 24;
   private static m_fpsInterval = 1000 / this.m_fps;
   private static m_lastDrawTime = performance.now();
-  private static m_lastSampleTime = this.m_lastDrawTime;
   private static m_frameCount = 0;
-  private static m_sampleFrequency = 1000;
-  private static m_intervalId: ReturnType<typeof setInterval>;
   private static m_requestId: number;
   private static m_currentFps = this.m_fps;
   private static m_started = false;
@@ -62,17 +59,13 @@ abstract class AnimationManager {
   private static startAnimating() {
     this.m_started = true;
     this.m_lastDrawTime = performance.now();
-    this.m_lastSampleTime = this.m_lastDrawTime;
     this.m_frameCount = 0;
 
     this.animate(0);
-
-    this.m_intervalId = setInterval(this.sampleFps.bind(this), this.m_sampleFrequency);
   }
 
   private static stopAnimating() {
     this.m_started = false;
-    clearInterval(this.m_intervalId);
   }
 
   private static animate(now: number) {
@@ -95,24 +88,13 @@ abstract class AnimationManager {
   }
 
   static render() {
-    if (!this.m_playing || this.m_smoothInteractions) {
+    if (!this.m_playing) {
       requestAnimationFrame(this.m_renderFn);
     } else if (!this.m_started) {
       this.startAnimating();
+    } else if (this.m_smoothInteractions) {
+      requestAnimationFrame(this.m_renderFn);
     }
-  }
-
-  private static sampleFps() {
-    let now = performance.now();
-
-    if (this.m_frameCount > 0) {
-      let currentFps = (this.m_frameCount / (now - this.m_lastSampleTime)) * 1000;
-      this.m_currentFps = currentFps;
-
-      this.m_frameCount = 0;
-    }
-
-    this.m_lastSampleTime = now;
   }
 }
 

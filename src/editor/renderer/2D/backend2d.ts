@@ -3,11 +3,11 @@ import { MATH_TWO_PI } from '@/utils/constants';
 
 class CanvasBackend2D {
   private m_container: HTMLDivElement;
-  private m_canvas: HTMLCanvasElement;
+  protected m_canvas: HTMLCanvasElement;
   protected m_ctx: CanvasRenderingContext2D;
 
-  private m_dpr = 1;
   private m_offset: vec2;
+  protected m_dpr = 1;
 
   protected beginPath: () => void;
   protected closePath: () => void;
@@ -40,7 +40,7 @@ class CanvasBackend2D {
   }
 
   get size(): vec2 {
-    return [this.m_canvas.width, this.m_canvas.height];
+    return [this.m_canvas.width * this.m_dpr, this.m_canvas.height * this.m_dpr];
   }
 
   private bind() {
@@ -113,6 +113,10 @@ class CanvasBackend2D {
     this.m_ctx.lineWidth = width;
   }
 
+  protected transform(matrix: mat3) {
+    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
+  }
+
   setup(canvas: HTMLCanvasElement) {
     this.m_container = canvas.parentElement as HTMLDivElement;
     this.m_canvas = canvas;
@@ -131,11 +135,11 @@ class CanvasBackend2D {
 
     this.m_offset = [this.m_canvas.offsetLeft, this.m_canvas.offsetTop];
 
-    this.m_canvas.style.width = this.m_container.offsetWidth - 1 + 'px';
-    this.m_canvas.style.height = this.m_container.offsetHeight - 1 + 'px';
+    this.m_canvas.style.width = this.m_container.offsetWidth + 'px';
+    this.m_canvas.style.height = this.m_container.offsetHeight + 'px';
 
-    this.m_canvas.width = (this.m_container.offsetWidth - 1) * this.m_dpr;
-    this.m_canvas.height = (this.m_container.offsetHeight - 1) * this.m_dpr;
+    this.m_canvas.width = this.m_container.offsetWidth * this.m_dpr;
+    this.m_canvas.height = this.m_container.offsetHeight * this.m_dpr;
   }
 
   beginFrame({
@@ -147,7 +151,7 @@ class CanvasBackend2D {
     color?: string;
     zoom?: number;
     position?: vec2;
-    stats?: Stats;
+    stats?: RendererStats;
   }): void {
     stats?.begin();
 
@@ -159,7 +163,7 @@ class CanvasBackend2D {
     this.m_ctx.translate(...position);
   }
 
-  endFrame({ stats, debugging }: { stats?: Stats; debugging?: boolean }) {
+  endFrame({ stats }: { stats?: RendererStats }) {
     stats?.end();
   }
 

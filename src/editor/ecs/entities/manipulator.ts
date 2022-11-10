@@ -105,9 +105,7 @@ class Manipulator implements ManipulatorEntity {
   parent: Entity;
   transform: UntrackedTransformComponent;
 
-  private m_size: vec2 = vec2.create();
   private m_lastCalculatedSize: vec2 = vec2.create();
-  private m_lastCalculatedPosition: vec2 = vec2.create();
   private m_active: boolean = false;
   private m_handles: TransformHandles<GenericHandle> = {
     n: new GenericHandle({ type: 'scale', id: 'scale-n' }),
@@ -168,7 +166,7 @@ class Manipulator implements ManipulatorEntity {
     return this.m_active && !InputManager.tool.isVertex;
   }
 
-  private setHandles(size: vec2 = this.m_size) {
+  private setHandles(size: vec2 = this.transform.size) {
     this.m_lastCalculatedSize = size;
 
     Object.keys(this.m_handles).forEach((key) => {
@@ -189,11 +187,9 @@ class Manipulator implements ManipulatorEntity {
 
     this.m_active = true;
 
-    this.transform.center = vec2.mid(box[0], box[1]);
     this.transform.position = box[0];
     this.transform.rotation = angle;
-    this.m_lastCalculatedPosition = box[0];
-    this.m_size = vec2.sub(box[1], box[0]);
+    this.transform.size = vec2.sub(box[1], box[0]);
 
     this.setHandles();
 
@@ -217,11 +213,11 @@ class Manipulator implements ManipulatorEntity {
     position = vec2.sub(position, this.transform.position);
 
     if (this.transform.rotation !== 0)
-      position = vec2.rotate(position, vec2.divS(this.m_size, 2), -this.transform.rotation);
+      position = vec2.rotate(position, vec2.divS(this.transform.size, 2), -this.transform.rotation);
 
     let toReturn: Entity | undefined;
 
-    const size = vec2.mulS(this.m_size, SceneManager.viewport.zoom);
+    const size = vec2.mulS(this.transform.size, SceneManager.viewport.zoom);
     const isBoxSmall = [size[0] < 30, size[1] < 30];
 
     Object.entries(this.m_handles).forEach(([key, handle]: [string, GenericHandle]) => {
@@ -243,13 +239,13 @@ class Manipulator implements ManipulatorEntity {
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
 
   getDrawable(useWebGL: boolean = false): Drawable {
-    const size = vec2.mulS(this.m_size, SceneManager.viewport.zoom);
+    const size = vec2.mulS(this.transform.size, SceneManager.viewport.zoom);
     const isBoxSmall = [size[0] < 30, size[1] < 30];
 
     const ops: DrawOp[] = [
       {
         type: 'rect',
-        data: [[0, 0], this.m_size]
+        data: [[0, 0], this.transform.size]
       },
       {
         type: 'stroke'

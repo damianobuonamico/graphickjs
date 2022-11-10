@@ -1,6 +1,8 @@
 import { MATH_EPSILON } from '@/utils/constants';
 import { round as nRound, clamp as nClamp } from './math';
 
+// TODO: check methods where out = a
+
 /**
  * 2 Dimensional Vector
  * @module vec2

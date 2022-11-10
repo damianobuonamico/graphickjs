@@ -14,23 +14,25 @@ const Timeline: Component<{}> = (props) => {
   });
 
   return (
-    <div class="bg-primary-800 w-full h-full flex border-primary-600 border-t">
-      <canvas
-        class="absolute"
-        ref={(ref) => {
-          if (ref !== null) AnimationManager.canvas = ref;
-          ref.style.opacity = '0';
-          canvas = ref;
-        }}
-      />
+    <div class="bg-primary-800 w-full h-full border-primary-600 border-t">
+      <div class="flex w-full h-full">
+        <canvas
+          class="absolute"
+          ref={(ref) => {
+            if (ref !== null) AnimationManager.canvas = ref;
+            ref.style.opacity = '0';
+            canvas = ref;
+          }}
+        />
 
-      <div class="z-50 flex">
-        <Button onClick={() => AnimationManager.pause()}>
-          <PauseIcon />
-        </Button>
-        <Button onClick={() => AnimationManager.play()}>
-          <PlayIcon />
-        </Button>
+        <div class="z-50 flex">
+          <Button onClick={() => AnimationManager.pause()}>
+            <PauseIcon />
+          </Button>
+          <Button onClick={() => AnimationManager.play()}>
+            <PlayIcon />
+          </Button>
+        </div>
       </div>
     </div>
   );

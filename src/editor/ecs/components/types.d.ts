@@ -244,6 +244,7 @@ interface UntrackedBaseTransformComponent {
 
 interface UntrackedTransformComponent extends UntrackedBaseTransformComponent {
   center: vec2;
+  size: vec2;
 
   readonly staticBoundingBox: Box;
   readonly unrotatedBoundingBox: Box;

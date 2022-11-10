@@ -1,125 +1,85 @@
-import { round } from '@math';
-
-class CanvasStats implements Stats {
-  private m_entities: number = 0;
-  private m_drawn: number = 0;
-
+class Stats implements RendererStats {
   private m_beginTime = 0;
   private m_prevTime = 0;
   private m_frames = 0;
-  private m_samples = 0;
 
-  private m_renderTime = 0;
-  private m_avgRenderTime = 0;
-  private m_minRenderTime = Infinity;
-  private m_maxRenderTime = -Infinity;
+  private m_maxSamples = 100;
 
-  private m_fps = 0;
-  private m_avg = 0;
-  private m_min = Infinity;
-  private m_max = -Infinity;
+  ms: number[] = [];
+  fps: number[] = [];
+  memory: number[] = [];
 
-  private m_memory = 0;
-  private m_maxMemory = 0;
+  minMs: number = Infinity;
+  maxMs: number = 0;
+
+  minFps: number = Infinity;
+  maxFps: number = 0;
+
+  minMemory: number = Infinity;
+  maxMemory: number = 0;
+
+  readonly availableMemory: number;
+  readonly hasMemoryStats: boolean;
 
   constructor() {
-    this.m_maxMemory = (performance as any).memory
-      ? round((performance as any).memory.jsHeapSizeLimit / 1048576, 2)
-      : 0;
+    const memory = (performance as any).memory;
+
+    this.hasMemoryStats = !!memory;
+    this.availableMemory = memory ? Math.round(memory.jsHeapSizeLimit / 1048576) : 0;
   }
 
-  public get entities() {
-    return this.m_entities;
+  get avgMs() {
+    return this.ms.reduce((a, b) => a + b, 0) / this.ms.length;
   }
 
-  public get drawn() {
-    return this.m_drawn;
+  get avgFps() {
+    return this.fps.reduce((a, b) => a + b, 0) / this.fps.length;
   }
 
-  public get ren() {
-    return this.m_renderTime;
+  get avgMemory() {
+    return this.memory.reduce((a, b) => a + b, 0) / this.memory.length;
   }
 
-  public get fps() {
-    return [this.m_fps, this.m_renderTime];
+  begin() {
+    this.m_beginTime = performance.now();
   }
 
-  public get avg() {
-    return [this.m_avg, this.m_avgRenderTime];
-  }
-
-  public get min() {
-    return [this.m_min, this.m_maxRenderTime];
-  }
-
-  public get max() {
-    return [this.m_max, this.m_minRenderTime];
-  }
-
-  public get mem() {
-    return this.m_memory;
-  }
-
-  public get heap() {
-    return this.m_maxMemory;
-  }
-
-  public clear() {
-    this.m_entities = 0;
-    this.m_drawn = 0;
-  }
-
-  public entity() {
-    this.m_entities++;
-  }
-
-  public draw() {
-    this.m_drawn++;
-  }
-
-  public getColor(value: number) {
-    if (value > 49) return 'springgreen';
-    else if (value > 20) return 'orange';
-    return 'crimson';
-  }
-
-  public begin() {
-    this.m_beginTime = (performance || Date).now();
-    this.clear();
-  }
-
-  public end() {
-    const time = (performance || Date).now();
+  end() {
     this.m_frames++;
 
-    if (this.m_samples > 100) {
-      this.m_samples = 0;
-      this.m_max = 0;
-      this.m_min = 1000;
-    }
+    const time = performance.now();
 
-    if (time > this.m_prevTime + 200) {
-      this.m_renderTime = round(time - this.m_beginTime, 2);
-      this.m_fps = round(1000 / this.m_renderTime, 2);
-      this.m_memory = (performance as any).memory
-        ? round((performance as any).memory.usedJSHeapSize / 1048576, 2)
-        : 0;
+    const delta = time - this.m_beginTime;
 
-      this.m_max = Math.max(this.m_max, this.m_fps);
-      this.m_min = Math.min(this.m_min, this.m_fps);
-      this.m_maxRenderTime = Math.max(this.m_maxRenderTime, this.m_renderTime);
-      this.m_minRenderTime = Math.min(this.m_minRenderTime, this.m_renderTime);
-      this.m_avg = round((this.m_avg * this.m_samples + this.m_fps) / (this.m_samples + 1), 2);
-      this.m_avgRenderTime = round(
-        (this.m_avgRenderTime * this.m_samples + this.m_renderTime) / (this.m_samples + 1),
-        2
-      );
+    this.ms.push(delta);
+    this.minMs = Math.min(this.minMs, Math.round(delta));
+    this.maxMs = Math.max(this.maxMs, Math.round(delta));
+
+    if (this.ms.length > this.m_maxSamples) this.ms.shift();
+
+    if (time > this.m_prevTime + 1000) {
+      const fps = (this.m_frames * 1000) / (time - this.m_prevTime);
+
+      this.minFps = Math.min(this.minFps, Math.round(fps));
+      this.maxFps = Math.max(this.maxFps, Math.round(fps));
+      this.fps.push(fps);
+
+      if (this.fps.length > this.m_maxSamples) this.fps.shift();
 
       this.m_prevTime = time;
       this.m_frames = 0;
-      this.m_samples++;
+
+      if (this.hasMemoryStats) {
+        const memory = (performance as any).memory.usedJSHeapSize / 1048576;
+
+        this.minMemory = Math.min(this.minMemory, Math.round(memory));
+        this.maxMemory = Math.max(this.maxMemory, Math.round(memory));
+        this.memory.push(memory);
+      }
     }
+
+    return time;
   }
 }
 
-export default CanvasStats;
+export default Stats;

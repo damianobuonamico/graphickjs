@@ -1,23 +1,27 @@
 import Element, { isElement } from '@/editor/ecs/entities/element';
 import SceneManager from '@editor/scene';
 import { round, vec2 } from '@math';
-import CanvasStats from '../stats';
-import Renderer from '../renderer';
 import InputManager from '@/editor/input';
-import SelectionManager from '@/editor/selection';
 import ImageMedia, { isImage } from '@/editor/ecs/entities/image';
-import { RectTransform } from '@/editor/ecs/components/transform';
-import Debugger from '@/utils/debugger';
-import AnimationManager from '@/editor/animation';
 import CanvasBackend2D from './backend2d';
 import { MATH_TWO_PI } from '@/utils/constants';
+import Renderer from '../renderer';
+import SelectionManager from '@/editor/selection';
+import { isTransform } from '@/editor/ecs/components/transform';
 
 class Canvas2D extends CanvasBackend2D {
+  private m_debuggerBinded: boolean = false;
+  private m_debuggerEntities: Map<string, Entity> = new Map();
+
   private m_outlineImageQueue: ImageEntity[] = [];
   private m_outlineCircleQueue: vec2[] = [];
   private m_outlineSquareQueue: vec2[] = [];
   private m_outlineFilledSquareQueue: vec2[] = [];
   private m_outlineCurrentTransform: mat3;
+
+  constructor() {
+    super();
+  }
 
   private vertexOutline(vertex: VertexEntity, selected?: boolean) {
     const position = vertex.transform.position;
@@ -51,11 +55,164 @@ class Canvas2D extends CanvasBackend2D {
     }
   }
 
-  private debugging() {
-    console.log('debugging');
+  private drawMonitor(
+    value: string,
+    values: number[],
+    max: number,
+    background: string,
+    color: string,
+    width: number,
+    padding: number
+  ) {
+    this.m_ctx.save();
+    this.m_ctx.globalAlpha = 0.8;
+    this.m_ctx.fillStyle = background;
+    this.m_ctx.fillRect(0, 0, width + padding * 2, 53);
+
+    this.m_ctx.translate(padding, padding + 1);
+    this.m_ctx.fillStyle = color;
+    this.m_ctx.globalAlpha = 0.1;
+    this.m_ctx.fillRect(0, 11, width, 35);
+
+    this.m_ctx.globalAlpha = 1;
+    this.m_ctx.fillText(value, 0, 0);
+
+    this.m_ctx.translate(width, 46);
+    this.m_ctx.scale(-1, -1);
+    this.beginPath();
+
+    const multiplier = 35 / max;
+
+    for (let i = 0, n = values.length; i < n; i++) {
+      this.m_ctx.rect(n - i, 0, 1, Math.min(values[i], max) * multiplier);
+    }
+
+    this.fill();
+
+    this.m_ctx.restore();
+
+    return 53;
   }
 
-  entity(entity: Entity, options: { inheritStrokeWidth?: boolean } = {}) {
+  private debugging(stats?: RendererStats, { entityBox, segmentBox }: Partial<DebugState> = {}) {
+    this.m_ctx.lineWidth = 1.5 / SceneManager.viewport.zoom;
+
+    this.m_debuggerEntities.forEach((entity) => {
+      if (
+        (InputManager.hover.element && InputManager.hover.element.id === entity.id) ||
+        SelectionManager.has(entity.id)
+      ) {
+        this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.1)';
+        this.m_ctx.strokeStyle = 'rgb(220, 20, 60, 0.5)';
+      } else {
+        this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.1)';
+        this.m_ctx.strokeStyle = 'rgb(0, 255, 127, 0.5)';
+      }
+
+      this.beginPath();
+
+      if (entityBox && isTransform(entity.transform)) {
+        const box = entity.transform.boundingBox;
+        this.rect(box[0], vec2.sub(box[1], box[0]));
+      }
+
+      if (segmentBox && isElement(entity)) {
+        this.m_ctx.save();
+
+        this.transform(entity.transform.mat3);
+
+        entity.forEachBezier((b) => {
+          const box = b.boundingBox;
+          this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
+        });
+
+        this.m_ctx.restore();
+      }
+
+      this.fill();
+      this.stroke();
+    });
+
+    if (!stats) return;
+
+    const WIDTH = 100;
+    const PADDING = 3;
+
+    this.m_ctx.setTransform(
+      this.m_dpr,
+      0,
+      0,
+      this.m_dpr,
+      this.m_canvas.width - (WIDTH + PADDING * 2) * this.m_dpr,
+      0
+    );
+
+    this.m_ctx.font = 'bold ' + 9 + 'px Helvetica,Arial,sans-serif';
+    this.m_ctx.textBaseline = 'top';
+
+    this.m_ctx.translate(
+      0,
+      this.drawMonitor(
+        `${Math.round(stats.fps[stats.fps.length - 1] || 0)} FPS (${stats.minFps}-${stats.maxFps})`,
+        stats.fps,
+        100,
+        '#002',
+        '#0FF',
+        WIDTH,
+        PADDING
+      )
+    );
+
+    this.m_ctx.translate(
+      0,
+      this.drawMonitor(
+        `${Math.round(stats.ms[stats.ms.length - 1] || 0)} MS (${stats.minMs}-${stats.maxMs})`,
+        stats.ms,
+        30,
+        '#020',
+        '#0F0',
+        WIDTH,
+        PADDING
+      )
+    );
+
+    if (stats.hasMemoryStats) {
+      this.m_ctx.translate(
+        0,
+        this.drawMonitor(
+          `${Math.round(stats.memory[stats.memory.length - 1] || 0)} MB (${stats.minMemory}-${
+            stats.maxMemory
+          } / ${stats.availableMemory})`,
+          stats.memory,
+          stats.availableMemory,
+          '#201',
+          '#F08',
+          WIDTH,
+          PADDING
+        )
+      );
+    }
+  }
+
+  private bindDebugger(unbind?: boolean) {
+    if (unbind) {
+      this.entity = this.drawEntity;
+      this.element = this.drawElement;
+      this.image = this.drawImage;
+
+      this.m_debuggerBinded = false;
+    } else {
+      this.entity = this.drawEntityDebugged;
+      this.element = this.drawElementDebugged;
+      this.image = this.drawImageDebugged;
+
+      this.m_debuggerBinded = true;
+    }
+
+    Renderer.refresh();
+  }
+
+  private drawEntity(entity: Entity, options: { inheritStrokeWidth?: boolean } = {}) {
     if (isElement(entity)) {
       this.element(entity, options);
       return;
@@ -66,24 +223,22 @@ class Canvas2D extends CanvasBackend2D {
       return;
     }
 
+    if (!SceneManager.isVisible(entity)) return false;
+
     this.m_ctx.save();
 
-    const matrix = entity.transform.mat3;
-    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
-
+    this.transform(entity.transform.mat3);
     this.draw(entity.getDrawable());
 
     this.m_ctx.restore();
   }
 
-  element(element: Element, options: { inheritStrokeWidth?: boolean } = {}) {
-    if (!SceneManager.isVisible(element)) return;
+  private drawElement(element: Element, options: { inheritStrokeWidth?: boolean } = {}) {
+    if (!SceneManager.isVisible(element)) return false;
 
     this.m_ctx.save();
 
-    const matrix = element.transform.mat3;
-    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
-
+    this.transform(element.transform.mat3);
     this.beginPath();
     this.draw(element.getDrawable());
 
@@ -108,18 +263,54 @@ class Canvas2D extends CanvasBackend2D {
     this.m_ctx.restore();
   }
 
-  image(image: ImageEntity) {
+  private drawImage(image: ImageEntity) {
     // TODO: Bilinar Filtering
-    if (!SceneManager.isVisible(image)) return;
+    if (!SceneManager.isVisible(image)) return false;
 
     this.m_ctx.save();
 
-    const matrix = image.transform.mat3;
-    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
-
+    this.transform(image.transform.mat3);
     this.m_ctx.drawImage(image.source, 0, 0, ...image.transform.staticSize);
 
     this.m_ctx.restore();
+  }
+
+  private drawEntityDebugged(entity: Entity, options: { inheritStrokeWidth?: boolean }) {
+    if (this.drawEntity(entity, options) === false) return;
+
+    this.m_debuggerEntities.set(entity.id, entity);
+  }
+
+  private drawElementDebugged(element: Element, options: { inheritStrokeWidth?: boolean }) {
+    if (this.drawElement(element, options) === false) return;
+
+    this.m_debuggerEntities.set(element.id, element);
+  }
+
+  private drawImageDebugged(image: ImageEntity) {
+    if (this.drawImage(image) === false) return;
+
+    this.m_debuggerEntities.set(image.id, image);
+  }
+
+  entity: (entity: Entity, options: { inheritStrokeWidth?: boolean }) => void = this.drawEntity;
+
+  element: (element: Element, options: { inheritStrokeWidth?: boolean }) => void = this.drawElement;
+
+  image: (image: ImageEntity) => void = this.drawImage;
+
+  debugCircle(options: { position: vec2; radius?: number; color?: string }) {
+    super.debugCircle({ ...options, radius: (options.radius || 5) / SceneManager.viewport.zoom });
+  }
+
+  debugRect(options: { position: vec2; size?: vec2 | number; centered?: boolean; color?: string }) {
+    super.debugRect({
+      ...options,
+      size: vec2.divS(
+        typeof options.size === 'number' ? [options.size, options.size] : options.size || [10, 10],
+        SceneManager.viewport.zoom
+      )
+    });
   }
 
   beginOutline() {
@@ -141,8 +332,7 @@ class Canvas2D extends CanvasBackend2D {
     this.m_ctx.save();
 
     const matrix = entity.transform.mat3;
-    this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
-
+    this.transform(matrix);
     this.draw(entity.getOutlineDrawable());
 
     if (!skipVertices && InputManager.tool.isVertex && isElement(entity)) {
@@ -162,9 +352,7 @@ class Canvas2D extends CanvasBackend2D {
       for (let i = 0, n = this.m_outlineImageQueue.length; i < n; i++) {
         this.m_ctx.save();
 
-        const matrix = this.m_outlineImageQueue[i].transform.mat3;
-        this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
-
+        this.transform(this.m_outlineImageQueue[i].transform.mat3);
         this.draw(this.m_outlineImageQueue[i].getOutlineDrawable());
 
         this.m_ctx.restore();
@@ -225,190 +413,32 @@ class Canvas2D extends CanvasBackend2D {
     }
   }
 
-  endFrame({ stats, debugging }: { stats?: Stats; debugging?: boolean }): void {
-    super.endFrame({ stats });
-    if (debugging) this.debugging();
+  beginFrame(options: {
+    color?: string;
+    zoom?: number;
+    position?: vec2;
+    stats?: RendererStats;
+    debugging?: boolean;
+  }): void {
+    super.beginFrame({ ...options, stats: options.debugging ? options.stats : undefined });
+
+    if (this.m_debuggerBinded !== options.debugging) this.bindDebugger(!options.debugging);
+  }
+
+  endFrame({
+    stats,
+    debugging,
+    debug
+  }: {
+    stats?: RendererStats;
+    debugging?: boolean;
+    debug?: DebugState;
+  }): void {
+    super.endFrame(debugging ? { stats } : {});
+
+    if (debugging) this.debugging(stats, debug);
+    this.m_debuggerEntities.clear();
   }
 }
-
-// public element(element: Element) {
-//   this.m_stats.entity();
-//   if (!SceneManager.isVisible(element)) return;
-
-//   this.m_ctx.save();
-//   this.m_ctx.strokeStyle = `rgba(0, 0, 0, 1.0)`;
-//   this.m_ctx.lineWidth = 1;
-
-//   const matrix = element.transform.mat3;
-//   this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
-
-//   this.draw(element.getDrawable(false));
-
-//   if (element.fill && element.fill.visible) {
-//     this.m_ctx.fillStyle = element.fill.color.toString();
-//     this.m_ctx.fill();
-//   }
-
-//   if (element.stroke && element.stroke.visible) {
-//     this.m_ctx.strokeStyle = element.stroke.color.toString();
-//     this.m_ctx.lineJoin = element.stroke.corner;
-//     this.m_ctx.lineWidth = element.stroke.width;
-//     // TODO: inside/outside strokes
-//     // this.m_ctx.clip();
-//     // this.m_ctx.lineWidth *= 2;
-//     this.m_ctx.stroke();
-//   }
-
-//   if (Renderer.debugging && Renderer.debug.box) {
-//     if (
-//       (InputManager.hover.element && InputManager.hover.element.id === element.id) ||
-//       SelectionManager.has(element.id)
-//     ) {
-//       this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.2)';
-//       this.m_ctx.strokeStyle = 'rgb(220, 20, 60)';
-//     } else {
-//       this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
-//       this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
-//     }
-//     this.beginPath();
-//     element.forEachBezier((b) => {
-//       const box = b.boundingBox;
-//       this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
-//     });
-//     const b = element.transform.unrotatedBoundingBox;
-//     const box = b.map((p) => vec2.sub(p, element.transform.position));
-//     this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
-//     this.fill();
-//     this.stroke();
-//   }
-
-//   this.m_ctx.restore();
-//   this.m_ctx.save();
-
-//   this.m_ctx.translate(...element.transform.position);
-
-//   for (const point of element.points) {
-//     this.m_ctx.fillStyle = 'rgb(250, 50, 50)';
-//     this.beginPath();
-//     this.circle({ type: 'circle', data: [point, 20] });
-//     this.fill();
-//     this.closePath();
-//   }
-
-//   this.m_ctx.restore();
-
-//   if (Renderer.debugging && Renderer.debug.box) {
-//     if (
-//       (InputManager.hover.element && InputManager.hover.element.id === element.id) ||
-//       SelectionManager.has(element.id)
-//     ) {
-//       this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.2)';
-//       this.m_ctx.strokeStyle = 'rgb(220, 20, 60)';
-//     } else {
-//       this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
-//       this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
-//     }
-//     const box = (element as Element).transform.boundingBox;
-//     this.beginPath();
-//     this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
-//     this.fill();
-//     this.stroke();
-//   }
-//   this.m_stats.draw();
-// }
-
-// public image(image: ImageMedia) {
-//   // TODO: Bilinar Filtering
-//   if (!SceneManager.isVisible(image)) return;
-//   this.m_stats.draw();
-
-//   this.m_ctx.save();
-
-//   const matrix = image.transform.mat3;
-//   this.m_ctx.transform(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]);
-//   this.m_ctx.drawImage(image.source, 0, 0, ...image.transform.staticSize);
-
-//   this.m_ctx.restore();
-
-//   if (Renderer.debugging && Renderer.debug.box) {
-//     if (
-//       (InputManager.hover.element && InputManager.hover.element.id === image.id) ||
-//       SelectionManager.has(image.id)
-//     ) {
-//       this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.2)';
-//       this.m_ctx.strokeStyle = 'rgb(220, 20, 60)';
-//     } else {
-//       this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.2)';
-//       this.m_ctx.strokeStyle = 'rgb(0, 255, 127)';
-//     }
-//     const box = image.transform.boundingBox;
-//     this.beginPath();
-//     this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
-//     this.fill();
-//     this.stroke();
-//   }
-// }
-
-// public debugging() {
-//   const width = 150;
-//   const lAlign = 5;
-//   const rAlign = 40;
-//   const timers = Debugger.timers;
-
-//   this.m_ctx.setTransform(1, 0, 0, 1, this.size[0] - width, 0);
-//   this.m_ctx.fillStyle = 'rgba(0.0, 0.0, 0.0, 0.5)';
-//   this.m_ctx.fillRect(0, 0, width, 170 + timers.size * 55);
-
-//   this.m_ctx.textAlign = 'left';
-//   this.m_ctx.font = 'bold 12px Helvetica,Arial,sans-serif';
-//   this.m_ctx.fillStyle = 'white';
-//   this.m_ctx.textBaseline = 'top';
-
-//   this.m_ctx.fillStyle = this.m_stats.getColor(this.m_stats.fps[0]);
-//   this.m_ctx.fillText('FPS:', lAlign, 5);
-//   this.m_ctx.fillText(
-//     `${AnimationManager.playing ? AnimationManager.fps : this.m_stats.fps[0]}  [${
-//       this.m_stats.fps[1]
-//     } MS]`,
-//     rAlign,
-//     5
-//   );
-
-//   this.m_ctx.fillStyle = this.m_stats.getColor(this.m_stats.avg[0]);
-//   this.m_ctx.fillText('AVG:', lAlign, 30);
-//   this.m_ctx.fillText(`${this.m_stats.avg[0]}  [${this.m_stats.avg[1]} MS]`, rAlign, 30);
-
-//   this.m_ctx.fillStyle = this.m_stats.getColor(this.m_stats.min[0]);
-//   this.m_ctx.fillText('MIN:', lAlign, 55);
-//   this.m_ctx.fillText(`${this.m_stats.min[0]}  [${this.m_stats.min[1]} MS]`, rAlign, 55);
-
-//   this.m_ctx.fillStyle = 'mediumorchid';
-//   this.m_ctx.fillText('MEM:', lAlign, 80);
-//   this.m_ctx.fillText(`${this.m_stats.mem} / ${this.m_stats.heap} MB`, rAlign, 80);
-
-//   this.m_ctx.fillStyle = 'white';
-//   this.m_ctx.fillText('BOX:', lAlign, 105);
-//   this.m_ctx.fillText(`${Renderer.debug.box.toString().toUpperCase()}`, rAlign, 105);
-
-//   this.m_ctx.fillText('ENT:', lAlign, 130);
-//   this.m_ctx.fillText(`${this.m_stats.entities}`, rAlign, 130);
-
-//   this.m_ctx.fillText('DRW:', lAlign, 155);
-//   this.m_ctx.fillText(`${this.m_stats.drawn}`, rAlign, 155);
-
-//   let i = 0;
-
-//   timers.forEach((timer, id) => {
-//     this.m_ctx.fillText(id + ':', lAlign, 180 + 55 * i);
-//     this.m_ctx.fillText(`${timer.value.toFixed(4)}ms`, rAlign + 10, 180 + 55 * i);
-//     this.m_ctx.fillText(`${timer.entries}`, rAlign + 10, 195 + 55 * i);
-//     this.m_ctx.fillText(
-//       `${(timer.value / timer.entries).toFixed(4)}ms`,
-//       rAlign + 10,
-//       210 + 55 * i
-//     );
-//     ++i;
-//   });
-// }
 
 export default Canvas2D;
