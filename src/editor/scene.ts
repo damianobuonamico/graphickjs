@@ -20,7 +20,7 @@ import tigerSvg from '@utils/svg/demo';
 import ImageMedia from './ecs/entities/image';
 import OverlayState from './overlays';
 import Color from './ecs/components/color';
-import AnimationManager from './animation';
+import AnimationManager from './animation/animation';
 
 abstract class SceneManager {
   private static m_ecs: ECS;

@@ -11,9 +11,11 @@ import SceneManager from './scene';
 import actions from './actions';
 import HoverState from './hover';
 import { ToolState } from './tools';
-import AnimationManager from './animation';
+import AnimationManager from './animation/animation';
 
 abstract class InputManager {
+  public static target: EventTarget | undefined;
+
   public static client: PointerCoord;
   public static scene: PointerCoord;
 
@@ -108,15 +110,15 @@ abstract class InputManager {
     this.addListener('keydown', this.onKeyDown.bind(this));
     this.addListener('keyup', this.onKeyUp.bind(this));
 
-    this.addListener('pointerdown', this.calculateDeviceType.bind(this), Renderer.canvas);
+    this.addListener('pointerdown', this.calculateDeviceType.bind(this));
 
     if (this.m_type === 'touch') {
-      this.addListener('touchstart', this.onTouchStart.bind(this), Renderer.canvas);
+      this.addListener('touchstart', this.onTouchStart.bind(this));
       this.addListener('touchmove', this.onTouchMove.bind(this));
       this.addListener('touchend', this.onTouchEnd.bind(this));
       this.addListener('touchcancel', this.onTouchEnd.bind(this));
     } else {
-      this.addListener('pointerdown', this.onPointerDown.bind(this), Renderer.canvas);
+      this.addListener('pointerdown', this.onPointerDown.bind(this));
       this.addListener('pointermove', this.onPointerMove.bind(this));
       this.addListener('pointerup', this.onPointerUp.bind(this));
       this.addListener('pointercancel', this.onPointerUp.bind(this));
@@ -235,6 +237,25 @@ abstract class InputManager {
 
   //* Pointer Events
   private static onPointerDown(e: PointerEvent) {
+    if (e.target === AnimationManager.canvas) {
+      AnimationManager.onPointerDown();
+
+      this.target = e.target;
+
+      this.client.movement = vec2.create();
+      this.client.position = vec2.fromValues(e.clientX, e.clientY);
+      this.client.delta = vec2.create();
+      this.client.origin = vec2.fromValues(e.clientX, e.clientY);
+
+      this.setPointer(e);
+      this.down = true;
+      this.m_abort = false;
+
+      return;
+    } else if (e.target !== Renderer.canvas) return;
+
+    this.target = e.target;
+
     this.client.movement = vec2.create();
     this.client.position = vec2.fromValues(e.clientX, e.clientY);
     this.client.delta = vec2.create();
@@ -264,6 +285,18 @@ abstract class InputManager {
   }
 
   private static onPointerMove(e: PointerEvent) {
+    if (this.target === AnimationManager.canvas) {
+      this.client.movement = vec2.sub([e.clientX, e.clientY], this.client.position);
+      this.client.position = vec2.fromValues(e.clientX, e.clientY);
+      this.client.delta = vec2.sub(this.client.position, this.client.origin);
+
+      this.setPointer(e);
+
+      AnimationManager.onPointerMove();
+
+      return;
+    } else if (this.target !== Renderer.canvas && e.target !== Renderer.canvas) return;
+
     this.client.movement = vec2.sub([e.clientX, e.clientY], this.client.position);
     this.client.position = vec2.fromValues(e.clientX, e.clientY);
     this.client.delta = vec2.sub(this.client.position, this.client.origin);
@@ -298,6 +331,18 @@ abstract class InputManager {
   private static onPointerUp(e: PointerEvent) {
     this.setPointer(e);
     if (!this.down) return;
+
+    if (this.target === AnimationManager.canvas) {
+      AnimationManager.onPointerUp();
+
+      this.target = undefined;
+      this.down = false;
+      this.m_moving = false;
+
+      return;
+    }
+
+    this.target = undefined;
     this.down = false;
     this.m_moving = false;
 

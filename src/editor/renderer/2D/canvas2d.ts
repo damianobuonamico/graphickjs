@@ -224,6 +224,7 @@ class Canvas2D extends CanvasBackend2D {
     this.m_ctx.fillStyle = '#0E1117';
     this.m_ctx.fillRect(0, 0, WIDTH + PADDING * 2, properties.length * 10 + PADDING);
 
+    this.m_ctx.globalAlpha = 1;
     this.m_ctx.translate(PADDING, PADDING);
     this.m_ctx.fillStyle = '#FFF';
 
@@ -302,7 +303,7 @@ class Canvas2D extends CanvasBackend2D {
   }
 
   private drawImage(image: ImageEntity) {
-    // TODO: Bilinar Filtering
+    // TODO: Bilinar Filtering / Lanczos Resampling
     if (!SceneManager.isVisible(image)) return false;
 
     this.m_ctx.save();

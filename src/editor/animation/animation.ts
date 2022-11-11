@@ -1,5 +1,6 @@
 import { round } from '@/math';
-import CanvasBackend2D from './renderer/2D/backend2d';
+import CanvasBackend2D from '../renderer/2D/backend2d';
+import Sequencer from './sequencer';
 
 abstract class AnimationManager {
   private static m_playing = false;
@@ -12,27 +13,20 @@ abstract class AnimationManager {
   private static m_currentFps = this.m_fps;
   private static m_started = false;
 
-  private static m_canvas: CanvasBackend2D;
+  private static m_sequencer: Sequencer;
 
   private static m_renderFn: () => void;
 
   static set canvas(canvas: HTMLCanvasElement) {
-    this.m_canvas = new CanvasBackend2D();
-    this.m_canvas.setup(canvas);
+    this.m_sequencer = new Sequencer(canvas);
+  }
+
+  static get canvas() {
+    return this.m_sequencer.DOM;
   }
 
   static resize() {
-    this.m_canvas.resize();
-    this.m_canvas.debugRect({ position: [10, 10] });
-    this.m_canvas.draw({
-      operations: [
-        { type: 'beginPath' },
-        { type: 'moveTo', data: [[50, 50]] },
-        { type: 'lineTo', data: [[100, 50]] },
-        { type: 'stroke' },
-        { type: 'closePath' }
-      ]
-    });
+    this.m_sequencer.resize();
   }
 
   static get playing(): boolean {
@@ -85,6 +79,8 @@ abstract class AnimationManager {
 
       this.m_frameCount++;
     }
+
+    this.m_sequencer.render();
   }
 
   static render() {
@@ -95,6 +91,18 @@ abstract class AnimationManager {
     } else if (this.m_smoothInteractions) {
       requestAnimationFrame(this.m_renderFn);
     }
+  }
+
+  static onPointerDown() {
+    this.m_sequencer.onPointerDown();
+  }
+
+  static onPointerMove() {
+    this.m_sequencer.onPointerMove();
+  }
+
+  static onPointerUp() {
+    this.m_sequencer.onPointerUp();
   }
 }
 

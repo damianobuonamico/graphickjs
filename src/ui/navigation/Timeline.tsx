@@ -1,6 +1,6 @@
 import { Component, createEffect } from 'solid-js';
 import { Button } from '../inputs';
-import AnimationManager from '@/editor/animation';
+import AnimationManager from '@/editor/animation/animation';
 import { PauseIcon, PlayIcon } from '../icons';
 
 const Timeline: Component<{}> = (props) => {
