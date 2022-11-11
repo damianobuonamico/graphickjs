@@ -64,24 +64,26 @@ class Canvas2D extends CanvasBackend2D {
     width: number,
     padding: number
   ) {
+    const height = 40;
+
     this.m_ctx.save();
     this.m_ctx.globalAlpha = 0.8;
     this.m_ctx.fillStyle = background;
-    this.m_ctx.fillRect(0, 0, width + padding * 2, 53);
+    this.m_ctx.fillRect(0, 0, width + padding * 2, height + 18);
 
     this.m_ctx.translate(padding, padding + 1);
     this.m_ctx.fillStyle = color;
     this.m_ctx.globalAlpha = 0.1;
-    this.m_ctx.fillRect(0, 11, width, 35);
+    this.m_ctx.fillRect(0, 11, width, height);
 
     this.m_ctx.globalAlpha = 1;
     this.m_ctx.fillText(value, 0, 0);
 
-    this.m_ctx.translate(width, 46);
+    this.m_ctx.translate(width, height + 11);
     this.m_ctx.scale(-1, -1);
     this.beginPath();
 
-    const multiplier = 35 / max;
+    const multiplier = height / max;
 
     for (let i = 0, n = values.length; i < n; i++) {
       this.m_ctx.rect(n - i, 0, 1, Math.min(values[i], max) * multiplier);
@@ -91,7 +93,17 @@ class Canvas2D extends CanvasBackend2D {
 
     this.m_ctx.restore();
 
-    return 53;
+    return height + 18;
+  }
+
+  private drawDebuggingProperty(name: string, value: string, width: number) {
+    this.m_ctx.textAlign = 'right';
+    this.m_ctx.fillText(value, width, 0);
+
+    this.m_ctx.textAlign = 'left';
+    if (name.length) this.m_ctx.fillText(name + ':', 0, 0);
+
+    return 10;
   }
 
   private debugging(stats?: RendererStats, { entityBox, segmentBox }: Partial<DebugState> = {}) {
@@ -191,6 +203,32 @@ class Canvas2D extends CanvasBackend2D {
           PADDING
         )
       );
+    }
+
+    // TODO: Draw checkboxes
+
+    const properties: [string, string][] = [
+      ['ENTITY BOX', (entityBox || false).toString().toUpperCase()],
+      ['SEGMENT BOX', (segmentBox || false).toString().toUpperCase()],
+      ['ENTITIES', this.m_debuggerEntities.size.toString()],
+      ['', ''],
+      ['POS X', round(SceneManager.viewport.position[0], 2).toString()],
+      ['POS Y', round(SceneManager.viewport.position[1], 2).toString()],
+      ['ZOOM', round(SceneManager.viewport.zoom, 2).toString()],
+      ['', ''],
+      ['MOUSE X', round(InputManager.scene.position[0], 2).toString()],
+      ['MOUSE Y', round(InputManager.scene.position[1], 2).toString()]
+    ];
+
+    this.m_ctx.globalAlpha = 0.8;
+    this.m_ctx.fillStyle = '#0E1117';
+    this.m_ctx.fillRect(0, 0, WIDTH + PADDING * 2, properties.length * 10 + PADDING);
+
+    this.m_ctx.translate(PADDING, PADDING);
+    this.m_ctx.fillStyle = '#FFF';
+
+    for (const property of properties) {
+      this.m_ctx.translate(0, this.drawDebuggingProperty(property[0], property[1], WIDTH));
     }
   }
 
