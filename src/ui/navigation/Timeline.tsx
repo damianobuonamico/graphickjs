@@ -1,7 +1,8 @@
 import { Component, createEffect } from 'solid-js';
 import { Button } from '../inputs';
 import AnimationManager from '@/editor/animation/animation';
-import { PauseIcon, PlayIcon } from '../icons';
+import { PauseIcon, PlayIcon, PlusIcon } from '../icons';
+import SelectionManager from '@/editor/selection';
 
 const Timeline: Component<{}> = (props) => {
   let canvas: HTMLCanvasElement | undefined;
@@ -25,12 +26,21 @@ const Timeline: Component<{}> = (props) => {
           }}
         />
 
-        <div class="z-50 flex">
+        <div class="z-50 flex h-fit">
           <Button onClick={() => AnimationManager.pause()}>
             <PauseIcon />
           </Button>
           <Button onClick={() => AnimationManager.play()}>
             <PlayIcon />
+          </Button>
+          <Button
+            onClick={() => {
+              SelectionManager.forEach((entity) => {
+                AnimationManager.add(entity);
+              });
+            }}
+          >
+            <PlusIcon />
           </Button>
         </div>
       </div>

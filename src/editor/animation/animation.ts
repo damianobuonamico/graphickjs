@@ -5,7 +5,7 @@ import Sequencer from './sequencer/sequencer';
 abstract class AnimationManager {
   private static m_playing = false;
   private static m_smoothInteractions = true;
-  private static m_fps = 24;
+  private static m_fps = 60;
   private static m_fpsInterval = 1000 / this.m_fps;
   private static m_lastDrawTime = performance.now();
   private static m_frameCount = 0;
@@ -62,6 +62,10 @@ abstract class AnimationManager {
     this.m_started = false;
   }
 
+  static add(entity: Entity) {
+    this.m_sequencer.add(entity);
+  }
+
   private static animate(now: number) {
     if (!this.m_playing) {
       this.stopAnimating();
@@ -80,7 +84,7 @@ abstract class AnimationManager {
       this.m_frameCount++;
     }
 
-    this.m_sequencer.render(true);
+    this.m_sequencer.animate(this.m_fps);
   }
 
   static render() {
@@ -88,7 +92,7 @@ abstract class AnimationManager {
       requestAnimationFrame(this.m_renderFn);
     } else if (!this.m_started) {
       this.startAnimating();
-    } else if (this.m_smoothInteractions) {
+    } else if (this.m_smoothInteractions && this.m_fps < 60) {
       requestAnimationFrame(this.m_renderFn);
     }
   }
@@ -107,6 +111,16 @@ abstract class AnimationManager {
 
   static onWheel(e: WheelEvent) {
     this.m_sequencer.onWheel(e);
+  }
+
+  static toJSON() {
+    return this.m_sequencer.toJSON();
+  }
+
+  static load(sequence: Entity[]) {
+    setTimeout(() => {
+      this.m_sequencer.load(sequence);
+    }, 100);
   }
 }
 

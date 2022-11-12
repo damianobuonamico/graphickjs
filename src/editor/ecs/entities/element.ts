@@ -28,6 +28,7 @@ class Element implements ElementEntity {
   transform: ElementTransform;
   fill: Fill | null;
   stroke: Stroke | null;
+  opacity = 1;
 
   private m_order: string[] = [];
   private m_vertices: Map<string, VertexEntity> = new Map();

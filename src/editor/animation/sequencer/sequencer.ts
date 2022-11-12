@@ -191,12 +191,29 @@ class Sequencer extends CanvasBackend2D {
     this.render();
   }
 
-  render(frameRequested: boolean = false) {
+  render() {
     // if (!this.m_shouldUpdate) return;
-    if (frameRequested) return this.renderFn();
-
     requestAnimationFrame(this.renderFn.bind(this));
     // this.m_shouldUpdate = false;
+  }
+
+  animate(fps: number) {
+    this.renderFn();
+    this.m_sequence.animate(fps);
+  }
+
+  add(entity: Entity) {
+    this.m_sequence.add(entity);
+    this.render();
+  }
+
+  toJSON() {
+    return this.m_sequence.toJSON();
+  }
+
+  load(sequence: Entity[]) {
+    this.m_sequence.load(sequence);
+    this.render();
   }
 }
 

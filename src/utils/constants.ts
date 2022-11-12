@@ -1,6 +1,7 @@
 //* Local Storage Constants
 export const LOCAL_STORAGE_KEY = 'graphick-data';
 export const LOCAL_STORAGE_KEY_STATE = 'graphick-data-state';
+export const LOCAL_STORAGE_KEY_SEQUENCE = 'graphick-data-sequence';
 
 //* Zoom Constants
 export const ZOOM_MIN = 0.02;

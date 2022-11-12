@@ -7,7 +7,13 @@ import Layer from './ecs/entities/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/entities/vertex';
 import HistoryManager from './history';
-import { LOCAL_STORAGE_KEY, LOCAL_STORAGE_KEY_STATE, ZOOM_MAX, ZOOM_MIN } from '@utils/constants';
+import {
+  LOCAL_STORAGE_KEY,
+  LOCAL_STORAGE_KEY_SEQUENCE,
+  LOCAL_STORAGE_KEY_STATE,
+  ZOOM_MAX,
+  ZOOM_MIN
+} from '@utils/constants';
 import SelectionManager from './selection';
 import InputManager from './input';
 import { fileDialog } from '@/utils/file';
@@ -159,6 +165,7 @@ abstract class SceneManager {
 
   static save() {
     localStorage.setItem(LOCAL_STORAGE_KEY_STATE, JSON.stringify(this.viewport, stringifyReplacer));
+    localStorage.setItem(LOCAL_STORAGE_KEY_SEQUENCE, JSON.stringify(AnimationManager.toJSON()));
     localStorage.setItem(
       LOCAL_STORAGE_KEY,
       JSON.stringify(
@@ -169,6 +176,7 @@ abstract class SceneManager {
   }
 
   static load() {
+    const sequence = localStorage.getItem(LOCAL_STORAGE_KEY_SEQUENCE);
     const state = localStorage.getItem(LOCAL_STORAGE_KEY_STATE);
     const data = localStorage.getItem(LOCAL_STORAGE_KEY);
 
@@ -203,6 +211,18 @@ abstract class SceneManager {
       artboard.add(this.m_layer);
 
       this.m_ecs.add(artboard);
+    }
+
+    if (sequence) {
+      let entitiesMap: Map<string, Entity> = new Map();
+      let seq = JSON.parse(sequence);
+      let nodes: Set<string> = new Set(seq.nodes);
+
+      this.forEach((entity) => {
+        if (nodes.has(entity.id)) entitiesMap.set(entity.id, entity);
+      });
+
+      AnimationManager.load(Array.from(entitiesMap.values()));
     }
 
     this.setLoading(false);

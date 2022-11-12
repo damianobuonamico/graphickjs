@@ -277,6 +277,7 @@ class Canvas2D extends CanvasBackend2D {
 
     this.m_ctx.save();
 
+    this.m_ctx.globalAlpha = element.opacity;
     this.transform(element.transform.mat3);
     this.beginPath();
     this.draw(element.getDrawable());
