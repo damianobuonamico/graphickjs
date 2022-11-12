@@ -94,6 +94,11 @@ interface ShapeDrawOp {
   data: [vec2, vec2];
 }
 
+interface RoundedRectDrawOp {
+  type: 'roundedRect';
+  data: [vec2, vec2, number];
+}
+
 interface CenteredShapeDrawOp {
   type: 'circle' | 'square';
   data: [vec2, number];
@@ -116,7 +121,8 @@ type DrawOp =
   | ShapeDrawOp
   | CenteredShapeDrawOp
   | ColorDrawOp
-  | ParameterDrawOp;
+  | ParameterDrawOp
+  | RoundedRectDrawOp;
 
 interface Drawable {
   operations: DrawOp[];

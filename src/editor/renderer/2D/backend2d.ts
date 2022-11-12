@@ -23,10 +23,12 @@ class CanvasBackend2D {
     lineTo: (position: vec2) => {},
     cubicTo: (position: vec2, size: vec2) => {},
     rect: (position: vec2, size: vec2) => {},
+    roundedRect: (position: vec2, size: vec2, radius: number) => {},
     circle: (position: vec2, size: vec2) => {},
     square: (position: vec2, size: vec2) => {},
+    strokeColor: (color: string) => {},
     fillColor: (color: string) => {},
-    strokeColor: (color: string) => {}
+    strokeWidth: (color: string) => {}
   };
 
   constructor() {}
@@ -58,6 +60,7 @@ class CanvasBackend2D {
       lineTo: this.lineTo.bind(this),
       cubicTo: this.cubicTo.bind(this),
       rect: this.rect.bind(this),
+      roundedRect: this.roundedRect.bind(this),
       circle: this.circle.bind(this),
       square: this.square.bind(this),
       strokeColor: this.strokeColor.bind(this),
@@ -91,6 +94,22 @@ class CanvasBackend2D {
 
   protected rect(position: vec2, size: vec2) {
     this.m_ctx.rect(...position, ...size);
+  }
+
+  protected roundedRect(position: vec2, size: vec2, radius: number) {
+    const [x, y] = position;
+    const [w, h] = size;
+
+    if (w < 2 * radius) radius = w / 2;
+    if (h < 2 * radius) radius = h / 2;
+    
+    this.m_ctx.beginPath();
+    this.m_ctx.moveTo(x + radius, y);
+    this.m_ctx.arcTo(x + w, y, x + w, y + h, radius);
+    this.m_ctx.arcTo(x + w, y + h, x, y + h, radius);
+    this.m_ctx.arcTo(x, y + h, x, y, radius);
+    this.m_ctx.arcTo(x, y, x + w, y, radius);
+    this.m_ctx.closePath();
   }
 
   protected circle(position: vec2, radius: number) {

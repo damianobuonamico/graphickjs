@@ -1,5 +1,4 @@
-import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from '@/utils/constants';
-import { clamp, round, vec2 } from '@math';
+import { ZOOM_STEP } from '@/utils/constants';
 import InputManager from '../input';
 import SceneManager from '../scene';
 

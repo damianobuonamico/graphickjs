@@ -127,7 +127,7 @@ abstract class InputManager {
     }
 
     this.addListener('resize', this.onResize.bind(this));
-    this.addListener('contextmenu', (e: UIEvent) => e.preventDefault(), Renderer.canvas);
+    this.addListener('contextmenu', (e: UIEvent) => e.preventDefault());
     this.addListener('wheel', this.onWheel.bind(this), window, { passive: false });
   }
 
@@ -150,7 +150,6 @@ abstract class InputManager {
   }
 
   private static setPointer(e: PointerEvent) {
-    this.button = e.button;
     this.setKey(e);
 
     if (this.down) return;
@@ -238,8 +237,6 @@ abstract class InputManager {
   //* Pointer Events
   private static onPointerDown(e: PointerEvent) {
     if (e.target === AnimationManager.canvas) {
-      AnimationManager.onPointerDown();
-
       this.target = e.target;
 
       this.client.movement = vec2.create();
@@ -250,6 +247,9 @@ abstract class InputManager {
       this.setPointer(e);
       this.down = true;
       this.m_abort = false;
+      this.button = e.button;
+
+      AnimationManager.onPointerDown();
 
       return;
     } else if (e.target !== Renderer.canvas) return;
@@ -269,6 +269,7 @@ abstract class InputManager {
     this.setPointer(e);
     this.down = true;
     this.m_abort = false;
+    this.button = e.button;
 
     if (this.button === BUTTONS.MIDDLE) {
       this.tool.active = this.keys.ctrlStateChanged ? 'zoom' : 'pan';
@@ -285,7 +286,10 @@ abstract class InputManager {
   }
 
   private static onPointerMove(e: PointerEvent) {
-    if (this.target === AnimationManager.canvas) {
+    if (
+      this.target === AnimationManager.canvas ||
+      (!this.down && e.target === AnimationManager.canvas)
+    ) {
       this.client.movement = vec2.sub([e.clientX, e.clientY], this.client.position);
       this.client.position = vec2.fromValues(e.clientX, e.clientY);
       this.client.delta = vec2.sub(this.client.position, this.client.origin);
@@ -333,11 +337,11 @@ abstract class InputManager {
     if (!this.down) return;
 
     if (this.target === AnimationManager.canvas) {
-      AnimationManager.onPointerUp();
-
       this.target = undefined;
       this.down = false;
       this.m_moving = false;
+
+      AnimationManager.onPointerUp();
 
       return;
     }
@@ -387,7 +391,12 @@ abstract class InputManager {
 
   private static onWheel(e: WheelEvent) {
     e.preventDefault();
-    if (e.target !== Renderer.canvas) return;
+
+    if (e.target === AnimationManager.canvas) {
+      AnimationManager.onWheel(e);
+      return;
+    } else if (e.target !== Renderer.canvas) return;
+
     this.m_listeners.wheel(e);
 
     if (!this.keys.ctrl) return;

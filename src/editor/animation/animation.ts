@@ -1,6 +1,6 @@
 import { round } from '@/math';
 import CanvasBackend2D from '../renderer/2D/backend2d';
-import Sequencer from './sequencer';
+import Sequencer from './sequencer/sequencer';
 
 abstract class AnimationManager {
   private static m_playing = false;
@@ -80,7 +80,7 @@ abstract class AnimationManager {
       this.m_frameCount++;
     }
 
-    this.m_sequencer.render();
+    this.m_sequencer.render(true);
   }
 
   static render() {
@@ -103,6 +103,10 @@ abstract class AnimationManager {
 
   static onPointerUp() {
     this.m_sequencer.onPointerUp();
+  }
+
+  static onWheel(e: WheelEvent) {
+    this.m_sequencer.onWheel(e);
   }
 }
 

@@ -43,13 +43,16 @@ abstract class SceneManager {
   static set zoom(value: number | [number, vec2]) {
     const isArray = Array.isArray(value);
     const zoom = round(clamp(isArray ? value[0] : value, ZOOM_MIN, ZOOM_MAX), 4);
+
     if (isArray) {
       const delta = vec2.sub(
         this.clientToScene(vec2.clone(value[1]), { zoom }),
         this.clientToScene(vec2.clone(value[1]))
       );
-      this.viewport.position = vec2.add(this.viewport.position, delta);
+
+      vec2.add(this.viewport.position, delta, this.viewport.position);
     }
+
     this.viewport.zoom = zoom;
   }
 
