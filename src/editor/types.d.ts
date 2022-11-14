@@ -5,6 +5,7 @@ interface State {
   tool: Tool;
   loading: boolean;
   timeline: boolean;
+  timelineHeight: number;
 }
 
 interface Action {

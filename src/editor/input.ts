@@ -382,7 +382,7 @@ abstract class InputManager {
   private static onTouchEnd(e: TouchEvent) {}
 
   //* Window Events
-  private static onResize(e: UIEvent) {
+  public static onResize(e: UIEvent) {
     Renderer.resize();
     AnimationManager.resize();
     SceneManager.render();

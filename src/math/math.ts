@@ -47,6 +47,22 @@ export function isPointInCircle(point: vec2, center: vec2, radius: number): bool
   );
 }
 
+export function doesLineIntersectLine(a: Box, b: Box) {
+  const [[c, d], [j, k]] = a;
+  const [[p, q], [r, s]] = b;
+
+  let det, gamma, lambda;
+
+  det = (j - c) * (s - q) - (r - p) * (k - d);
+
+  if (det === 0) return false;
+
+  lambda = ((s - q) * (r - c) + (p - r) * (s - d)) / det;
+  gamma = ((d - k) * (r - c) + (j - c) * (s - d)) / det;
+
+  return 0 < lambda && lambda < 1 && 0 < gamma && gamma < 1;
+}
+
 export function doesBoxIntersectBox(a: Box, b: Box): boolean {
   return b[1][0] >= a[0][0] && a[1][0] >= b[0][0] && b[1][1] >= a[0][1] && a[1][1] >= b[0][1];
 }
@@ -102,4 +118,36 @@ export function doesBoxIntersectRotatedBox(a: Box, b: Box, angle: number): boole
   }
 
   return overlaps(axis, origin, rotated) && overlaps(rotatedAxis, rotatedOrigin, vertices);
+}
+
+export function closestPointToLine(point: vec2, line: Box): [vec2, number] {
+  const [a, b] = vec2.sub(point, line[0]);
+  const [c, d] = vec2.sub(line[1], line[0]);
+
+  const dot = a * c + b * d;
+  const lenSquare = c * c + d * d;
+
+  let param = -1;
+
+  if (lenSquare !== 0) param = dot / lenSquare;
+
+  let vec: vec2;
+  if (param < 0) vec = line[0];
+  else if (param > 1) vec = line[1];
+  else vec = vec2.add(line[0], [param * c, param * d]);
+
+  return [vec, vec2.dist(point, vec)];
+}
+
+export function closestPointToBox(point: vec2, box: Box): [vec2, number] {
+  const lines = getLinesFromBox(box);
+
+  let closest: [vec2, number] = [vec2.create(), Infinity];
+
+  for (const line of lines) {
+    const distance = closestPointToLine(point, line);
+    if (distance[1] < closest[1]) closest = distance;
+  }
+
+  return closest;
 }

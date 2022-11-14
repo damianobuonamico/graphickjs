@@ -72,9 +72,11 @@ class Stats implements RendererStats {
       if (this.hasMemoryStats) {
         const memory = (performance as any).memory.usedJSHeapSize / 1048576;
 
+        this.memory.push(memory);
         this.minMemory = Math.min(this.minMemory, Math.round(memory));
         this.maxMemory = Math.max(this.maxMemory, Math.round(memory));
-        this.memory.push(memory);
+
+        if (this.memory.length > this.m_maxSamples) this.memory.shift();
       }
     }
 

@@ -24,6 +24,7 @@ import CornerMiterIcon from './CornerMiterIcon';
 import CornerRoundIcon from './CornerRoundIcon';
 import PauseIcon from './PauseIcon';
 import PlayIcon from './PlayIcon';
+import StopIcon from './StopIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
@@ -48,6 +49,7 @@ export { PlusIcon };
 export { PointerIcon };
 export { PointerVertexIcon };
 export { RectangleIcon };
+export { StopIcon };
 export { ZoomIcon };
 
 const getIcon = (name: string, props?: IconProps) => {
@@ -98,6 +100,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <PointerVertexIcon {...props} />;
     case 'rectangle':
       return <RectangleIcon {...props} />;
+    case 'stop':
+      return <StopIcon {...props} />;
     case 'zoom':
       return <ZoomIcon {...props} />;
     default:

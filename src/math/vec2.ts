@@ -323,20 +323,6 @@ export function negate(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
 }
 
 /**
- * Returns the unit vector of a vec2
- *
- * @param {ReadonlyVec2} a vector to negate
- * @param {vec2} out the receiving vector
- * @returns {vec2} out
- */
-export function unit(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
-  const l = Math.hypot(a[0], a[1]);
-  out[0] = a[0] / l;
-  out[1] = a[1] / l;
-  return out;
-}
-
-/**
  * Returns the inverse of the components of a vec2
  *
  * @param {ReadonlyVec2} a vector to invert

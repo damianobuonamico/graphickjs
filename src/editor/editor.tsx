@@ -24,7 +24,8 @@ const Editor: Component = () => {
     mode: 'designer',
     tool: 'select',
     loading: true,
-    timeline: true
+    timeline: true,
+    timelineHeight: 500
   });
   Renderer.init();
   SceneManager.init((loading) => {
@@ -71,15 +72,35 @@ const Editor: Component = () => {
           }}
         />
         <div
-          class={classNames('grow overflow-hidden z-0 grid', {
-            'grid-rows-timeline-visible': state.timeline,
-            'grid-rows-timeline-hidden': !state.timeline
-          })}
+          class={classNames(
+            'grow overflow-hidden z-0 grid'
+            // {
+            //   'grid-rows-timeline-visible': state.timeline,
+            //   'grid-rows-timeline-hidden': !state.timeline
+            // }
+          )}
+          style={{
+            'grid-template-rows': state.timeline ? `1fr ${state.timelineHeight}px` : '1fr 0px'
+          }}
         >
           <CanvasDOM />
-          <Show when={state.timeline}>
-            <Timeline />
-          </Show>
+          {/* <Show when={state.timeline}> */}
+          <Timeline
+            onResize={(y) => {
+              setState((prev) => {
+                let height = window.innerHeight - y;
+
+                height = Math.min(height, window.innerHeight - 200);
+
+                if (height < 30) {
+                  return { timeline: false };
+                } else return { timeline: true, timelineHeight: height };
+              });
+
+              InputManager.onResize({} as UIEvent);
+            }}
+          />
+          {/* </Show> */}
         </div>
         <ComponentsPanel />
       </div>

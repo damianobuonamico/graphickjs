@@ -50,6 +50,11 @@ abstract class AnimationManager {
     this.m_playing = false;
   }
 
+  static stop() {
+    this.m_playing = false;
+    this.m_sequencer.stop();
+  }
+
   private static startAnimating() {
     this.m_started = true;
     this.m_lastDrawTime = performance.now();
