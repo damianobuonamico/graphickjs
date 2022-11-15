@@ -6,7 +6,7 @@ import Element, { isElement } from './ecs/entities/element';
 import Layer from './ecs/entities/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/entities/vertex';
-import HistoryManager from './history';
+import HistoryManager, { CommandHistory } from './history/history';
 import {
   LOCAL_STORAGE_KEY,
   LOCAL_STORAGE_KEY_SEQUENCE,

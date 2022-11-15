@@ -1,7 +1,7 @@
 import { Cache, ElementCache } from '@/editor/ecs/components/cache';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
-import HistoryManager from '../../history';
+import HistoryManager from '../../history/history';
 import { Renderer } from '../../renderer';
 import SceneManager from '../../scene';
 import { ElementSelectionManager } from '../../selection';

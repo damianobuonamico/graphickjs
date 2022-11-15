@@ -4,7 +4,7 @@ import Element from '../ecs/entities/element';
 import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
-import HistoryManager from '../history';
+import HistoryManager from '../history/history';
 import { nanoid } from 'nanoid';
 
 const onPolygonPointerDown = (tool: Tool) => {

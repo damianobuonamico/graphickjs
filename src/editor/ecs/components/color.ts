@@ -1,4 +1,4 @@
-import HistoryManager from '@/editor/history';
+import HistoryManager from '@/editor/history/history';
 import { HEX2RGB, HSB2RGB, RGB2HEX, RGB2HSB } from '@/utils/color';
 import { vec4 } from '@math';
 import * as colorNames from 'color-name';

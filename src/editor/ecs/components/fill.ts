@@ -1,5 +1,5 @@
 import Color from '@/editor/ecs/components/color';
-import HistoryManager from '@/editor/history';
+import HistoryManager from '@/editor/history/history';
 import { nanoid } from 'nanoid';
 
 class Fill implements FillComponent {

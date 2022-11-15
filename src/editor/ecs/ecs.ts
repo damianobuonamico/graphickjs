@@ -1,4 +1,4 @@
-import HistoryManager from '../history';
+import HistoryManager from '../history/history';
 import SceneManager from '../scene';
 
 class ECS {

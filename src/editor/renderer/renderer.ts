@@ -6,8 +6,8 @@ abstract class Renderer {
 
   public static debugging: boolean = true;
   public static debug: DebugState = {
-    entityBox: true,
-    segmentBox: true
+    entityBox: false,
+    segmentBox: false
   };
 
   public static stats: RendererStats = new Stats();

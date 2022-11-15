@@ -1,3 +1,4 @@
+import { Vec2Value } from '@/editor/history/value';
 import InputManager from '@/editor/input';
 import {
   clamp,
@@ -91,24 +92,29 @@ class Sequencer extends CanvasBackend2D {
     this.m_ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
     this.m_ctx.shadowBlur = 10 * this.m_viewport.zoom;
     this.m_ctx.shadowOffsetY = 2 * this.m_viewport.zoom;
-    this.m_ctx.fillStyle = node.color;
+    // this.m_ctx.fillStyle = node.color;
+    this.m_ctx.fillStyle = 'green';
 
-    const width = this.m_ctx.measureText(node.name).width;
+    // const width = this.m_ctx.measureText(node.name).width;
+    const width = this.m_ctx.measureText(node.id).width;
     const height = 12 + 2 * padding;
 
     node.size = [width + 2 * padding, height];
 
-    this.roundedRect(node.position, node.size, 5);
+    const position = node.position.value;
+
+    this.roundedRect(position, node.size, 5);
     this.fill();
 
     this.m_ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    this.roundedRect(node.position, [node.size[0] * node.percent, node.size[1]], 5);
+    this.roundedRect(position, [node.size[0] * node.percent, node.size[1]], 5);
     this.fill();
 
     this.m_ctx.restore();
     this.m_ctx.fillStyle = 'white';
 
-    this.m_ctx.fillText(node.name, node.position[0] + padding, node.position[1] + height / 2 + 1);
+    this.m_ctx.fillText(node.id, position[0] + padding, position[1] + height / 2 + 1);
+    // this.m_ctx.fillText(node.name, node.position[0] + padding, node.position[1] + height / 2 + 1);
   }
 
   private renderFn() {
@@ -195,7 +201,7 @@ class Sequencer extends CanvasBackend2D {
       this.m_ctx.strokeStyle = 'rgba(56, 195, 242, 1.0)';
       this.m_ctx.lineWidth = 1.5 / this.m_viewport.zoom;
 
-      this.roundedRect(this.m_hover.position, this.m_hover.size, 5);
+      this.roundedRect(this.m_hover.position.value, this.m_hover.size, 5);
       this.stroke();
     }
 
@@ -291,7 +297,9 @@ class Sequencer extends CanvasBackend2D {
     }
 
     if (this.m_hover) {
-      vec2.add(this.m_hover.position, this.m_local.movement, this.m_hover.position);
+      this.m_hover.position.add(this.m_local.movement);
+      // this.m_hover.position.value = vec2.add(this.m_hover.position.value, this.m_local.movement);
+      // vec2.add(this.m_hover.position, this.m_local.movement, this.m_hover.position);
     }
 
     this.render();

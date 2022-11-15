@@ -1,4 +1,4 @@
-import HistoryManager from '@/editor/history';
+import HistoryManager from '@/editor/history/history';
 import { equals, mat3, vec2 } from '@/math';
 import { Cache } from '@/editor/ecs/components/cache';
 import Debugger from '@/utils/debugger';

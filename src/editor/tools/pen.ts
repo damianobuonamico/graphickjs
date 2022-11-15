@@ -4,7 +4,7 @@ import Bezier from '../ecs/entities/bezier';
 import Element from '../ecs/entities/element';
 import Handle from '../ecs/entities/handle';
 import Vertex from '../ecs/entities/vertex';
-import HistoryManager from '../history';
+import HistoryManager from '../history/history';
 import InputManager from '../input';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';

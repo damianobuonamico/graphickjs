@@ -12,6 +12,7 @@ import actions from './actions';
 import HoverState from './hover';
 import { ToolState } from './tools';
 import AnimationManager from './animation/animation';
+import { CommandHistory } from './history/history';
 
 abstract class InputManager {
   public static target: EventTarget | undefined;
@@ -209,6 +210,7 @@ abstract class InputManager {
           e.preventDefault();
           action.callback();
           SceneManager.render();
+          AnimationManager.renderSequencer();
           return;
         }
       });
@@ -236,6 +238,8 @@ abstract class InputManager {
 
   //* Pointer Events
   private static onPointerDown(e: PointerEvent) {
+    CommandHistory.endBatch();
+
     if (e.target === AnimationManager.canvas) {
       this.target = e.target;
 
@@ -333,6 +337,8 @@ abstract class InputManager {
   }
 
   private static onPointerUp(e: PointerEvent) {
+    CommandHistory.endBatch();
+
     this.setPointer(e);
     if (!this.down) return;
 

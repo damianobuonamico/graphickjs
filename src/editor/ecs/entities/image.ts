@@ -1,4 +1,4 @@
-import HistoryManager from '@/editor/history';
+import HistoryManager from '@/editor/history/history';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@/math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';

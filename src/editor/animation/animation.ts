@@ -102,6 +102,10 @@ abstract class AnimationManager {
     }
   }
 
+  static renderSequencer() {
+    requestAnimationFrame(() => this.m_sequencer.render());
+  }
+
   static onPointerDown() {
     this.m_sequencer.onPointerDown();
   }
