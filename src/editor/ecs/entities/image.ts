@@ -1,3 +1,4 @@
+import CommandHistory from '@/editor/history/history';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@/math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
@@ -32,14 +33,13 @@ class ImageMedia implements ImageEntity {
     this.m_source.src = source;
 
     this.m_source.onload = () => {
-      // TOCHECK
-      // HistoryManager.skipNext();
+      CommandHistory.ignoreNext();
       if (size && !vec2.equals(size, vec2.create())) {
         this.transform.size = size;
       } else {
         this.transform.size = [this.m_source.width, this.m_source.height];
       }
-      // HistoryManager.clearSkip();
+      CommandHistory.clearIgnore();
     };
   }
 

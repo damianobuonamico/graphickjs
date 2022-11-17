@@ -9,9 +9,10 @@ import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
 import CommandHistory from '../history/history';
+import Selector from '../ecs/entities/selector';
 
 interface SelectToolData {
-  element?: Element;
+  selector?: SelectorEntity;
 }
 
 // TODO: curve selection
@@ -57,19 +58,12 @@ const onVSelectPointerDown = () => {
       SelectionManager.clear();
     }
 
-    rect.element = new Element({
+    rect.selector = new Selector({
       position: InputManager.scene.position,
-      vertices: createVertices('rectangle', vec2.create()),
-      closed: true,
-      stroke: {
-        color: [56 / 255, 195 / 255, 242 / 255, 1],
-        width: 2 / SceneManager.viewport.zoom,
-        style: [3 / SceneManager.viewport.zoom, 3 / SceneManager.viewport.zoom]
-      },
-      fill: { color: [56 / 255, 195 / 255, 242 / 255, 0.2] }
+      dashed: true
     });
 
-    SceneManager.overlays.add({ entity: rect.element });
+    SceneManager.overlays.add({ entity: rect.selector });
   }
 
   let last = InputManager.scene.position;
@@ -184,10 +178,10 @@ const onVSelectPointerDown = () => {
 
         last = current;
       }
-    } else if (rect.element) {
+    } else if (rect.selector) {
       draggingOccurred = false;
-      rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
-      const box = rect.element.transform.boundingBox;
+      rect.selector.set(InputManager.scene.delta);
+      const box = rect.selector.transform.boundingBox;
       const entities = SceneManager.getEntitiesIn(box);
       entities.forEach((entity) => {
         if (entity.type === 'element') {
@@ -203,9 +197,9 @@ const onVSelectPointerDown = () => {
 
   function onPointerUp(abort?: boolean) {
     SelectionManager.sync(true);
-    if (rect.element) {
-      SceneManager.overlays.remove(rect.element.id);
-      rect.element = undefined;
+    if (rect.selector) {
+      SceneManager.overlays.remove(rect.selector.id);
+      rect.selector = undefined;
     }
 
     if (element) {

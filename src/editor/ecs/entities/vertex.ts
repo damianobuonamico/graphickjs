@@ -1,4 +1,6 @@
 import { Cache, VertexCache } from '@/editor/ecs/components/cache';
+import { ChangeCommand } from '@/editor/history/command';
+import CommandHistory from '@/editor/history/history';
 import { isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
@@ -48,9 +50,23 @@ class Vertex implements VertexEntity {
   }
 
   set left(handle: HandleEntity | undefined) {
+    const backup = this.m_left;
+
+    CommandHistory.add(
+      new ChangeCommand(
+        () => {
+          this.m_left = handle;
+          handle?.setCache(this.m_cache as any as Cache);
+          this.m_cache.pause = true;
+        },
+        () => {
+          this.m_left = backup;
+          backup?.setCache(this.m_cache as any as Cache);
+          this.m_cache.pause = true;
+        }
+      )
+    );
     this.m_left = handle;
-    handle?.setCache(this.m_cache as any as Cache);
-    this.m_cache.pause = true;
   }
 
   get right(): HandleEntity | undefined {
@@ -58,13 +74,30 @@ class Vertex implements VertexEntity {
   }
 
   set right(handle: HandleEntity | undefined) {
-    this.m_right = handle;
-    handle?.setCache(this.m_cache as any as Cache);
-    this.m_cache.pause = true;
+    const backup = this.m_right;
+
+    CommandHistory.add(
+      new ChangeCommand(
+        () => {
+          this.m_right = handle;
+          handle?.setCache(this.m_cache as any as Cache);
+          this.m_cache.pause = true;
+        },
+        () => {
+          this.m_right = backup;
+          backup?.setCache(this.m_cache as any as Cache);
+          this.m_cache.pause = true;
+        }
+      )
+    );
   }
 
   registerCache(cache: Cache): void {
     this.m_cache.register(cache);
+  }
+
+  pauseCache(): void {
+    this.m_cache.pause = true;
   }
 
   getEntityAt(

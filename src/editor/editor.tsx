@@ -1,4 +1,4 @@
-import { Component, createEffect, onMount, Show } from 'solid-js';
+import { Component, createEffect, onMount } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { ToolBar, TitleBar, Timeline } from '@navigation';
 import { CanvasDOM } from '@multimedia';

@@ -23,8 +23,6 @@ class Handle implements HandleEntity {
     this.transform.cache = cache;
   }
 
-  destroy(): void {}
-
   getEntityAt(
     position: vec2,
     lowerLevel: boolean = false,

@@ -2,6 +2,7 @@ import { GEOMETRY_MAX_ERROR } from '@/utils/constants';
 import { BUTTONS } from '@/utils/keys';
 import { vec2 } from '@math';
 import Element from '../ecs/entities/element';
+import Selector from '../ecs/entities/selector';
 import CommandHistory from '../history/history';
 import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
@@ -9,7 +10,7 @@ import SceneManager from '../scene';
 import SelectionManager from '../selection';
 
 interface SelectToolData {
-  element?: Element;
+  selector?: SelectorEntity;
 }
 
 const onSelectPointerDown = () => {
@@ -36,14 +37,10 @@ const onSelectPointerDown = () => {
       });
     }
   } else {
-    rect.element = new Element({
-      position: InputManager.scene.position,
-      vertices: createVertices('rectangle', vec2.create()),
-      closed: true,
-      stroke: { color: [56 / 255, 195 / 255, 242 / 255, 1], width: 2 / SceneManager.viewport.zoom },
-      fill: { color: [56 / 255, 195 / 255, 242 / 255, 0.2] },
+    rect.selector = new Selector({
+      position: InputManager.scene.position
     });
-    SceneManager.overlays.add({ entity: rect.element });
+    SceneManager.overlays.add({ entity: rect.selector });
   }
 
   SelectionManager.calculateRenderOverlay();
@@ -111,9 +108,9 @@ const onSelectPointerDown = () => {
           );
         });
       }
-    } else if (rect.element) {
-      rect.element.vertices = createVertices('rectangle', InputManager.scene.delta);
-      SelectionManager.temp(SceneManager.getEntitiesIn(rect.element.transform.boundingBox));
+    } else if (rect.selector) {
+      rect.selector.set(InputManager.scene.delta);
+      SelectionManager.temp(SceneManager.getEntitiesIn(rect.selector.transform.boundingBox));
     }
 
     SelectionManager.calculateRenderOverlay();
@@ -121,9 +118,9 @@ const onSelectPointerDown = () => {
 
   function onPointerUp(abort?: boolean) {
     SelectionManager.sync();
-    if (rect.element) {
-      SceneManager.overlays.remove(rect.element.id);
-      rect.element = undefined;
+    if (rect.selector) {
+      SceneManager.overlays.remove(rect.selector.id);
+      rect.selector = undefined;
     }
 
     if (abort) {

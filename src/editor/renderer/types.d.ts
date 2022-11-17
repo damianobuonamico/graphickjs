@@ -114,6 +114,11 @@ interface ParameterDrawOp {
   data: [number];
 }
 
+interface LineDashDrawOp {
+  type: 'lineDash';
+  data: [number[] | undefined];
+}
+
 type DrawOp =
   | GeometryDrawOp
   | BezierDrawOp
@@ -122,7 +127,8 @@ type DrawOp =
   | CenteredShapeDrawOp
   | ColorDrawOp
   | ParameterDrawOp
-  | RoundedRectDrawOp;
+  | RoundedRectDrawOp
+  | LineDashDrawOp;
 
 interface Drawable {
   operations: DrawOp[];

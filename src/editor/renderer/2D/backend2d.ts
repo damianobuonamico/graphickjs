@@ -28,7 +28,8 @@ class CanvasBackend2D {
     square: (position: vec2, size: vec2) => {},
     strokeColor: (color: string) => {},
     fillColor: (color: string) => {},
-    strokeWidth: (color: string) => {}
+    strokeWidth: (color: string) => {},
+    lineDash: (dash: number[]) => {}
   };
 
   constructor() {}
@@ -65,7 +66,8 @@ class CanvasBackend2D {
       square: this.square.bind(this),
       strokeColor: this.strokeColor.bind(this),
       fillColor: this.fillColor.bind(this),
-      strokeWidth: this.strokeWidth.bind(this)
+      strokeWidth: this.strokeWidth.bind(this),
+      lineDash: this.lineDash.bind(this)
     };
   }
 
@@ -130,6 +132,11 @@ class CanvasBackend2D {
 
   protected strokeWidth(width: number) {
     this.m_ctx.lineWidth = width;
+  }
+
+  protected lineDash(dash: number[] | undefined) {
+    if (dash) this.m_ctx.setLineDash(dash);
+    else this.m_ctx.setLineDash([]);
   }
 
   protected transform(matrix: mat3) {

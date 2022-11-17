@@ -134,7 +134,7 @@ const onScalePointerDown = () => {
 
     transforms.forEach((transform) => {
       transform.origin = center;
-      transform.scale(magnitude, angle === null);
+      transform.scale(magnitude, angle === null, false);
     });
 
     SelectionManager.calculateRenderOverlay();

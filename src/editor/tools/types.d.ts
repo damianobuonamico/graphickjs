@@ -9,7 +9,7 @@ interface PenToolData {
 }
 
 interface SelectToolData {
-  element?: Entity;
+  selector?: SelectorEntity;
 }
 
 type ToolData = PenToolData | SelectToolData;

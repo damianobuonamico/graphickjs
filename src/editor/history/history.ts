@@ -77,9 +77,12 @@ class CommandBatch implements GenericCommand {
 abstract class CommandHistory {
   private static m_commands: GenericCommand[] = [];
   private static m_index: number = -1;
+  private static m_ignore: boolean = false;
 
   static add<T>(command: GenericCommand): T {
+    console.trace(command);
     const value = command.execute<T>();
+    if (this.m_ignore) return value as T;
 
     this.seal();
 
@@ -96,7 +99,6 @@ abstract class CommandHistory {
     }
 
     if (!merged) {
-      console.trace(command);
       this.m_commands.push(new CommandBatch(command));
       this.m_index = this.m_commands.length - 1;
     }
@@ -158,6 +160,14 @@ abstract class CommandHistory {
     this.m_commands.length = 0;
     this.m_index = -1;
     console.clear();
+  }
+
+  static ignoreNext() {
+    this.m_ignore = true;
+  }
+
+  static clearIgnore() {
+    this.m_ignore = false;
   }
 }
 

@@ -565,10 +565,11 @@ export class ElementTransform extends Transform implements ElementTransformCompo
       vertex.transform.position.value = position;
       if (vertex.transform.left) vertex.transform.left.value = left;
       if (vertex.transform.right) vertex.transform.right.value = right;
+
+      vertex.pauseCache();
     });
 
     this.keepCentered(center, false);
-    this.m_cache.pause = true;
 
     if (apply) this.applyScale();
   }
@@ -909,7 +910,9 @@ export class UntrackedTransform implements TransformComponent {
   }
 
   get unrotatedBoundingBox(): Box {
-    return [this.position.value, vec2.add(this.position.value, this.m_size)];
+    const p1 = this.position.value,
+      p2 = vec2.add(p1, this.m_size);
+    return [vec2.min(p1, p2), vec2.max(p1, p2)];
   }
 
   get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {

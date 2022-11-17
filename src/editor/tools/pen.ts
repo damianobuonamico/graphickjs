@@ -3,6 +3,7 @@ import Bezier from '../ecs/entities/bezier';
 import Element from '../ecs/entities/element';
 import Handle from '../ecs/entities/handle';
 import Vertex from '../ecs/entities/vertex';
+import CommandHistory from '../history/history';
 import InputManager from '../input';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
@@ -109,22 +110,17 @@ const onPenPointerDown = () => {
       break;
     }
     case 'angle': {
-      const h = vertex!.right;
-
       // TOCHECK
       pen.element = element;
       pen.vertex = vertex;
       vertex!.right = undefined;
 
-      // vertex!.right = h;
       // restorePen();
 
       break;
     }
     case 'start': {
       if (element!.isFirstVertex(vertex!.id)) element!.reverse();
-
-      const h = vertex!.right;
 
       // TOCHECK
       pen.element = element;
@@ -134,7 +130,6 @@ const onPenPointerDown = () => {
       SelectionManager.clear();
       SelectionManager.select(element!);
 
-      // vertex!.right = h;
       // restorePen();
       // SelectionManager.restore(backupSelection);
 
@@ -200,13 +195,11 @@ const onPenPointerDown = () => {
         const v = pen.vertex;
         const backup = pen.vertex.left;
 
-        // TOCHECK
         v.left = backup;
-
-        // v.left = undefined;
       }
     } else if (position) pen.vertex.transform.left.value = position;
 
+    pen.vertex.pauseCache();
     pen.element!.transform.keepCentered(center);
   }
 
@@ -229,6 +222,7 @@ const onPenPointerDown = () => {
       }
     } else if (position) pen.vertex.transform.right.value = position;
 
+    pen.vertex.pauseCache();
     pen.element!.transform.keepCentered(center);
   }
 
@@ -381,12 +375,14 @@ export function onPenPointerHover() {
           pen.element.transform.rotation.value
         );
 
+      CommandHistory.ignoreNext();
       pen.overlayVertex.transform.translate(
         vec2.sub(
           InputManager.scene.position,
           vec2.add(pen.overlayVertex.transform.position.value, pen.overlay.transform.position.value)
         )
       );
+      CommandHistory.clearIgnore();
     } else {
       if (hasOverlay) SceneManager.overlays.remove(pen.overlay!.id);
 

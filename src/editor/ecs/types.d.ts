@@ -7,7 +7,8 @@ type EntityType =
   | 'bezier'
   | 'image'
   | 'manipulator'
-  | 'generichandle';
+  | 'generichandle'
+  | 'selector';
 
 interface Entity {
   readonly id: string;

@@ -10,6 +10,7 @@ interface VertexEntity extends Entity {
   right: HandleEntity | undefined;
 
   registerCache(cache: CacheComponent): void;
+  pauseCache(): void;
 
   getEntitiesIn(
     box: Box,
