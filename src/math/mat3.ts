@@ -4,8 +4,6 @@
  * @module mat3
  */
 
-import { vec2 } from '.';
-
 /**
  * Creates a new identity mat3
  *

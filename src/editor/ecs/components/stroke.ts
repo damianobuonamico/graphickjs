@@ -1,8 +1,8 @@
 import Color from '@/editor/ecs/components/color';
-import HistoryManager from '@/editor/history/history';
+import { FloatValue } from '@/editor/history/value';
 import { nanoid } from 'nanoid';
-import { FloatValue } from './transform';
 
+// TODO: refactor getters with value direct access
 class Stroke implements StrokeComponent {
   public readonly id: string;
 
@@ -38,7 +38,7 @@ class Stroke implements StrokeComponent {
     };
 
     if (this.style !== 'solid') obj.style = this.style;
-    if (this.width !== 1) obj.width = this.m_width.get();
+    if (this.width !== 1) obj.width = this.m_width.value;
     if (this.cap !== 'butt') obj.cap = this.cap;
     if (this.corner !== 'miter') obj.corner = this.corner;
     if (this.miterLimit !== 10) obj.miterLimit = this.miterLimit;
@@ -55,14 +55,10 @@ class Stroke implements StrokeComponent {
     const backup = this.m_visible;
     if (value === backup) return;
 
-    HistoryManager.record({
-      fn: () => {
-        this.m_visible = value;
-      },
-      undo: () => {
-        this.m_visible = backup;
-      }
-    });
+    // TOCHECK
+    this.m_visible = value;
+
+    // this.m_visible = backup;
   }
 
   set tempVisible(value: boolean) {
@@ -70,11 +66,11 @@ class Stroke implements StrokeComponent {
   }
 
   get width() {
-    return this.m_width.get();
+    return this.m_width.value;
   }
 
   set width(value: number) {
-    this.m_width.set(typeof value === 'string' ? parseInt(value) : value);
+    this.m_width.value = typeof value === 'string' ? parseInt(value) : value;
   }
 }
 

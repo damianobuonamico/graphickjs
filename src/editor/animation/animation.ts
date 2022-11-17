@@ -1,5 +1,4 @@
 import { round } from '@/math';
-import CanvasBackend2D from '../renderer/2D/backend2d';
 import Sequencer from './sequencer/sequencer';
 
 abstract class AnimationManager {
@@ -89,7 +88,7 @@ abstract class AnimationManager {
       this.m_frameCount++;
     }
 
-    this.m_sequencer.animate(this.m_fps);
+    this.m_sequencer.animate(this.m_fpsInterval);
   }
 
   static render() {

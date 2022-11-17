@@ -8,6 +8,7 @@ import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
+import CommandHistory from '../history/history';
 
 interface SelectToolData {
   element?: Element;
@@ -78,29 +79,32 @@ const onVSelectPointerDown = () => {
     if (element) {
       if (handle && !vertex) {
         if (InputManager.keys.space) {
-          const angle = handle.parent.parent.transform.rotation;
+          const angle = handle.parent.parent.transform.rotation.value;
 
           if (angle === 0) {
-            handle.parent.transform.tempTranslate(InputManager.scene.movement);
+            handle.parent.transform.translate(InputManager.scene.movement);
           } else {
             const center = (handle.parent.parent.transform as ElementTransformComponent).center;
             const movement = vec2.rotate(InputManager.scene.movement, [0, 0], -angle);
 
-            handle.parent.transform.tempTranslate(movement);
+            handle.parent.transform.translate(movement);
             (handle.parent.parent.transform as ElementTransformComponent).keepCentered(
               center,
               true
             );
           }
         } else {
-          const angle = handle.parent.parent.transform.rotation;
+          const angle = handle.parent.parent.transform.rotation.value;
           const center = (handle.parent.parent.transform as ElementTransformComponent).center;
 
           let value = vec2.rotate(
             vec2.sub(
               InputManager.scene.position,
               vec2.rotate(
-                vec2.add(handle.parent.transform.position, handle.parent.parent.transform.position),
+                vec2.add(
+                  handle.parent.transform.position.value,
+                  handle.parent.parent.transform.position.value
+                ),
                 center,
                 angle
               )
@@ -113,24 +117,24 @@ const onVSelectPointerDown = () => {
 
           if (angle === 0) {
             if (handle.id === handle.parent.left?.id)
-              handle.parent.transform.tempTranslateLeft(
-                vec2.sub(value, handle.parent.transform.left),
+              handle.parent.transform.translateLeft(
+                vec2.sub(value, handle.parent.transform.left?.value || [0, 0]),
                 InputManager.keys.alt
               );
             else
-              handle.parent.transform.tempTranslateRight(
-                vec2.sub(value, handle.parent.transform.right),
+              handle.parent.transform.translateRight(
+                vec2.sub(value, handle.parent.transform.right?.value || [0, 0]),
                 InputManager.keys.alt
               );
           } else {
             if (handle.id === handle.parent.left?.id)
-              handle.parent.transform.tempTranslateLeft(
-                vec2.sub(value, handle.parent.transform.left),
+              handle.parent.transform.translateLeft(
+                vec2.sub(value, handle.parent.transform.left?.value || [0, 0]),
                 InputManager.keys.alt
               );
             else
-              handle.parent.transform.tempTranslateRight(
-                vec2.sub(value, handle.parent.transform.right),
+              handle.parent.transform.translateRight(
+                vec2.sub(value, handle.parent.transform.right?.value || [0, 0]),
                 InputManager.keys.alt
               );
 
@@ -150,26 +154,31 @@ const onVSelectPointerDown = () => {
 
         draggingOccurred = true;
 
-        SelectionManager.forEach((element) => {
-          const angle = (element as Element).transform.rotation;
+        SelectionManager.forEach((el) => {
+          if (!vertex && el === element) {
+            (el as Element).transform.translate(InputManager.scene.movement);
+            return;
+          }
+
+          const angle = (el as Element).transform.rotation.value;
 
           if (angle === 0) {
-            if ((element as Element).selection && (element as Element).selection.size) {
-              (element as Element).selection.forEach((vertex) => {
-                vertex.transform.tempTranslate(movement);
+            if ((el as Element).selection && (el as Element).selection.size) {
+              (el as Element).selection.forEach((vertex) => {
+                vertex.transform.translate(movement);
               });
             }
           } else {
-            const center = (element as Element).transform.center;
+            const center = (el as Element).transform.center;
             const mov = vec2.rotate(movement, [0, 0], -angle);
 
-            if ((element as Element).selection.size) {
-              (element as Element).selection.forEach((vertex) => {
-                vertex.transform.tempTranslate(mov);
+            if ((el as Element).selection.size) {
+              (el as Element).selection.forEach((vertex) => {
+                vertex.transform.translate(mov);
               });
             }
 
-            (element.transform as ElementTransformComponent).keepCentered(center, true);
+            (el.transform as ElementTransformComponent).keepCentered(center, true);
           }
         });
 
@@ -202,13 +211,8 @@ const onVSelectPointerDown = () => {
     if (element) {
       if (vertex) {
         if (abort) {
-          SelectionManager.forEach((element) => {
-            (element as Element).selection.forEach((vertex) => {
-              vertex.transform.clear();
-            });
-          });
-
-          (element as Element).transform.clear();
+          CommandHistory.undo();
+          CommandHistory.seal();
         } else if (draggingOccurred && element.selection.size) {
           SelectionManager.forEach((element) => {
             (element as Element).selection.forEach((vertex) => {
@@ -227,21 +231,16 @@ const onVSelectPointerDown = () => {
         }
       } else if (handle) {
         if (abort) {
-          handle.parent.transform.clear();
-          handle.parent.parent.transform.clear();
+          CommandHistory.undo();
+          CommandHistory.seal();
         } else {
           handle.parent.transform.apply();
           handle.parent.parent.transform.apply();
         }
       } else {
         if (abort) {
-          SelectionManager.forEach((element) => {
-            (element as Element).selection.forEach((vertex) => {
-              vertex.transform.clear();
-            });
-          });
-
-          (element as Element).transform.clear();
+          CommandHistory.undo();
+          CommandHistory.seal();
         } else if (draggingOccurred && element.selection.size) {
           SelectionManager.forEach((element) => {
             (element as Element).selection.forEach((vertex) => {

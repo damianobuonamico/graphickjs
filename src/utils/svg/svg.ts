@@ -1,4 +1,3 @@
-import SceneManager from '@/editor/scene';
 import SVGAttributesContainer from './attributes';
 import parseSVGG from './parsers/SVGGParser';
 import parseSVGPath from './parsers/SVGPathParser';
@@ -8,14 +7,10 @@ import parseSVGText from './parsers/SVGTextParser';
 export function parseSVG(svg: string) {
   // Convert string to SVG tree
   const parser = new DOMParser();
-  parser.parseFromString;
   const tree = parser.parseFromString(svg.trim(), 'image/svg+xml');
-
   const attributes = new SVGAttributesContainer();
 
-  console.time('svg');
-  parseSVGNode(tree, attributes);
-  console.timeEnd('svg');
+  return parseSVGNode(tree, attributes);
 }
 
 const SVGParsers: {
@@ -56,7 +51,6 @@ export function parseSVGNodeChildren(node: Node, attributes: SVGAttributesContai
 }
 
 function importSVGDocument(node: Node, attributes: SVGAttributesContainer) {
-  parseSVGNodeChildren(node, attributes).forEach((entity) => {
-    SceneManager.add(entity);
-  });
+  // TODO: Group imported svg
+  return parseSVGNodeChildren(node, attributes);
 }

@@ -1,7 +1,7 @@
 interface GenericCommand {
-  readonly id: string;
-
   canMerge: boolean;
+
+  readonly hash: Object;
 
   execute<T>(): T | void;
   undo(): void;
@@ -12,4 +12,9 @@ interface Value<T> {
   value: T;
 
   add(amount: T): void;
+}
+
+interface MapSuper<K, V> extends Map<K, V> {
+  superSet(key: K, value: V): Map<K, V>;
+  superDelete(key: K): boolean;
 }

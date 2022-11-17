@@ -1,22 +1,16 @@
 import { KEYS } from '@/utils/keys';
-import HistoryManager, { CommandHistory } from './history/history';
+import CommandHistory from './history/history';
 import { Renderer } from './renderer';
 import SceneManager from './scene';
 import SelectionManager from './selection';
 
 const actions: { [key: string]: ActionBinding } = {
   undo: {
-    callback: () => {
-      // HistoryManager.undo();
-      CommandHistory.undo();
-    },
+    callback: () => CommandHistory.undo(),
     shortcut: { ctrl: true, shift: false, key: KEYS.Z }
   },
   redo: {
-    callback: () => {
-      // HistoryManager.redo();
-      CommandHistory.redo();
-    },
+    callback: () => CommandHistory.redo(),
     shortcut: { ctrl: true, shift: true, key: KEYS.Z }
   },
   delete: {

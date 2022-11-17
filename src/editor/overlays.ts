@@ -44,7 +44,7 @@ class OverlayState {
 
     this.m_overlays.forEach((overlay) => {
       if (!overlay.condition || overlay.condition()) {
-        Renderer.entity(overlay.entity, {inheritStrokeWidth: true});
+        Renderer.entity(overlay.entity, { inheritStrokeWidth: true });
       }
     });
   }

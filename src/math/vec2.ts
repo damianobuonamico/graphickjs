@@ -431,6 +431,36 @@ export function lerp(a: ReadonlyVec2, b: ReadonlyVec2, t: number, out: vec2 = [0
 }
 
 /**
+ * Performs a cubic bezier interpolation between four vec2's
+ *
+ * @param {ReadonlyVec2} p0 the start point
+ * @param {ReadonlyVec2} p1 the first control point
+ * @param {ReadonlyVec2} p2 the second control point
+ * @param {ReadonlyVec2} p3 the end point
+ * @param {Number} t interpolation amount, in the range [0-1], between the two inputs
+ * @param {vec2} out the receiving vector
+ * @returns {vec2} out
+ */
+export function bezier(
+  p0: ReadonlyVec2,
+  p1: ReadonlyVec2,
+  p2: ReadonlyVec2,
+  p3: ReadonlyVec2,
+  t: number,
+  out: vec2 = [0, 0]
+): vec2 {
+  const c0 = Math.pow(1 - t, 3),
+    c1 = 3 * t * Math.pow(1 - t, 2),
+    c2 = 3 * Math.pow(t, 2) * (1 - t),
+    c3 = Math.pow(t, 3);
+
+  out[0] = p0[0] * c0 + p1[0] * c1 + p2[0] * c2 + p3[0] * c3;
+  out[1] = p0[1] * c0 + p1[1] * c1 + p2[1] * c2 + p3[1] * c3;
+
+  return out;
+}
+
+/**
  * Generates a random vector with the given scale
  *
  * @param {Number} scale Length of the resulting vector. If omitted, a unit vector will be returned

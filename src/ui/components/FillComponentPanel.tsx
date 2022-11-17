@@ -52,7 +52,6 @@ const FillPropertyPanel: Component<{ component: FillComponentCollection }> = (pr
                 { commit: false }
               )
             }
-            onChange={() => SelectionManager.setComponents({ fill: {} }, { commit: true })}
           ></ColorPropertyValue>
           <div class="flex">
             <Button

@@ -1,7 +1,7 @@
-interface ArtboardEntity extends MovableEntity, ECSEntity {
-  selectable: false;
-
-  size: vec2;
+interface ArtboardEntity extends ECSEntity {
+  readonly type: 'artboard';
+  readonly selectable: false;
+  readonly transform: SimpleTransformComponent;
 }
 
 interface ArtboardOptions {

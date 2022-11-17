@@ -6,9 +6,9 @@ interface AnimationReturnState {
 interface SequenceNode {
   readonly id: string;
   readonly position: Value<vec2>;
+  readonly duration: Value<number>;
 
   size: vec2;
-  duration: number;
 
   readonly percent: number;
   readonly animating: boolean;

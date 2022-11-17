@@ -1,13 +1,13 @@
 interface VertexEntity extends Entity {
-  selectable: false;
+  readonly type: 'vertex';
+  readonly selectable: false;
+  readonly transform: VertexTransformComponent;
+
   parent: ElementEntity;
 
   position: HandleEntity;
   left: HandleEntity | undefined;
   right: HandleEntity | undefined;
-
-  transform: VertexTransformComponent;
-  boundingBox: Box;
 
   registerCache(cache: CacheComponent): void;
 
@@ -18,8 +18,6 @@ interface VertexEntity extends Entity {
     angle?: number,
     center?: vec2
   ): void;
-
-  render(selected?: boolean): void;
 }
 
 interface VertexOptions {

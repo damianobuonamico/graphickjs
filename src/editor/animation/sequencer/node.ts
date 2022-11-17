@@ -6,8 +6,9 @@ export class Node implements SequenceNode {
   readonly id: string;
 
   readonly position: Vec2Value;
+  readonly duration: FloatValue;
+
   private m_size: vec2 = vec2.create();
-  private m_duration: FloatValue;
   private m_links: MapValue<string, SequenceNode> = new MapValue();
 
   private m_now: number = 0;
@@ -21,16 +22,8 @@ export class Node implements SequenceNode {
   }: SequencerNodeOptions) {
     this.id = id;
     this.position = new Vec2Value(position);
-    this.m_duration = new FloatValue(duration);
+    this.duration = new FloatValue(duration);
   }
-
-  // get position(): vec2 {
-  //   return this.m_position.value;
-  // }
-
-  // set position(value: vec2) {
-  //   this.m_position.value = value;
-  // }
 
   get size(): vec2 {
     return vec2.clone(this.m_size);
@@ -40,18 +33,8 @@ export class Node implements SequenceNode {
     vec2.copy(this.m_size, value);
   }
 
-  get duration(): number {
-    return 1000;
-    // return this.m_duration.value;
-  }
-
-  set duration(value: number) {
-    // this.m_duration.value = value;
-  }
-
   get percent(): number {
-    return this.m_now / 1000;
-    // return this.m_now / this.m_duration.value;
+    return this.m_now / this.duration.value;
   }
 
   get animating(): boolean {
@@ -78,7 +61,7 @@ export class Node implements SequenceNode {
   animate(interval: number): AnimationReturnState {
     this.m_now += interval;
 
-    if (this.m_now >= 1000 /*this.m_duration.value*/) {
+    if (this.m_now >= this.duration.value) {
       this.reset();
 
       const playing: string[] = [];

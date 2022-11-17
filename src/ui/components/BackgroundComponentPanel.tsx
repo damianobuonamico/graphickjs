@@ -11,11 +11,8 @@ const BackgroundComponentValue: Component<{ component: GlobalComponent<ColorComp
       <ColorPropertyValue
         value={props.component.value}
         onInput={(val) => {
-          props.component.value.tempSet(val);
+          props.component.value.set(val);
           SceneManager.render();
-        }}
-        onChange={() => {
-          props.component.value.apply();
         }}
       ></ColorPropertyValue>
     </PropertyPanel>

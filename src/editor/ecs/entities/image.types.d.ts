@@ -1,6 +1,7 @@
-interface ImageEntity extends TransformableEntity {
-  selectable: true;
-  transform: RectTransformComponent;
+interface ImageEntity extends Entity {
+  readonly type: 'image';
+  readonly selectable: true;
+  readonly transform: RectTransformComponent;
 
   size: vec2;
   source: HTMLImageElement;

@@ -1,12 +1,12 @@
-import { fillObject, stringifyReplacer } from '@utils/utils';
+import { fillObject } from '@utils/utils';
 import { clamp, round, vec2 } from '@math';
 import Artboard from './ecs/entities/artboard';
-import ECS from './ecs/ecs';
-import Element, { isElement } from './ecs/entities/element';
+import ECS, { isECS } from './ecs/ecs';
+import Element from './ecs/entities/element';
 import Layer from './ecs/entities/layer';
 import { Renderer } from './renderer';
 import Vertex from './ecs/entities/vertex';
-import HistoryManager, { CommandHistory } from './history/history';
+import CommandHistory from './history/history';
 import {
   LOCAL_STORAGE_KEY,
   LOCAL_STORAGE_KEY_SEQUENCE,
@@ -17,16 +17,14 @@ import {
 import SelectionManager from './selection';
 import InputManager from './input';
 import { fileDialog } from '@/utils/file';
-import Stroke from './ecs/components/stroke';
-import Fill from './ecs/components/fill';
 import { parseSVG } from '@/utils/svg';
 
 // DEV
-import tigerSvg from '@utils/svg/demo';
 import ImageMedia from './ecs/entities/image';
 import OverlayState from './overlays';
 import Color from './ecs/components/color';
 import AnimationManager from './animation/animation';
+import Debugger from '@/utils/debugger';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -42,7 +40,7 @@ abstract class SceneManager {
   static init(setLoading: (loading: boolean) => void) {
     this.setLoading = setLoading;
     this.load();
-    HistoryManager.clear();
+    CommandHistory.clear();
     AnimationManager.renderFn = this.renderFn.bind(this);
   }
 
@@ -70,10 +68,6 @@ abstract class SceneManager {
     this.m_layer.add(entity);
   }
 
-  static remove(entity: Entity, skipRecordAction = false) {
-    (entity.parent as unknown as ECS).remove(entity.id, skipRecordAction);
-  }
-
   static delete(selected: Entity | true, forceObject = false) {
     (selected === true ? SelectionManager.entities : [selected]).forEach((entity) => {
       if (
@@ -82,22 +76,21 @@ abstract class SceneManager {
         InputManager.tool.isVertex &&
         (entity as Element).selection.size < (entity as Element).length - 1
       ) {
-        (entity as Element).delete(true, false);
+        (entity as Element).remove(true, false);
       } else {
         const backupSelection = (entity as Element).selection?.get();
-        HistoryManager.record({
-          fn: () => {
-            SelectionManager.deselect(entity.id);
-          },
-          undo: () => {
-            SelectionManager.select(entity);
-            if (backupSelection) (entity as Element).selection?.restore(backupSelection);
-          }
-        });
-        (entity.parent as ECSEntity).delete(entity);
-        entity.destroy();
+
+        // TOCHECK
+        SelectionManager.deselect(entity.id);
+
+        // SelectionManager.select(entity);
+        // if (backupSelection) (entity as Element).selection?.restore(backupSelection);
+
+        if (!isECS(entity.parent)) return;
+        entity.parent.remove(entity.id);
       }
     });
+
     SelectionManager.calculateRenderOverlay();
   }
 
@@ -148,7 +141,7 @@ abstract class SceneManager {
   }
 
   static isVisible(entity: Entity) {
-    const box = (entity.transform as TransformComponent).boundingBox;
+    const box = entity.transform.boundingBox;
     if (!box) return false;
 
     const position = this.viewport.position;
@@ -164,14 +157,11 @@ abstract class SceneManager {
   }
 
   static save() {
-    localStorage.setItem(LOCAL_STORAGE_KEY_STATE, JSON.stringify(this.viewport, stringifyReplacer));
+    localStorage.setItem(LOCAL_STORAGE_KEY_STATE, JSON.stringify(this.viewport));
     localStorage.setItem(LOCAL_STORAGE_KEY_SEQUENCE, JSON.stringify(AnimationManager.toJSON()));
     localStorage.setItem(
       LOCAL_STORAGE_KEY,
-      JSON.stringify(
-        this.m_ecs.map((entity) => entity.toJSON()),
-        stringifyReplacer
-      )
+      JSON.stringify(this.m_ecs.map((entity) => entity.toJSON()))
     );
   }
 
@@ -319,7 +309,6 @@ abstract class SceneManager {
 
       let current = 0;
 
-      HistoryManager.beginSequence();
       SelectionManager.clear();
 
       Array.from(files).forEach((file) => {
@@ -328,14 +317,28 @@ abstract class SceneManager {
         reader.onload = () => {
           if (!reader.result || typeof reader.result !== 'string') return;
 
-          if (file.type === 'image/svg+xml') parseSVG(reader.result);
-          else if (file.type === 'image/png' || file.type === 'image/jpeg')
+          if (file.type === 'image/svg+xml') {
+            CommandHistory.endBatch();
+
+            console.time('svg');
+            let entities = parseSVG(reader.result);
+            console.timeEnd('svg');
+
+            if (entities) {
+              if (!Array.isArray(entities)) entities = [entities];
+              CommandHistory.pop();
+
+              for (let i = 0, n = entities.length; i < n; ++i) {
+                SceneManager.add(entities[i]);
+              }
+            }
+          } else if (file.type === 'image/png' || file.type === 'image/jpeg') {
             SceneManager.add(new ImageMedia({ source: reader.result }));
+          }
 
           current++;
 
           if (current === files.length) {
-            HistoryManager.endSequence();
             this.render();
             this.setLoading(false);
           }

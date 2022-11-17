@@ -1,4 +1,6 @@
 import { snap, vec2 } from '@/math';
+import { isCompleteTransform } from '../ecs/components/transform';
+import CommandHistory from '../history/history';
 import InputManager from '../input';
 import SelectionManager from '../selection';
 
@@ -11,12 +13,10 @@ const onRotatePointerDown = () => {
       onPointerUp: () => {}
     };
 
-  const entities: TransformableEntity[] = [];
-
-  console.log(entity.id);
+  const transforms: TransformComponent[] = [];
 
   SelectionManager.forEach((entity) => {
-    if ((entity as TransformableEntity).transform) entities.push(entity as TransformableEntity);
+    if (isCompleteTransform(entity.transform)) transforms.push(entity.transform);
   });
 
   const box = SelectionManager.unrotatedBoundingBox;
@@ -30,12 +30,11 @@ const onRotatePointerDown = () => {
 
     if (InputManager.keys.shift) angle = snap(angle);
 
-    entities.forEach((entity) => {
-      const center = entity.transform.staticCenter;
+    transforms.forEach((transform) => {
+      const center = transform.staticCenter;
 
-      entity.transform.clear();
-      entity.transform.tempRotate(angle);
-      entity.transform.tempTranslate(vec2.sub(vec2.rotate(center, origin, angle), center));
+      transform.rotation.delta = angle;
+      transform.position.delta = vec2.sub(vec2.rotate(center, origin, angle), center);
     });
 
     SelectionManager.manipulator.transform.rotate(angle - (lastAngle || 0));
@@ -44,9 +43,10 @@ const onRotatePointerDown = () => {
 
   function onPointerUp(abort?: boolean) {
     if (abort) {
-      entities.forEach((entity) => entity.transform.clear());
+      CommandHistory.undo();
+      CommandHistory.seal();
     } else {
-      entities.forEach((entity) => entity.transform.apply());
+      transforms.forEach((transform) => transform.apply());
     }
 
     SelectionManager.calculateRenderOverlay();

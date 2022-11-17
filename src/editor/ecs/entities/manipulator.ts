@@ -3,13 +3,14 @@ import { Renderer } from '@/editor/renderer';
 import SceneManager from '@/editor/scene';
 import { isPointInCircle, vec2 } from '@/math';
 import { nanoid } from 'nanoid';
-import { UntrackedSimpleTransform, UntrackedTransform } from '../components/transform';
+import { UntrackedTransform } from '../components/transform';
 
 class GenericHandle implements Entity {
-  transform: UntrackedSimpleTransform;
-  boundingBox: Box;
   readonly id: string;
   readonly selectable = false;
+  readonly transform: UntrackedTransform;
+
+  boundingBox: Box;
   type: EntityType = 'generichandle';
   parent: Entity;
   handleType: string;
@@ -20,10 +21,8 @@ class GenericHandle implements Entity {
     this.handleType = type;
     this.id = id;
     this.m_radius = type === 'rotate' ? 9 : 3;
-    this.transform = new UntrackedSimpleTransform(position);
+    this.transform = new UntrackedTransform(position);
   }
-
-  destroy(): void {}
 
   getEntityAt(
     position: vec2,
@@ -33,7 +32,7 @@ class GenericHandle implements Entity {
     if (
       isPointInCircle(
         position,
-        this.transform.position,
+        this.transform.position.value,
         (this.m_radius + 2) / SceneManager.viewport.zoom
       )
     )
@@ -43,14 +42,14 @@ class GenericHandle implements Entity {
 
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
 
-  getDrawable(useWebGL: boolean = false): Drawable {
+  getDrawable(): Drawable {
     return {
       operations: [
         {
           type: 'rect',
           data: [
             vec2.add(
-              this.transform.position,
+              this.transform.position.value,
               vec2.divS([-this.m_radius, -this.m_radius], SceneManager.viewport.zoom)
             ),
             vec2.divS([this.m_radius * 2, this.m_radius * 2], SceneManager.viewport.zoom)
@@ -61,9 +60,7 @@ class GenericHandle implements Entity {
     };
   }
 
-  getOutlineDrawable(useWebGL: boolean = false): Drawable {
-    return this.getDrawable(useWebGL);
-  }
+  getOutlineDrawable = this.getDrawable;
 
   render(): void {}
 
@@ -99,11 +96,11 @@ type HandleKey = keyof TransformHandles<null>;
 
 class Manipulator implements ManipulatorEntity {
   readonly id: string = nanoid();
-  readonly type: EntityType = 'manipulator';
+  readonly type = 'manipulator';
   readonly selectable = false;
 
   parent: Entity;
-  transform: UntrackedTransformComponent;
+  transform: UntrackedTransform;
 
   private m_lastCalculatedSize: vec2 = vec2.create();
   private m_active: boolean = false;
@@ -159,7 +156,10 @@ class Manipulator implements ManipulatorEntity {
   }
 
   get boundingBox(): Box {
-    return [this.transform.position, vec2.add(this.transform.position, this.m_lastCalculatedSize)];
+    return [
+      this.transform.position.value,
+      vec2.add(this.transform.position.value, this.m_lastCalculatedSize)
+    ];
   }
 
   get active() {
@@ -170,7 +170,7 @@ class Manipulator implements ManipulatorEntity {
     this.m_lastCalculatedSize = size;
 
     Object.keys(this.m_handles).forEach((key) => {
-      this.m_handles[key as HandleKey].transform.position =
+      this.m_handles[key as HandleKey].transform.position.value =
         this.m_positions[key as HandleKey](size);
       if (this.m_handles[key as HandleKey].handleType === 'rotate')
         this.m_handles[key as HandleKey].transform.translate(
@@ -187,8 +187,8 @@ class Manipulator implements ManipulatorEntity {
 
     this.m_active = true;
 
-    this.transform.position = box[0];
-    this.transform.rotation = angle;
+    this.transform.position.value = box[0];
+    this.transform.rotation.value = angle;
     this.transform.size = vec2.sub(box[1], box[0]);
 
     this.setHandles();
@@ -201,19 +201,21 @@ class Manipulator implements ManipulatorEntity {
         static: true
       });
   }
-
-  destroy(): void {}
-
+  
   getEntityAt(
     position: vec2,
     lowerLevel?: boolean | undefined,
     threshold?: number | undefined
   ): Entity | undefined {
     if (!this.active) return undefined;
-    position = vec2.sub(position, this.transform.position);
+    position = vec2.sub(position, this.transform.position.value);
 
-    if (this.transform.rotation !== 0)
-      position = vec2.rotate(position, vec2.divS(this.transform.size, 2), -this.transform.rotation);
+    if (this.transform.rotation.value !== 0)
+      position = vec2.rotate(
+        position,
+        vec2.divS(this.transform.size, 2),
+        -this.transform.rotation.value
+      );
 
     let toReturn: Entity | undefined;
 
@@ -238,7 +240,7 @@ class Manipulator implements ManipulatorEntity {
 
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {}
 
-  getDrawable(useWebGL: boolean = false): Drawable {
+  getDrawable(): Drawable {
     const size = vec2.mulS(this.transform.size, SceneManager.viewport.zoom);
     const isBoxSmall = [size[0] < 30, size[1] < 30];
 
@@ -260,7 +262,7 @@ class Manipulator implements ManipulatorEntity {
         if ((key === 'n' || key === 's') && isBoxSmall[0]) render = false;
         else if ((key === 'e' || key === 'w') && isBoxSmall[1]) render = false;
 
-        if (render) ops.push(...handle.getDrawable(useWebGL).operations);
+        if (render) ops.push(...handle.getDrawable().operations);
       }
     });
 
@@ -280,9 +282,7 @@ class Manipulator implements ManipulatorEntity {
     };
   }
 
-  getOutlineDrawable(useWebGL: boolean = false): Drawable {
-    return this.getDrawable(useWebGL);
-  }
+  getOutlineDrawable = this.getDrawable;
 
   render(): void {
     Renderer.entity(this);

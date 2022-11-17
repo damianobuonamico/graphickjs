@@ -1,5 +1,4 @@
 import Color from '@/editor/ecs/components/color';
-import HistoryManager from '@/editor/history/history';
 import { nanoid } from 'nanoid';
 
 class Fill implements FillComponent {
@@ -42,14 +41,10 @@ class Fill implements FillComponent {
     const backup = this.m_visible;
     if (value === backup) return;
 
-    HistoryManager.record({
-      fn: () => {
-        this.m_visible = value;
-      },
-      undo: () => {
-        this.m_visible = backup;
-      }
-    });
+    // TOCHECK
+    this.m_visible = value;
+
+    // this.m_visible = backup;
   }
 
   set tempVisible(value: boolean) {

@@ -6,16 +6,35 @@ class SVGAttributesContainer {
   private m_strokes: { level: number; value: Stroke | null }[] = [{ level: 0, value: null }];
   private m_fills: { level: number; value: Fill | null }[] = [{ level: 0, value: null }];
 
+  private m_strokeObjects: Map<string, StrokeComponentObject> = new Map();
+  private m_fillObjects: Map<string, FillComponentObject> = new Map();
+
   public level = 0;
 
   constructor() {}
 
   public get stroke() {
-    return this.m_strokes[this.m_strokes.length - 1].value?.asObject();
+    const stroke = this.m_strokes[this.m_strokes.length - 1].value;
+    if (!stroke) return undefined;
+
+    if (this.m_strokeObjects.has(stroke.id)) return this.m_strokeObjects.get(stroke.id);
+
+    const object = stroke.asObject();
+    this.m_strokeObjects.set(stroke.id, object);
+
+    return object;
   }
 
   public get fill() {
-    return this.m_fills[this.m_fills.length - 1].value?.asObject();
+    const fill = this.m_fills[this.m_fills.length - 1].value;
+    if (!fill) return undefined;
+
+    if (this.m_fillObjects.has(fill.id)) return this.m_fillObjects.get(fill.id);
+
+    const object = fill.asObject();
+    this.m_fillObjects.set(fill.id, object);
+
+    return object;
   }
 
   private get m_stroke() {

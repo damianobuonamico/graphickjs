@@ -8,7 +8,6 @@ import PropertyValue from './PropertyValue';
 const ColorPropertyValue: Component<{
   value: ColorComponent;
   onInput: (color: vec3 | vec4 | string, format?: ColorFormat) => void;
-  onChange: () => void;
 }> = (props) => {
   const [eyeDropperActive, setEyeDropperActive] = createSignal(false);
   const [color, setColor] = createSignal(props.value.hex);
@@ -53,7 +52,6 @@ const ColorPropertyValue: Component<{
         const hex = result.sRGBHex;
         props.value.set(hex);
         props.onInput(result.sRGBHex);
-        props.onChange();
         setColor(hex);
         setValue(props.value.hsb);
 
@@ -77,7 +75,7 @@ const ColorPropertyValue: Component<{
       );
 
       setValue([value()[0], clamped[0], 100 - clamped[1]]);
-      props.value.tempSet([value()[0], clamped[0], 100 - clamped[1]], 'hsb');
+      props.value.set([value()[0], clamped[0], 100 - clamped[1]], 'hsb');
       props.onInput(props.value.hex);
       setColor(props.value.hex);
     }
@@ -95,7 +93,7 @@ const ColorPropertyValue: Component<{
       );
 
       setValue([value()[0], clamped[0], 100 - clamped[1]]);
-      props.value.tempSet([value()[0], clamped[0], 100 - clamped[1]], 'hsb');
+      props.value.set([value()[0], clamped[0], 100 - clamped[1]], 'hsb');
       props.onInput(props.value.hex);
       setColor(props.value.hex);
     }
@@ -103,7 +101,6 @@ const ColorPropertyValue: Component<{
 
   const onMouseUp = () => {
     document.removeEventListener('mousemove', onMouseMove);
-    props.onChange();
   };
 
   return (
@@ -182,11 +179,10 @@ const ColorPropertyValue: Component<{
                       value={value()[0]}
                       onInput={(val) => {
                         setValue([val, value()[1], value()[2]]);
-                        props.value.tempSet([val, value()[1], value()[2]], 'hsb');
+                        props.value.set([val, value()[1], value()[2]], 'hsb');
                         props.onInput(props.value.hex);
                         setColor(props.value.hex);
                       }}
-                      onChange={props.onChange}
                     />
                     <Slider
                       class="mt-2"
@@ -202,11 +198,10 @@ const ColorPropertyValue: Component<{
                       value={alpha() * 100}
                       onInput={(val) => {
                         setAlpha(val / 100);
-                        props.value.tempSet([...value(), val / 100], 'hsb');
+                        props.value.set([...value(), val / 100], 'hsb');
                         props.onInput([...value(), val / 100], 'hsb');
                         setColor(props.value.hex);
                       }}
-                      onChange={props.onChange}
                     />
                   </div>
                 </PropertyValue>

@@ -57,7 +57,6 @@ const StrokeComponentPanel: Component<{ component: StrokeComponentCollection }> 
                 { commit: false }
               )
             }
-            onChange={() => SelectionManager.setComponents({ stroke: {} }, { commit: true })}
           ></ColorPropertyValue>
           <div class="flex">
             <Button

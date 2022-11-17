@@ -1,28 +1,30 @@
-interface ElementEntity extends TransformableEntity {
-  parent: LayerEntity;
-  selectable: true;
-
+interface ElementEntity extends Entity {
+  readonly type: 'element';
+  readonly selectable: true;
+  readonly transform: ElementTransformComponent;
   readonly cache: CacheComponent;
 
+  parent: LayerEntity;
+
   length: number;
-  last: VertexEntity;
+  first: VertexEntity | undefined;
+  last: VertexEntity | undefined;
   vertices: VertexEntity[];
 
   regenerate(ids?: string[]): void;
   reverse(): void;
-  forEach(callback: (vertex: VertexEntity, selected?: boolean) => void): void;
+  forEach(callback: (vertex: VertexEntity, selected: boolean, index: number) => void): void;
   forEachBezier(callback: (bezier: BezierEntity) => void): void;
 
   concat(element: ElementEntity): void;
   split(bezier: BezierEntity, position: vec2): VertexEntity | void;
-  push(vertex: VertexEntity, regenerate?: boolean, index?: number): void;
+  add(vertex: VertexEntity, regenerate?: boolean, index?: number): void;
+  remove(vertex: VertexEntity | boolean, keepClosed?: boolean): void;
   close(mergeThreshold?: number): void;
 
   isOpenEnd(id: string): boolean;
   isFirstVertex(id: string): boolean;
   intersects(box: Box): boolean;
-
-  delete(vertex: VertexEntity | boolean, keepClosed?: boolean): void;
 }
 
 interface ElementOptions {

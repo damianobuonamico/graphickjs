@@ -1,19 +1,17 @@
-import HistoryManager from '@/editor/history/history';
+import { Vec4Value } from '@/editor/history/value';
 import { HEX2RGB, HSB2RGB, RGB2HEX, RGB2HSB } from '@/utils/color';
 import { vec4 } from '@math';
 import * as colorNames from 'color-name';
 
-class Color implements ColorComponent {
-  private m_value: vec4 = vec4.create();
-  private m_committed: vec4 = vec4.create();
-
+class Color extends Vec4Value implements ColorComponent {
   constructor(value: vec3 | vec4 | string) {
-    const parsed = this.parse(value);
-    if (!parsed) this.m_value = [1, 1, 1, 1];
-    else if (parsed.length === 3) vec4.set(this.m_value, ...parsed, 1);
-    else vec4.copy(this.m_value, parsed);
+    super();
 
-    vec4.copy(this.m_committed, this.m_value);
+    const parsed = this.parse(value);
+
+    if (!parsed) vec4.copy(this.m_value, [1, 1, 1, 1]);
+    else if (parsed.length === 3) vec4.copy(this.m_value, [...parsed, 1]);
+    else vec4.copy(this.m_value, parsed);
   }
 
   get alpha() {
@@ -21,18 +19,18 @@ class Color implements ColorComponent {
   }
 
   set alpha(value: number) {
-    this.m_value[3] = value;
+    this.value = [this.m_value[0], this.m_value[1], this.m_value[2], value];
   }
 
-  public get hex() {
+  get hex() {
     return RGB2HEX([this.m_value[0], this.m_value[1], this.m_value[2]]);
   }
 
-  public get hsb(): vec3 {
+  get hsb(): vec3 {
     return RGB2HSB([this.m_value[0], this.m_value[1], this.m_value[2]]);
   }
 
-  public get vec4() {
+  get vec4() {
     return vec4.clone(this.m_value);
   }
 
@@ -130,53 +128,22 @@ class Color implements ColorComponent {
     return rgbValues.map((v: number) => v / 255);
   }
 
-  tempSet(color: string, format?: ColorFormat) {
+  set(color: string, format?: ColorFormat) {
     const parsed = this.parse(color, format);
     if (!parsed) return;
 
-    this.m_value[0] = parsed[0];
-    this.m_value[1] = parsed[1];
-    this.m_value[2] = parsed[2];
-
-    if (parsed.length === 4) this.m_value[3] = parsed[3];
+    if (parsed.length === 3) this.value = [...parsed, this.m_value[3]];
+    else this.value = parsed;
   }
 
-  set(color: string, format?: ColorFormat) {
-    this.tempSet(color, format);
-    this.apply();
-  }
-
-  apply() {
-    if (vec4.equals(this.m_committed, this.m_value)) return;
-
-    const backup = vec4.clone(this.m_committed);
-    const value = vec4.clone(this.m_value);
-
-    HistoryManager.record({
-      fn: () => {
-        vec4.copy(this.m_committed, value);
-        vec4.copy(this.m_value, value);
-      },
-      undo: () => {
-        vec4.copy(this.m_committed, backup);
-        vec4.copy(this.m_value, this.m_committed);
-      }
-    });
-  }
-
-  clear() {
-    vec4.copy(this.m_value, this.m_committed);
-  }
-
-  public equals(color: vec4 | string | ColorComponent): boolean {
-    if (color instanceof Color) return vec4.equals(this.m_value, color.vec4);
+  equals(color: vec4 | string | ColorComponent): boolean {
+    if (color instanceof Color) return vec4.equals(this.m_value, color.m_value);
     else if (Array.isArray(color)) return vec4.equals(this.m_value, color);
 
     const parsed = this.parse(color as string);
     if (!parsed) return false;
 
-    if (parsed.length === 3) parsed.push(1);
-    return vec4.equals(this.m_value, parsed as vec4);
+    return vec4.equals(this.m_value, parsed.length === 3 ? [...parsed, 1] : parsed);
   }
 }
 

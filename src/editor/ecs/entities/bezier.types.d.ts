@@ -1,5 +1,7 @@
 interface BezierEntity extends Entity {
-  selectable: false;
+  readonly type: 'bezier';
+  readonly selectable: false;
+  readonly transform: SimpleTransformComponent;
 
   start: VertexEntity;
   end: VertexEntity;

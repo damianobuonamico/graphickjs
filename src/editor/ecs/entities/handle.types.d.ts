@@ -1,5 +1,7 @@
-interface HandleEntity extends MovableEntity {
-  selectable: false;
+interface HandleEntity extends Entity {
+  readonly type: 'handle';
+  readonly selectable: false;
+  readonly transform: SimpleTransformComponent;
 
   handleType: HandleType;
 

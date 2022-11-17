@@ -12,7 +12,7 @@ import actions from './actions';
 import HoverState from './hover';
 import { ToolState } from './tools';
 import AnimationManager from './animation/animation';
-import { CommandHistory } from './history/history';
+import CommandHistory from './history/history';
 
 abstract class InputManager {
   public static target: EventTarget | undefined;
@@ -337,8 +337,6 @@ abstract class InputManager {
   }
 
   private static onPointerUp(e: PointerEvent) {
-    CommandHistory.endBatch();
-
     this.setPointer(e);
     if (!this.down) return;
 
@@ -365,6 +363,8 @@ abstract class InputManager {
     this.tool.onPointerUp(this.m_abort);
 
     this.m_listeners.pointerup(e);
+
+    CommandHistory.endBatch();
 
     SceneManager.render();
     SceneManager.save();

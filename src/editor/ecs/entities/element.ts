@@ -1,7 +1,7 @@
 import { Cache, ElementCache } from '@/editor/ecs/components/cache';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
-import HistoryManager from '../../history/history';
+import CommandHistory from '../../history/history';
 import { Renderer } from '../../renderer';
 import SceneManager from '../../scene';
 import { ElementSelectionManager } from '../../selection';
@@ -13,6 +13,8 @@ import Stroke from '../components/stroke';
 import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { ElementTransform } from '../components/transform';
 import Debugger from '@/utils/debugger';
+import { OrderedMapValue } from '@/editor/history/value';
+import { ChangeCommand } from '@/editor/history/command';
 
 export const isElement = (b: Entity): b is Element => {
   return b.type === 'element';
@@ -20,18 +22,21 @@ export const isElement = (b: Entity): b is Element => {
 
 class Element implements ElementEntity {
   readonly id: string;
-  readonly type: EntityType = 'element';
+  readonly type = 'element';
   readonly selectable = true;
   readonly selection = new ElementSelectionManager(this);
 
+  readonly transform: ElementTransformComponent;
+  readonly fill: Fill | null;
+  readonly stroke: Stroke | null;
+
   parent: Layer;
-  transform: ElementTransform;
-  fill: Fill | null;
-  stroke: Stroke | null;
   opacity = 1;
 
-  private m_order: string[] = [];
-  private m_vertices: Map<string, VertexEntity> = new Map();
+  private m_vertices: OrderedMapValue<string, VertexEntity> = new OrderedMapValue(
+    undefined,
+    (vertex) => (vertex.parent = this)
+  );
   private m_curves: Map<string, BezierEntity> = new Map();
   private m_closed: boolean;
   private m_recordHistory: boolean;
@@ -67,19 +72,22 @@ class Element implements ElementEntity {
   }
 
   get length(): number {
-    return this.m_order.length;
+    return this.m_vertices.size;
   }
 
-  get last(): VertexEntity {
-    return this.m_vertices.get(this.m_order[this.m_order.length - 1])!;
+  get first(): VertexEntity | undefined {
+    return this.m_vertices.last;
+  }
+
+  get last(): VertexEntity | undefined {
+    return this.m_vertices.last;
   }
 
   set vertices(vertices: VertexEntity[]) {
-    this.m_order.length = 0;
     this.m_vertices.clear();
 
     vertices.forEach((vertex) => {
-      this.pushVertex(vertex, false);
+      this.m_vertices.set(vertex.id, vertex);
     });
 
     this.regenerate();
@@ -91,6 +99,7 @@ class Element implements ElementEntity {
 
   private onClosingCurveCacheMiss(): Bezier {
     const curves = Array.from(this.m_curves.values());
+
     return new Bezier({
       start: new Vertex({ position: curves[curves.length - 1].p3 }),
       end: new Vertex({ position: curves[0].p0 })
@@ -98,50 +107,18 @@ class Element implements ElementEntity {
   }
 
   private get m_closingCurve(): Bezier {
-    Debugger.time('cCurve');
-    const bezier = this.m_cache.cached('closingCurve', this.onClosingCurveCacheMiss.bind(this));
-    Debugger.timeEnd('cCurve');
-    return bezier;
-  }
-
-  private pushVertex(
-    vertex: VertexEntity,
-    regenerate = true,
-    index: number = this.m_order.length
-  ): void {
-    this.m_vertices.set(vertex.id, vertex);
-    this.m_order.splice(index, 0, vertex.id);
-
-    vertex.parent = this;
-
-    if (regenerate) this.regenerate();
-    else this.m_cache.pause = true;
-  }
-
-  private spliceVertex(
-    id: string,
-    regenerate = true,
-    index: number = this.m_order.indexOf(id)
-  ): void {
-    this.m_vertices.delete(id);
-    this.m_order.splice(index, 1);
-
-    if (regenerate) this.regenerate();
-    else this.m_cache.pause = true;
+    return this.m_cache.cached('closingCurve', this.onClosingCurveCacheMiss.bind(this));
   }
 
   public points: vec2[] = [];
 
-  regenerate(ids: string[] = this.m_order): void {
+  regenerate(ids: string[] = this.m_vertices.order): void {
     const curves = new Map<string, BezierEntity>();
-    const vertices = new Map<string, VertexEntity>();
-
+    const order = this.m_vertices.reorder(ids);
     let last: VertexEntity | null = null;
 
-    ids.forEach((id) => {
-      const vertex = this.m_vertices.get(id)!;
-
-      vertices.set(vertex.id, vertex);
+    for (let i = 0, n = order.length; i < n; ++i) {
+      const vertex = this.m_vertices.get(order[i])!;
 
       if (last) {
         const bezier = new Bezier({ start: last, end: vertex });
@@ -150,28 +127,28 @@ class Element implements ElementEntity {
       }
 
       last = vertex;
-    });
-
-    if (this.m_closed) {
-      const bezier = new Bezier({
-        start: this.m_vertices.get(ids[ids.length - 1])!,
-        end: this.m_vertices.get(ids[0])!
-      });
-
-      curves.set(bezier.id, bezier);
-
-      bezier.parent = this;
     }
 
-    this.m_order = [...ids];
-    this.m_vertices = vertices;
-    this.m_curves = curves;
+    if (this.m_closed) {
+      const start = this.m_vertices.last;
+      const end = this.m_vertices.first;
 
+      if (start && end) {
+        const bezier = new Bezier({ start, end });
+        curves.set(bezier.id, bezier);
+        bezier.parent = this;
+      }
+    }
+
+    this.m_curves = curves;
+    // TOCHECK
     this.m_cache.pause = true;
   }
 
-  forEach(callback: (vertex: VertexEntity, selected?: boolean | undefined) => void): void {
-    this.m_vertices.forEach((vertex) => callback(vertex, this.selection.has(vertex.id)));
+  forEach(callback: (vertex: VertexEntity, selected: boolean, index: number) => void): void {
+    this.m_vertices.forEach((vertex, id, _, index) =>
+      callback(vertex, this.selection.has(id), index)
+    );
   }
 
   forEachBezier(callback: (bezier: BezierEntity) => void): void {
@@ -179,124 +156,95 @@ class Element implements ElementEntity {
   }
 
   reverse(): void {
-    HistoryManager.record({
-      fn: () => {
-        this.regenerate(this.m_order.reverse());
-        this.m_vertices.forEach((vertex) => {
-          const left = vertex.left;
-          const right = vertex.right;
+    this.regenerate(this.m_vertices.order.reverse());
+    CommandHistory.add(
+      new ChangeCommand(
+        () => {
+          this.m_vertices.forEach((vertex) => {
+            const left = vertex.left;
+            const right = vertex.right;
 
-          vertex.left = right;
-          vertex.right = left;
-        });
-      },
-      undo: () => {
-        this.regenerate(this.m_order.reverse());
-        this.m_vertices.forEach((vertex) => {
-          const left = vertex.left;
-          const right = vertex.right;
+            vertex.left = right;
+            vertex.right = left;
+          });
+        },
+        () => {
+          this.m_vertices.forEach((vertex) => {
+            const left = vertex.left;
+            const right = vertex.right;
 
-          vertex.left = right;
-          vertex.right = left;
-        });
-      }
-    });
+            vertex.left = right;
+            vertex.right = left;
+          });
+        }
+      )
+    );
   }
 
   concat(element: ElementEntity): void {
-    const backup = [...this.m_order];
+    // const backup = [...this.____________m_order];
 
-    const box = this.transform.unrotatedBoundingBox;
-    const mid = vec2.mid(
-      vec2.sub(box[0], this.transform.position),
-      vec2.sub(box[1], this.transform.position)
-    );
-    const angle = this.transform.rotation;
+    const mid = vec2.sub(this.transform.center, this.transform.position.value);
+    const angle = this.transform.rotation.value;
 
-    const box1 = element.transform.unrotatedBoundingBox;
-    const mid1 = vec2.mid(
-      vec2.sub(box1[0], element.transform.position),
-      vec2.sub(box1[1], element.transform.position)
-    );
-    const angle1 = element.transform.rotation;
+    const mid1 = vec2.sub(element.transform.center, element.transform.position.value);
+    const angle1 = element.transform.rotation.value;
 
     element.forEach((vertex) => {
-      vertex.transform.position = vec2.rotate(
+      vertex.transform.position.value = vec2.rotate(
         vec2.add(
-          vec2.rotate(vertex.transform.position, mid1, angle1),
-          vec2.sub(element.transform.staticPosition, this.transform.staticPosition)
+          vec2.rotate(vertex.transform.position.value, mid1, angle1),
+          vec2.sub(element.transform.position.static, this.transform.position.static)
         ),
         mid,
         -angle
       );
 
-      if (vertex.left)
-        vertex.transform.left = vec2.rotate(vertex.transform.left, [0, 0], angle1 - angle);
-      if (vertex.right)
-        vertex.transform.right = vec2.rotate(vertex.transform.right, [0, 0], angle1 - angle);
+      if (vertex.transform.left)
+        vertex.transform.left.value = vec2.rotate(
+          vertex.transform.left.value,
+          [0, 0],
+          angle1 - angle
+        );
+      if (vertex.transform.right)
+        vertex.transform.right.value = vec2.rotate(
+          vertex.transform.right.value,
+          [0, 0],
+          angle1 - angle
+        );
     });
 
-    HistoryManager.record({
-      fn: () => {
-        element.forEach((vertex) => {
-          this.pushVertex(vertex, false);
-        });
-
-        this.regenerate();
-        element.parent.delete(element, true);
-      },
-      undo: () => {
-        element.forEach((vertex) => {
-          this.spliceVertex(vertex.id, false);
-          vertex.parent = element;
-        });
-
-        element.parent.add(element, true);
-        this.regenerate(backup);
-      }
+    element.forEach((vertex) => {
+      this.m_vertices.set(vertex.id, vertex);
     });
+    this.regenerate();
 
-    const box2 = this.transform.unrotatedBoundingBox;
-    const mid2 = vec2.mid(
-      vec2.sub(box2[0], this.transform.position),
-      vec2.sub(box2[1], this.transform.position)
-    );
+    element.parent.remove(element.id);
 
-    this.transform.translate(
-      vec2.sub(
-        vec2.rotate([0, 0], mid, this.transform.rotation),
-        vec2.rotate([0, 0], mid2, this.transform.rotation)
-      )
-    );
+    this.transform.keepCentered(mid, true);
   }
 
   split(bezier: BezierEntity, position: vec2): VertexEntity | void {
     if (!this.m_curves.has(bezier.id)) return;
 
-    if (this.transform.rotation !== 0) {
-      const box = this.transform.unrotatedBoundingBox;
-      const mid = vec2.mid(box[0], box[1]);
-      position = vec2.rotate(position, mid, -this.transform.rotation);
+    if (this.transform.rotation.value !== 0) {
+      const mid = this.transform.center;
+      position = vec2.rotate(position, mid, -this.transform.rotation.value);
     }
 
-    position = vec2.sub(position, this.transform.position);
+    position = vec2.sub(position, this.transform.position.value);
 
     const vertex = bezier.split(position);
 
-    this.push(vertex, true, this.m_order.indexOf(bezier.start.id) + 1);
+    this.m_vertices.set(vertex.id, vertex, this.m_vertices.indexOf(bezier.start.id) + 1);
+    this.regenerate();
 
     return vertex;
   }
 
-  push(vertex: VertexEntity, regenerate?: boolean, index?: number): void {
-    HistoryManager.record({
-      fn: () => {
-        this.pushVertex(vertex, regenerate, index);
-      },
-      undo: () => {
-        this.spliceVertex(vertex.id, regenerate);
-      }
-    });
+  add(vertex: VertexEntity, regenerate: boolean = true, index?: number): void {
+    this.m_vertices.set(vertex.id, vertex, index);
+    if (regenerate) this.regenerate();
   }
 
   close(mergeThreshold: number = 1e-4): void {
@@ -307,65 +255,67 @@ class Element implements ElementEntity {
     if (this.m_curves.size === 1 && this.m_curves.values().next().value.bezierType === 'linear')
       return;
 
-    const first = this.m_vertices.get(this.m_order[0])!;
-    const last = this.m_vertices.get(this.m_order[this.m_order.length - 1])!;
+    const first = this.m_vertices.first!;
+    const last = this.m_vertices.last!;
 
     if (
-      vec2.sqrDist(first.transform.position, last.transform.position) < Math.pow(mergeThreshold, 2)
+      vec2.sqrDist(first.transform.position.value, last.transform.position.value) <
+      Math.pow(mergeThreshold, 2)
     ) {
-      if (last.left) first.transform.left = last.transform.left;
-      this.delete(last, true);
+      if (last.transform.left) first.transform.leftValue = last.transform.left.value;
+      this.remove(last, true);
     }
 
-    const box = this.transform.unrotatedBoundingBox;
-    const mid = vec2.mid(box[0], box[1]);
+    const mid = this.transform.center;
 
-    if (this.m_order[0]) {
-      HistoryManager.record({
-        fn: () => {
-          this.m_closed = true;
-          this.regenerate();
-        },
-        undo: () => {
-          this.m_closed = false;
-          this.regenerate();
-        }
-      });
+    if (this.m_vertices.order[0]) {
+      CommandHistory.add(
+        new ChangeCommand(
+          () => {
+            this.m_closed = true;
+          },
+          () => {
+            this.m_closed = false;
+          }
+        )
+      );
+      this.regenerate();
     }
 
-    const box1 = this.transform.unrotatedBoundingBox;
-    const mid1 = vec2.mid(box1[0], box1[1]);
-
-    this.transform.translate(
-      vec2.sub(
-        vec2.rotate([0, 0], mid, this.transform.rotation),
-        vec2.rotate([0, 0], mid1, this.transform.rotation)
-      )
-    );
+    this.transform.keepCentered(mid, true);
   }
 
   isOpenEnd(id: string): boolean {
-    if (!this.m_closed && (this.m_order[0] === id || this.m_order[this.m_order.length - 1] === id))
+    if (
+      !this.m_closed &&
+      (this.m_vertices.order[0] === id ||
+        this.m_vertices.order[this.m_vertices.order.length - 1] === id)
+    )
       return true;
     return false;
   }
 
   isFirstVertex(id: string): boolean {
-    if (this.m_order[0] === id) return true;
+    if (this.m_vertices.order[0] === id) return true;
     return false;
   }
 
   intersects(box: Box): boolean {
-    const angle = this.transform.rotation;
+    if (this.m_vertices.size < 1) return false;
+
+    const angle = this.transform.rotation.value;
 
     if (angle === 0) {
       if (!doesBoxIntersectBox(box, this.transform.boundingBox)) return false;
 
-      box = [vec2.sub(box[0], this.transform.position), vec2.sub(box[1], this.transform.position)];
+      box = [
+        vec2.sub(box[0], this.transform.position.value),
+        vec2.sub(box[1], this.transform.position.value)
+      ];
 
       if (
-        this.length < 2 &&
-        isPointInBox(Array.from(this.m_vertices.values())[0].transform.position, box, 5)
+        this.m_vertices.size < 2 &&
+        isPointInBox(this.m_vertices.first!.transform.position.value, box, 5)
       )
         return true;
 
@@ -376,7 +326,7 @@ class Element implements ElementEntity {
 
       if (!doesBoxIntersectRotatedBox(box, unrotatedBox, angle)) return false;
 
-      const position = this.transform.position;
+      const position = this.transform.position.value;
       const rotated: vec2[] = [box[0], [box[1][0], box[0][1]], box[1], [box[0][0], box[1][1]]].map(
         (point) => vec2.sub(vec2.rotate(point as vec2, mid, -angle), position)
       );
@@ -399,8 +349,8 @@ class Element implements ElementEntity {
     }
   }
 
-  delete(vertex: VertexEntity | true, keepClosed = true): void {
-    if (this.m_order.length < 3) {
+  remove(vertex: VertexEntity | true, keepClosed = true): void {
+    if (this.m_vertices.size < 3) {
       SceneManager.delete(this, true);
       return;
     }
@@ -409,51 +359,43 @@ class Element implements ElementEntity {
     const mid = vec2.mid(box[0], box[1]);
 
     const vertices = vertex === true ? this.selection.entities : [vertex];
-    const indices = vertices.map((vertex) => this.m_order.indexOf(vertex.id)).sort();
+    const indices = vertices.map((vertex) => this.m_vertices.indexOf(vertex.id)).sort();
 
     let fragments: string[][] = [];
 
     for (let i = 0, n = indices.length; i < n; ++i) {
       let prev = i < 1 ? -1 : indices[i - 1];
-      if (prev !== indices[i] - 1) fragments.push(this.m_order.slice(prev + 1, indices[i]));
+      if (prev !== indices[i] - 1) fragments.push(this.m_vertices.slice(prev + 1, indices[i]));
     }
 
-    if (indices[indices.length - 1] < this.m_order.length - 1) {
-      fragments.push(this.m_order.slice(indices[indices.length - 1] + 1));
+    if (indices[indices.length - 1] < this.m_vertices.size - 1) {
+      fragments.push(this.m_vertices.slice(indices[indices.length - 1] + 1));
     }
 
     if (this.m_closed || keepClosed) {
       if (keepClosed) {
         const order: string[] = [];
-        const backup = [...this.m_order];
 
         fragments.forEach((fragment) => {
           order.push(...fragment);
         });
 
-        const vertices = this.m_order
-          .filter((id) => order.indexOf(id) === -1)
-          .map((id) => this.m_vertices.get(id));
+        const vertices = this.m_vertices.order.filter((id) => order.indexOf(id) === -1);
 
-        HistoryManager.record({
-          fn: () => {
-            this.regenerate(order);
-          },
-          undo: () => {
-            vertices.forEach((vertex) => {
-              if (vertex) this.pushVertex(vertex, false);
-            });
-            this.selection.restore(vertices as VertexEntity[]);
-            this.regenerate(backup);
-          }
+        vertices.forEach((id) => {
+          if (id) this.m_vertices.delete(id);
         });
+        this.regenerate(order);
+
+        // TOCHECK
+        // this.selection.restore(vertices as VertexEntity[]);
 
         return;
       } else {
         if (
-          fragments[0][0] === this.m_order[0] &&
+          fragments[0][0] === this.m_vertices.order[0] &&
           fragments[fragments.length - 1][fragments[fragments.length - 1].length - 1] ===
-            this.m_order[this.m_order.length - 1]
+            this.m_vertices.order[this.m_vertices.size - 1]
         ) {
           const last = fragments.pop();
           if (last) fragments[0] = last.concat(fragments[0]);
@@ -468,19 +410,12 @@ class Element implements ElementEntity {
       if (fragments[i].length > 1) {
         const element = new Element({
           vertices: fragments[i].map((id) => this.m_vertices.get(id)!),
-          position: this.transform.staticPosition,
-          rotation: this.transform.staticRotation,
+          position: this.transform.position.static,
+          rotation: this.transform.rotation.static,
           fill: this.fill?.asObject(),
           stroke: this.stroke?.asObject()
         });
-        const box1 = element.transform.unrotatedBoundingBox;
-        const mid1 = vec2.mid(box1[0], box1[1]);
-        element.transform.translate(
-          vec2.sub(
-            vec2.rotate([0, 0], mid, this.transform.staticRotation),
-            vec2.rotate([0, 0], mid1, this.transform.staticRotation)
-          )
-        );
+        element.transform.keepCentered(mid);
         SceneManager.add(element);
         elements.push(element);
       }
@@ -488,28 +423,16 @@ class Element implements ElementEntity {
 
     SceneManager.delete(this, true);
 
-    HistoryManager.record({
-      fn: () => {
-        elements.forEach((element) => {
-          element.forEach((vertex) => (vertex.parent = element));
-        });
-        this.selection.clear();
-      },
-      undo: () => {
-        this.forEach((vertex) => (vertex.parent = this));
-      }
-    });
+    // TOCHECK
+    this.selection.clear();
   }
 
-  destroy(): void {}
-
   getEntityAt(position: vec2, lowerLevel: boolean, threshold: number): Entity | undefined {
-    const angle = this.transform.rotation;
-    const box = this.transform.unrotatedBoundingBox;
-    const mid = vec2.mid(box[0], box[1]);
+    const angle = this.transform.rotation.value;
+    const mid = this.transform.center;
 
     if (angle !== 0) {
-      position = vec2.rotate(position, mid, -this.transform.rotation);
+      position = vec2.rotate(position, mid, -this.transform.rotation.value);
     }
 
     if (
@@ -519,7 +442,7 @@ class Element implements ElementEntity {
         threshold
       )
     ) {
-      position = vec2.sub(position, this.transform.position);
+      position = vec2.sub(position, this.transform.position.value);
 
       let toReturn: Entity | undefined = undefined;
 
@@ -579,12 +502,11 @@ class Element implements ElementEntity {
 
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean): void {
     if (lowerLevel) {
-      const position = this.transform.position;
+      const position = this.transform.position.value;
+      const mid = vec2.sub(this.transform.center, position);
+      const angle = this.transform.rotation.value;
 
       box = [vec2.sub(box[0], position), vec2.sub(box[1], position)];
-      const unrotatedBox = this.transform.unrotatedBoundingBox;
-      const mid = vec2.sub(vec2.mid(unrotatedBox[0], unrotatedBox[1]), position);
-      const angle = this.transform.rotation;
 
       this.m_vertices.forEach((vertex) => {
         vertex.getEntitiesIn(box, entities, true, angle, mid);
@@ -629,9 +551,7 @@ class Element implements ElementEntity {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
       transform: this.transform.asObject(),
-      vertices: this.m_order.map(
-        (id) => this.m_vertices.get(id)!.asObject(duplicate) as VertexObject
-      )
+      vertices: this.m_vertices.map((vertex) => vertex.asObject(duplicate) as VertexObject)
     };
 
     if (this.m_closed) obj.closed = true;

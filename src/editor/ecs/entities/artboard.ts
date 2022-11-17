@@ -1,89 +1,72 @@
 import { vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
-import { SimpleTransform } from '../components/transform';
+import { RectTransform } from '../components/transform';
 import ECS from '../ecs';
 
 class Artboard extends ECS implements ArtboardEntity {
-  public readonly id: string;
-  public readonly type: EntityType = 'artboard';
+  readonly id: string;
+  readonly type = 'artboard';
   readonly selectable = false;
 
-  public parent: Entity;
-  public transform: SimpleTransformComponent;
-
-  private m_size: vec2;
+  parent: Entity;
+  transform: RectTransform;
 
   constructor({ id = nanoid(), size, position = vec2.create() }: ArtboardOptions) {
     super();
     this.id = id;
-    this.m_size = size;
-    this.transform = new SimpleTransform(position);
+    this.transform = new RectTransform(position, 0, size);
   }
 
-  public get boundingBox(): Box {
-    return [this.transform.position, vec2.add(this.transform.position, this.m_size)];
-  }
-
-  public get staticBoundingBox(): Box {
-    return [this.transform.staticPosition, vec2.add(this.transform.staticPosition, this.m_size)];
-  }
-
-  public get size() {
-    return vec2.clone(this.m_size);
-  }
-
-  public add(entity: Entity) {
+  add(entity: Entity) {
     super.add(entity);
     entity.parent = this;
   }
 
-  public delete(entity: Entity) {
-    this.remove(entity.id);
-  }
-
-  public destroy(): void {}
-
-  public getDrawable(useWebGL: boolean = false): Drawable {
+  getDrawable(): Drawable {
     return {
       operations: [
         {
           type: 'rect',
-          data: [this.transform.position, this.m_size]
+          data: [this.transform.position.value, this.transform.size]
         },
         { type: 'fill' }
       ]
     };
   }
 
-  public getOutlineDrawable(useWebGL: boolean = false): Drawable {
+  getOutlineDrawable(): Drawable {
     return {
       operations: [
         {
           type: 'rect',
-          data: [this.transform.position, this.m_size]
+          data: [this.transform.position.value, this.transform.size]
         },
         { type: 'stroke' }
       ]
     };
   }
 
-  public render() {
-    Renderer.rect({ position: [0, 0], size: this.m_size, fill: '#FFFFFF' });
+  render() {
+    Renderer.rect({
+      position: this.transform.position.value,
+      size: this.transform.size,
+      fill: '#FFFFFF'
+    });
     super.render();
   }
 
-  public asObject(duplicate = false): ArtboardObject {
+  asObject(duplicate = false): ArtboardObject {
     return {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
-      position: this.transform.position,
-      size: this.size,
+      position: this.transform.position.value,
+      size: this.transform.size,
       children: this.map((entity) => entity.asObject(duplicate))
     };
   }
 
-  public toJSON() {
+  toJSON() {
     return this.asObject(false);
   }
 }

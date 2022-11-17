@@ -1,8 +1,8 @@
 interface ManipulatorEntity extends Entity {
-  selectable: false;
+  readonly type: 'manipulator';
+  readonly selectable: false;
+  readonly transform: TransformComponent;
 
-  transform: UntrackedTransformComponent;
-  boundingBox: Box;
   active: boolean;
 
   set(box: Box | null, angle?: number): void;

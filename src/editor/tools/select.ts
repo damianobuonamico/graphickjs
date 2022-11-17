@@ -2,6 +2,7 @@ import { GEOMETRY_MAX_ERROR } from '@/utils/constants';
 import { BUTTONS } from '@/utils/keys';
 import { vec2 } from '@math';
 import Element from '../ecs/entities/element';
+import CommandHistory from '../history/history';
 import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
@@ -40,7 +41,7 @@ const onSelectPointerDown = () => {
       vertices: createVertices('rectangle', vec2.create()),
       closed: true,
       stroke: { color: [56 / 255, 195 / 255, 242 / 255, 1], width: 2 / SceneManager.viewport.zoom },
-      fill: { color: [56 / 255, 195 / 255, 242 / 255, 0.2] }
+      fill: { color: [56 / 255, 195 / 255, 242 / 255, 0.2] },
     });
     SceneManager.overlays.add({ entity: rect.element });
   }
@@ -66,7 +67,7 @@ const onSelectPointerDown = () => {
 
         SceneManager.forEach((entity) => {
           if (SceneManager.isVisible(entity) && !SelectionManager.ids.includes(entity.id)) {
-            const entityBox = (entity.transform as TransformComponent).boundingBox;
+            const entityBox = entity.transform.boundingBox;
 
             if (entityBox) {
               entityBox.push(vec2.mid(entityBox[0], entityBox[1]));
@@ -105,8 +106,8 @@ const onSelectPointerDown = () => {
 
         draggingOccurred = true;
         SelectionManager.forEach((entity) => {
-          (entity as Element).transform.tempTranslate(
-            vec2.sub(delta, (entity as Element).transform.positionDelta)
+          (entity as Element).transform.translate(
+            vec2.sub(delta, (entity as Element).transform.position.delta)
           );
         });
       }
@@ -126,9 +127,8 @@ const onSelectPointerDown = () => {
     }
 
     if (abort) {
-      SelectionManager.forEach((entity) => {
-        (entity as Element).transform.clear();
-      });
+      CommandHistory.undo();
+      CommandHistory.seal();
     } else if (draggingOccurred && SelectionManager.size) {
       SelectionManager.forEach((entity) => {
         (entity as Element).transform.apply();

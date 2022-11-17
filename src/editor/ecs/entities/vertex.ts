@@ -1,18 +1,17 @@
 import { Cache, VertexCache } from '@/editor/ecs/components/cache';
-import { isPointInBox, vec2, vec4 } from '@math';
+import { isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
-import SceneManager from '../../scene';
 import { VertexTransform } from '../components/transform';
 import Handle from './handle';
 
 class Vertex implements VertexEntity {
   readonly id: string;
-  readonly type: EntityType = 'vertex';
+  readonly type = 'vertex';
   readonly selectable = false;
 
   private m_parent: ElementEntity;
-  transform: VertexTransformComponent;
+  transform: VertexTransform;
 
   private m_position: HandleEntity;
   private m_left?: HandleEntity;
@@ -64,28 +63,9 @@ class Vertex implements VertexEntity {
     this.m_cache.pause = true;
   }
 
-  get boundingBox(): Box {
-    let min: vec2 = [0, 0];
-    let max: vec2 = [0, 0];
-
-    if (this.m_left) {
-      vec2.min(min, this.transform.left, min);
-      vec2.max(max, this.transform.left, max);
-    }
-
-    if (this.m_right) {
-      vec2.min(min, this.transform.right, min);
-      vec2.max(max, this.transform.right, max);
-    }
-
-    return [vec2.add(min, this.transform.position), vec2.add(max, this.transform.position)] as Box;
-  }
-
   registerCache(cache: Cache): void {
     this.m_cache.register(cache);
   }
-
-  destroy(): void {}
 
   getEntityAt(
     position: vec2,
@@ -94,7 +74,7 @@ class Vertex implements VertexEntity {
   ): Entity | undefined {
     if (this.m_position.getEntityAt(position, lowerLevel, threshold)) return this.m_position;
 
-    position = vec2.sub(position, this.transform.position);
+    position = vec2.sub(position, this.transform.position.value);
 
     if (lowerLevel && this.m_left && this.m_left.getEntityAt(position, lowerLevel, threshold))
       return this.m_left;
@@ -113,34 +93,29 @@ class Vertex implements VertexEntity {
     center?: vec2
   ): void {
     if (angle !== 0 && center) {
-      if (isPointInBox(vec2.rotate(this.transform.position, center, angle), box))
+      if (isPointInBox(vec2.rotate(this.transform.position.value, center, angle), box))
         entities.add(this);
       return;
     }
 
-    if (isPointInBox(this.transform.position, box)) entities.add(this);
+    if (isPointInBox(this.transform.position.value, box)) entities.add(this);
   }
 
-
-  getDrawable(useWebGL: boolean = false, selected: boolean = false): Drawable {
+  getDrawable(): Drawable {
     return { operations: [] };
   }
 
-  getOutlineDrawable(useWebGL: boolean = false): Drawable {
-    return { operations: [] };
-  }
+  getOutlineDrawable = this.getDrawable;
 
-  render(selected: boolean = false): void {
-    Renderer.draw(this.getDrawable(false, !!selected));
-  }
+  render(): void {}
 
   asObject(duplicate: boolean = false): VertexObject {
     return {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
-      position: this.transform.position,
-      left: this.m_left ? this.transform.left : undefined,
-      right: this.m_right ? this.transform.right : undefined
+      position: this.transform.position.value,
+      left: this.transform.left?.value,
+      right: this.transform.right?.value
     };
   }
 

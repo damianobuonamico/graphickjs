@@ -25,7 +25,7 @@ class SVGPather {
   }
 
   public get cursor() {
-    return this.m_cursor as ReadonlyVec2;
+    return this.m_cursor;
   }
 
   private get position() {
@@ -42,13 +42,13 @@ class SVGPather {
   }
 
   public moveTo(position: vec2) {
-    this.m_element.transform.position = position;
-    this.m_element.push(new Vertex({ position: vec2.create() }));
+    this.m_element.transform.position.value = position;
+    this.m_element.add(new Vertex({ position: vec2.create() }));
     this.setCursor(position);
   }
 
   public lineTo(position: vec2) {
-    this.m_element.push(new Vertex({ position: vec2.sub(position, this.position) }));
+    this.m_element.add(new Vertex({ position: vec2.sub(position, this.position.value) }));
     this.setCursor(position);
   }
 
@@ -58,7 +58,7 @@ class SVGPather {
     // Check if control point if it differs from start and end points
     if (
       vec2.equals(position, cp) ||
-      vec2.equals(vec2.add(last.transform.position, this.position), cp)
+      vec2.equals(vec2.add(last.transform.position.value, this.position.value), cp)
     ) {
       this.lineTo(position);
       return;
@@ -77,7 +77,11 @@ class SVGPather {
     const last = this.m_element.last;
 
     // Check if there is something to mirror
-    if (clearSmooth || !last.left || vec2.equals(last.transform.left, vec2.create())) {
+    if (
+      clearSmooth ||
+      !last.transform.left ||
+      vec2.equals(last.transform.left.value, vec2.create())
+    ) {
       this.lineTo(position);
       return;
     }
@@ -86,13 +90,19 @@ class SVGPather {
       ? vec2.add(
           vec2.add(
             vec2.neg(
-              vec2.sub(vec2.sub(this.m_lastQuadratic, last.transform.position), this.position)
+              vec2.sub(
+                vec2.sub(this.m_lastQuadratic, last.transform.position.value),
+                this.position.value
+              )
             ),
-            last.transform.position
+            last.transform.position.value
           ),
-          this.position
+          this.position.value
         )
-      : vec2.add(vec2.add(vec2.neg(last.transform.left), last.transform.position), this.position);
+      : vec2.add(
+          vec2.add(vec2.neg(last.transform.left.value), last.transform.position.value),
+          this.position.value
+        );
 
     this.quadraticBezierTo(cp, position);
   }
@@ -103,20 +113,27 @@ class SVGPather {
     // Make first control point if it differs from start and end points
     if (
       !vec2.equals(position, cp1) &&
-      !vec2.equals(vec2.add(last.transform.position, this.position), cp1)
+      !vec2.equals(vec2.add(last.transform.position.value, this.position.value), cp1)
     )
-      last.transform.right = vec2.sub(vec2.sub(cp1, last.transform.position), this.position);
+      last.transform.rightValue = vec2.sub(
+        vec2.sub(cp1, last.transform.position.value),
+        this.position.value
+      );
 
     // Create end vertex
-    const end = new Vertex({ position: vec2.sub(position, this.position) });
-    this.m_element.push(end);
+    const end = new Vertex({ position: vec2.sub(position, this.position.value) });
+    this.m_element.add(end);
 
     // Make second control point if it differs from start and end points
     if (
       !vec2.equals(position, cp2) &&
-      !vec2.equals(vec2.add(last.transform.position, this.position), cp2)
+      !vec2.equals(vec2.add(last.transform.position.value, this.position.value), cp2)
     )
-      end.transform.left = vec2.sub(vec2.sub(cp2, end.transform.position), this.position);
+      end.transform.leftValue = vec2.sub(
+        vec2.sub(cp2, end.transform.position.value),
+        this.position.value
+      );
+
     this.setCursor(position);
   }
 
@@ -124,19 +141,26 @@ class SVGPather {
     const last = this.m_element.last;
 
     // Calculate first control point through symmetry
-    if (!clearSmooth && last.left && !vec2.equals(last.transform.left, vec2.create()))
-      last.transform.right = vec2.neg(last.transform.left);
+    if (
+      !clearSmooth &&
+      last.transform.left &&
+      !vec2.equals(last.transform.left.value, vec2.create())
+    )
+      last.transform.rightValue = vec2.neg(last.transform.left.value);
 
     // Create end vertex
-    const end = new Vertex({ position: vec2.sub(position, this.position) });
-    this.m_element.push(end);
+    const end = new Vertex({ position: vec2.sub(position, this.position.value) });
+    this.m_element.add(end);
 
     // Make second control point if it differs from start and end points
     if (
       !vec2.equals(position, cp2) &&
-      !vec2.equals(vec2.add(last.transform.position, this.position), cp2)
+      !vec2.equals(vec2.add(last.transform.position.value, this.position.value), cp2)
     )
-      end.transform.left = vec2.sub(vec2.sub(cp2, end.transform.position), this.position);
+      end.transform.leftValue = vec2.sub(
+        vec2.sub(cp2, end.transform.position.value),
+        this.position.value
+      );
     this.setCursor(position);
   }
 
@@ -186,13 +210,11 @@ function parseSVGPath(node: SVGPathElement, attributes: SVGAttributesContainer) 
     .replace(/ +/g, ' ')
     .split('\n');
 
-  console.log(attributes.stroke);
-
   const pather = new SVGPather(
     new Element({
       position: vec2.create(),
-      stroke: attributes.stroke as any,
-      fill: attributes.fill as any
+      stroke: attributes.stroke,
+      fill: attributes.fill
     })
   );
 
@@ -233,6 +255,7 @@ function parseSVGPath(node: SVGPathElement, attributes: SVGAttributesContainer) 
     history.last = op;
   }
 
+  pather.element.transform.apply();
   return pather.element;
 }
 

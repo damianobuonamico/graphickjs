@@ -7,7 +7,7 @@ import CanvasBackend2D from './backend2d';
 import { MATH_TWO_PI } from '@/utils/constants';
 import Renderer from '../renderer';
 import SelectionManager from '@/editor/selection';
-import { isTransform } from '@/editor/ecs/components/transform';
+import { isCompleteTransform } from '@/editor/ecs/components/transform';
 
 class Canvas2D extends CanvasBackend2D {
   private m_debuggerBinded: boolean = false;
@@ -24,7 +24,7 @@ class Canvas2D extends CanvasBackend2D {
   }
 
   private vertexOutline(vertex: VertexEntity, selected?: boolean) {
-    const position = vertex.transform.position;
+    const position = vertex.transform.position.value;
 
     // TODO: Check if caching improves performance
 
@@ -37,8 +37,11 @@ class Canvas2D extends CanvasBackend2D {
       vec2.transformMat3(position, this.m_outlineCurrentTransform)
     );
 
-    if (vertex.left) {
-      const left = vec2.add(vertex.left.transform.position, position);
+    const left = vertex.transform.left?.value;
+    const right = vertex.transform.right?.value;
+
+    if (left) {
+      vec2.add(left, position, left);
       this.m_ctx.moveTo(...left);
       this.m_ctx.lineTo(...position);
       this.m_outlineCircleQueue.push(
@@ -46,8 +49,8 @@ class Canvas2D extends CanvasBackend2D {
       );
     } else this.m_ctx.moveTo(...position);
 
-    if (vertex.right) {
-      const right = vec2.add(vertex.right.transform.position, position);
+    if (right) {
+      vec2.add(right, position, right);
       this.m_ctx.lineTo(...right);
       this.m_outlineCircleQueue.push(
         vec2.transformMat3(right, this.m_outlineCurrentTransform, right)
@@ -123,7 +126,7 @@ class Canvas2D extends CanvasBackend2D {
 
       this.beginPath();
 
-      if (entityBox && isTransform(entity.transform)) {
+      if (entityBox && isCompleteTransform(entity.transform)) {
         const box = entity.transform.boundingBox;
         this.rect(box[0], vec2.sub(box[1], box[0]));
       }
@@ -266,7 +269,7 @@ class Canvas2D extends CanvasBackend2D {
 
     this.m_ctx.save();
 
-    this.transform(entity.transform.mat3);
+    if (isCompleteTransform(entity.transform)) this.transform(entity.transform.mat3);
     this.draw(entity.getDrawable());
 
     this.m_ctx.restore();

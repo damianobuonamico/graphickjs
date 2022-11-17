@@ -1,37 +1,31 @@
 import { nanoid } from 'nanoid';
-import { UntrackedSimpleTransform } from '../components/transform';
+import { SimpleTransform } from '../components/transform';
 import ECS from '../ecs';
 
 class Layer extends ECS implements LayerEntity {
   readonly id: string;
-  readonly type: EntityType = 'layer';
+  readonly type = 'layer';
   readonly selectable = false;
 
   parent: ArtboardEntity;
-  transform: UntrackedSimpleTransformComponent;
+  transform: SimpleTransform;
 
   constructor({ id = nanoid() }: LayerOptions) {
     super();
     this.id = id;
-    this.transform = new UntrackedSimpleTransform();
+    this.transform = new SimpleTransform();
   }
 
-  add(entity: Entity, skipRecordAction: boolean = false) {
-    super.add(entity, skipRecordAction);
+  add(entity: Entity) {
+    super.add(entity);
     entity.parent = this;
   }
 
-  delete(entity: Entity, skipRecordAction: boolean = false) {
-    this.remove(entity.id, skipRecordAction);
-  }
-
-  destroy(): void {}
-
-  getDrawable(useWebGL: boolean = false): Drawable {
+  getDrawable(): Drawable {
     return { operations: [] };
   }
 
-  getOutlineDrawable(useWebGL: boolean = false): Drawable {
+  getOutlineDrawable(): Drawable {
     return { operations: [] };
   }
 

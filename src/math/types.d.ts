@@ -36,6 +36,6 @@ declare type ReadonlyMat4 = readonly [
   number, number, number, number,
 ];
 
-declare type VectorOrMatrix = number | vec2 | vec3 | vec4;
+declare type VectorOrMatrix = number | vec2 | vec3 | vec4 | mat3 | mat4;
 
 type Box = [vec2, vec2];

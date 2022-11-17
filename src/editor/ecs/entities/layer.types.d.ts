@@ -1,5 +1,7 @@
 interface LayerEntity extends ECSEntity {
-  selectable: false;
+  readonly type: 'layer';
+  readonly selectable: false;
+  readonly transform: SimpleTransformComponent;
 }
 
 interface LayerOptions {

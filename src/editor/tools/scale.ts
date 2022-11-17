@@ -1,5 +1,7 @@
 import { vec2 } from '@/math';
 import { KEYS } from '@/utils/keys';
+import { isCompleteTransform } from '../ecs/components/transform';
+import CommandHistory from '../history/history';
 import InputManager from '../input';
 import SelectionManager from '../selection';
 
@@ -80,6 +82,12 @@ const onScalePointerDown = () => {
 
   let backup = center;
 
+  const transforms: TransformComponent[] = [];
+
+  SelectionManager.forEach((entity) => {
+    if (isCompleteTransform(entity.transform)) transforms.push(entity.transform);
+  });
+
   // TODO: Fix rotated image + element scaling
   function onPointerMove() {
     if (InputManager.keys.alt) center = mid;
@@ -124,11 +132,9 @@ const onScalePointerDown = () => {
       }
     }
 
-    SelectionManager.forEach((entity) => {
-      if ((entity.transform as RectTransformComponent).tempScale) {
-        (entity.transform as RectTransformComponent).origin = center;
-        (entity.transform as RectTransformComponent).tempScale(magnitude, angle === null);
-      }
+    transforms.forEach((transform) => {
+      transform.origin = center;
+      transform.scale(magnitude, angle === null);
     });
 
     SelectionManager.calculateRenderOverlay();
@@ -136,12 +142,11 @@ const onScalePointerDown = () => {
 
   function onPointerUp(abort?: boolean) {
     if (abort) {
-      SelectionManager.forEach((entity) => {
-        (entity.transform as TransformComponent).clear();
-      });
+      CommandHistory.undo();
+      CommandHistory.seal();
     } else {
-      SelectionManager.forEach((entity) => {
-        (entity.transform as TransformComponent).apply();
+      transforms.forEach((transform) => {
+        transform.apply();
       });
     }
   }

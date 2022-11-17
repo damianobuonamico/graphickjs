@@ -4,20 +4,20 @@ import Element from '../ecs/entities/element';
 import InputManager from '../input';
 import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
-import HistoryManager from '../history/history';
-import { nanoid } from 'nanoid';
+import CommandHistory from '../history/history';
 
 const onPolygonPointerDown = (tool: Tool) => {
   let size = vec2.create();
-
   let vertices = createVertices(tool as 'rectangle' | 'ellipse', size);
+
   const element = new Element({
     position: InputManager.scene.position,
     vertices,
     closed: true,
     stroke: { color: [0, 0, 0, 1] },
-    fill: { color: [1, 1, 1, 0] }
+    fill: { color: [1, 1, 1, 1] }
   });
+
   SceneManager.add(element);
 
   function onKey(e: KeyboardEvent) {
@@ -26,8 +26,9 @@ const onPolygonPointerDown = (tool: Tool) => {
       vertices = createVertices(tool as 'rectangle' | 'ellipse', size, e.shiftKey, e.altKey);
       element.vertices = vertices;
     } else if (e.key === KEYS.ESCAPE) {
-      SceneManager.remove(element, true);
-      HistoryManager.pop();
+      SceneManager.delete(element);
+      CommandHistory.undo();
+      CommandHistory.seal();
     }
   }
 
@@ -43,7 +44,11 @@ const onPolygonPointerDown = (tool: Tool) => {
   }
 
   function onPointerUp() {
-    if (Math.abs(size[0]) < 1 && Math.abs(size[1]) < 1) SceneManager.remove(element);
+    if (Math.abs(size[0]) < 1 && Math.abs(size[1]) < 1) {
+      SceneManager.delete(element);
+      CommandHistory.undo();
+      CommandHistory.seal();
+    }
   }
 
   return {

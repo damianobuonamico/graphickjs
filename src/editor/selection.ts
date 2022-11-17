@@ -1,8 +1,7 @@
 import { vec2 } from '@/math';
 import { debounce } from 'debounce';
 import Color from './ecs/components/color';
-import Fill from './ecs/components/fill';
-import Stroke from './ecs/components/stroke';
+import { isCompleteTransform } from './ecs/components/transform';
 import Element, { isElement } from './ecs/entities/element';
 import Manipulator from './ecs/entities/manipulator';
 import Vertex from './ecs/entities/vertex';
@@ -112,9 +111,10 @@ abstract class SelectionManager {
     let angle: number | null = null;
 
     this.m_selected.forEach((entity) => {
-      if (angle === null) angle = (entity.transform as TransformComponent).rotation ?? 0;
-      else if (sameAngle && angle !== (entity.transform as TransformComponent).rotation)
-        sameAngle = false;
+      if (!isCompleteTransform(entity.transform)) return;
+
+      if (angle === null) angle = entity.transform.rotation.value ?? 0;
+      else if (sameAngle && angle !== entity.transform.rotation.value) sameAngle = false;
     });
 
     return sameAngle ? angle : null;
@@ -125,8 +125,10 @@ abstract class SelectionManager {
     let max: vec2 = [-Infinity, -Infinity];
 
     this.m_selected.forEach((entity) => {
-      if (entity.type !== 'element' || (entity as Element).length > 1) {
-        const box = (entity.transform as TransformComponent).boundingBox;
+      const isElementEntity = isElement(entity);
+
+      if ((isElement(entity) && entity.length > 1) || !isElementEntity) {
+        const box = entity.transform.boundingBox;
 
         if (box) {
           box.forEach((point) => {
@@ -145,12 +147,14 @@ abstract class SelectionManager {
     let max: vec2 = [-Infinity, -Infinity];
 
     this.m_selected.forEach((entity) => {
-      if (entity.type !== 'element' || (entity as Element).length > 1) {
-        const box = (entity.transform as TransformComponent).boundingBox;
+      const isElementEntity = isElement(entity);
+
+      if ((isElement(entity) && entity.length > 1) || !isElementEntity) {
+        const box = entity.transform.boundingBox;
 
         if (box) {
           box.forEach((point) => {
-            const p = vec2.sub(point, (entity.transform as TransformComponent).positionDelta);
+            const p = vec2.sub(point, entity.transform.position.delta);
             vec2.min(min, p, min);
             vec2.max(max, p, max);
           });
@@ -168,12 +172,17 @@ abstract class SelectionManager {
 
     if (angle) {
       this.m_selected.forEach((entity) => {
-        if (entity.type !== 'element' || (entity as Element).length > 1) {
-          const box = (entity.transform as TransformComponent).rotatedBoundingBox;
+        if (!isCompleteTransform(entity.transform)) return;
+
+        const isElementEntity = isElement(entity);
+
+        if ((isElement(entity) && entity.length > 1) || !isElementEntity) {
+          const box = entity.transform.rotatedBoundingBox;
 
           if (box) {
             box.forEach((point) => {
               const rotated = vec2.rotate(point, [0, 0], -angle);
+
               vec2.min(min, rotated, min);
               vec2.max(max, rotated, max);
             });
@@ -189,7 +198,7 @@ abstract class SelectionManager {
       return [vec2.rotate(rMin, mid, -angle), vec2.rotate(rMax, mid, -angle)];
     } else {
       this.m_selected.forEach((entity) => {
-        const box = (entity.transform as TransformComponent).boundingBox;
+        const box = entity.transform.boundingBox;
 
         if (box) {
           vec2.min(min, box[0], min);
@@ -215,7 +224,7 @@ abstract class SelectionManager {
   static clear() {
     [this.m_selected, this.m_temp].forEach((map) => {
       map.forEach((entity) => {
-        if (entity.type === 'element') (entity as Element).selection.clear();
+        if (isElement(entity)) entity.selection.clear();
       });
       map.clear();
     });
@@ -223,8 +232,8 @@ abstract class SelectionManager {
 
   static select(entity: Entity, selectVertices = true) {
     this.m_selected.set(entity.id, entity);
-    if (selectVertices && entity.type === 'element') {
-      (entity as Element).selection.all();
+    if (selectVertices && isElement(entity)) {
+      entity.selection.all();
     }
 
     this.updateComponents();
@@ -233,8 +242,8 @@ abstract class SelectionManager {
   static deselect(id: string, deselectVertices = true) {
     if (deselectVertices) {
       const entity = this.m_selected.get(id);
-      if (entity && entity.type === 'element') {
-        (entity as Element).selection.clear();
+      if (entity && isElement(entity)) {
+        entity.selection.clear();
       }
     }
     this.m_selected.delete(id);
@@ -252,9 +261,9 @@ abstract class SelectionManager {
   static sync(syncVertices = false) {
     if (syncVertices) {
       this.m_temp.forEach((entity) => {
-        if (entity.type === 'element') {
-          (entity as Element).selection.sync();
-          if ((entity as Element).selection.size) this.select(entity, false);
+        if (isElement(entity)) {
+          entity.selection.sync();
+          if (entity.selection.size) this.select(entity, false);
         }
       });
     } else {
@@ -285,8 +294,8 @@ abstract class SelectionManager {
 
   static get() {
     return Array.from(this.m_selected.values()).map((entity) => {
-      if (entity.type === 'element') {
-        return { element: entity, vertices: (entity as Element).selection.get() };
+      if (isElement(entity)) {
+        return { element: entity, vertices: entity.selection.get() };
       }
       return entity;
     }) as SelectionBackup;
@@ -298,8 +307,8 @@ abstract class SelectionManager {
     selection.forEach((entity) => {
       if (entity.hasOwnProperty('element') && entity.hasOwnProperty('vertices')) {
         const e = (entity as any).element as Entity;
-        if (e.type === 'element') {
-          (e as Element).selection.restore((entity as any).vertices);
+        if (isElement(e)) {
+          e.selection.restore((entity as any).vertices);
         } else {
           this.select(e, false);
         }
@@ -386,6 +395,7 @@ abstract class SelectionManager {
     this.m_updateComponentsFn(this.components);
   }
 
+  // TODO: remove commit
   static setComponents(
     components: PartialComponentCollection,
     {
@@ -402,9 +412,7 @@ abstract class SelectionManager {
         if (isElement(entity)) {
           if (entity.fill) {
             if (fill.visible !== undefined) entity.fill.visible = fill.visible;
-            if (fill.color) entity.fill.color.tempSet(fill.color, fill.format);
-
-            if (commit) entity.fill.color.apply();
+            if (fill.color) entity.fill.color.set(fill.color, fill.format);
           }
         }
       });
@@ -426,11 +434,9 @@ abstract class SelectionManager {
         if (isElement(entity)) {
           if (entity.stroke) {
             if (stroke.visible !== undefined) entity.stroke.visible = stroke.visible;
-            if (stroke.color) entity.stroke.color.tempSet(stroke.color, stroke.format);
+            if (stroke.color) entity.stroke.color.set(stroke.color, stroke.format);
             if (stroke.width) entity.stroke.width = stroke.width;
             if (stroke.corner) entity.stroke.corner = stroke.corner;
-
-            if (commit) entity.stroke.color.apply();
           }
         }
       });

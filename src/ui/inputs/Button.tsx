@@ -85,8 +85,7 @@ const Button: Component<{
         ],
         [
           'flex items-center justify-center w-8 h-8 m-1 rounded',
-          { 'hover:text-primary': !props.active },
-          { 'bg-primary-700 text-primary': props.active },
+          ['hover:text-primary', !props.active, 'bg-primary-700 text-primary'],
           variant === 'tool'
         ],
         [

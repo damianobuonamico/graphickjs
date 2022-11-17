@@ -1,4 +1,3 @@
-import HistoryManager from '@/editor/history/history';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@/math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
@@ -11,11 +10,11 @@ export const isImage = (b: Entity): b is ImageEntity => {
 
 class ImageMedia implements ImageEntity {
   readonly id: string;
-  readonly type: EntityType = 'image';
+  readonly type = 'image';
   readonly selectable = true;
 
   parent: Layer;
-  transform: RectTransformComponent;
+  transform: RectTransform;
 
   private m_data: string;
   private m_source = new Image();
@@ -33,13 +32,14 @@ class ImageMedia implements ImageEntity {
     this.m_source.src = source;
 
     this.m_source.onload = () => {
-      HistoryManager.skipNext();
+      // TOCHECK
+      // HistoryManager.skipNext();
       if (size && !vec2.equals(size, vec2.create())) {
         this.transform.size = size;
       } else {
         this.transform.size = [this.m_source.width, this.m_source.height];
       }
-      HistoryManager.clearSkip();
+      // HistoryManager.clearSkip();
     };
   }
 
@@ -51,19 +51,20 @@ class ImageMedia implements ImageEntity {
     return this.m_source;
   }
 
-  destroy(): void {}
-
   getEntityAt(position: vec2, lowerLevel: boolean, threshold: number): Entity | undefined {
     const box = this.transform.unrotatedBoundingBox;
     const mid = vec2.mid(box[0], box[1]);
-    if (this.transform.rotation !== 0)
-      position = vec2.rotate(position, mid, -this.transform.rotation);
+    const angle = this.transform.rotation.value;
+
+    if (angle !== 0) position = vec2.rotate(position, mid, -angle);
     if (isPointInBox(position, box, threshold)) return this;
+
     return undefined;
   }
 
   getEntitiesIn(box: Box, entities: Set<Entity>, lowerLevel?: boolean | undefined): void {
-    const angle = this.transform.rotation;
+    const angle = this.transform.rotation.value;
+
     if (angle !== 0) {
       if (doesBoxIntersectRotatedBox(box, this.transform.unrotatedBoundingBox, angle))
         entities.add(this);
@@ -81,7 +82,7 @@ class ImageMedia implements ImageEntity {
       operations: [
         {
           type: 'rect',
-          data: [vec2.sub(box[0], this.transform.staticPosition), vec2.sub(box[1], box[0])]
+          data: [vec2.sub(box[0], this.transform.position.static), vec2.sub(box[1], box[0])]
         }
       ]
     };
@@ -96,7 +97,7 @@ class ImageMedia implements ImageEntity {
       id: duplicate ? nanoid() : this.id,
       type: this.type,
       transform: this.transform.asObject(),
-      size: this.size,
+      size: this.transform.size,
       source: this.m_data
     };
   }

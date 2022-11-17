@@ -1,102 +1,7 @@
-import { nanoid } from 'nanoid';
-import AnimationManager from '../animation/animation';
-
-abstract class HistoryManager {
-  private static m_undoStack: Action[][] = [];
-  private static m_redoStack: Action[][] = [];
-  private static m_join = false;
-  private static m_sequence: Action[] | null = null;
-  private static m_skip = false;
-
-  private static push(actions: Action[]) {
-    this.m_undoStack.push(actions);
-    this.m_redoStack.length = 0;
-  }
-
-  public static record(actions: Action | Action[]) {
-    if (!Array.isArray(actions)) actions = [actions];
-
-    actions.forEach((action) => {
-      action.fn();
-    });
-
-    if (this.m_skip) {
-      this.m_skip = false;
-      return;
-    }
-
-    if (this.m_sequence) {
-      this.m_sequence.push(...actions);
-    } else {
-      if (this.m_join === false || !this.m_undoStack.length) {
-        this.push(actions);
-        this.m_join = true;
-        setTimeout(() => {
-          this.m_join = false;
-        }, 100);
-      } else {
-        this.m_undoStack[this.m_undoStack.length - 1].push(...actions);
-      }
-    }
-  }
-
-  public static undo() {
-    const action = this.m_undoStack.pop();
-    if (!action) return;
-    console.time('undo');
-    action.reverse().forEach((entry) => entry.undo());
-    this.m_redoStack.push(action);
-    console.timeEnd('undo');
-  }
-
-  public static redo() {
-    const action = this.m_redoStack.pop();
-    if (!action) return;
-    console.time('redo');
-    action.reverse().forEach((entry) => entry.fn());
-    this.m_undoStack.push(action);
-    console.timeEnd('redo');
-  }
-
-  public static clear() {
-    this.m_undoStack.length = 0;
-    this.m_redoStack.length = 0;
-  }
-
-  public static pop() {
-    this.m_undoStack.pop();
-  }
-
-  public static beginSequence() {
-    this.m_sequence = [];
-  }
-
-  public static endSequence() {
-    if (this.m_sequence && this.m_sequence.length) this.push(this.m_sequence);
-    this.m_sequence = null;
-  }
-
-  public static skipNext() {
-    this.m_skip = true;
-  }
-
-  public static clearSkip() {
-    this.m_skip = false;
-  }
-
-  static get() {
-    return { undo: this.m_undoStack, redo: this.m_redoStack };
-  }
-}
-
-export default HistoryManager;
-
 class CommandBatch implements GenericCommand {
-  readonly id: string = nanoid();
-
-  canMerge: boolean = true;
-
+  private m_canMerge: boolean = true;
   private m_commands: GenericCommand[] = [];
+  private m_hashes: Map<Object | 'string', number> = new Map();
 
   constructor(commands?: GenericCommand[] | GenericCommand) {
     if (!commands) return;
@@ -105,6 +10,19 @@ class CommandBatch implements GenericCommand {
     for (let i = 0, n = commands.length; i < n; ++i) {
       this.add(commands[i]);
     }
+  }
+
+  get canMerge(): boolean {
+    return this.m_canMerge;
+  }
+
+  set canMerge(canMerge: boolean) {
+    if (canMerge === false) this.m_hashes.clear();
+    this.m_canMerge = canMerge;
+  }
+
+  get hash(): Object {
+    return {};
   }
 
   get length() {
@@ -119,15 +37,20 @@ class CommandBatch implements GenericCommand {
     let merged = false;
 
     if (command.canMerge) {
-      for (let i = 0, n = this.m_commands.length; i < n; ++i) {
-        if (this.m_commands[i].canMerge && command.mergeWith(this.m_commands[i])) {
-          merged = true;
-          break;
-        }
-      }
+      const index = this.m_hashes.get(command.hash);
+
+      if (
+        index !== undefined &&
+        this.m_commands[index].canMerge &&
+        command.mergeWith(this.m_commands[index])
+      )
+        merged = true;
     }
 
-    if (!merged) this.m_commands.push(command);
+    if (!merged) {
+      this.m_commands.push(command);
+      this.m_hashes.set(command.hash, this.m_commands.length - 1);
+    }
   }
 
   execute(): void {
@@ -151,18 +74,14 @@ class CommandBatch implements GenericCommand {
   }
 }
 
-export abstract class CommandHistory {
+abstract class CommandHistory {
   private static m_commands: GenericCommand[] = [];
   private static m_index: number = -1;
 
   static add<T>(command: GenericCommand): T {
     const value = command.execute<T>();
 
-    if (this.m_index < this.m_commands.length - 1) {
-      for (let i = this.m_commands.length - 1; i > this.m_index; --i) {
-        this.m_commands.pop();
-      }
-    }
+    this.seal();
 
     const last = this.m_commands[this.m_index];
     let merged = false;
@@ -177,6 +96,7 @@ export abstract class CommandHistory {
     }
 
     if (!merged) {
+      console.trace(command);
       this.m_commands.push(new CommandBatch(command));
       this.m_index = this.m_commands.length - 1;
     }
@@ -222,7 +142,23 @@ export abstract class CommandHistory {
     }
   }
 
+  static seal() {
+    if (this.m_index < this.m_commands.length - 1) {
+      for (let i = this.m_commands.length - 1; i > this.m_index; --i) {
+        this.m_commands.pop();
+      }
+    }
+  }
+
+  static pop() {
+    if (this.m_commands.pop()) this.m_index--;
+  }
+
   static clear() {
     this.m_commands.length = 0;
+    this.m_index = -1;
+    console.clear();
   }
 }
+
+export default CommandHistory;

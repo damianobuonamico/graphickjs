@@ -102,7 +102,7 @@ class CanvasBackend2D {
 
     if (w < 2 * radius) radius = w / 2;
     if (h < 2 * radius) radius = h / 2;
-    
+
     this.m_ctx.beginPath();
     this.m_ctx.moveTo(x + radius, y);
     this.m_ctx.arcTo(x + w, y, x + w, y + h, radius);
