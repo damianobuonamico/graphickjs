@@ -3,6 +3,14 @@ import { isPointInCircle } from '@math';
 import { nanoid } from 'nanoid';
 import { SimpleTransform } from '../components/transform';
 
+export const isHandle = (b: Entity): b is Handle => {
+  return b.type === 'handle';
+};
+
+export const isVertexHandle = (b: Entity): b is Handle => {
+  return isHandle(b) && b.handleType === 'vertex';
+};
+
 class Handle implements HandleEntity {
   readonly id: string;
   readonly type = 'handle';

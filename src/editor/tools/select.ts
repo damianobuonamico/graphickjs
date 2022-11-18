@@ -9,10 +9,6 @@ import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
 
-interface SelectToolData {
-  selector?: SelectorEntity;
-}
-
 const onSelectPointerDown = () => {
   let draggingOccurred = false;
   let elementIsAddedToSelection = false;

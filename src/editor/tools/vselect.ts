@@ -5,15 +5,10 @@ import Element from '../ecs/entities/element';
 import Handle from '../ecs/entities/handle';
 import Vertex from '../ecs/entities/vertex';
 import InputManager from '../input';
-import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
 import CommandHistory from '../history/history';
 import Selector from '../ecs/entities/selector';
-
-interface SelectToolData {
-  selector?: SelectorEntity;
-}
 
 // TODO: curve selection
 const onVSelectPointerDown = () => {

@@ -8,7 +8,8 @@ type EntityType =
   | 'image'
   | 'manipulator'
   | 'generichandle'
-  | 'selector';
+  | 'selector'
+  | 'pen';
 
 interface Entity {
   readonly id: string;

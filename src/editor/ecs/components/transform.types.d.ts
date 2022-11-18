@@ -72,6 +72,7 @@ interface VertexTransformComponent {
   translate(amount: vec2, apply?: boolean): void;
   translateLeft(amount: vec2, lockMirror?: boolean, apply?: boolean): void;
   translateRight(amount: vec2, lockMirror?: boolean, apply?: boolean): void;
+  transform(point: vec2): vec2;
 
   apply(): void;
 }

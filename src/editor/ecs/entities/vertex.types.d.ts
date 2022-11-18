@@ -26,6 +26,7 @@ interface VertexOptions {
   position: vec2;
   left?: vec2;
   right?: vec2;
+  disableCache?: boolean;
 }
 
 interface VertexObject extends GenericEntityObject {

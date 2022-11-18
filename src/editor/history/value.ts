@@ -6,10 +6,31 @@ import {
   ChangeVec4Command,
   DeleteFromMapCommand,
   DeleteFromOrderedMapCommand,
+  FunctionCallCommand,
   SetToMapCommand,
   SetToOrderedMapCommand
 } from './command';
 import CommandHistory from './history';
+
+export class BooleanValue implements Value<boolean> {
+  protected m_value: { value: boolean };
+
+  constructor(value?: boolean) {
+    this.m_value = { value: !!value };
+  }
+
+  get value(): boolean {
+    return this.m_value.value;
+  }
+
+  set value(value: boolean) {
+    CommandHistory.add(new ChangePrimitiveCommand(this.m_value, value));
+  }
+
+  add(): void {
+    this.value = !this.m_value.value;
+  }
+}
 
 export class StringValue implements Value<string> {
   protected m_value: { value: string };
@@ -26,8 +47,8 @@ export class StringValue implements Value<string> {
     CommandHistory.add(new ChangePrimitiveCommand(this.m_value, value));
   }
 
-  add(amount: string): void {
-    CommandHistory.add(new ChangePrimitiveCommand(this.m_value, this.m_value.value + amount));
+  add(string: string): void {
+    CommandHistory.add(new ChangePrimitiveCommand(this.m_value, this.m_value.value + string));
   }
 }
 
@@ -198,9 +219,7 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
       else this.delete(key);
     }
 
-    CommandHistory.add(
-      new SetToOrderedMapCommand(this, this.m_order, key, value, index, this.m_setCallback)
-    );
+    CommandHistory.add(new SetToOrderedMapCommand(this, key, value, index, this.m_setCallback));
 
     return this;
   }
@@ -211,7 +230,7 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
     const index = this.m_order.indexOf(key);
 
     CommandHistory.add(
-      new DeleteFromOrderedMapCommand(this, this.m_order, key, value, index, this.m_deleteCallback)
+      new DeleteFromOrderedMapCommand(this, key, value, index, this.m_deleteCallback)
     );
 
     return true;
@@ -223,8 +242,9 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
   ): void {
     if (thisArg) callbackfn = callbackfn.bind(thisArg);
 
-    for (let i = 0, n = this.m_order.length; i < n; ++i)
+    for (let i = 0, n = this.m_order.length; i < n; ++i) {
       callbackfn(this.get(this.m_order[i])!, this.m_order[i], this, i);
+    }
   }
 
   forEachReversed(
@@ -233,33 +253,67 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
   ): void {
     if (thisArg) callbackfn = callbackfn.bind(thisArg);
 
-    for (let i = this.m_order.length - 1; i > -1; --i)
+    for (let i = this.m_order.length - 1; i > -1; --i) {
       callbackfn(this.get(this.m_order[i])!, this.m_order[i], this, i);
+    }
   }
 
   map<T>(callbackfn: (value: V, id: K, index: number, array: K[]) => T, thisArg?: any): T[] {
     if (thisArg) callbackfn = callbackfn.bind(thisArg);
 
-    return this.m_order.map((value, index, array) =>
-      callbackfn(this.get(value)!, value, index, array)
-    );
+    return this.m_order
+      .filter((key) => this.has(key))
+      .map((key, index, array) => callbackfn(this.get(key)!, key, index, array));
   }
 
-  reorder(order: K[]): K[] {
+  reorder(order: K[], callbackfn?: (order: K[]) => void): K[] {
     const backup = [...this.m_order];
     const reordered = order.filter((key) => this.has(key));
 
-    return CommandHistory.add(
-      new ChangeCommand(
-        () => {
-          this.m_order = [...reordered];
-          return reordered;
-        },
-        () => {
-          this.m_order = [...backup];
+    let isSameOrder = true;
+
+    if (backup.length === reordered.length) {
+      for (let i = 0, n = backup.length; i < n; ++i) {
+        if (backup[i] !== reordered[i]) {
+          isSameOrder = false;
+          break;
         }
-      )
-    );
+      }
+    } else isSameOrder = false;
+
+    if (!isSameOrder) {
+      return CommandHistory.add(
+        new ChangeCommand(
+          () => {
+            this.m_order = [...reordered];
+            if (callbackfn) callbackfn(reordered);
+            return reordered;
+          },
+          () => {
+            this.m_order = [...backup];
+            if (callbackfn) callbackfn(backup);
+          }
+        )
+      );
+    } else if (callbackfn) {
+      return CommandHistory.add(
+        new ChangeCommand(
+          () => {
+            callbackfn(reordered);
+            return reordered;
+          },
+          () => {
+            callbackfn(backup);
+          }
+        )
+      );
+    }
+
+    return this.m_order;
+  }
+
+  reverse(): K[] {
+    return CommandHistory.add(new FunctionCallCommand(this.m_order.reverse.bind(this.m_order)));
   }
 
   indexOf(searchElement: K, fromIndex?: number): number {
@@ -269,4 +323,23 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
   slice(start?: number, end?: number): K[] {
     return this.m_order.slice(start, end);
   }
+}
+
+export class EntityValue<T extends Entity> implements Value<T | undefined> {
+  protected m_value: { value: T | undefined };
+
+  constructor(value?: T) {
+    this.m_value = { value };
+  }
+
+  get value(): T | undefined {
+    return this.m_value.value;
+  }
+
+  set value(value: T | undefined) {
+    if (this.m_value.value === value) return;
+    CommandHistory.add(new ChangePrimitiveCommand(this.m_value, value));
+  }
+
+  add(): void {}
 }

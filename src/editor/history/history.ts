@@ -1,3 +1,5 @@
+import { ChangeCommand, ChangePrimitiveCommand, ChangeVec2Command } from './command';
+
 class CommandBatch implements GenericCommand {
   private m_canMerge: boolean = true;
   private m_commands: GenericCommand[] = [];
@@ -74,15 +76,65 @@ class CommandBatch implements GenericCommand {
   }
 }
 
+/**
+ * In a MiniBatch, execute and undo order is the same (if commands are not merged)
+ */
+class CommandMiniBatch implements GenericCommand {
+  private m_commands: GenericCommand[] = [];
+
+  readonly canMerge: false = false;
+
+  constructor(commands?: GenericCommand[] | GenericCommand) {
+    if (!commands) return;
+    if (!Array.isArray(commands)) commands = [commands];
+
+    for (let i = 0, n = commands.length; i < n; ++i) {
+      this.add(commands[i]);
+    }
+  }
+
+  get hash(): Object {
+    return {};
+  }
+
+  add(command: GenericCommand) {
+    const last = this.m_commands[this.m_commands.length - 1];
+    if (last && last.canMerge && command.canMerge && command.mergeWith(last)) return;
+
+    this.m_commands.push(command);
+  }
+
+  execute(): void {
+    for (let i = 0, n = this.m_commands.length; i < n; ++i) {
+      this.m_commands[i].execute();
+    }
+  }
+
+  undo(): void {
+    for (let i = 0, n = this.m_commands.length; i < n; ++i) {
+      this.m_commands[i].undo();
+    }
+  }
+
+  mergeWith(miniBatch: CommandMiniBatch): boolean {
+    return false;
+  }
+}
+
 abstract class CommandHistory {
   private static m_commands: GenericCommand[] = [];
   private static m_index: number = -1;
   private static m_ignore: boolean = false;
+  private static m_miniBatch: CommandMiniBatch | null = null;
 
   static add<T>(command: GenericCommand): T {
-    console.trace(command);
-    const value = command.execute<T>();
+    const value = <T>command.execute<T>();
     if (this.m_ignore) return value as T;
+
+    if (this.m_miniBatch) {
+      this.m_miniBatch.add(command);
+      return value;
+    }
 
     this.seal();
 
@@ -103,7 +155,7 @@ abstract class CommandHistory {
       this.m_index = this.m_commands.length - 1;
     }
 
-    return value as T;
+    return value;
   }
 
   static endBatch() {
@@ -125,7 +177,6 @@ abstract class CommandHistory {
 
   static undo() {
     if (this.m_index >= 0) {
-      console.log(this.m_commands);
       console.time('__undo__');
       this.m_commands[this.m_index].undo();
       this.m_index--;
@@ -136,7 +187,6 @@ abstract class CommandHistory {
   static redo() {
     const command = this.m_index + 1;
     if (command < this.m_commands.length && command >= 0) {
-      console.log(this.m_commands);
       console.time('__redo__');
       this.m_commands[command].execute();
       this.m_index++;
@@ -149,6 +199,7 @@ abstract class CommandHistory {
       for (let i = this.m_commands.length - 1; i > this.m_index; --i) {
         this.m_commands.pop();
       }
+      this.m_index = this.m_commands.length - 1;
     }
   }
 
@@ -168,6 +219,62 @@ abstract class CommandHistory {
 
   static clearIgnore() {
     this.m_ignore = false;
+  }
+
+  static pushMiniBatch() {
+    this.m_miniBatch = new CommandMiniBatch();
+  }
+
+  // const value = <T>command.execute<T>();
+  // if (this.m_ignore) return value as T;
+
+  // if (this.m_miniBatch) {
+  //   this.m_miniBatch.add(command);
+  //   return value;
+  // }
+
+  // this.seal();
+
+  // const last = this.m_commands[this.m_index];
+  // let merged = false;
+
+  // if (last && last.canMerge) {
+  //   if (last instanceof CommandBatch) {
+  //     last.add(command);
+  //     merged = true;
+  //   } else if (command.canMerge) {
+  //     merged = command.mergeWith(last);
+  //   }
+  // }
+
+  // if (!merged) {
+  //   this.m_commands.push(new CommandBatch(command));
+  //   this.m_index = this.m_commands.length - 1;
+  // }
+
+  // return value;
+
+  static popMiniBatch() {
+    if (this.m_miniBatch) {
+      this.seal();
+
+      const last = this.m_commands[this.m_index];
+      let merged = false;
+
+      if (last && last.canMerge) {
+        if (last instanceof CommandBatch) {
+          last.add(this.m_miniBatch);
+          merged = true;
+        }
+      }
+
+      if (!merged) {
+        this.m_commands.push(new CommandBatch(this.m_miniBatch));
+        this.m_index = this.m_commands.length - 1;
+      }
+
+      this.m_miniBatch = null;
+    }
   }
 }
 

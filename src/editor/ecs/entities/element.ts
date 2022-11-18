@@ -13,8 +13,8 @@ import Stroke from '../components/stroke';
 import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { ElementTransform } from '../components/transform';
 import Debugger from '@/utils/debugger';
-import { OrderedMapValue } from '@/editor/history/value';
-import { ChangeCommand } from '@/editor/history/command';
+import { BooleanValue, OrderedMapValue } from '@/editor/history/value';
+import { ChangeCommand, FunctionCallCommand } from '@/editor/history/command';
 
 export const isElement = (b: Entity): b is Element => {
   return b.type === 'element';
@@ -38,7 +38,7 @@ class Element implements ElementEntity {
     (vertex) => (vertex.parent = this)
   );
   private m_curves: Map<string, BezierEntity> = new Map();
-  private m_closed: boolean;
+  private m_closed: BooleanValue;
   private m_recordHistory: boolean;
   private m_fillRule: 'even-odd' | 'non-zero' = 'non-zero';
 
@@ -56,7 +56,7 @@ class Element implements ElementEntity {
     recordHistory = true
   }: ElementOptions) {
     this.id = id;
-    this.m_closed = closed;
+    this.m_closed = new BooleanValue(closed);
     this.transform = new ElementTransform(
       this,
       this.m_cache.last,
@@ -101,8 +101,8 @@ class Element implements ElementEntity {
     const curves = Array.from(this.m_curves.values());
 
     return new Bezier({
-      start: new Vertex({ position: curves[curves.length - 1].p3 }),
-      end: new Vertex({ position: curves[0].p0 })
+      start: new Vertex({ position: curves[curves.length - 1].p3, disableCache: true }),
+      end: new Vertex({ position: curves[0].p0, disableCache: true })
     });
   }
 
@@ -112,9 +112,8 @@ class Element implements ElementEntity {
 
   public points: vec2[] = [];
 
-  regenerate(ids: string[] = this.m_vertices.order): void {
+  private generateCurves(order: string[] = this.m_vertices.order): void {
     const curves = new Map<string, BezierEntity>();
-    const order = this.m_vertices.reorder(ids);
     let last: VertexEntity | null = null;
 
     for (let i = 0, n = order.length; i < n; ++i) {
@@ -129,7 +128,7 @@ class Element implements ElementEntity {
       last = vertex;
     }
 
-    if (this.m_closed) {
+    if (this.m_closed.value) {
       const start = this.m_vertices.last;
       const end = this.m_vertices.first;
 
@@ -141,8 +140,11 @@ class Element implements ElementEntity {
     }
 
     this.m_curves = curves;
-    // TOCHECK
     this.m_cache.pause = true;
+  }
+
+  regenerate(ids: string[] = this.m_vertices.order): void {
+    this.m_vertices.reorder(ids, this.generateCurves.bind(this));
   }
 
   forEach(callback: (vertex: VertexEntity, selected: boolean, index: number) => void): void {
@@ -156,34 +158,21 @@ class Element implements ElementEntity {
   }
 
   reverse(): void {
-    this.regenerate(this.m_vertices.order.reverse());
-    CommandHistory.add(
-      new ChangeCommand(
-        () => {
-          this.m_vertices.forEach((vertex) => {
-            const left = vertex.left;
-            const right = vertex.right;
+    CommandHistory.pushMiniBatch();
+    this.m_vertices.reverse();
+    this.regen();
+    CommandHistory.popMiniBatch();
 
-            vertex.left = right;
-            vertex.right = left;
-          });
-        },
-        () => {
-          this.m_vertices.forEach((vertex) => {
-            const left = vertex.left;
-            const right = vertex.right;
+    this.m_vertices.forEach((vertex) => {
+      const left = vertex.left;
+      const right = vertex.right;
 
-            vertex.left = right;
-            vertex.right = left;
-          });
-        }
-      )
-    );
+      vertex.left = right;
+      vertex.right = left;
+    });
   }
 
   concat(element: ElementEntity): void {
-    // const backup = [...this.____________m_order];
-
     const mid = vec2.sub(this.transform.center, this.transform.position.value);
     const angle = this.transform.rotation.value;
 
@@ -214,10 +203,12 @@ class Element implements ElementEntity {
         );
     });
 
+    CommandHistory.pushMiniBatch();
     element.forEach((vertex) => {
       this.m_vertices.set(vertex.id, vertex);
     });
-    this.regenerate();
+    this.regen();
+    CommandHistory.popMiniBatch();
 
     element.parent.remove(element.id);
 
@@ -227,24 +218,32 @@ class Element implements ElementEntity {
   split(bezier: BezierEntity, position: vec2): VertexEntity | void {
     if (!this.m_curves.has(bezier.id)) return;
 
-    if (this.transform.rotation.value !== 0) {
-      const mid = this.transform.center;
-      position = vec2.rotate(position, mid, -this.transform.rotation.value);
-    }
+    if (this.transform.rotation.value !== 0)
+      position = vec2.rotate(position, this.transform.center, -this.transform.rotation.value);
 
     position = vec2.sub(position, this.transform.position.value);
 
     const vertex = bezier.split(position);
 
-    this.m_vertices.set(vertex.id, vertex, this.m_vertices.indexOf(bezier.start.id) + 1);
-    this.regenerate();
+    this.add(vertex, true, this.m_vertices.indexOf(bezier.start.id) + 1);
 
     return vertex;
   }
 
   add(vertex: VertexEntity, regenerate: boolean = true, index?: number): void {
-    this.m_vertices.set(vertex.id, vertex, index);
-    if (regenerate) this.regenerate();
+    if (regenerate) CommandHistory.pushMiniBatch();
+
+    this.m_vertices.set(
+      vertex.id,
+      vertex,
+      index
+      // regenerate ? this.generateCurves.bind(this) : undefined
+    );
+
+    if (regenerate) {
+      this.regen();
+      CommandHistory.popMiniBatch();
+    }
   }
 
   close(mergeThreshold: number = 1e-4): void {
@@ -269,17 +268,10 @@ class Element implements ElementEntity {
     const mid = this.transform.center;
 
     if (this.m_vertices.order[0]) {
-      CommandHistory.add(
-        new ChangeCommand(
-          () => {
-            this.m_closed = true;
-          },
-          () => {
-            this.m_closed = false;
-          }
-        )
-      );
+      CommandHistory.pushMiniBatch();
+      this.m_closed.value = true;
       this.regenerate();
+      CommandHistory.popMiniBatch();
     }
 
     this.transform.keepCentered(mid, true);
@@ -287,7 +279,7 @@ class Element implements ElementEntity {
 
   isOpenEnd(id: string): boolean {
     if (
-      !this.m_closed &&
+      !this.m_closed.value &&
       (this.m_vertices.order[0] === id ||
         this.m_vertices.order[this.m_vertices.order.length - 1] === id)
     )
@@ -349,6 +341,10 @@ class Element implements ElementEntity {
     }
   }
 
+  regen() {
+    CommandHistory.add(new FunctionCallCommand(this.generateCurves.bind(this)));
+  }
+
   remove(vertex: VertexEntity | true, keepClosed = true): void {
     if (this.m_vertices.size < 3) {
       SceneManager.delete(this, true);
@@ -372,7 +368,7 @@ class Element implements ElementEntity {
       fragments.push(this.m_vertices.slice(indices[indices.length - 1] + 1));
     }
 
-    if (this.m_closed || keepClosed) {
+    if (this.m_closed.value || keepClosed) {
       if (keepClosed) {
         const order: string[] = [];
 
@@ -380,12 +376,27 @@ class Element implements ElementEntity {
           order.push(...fragment);
         });
 
-        const vertices = this.m_vertices.order.filter((id) => order.indexOf(id) === -1);
+        const ids = this.m_vertices.order.filter((id) => order.indexOf(id) === -1);
 
-        vertices.forEach((id) => {
+        // TODO: CREATE FUNCTION CALL COMMAND
+        CommandHistory.pushMiniBatch();
+        ids.forEach((id) => {
           if (id) this.m_vertices.delete(id);
         });
-        this.regenerate(order);
+
+        if (this.m_closed.value && this.m_vertices.size === 2) {
+          if (
+            !this.m_vertices.first!.right &&
+            !this.m_vertices.first!.left &&
+            !this.m_vertices.last!.right &&
+            !this.m_vertices.last!.left
+          ) {
+            this.m_closed.value = false;
+          }
+        }
+
+        this.regen();
+        CommandHistory.popMiniBatch();
 
         // TOCHECK
         // this.selection.restore(vertices as VertexEntity[]);
@@ -422,6 +433,20 @@ class Element implements ElementEntity {
     }
 
     SceneManager.delete(this, true);
+
+    CommandHistory.add(
+      new ChangeCommand(
+        () => {
+          elements.forEach((element) => {
+            element.forEach((vertex) => (vertex.parent = element));
+          });
+          this.selection.clear();
+        },
+        () => {
+          this.forEach((vertex) => (vertex.parent = this));
+        }
+      )
+    );
 
     // TOCHECK
     this.selection.clear();
@@ -467,7 +492,7 @@ class Element implements ElementEntity {
             intersections += points.length;
           });
 
-          if (!this.m_closed && this.length > 1)
+          if (!this.m_closed.value && this.length > 1)
             intersections += this.m_closingCurve.getLineIntersectionPoints(rect).length;
 
           if (intersections % 2 !== 0) toReturn = this;
@@ -475,7 +500,7 @@ class Element implements ElementEntity {
           let count = 0;
 
           const curves = Array.from(this.m_curves.values());
-          if (!this.m_closed && this.length > 1) curves.push(this.m_closingCurve);
+          if (!this.m_closed.value && this.length > 1) curves.push(this.m_closingCurve);
 
           curves.forEach((bezier) => {
             bezier.getLineIntersections(rect).forEach((t) => {
@@ -528,7 +553,7 @@ class Element implements ElementEntity {
       drawable.operations.push(...bezier.getDrawable().operations);
     });
 
-    if (this.m_closed) drawable.operations.push({ type: 'closePath' });
+    if (this.m_closed.value) drawable.operations.push({ type: 'closePath' });
 
     return drawable;
   }
@@ -554,7 +579,7 @@ class Element implements ElementEntity {
       vertices: this.m_vertices.map((vertex) => vertex.asObject(duplicate) as VertexObject)
     };
 
-    if (this.m_closed) obj.closed = true;
+    if (this.m_closed.value === true) obj.closed = true;
 
     if (this.fill) obj.fill = this.fill.asObject(duplicate);
     if (this.stroke) obj.stroke = this.stroke.asObject(duplicate);

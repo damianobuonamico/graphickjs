@@ -3,28 +3,33 @@ import { ChangeCommand } from '@/editor/history/command';
 import CommandHistory from '@/editor/history/history';
 import { isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
-import { Renderer } from '../../renderer';
 import { VertexTransform } from '../components/transform';
 import Handle from './handle';
+
+export const isVertex = (b: Entity): b is Vertex => {
+  return b.type === 'vertex';
+};
 
 class Vertex implements VertexEntity {
   readonly id: string;
   readonly type = 'vertex';
   readonly selectable = false;
+  readonly transform: VertexTransform;
 
   private m_parent: ElementEntity;
-  transform: VertexTransform;
 
   private m_position: HandleEntity;
   private m_left?: HandleEntity;
   private m_right?: HandleEntity;
 
   private m_cache: VertexCache = new VertexCache();
+  private m_cacheDisabled: boolean;
 
-  constructor({ id = nanoid(), position, left, right }: VertexOptions) {
+  constructor({ id = nanoid(), position, left, right, disableCache = false }: VertexOptions) {
     this.id = id;
     this.m_position = new Handle({ position, type: 'vertex', parent: this });
-    this.m_position.setCache(this.m_cache as any as Cache);
+    this.m_cacheDisabled = disableCache;
+    if (!disableCache) this.m_position.setCache(this.m_cache as any as Cache);
 
     if (left) this.left = new Handle({ position: left, type: 'bezier', parent: this });
     if (right) this.right = new Handle({ position: right, type: 'bezier', parent: this });
@@ -52,20 +57,21 @@ class Vertex implements VertexEntity {
   set left(handle: HandleEntity | undefined) {
     const backup = this.m_left;
 
+    if (!this.m_cacheDisabled) handle?.setCache(this.m_cache as any as Cache);
+
     CommandHistory.add(
       new ChangeCommand(
         () => {
           this.m_left = handle;
-          handle?.setCache(this.m_cache as any as Cache);
           this.m_cache.pause = true;
         },
         () => {
           this.m_left = backup;
-          backup?.setCache(this.m_cache as any as Cache);
           this.m_cache.pause = true;
         }
       )
     );
+
     this.m_left = handle;
   }
 
@@ -76,16 +82,16 @@ class Vertex implements VertexEntity {
   set right(handle: HandleEntity | undefined) {
     const backup = this.m_right;
 
+    if (!this.m_cacheDisabled) handle?.setCache(this.m_cache as any as Cache);
+
     CommandHistory.add(
       new ChangeCommand(
         () => {
           this.m_right = handle;
-          handle?.setCache(this.m_cache as any as Cache);
           this.m_cache.pause = true;
         },
         () => {
           this.m_right = backup;
-          backup?.setCache(this.m_cache as any as Cache);
           this.m_cache.pause = true;
         }
       )

@@ -29,6 +29,17 @@ export class ChangeCommand<T> extends Command {
 
 // TODO: ChangePrimitivePairCommand
 
+export class FunctionCallCommand<T> extends Command {
+  canMerge: false = false;
+
+  constructor(fn: () => T) {
+    super();
+
+    this.execute = fn;
+    this.undo = fn;
+  }
+}
+
 export class ChangePrimitiveCommand<T> extends Command {
   private m_value: { value: T };
   private m_oldValue: T;
@@ -215,29 +226,29 @@ export class DeleteFromMapCommand<K, V> extends Command {
 }
 
 export class SetToOrderedMapCommand<K, V> extends Command {
-  private m_map: MapSuper<K, V>;
-  private m_order: K[];
+  private m_map: OrderedMapSuper<K, V>;
   private m_keys: K[];
   private m_values: V[];
   private m_indices: (number | undefined)[];
   private m_callback: ((value: V, key: K) => void) | undefined;
+  private m_undoCallback: ((order: K[]) => void) | undefined;
 
   constructor(
-    map: MapSuper<K, V>,
-    order: K[],
+    map: OrderedMapSuper<K, V>,
     key: K,
     value: V,
     index?: number,
-    callbackfn?: (value: V, key: K) => void
+    callbackfn?: (value: V, key: K) => void,
+    undocallbackfn?: (order: K[]) => void
   ) {
     super();
 
     this.m_map = map;
-    this.m_order = order;
     this.m_keys = [key];
     this.m_values = [value];
     this.m_indices = [index];
     this.m_callback = callbackfn;
+    this.m_undoCallback = undocallbackfn;
   }
 
   get hash(): Object {
@@ -248,8 +259,8 @@ export class SetToOrderedMapCommand<K, V> extends Command {
     if (this.m_callback) {
       for (let i = 0, n = this.m_keys.length; i < n; ++i) {
         const index = this.m_indices[i];
-        if (index) this.m_order.splice(index, 0, this.m_keys[i]);
-        else this.m_order.push(this.m_keys[i]);
+        if (index) this.m_map.order.splice(index, 0, this.m_keys[i]);
+        else this.m_map.order.push(this.m_keys[i]);
 
         this.m_map.superSet(this.m_keys[i], this.m_values[i]);
         this.m_callback(this.m_values[i], this.m_keys[i]);
@@ -257,8 +268,8 @@ export class SetToOrderedMapCommand<K, V> extends Command {
     } else {
       for (let i = 0, n = this.m_keys.length; i < n; ++i) {
         const index = this.m_indices[i];
-        if (index) this.m_order.splice(index, 0, this.m_keys[i]);
-        else this.m_order.push(this.m_keys[i]);
+        if (index) this.m_map.order.splice(index, 0, this.m_keys[i]);
+        else this.m_map.order.push(this.m_keys[i]);
 
         this.m_map.superSet(this.m_keys[i], this.m_values[i]);
       }
@@ -266,18 +277,28 @@ export class SetToOrderedMapCommand<K, V> extends Command {
   }
 
   undo(): void {
-    for (let i = this.m_keys.length - 1; i > -1; --i) {
-      this.m_order.pop();
-      this.m_map.superDelete(this.m_keys[i]);
+    if (this.m_undoCallback) {
+      for (let i = this.m_keys.length - 1; i > -1; --i) {
+        const index = this.m_indices[i];
+        if (index) this.m_map.order.splice(index, 1);
+        else this.m_map.order.pop();
+
+        this.m_map.superDelete(this.m_keys[i]);
+        this.m_undoCallback(this.m_map.order);
+      }
+    } else {
+      for (let i = this.m_keys.length - 1; i > -1; --i) {
+        const index = this.m_indices[i];
+        if (index) this.m_map.order.splice(index, 1);
+        else this.m_map.order.pop();
+
+        this.m_map.superDelete(this.m_keys[i]);
+      }
     }
   }
 
   mergeWith(command: GenericCommand): boolean {
-    if (
-      command instanceof SetToOrderedMapCommand &&
-      command.m_map === this.m_map &&
-      command.m_order === this.m_order
-    ) {
+    if (command instanceof SetToOrderedMapCommand && command.m_map === this.m_map) {
       command.m_keys.push(...this.m_keys);
       command.m_values.push(...this.m_values);
       command.m_indices.push(...this.m_indices);
@@ -289,16 +310,14 @@ export class SetToOrderedMapCommand<K, V> extends Command {
 }
 
 export class DeleteFromOrderedMapCommand<K, V> extends Command {
-  private m_map: MapSuper<K, V>;
-  private m_order: K[];
+  private m_map: OrderedMapSuper<K, V>;
   private m_keys: K[];
   private m_values: V[];
   private m_indices: number[];
   private m_callback: ((value: V, key: K) => void) | undefined;
 
   constructor(
-    map: MapSuper<K, V>,
-    order: K[],
+    map: OrderedMapSuper<K, V>,
     key: K,
     value: V,
     index: number,
@@ -307,7 +326,6 @@ export class DeleteFromOrderedMapCommand<K, V> extends Command {
     super();
 
     this.m_map = map;
-    this.m_order = order;
     this.m_keys = [key];
     this.m_values = [value];
     this.m_indices = [index];
@@ -321,13 +339,13 @@ export class DeleteFromOrderedMapCommand<K, V> extends Command {
   execute(): void {
     if (this.m_callback) {
       for (let i = 0, n = this.m_keys.length; i < n; ++i) {
-        this.m_order.splice(this.m_indices[i], 1);
+        this.m_map.order.splice(this.m_indices[i], 1);
         this.m_map.superDelete(this.m_keys[i]);
         this.m_callback(this.m_values[i], this.m_keys[i]);
       }
     } else {
       for (let i = 0, n = this.m_keys.length; i < n; ++i) {
-        this.m_order.splice(this.m_indices[i], 1);
+        this.m_map.order.splice(this.m_indices[i], 1);
         this.m_map.superDelete(this.m_keys[i]);
       }
     }
@@ -335,17 +353,13 @@ export class DeleteFromOrderedMapCommand<K, V> extends Command {
 
   undo(): void {
     for (let i = this.m_keys.length - 1; i > -1; --i) {
-      this.m_order.splice(this.m_indices[i], 0, this.m_keys[i]);
+      this.m_map.order.splice(this.m_indices[i], 0, this.m_keys[i]);
       this.m_map.superSet(this.m_keys[i], this.m_values[i]);
     }
   }
 
   mergeWith(command: GenericCommand): boolean {
-    if (
-      command instanceof DeleteFromOrderedMapCommand &&
-      command.m_map === this.m_map &&
-      command.m_order === this.m_order
-    ) {
+    if (command instanceof DeleteFromOrderedMapCommand && command.m_map === this.m_map) {
       command.m_keys.push(...this.m_keys);
       command.m_values.push(...this.m_values);
       command.m_indices.push(...this.m_indices);

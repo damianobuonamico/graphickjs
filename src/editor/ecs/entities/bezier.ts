@@ -4,7 +4,10 @@ import { nanoid } from 'nanoid';
 import Vertex from './vertex';
 import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { SimpleTransform } from '../components/transform';
-import Debugger from '@/utils/debugger';
+
+export const isBezier = (b: Entity): b is Bezier => {
+  return b.type === 'bezier';
+};
 
 class Bezier implements BezierEntity {
   readonly id: string;

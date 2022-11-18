@@ -3,6 +3,7 @@ import { mat3, vec2 } from '@/math';
 import { Cache } from '@/editor/ecs/components/cache';
 import { FloatValue, Vec2Value } from '@/editor/history/value';
 import {
+  ChangeCommand,
   ChangePrimitiveCommand,
   ChangeVec2Command,
   PauseCacheCommand
@@ -71,6 +72,14 @@ class CachedTransformVec2Value extends TransformVec2Value {
 
   constructor(cache: CacheComponent, value?: vec2) {
     super(value);
+    this.m_cache = cache;
+  }
+
+  get cache(): CacheComponent {
+    return this.m_cache;
+  }
+
+  set cache(cache: CacheComponent) {
     this.m_cache = cache;
   }
 
@@ -205,7 +214,39 @@ export class SimpleTransform implements SimpleTransformComponent {
   }
 
   set cache(cache: CacheComponent) {
-    this.position = new CachedTransformVec2Value(cache, this.position.value);
+    if (this.position instanceof CachedTransformVec2Value) {
+      const backup = this.position.cache;
+      if (backup === cache) return;
+
+      CommandHistory.add(
+        new ChangeCommand(
+          () => {
+            (<CachedTransformVec2Value>this.position).cache = cache;
+          },
+          () => {
+            (<CachedTransformVec2Value>this.position).cache = backup;
+          }
+        )
+      );
+
+      return;
+    }
+
+    console.trace('set');
+
+    const backup = this.position;
+    const value = new CachedTransformVec2Value(cache, this.position.value);
+
+    CommandHistory.add(
+      new ChangeCommand(
+        () => {
+          this.position = value;
+        },
+        () => {
+          this.position = backup;
+        }
+      )
+    );
   }
 
   get boundingBox(): Box {
@@ -787,7 +828,8 @@ export class VertexTransform implements VertexTransformComponent {
     if (this.m_parent.left) {
       this.m_parent.left.transform.position.value = value;
     } else {
-      this.m_parent.left = new Handle({ position: value, type: 'bezier', parent: this.m_parent });
+      const handle = new Handle({ position: value, type: 'bezier', parent: this.m_parent });
+      this.m_parent.left = handle;
     }
   }
 
@@ -865,6 +907,10 @@ export class VertexTransform implements VertexTransformComponent {
     }
 
     if (apply) this.m_parent.right.transform.apply();
+  }
+
+  transform(point: vec2) {
+    return vec2.add(point, this.position.value);
   }
 
   apply(): void {

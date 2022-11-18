@@ -1,339 +1,120 @@
-import { vec2 } from '@math';
-import Bezier from '../ecs/entities/bezier';
-import Element from '../ecs/entities/element';
-import Handle from '../ecs/entities/handle';
+import { vec2 } from '@/math';
+import { isBezier } from '../ecs/entities/bezier';
+import Element, { isElement } from '../ecs/entities/element';
+import { isHandle, isVertexHandle } from '../ecs/entities/handle';
+import Pen from '../ecs/entities/pen';
 import Vertex from '../ecs/entities/vertex';
-import CommandHistory from '../history/history';
+import { EntityValue } from '../history/value';
 import InputManager from '../input';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
 
-interface PenToolData {
-  vertex?: VertexEntity;
-  element?: Element;
-  overlay?: Element;
-  overlayLastVertex?: Vertex;
-  overlayVertex?: Vertex;
+function setLeftHandle(vertex: VertexEntity, position: vec2 = [0, 0]) {
+  const element = vertex.parent;
+  const center = element.transform.center;
+
+  vertex.transform.leftValue = position;
+  vertex.pauseCache();
+
+  element.transform.keepCentered(center);
 }
 
-const onPenPointerDown = () => {
-  const pen = InputManager.tool.data as PenToolData;
-  const entity = InputManager.hover.entity;
-  const el = InputManager.hover.element;
-  const element = el && el.type === 'element' ? (el as Element) : undefined;
-  const bezier = entity && entity.type === 'bezier' ? (entity as Bezier) : undefined;
-  const handle = entity && entity.type === 'handle' ? (entity as Handle) : undefined;
-  const vertex = handle && handle.handleType === 'vertex' ? (handle.parent as Vertex) : undefined;
+function setRightHandle(vertex: VertexEntity, position: vec2 = [0, 0]) {
+  const element = vertex.parent;
+  const center = element.transform.center;
 
-  let penState = 'new' as PenState;
+  vertex.transform.rightValue = position;
+  vertex.pauseCache();
 
-  if (vertex && element) {
-    if (element.isOpenEnd(vertex.id)) {
-      if (pen.element && element.id === pen.element.id) {
-        if (pen.vertex && vertex.id === pen.vertex.id) penState = 'angle';
-        else penState = 'close';
-      } else {
-        if (pen.element) penState = 'join';
-        else penState = 'start';
-      }
-    } else if (SelectionManager.has(element.id)) penState = 'sub';
-  } else if (bezier && element && SelectionManager.has(element.id)) penState = 'add';
+  element.transform.keepCentered(center);
+}
 
-  const backupPen: PenToolData = { ...pen };
-  const backupSelection: SelectionBackup = SelectionManager.get();
+const onPenNewPointerDown = (pen: PenDataStateInterface) => {
+  let pElement = pen.element.value;
+  let pVertex = pen.vertex.value;
 
-  function restorePen() {
-    pen.vertex = backupPen.vertex;
-    pen.element = backupPen.element;
-    pen.overlay = backupPen.overlay;
-    pen.overlayVertex = backupPen.overlayVertex;
-    pen.overlayLastVertex = backupPen.overlayLastVertex;
+  const center = pElement?.transform.center;
+  const position = vec2.create();
+
+  if (!pElement) {
+    pen.element.value = pElement = new Element({
+      position: InputManager.scene.position,
+      stroke: { color: [0, 0, 0, 1] },
+      fill: { color: [1, 1, 1, 1] }
+    });
+
+    SceneManager.add(pElement);
+  } else {
+    const center = pElement.transform.center;
+    const angle = pElement.transform.rotation.value;
+
+    vec2.sub(
+      angle === 0
+        ? InputManager.scene.position
+        : vec2.rotate(InputManager.scene.position, center, -angle),
+      pElement.transform.position.value,
+      position
+    );
   }
 
-  if (pen.overlay) SceneManager.overlays.remove(pen.overlay!.id);
+  pen.vertex.value = pVertex = new Vertex({ position });
+  pElement.add(pVertex);
 
-  pen.overlay = undefined;
-  pen.overlayLastVertex = undefined;
-  pen.overlayVertex = undefined;
+  SelectionManager.clear();
+  SelectionManager.select(pElement);
 
-  switch (penState) {
-    case 'join': {
-      if (!element!.isFirstVertex(vertex!.id)) element!.reverse();
+  if (center) pElement.transform.keepCentered(center);
 
-      pen.element!.concat(element!);
+  function onPointerMove(delta: vec2) {
+    if (!pVertex) return;
 
-      // TOCHECK
-      pen.vertex = vertex;
-      SelectionManager.clear();
-      SelectionManager.select(pen.element!);
-
-      // restorePen();
-      // SelectionManager.restore(backupSelection);
-
-      break;
+    if (InputManager.keys.space) {
+      // TODO: Move vertex
+      return;
     }
-    case 'close': {
-      element!.close();
 
-      // TOCHECK
-      pen.element = element;
-      pen.vertex = vertex;
+    if (!InputManager.keys.alt) setLeftHandle(pVertex, vec2.neg(delta));
+    setRightHandle(pVertex, delta);
+  }
 
-      SelectionManager.clear();
-      SelectionManager.select(pen.element!);
+  return {
+    onPointerMove
+  };
+};
 
-      // restorePen();
-      // SelectionManager.restore(backupSelection);
+const onPenJoinPointerDown = (
+  pen: PenDataStateInterface,
+  element: ElementEntity,
+  vertex: VertexEntity
+) => {
+  const pElement = pen.element.value;
+  if (!pElement) return {};
 
-      break;
-    }
-    case 'sub': {
-      break;
-    }
-    case 'add': {
-      const center = element!.transform.center;
-      const vertex = element!.split(bezier!, InputManager.scene.position);
-      element!.transform.keepCentered(center);
+  if (!element.isFirstVertex(vertex.id)) element.reverse();
+  pElement.concat(element);
 
-      // TOCHECK
-      if (vertex) {
-        pen.element = element;
-        pen.vertex = vertex;
+  pen.vertex.value = vertex;
+  SelectionManager.clear();
+  SelectionManager.select(pElement);
 
-        SelectionManager.clear();
-        SelectionManager.select(element!);
-      }
+  function onPointerMove(delta: vec2) {
+    setLeftHandle(vertex, vec2.neg(delta));
 
-      // restorePen();
-      // SelectionManager.restore(backupSelection);
+    if (!InputManager.keys.alt && vertex.transform.right) {
+      const direction = vec2.normalize(delta);
 
-      break;
-    }
-    case 'angle': {
-      // TOCHECK
-      pen.element = element;
-      pen.vertex = vertex;
-      vertex!.right = undefined;
-
-      // restorePen();
-
-      break;
-    }
-    case 'start': {
-      if (element!.isFirstVertex(vertex!.id)) element!.reverse();
-
-      // TOCHECK
-      pen.element = element;
-      pen.vertex = vertex;
-      vertex!.right = undefined;
-
-      SelectionManager.clear();
-      SelectionManager.select(element!);
-
-      // restorePen();
-      // SelectionManager.restore(backupSelection);
-
-      break;
-    }
-    case 'new': {
-      const center = pen.element?.transform.center;
-      const angle = pen.element?.transform.rotation.value;
-
-      const delta =
-        pen.element &&
-        vec2.sub(
-          angle === 0
-            ? InputManager.scene.position
-            : vec2.rotate(InputManager.scene.position, center!, -(angle || 0)),
-          pen.element.transform.position.value
+      if (!vec2.equals(direction, [0, 0])) {
+        setRightHandle(
+          vertex,
+          vec2.mulS(direction, vec2.len(vertex.transform.right.value || [0, 0]))
         );
-
-      // if (InputManager.keys.shift && delta) vec2.snap(delta, 8, delta);
-
-      const v = new Vertex({
-        position: delta || vec2.create()
-      });
-
-      if (!pen.element) {
-        pen.element = new Element({
-          position: InputManager.scene.position,
-          stroke: { color: [0, 0, 0, 1] },
-          fill: {}
-        });
-
-        SceneManager.add(pen.element);
-      }
-
-      const e = pen.element;
-
-      e.add(v);
-
-      if (center) e.transform.keepCentered(center);
-
-      // TOCHECK
-      pen.element = e;
-      pen.vertex = v;
-      SelectionManager.clear();
-      SelectionManager.select(e);
-
-      // restorePen();
-      // SelectionManager.restore(backupSelection);
-
-      break;
-    }
-  }
-
-  function setLeft(position?: vec2, recordHandleCreation = false) {
-    if (!pen.vertex) return;
-
-    const center = pen.element!.transform.center;
-
-    if (!pen.vertex.transform.left) {
-      pen.vertex.transform.leftValue = position || vec2.create();
-
-      if (recordHandleCreation) {
-        const v = pen.vertex;
-        const backup = pen.vertex.left;
-
-        v.left = backup;
-      }
-    } else if (position) pen.vertex.transform.left.value = position;
-
-    pen.vertex.pauseCache();
-    pen.element!.transform.keepCentered(center);
-  }
-
-  function setRight(position?: vec2, recordHandleCreation = false) {
-    if (!pen.vertex) return;
-
-    const center = pen.element!.transform.center;
-
-    if (!pen.vertex.transform.right) {
-      pen.vertex.transform.rightValue = position || vec2.create();
-
-      if (recordHandleCreation) {
-        const v = pen.vertex;
-        const backup = pen.vertex.right;
-
-        // TOCHECK
-        v.right = backup;
-
-        // v.right = undefined;
-      }
-    } else if (position) pen.vertex.transform.right.value = position;
-
-    pen.vertex.pauseCache();
-    pen.element!.transform.keepCentered(center);
-  }
-
-  const left = !!(pen.vertex && pen.vertex.left);
-  const right = !!(pen.vertex && pen.vertex.right);
-
-  function onPointerMove() {
-    const unrotatedDelta = InputManager.keys.shift
-      ? vec2.snap(InputManager.scene.delta)
-      : InputManager.scene.delta;
-
-    const delta =
-      pen.element && pen.element.transform.rotation.value !== 0
-        ? vec2.rotate(unrotatedDelta, [0, 0], -pen.element.transform.rotation)
-        : unrotatedDelta;
-
-    switch (penState) {
-      case 'sub':
-        break;
-      case 'add': {
-        setRight(delta);
-
-        if (!InputManager.keys.alt) setLeft(vec2.neg(delta));
-
-        break;
-      }
-      case 'close':
-      case 'join': {
-        setLeft(vec2.neg(delta), true);
-
-        if (!InputManager.keys.alt && right) {
-          const direction = vec2.normalize(delta);
-
-          if (!vec2.equals(direction, [0, 0])) {
-            setRight(
-              vec2.mulS(direction, vec2.len(pen.vertex!.transform.right?.value || [0, 0])),
-              true
-            );
-          }
-        }
-
-        break;
-      }
-      case 'start':
-      case 'angle': {
-        setRight(delta, true);
-
-        if (!InputManager.keys.alt && left) {
-          const direction = vec2.normalize(vec2.neg(delta));
-
-          if (!vec2.equals(direction, [0, 0])) {
-            setLeft(
-              vec2.mulS(direction, vec2.len(pen.vertex!.transform.left?.value || [0, 0])),
-              true
-            );
-          }
-        }
-
-        break;
-      }
-      case 'new': {
-        // TODO: if space key is held down, the entire vertex should move
-        if (!InputManager.keys.alt) setLeft(vec2.neg(delta));
-
-        setRight(delta);
-
-        break;
       }
     }
   }
 
   function onPointerUp() {
-    if (pen.vertex) pen.vertex.transform.apply();
-    if (pen.element) pen.element?.transform.apply();
-
-    switch (penState) {
-      case 'close':
-      case 'join':
-      case 'add': {
-        pen.element = undefined;
-        pen.vertex = undefined;
-
-        onPenPointerHover();
-
-        break;
-      }
-      case 'sub': {
-        if (vec2.len(InputManager.client.delta) < 10 / SceneManager.viewport.zoom) {
-          const center = element!.transform.center;
-          element!.remove(vertex!, true);
-
-          element!.transform.keepCentered(center);
-        }
-
-        // TOCHECK
-        pen.element = undefined;
-        pen.vertex = undefined;
-
-        // restorePen();
-        // SelectionManager.restore(backupSelection);
-
-        break;
-      }
-      case 'angle':
-      case 'start':
-      case 'new': {
-        onPenPointerHover();
-
-        break;
-      }
-    }
+    pen.element.value = undefined;
+    pen.vertex.value = undefined;
   }
 
   return {
@@ -342,96 +123,243 @@ const onPenPointerDown = () => {
   };
 };
 
-export function onPenPointerHover() {
-  const pen = InputManager.tool.data as PenToolData;
-  const hasOverlay = pen.overlay ? SceneManager.overlays.has(pen.overlay.id) : false;
+const onPenClosePointerDown = (
+  pen: PenDataStateInterface,
+  element: ElementEntity,
+  vertex: VertexEntity
+) => {
+  element.close();
 
-  if (pen.element && pen.vertex) {
-    const box = pen.element.transform.unrotatedBoundingBox;
-    const mid = vec2.mid(
-      vec2.sub(box[0], pen.element.transform.position.value),
-      vec2.sub(box[1], pen.element.transform.position.value)
-    );
+  pen.element.value = element;
+  pen.vertex.value = vertex;
 
-    if (
-      pen.overlay &&
-      pen.overlayVertex &&
-      pen.overlayLastVertex &&
-      vec2.equals(
-        pen.overlayLastVertex.transform.position.value,
-        vec2.rotate(pen.vertex.transform.position.value, mid, pen.element.transform.rotation.value)
-      )
-    ) {
-      if (pen.vertex.transform.left)
-        pen.overlayLastVertex.transform.leftValue = vec2.rotate(
-          pen.vertex.transform.left.value,
-          [0, 0],
-          pen.element.transform.rotation.value
+  function onPointerMove(delta: vec2) {
+    setLeftHandle(vertex, vec2.neg(delta));
+
+    if (!InputManager.keys.alt && vertex.transform.right) {
+      const direction = vec2.normalize(delta);
+
+      if (!vec2.equals(direction, [0, 0])) {
+        setRightHandle(
+          vertex,
+          vec2.mulS(direction, vec2.len(vertex.transform.right.value || [0, 0]))
         );
-      if (pen.vertex.transform.right)
-        pen.overlayLastVertex.transform.rightValue = vec2.rotate(
-          pen.vertex.transform.right.value,
-          [0, 0],
-          pen.element.transform.rotation.value
-        );
+      }
+    }
+  }
 
-      CommandHistory.ignoreNext();
-      pen.overlayVertex.transform.translate(
-        vec2.sub(
-          InputManager.scene.position,
-          vec2.add(pen.overlayVertex.transform.position.value, pen.overlay.transform.position.value)
-        )
-      );
-      CommandHistory.clearIgnore();
-    } else {
-      if (hasOverlay) SceneManager.overlays.remove(pen.overlay!.id);
+  function onPointerUp() {
+    pen.element.value = undefined;
+    pen.vertex.value = undefined;
+  }
 
-      pen.overlayLastVertex = new Vertex({
-        position: vec2.rotate(
-          pen.vertex.transform.position.value,
-          mid,
-          pen.element.transform.rotation.value
-        ),
-        left: pen.vertex.transform.left
-          ? vec2.rotate(
-              pen.vertex.transform.left.value,
-              [0, 0],
-              pen.element.transform.rotation.value
-            )
-          : undefined,
-        right: pen.vertex.transform.right
-          ? vec2.rotate(
-              pen.vertex.transform.right.value,
-              [0, 0],
-              pen.element.transform.rotation.value
-            )
-          : undefined
-      });
+  return {
+    onPointerMove,
+    onPointerUp
+  };
+};
 
-      pen.overlayVertex = new Vertex({
-        position: vec2.sub(InputManager.scene.position, pen.element.transform.position.value)
-      });
+const onPenSubPointerDown = (
+  pen: PenDataStateInterface,
+  element: ElementEntity,
+  vertex: VertexEntity
+) => {
+  function onPointerUp() {
+    if (vec2.sqrLen(InputManager.client.delta) < Math.pow(10 / SceneManager.viewport.zoom, 2)) {
+      const center = element.transform.center;
 
-      pen.overlay = new Element({
-        position: pen.element.transform.position.value,
-        vertices: [pen.overlayLastVertex, pen.overlayVertex],
-        stroke: {
-          color: [56 / 255, 195 / 255, 242 / 255, 1],
-          width: 1.5 / SceneManager.viewport.zoom
-        },
-        closed: false
-      });
+      element.remove(vertex, true);
+      element.transform.keepCentered(center);
     }
 
-    if (!hasOverlay) SceneManager.overlays.add({ entity: pen.overlay });
-
-    SceneManager.render();
-  } else if (hasOverlay) {
-    SceneManager.overlays.remove(pen.overlay!.id);
-
-    pen.overlay = undefined;
-    pen.overlayVertex = undefined;
+    pen.element.value = undefined;
+    pen.vertex.value = undefined;
   }
+
+  return {
+    onPointerUp
+  };
+};
+
+const onPenAddPointerDown = (
+  pen: PenDataStateInterface,
+  element: ElementEntity,
+  bezier: BezierEntity
+) => {
+  const center = element.transform.center;
+  const vertex = element.split(bezier, InputManager.scene.position);
+  if (!vertex) return {};
+
+  element.transform.keepCentered(center);
+
+  if (vertex) {
+    pen.element.value = element;
+    pen.vertex.value = vertex;
+
+    SelectionManager.clear();
+    SelectionManager.select(element);
+  }
+
+  function onPointerMove(delta: vec2) {
+    if (!vertex) return;
+
+    setRightHandle(vertex, delta);
+    if (!InputManager.keys.alt) setLeftHandle(vertex, vec2.neg(delta));
+  }
+
+  function onPointerUp() {
+    pen.element.value = undefined;
+    pen.vertex.value = undefined;
+  }
+
+  return {
+    onPointerMove,
+    onPointerUp
+  };
+};
+
+const onPenAnglePointerDown = (
+  pen: PenDataStateInterface,
+  element: ElementEntity,
+  vertex: VertexEntity
+) => {
+  pen.element.value = element;
+  pen.vertex.value = vertex;
+  vertex.right = undefined;
+
+  function onPointerMove(delta: vec2) {
+    setRightHandle(vertex, delta);
+
+    if (!InputManager.keys.alt && vertex.transform.left) {
+      const direction = vec2.normalize(vec2.neg(delta));
+
+      if (!vec2.equals(direction, [0, 0])) {
+        setLeftHandle(vertex, vec2.mulS(direction, vec2.len(vertex.transform.left.value)));
+      }
+    }
+  }
+
+  return {
+    onPointerMove
+  };
+};
+
+const onPenStartPointerDown = (
+  pen: PenDataStateInterface,
+  element: ElementEntity,
+  vertex: VertexEntity
+) => {
+  if (element.isFirstVertex(vertex.id)) element.reverse();
+
+  pen.element.value = element;
+  pen.vertex.value = vertex;
+  vertex.right = undefined;
+
+  SelectionManager.clear();
+  SelectionManager.select(element);
+
+  function onPointerMove(delta: vec2) {
+    setRightHandle(vertex, delta);
+
+    if (!InputManager.keys.alt && vertex.transform.left) {
+      const direction = vec2.normalize(vec2.neg(delta));
+
+      if (!vec2.equals(direction, [0, 0])) {
+        setLeftHandle(vertex, vec2.mulS(direction, vec2.len(vertex.transform.left.value)));
+      }
+    }
+  }
+
+  return {
+    onPointerMove
+  };
+};
+
+class PenDataState implements PenDataStateInterface {
+  readonly element: EntityValue<ElementEntity> = new EntityValue();
+  readonly vertex: EntityValue<VertexEntity> = new EntityValue();
+  readonly overlay: PenEntity = new Pen();
+}
+
+const onPenPointerDown = () => {
+  if (!(<PenToolData>InputManager.tool.data).pen)
+    (<PenToolData>InputManager.tool.data).pen = new PenDataState();
+
+  const pen = (InputManager.tool.data as PenToolData).pen!;
+  const hovered = InputManager.hover.entity;
+  const entity = hovered ? InputManager.hover.element : null;
+  const element = entity && isElement(entity) ? entity : null;
+  const bezier = hovered && isBezier(hovered) ? hovered : null;
+  const handle = hovered && isHandle(hovered) ? hovered : null;
+  const vertex = handle && isVertexHandle(handle) ? handle.parent : null;
+  const overlay = pen.overlay;
+
+  if (overlay) SceneManager.overlays.remove(overlay.id);
+
+  let functions: Partial<ReturnType<typeof onPenClosePointerDown>>;
+
+  if (vertex && element) {
+    if (element.isOpenEnd(vertex.id)) {
+      if (pen.element.value && element.id === pen.element.value.id) {
+        if (pen.vertex.value && vertex.id === pen.vertex.value.id)
+          functions = onPenAnglePointerDown(pen, element, vertex);
+        else functions = onPenClosePointerDown(pen, element, vertex);
+      } else {
+        if (pen.element.value) functions = onPenJoinPointerDown(pen, element, vertex);
+        else functions = onPenStartPointerDown(pen, element, vertex);
+      }
+    } else if (SelectionManager.has(element.id))
+      functions = onPenSubPointerDown(pen, element, vertex);
+  } else if (bezier && element && SelectionManager.has(element.id))
+    functions = onPenAddPointerDown(pen, element, bezier);
+  else functions = onPenNewPointerDown(pen);
+
+  function onPointerMove() {
+    const pElement = pen.element.value;
+    if (!pElement) return;
+
+    const unrotatedDelta = InputManager.keys.shift
+      ? vec2.snap(InputManager.scene.delta)
+      : InputManager.scene.delta;
+
+    const delta =
+      pElement.transform.rotation.value !== 0
+        ? vec2.rotate(unrotatedDelta, [0, 0], -pElement.transform.rotation)
+        : unrotatedDelta;
+
+    if (functions.onPointerMove) functions.onPointerMove(delta);
+  }
+
+  function onPointerUp() {
+    if (functions.onPointerUp) functions.onPointerUp();
+    onPenPointerHover();
+  }
+
+  return { onPointerMove, onPointerUp };
+};
+
+export function onPenPointerHover() {
+  if (!(<PenToolData>InputManager.tool.data).pen)
+    (<PenToolData>InputManager.tool.data).pen = new PenDataState();
+
+  const pen = (<PenToolData>InputManager.tool.data).pen!;
+  const element = pen.element.value;
+  const vertex = pen.vertex.value;
+  const overlay = pen.overlay;
+  const hasOverlay = SceneManager.overlays.has(overlay.id);
+
+  if (element && vertex) {
+    const p0 = element.transform.transform(vertex.transform.position.value);
+    const p1 = vertex.transform.right
+      ? element.transform.transform(vertex.transform.transform(vertex.transform.right.value))
+      : undefined;
+    const p3 = InputManager.scene.position;
+
+    overlay.set({ p0, p1, p2: undefined, p3 });
+
+    if (!hasOverlay) SceneManager.overlays.add({ entity: overlay });
+    SceneManager.render();
+  } else if (hasOverlay) SceneManager.overlays.remove(overlay.id);
 }
 
 export default onPenPointerDown;

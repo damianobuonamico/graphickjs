@@ -1,11 +1,13 @@
 type PenState = 'new' | 'join' | 'close' | 'sub' | 'add' | 'angle' | 'start';
 
+interface PenDataStateInterface {
+  readonly element: Value<ElementEntity | undefined>;
+  readonly vertex: Value<VertexEntity | undefined>;
+  readonly overlay: PenEntity;
+}
+
 interface PenToolData {
-  element?: Entity;
-  vertex?: VertexEntity;
-  overlay?: Entity;
-  overlayLastVertex?: VertexEntity;
-  overlayVertex?: VertexEntity;
+  pen?: PenDataStateInterface;
 }
 
 interface SelectToolData {

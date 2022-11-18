@@ -18,3 +18,7 @@ interface MapSuper<K, V> extends Map<K, V> {
   superSet(key: K, value: V): Map<K, V>;
   superDelete(key: K): boolean;
 }
+
+interface OrderedMapSuper<K, V> extends MapSuper<K, V> {
+  readonly order: K[];
+}
