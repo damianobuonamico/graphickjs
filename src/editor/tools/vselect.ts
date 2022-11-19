@@ -77,10 +77,7 @@ const onVSelectPointerDown = () => {
             const movement = vec2.rotate(InputManager.scene.movement, [0, 0], -angle);
 
             handle.parent.transform.translate(movement);
-            (handle.parent.parent.transform as ElementTransformComponent).keepCentered(
-              center,
-              true
-            );
+            (handle.parent.parent.transform as ElementTransformComponent).keepCentered(center);
           }
         } else {
           const angle = handle.parent.parent.transform.rotation.value;

@@ -68,11 +68,6 @@ const onPenNewPointerDown = (pen: PenDataStateInterface) => {
   function onPointerMove(delta: vec2) {
     if (!pVertex) return;
 
-    if (InputManager.keys.space) {
-      // TODO: Move vertex
-      return;
-    }
-
     if (!InputManager.keys.alt) setLeftHandle(pVertex, vec2.neg(delta));
     setRightHandle(pVertex, delta);
   }
@@ -314,18 +309,39 @@ const onPenPointerDown = () => {
     functions = onPenAddPointerDown(pen, element, bezier);
   else functions = onPenNewPointerDown(pen);
 
+  const origin = InputManager.scene.origin;
+
   function onPointerMove() {
     const pElement = pen.element.value;
+    const pVertex = pen.vertex.value;
     if (!pElement) return;
 
     const unrotatedDelta = InputManager.keys.shift
-      ? vec2.snap(InputManager.scene.delta)
-      : InputManager.scene.delta;
+      ? vec2.snap(vec2.sub(InputManager.scene.position, origin))
+      : vec2.sub(InputManager.scene.position, origin);
 
     const delta =
       pElement.transform.rotation.value !== 0
         ? vec2.rotate(unrotatedDelta, [0, 0], -pElement.transform.rotation.value)
         : unrotatedDelta;
+
+    if (pElement && pVertex && InputManager.keys.space) {
+      const angle = pElement.transform.rotation.value;
+
+      if (angle === 0) {
+        pVertex.transform.translate(InputManager.scene.movement);
+      } else {
+        const center = pElement.transform.center;
+        const movement = vec2.rotate(InputManager.scene.movement, [0, 0], -angle);
+
+        pVertex.transform.translate(movement);
+        pElement.transform.keepCentered(center);
+      }
+
+      vec2.add(origin, InputManager.scene.movement, origin);
+
+      return;
+    }
 
     if (functions.onPointerMove) functions.onPointerMove(delta);
   }
