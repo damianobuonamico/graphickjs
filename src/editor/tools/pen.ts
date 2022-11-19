@@ -324,7 +324,7 @@ const onPenPointerDown = () => {
 
     const delta =
       pElement.transform.rotation.value !== 0
-        ? vec2.rotate(unrotatedDelta, [0, 0], -pElement.transform.rotation)
+        ? vec2.rotate(unrotatedDelta, [0, 0], -pElement.transform.rotation.value)
         : unrotatedDelta;
 
     if (functions.onPointerMove) functions.onPointerMove(delta);

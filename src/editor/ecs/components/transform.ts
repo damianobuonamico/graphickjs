@@ -362,10 +362,8 @@ export class Transform implements TransformComponent {
     const angle = this.rotation.value;
     if (angle === 0) return vec2.add(point, this.position.value);
 
-    const rotated = vec2.rotate(point, this.center, angle);
-    vec2.add(rotated, this.position.value, rotated);
-
-    return rotated;
+    const translated = vec2.add(point, this.position.value);
+    return vec2.rotate(translated, this.center, angle, translated);
   }
 
   apply(): void {

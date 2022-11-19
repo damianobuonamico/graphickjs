@@ -173,20 +173,15 @@ class Element implements ElementEntity {
   }
 
   concat(element: ElementEntity): void {
-    const mid = vec2.sub(this.transform.center, this.transform.position.value);
+    const mid = this.transform.center;
     const angle = this.transform.rotation.value;
 
-    const mid1 = vec2.sub(element.transform.center, element.transform.position.value);
     const angle1 = element.transform.rotation.value;
 
     element.forEach((vertex) => {
-      vertex.transform.position.value = vec2.rotate(
-        vec2.add(
-          vec2.rotate(vertex.transform.position.value, mid1, angle1),
-          vec2.sub(element.transform.position.static, this.transform.position.static)
-        ),
-        mid,
-        -angle
+      vertex.transform.position.value = vec2.sub(
+        vec2.rotate(element.transform.transform(vertex.transform.position.value), mid, -angle),
+        this.transform.position.static
       );
 
       if (vertex.transform.left)
@@ -209,6 +204,17 @@ class Element implements ElementEntity {
     });
     this.regen();
     CommandHistory.popMiniBatch();
+
+    CommandHistory.add(
+      new ChangeCommand(
+        () => {
+          this.forEach((vertex) => (vertex.parent = this));
+        },
+        () => {
+          element.forEach((vertex) => (vertex.parent = element));
+        }
+      )
+    );
 
     element.parent.remove(element.id);
 
@@ -378,7 +384,6 @@ class Element implements ElementEntity {
 
         const ids = this.m_vertices.order.filter((id) => order.indexOf(id) === -1);
 
-        // TODO: CREATE FUNCTION CALL COMMAND
         CommandHistory.pushMiniBatch();
         ids.forEach((id) => {
           if (id) this.m_vertices.delete(id);
