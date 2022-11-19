@@ -111,8 +111,11 @@ class Canvas2D extends CanvasBackend2D {
 
   private debugging(
     stats?: RendererStats,
-    { entityBox, segmentBox, vertices }: Partial<DebugState> = {}
+    { entityBox, segmentBox, vertices, opacity }: Partial<DebugState> = {}
   ) {
+    this.m_ctx.save();
+
+    this.m_ctx.globalAlpha = Math.max(opacity || 1, 0.1);
     this.m_ctx.lineWidth = 1.5 / SceneManager.viewport.zoom;
 
     this.m_debuggerEntities.forEach((entity) => {
@@ -250,6 +253,8 @@ class Canvas2D extends CanvasBackend2D {
     for (const property of properties) {
       this.m_ctx.translate(0, this.drawDebuggingProperty(property[0], property[1], WIDTH));
     }
+
+    this.m_ctx.restore();
   }
 
   private bindDebugger(unbind?: boolean) {

@@ -8,7 +8,8 @@ abstract class Renderer {
   public static debug: DebugState = {
     entityBox: true,
     segmentBox: true,
-    vertices: true
+    vertices: true,
+    opacity: 0.3
   };
 
   public static stats: RendererStats = new Stats();

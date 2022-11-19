@@ -138,6 +138,7 @@ interface DebugState {
   entityBox: boolean;
   segmentBox: boolean;
   vertices: boolean;
+  opacity: number;
 }
 
 interface RendererStats {
