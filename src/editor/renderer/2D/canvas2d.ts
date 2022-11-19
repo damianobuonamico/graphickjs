@@ -109,7 +109,10 @@ class Canvas2D extends CanvasBackend2D {
     return 10;
   }
 
-  private debugging(stats?: RendererStats, { entityBox, segmentBox }: Partial<DebugState> = {}) {
+  private debugging(
+    stats?: RendererStats,
+    { entityBox, segmentBox, vertices }: Partial<DebugState> = {}
+  ) {
     this.m_ctx.lineWidth = 1.5 / SceneManager.viewport.zoom;
 
     this.m_debuggerEntities.forEach((entity) => {
@@ -118,10 +121,10 @@ class Canvas2D extends CanvasBackend2D {
         SelectionManager.has(entity.id)
       ) {
         this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.1)';
-        this.m_ctx.strokeStyle = 'rgb(220, 20, 60, 0.5)';
+        this.m_ctx.strokeStyle = 'rgba(220, 20, 60, 0.5)';
       } else {
         this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.1)';
-        this.m_ctx.strokeStyle = 'rgb(0, 255, 127, 0.5)';
+        this.m_ctx.strokeStyle = 'rgba(0, 255, 127, 0.5)';
       }
 
       this.beginPath();
@@ -146,6 +149,19 @@ class Canvas2D extends CanvasBackend2D {
 
       this.fill();
       this.stroke();
+
+      if (vertices && isElement(entity)) {
+        entity.forEach((vertex) =>
+          this.debugCircle({
+            position: entity.transform.transform(vertex.transform.position.value),
+            radius: 4,
+            color:
+              InputManager.hover.entity === vertex.position || entity.selection.has(vertex.id)
+                ? 'rgba(220, 20, 60, 0.5)'
+                : 'rgba(0, 255, 127, 0.5)'
+          })
+        );
+      }
     });
 
     if (!stats) return;

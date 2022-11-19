@@ -6,12 +6,11 @@ interface ElementEntity extends Entity {
 
   parent: LayerEntity;
 
-  length: number;
+  size: number;
   first: VertexEntity | undefined;
   last: VertexEntity | undefined;
   vertices: VertexEntity[];
 
-  regenerate(ids?: string[]): void;
   reverse(): void;
   forEach(callback: (vertex: VertexEntity, selected: boolean, index: number) => void): void;
   forEachBezier(callback: (bezier: BezierEntity) => void): void;
@@ -36,7 +35,6 @@ interface ElementOptions {
   closed?: boolean;
   fill?: FillComponentObject;
   stroke?: StrokeComponentObject;
-  recordHistory?: boolean;
 }
 
 interface ElementObject extends GenericEntityObject {

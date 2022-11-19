@@ -12,9 +12,8 @@ import Fill from '../components/fill';
 import Stroke from '../components/stroke';
 import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { ElementTransform } from '../components/transform';
-import Debugger from '@/utils/debugger';
 import { BooleanValue, OrderedMapValue } from '@/editor/history/value';
-import { ChangeCommand, FunctionCallCommand } from '@/editor/history/command';
+import { FunctionCallCommand } from '@/editor/history/command';
 
 export const isElement = (b: Entity): b is Element => {
   return b.type === 'element';
@@ -33,13 +32,9 @@ class Element implements ElementEntity {
   parent: Layer;
   opacity = 1;
 
-  private m_vertices: OrderedMapValue<string, VertexEntity> = new OrderedMapValue(
-    undefined,
-    (vertex) => (vertex.parent = this)
-  );
+  private m_vertices: OrderedMapValue<string, VertexEntity> = new OrderedMapValue();
   private m_curves: Map<string, BezierEntity> = new Map();
   private m_closed: BooleanValue;
-  private m_recordHistory: boolean;
   private m_fillRule: 'even-odd' | 'non-zero' = 'non-zero';
 
   private m_cache: ElementCache = new ElementCache();
@@ -52,8 +47,7 @@ class Element implements ElementEntity {
     rotation,
     closed = false,
     stroke,
-    fill,
-    recordHistory = true
+    fill
   }: ElementOptions) {
     this.id = id;
     this.m_closed = new BooleanValue(closed);
@@ -63,7 +57,6 @@ class Element implements ElementEntity {
       transform?.position || position,
       transform?.rotation || rotation
     );
-    this.m_recordHistory = recordHistory;
 
     if (vertices) this.vertices = vertices;
 
@@ -71,7 +64,7 @@ class Element implements ElementEntity {
     if (stroke) this.stroke = new Stroke(stroke);
   }
 
-  get length(): number {
+  get size(): number {
     return this.m_vertices.size;
   }
 
@@ -85,12 +78,7 @@ class Element implements ElementEntity {
 
   set vertices(vertices: VertexEntity[]) {
     this.m_vertices.clear();
-
-    vertices.forEach((vertex) => {
-      this.m_vertices.set(vertex.id, vertex);
-    });
-
-    this.regenerate();
+    this.mutate(() => vertices.forEach((vertex) => this.add(vertex, false)));
   }
 
   get cache() {
@@ -112,13 +100,11 @@ class Element implements ElementEntity {
 
   public points: vec2[] = [];
 
-  private generateCurves(order: string[] = this.m_vertices.order): void {
+  private regenerate(): void {
     const curves = new Map<string, BezierEntity>();
     let last: VertexEntity | null = null;
 
-    for (let i = 0, n = order.length; i < n; ++i) {
-      const vertex = this.m_vertices.get(order[i])!;
-
+    this.m_vertices.forEach((vertex) => {
       if (last) {
         const bezier = new Bezier({ start: last, end: vertex });
         curves.set(bezier.id, bezier);
@@ -126,7 +112,7 @@ class Element implements ElementEntity {
       }
 
       last = vertex;
-    }
+    });
 
     if (this.m_closed.value) {
       const start = this.m_vertices.last;
@@ -143,8 +129,11 @@ class Element implements ElementEntity {
     this.m_cache.pause = true;
   }
 
-  regenerate(ids: string[] = this.m_vertices.order): void {
-    this.m_vertices.reorder(ids, this.generateCurves.bind(this));
+  private mutate(callback: () => void): void {
+    CommandHistory.pushMiniBatch();
+    callback();
+    CommandHistory.add(new FunctionCallCommand(this.regenerate.bind(this)));
+    CommandHistory.popMiniBatch();
   }
 
   forEach(callback: (vertex: VertexEntity, selected: boolean, index: number) => void): void {
@@ -158,10 +147,7 @@ class Element implements ElementEntity {
   }
 
   reverse(): void {
-    CommandHistory.pushMiniBatch();
-    this.m_vertices.reverse();
-    this.regen();
-    CommandHistory.popMiniBatch();
+    this.mutate(() => this.m_vertices.reverse());
 
     this.m_vertices.forEach((vertex) => {
       const left = vertex.left;
@@ -198,23 +184,9 @@ class Element implements ElementEntity {
         );
     });
 
-    CommandHistory.pushMiniBatch();
-    element.forEach((vertex) => {
-      this.m_vertices.set(vertex.id, vertex);
+    this.mutate(() => {
+      element.forEach((vertex) => this.add(vertex, false));
     });
-    this.regen();
-    CommandHistory.popMiniBatch();
-
-    CommandHistory.add(
-      new ChangeCommand(
-        () => {
-          this.forEach((vertex) => (vertex.parent = this));
-        },
-        () => {
-          element.forEach((vertex) => (vertex.parent = element));
-        }
-      )
-    );
 
     element.parent.remove(element.id);
 
@@ -227,35 +199,21 @@ class Element implements ElementEntity {
 
     if (this.transform.rotation.value !== 0)
       position = vec2.rotate(position, this.transform.center, -this.transform.rotation.value);
-
     position = vec2.sub(position, this.transform.position.value);
 
-    const vertex = bezier.split(position);
+    return this.add(bezier.split(position), true, this.m_vertices.indexOf(bezier.start.id) + 1);
+  }
 
-    this.add(vertex, true, this.m_vertices.indexOf(bezier.start.id) + 1);
+  add(vertex: VertexEntity, regenerate: boolean = true, index?: number): VertexEntity {
+    if (regenerate) this.mutate(() => this.m_vertices.set(vertex.id, vertex, index));
+    else this.m_vertices.set(vertex.id, vertex, index);
 
+    vertex.parent = this;
     return vertex;
   }
 
-  add(vertex: VertexEntity, regenerate: boolean = true, index?: number): void {
-    if (regenerate) CommandHistory.pushMiniBatch();
-
-    this.m_vertices.set(
-      vertex.id,
-      vertex,
-      index
-      // regenerate ? this.generateCurves.bind(this) : undefined
-    );
-
-    if (regenerate) {
-      this.regen();
-      CommandHistory.popMiniBatch();
-    }
-  }
-
   close(mergeThreshold: number = 1e-4): void {
-    // Check if there are at least 2 vertices
-    if (this.length < 2) return;
+    if (this.m_vertices.size < 2) return;
 
     // Check if the element is a line segment
     if (this.m_curves.size === 1 && this.m_curves.values().next().value.bezierType === 'linear')
@@ -274,13 +232,7 @@ class Element implements ElementEntity {
 
     const mid = this.transform.center;
 
-    if (this.m_vertices.order[0]) {
-      CommandHistory.pushMiniBatch();
-      this.m_closed.value = true;
-      this.regenerate();
-      CommandHistory.popMiniBatch();
-    }
-
+    if (this.m_vertices.order[0]) this.mutate(() => (this.m_closed.value = true));
     this.transform.keepCentered(mid, true);
   }
 
@@ -348,19 +300,13 @@ class Element implements ElementEntity {
     }
   }
 
-  regen() {
-    CommandHistory.add(new FunctionCallCommand(this.generateCurves.bind(this)));
-  }
-
   remove(vertex: VertexEntity | true, keepClosed = true): void {
     if (this.m_vertices.size < 3) {
       SceneManager.delete(this, true);
       return;
     }
 
-    const box = this.transform.unrotatedBoundingBox;
-    const mid = vec2.mid(box[0], box[1]);
-
+    const mid = this.transform.center;
     const vertices = vertex === true ? this.selection.entities : [vertex];
     const indices = vertices.map((vertex) => this.m_vertices.indexOf(vertex.id)).sort();
 
@@ -385,24 +331,22 @@ class Element implements ElementEntity {
 
         const ids = this.m_vertices.order.filter((id) => order.indexOf(id) === -1);
 
-        CommandHistory.pushMiniBatch();
-        ids.forEach((id) => {
-          if (id) this.m_vertices.delete(id);
-        });
+        this.mutate(() => {
+          ids.forEach((id) => {
+            if (id) this.m_vertices.delete(id);
+          });
 
-        if (this.m_closed.value && this.m_vertices.size === 2) {
-          if (
-            !this.m_vertices.first!.right &&
-            !this.m_vertices.first!.left &&
-            !this.m_vertices.last!.right &&
-            !this.m_vertices.last!.left
-          ) {
-            this.m_closed.value = false;
+          if (this.m_closed.value && this.m_vertices.size === 2) {
+            if (
+              !this.m_vertices.first!.right &&
+              !this.m_vertices.first!.left &&
+              !this.m_vertices.last!.right &&
+              !this.m_vertices.last!.left
+            ) {
+              this.m_closed.value = false;
+            }
           }
-        }
-
-        this.regen();
-        CommandHistory.popMiniBatch();
+        });
 
         // TOCHECK
         // this.selection.restore(vertices as VertexEntity[]);
@@ -424,6 +368,7 @@ class Element implements ElementEntity {
 
     for (let i = 0, n = fragments.length; i < n; ++i) {
       fragments[i] = fragments[i].filter((id) => id != undefined);
+
       if (fragments[i].length > 1) {
         const element = new Element({
           vertices: fragments[i].map((id) => this.m_vertices.get(id)!),
@@ -432,6 +377,7 @@ class Element implements ElementEntity {
           fill: this.fill?.asObject(),
           stroke: this.stroke?.asObject()
         });
+
         element.transform.keepCentered(mid);
         SceneManager.add(element);
         elements.push(element);
@@ -439,20 +385,7 @@ class Element implements ElementEntity {
     }
 
     SceneManager.delete(this, true);
-
-    CommandHistory.add(
-      new ChangeCommand(
-        () => {
-          elements.forEach((element) => {
-            element.forEach((vertex) => (vertex.parent = element));
-          });
-          this.selection.clear();
-        },
-        () => {
-          this.forEach((vertex) => (vertex.parent = this));
-        }
-      )
-    );
+    CommandHistory.add(new FunctionCallCommand(this.regenerate.bind(this)));
 
     // TOCHECK
     this.selection.clear();
@@ -498,7 +431,7 @@ class Element implements ElementEntity {
             intersections += points.length;
           });
 
-          if (!this.m_closed.value && this.length > 1)
+          if (!this.m_closed.value && this.m_vertices.size > 1)
             intersections += this.m_closingCurve.getLineIntersectionPoints(rect).length;
 
           if (intersections % 2 !== 0) toReturn = this;
@@ -506,7 +439,7 @@ class Element implements ElementEntity {
           let count = 0;
 
           const curves = Array.from(this.m_curves.values());
-          if (!this.m_closed.value && this.length > 1) curves.push(this.m_closingCurve);
+          if (!this.m_closed.value && this.m_vertices.size > 1) curves.push(this.m_closingCurve);
 
           curves.forEach((bezier) => {
             bezier.getLineIntersections(rect).forEach((t) => {
@@ -564,11 +497,8 @@ class Element implements ElementEntity {
     return drawable;
   }
 
-  getDrawable(useWebGL: boolean = false): Drawable {
-    Debugger.time('drwb');
-    const drawable = this.m_cache.cached('drawable', this.onGetDrawableCacheMiss.bind(this));
-    Debugger.timeEnd('drwb');
-    return drawable;
+  getDrawable(): Drawable {
+    return this.m_cache.cached('drawable', this.onGetDrawableCacheMiss.bind(this));
   }
 
   getOutlineDrawable = this.getDrawable;

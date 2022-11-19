@@ -210,7 +210,7 @@ abstract class CommandHistory {
   static clear() {
     this.m_commands.length = 0;
     this.m_index = -1;
-    console.clear();
+    // console.clear();
   }
 
   static ignoreNext() {

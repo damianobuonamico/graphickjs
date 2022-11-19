@@ -1,6 +1,7 @@
 import { Cache, VertexCache } from '@/editor/ecs/components/cache';
 import { ChangeCommand } from '@/editor/history/command';
 import CommandHistory from '@/editor/history/history';
+import { EntityValue } from '@/editor/history/value';
 import { isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import { VertexTransform } from '../components/transform';
@@ -16,7 +17,7 @@ class Vertex implements VertexEntity {
   readonly selectable = false;
   readonly transform: VertexTransform;
 
-  private m_parent: ElementEntity;
+  private m_parent: EntityValue<ElementEntity> = new EntityValue();
 
   private m_position: HandleEntity;
   private m_left?: HandleEntity;
@@ -29,7 +30,7 @@ class Vertex implements VertexEntity {
     this.id = id;
     this.m_position = new Handle({ position, type: 'vertex', parent: this });
     this.m_cacheDisabled = disableCache;
-    if (!disableCache) this.m_position.setCache(this.m_cache as any as Cache);
+    if (!disableCache) this.m_position.setCache(this.m_cache);
 
     if (left) this.left = new Handle({ position: left, type: 'bezier', parent: this });
     if (right) this.right = new Handle({ position: right, type: 'bezier', parent: this });
@@ -38,12 +39,12 @@ class Vertex implements VertexEntity {
   }
 
   get parent() {
-    return this.m_parent;
+    return this.m_parent.value!;
   }
 
   set parent(parent: ElementEntity) {
-    this.m_parent = parent;
-    this.m_cache.parentCache = parent.cache as Cache;
+    this.m_parent.value = parent;
+    this.m_cache.parentCache = parent.cache;
   }
 
   get position(): HandleEntity {
@@ -57,7 +58,7 @@ class Vertex implements VertexEntity {
   set left(handle: HandleEntity | undefined) {
     const backup = this.m_left;
 
-    if (!this.m_cacheDisabled) handle?.setCache(this.m_cache as any as Cache);
+    if (!this.m_cacheDisabled && handle) handle.setCache(this.m_cache);
 
     CommandHistory.add(
       new ChangeCommand(

@@ -137,6 +137,7 @@ interface Drawable {
 interface DebugState {
   entityBox: boolean;
   segmentBox: boolean;
+  vertices: boolean;
 }
 
 interface RendererStats {

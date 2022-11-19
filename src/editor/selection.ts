@@ -30,7 +30,7 @@ class ElementSelectionManager {
   }
 
   get full() {
-    return this.m_selected.size === this.m_parent.length;
+    return this.m_selected.size === this.m_parent.size;
   }
 
   has(id: string) {
@@ -127,7 +127,7 @@ abstract class SelectionManager {
     this.m_selected.forEach((entity) => {
       const isElementEntity = isElement(entity);
 
-      if ((isElement(entity) && entity.length > 1) || !isElementEntity) {
+      if ((isElement(entity) && entity.size > 1) || !isElementEntity) {
         const box = entity.transform.boundingBox;
 
         if (box) {
@@ -149,7 +149,7 @@ abstract class SelectionManager {
     this.m_selected.forEach((entity) => {
       const isElementEntity = isElement(entity);
 
-      if ((isElement(entity) && entity.length > 1) || !isElementEntity) {
+      if ((isElement(entity) && entity.size > 1) || !isElementEntity) {
         const box = entity.transform.boundingBox;
 
         if (box) {
@@ -176,7 +176,7 @@ abstract class SelectionManager {
 
         const isElementEntity = isElement(entity);
 
-        if ((isElement(entity) && entity.length > 1) || !isElementEntity) {
+        if ((isElement(entity) && entity.size > 1) || !isElementEntity) {
           const box = entity.transform.rotatedBoundingBox;
 
           if (box) {

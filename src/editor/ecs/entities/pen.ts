@@ -1,5 +1,4 @@
 import { Renderer } from '@/editor/renderer';
-import SceneManager from '@/editor/scene';
 import { nanoid } from 'nanoid';
 import { UntrackedTransform } from '../components/transform';
 

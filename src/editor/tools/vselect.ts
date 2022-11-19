@@ -10,6 +10,7 @@ import SelectionManager from '../selection';
 import CommandHistory from '../history/history';
 import Selector from '../ecs/entities/selector';
 
+// TODO: Refactor based on pen tool syntax
 // TODO: curve selection
 const onVSelectPointerDown = () => {
   const entity = InputManager.hover.entity;

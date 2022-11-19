@@ -232,8 +232,6 @@ export class SimpleTransform implements SimpleTransformComponent {
       return;
     }
 
-    console.trace('set');
-
     const backup = this.position;
     const value = new CachedTransformVec2Value(cache, this.position.value);
 

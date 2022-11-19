@@ -230,25 +230,14 @@ export class SetToOrderedMapCommand<K, V> extends Command {
   private m_keys: K[];
   private m_values: V[];
   private m_indices: (number | undefined)[];
-  private m_callback: ((value: V, key: K) => void) | undefined;
-  private m_undoCallback: ((order: K[]) => void) | undefined;
 
-  constructor(
-    map: OrderedMapSuper<K, V>,
-    key: K,
-    value: V,
-    index?: number,
-    callbackfn?: (value: V, key: K) => void,
-    undocallbackfn?: (order: K[]) => void
-  ) {
+  constructor(map: OrderedMapSuper<K, V>, key: K, value: V, index?: number) {
     super();
 
     this.m_map = map;
     this.m_keys = [key];
     this.m_values = [value];
     this.m_indices = [index];
-    this.m_callback = callbackfn;
-    this.m_undoCallback = undocallbackfn;
   }
 
   get hash(): Object {
@@ -256,44 +245,22 @@ export class SetToOrderedMapCommand<K, V> extends Command {
   }
 
   execute(): void {
-    if (this.m_callback) {
-      for (let i = 0, n = this.m_keys.length; i < n; ++i) {
-        const index = this.m_indices[i];
-        if (index) this.m_map.order.splice(index, 0, this.m_keys[i]);
-        else this.m_map.order.push(this.m_keys[i]);
+    for (let i = 0, n = this.m_keys.length; i < n; ++i) {
+      const index = this.m_indices[i];
+      if (index) this.m_map.order.splice(index, 0, this.m_keys[i]);
+      else this.m_map.order.push(this.m_keys[i]);
 
-        this.m_map.superSet(this.m_keys[i], this.m_values[i]);
-        this.m_callback(this.m_values[i], this.m_keys[i]);
-      }
-    } else {
-      for (let i = 0, n = this.m_keys.length; i < n; ++i) {
-        const index = this.m_indices[i];
-        if (index) this.m_map.order.splice(index, 0, this.m_keys[i]);
-        else this.m_map.order.push(this.m_keys[i]);
-
-        this.m_map.superSet(this.m_keys[i], this.m_values[i]);
-      }
+      this.m_map.superSet(this.m_keys[i], this.m_values[i]);
     }
   }
 
   undo(): void {
-    if (this.m_undoCallback) {
-      for (let i = this.m_keys.length - 1; i > -1; --i) {
-        const index = this.m_indices[i];
-        if (index) this.m_map.order.splice(index, 1);
-        else this.m_map.order.pop();
+    for (let i = this.m_keys.length - 1; i > -1; --i) {
+      const index = this.m_indices[i];
+      if (index) this.m_map.order.splice(index, 1);
+      else this.m_map.order.pop();
 
-        this.m_map.superDelete(this.m_keys[i]);
-        this.m_undoCallback(this.m_map.order);
-      }
-    } else {
-      for (let i = this.m_keys.length - 1; i > -1; --i) {
-        const index = this.m_indices[i];
-        if (index) this.m_map.order.splice(index, 1);
-        else this.m_map.order.pop();
-
-        this.m_map.superDelete(this.m_keys[i]);
-      }
+      this.m_map.superDelete(this.m_keys[i]);
     }
   }
 
@@ -314,22 +281,14 @@ export class DeleteFromOrderedMapCommand<K, V> extends Command {
   private m_keys: K[];
   private m_values: V[];
   private m_indices: number[];
-  private m_callback: ((value: V, key: K) => void) | undefined;
 
-  constructor(
-    map: OrderedMapSuper<K, V>,
-    key: K,
-    value: V,
-    index: number,
-    callbackfn?: (value: V, key: K) => void
-  ) {
+  constructor(map: OrderedMapSuper<K, V>, key: K, value: V, index: number) {
     super();
 
     this.m_map = map;
     this.m_keys = [key];
     this.m_values = [value];
     this.m_indices = [index];
-    this.m_callback = callbackfn;
   }
 
   get hash(): Object {
@@ -337,17 +296,9 @@ export class DeleteFromOrderedMapCommand<K, V> extends Command {
   }
 
   execute(): void {
-    if (this.m_callback) {
-      for (let i = 0, n = this.m_keys.length; i < n; ++i) {
-        this.m_map.order.splice(this.m_indices[i], 1);
-        this.m_map.superDelete(this.m_keys[i]);
-        this.m_callback(this.m_values[i], this.m_keys[i]);
-      }
-    } else {
-      for (let i = 0, n = this.m_keys.length; i < n; ++i) {
-        this.m_map.order.splice(this.m_indices[i], 1);
-        this.m_map.superDelete(this.m_keys[i]);
-      }
+    for (let i = 0, n = this.m_keys.length; i < n; ++i) {
+      this.m_map.order.splice(this.m_indices[i], 1);
+      this.m_map.superDelete(this.m_keys[i]);
     }
   }
 

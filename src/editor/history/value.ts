@@ -164,18 +164,10 @@ export class MapValue<K, V> extends Map<K, V> {
 
 export class OrderedMapValue<K, V> extends Map<K, V> {
   private m_order: K[];
-  private m_setCallback: ((value: V, key: K) => void) | undefined;
-  private m_deleteCallback: ((value: V, key: K) => void) | undefined;
 
-  constructor(
-    entries?: readonly (readonly [K, V])[] | null,
-    setCallback?: (value: V, key: K) => void,
-    deleteCallback?: (value: V, key: K) => void
-  ) {
+  constructor(entries?: readonly (readonly [K, V])[] | null) {
     super(entries);
     this.m_order = entries ? entries.map((entry) => entry[0]) : [];
-    this.m_setCallback = setCallback;
-    this.m_deleteCallback = deleteCallback;
   }
 
   get first(): V | undefined {
@@ -219,7 +211,7 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
       else this.delete(key);
     }
 
-    CommandHistory.add(new SetToOrderedMapCommand(this, key, value, index, this.m_setCallback));
+    CommandHistory.add(new SetToOrderedMapCommand(this, key, value, index));
 
     return this;
   }
@@ -229,9 +221,7 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
     if (!value) return false;
     const index = this.m_order.indexOf(key);
 
-    CommandHistory.add(
-      new DeleteFromOrderedMapCommand(this, key, value, index, this.m_deleteCallback)
-    );
+    CommandHistory.add(new DeleteFromOrderedMapCommand(this, key, value, index));
 
     return true;
   }
@@ -264,52 +254,6 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
     return this.m_order
       .filter((key) => this.has(key))
       .map((key, index, array) => callbackfn(this.get(key)!, key, index, array));
-  }
-
-  reorder(order: K[], callbackfn?: (order: K[]) => void): K[] {
-    const backup = [...this.m_order];
-    const reordered = order.filter((key) => this.has(key));
-
-    let isSameOrder = true;
-
-    if (backup.length === reordered.length) {
-      for (let i = 0, n = backup.length; i < n; ++i) {
-        if (backup[i] !== reordered[i]) {
-          isSameOrder = false;
-          break;
-        }
-      }
-    } else isSameOrder = false;
-
-    if (!isSameOrder) {
-      return CommandHistory.add(
-        new ChangeCommand(
-          () => {
-            this.m_order = [...reordered];
-            if (callbackfn) callbackfn(reordered);
-            return reordered;
-          },
-          () => {
-            this.m_order = [...backup];
-            if (callbackfn) callbackfn(backup);
-          }
-        )
-      );
-    } else if (callbackfn) {
-      return CommandHistory.add(
-        new ChangeCommand(
-          () => {
-            callbackfn(reordered);
-            return reordered;
-          },
-          () => {
-            callbackfn(backup);
-          }
-        )
-      );
-    }
-
-    return this.m_order;
   }
 
   reverse(): K[] {

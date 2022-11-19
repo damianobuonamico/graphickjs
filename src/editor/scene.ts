@@ -18,13 +18,10 @@ import SelectionManager from './selection';
 import InputManager from './input';
 import { fileDialog } from '@/utils/file';
 import { parseSVG } from '@/utils/svg';
-
-// DEV
 import ImageMedia from './ecs/entities/image';
 import OverlayState from './overlays';
 import Color from './ecs/components/color';
 import AnimationManager from './animation/animation';
-import Debugger from '@/utils/debugger';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -74,7 +71,7 @@ abstract class SceneManager {
         !forceObject &&
         entity.type === 'element' &&
         InputManager.tool.isVertex &&
-        (entity as Element).selection.size < (entity as Element).length - 1
+        (entity as Element).selection.size < (entity as Element).size - 1
       ) {
         (entity as Element).remove(true, false);
       } else {
@@ -250,6 +247,8 @@ abstract class SceneManager {
           const vertex = this.fromObject(obj);
           if (vertex) vertices.push(vertex as Vertex);
         });
+
+        if (!vertices.length) return;
 
         return new Element({ ...{ ...(object as ElementObject), vertices } });
       case 'vertex':

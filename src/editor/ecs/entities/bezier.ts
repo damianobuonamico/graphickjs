@@ -15,19 +15,21 @@ class Bezier implements BezierEntity {
   readonly selectable = false;
   readonly start: VertexEntity;
   readonly end: VertexEntity;
+  readonly transform: SimpleTransform;
 
   private m_parent: ElementEntity;
-  transform: SimpleTransform;
 
   private m_cache: Cache = new Cache();
 
   constructor({ start, end }: BezierOptions) {
     this.id = nanoid();
+    this.transform = new SimpleTransform();
+
     this.start = start;
     this.start.registerCache(this.m_cache);
+
     this.end = end;
     this.end.registerCache(this.m_cache);
-    this.transform = new SimpleTransform();
   }
 
   get parent() {
