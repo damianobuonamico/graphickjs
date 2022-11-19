@@ -1,4 +1,5 @@
 import { vec2 } from '@/math';
+import { KEYS } from '@/utils/keys';
 import { isBezier } from '../ecs/entities/bezier';
 import Element, { isElement } from '../ecs/entities/element';
 import { isHandle, isVertexHandle } from '../ecs/entities/handle';
@@ -347,11 +348,24 @@ const onPenPointerDown = () => {
   }
 
   function onPointerUp() {
+    const pElement = pen.element.value;
+    const pVertex = pen.vertex.value;
+
     if (functions.onPointerUp) functions.onPointerUp();
+
+    if (pElement) pElement.transform.apply();
+    if (pVertex) pVertex.transform.apply();
+
     onPenPointerHover();
   }
 
-  return { onPointerMove, onPointerUp };
+  function onKey(e: KeyboardEvent) {
+    if (e.key === KEYS.SHIFT) {
+      onPointerMove();
+    }
+  }
+
+  return { onPointerMove, onPointerUp, onKey };
 };
 
 export function onPenPointerHover() {

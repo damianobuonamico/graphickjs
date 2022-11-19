@@ -218,7 +218,8 @@ class Element implements ElementEntity {
 
     element.parent.remove(element.id);
 
-    this.transform.keepCentered(mid, true);
+    this.transform.keepCentered(mid);
+    this.transform.apply();
   }
 
   split(bezier: BezierEntity, position: vec2): VertexEntity | void {
