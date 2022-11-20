@@ -56,7 +56,7 @@ const Editor: Component = () => {
         <ToolBar
           tools={[
             'select',
-            'vselect',
+            'directSelect',
             'separator',
             'pen',
             'separator',

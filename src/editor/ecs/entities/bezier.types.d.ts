@@ -21,16 +21,20 @@ interface BezierEntity extends Entity {
   getRoots(): number[];
   getRotatedRoots(origin: vec2, angle: number): number[];
   getRotatedExtrema(origin: vec2, angle: number): vec2[];
-  getClosestTo(position: vec2, iterations: number): vec2;
-  getDistanceTo(position: vec2, iterations: number): number;
+  getClosestTo(position: vec2, iterations?: number): vec2;
+  getClosestTTo(position: vec2, iterations?: number): number;
+  getDistanceTo(position: vec2, iterations?: number): number;
   getLineIntersections(line: Box): number[];
   getLineIntersectionPoints(line: Box): vec2[];
   getBoxIntersectionPoints(box: Box): vec2[];
+  getStrutPoints(t: number): { v1: vec2; A: vec2; v2: vec2; e1: vec2; e2: vec2 };
+  getABC(t: number, B: vec2): { A: vec2; B: vec2; C: vec2 };
 
   intersectsLine(line: Box): boolean;
   intersectsBox(box: Box): boolean;
 
   split(position: vec2): VertexEntity;
+  deriveControlPoints(A: vec2, e1: vec2, e2: vec2, t: number): { p1: vec2; p2: vec2 };
 }
 
 type BezierType = 'linear' | 'cubic';

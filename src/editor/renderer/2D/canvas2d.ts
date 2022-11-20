@@ -12,6 +12,7 @@ import { isCompleteTransform } from '@/editor/ecs/components/transform';
 class Canvas2D extends CanvasBackend2D {
   private m_debuggerBinded: boolean = false;
   private m_debuggerEntities: Map<string, Entity> = new Map();
+  private m_debugCircles: { position: vec2; radius: number; color: string }[] = [];
 
   private m_outlineImageQueue: ImageEntity[] = [];
   private m_outlineCircleQueue: vec2[] = [];
@@ -154,18 +155,28 @@ class Canvas2D extends CanvasBackend2D {
       this.stroke();
 
       if (vertices && isElement(entity)) {
-        entity.forEach((vertex) =>
-          this.debugCircle({
-            position: entity.transform.transform(vertex.transform.position.value),
-            radius: 4,
-            color:
-              InputManager.hover.entity === vertex.position || entity.selection.has(vertex.id)
-                ? 'rgba(220, 20, 60, 0.5)'
-                : 'rgba(0, 255, 127, 0.5)'
-          })
-        );
+        entity.forEach((vertex) => {
+          this.beginPath();
+
+          this.m_ctx.fillStyle =
+            InputManager.hover.entity === vertex.position || entity.selection.has(vertex.id)
+              ? 'rgba(220, 20, 60, 0.5)'
+              : 'rgba(0, 255, 127, 0.5)';
+
+          this.circle(
+            entity.transform.transform(vertex.transform.position.value),
+            4 / SceneManager.viewport.zoom
+          );
+          this.fill();
+        });
       }
     });
+
+    this.m_debugCircles.forEach((circle) =>
+      super.debugCircle({ ...circle, radius: circle.radius / SceneManager.viewport.zoom })
+    );
+
+    this.m_debugCircles = [];
 
     if (!stats) return;
 
@@ -363,8 +374,16 @@ class Canvas2D extends CanvasBackend2D {
 
   image: (image: ImageEntity) => void = this.drawImage;
 
-  debugCircle(options: { position: vec2; radius?: number; color?: string }) {
-    super.debugCircle({ ...options, radius: (options.radius || 5) / SceneManager.viewport.zoom });
+  debugCircle({
+    position,
+    radius = 4,
+    color = 'rgb(220, 20, 60)'
+  }: {
+    position: vec2;
+    radius?: number;
+    color?: string;
+  }) {
+    this.m_debugCircles.push({ position, radius, color });
   }
 
   debugRect(options: { position: vec2; size?: vec2 | number; centered?: boolean; color?: string }) {

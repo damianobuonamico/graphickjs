@@ -197,11 +197,11 @@ class Element implements ElementEntity {
   split(bezier: BezierEntity, position: vec2): VertexEntity | void {
     if (!this.m_curves.has(bezier.id)) return;
 
-    if (this.transform.rotation.value !== 0)
-      position = vec2.rotate(position, this.transform.center, -this.transform.rotation.value);
-    position = vec2.sub(position, this.transform.position.value);
-
-    return this.add(bezier.split(position), true, this.m_vertices.indexOf(bezier.start.id) + 1);
+    return this.add(
+      bezier.split(this.transform.untransform(position)),
+      true,
+      this.m_vertices.indexOf(bezier.start.id) + 1
+    );
   }
 
   add(vertex: VertexEntity, regenerate: boolean = true, index?: number): VertexEntity {
@@ -395,9 +395,7 @@ class Element implements ElementEntity {
     const angle = this.transform.rotation.value;
     const mid = this.transform.center;
 
-    if (angle !== 0) {
-      position = vec2.rotate(position, mid, -this.transform.rotation.value);
-    }
+    if (angle !== 0) position = vec2.rotate(position, mid, -this.transform.rotation.value);
 
     if (
       isPointInBox(

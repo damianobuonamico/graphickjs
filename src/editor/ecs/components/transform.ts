@@ -62,7 +62,6 @@ class TransformFloatValue extends FloatValue implements TransformComponentValue<
 
   apply(): void {
     if (this.m_static.value === this.m_value.value) return;
-    // TODO: ChangeDoublePrimitiveCommand
     CommandHistory.add(new ChangePrimitiveCommand(this.m_static, this.m_value.value));
   }
 }
@@ -81,6 +80,15 @@ class CachedTransformVec2Value extends TransformVec2Value {
 
   set cache(cache: CacheComponent) {
     this.m_cache = cache;
+  }
+
+  get value(): vec2 {
+    return vec2.clone(this.m_value);
+  }
+
+  set value(value: vec2) {
+    super.value = value;
+    this.m_cache.pause = true;
   }
 
   get delta(): vec2 {
@@ -112,6 +120,23 @@ class CachedTransformFloatValue extends TransformFloatValue {
   constructor(cache: CacheComponent, value?: number) {
     super(value);
     this.m_cache = cache;
+  }
+
+  get cache(): CacheComponent {
+    return this.m_cache;
+  }
+
+  set cache(cache: CacheComponent) {
+    this.m_cache = cache;
+  }
+
+  get value(): number {
+    return this.m_value.value;
+  }
+
+  set value(value: number) {
+    super.value = value;
+    this.m_cache.pause = true;
   }
 
   get delta(): number {
@@ -609,6 +634,13 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     this.keepCentered(center, false);
 
     if (apply) this.applyScale();
+  }
+
+  untransform(point: vec2): vec2 {
+    const angle = this.rotation.value;
+    const untransformed = angle === 0 ? vec2.clone(point) : vec2.rotate(point, this.center, -angle);
+
+    return vec2.sub(untransformed, this.position.value, untransformed);
   }
 
   keepCentered(center: vec2, apply: boolean = false): void {

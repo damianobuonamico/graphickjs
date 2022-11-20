@@ -7,7 +7,7 @@ import onPolygonPointerDown from './polygon';
 import onRotatePointerDown from './rotate';
 import onScalePointerDown from './scale';
 import onSelectPointerDown from './select';
-import onVSelectPointerDown from './vselect';
+import onDirectSelectPointerDown from './directSelect';
 import onZoomPointerDown from './zoom';
 
 class ToolState {
@@ -17,7 +17,7 @@ class ToolState {
 
   private m_callbacks: ToolMap<() => PointerDownReturn> = {
     select: onSelectPointerDown,
-    vselect: onVSelectPointerDown,
+    directSelect: onDirectSelectPointerDown,
     pen: onPenPointerDown,
     rectangle: () => onPolygonPointerDown('rectangle'),
     ellipse: () => onPolygonPointerDown('ellipse'),
@@ -28,7 +28,7 @@ class ToolState {
   };
   private m_data: ToolMap<ToolData> = {
     select: {},
-    vselect: {},
+    directSelect: {},
     pen: {},
     rectangle: {},
     ellipse: {},
@@ -41,7 +41,7 @@ class ToolState {
     pen: onPenPointerHover
   };
 
-  private m_vertexTools = { vselect: true, pen: true };
+  private m_vertexTools = { directSelect: true, pen: true };
 
   private m_setTool: (tool: Tool) => void;
   private m_onPointerMove: (() => void) | undefined;
@@ -95,7 +95,7 @@ class ToolState {
         this.active = 'pan';
       }
     } else if (InputManager.keys.ctrl) {
-      if (this.m_current === 'select' || this.m_current === 'pen') this.active = 'vselect';
+      if (this.m_current === 'select' || this.m_current === 'pen') this.active = 'directSelect';
       else this.active = 'select';
     } else {
       this.active = this.current;

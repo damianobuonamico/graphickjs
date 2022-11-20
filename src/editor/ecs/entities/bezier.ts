@@ -388,6 +388,13 @@ class Bezier implements BezierEntity {
     }).point;
   }
 
+  getClosestTTo(position: vec2, iterations: number = 4): number {
+    return this.call(this.getLinearClosestTo, this.getCubicClosestTo, {
+      position,
+      iterations
+    }).t;
+  }
+
   getDistanceTo(position: vec2, iterations: number = 8): number {
     return this.call(this.getLinearClosestTo, this.getCubicClosestTo, {
       position,
@@ -504,6 +511,61 @@ class Bezier implements BezierEntity {
     return points;
   }
 
+  private getLinearStrutPoints({ t }: { t: number }) {
+    const p0 = this.p0;
+    const p3 = this.p3;
+    return { v1: p0, A: vec2.lerp(p0, p3, t), v2: p3, e1: this.p0, e2: this.p3 };
+  }
+  private getCubicStrutPoints({ t }: { t: number }) {
+    const p0 = this.p0;
+    const p1 = this.p1;
+    const p2 = this.p2;
+    const p3 = this.p3;
+
+    const v1 = vec2.lerp(p0, p1, t);
+    const A = vec2.lerp(p1, p2, t);
+    const v2 = vec2.lerp(p2, p3, t);
+
+    const e1 = vec2.lerp(v1, A, t);
+    const e2 = vec2.lerp(A, v2, t);
+
+    return { v1, A, v2, e1, e2 };
+  }
+  getStrutPoints(t: number): { v1: vec2; A: vec2; v2: vec2; e1: vec2; e2: vec2 } {
+    return this.call(this.getLinearStrutPoints, this.getCubicStrutPoints, { t });
+  }
+
+  private getProjectionRatio(t: number) {
+    if (t === 0 || t === 1) return t;
+    const n = Math.pow(1 - t, 3);
+
+    return n / (Math.pow(t, 3) + n);
+  }
+
+  private getABCRatio(t: number) {
+    if (t === 0 || t === 1) return t;
+    const d = Math.pow(t, 3) + Math.pow(1 - t, 3);
+
+    return Math.abs((d - 1) / d);
+  }
+
+  getLinearABC({ t, B }: { t: number; B: vec2 }) {
+    const point = this.getLinearPoint({ t });
+    return { A: point, B, C: point };
+  }
+  getCubicABC({ t, B }: { t: number; B: vec2 }) {
+    const u = this.getProjectionRatio(t);
+    const um = 1 - u;
+    const C = vec2.add(vec2.mulS(this.p0, u), vec2.mulS(this.p3, um));
+    const s = this.getABCRatio(t);
+    const A = vec2.add(B, vec2.divS(vec2.sub(B, C), s));
+
+    return { A, B, C };
+  }
+  getABC(t: number, B: vec2): { A: vec2; B: vec2; C: vec2 } {
+    return this.call(this.getLinearABC, this.getCubicABC, { t, B });
+  }
+
   intersectsLine(line: Box): boolean {
     if (
       !doesBoxIntersectBox(
@@ -545,6 +607,28 @@ class Bezier implements BezierEntity {
   split(position: vec2): VertexEntity {
     return this.call(this.linearSplit, this.cubicSplit, {
       position
+    });
+  }
+
+  private deriveLinearControlPoints() {
+    return { p1: vec2.create(), p2: vec2.create() };
+  }
+  private deriveCubicControlPoints({ A, e1, e2, t }: { A: vec2; e1: vec2; e2: vec2; t: number }) {
+    const p0 = this.p0;
+    const p3 = this.p3;
+    const v1 = vec2.sub(A, vec2.divS(vec2.sub(A, e1), 1 - t));
+    const v2 = vec2.sub(A, vec2.divS(vec2.sub(A, e2), t));
+    const p1 = vec2.add(p0, vec2.divS(vec2.sub(v1, p0), t));
+    const p2 = vec2.add(p3, vec2.divS(vec2.sub(v2, p3), 1 - t));
+
+    return { p1, p2 };
+  }
+  deriveControlPoints(A: vec2, e1: vec2, e2: vec2, t: number): { p1: vec2; p2: vec2 } {
+    return this.call(this.deriveLinearControlPoints, this.deriveCubicControlPoints, {
+      A,
+      e1,
+      e2,
+      t
     });
   }
 

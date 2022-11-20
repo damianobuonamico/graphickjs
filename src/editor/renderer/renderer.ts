@@ -6,10 +6,10 @@ abstract class Renderer {
 
   public static debugging: boolean = true;
   public static debug: DebugState = {
-    entityBox: true,
-    segmentBox: true,
-    vertices: true,
-    opacity: 0.3
+    entityBox: false,
+    segmentBox: false,
+    vertices: false,
+    opacity: 1
   };
 
   public static stats: RendererStats = new Stats();

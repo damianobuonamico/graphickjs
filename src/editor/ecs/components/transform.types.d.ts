@@ -48,6 +48,7 @@ interface TransformComponent {
 interface ElementTransformComponent extends TransformComponent {
   readonly largeBoundingBox: Box;
 
+  untransform(point: vec2): vec2;
   keepCentered(center: vec2, apply?: boolean): void;
 }
 

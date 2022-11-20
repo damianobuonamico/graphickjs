@@ -13,7 +13,7 @@ import MenuSelect from '../menu/MenuSelect';
 
 export function getToolIcon(tool: Tool): JSX.Element {
   switch (tool) {
-    case 'vselect':
+    case 'directSelect':
       return <PointerVertexIcon />;
     case 'pen':
       return <PenIcon />;

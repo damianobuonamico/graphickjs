@@ -59,9 +59,15 @@ class ElementSelectionManager {
     });
   }
 
-  temp(vertices: Set<Vertex>) {
+  temp(vertices: Set<VertexEntity>) {
     this.m_temp.clear();
     vertices.forEach((vertex) => {
+      this.m_temp.set(vertex.id, vertex);
+    });
+  }
+
+  tempAll() {
+    this.m_parent.forEach((vertex) => {
       this.m_temp.set(vertex.id, vertex);
     });
   }

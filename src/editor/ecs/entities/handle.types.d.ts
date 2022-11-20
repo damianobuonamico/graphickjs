@@ -4,6 +4,7 @@ interface HandleEntity extends Entity {
   readonly transform: SimpleTransformComponent;
 
   handleType: HandleType;
+  parent: VertexEntity;
 
   setCache(caches: CacheComponent): void;
 }

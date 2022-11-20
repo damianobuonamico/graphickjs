@@ -3,6 +3,8 @@ interface ElementEntity extends Entity {
   readonly selectable: true;
   readonly transform: ElementTransformComponent;
   readonly cache: CacheComponent;
+  // TODO: SelectionComponent;
+  readonly selection: any;
 
   parent: LayerEntity;
 

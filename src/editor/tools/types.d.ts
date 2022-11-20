@@ -1,13 +1,18 @@
 type PenState = 'new' | 'join' | 'close' | 'sub' | 'add' | 'angle' | 'start';
 
-interface PenDataStateInterface {
+interface PenToolStateInterface {
   readonly element: Value<ElementEntity | undefined>;
   readonly vertex: Value<VertexEntity | undefined>;
   readonly overlay: PenEntity;
 }
 
 interface PenToolData {
-  pen?: PenDataStateInterface;
+  pen?: PenToolStateInterface;
+}
+
+interface DirectSelectToolStateInterface {
+  draggingOccurred: boolean;
+  entityIsAddedToSelection: boolean;
 }
 
 interface SelectToolData {
@@ -18,7 +23,7 @@ type ToolData = PenToolData | SelectToolData;
 
 interface ToolMap<T> {
   select: T;
-  vselect: T;
+  directSelect: T;
   pen: T;
   rectangle: T;
   ellipse: T;

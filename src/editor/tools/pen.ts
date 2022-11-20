@@ -30,7 +30,7 @@ function setRightHandle(vertex: VertexEntity, position: vec2 = [0, 0]) {
   element.transform.keepCentered(center);
 }
 
-const onPenNewPointerDown = (pen: PenDataStateInterface) => {
+const onPenNewPointerDown = (pen: PenToolStateInterface) => {
   let pElement = pen.element.value;
   let pVertex = pen.vertex.value;
 
@@ -73,13 +73,11 @@ const onPenNewPointerDown = (pen: PenDataStateInterface) => {
     setRightHandle(pVertex, delta);
   }
 
-  return {
-    onPointerMove
-  };
+  return { onPointerMove };
 };
 
 const onPenJoinPointerDown = (
-  pen: PenDataStateInterface,
+  pen: PenToolStateInterface,
   element: ElementEntity,
   vertex: VertexEntity
 ) => {
@@ -113,14 +111,11 @@ const onPenJoinPointerDown = (
     pen.vertex.value = undefined;
   }
 
-  return {
-    onPointerMove,
-    onPointerUp
-  };
+  return { onPointerMove, onPointerUp };
 };
 
 const onPenClosePointerDown = (
-  pen: PenDataStateInterface,
+  pen: PenToolStateInterface,
   element: ElementEntity,
   vertex: VertexEntity
 ) => {
@@ -149,14 +144,11 @@ const onPenClosePointerDown = (
     pen.vertex.value = undefined;
   }
 
-  return {
-    onPointerMove,
-    onPointerUp
-  };
+  return { onPointerMove, onPointerUp };
 };
 
 const onPenSubPointerDown = (
-  pen: PenDataStateInterface,
+  pen: PenToolStateInterface,
   element: ElementEntity,
   vertex: VertexEntity
 ) => {
@@ -172,13 +164,11 @@ const onPenSubPointerDown = (
     pen.vertex.value = undefined;
   }
 
-  return {
-    onPointerUp
-  };
+  return { onPointerUp };
 };
 
 const onPenAddPointerDown = (
-  pen: PenDataStateInterface,
+  pen: PenToolStateInterface,
   element: ElementEntity,
   bezier: BezierEntity
 ) => {
@@ -208,14 +198,11 @@ const onPenAddPointerDown = (
     pen.vertex.value = undefined;
   }
 
-  return {
-    onPointerMove,
-    onPointerUp
-  };
+  return { onPointerMove, onPointerUp };
 };
 
 const onPenAnglePointerDown = (
-  pen: PenDataStateInterface,
+  pen: PenToolStateInterface,
   element: ElementEntity,
   vertex: VertexEntity
 ) => {
@@ -235,13 +222,11 @@ const onPenAnglePointerDown = (
     }
   }
 
-  return {
-    onPointerMove
-  };
+  return { onPointerMove };
 };
 
 const onPenStartPointerDown = (
-  pen: PenDataStateInterface,
+  pen: PenToolStateInterface,
   element: ElementEntity,
   vertex: VertexEntity
 ) => {
@@ -266,12 +251,10 @@ const onPenStartPointerDown = (
     }
   }
 
-  return {
-    onPointerMove
-  };
+  return { onPointerMove };
 };
 
-class PenDataState implements PenDataStateInterface {
+class PenToolState implements PenToolStateInterface {
   readonly element: EntityValue<ElementEntity> = new EntityValue();
   readonly vertex: EntityValue<VertexEntity> = new EntityValue();
   readonly overlay: PenEntity = new Pen();
@@ -279,7 +262,7 @@ class PenDataState implements PenDataStateInterface {
 
 const onPenPointerDown = () => {
   if (!(<PenToolData>InputManager.tool.data).pen)
-    (<PenToolData>InputManager.tool.data).pen = new PenDataState();
+    (<PenToolData>InputManager.tool.data).pen = new PenToolState();
 
   const pen = (InputManager.tool.data as PenToolData).pen!;
   const hovered = InputManager.hover.entity;
@@ -329,9 +312,8 @@ const onPenPointerDown = () => {
     if (pElement && pVertex && InputManager.keys.space) {
       const angle = pElement.transform.rotation.value;
 
-      if (angle === 0) {
-        pVertex.transform.translate(InputManager.scene.movement);
-      } else {
+      if (angle === 0) pVertex.transform.translate(InputManager.scene.movement);
+      else {
         const center = pElement.transform.center;
         const movement = vec2.rotate(InputManager.scene.movement, [0, 0], -angle);
 
@@ -370,7 +352,7 @@ const onPenPointerDown = () => {
 
 export function onPenPointerHover() {
   if (!(<PenToolData>InputManager.tool.data).pen)
-    (<PenToolData>InputManager.tool.data).pen = new PenDataState();
+    (<PenToolData>InputManager.tool.data).pen = new PenToolState();
 
   const pen = (<PenToolData>InputManager.tool.data).pen!;
   const element = pen.element.value;
