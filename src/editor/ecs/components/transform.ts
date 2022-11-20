@@ -811,20 +811,22 @@ export class RectTransform extends Transform implements RectTransformComponent {
     const box = this.unrotatedBoundingBox;
     const size = vec2.sub(box[1], box[0]);
 
-    const rotation = this.rotation.value;
-    const position = vec2.rotate([0, 0], this.getCenter(), rotation);
-    const reflection = this.reflection.value;
+    if (!vec2.equals(this.m_size.value, size)) {
+      const rotation = this.rotation.value;
+      const position = vec2.rotate([0, 0], this.getCenter(), rotation);
+      const reflection = this.reflection.value;
 
-    vec2.sub(position, vec2.rotate([0, 0], this.getCenter(box[0], size), rotation), position);
-    vec2.add(position, box[0], position);
+      vec2.sub(position, vec2.rotate([0, 0], this.getCenter(box[0], size), rotation), position);
+      vec2.add(position, box[0], position);
 
-    if (this.m_scale[0] < 0) reflection[0] = reflection[0] === 1 ? -1 : 1;
-    if (this.m_scale[1] < 0) reflection[1] = reflection[1] === 1 ? -1 : 1;
+      if (this.m_scale[0] < 0) reflection[0] = reflection[0] === 1 ? -1 : 1;
+      if (this.m_scale[1] < 0) reflection[1] = reflection[1] === 1 ? -1 : 1;
 
-    this.reflection.value = reflection;
-    this.position.value = position;
-    this.m_size.value = size;
-    vec2.set(this.m_scale, 1, 1);
+      this.reflection.value = reflection;
+      this.position.value = position;
+      this.m_size.value = size;
+      vec2.set(this.m_scale, 1, 1);
+    }
 
     super.apply();
   }
