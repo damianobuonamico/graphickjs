@@ -5,7 +5,6 @@ import Element from '../ecs/entities/element';
 import Selector from '../ecs/entities/selector';
 import CommandHistory from '../history/history';
 import InputManager from '../input';
-import { createVertices } from '../renderer/geometry';
 import SceneManager from '../scene';
 import SelectionManager from '../selection';
 

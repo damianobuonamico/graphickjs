@@ -190,6 +190,8 @@ const onDirectSelectBezierPointerDown = (
     const last = element.transform.untransform(InputManager.scene.origin);
 
     onPointerMove = () => {
+      const center = element.transform.center;
+
       const B = bezier.getClosestTo(last);
       const t = bezier.getClosestTTo(last);
       const { e1, e2 } = bezier.getStrutPoints(t);
@@ -231,6 +233,8 @@ const onDirectSelectBezierPointerDown = (
       } else bezier.end.transform.leftValue = vec2.sub(p2, E);
 
       vec2.copy(last, nB);
+
+      if (element.transform.rotation.value !== 0) element.transform.keepCentered(center);
     };
   }
 
