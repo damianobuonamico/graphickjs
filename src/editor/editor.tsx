@@ -19,6 +19,7 @@ function getModePrimaryColor(mode: Workspace) {
 
 const Editor: Component = () => {
   const [state, setState] = createStore<State>({
+    name: 'Untitled',
     mode: 'whiteboard',
     tool: 'select',
     loading: true,

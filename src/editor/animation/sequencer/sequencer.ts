@@ -26,7 +26,7 @@ class Sequencer extends CanvasBackend2D {
   private m_targetHover: SequenceNode | undefined = undefined;
   private m_cutPosition: vec2 | undefined = undefined;
 
-  private m_viewport: ViewportState;
+  private m_viewport: ViewportObject;
 
   private m_minZoom = 0.5;
   private m_maxZoom = 2;
@@ -71,8 +71,8 @@ class Sequencer extends CanvasBackend2D {
     this.m_viewport.zoom = zoom;
   }
 
-  private clientToLocal(position: vec2, override: Partial<ViewportState> = {}) {
-    const viewport = fillObject<ViewportState>(override, this.m_viewport);
+  private clientToLocal(position: vec2, override: Partial<ViewportObject> = {}) {
+    const viewport = fillObject<ViewportObject>(override, this.m_viewport);
     const local = vec2.create();
 
     vec2.sub(

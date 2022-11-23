@@ -1,6 +1,7 @@
 type Workspace = 'designer' | 'publisher' | 'whiteboard';
 
 interface State {
+  name: string;
   mode: Workspace;
   tool: Tool;
   loading: boolean;
@@ -37,7 +38,7 @@ interface PointerDownReturn {
   onKey?(e: KeyboardEvent): void;
 }
 
-interface ViewportState {
+interface ViewportObject {
   position: vec2;
   zoom: number;
   rotation: number;

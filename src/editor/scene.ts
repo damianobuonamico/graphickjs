@@ -10,9 +10,7 @@ import CommandHistory from './history/history';
 import {
   LOCAL_STORAGE_KEY,
   LOCAL_STORAGE_KEY_SEQUENCE,
-  LOCAL_STORAGE_KEY_STATE,
-  ZOOM_MAX,
-  ZOOM_MIN
+  LOCAL_STORAGE_KEY_STATE
 } from '@utils/constants';
 import SelectionManager from './selection';
 import InputManager from './input';
@@ -137,11 +135,23 @@ abstract class SceneManager {
 
   static save() {
     localStorage.setItem(LOCAL_STORAGE_KEY_STATE, JSON.stringify(this.viewport));
-    localStorage.setItem(LOCAL_STORAGE_KEY_SEQUENCE, JSON.stringify(AnimationManager.toJSON()));
+    // localStorage.setItem(LOCAL_STORAGE_KEY_SEQUENCE, JSON.stringify(AnimationManager.toJSON()));
     localStorage.setItem(
       LOCAL_STORAGE_KEY,
       JSON.stringify(this.m_ecs.map((entity) => entity.toJSON()))
     );
+
+    const state = this.viewport.toJSON();
+
+    const worker = new Worker(new URL('./data/save.ts', import.meta.url), {
+      type: 'module'
+    });
+    // worker.onmessage = (event) => {
+    //   console.log(`Worker said : ${event.data}`);
+    // };
+
+    console.log('work');
+    worker.postMessage({ state });
   }
 
   static load() {
