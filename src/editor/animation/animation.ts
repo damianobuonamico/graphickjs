@@ -52,6 +52,7 @@ abstract class AnimationManager {
   static stop() {
     this.m_playing = false;
     this.m_sequencer.stop();
+    this.render();
   }
 
   private static startAnimating() {

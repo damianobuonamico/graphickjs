@@ -3,12 +3,14 @@ import { Renderer } from '@/editor/renderer';
 import SceneManager from '@/editor/scene';
 import { isPointInCircle, vec2 } from '@/math';
 import { nanoid } from 'nanoid';
+import LayerCompositing from '../components/layerCompositing';
 import { UntrackedTransform } from '../components/transform';
 
 class GenericHandle implements Entity {
   readonly id: string;
   readonly selectable = false;
   readonly transform: UntrackedTransform;
+  readonly layer: LayerCompositingComponent;
 
   boundingBox: Box;
   type: EntityType = 'generichandle';
@@ -22,6 +24,7 @@ class GenericHandle implements Entity {
     this.id = id;
     this.m_radius = type === 'rotate' ? 9 : 3;
     this.transform = new UntrackedTransform(position);
+    this.layer = new LayerCompositing();
   }
 
   getEntityAt(
@@ -98,7 +101,7 @@ class Manipulator implements ManipulatorEntity {
   readonly id: string = nanoid();
   readonly type = 'manipulator';
   readonly selectable = false;
-
+  readonly layer: LayerCompositingComponent;
   parent: Entity;
   transform: UntrackedTransform;
 
@@ -153,6 +156,7 @@ class Manipulator implements ManipulatorEntity {
 
   constructor() {
     this.transform = new UntrackedTransform();
+    this.layer = new LayerCompositing();
   }
 
   get boundingBox(): Box {
@@ -201,7 +205,7 @@ class Manipulator implements ManipulatorEntity {
         static: true
       });
   }
-  
+
   getEntityAt(
     position: vec2,
     lowerLevel?: boolean | undefined,

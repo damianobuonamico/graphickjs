@@ -92,8 +92,7 @@ class Sequencer extends CanvasBackend2D {
     this.m_ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
     this.m_ctx.shadowBlur = 10 * this.m_viewport.zoom;
     this.m_ctx.shadowOffsetY = 2 * this.m_viewport.zoom;
-    // this.m_ctx.fillStyle = node.color;
-    this.m_ctx.fillStyle = 'green';
+    this.m_ctx.fillStyle = node.color.value;
 
     // const width = this.m_ctx.measureText(node.name).width;
     const width = this.m_ctx.measureText(node.id).width;
@@ -405,7 +404,7 @@ class Sequencer extends CanvasBackend2D {
 
   stop() {
     this.m_sequence.stop();
-    this.renderFn();
+    this.render();
   }
 
   add(entity: Entity) {

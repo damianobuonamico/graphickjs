@@ -24,7 +24,7 @@ const Editor: Component = () => {
     mode: 'designer',
     tool: 'select',
     loading: true,
-    timeline: false,
+    timeline: true,
     timelineHeight: 500
   });
   Renderer.init();

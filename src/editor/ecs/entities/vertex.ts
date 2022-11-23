@@ -4,6 +4,7 @@ import CommandHistory from '@/editor/history/history';
 import { EntityValue } from '@/editor/history/value';
 import { isPointInBox, vec2 } from '@math';
 import { nanoid } from 'nanoid';
+import LayerCompositing from '../components/layerCompositing';
 import { VertexTransform } from '../components/transform';
 import Handle from './handle';
 
@@ -16,6 +17,7 @@ class Vertex implements VertexEntity {
   readonly type = 'vertex';
   readonly selectable = false;
   readonly transform: VertexTransform;
+  readonly layer: LayerCompositingComponent;
 
   private m_parent: EntityValue<ElementEntity> = new EntityValue();
 
@@ -36,6 +38,7 @@ class Vertex implements VertexEntity {
     if (right) this.right = new Handle({ position: right, type: 'bezier', parent: this });
 
     this.transform = new VertexTransform(this);
+    this.layer = new LayerCompositing();
   }
 
   get parent() {

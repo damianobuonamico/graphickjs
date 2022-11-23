@@ -16,6 +16,7 @@ interface Entity {
   readonly type: EntityType;
   readonly selectable: boolean;
   readonly transform: GenericTransformComponent;
+  readonly layer: LayerCompositingComponent;
 
   parent: Entity;
 

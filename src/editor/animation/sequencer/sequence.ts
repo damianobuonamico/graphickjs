@@ -1,14 +1,25 @@
+import CommandHistory from '@/editor/history/history';
 import { MapValue } from '@/editor/history/value';
+import { FadeInAnimation } from '../animations/fadeIn';
 import { Node } from './node';
 
 class Sequence {
-  private m_entry: SequenceNode = new Node({});
+  private m_entry: SequenceNode;
   private m_nodes: MapValue<string, SequenceNode> = new MapValue();
 
   private m_playing: Set<string> = new Set();
+  private m_animations = {
+    fadeIn: new FadeInAnimation()
+  };
+
+  constructor() {
+    this.m_entry = new Node({});
+    CommandHistory.ignoreNext();
+    this.m_entry.color.value = '#4D715B';
+  }
 
   add(entity: Entity) {
-    const node = new Node(entity);
+    const node = new Node({ entity, animation: this.m_animations.fadeIn });
     this.m_nodes.set(node.id, node);
   }
 
@@ -35,13 +46,14 @@ class Sequence {
 
   animate(fps: number): void {
     if (this.m_playing.size === 0) {
-      console.log('start');
+      const entities = new Set<string>();
+      this.m_entry.ready(entities);
       this.m_playing = new Set(this.m_entry.animate(fps).playing);
       return;
     }
 
     this.m_playing.forEach((id) => {
-      const node = this.m_nodes.get(id);
+      const node = id === this.m_entry.id ? this.m_entry : this.m_nodes.get(id);
       if (!node) return this.m_playing.delete(id);
 
       const result = node.animate(fps);

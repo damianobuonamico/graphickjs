@@ -1,6 +1,7 @@
 import { Renderer } from '@/editor/renderer';
 import SceneManager from '@/editor/scene';
 import { nanoid } from 'nanoid';
+import LayerCompositing from '../components/layerCompositing';
 import { UntrackedTransform } from '../components/transform';
 
 class Selector implements SelectorEntity {
@@ -8,6 +9,7 @@ class Selector implements SelectorEntity {
   readonly type = 'selector';
   readonly selectable = false;
   readonly transform: UntrackedTransform;
+  readonly layer: LayerCompositingComponent;
 
   parent: Entity;
 
@@ -17,6 +19,7 @@ class Selector implements SelectorEntity {
     this.id = nanoid();
     this.transform = new UntrackedTransform(position);
     this.m_dashed = dashed;
+    this.layer = new LayerCompositing();
   }
 
   set(size: vec2, position?: vec2): void {

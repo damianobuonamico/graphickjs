@@ -2,6 +2,7 @@ import CommandHistory from '@/editor/history/history';
 import { doesBoxIntersectBox, doesBoxIntersectRotatedBox, isPointInBox, vec2 } from '@/math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
+import LayerCompositing from '../components/layerCompositing';
 import { RectTransform } from '../components/transform';
 import Layer from './layer';
 
@@ -13,6 +14,7 @@ class ImageMedia implements ImageEntity {
   readonly id: string;
   readonly type = 'image';
   readonly selectable = true;
+  readonly layer: LayerCompositingComponent;
 
   parent: Layer;
   transform: RectTransform;
@@ -28,6 +30,7 @@ class ImageMedia implements ImageEntity {
       size,
       transform?.reflection
     );
+    this.layer = new LayerCompositing();
 
     this.m_data = source;
     this.m_source.src = source;

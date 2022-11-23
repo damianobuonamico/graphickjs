@@ -14,13 +14,14 @@ import CommandHistory from './history';
 
 export class BooleanValue implements Value<boolean> {
   protected m_value: { value: boolean };
+  protected m_animation: boolean | null = null;
 
   constructor(value?: boolean) {
     this.m_value = { value: !!value };
   }
 
   get value(): boolean {
-    return this.m_value.value;
+    return this.m_animation === null ? this.m_value.value : this.m_animation;
   }
 
   set value(value: boolean) {
@@ -30,17 +31,22 @@ export class BooleanValue implements Value<boolean> {
   add(): void {
     this.value = !this.m_value.value;
   }
+
+  animateTo(value: boolean | null): void {
+    this.m_animation = value;
+  }
 }
 
 export class StringValue implements Value<string> {
   protected m_value: { value: string };
+  protected m_animation: string | null = null;
 
   constructor(value?: string) {
     this.m_value = { value: value || '' };
   }
 
   get value(): string {
-    return this.m_value.value;
+    return this.m_animation === null ? this.m_value.value : this.m_animation;
   }
 
   set value(value: string) {
@@ -50,17 +56,22 @@ export class StringValue implements Value<string> {
   add(string: string): void {
     CommandHistory.add(new ChangePrimitiveCommand(this.m_value, this.m_value.value + string));
   }
+
+  animateTo(value: string | null): void {
+    this.m_animation = value;
+  }
 }
 
 export class FloatValue implements Value<number> {
   protected m_value: { value: number };
+  protected m_animation: number = 0;
 
   constructor(value?: number) {
     this.m_value = { value: value || 0 };
   }
 
   get value(): number {
-    return this.m_value.value;
+    return this.m_value.value + this.m_animation;
   }
 
   set value(value: number) {
@@ -72,17 +83,27 @@ export class FloatValue implements Value<number> {
     if (amount === 0) return;
     CommandHistory.add(new ChangePrimitiveCommand(this.m_value, this.m_value.value + amount));
   }
+
+  animateTo(value: number | null): void {
+    if (value === null) {
+      this.m_animation = 0;
+      return;
+    }
+
+    this.m_animation = value - this.m_value.value;
+  }
 }
 
 export class Vec2Value implements Value<vec2> {
   protected m_value: vec2;
+  protected m_animation: vec2 = [0, 0];
 
   constructor(value?: vec2) {
     this.m_value = value ? vec2.clone(value) : vec2.create();
   }
 
   get value(): vec2 {
-    return vec2.clone(this.m_value);
+    return vec2.add(this.m_value, this.m_animation);
   }
 
   set value(value: vec2) {
@@ -94,10 +115,20 @@ export class Vec2Value implements Value<vec2> {
     if (amount[0] === 0 && amount[1] === 0) return;
     CommandHistory.add(new ChangeVec2Command(this.m_value, vec2.add(this.m_value, amount)));
   }
+
+  animateTo(value: vec2 | null): void {
+    if (value === null) {
+      vec2.zero(this.m_animation);
+      return;
+    }
+
+    vec2.sub(value, this.m_value, this.m_animation);
+  }
 }
 
 export class Vec4Value implements Value<vec4> {
   protected m_value: vec4;
+  protected m_animation: vec4 = [0, 0, 0, 0];
 
   constructor(value?: vec4) {
     this.m_value = value ? vec4.clone(value) : vec4.create();
@@ -115,6 +146,15 @@ export class Vec4Value implements Value<vec4> {
   add(amount: vec4): void {
     if (amount[0] === 0 && amount[1] === 0 && amount[2] === 0 && amount[3] === 0) return;
     CommandHistory.add(new ChangeVec4Command(this.m_value, vec4.add(this.m_value, amount)));
+  }
+
+  animateTo(value: vec4 | null): void {
+    if (value === null) {
+      vec4.zero(this.m_animation);
+      return;
+    }
+
+    vec4.sub(value, this.m_value, this.m_animation);
   }
 }
 
@@ -271,13 +311,14 @@ export class OrderedMapValue<K, V> extends Map<K, V> {
 
 export class EntityValue<T extends Entity> implements Value<T | undefined> {
   protected m_value: { value: T | undefined };
+  protected m_animation: T | undefined | null = null;
 
   constructor(value?: T) {
     this.m_value = { value };
   }
 
   get value(): T | undefined {
-    return this.m_value.value;
+    return this.m_animation === null ? this.m_value.value : this.m_animation;
   }
 
   set value(value: T | undefined) {
@@ -286,4 +327,8 @@ export class EntityValue<T extends Entity> implements Value<T | undefined> {
   }
 
   add(): void {}
+
+  animateTo(value: T | undefined | null): void {
+    this.m_animation = value;
+  }
 }

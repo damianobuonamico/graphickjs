@@ -1,5 +1,6 @@
 import { Renderer } from '@/editor/renderer';
 import { nanoid } from 'nanoid';
+import LayerCompositing from '../components/layerCompositing';
 import { UntrackedTransform } from '../components/transform';
 
 class Pen implements PenEntity {
@@ -7,7 +8,8 @@ class Pen implements PenEntity {
   readonly type = 'pen';
   readonly selectable = false;
   readonly transform: UntrackedTransform;
-
+  readonly layer: LayerCompositingComponent;
+  
   parent: Entity;
 
   private m_p0: vec2 | undefined = undefined;
@@ -18,6 +20,7 @@ class Pen implements PenEntity {
   constructor() {
     this.id = nanoid();
     this.transform = new UntrackedTransform();
+    this.layer = new LayerCompositing();
   }
 
   set({ p0, p1, p2, p3 }: { p0?: vec2; p1?: vec2; p2?: vec2; p3?: vec2 }): void {

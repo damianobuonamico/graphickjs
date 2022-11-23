@@ -12,6 +12,7 @@ interface Value<T> {
   value: T;
 
   add(amount: T): void;
+  animateTo(value: T | null): void;
 }
 
 interface MapSuper<K, V> extends Map<K, V> {

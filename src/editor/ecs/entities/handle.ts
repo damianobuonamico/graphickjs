@@ -1,6 +1,7 @@
 import { Cache } from '@/editor/ecs/components/cache';
 import { isPointInCircle } from '@math';
 import { nanoid } from 'nanoid';
+import LayerCompositing from '../components/layerCompositing';
 import { SimpleTransform } from '../components/transform';
 
 export const isHandle = (b: Entity): b is Handle => {
@@ -16,6 +17,7 @@ class Handle implements HandleEntity {
   readonly type = 'handle';
   readonly selectable = false;
   readonly handleType: HandleType;
+  readonly layer: LayerCompositingComponent;
 
   parent: VertexEntity;
   transform: SimpleTransform;
@@ -25,6 +27,7 @@ class Handle implements HandleEntity {
     this.handleType = type;
     this.parent = parent;
     this.transform = new SimpleTransform(position);
+    this.layer = new LayerCompositing();
   }
 
   setCache(cache: Cache) {

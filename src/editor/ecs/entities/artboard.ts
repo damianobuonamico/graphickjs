@@ -1,6 +1,7 @@
 import { vec2 } from '@math';
 import { nanoid } from 'nanoid';
 import { Renderer } from '../../renderer';
+import LayerCompositing from '../components/layerCompositing';
 import { RectTransform } from '../components/transform';
 import ECS from '../ecs';
 
@@ -8,14 +9,16 @@ class Artboard extends ECS implements ArtboardEntity {
   readonly id: string;
   readonly type = 'artboard';
   readonly selectable = false;
+  readonly transform: RectTransform;
+  readonly layer: LayerCompositingComponent;
 
   parent: Entity;
-  transform: RectTransform;
 
   constructor({ id = nanoid(), size, position = vec2.create() }: ArtboardOptions) {
     super();
     this.id = id;
     this.transform = new RectTransform(position, 0, size);
+    this.layer = new LayerCompositing();
   }
 
   add(entity: Entity) {

@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import Vertex from './vertex';
 import { GEOMETRY_MAX_ERROR, GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { SimpleTransform } from '../components/transform';
+import LayerCompositing from '../components/layerCompositing';
 
 export const isBezier = (b: Entity): b is Bezier => {
   return b.type === 'bezier';
@@ -16,7 +17,7 @@ class Bezier implements BezierEntity {
   readonly start: VertexEntity;
   readonly end: VertexEntity;
   readonly transform: SimpleTransform;
-
+  readonly layer: LayerCompositingComponent;
   private m_parent: ElementEntity;
 
   private m_cache: Cache = new Cache();
@@ -30,6 +31,8 @@ class Bezier implements BezierEntity {
 
     this.end = end;
     this.end.registerCache(this.m_cache);
+
+    this.layer = new LayerCompositing();
   }
 
   get parent() {

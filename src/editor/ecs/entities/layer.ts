@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import LayerCompositing from '../components/layerCompositing';
 import { SimpleTransform } from '../components/transform';
 import ECS from '../ecs';
 
@@ -6,7 +7,7 @@ class Layer extends ECS implements LayerEntity {
   readonly id: string;
   readonly type = 'layer';
   readonly selectable = false;
-
+  readonly layer: LayerCompositingComponent;
   parent: ArtboardEntity;
   transform: SimpleTransform;
 
@@ -14,6 +15,7 @@ class Layer extends ECS implements LayerEntity {
     super();
     this.id = id;
     this.transform = new SimpleTransform();
+    this.layer = new LayerCompositing();
   }
 
   add(entity: Entity) {

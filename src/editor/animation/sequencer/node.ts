@@ -1,12 +1,16 @@
-import { FloatValue, MapValue, Vec2Value } from '@/editor/history/value';
+import { FloatValue, MapValue, StringValue, Vec2Value } from '@/editor/history/value';
 import { vec2 } from '@/math';
 import { nanoid } from 'nanoid';
 
 export class Node implements SequenceNode {
-  readonly id: string;
+  readonly id: string = nanoid();
+
+  entity: Entity | undefined;
+  animation: AnimationInterface | undefined;
 
   readonly position: Vec2Value;
   readonly duration: FloatValue;
+  readonly color: StringValue;
 
   private m_size: vec2 = vec2.create();
   private m_links: MapValue<string, SequenceNode> = new MapValue();
@@ -15,14 +19,17 @@ export class Node implements SequenceNode {
   private m_animating: boolean = false;
 
   constructor({
-    id = nanoid(),
+    entity,
+    animation,
     position = [100, 100],
     duration = 1000,
     links = []
   }: SequencerNodeOptions) {
-    this.id = id;
+    this.entity = entity;
+    this.animation = animation;
     this.position = new Vec2Value(position);
     this.duration = new FloatValue(duration);
+    this.color = new StringValue('#30363D');
   }
 
   get size(): vec2 {
@@ -76,11 +83,28 @@ export class Node implements SequenceNode {
 
     this.m_animating = true;
 
-    return { playing: [], remove: false };
+    if (this.animation && this.entity)
+      this.animation.animate(this.entity, this.m_now, this.duration.value);
+
+    return { playing: [this.id], remove: false };
+  }
+
+  ready(entities: Set<string>): void {
+    if (this.entity && this.animation) {
+      const id = this.animation.id + this.entity.id;
+
+      if (!entities.has(id)) {
+        this.animation.ready(this.entity);
+        entities.add(id);
+      }
+    }
+
+    this.m_links.forEach((link) => link.ready(entities));
   }
 
   reset(): void {
     this.m_animating = false;
     this.m_now = 0;
+    if (this.animation && this.entity) this.animation.reset(this.entity);
   }
 }

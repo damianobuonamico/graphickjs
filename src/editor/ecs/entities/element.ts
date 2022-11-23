@@ -14,6 +14,7 @@ import { GEOMETRY_MAX_INTERSECTION_ERROR } from '@/utils/constants';
 import { ElementTransform } from '../components/transform';
 import { BooleanValue, OrderedMapValue } from '@/editor/history/value';
 import { FunctionCallCommand } from '@/editor/history/command';
+import LayerCompositing from '../components/layerCompositing';
 
 export const isElement = (b: Entity): b is Element => {
   return b.type === 'element';
@@ -24,13 +25,12 @@ class Element implements ElementEntity {
   readonly type = 'element';
   readonly selectable = true;
   readonly selection = new ElementSelectionManager(this);
-
+  readonly layer: LayerCompositingComponent;
   readonly transform: ElementTransformComponent;
   readonly fill: Fill | null;
   readonly stroke: Stroke | null;
 
   parent: Layer;
-  opacity = 1;
 
   private m_vertices: OrderedMapValue<string, VertexEntity> = new OrderedMapValue();
   private m_curves: Map<string, BezierEntity> = new Map();
@@ -57,7 +57,7 @@ class Element implements ElementEntity {
       transform?.position || position,
       transform?.rotation || rotation
     );
-
+    this.layer = new LayerCompositing();
     if (vertices) this.vertices = vertices;
 
     if (fill) this.fill = new Fill(fill);
