@@ -12,7 +12,7 @@ abstract class AnimationManager {
   private static m_currentFps = this.m_fps;
   private static m_started = false;
 
-  private static m_sequencer: Sequencer;
+  private static m_sequencer: Sequencer | undefined;
 
   private static m_renderFn: () => void;
 
@@ -20,12 +20,8 @@ abstract class AnimationManager {
     this.m_sequencer = new Sequencer(canvas);
   }
 
-  static get canvas() {
-    return this.m_sequencer.DOM;
-  }
-
   static resize() {
-    this.m_sequencer.resize();
+    this.m_sequencer?.resize();
   }
 
   static get playing(): boolean {
@@ -51,7 +47,7 @@ abstract class AnimationManager {
 
   static stop() {
     this.m_playing = false;
-    this.m_sequencer.stop();
+    this.m_sequencer?.stop();
     this.render();
   }
 
@@ -68,7 +64,7 @@ abstract class AnimationManager {
   }
 
   static add(entity: Entity) {
-    this.m_sequencer.add(entity);
+    this.m_sequencer?.add(entity);
   }
 
   private static animate(now: number) {
@@ -89,7 +85,7 @@ abstract class AnimationManager {
       this.m_frameCount++;
     }
 
-    this.m_sequencer.animate(this.m_fpsInterval);
+    this.m_sequencer?.animate(this.m_fpsInterval);
   }
 
   static render() {
@@ -103,32 +99,33 @@ abstract class AnimationManager {
   }
 
   static renderSequencer() {
-    requestAnimationFrame(() => this.m_sequencer.render());
+    requestAnimationFrame(() => this.m_sequencer?.render());
   }
 
   static onPointerDown() {
-    this.m_sequencer.onPointerDown();
+    this.m_sequencer?.onPointerDown();
   }
 
   static onPointerMove() {
-    this.m_sequencer.onPointerMove();
+    this.m_sequencer?.onPointerMove();
   }
 
   static onPointerUp() {
-    this.m_sequencer.onPointerUp();
+    this.m_sequencer?.onPointerUp();
   }
 
   static onWheel(e: WheelEvent) {
-    this.m_sequencer.onWheel(e);
+    this.m_sequencer?.onWheel(e);
   }
 
   static toJSON() {
-    return this.m_sequencer.toJSON();
+    return this.m_sequencer?.toJSON();
   }
 
   static load(sequence: Entity[]) {
+    if (!this.m_sequencer) return;
     setTimeout(() => {
-      this.m_sequencer.load(sequence);
+      this.m_sequencer?.load(sequence);
     }, 100);
   }
 }

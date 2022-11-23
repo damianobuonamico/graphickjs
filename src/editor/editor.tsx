@@ -1,4 +1,4 @@
-import { Component, createEffect, onMount } from 'solid-js';
+import { Component, createEffect, Match, onMount, Switch } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { ToolBar, TitleBar, Timeline } from '@navigation';
 import { CanvasDOM } from '@multimedia';
@@ -7,10 +7,12 @@ import SceneManager from './scene';
 import InputManager from './input';
 import { ComponentsPanel } from '@/ui/components';
 import { classNames } from '@/utils/utils';
+import Whiteboard from '@/ui/workspaces/Whiteboard';
+import Designer from '@/ui/workspaces/Designer';
 
 function getModePrimaryColor(mode: Mode) {
   switch (mode) {
-    case 'photo':
+    case 'whiteboard':
       return '#c867e6';
     case 'publisher':
       return '#ffa666';
@@ -21,12 +23,13 @@ function getModePrimaryColor(mode: Mode) {
 
 const Editor: Component = () => {
   const [state, setState] = createStore<State>({
-    mode: 'designer',
+    mode: 'whiteboard',
     tool: 'select',
     loading: true,
     timeline: true,
     timelineHeight: 500
   });
+
   Renderer.init();
   SceneManager.init((loading) => {
     setState({ loading });
@@ -46,51 +49,11 @@ const Editor: Component = () => {
   );
 
   return (
-    <div class="w-screen h-screen bg-primary-700 grid grid-rows-title-bar">
-      <TitleBar
-        mode={state.mode}
-        setMode={(mode: Mode) => setState({ mode })}
-        loading={state.loading}
-      />
-      <div class="grid grid-cols-editor">
-        <ToolBar
-          tools={[
-            'select',
-            'directSelect',
-            'separator',
-            'pen',
-            'separator',
-            ['rectangle', 'ellipse'],
-            'separator',
-            'pan',
-            'zoom'
-          ]}
-          tool={state.tool}
-          setTool={(tool: Tool) => {
-            setState({ tool });
-            InputManager.tool.current = tool;
-          }}
-        />
-        <div
-          class={classNames('grow overflow-hidden z-0 grid')}
-          style={{
-            'grid-template-rows': state.timeline ? `1fr ${state.timelineHeight}px` : '1fr 0px'
-          }}
-        >
-          <CanvasDOM />
-          <Timeline
-            onResize={(y) => {
-              let height = Math.min(window.innerHeight - y, window.innerHeight - 200);
-              if (height < 30) setState({ timeline: false });
-              else setState({ timeline: true, timelineHeight: height });
-
-              InputManager.onResize({} as UIEvent);
-            }}
-          />
-        </div>
-        <ComponentsPanel />
-      </div>
-    </div>
+    <Switch fallback={<Designer state={state} setState={setState} />}>
+      <Match when={state.mode === 'whiteboard'}>
+        <Whiteboard state={state} setState={setState} />
+      </Match>
+    </Switch>
   );
 };
 

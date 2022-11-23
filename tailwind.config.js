@@ -36,7 +36,8 @@ module.exports = {
       },
       gridTemplateColumns: {
         'menu-item': '30px 1fr 30px',
-        editor: '2.5rem 1fr 15rem'
+        designer: '2.5rem 1fr 15rem',
+        whiteboard: '2.5rem 1fr'
       },
       gridTemplateRows: {
         'title-bar': '2rem 1fr',

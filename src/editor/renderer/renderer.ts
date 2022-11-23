@@ -6,7 +6,7 @@ abstract class Renderer {
 
   public static debugging: boolean = true;
   public static debug: DebugState = {
-    entityBox: false,
+    entityBox: true,
     segmentBox: false,
     vertices: false,
     opacity: 1

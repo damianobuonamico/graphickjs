@@ -200,15 +200,13 @@ abstract class SceneManager {
       this.m_ecs.add(artboard);
     }
 
-    if (sequence) {
+    if (sequence && sequence !== 'undefined') {
       let entitiesMap: Map<string, Entity> = new Map();
       let seq = JSON.parse(sequence);
       let nodes: Set<string> = new Set(seq.nodes);
-
       this.forEach((entity) => {
         if (nodes.has(entity.id)) entitiesMap.set(entity.id, entity);
       });
-
       AnimationManager.load(Array.from(entitiesMap.values()));
     }
 

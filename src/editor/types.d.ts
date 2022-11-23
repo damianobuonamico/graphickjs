@@ -1,4 +1,4 @@
-type Mode = 'designer' | 'publisher' | 'photo';
+type Mode = 'designer' | 'publisher' | 'whiteboard';
 
 interface State {
   mode: Mode;

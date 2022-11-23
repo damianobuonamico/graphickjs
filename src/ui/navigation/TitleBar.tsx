@@ -7,9 +7,9 @@ import getIcon from '../icons';
 
 export function getModeComponent(mode: Mode, setMode: (mode: Mode) => void): MenuItem {
   switch (mode) {
-    case 'photo':
+    case 'whiteboard':
       return {
-        label: 'Photo',
+        label: 'Whiteboard',
         icon: 'affinityPhotoLogo',
         callback: () => {
           setMode(mode);
@@ -57,7 +57,7 @@ const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void; loading: bool
             submenu: [
               getModeComponent('designer', props.setMode),
               getModeComponent('publisher', props.setMode),
-              getModeComponent('photo', props.setMode)
+              getModeComponent('whiteboard', props.setMode)
             ]
           },
           {
