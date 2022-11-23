@@ -4,10 +4,9 @@ import SceneManager from '../scene';
 
 const onPanPointerDown = () => {
   function onPointerMove() {
-    vec2.add(
+    SceneManager.viewport.position = vec2.add(
       SceneManager.viewport.position,
-      InputManager.scene.movement,
-      SceneManager.viewport.position
+      InputManager.scene.movement
     );
   }
 

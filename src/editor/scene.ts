@@ -22,39 +22,28 @@ import ImageMedia from './ecs/entities/image';
 import OverlayState from './overlays';
 import Color from './ecs/components/color';
 import AnimationManager from './animation/animation';
+import Viewport from './viewport';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
   private static m_layer: Layer;
 
-  static viewport: ViewportState;
+  static viewport: Viewport;
   static overlays: OverlayState = new OverlayState();
 
   static background = new Color([0.09, 0.11, 0.13, 1.0]);
 
+  static state: Readonly<State>;
   static setLoading: (loading: boolean) => void;
 
-  static init(setLoading: (loading: boolean) => void) {
+  static init(state: State, setLoading: (loading: boolean) => void) {
+    this.state = state;
+
     this.setLoading = setLoading;
     this.load();
+
     CommandHistory.clear();
     AnimationManager.renderFn = this.renderFn.bind(this);
-  }
-
-  static set zoom(value: number | [number, vec2]) {
-    const isArray = Array.isArray(value);
-    const zoom = round(clamp(isArray ? value[0] : value, ZOOM_MIN, ZOOM_MAX), 4);
-
-    if (isArray) {
-      const delta = vec2.sub(
-        this.clientToScene(vec2.clone(value[1]), { zoom }),
-        this.clientToScene(vec2.clone(value[1]))
-      );
-
-      vec2.add(this.viewport.position, delta, this.viewport.position);
-    }
-
-    this.viewport.zoom = zoom;
   }
 
   static get(id: string) {
@@ -91,6 +80,26 @@ abstract class SceneManager {
     SelectionManager.calculateRenderOverlay();
   }
 
+  static setViewportArea() {
+    this.viewport.viewport = Renderer.size;
+
+    if (this.state.mode === 'whiteboard') {
+      this.viewport.setBounds([[0, 0], this.m_layer.parent.transform.size]);
+    } else {
+      this.viewport.setBounds([
+        [-Infinity, -Infinity],
+        [Infinity, Infinity]
+      ]);
+    }
+
+    this.viewport.zoom = this.viewport.zoom || 1;
+    this.viewport.position = this.viewport.position || [0, 0];
+  }
+
+  static onWorkspaceChange(workspace: Workspace) {
+    this.setViewportArea();
+  }
+
   private static renderFn() {
     Renderer.beginFrame({
       color: this.background.hex,
@@ -111,46 +120,19 @@ abstract class SceneManager {
     AnimationManager.render();
   }
 
-  static clientToScene(position: vec2, override: Partial<ViewportState> = {}) {
-    const viewport = fillObject<ViewportState>(override, this.viewport);
-    const scene = vec2.create();
-
-    vec2.sub(
-      vec2.divS(vec2.sub(position, Renderer.canvasOffset, scene), viewport.zoom, scene),
-      viewport.position,
-      scene
-    );
-
-    return scene;
+  static clientToScene(position: vec2) {
+    return this.viewport.clientToLocal(position, Renderer.canvasOffset);
   }
 
-  static sceneToClient(position: vec2, override: Partial<ViewportState> = {}) {
-    const viewport = fillObject<ViewportState>(override, this.viewport);
-    const client = vec2.create();
-
-    vec2.add(
-      vec2.mulS(vec2.add(position, viewport.position, client), viewport.zoom, client),
-      Renderer.canvasOffset,
-      client
-    );
-
-    return client;
+  static sceneToClient(position: vec2) {
+    return this.viewport.localToClient(position, Renderer.canvasOffset);
   }
 
   static isVisible(entity: Entity) {
     const box = entity.transform.boundingBox;
     if (!box) return false;
 
-    const position = this.viewport.position;
-    const canvasSize = vec2.divS(Renderer.size, this.viewport.zoom);
-    vec2.sub(canvasSize, this.viewport.position, canvasSize);
-
-    return (
-      box[1][0] >= -position[0] &&
-      box[0][0] <= canvasSize[0] &&
-      box[1][1] >= -position[1] &&
-      box[0][1] <= canvasSize[1]
-    );
+    return this.viewport.isVisible(box, Renderer.size);
   }
 
   static save() {
@@ -169,11 +151,8 @@ abstract class SceneManager {
 
     this.m_ecs = new ECS();
 
-    this.viewport = fillObject(state ? JSON.parse(state) : {}, {
-      position: vec2.create(),
-      zoom: 1,
-      rotation: 0
-    });
+    const viewport = state ? JSON.parse(state) : {};
+    this.viewport = new Viewport(viewport.position, viewport.zoom, viewport.rotation);
 
     if (data) {
       const parsed = JSON.parse(data) as EntityObject[];
@@ -182,7 +161,7 @@ abstract class SceneManager {
         if (entity) this.m_ecs.add(entity);
       });
     } else {
-      const artboard = new Artboard({ size: [1920, 1080] });
+      const artboard = new Artboard({ size: [1080, 1920] });
       this.m_layer = new Layer({});
       const element = new Element({
         position: [100, 100],

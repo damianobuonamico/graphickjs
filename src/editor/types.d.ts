@@ -1,7 +1,7 @@
-type Mode = 'designer' | 'publisher' | 'whiteboard';
+type Workspace = 'designer' | 'publisher' | 'whiteboard';
 
 interface State {
-  mode: Mode;
+  mode: Workspace;
   tool: Tool;
   loading: boolean;
   timeline: boolean;

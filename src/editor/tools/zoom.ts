@@ -9,7 +9,7 @@ const onZoomPointerDown = () => {
         ? InputManager.client.movement[0]
         : -InputManager.client.movement[1];
 
-    SceneManager.zoom = [
+    SceneManager.viewport.zoom = [
       SceneManager.viewport.zoom * (1 + (movement * ZOOM_STEP) / 500),
       InputManager.client.origin
     ];

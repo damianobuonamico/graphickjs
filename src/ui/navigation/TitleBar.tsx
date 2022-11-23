@@ -5,7 +5,7 @@ import { KEYS } from '@utils/keys';
 import actions from '@/editor/actions';
 import getIcon from '../icons';
 
-export function getModeComponent(mode: Mode, setMode: (mode: Mode) => void): MenuItem {
+export function getModeComponent(mode: Workspace, setMode: (mode: Workspace) => void): MenuItem {
   switch (mode) {
     case 'whiteboard':
       return {
@@ -40,7 +40,7 @@ export function getModeComponent(mode: Mode, setMode: (mode: Mode) => void): Men
   }
 }
 
-const TitleBar: Component<{ mode: Mode; setMode(mode: Mode): void; loading: boolean }> = (
+const TitleBar: Component<{ mode: Workspace; setMode(mode: Workspace): void; loading: boolean }> = (
   props
 ) => {
   const [checked, setChecked] = createSignal(true);

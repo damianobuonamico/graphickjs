@@ -1,16 +1,12 @@
 import { Component, createEffect, Match, onMount, Switch } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import { ToolBar, TitleBar, Timeline } from '@navigation';
-import { CanvasDOM } from '@multimedia';
 import Renderer from './renderer/renderer';
 import SceneManager from './scene';
 import InputManager from './input';
-import { ComponentsPanel } from '@/ui/components';
-import { classNames } from '@/utils/utils';
 import Whiteboard from '@/ui/workspaces/Whiteboard';
 import Designer from '@/ui/workspaces/Designer';
 
-function getModePrimaryColor(mode: Mode) {
+function getModePrimaryColor(mode: Workspace) {
   switch (mode) {
     case 'whiteboard':
       return '#c867e6';
@@ -31,11 +27,12 @@ const Editor: Component = () => {
   });
 
   Renderer.init();
-  SceneManager.init((loading) => {
+  SceneManager.init(state, (loading) => {
     setState({ loading });
   });
 
   createEffect(() => {
+    SceneManager.onWorkspaceChange(state.mode);
     document.documentElement.style.setProperty('--primary-color', getModePrimaryColor(state.mode));
   });
 

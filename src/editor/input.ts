@@ -407,7 +407,7 @@ abstract class InputManager {
 
     if (!this.keys.ctrl) return;
 
-    SceneManager.zoom = [
+    SceneManager.viewport.zoom = [
       map(-e.deltaY, -100, 100, 1 - ZOOM_STEP / 10, 1 + ZOOM_STEP / 10) *
         SceneManager.viewport.zoom,
       InputManager.client.position

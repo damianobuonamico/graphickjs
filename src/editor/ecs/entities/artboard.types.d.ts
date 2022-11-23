@@ -1,7 +1,7 @@
 interface ArtboardEntity extends ECSEntity {
   readonly type: 'artboard';
   readonly selectable: false;
-  readonly transform: SimpleTransformComponent;
+  readonly transform: RectTransformComponent;
 }
 
 interface ArtboardOptions {

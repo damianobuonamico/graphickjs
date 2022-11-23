@@ -12,7 +12,7 @@ const Whiteboard: Component<{ state: State; setState: (state: Partial<State>) =>
     <div class="w-screen h-screen bg-primary-700 grid grid-rows-title-bar">
       <TitleBar
         mode={state.mode}
-        setMode={(mode: Mode) => setState({ mode })}
+        setMode={(mode: Workspace) => setState({ mode })}
         loading={state.loading}
       />
       <div class="grid grid-cols-whiteboard">

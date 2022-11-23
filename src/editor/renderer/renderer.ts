@@ -1,44 +1,43 @@
+import SceneManager from '../scene';
 import Canvas2D from './2D/canvas2d';
 import Stats from './stats';
 
 abstract class Renderer {
   private static m_canvas: Canvas;
 
-  public static debugging: boolean = true;
-  public static debug: DebugState = {
+  static debugging: boolean = true;
+  static debug: DebugState = {
     entityBox: true,
     segmentBox: false,
     vertices: false,
     opacity: 1
   };
 
-  public static stats: RendererStats = new Stats();
+  static stats: RendererStats = new Stats();
 
-  public static setup: Canvas['setup'];
-  public static resize: Canvas['resize'];
-  public static debugRect: Canvas['debugRect'];
-  public static debugCircle: Canvas['debugCircle'];
-  public static draw: Canvas['draw'];
-  public static entity: Canvas['entity'];
-  public static element: Canvas['element'];
-  public static image: Canvas['image'];
-  public static rect: Canvas['rectangle'];
-  public static beginOutline: Canvas['beginOutline'];
-  public static outline: Canvas['outline'];
-  public static endOutline: Canvas['endOutline'];
+  static setup: Canvas['setup'];
+  static debugRect: Canvas['debugRect'];
+  static debugCircle: Canvas['debugCircle'];
+  static draw: Canvas['draw'];
+  static entity: Canvas['entity'];
+  static element: Canvas['element'];
+  static image: Canvas['image'];
+  static rect: Canvas['rectangle'];
+  static beginOutline: Canvas['beginOutline'];
+  static outline: Canvas['outline'];
+  static endOutline: Canvas['endOutline'];
 
-  public static init() {
+  static init() {
     this.m_canvas = new Canvas2D();
     this.refresh();
   }
 
-  public static refresh() {
+  static refresh() {
     this.bind(this.m_canvas);
   }
 
   static bind(canvas: Canvas) {
     this.setup = canvas.setup.bind(canvas);
-    this.resize = canvas.resize.bind(canvas);
     this.debugRect = canvas.debugRect.bind(canvas);
     this.debugCircle = canvas.debugCircle.bind(canvas);
     this.draw = canvas.draw.bind(canvas);
@@ -51,15 +50,15 @@ abstract class Renderer {
     this.endOutline = canvas.endOutline.bind(canvas);
   }
 
-  public static get canvas() {
+  static get canvas() {
     return this.m_canvas.DOM;
   }
 
-  public static get canvasOffset() {
+  static get canvasOffset() {
     return this.m_canvas.offset;
   }
 
-  public static get size() {
+  static get size() {
     return this.m_canvas.size;
   }
 
@@ -69,6 +68,11 @@ abstract class Renderer {
 
   static endFrame() {
     this.m_canvas.endFrame({ debugging: this.debugging, debug: this.debug, stats: this.stats });
+  }
+
+  static resize() {
+    this.m_canvas.resize();
+    SceneManager.setViewportArea();
   }
 }
 
