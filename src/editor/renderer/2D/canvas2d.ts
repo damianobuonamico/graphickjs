@@ -20,8 +20,18 @@ class Canvas2D extends CanvasBackend2D {
   private m_outlineFilledSquareQueue: vec2[] = [];
   private m_outlineCurrentTransform: mat3;
 
+  private m_primaryColor: string = '#38c3f2';
+
   constructor() {
     super();
+  }
+
+  get primaryColor() {
+    return this.m_primaryColor;
+  }
+
+  set primaryColor(color: string) {
+    this.m_primaryColor = color;
   }
 
   private vertexOutline(vertex: VertexEntity, selected?: boolean) {
@@ -397,8 +407,8 @@ class Canvas2D extends CanvasBackend2D {
   }
 
   beginOutline() {
-    this.m_ctx.strokeStyle = 'rgba(56, 195, 242, 1.0)';
-    this.m_ctx.fillStyle = 'rgba(56, 195, 242, 1.0)';
+    this.m_ctx.strokeStyle = this.m_primaryColor;
+    this.m_ctx.fillStyle = this.m_primaryColor;
     this.m_ctx.lineWidth = 1.5 / SceneManager.viewport.zoom;
 
     this.beginPath();

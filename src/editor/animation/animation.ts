@@ -20,6 +20,10 @@ abstract class AnimationManager {
     this.m_sequencer = new Sequencer(canvas);
   }
 
+  static get canvas() {
+    return <HTMLCanvasElement>this.m_sequencer?.DOM;
+  }
+
   static resize() {
     this.m_sequencer?.resize();
   }

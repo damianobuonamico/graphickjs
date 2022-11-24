@@ -5,22 +5,12 @@ import SceneManager from './scene';
 import InputManager from './input';
 import Whiteboard from '@/ui/workspaces/Whiteboard';
 import Designer from '@/ui/workspaces/Designer';
-
-function getModePrimaryColor(mode: Workspace) {
-  switch (mode) {
-    case 'whiteboard':
-      return '#c867e6';
-    case 'publisher':
-      return '#ffa666';
-    default:
-      return '#38c3f2';
-  }
-}
+import { getWorkspacePrimaryColor } from '@/utils/color';
 
 const Editor: Component = () => {
   const [state, setState] = createStore<State>({
     name: 'Untitled',
-    mode: 'whiteboard',
+    workspace: 'whiteboard',
     tool: 'select',
     loading: true,
     timeline: true,
@@ -31,12 +21,15 @@ const Editor: Component = () => {
   SceneManager.init(
     state,
     (loading) => setState({ loading }),
-    (workspace) => setState({ mode: workspace })
+    (workspace) => setState({ workspace: workspace })
   );
 
   createEffect(() => {
-    SceneManager.onWorkspaceChange(state.mode);
-    document.documentElement.style.setProperty('--primary-color', getModePrimaryColor(state.mode));
+    SceneManager.onWorkspaceChange(state.workspace);
+    document.documentElement.style.setProperty(
+      '--primary-color',
+      getWorkspacePrimaryColor(state.workspace)
+    );
   });
 
   onMount(() =>
@@ -50,7 +43,7 @@ const Editor: Component = () => {
 
   return (
     <Switch fallback={<Designer state={state} setState={setState} />}>
-      <Match when={state.mode === 'whiteboard'}>
+      <Match when={state.workspace === 'whiteboard'}>
         <Whiteboard state={state} setState={setState} />
       </Match>
     </Switch>

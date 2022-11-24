@@ -5,7 +5,7 @@ import Stats from './stats';
 abstract class Renderer {
   private static m_canvas: Canvas;
 
-  static debugging: boolean = true;
+  static debugging: boolean = false;
   static debug: DebugState = {
     entityBox: true,
     segmentBox: false,
@@ -60,6 +60,14 @@ abstract class Renderer {
 
   static get size() {
     return this.m_canvas.size;
+  }
+
+  static set primaryColor(color: string) {
+    this.m_canvas.primaryColor = color;
+  }
+
+  static get primaryColor() {
+    return this.m_canvas.primaryColor;
   }
 
   static beginFrame(options: { color?: string; zoom?: number; position?: vec2 }) {

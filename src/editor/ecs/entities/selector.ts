@@ -52,8 +52,8 @@ class Selector implements SelectorEntity {
     Renderer.rect({
       position: this.transform.position.value,
       size: this.transform.size,
-      stroke: 'rgb(56, 195, 242)',
-      fill: 'rgba(56, 195, 242, 0.2)'
+      stroke: Renderer.primaryColor,
+      fill: Renderer.primaryColor + '33'
     });
 
     Renderer.draw({ operations: [{ type: 'lineDash', data: [undefined] }] });

@@ -37,7 +37,7 @@ class OverlayState {
     Renderer.draw({
       operations: [
         { type: 'fillColor', data: ['#FFFFFF'] },
-        { type: 'strokeColor', data: ['rgb(56, 195, 242'] },
+        { type: 'strokeColor', data: [Renderer.primaryColor] },
         { type: 'strokeWidth', data: [1.5 / SceneManager.viewport.zoom] }
       ]
     });

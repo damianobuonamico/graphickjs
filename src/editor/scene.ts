@@ -21,6 +21,7 @@ import OverlayState from './overlays';
 import Color from './ecs/components/color';
 import AnimationManager from './animation/animation';
 import Viewport from './viewport';
+import { getWorkspacePrimaryColor } from '@/utils/color';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -91,7 +92,7 @@ abstract class SceneManager {
   static setViewportArea() {
     this.viewport.viewport = Renderer.size;
 
-    if (this.state.mode === 'whiteboard') {
+    if (this.state.workspace === 'whiteboard') {
       this.viewport.setBounds([[0, 0], this.m_layer.parent.transform.size]);
     } else {
       this.viewport.setBounds([
@@ -106,6 +107,8 @@ abstract class SceneManager {
 
   static onWorkspaceChange(workspace: Workspace) {
     this.setViewportArea();
+    const color = getWorkspacePrimaryColor(workspace);
+    Renderer.primaryColor = getWorkspacePrimaryColor(workspace);
   }
 
   private static renderFn() {

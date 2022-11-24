@@ -3,6 +3,7 @@ interface Canvas {
 
   size: vec2;
   offset: vec2;
+  primaryColor: string;
 
   setup(canvas: HTMLCanvasElement): void;
   resize(): void;

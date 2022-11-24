@@ -12,8 +12,8 @@ const Designer: Component<{ state: State; setState: (state: Partial<State>) => v
   return (
     <div class="w-screen h-screen bg-primary-700 grid grid-rows-title-bar">
       <TitleBar
-        mode={state.mode}
-        setMode={(mode: Workspace) => setState({ mode })}
+        mode={state.workspace}
+        setMode={(mode: Workspace) => setState({ workspace: mode })}
         loading={state.loading}
       />
       <div class="grid grid-cols-designer">

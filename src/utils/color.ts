@@ -1,5 +1,16 @@
 import { clamp } from '@/math';
 
+export function getWorkspacePrimaryColor(mode: Workspace) {
+  switch (mode) {
+    case 'whiteboard':
+      return '#c867e6';
+    case 'publisher':
+      return '#ffa666';
+    default:
+      return '#38c3f2';
+  }
+}
+
 export function HSB2RGB([h, s, b]: vec3): vec3 {
   s /= 100;
   b /= 100;

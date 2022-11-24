@@ -94,7 +94,7 @@ class ToolState {
       } else {
         this.active = 'pan';
       }
-    } else if (InputManager.keys.ctrl) {
+    } else if (InputManager.keys.ctrl && SceneManager.state.workspace !== 'whiteboard') {
       if (this.m_current === 'select' || this.m_current === 'pen') this.active = 'directSelect';
       else this.active = 'select';
     } else {

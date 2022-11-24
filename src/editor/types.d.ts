@@ -2,7 +2,7 @@ type Workspace = 'designer' | 'publisher' | 'whiteboard';
 
 interface State {
   name: string;
-  mode: Workspace;
+  workspace: Workspace;
   tool: Tool;
   loading: boolean;
   timeline: boolean;

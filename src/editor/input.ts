@@ -240,7 +240,7 @@ abstract class InputManager {
   private static onPointerDown(e: PointerEvent) {
     CommandHistory.endBatch();
 
-    if (e.target === AnimationManager.canvas) {
+    if (SceneManager.state.workspace === 'designer' && e.target === AnimationManager.canvas) {
       this.target = e.target;
 
       this.client.movement = vec2.create();
@@ -291,7 +291,7 @@ abstract class InputManager {
 
   private static onPointerMove(e: PointerEvent) {
     if (
-      this.target === AnimationManager.canvas ||
+      (SceneManager.state.workspace === 'designer' && this.target === AnimationManager.canvas) ||
       (!this.down && e.target === AnimationManager.canvas)
     ) {
       this.client.movement = vec2.sub([e.clientX, e.clientY], this.client.position);
@@ -340,7 +340,7 @@ abstract class InputManager {
     this.setPointer(e);
     if (!this.down) return;
 
-    if (this.target === AnimationManager.canvas) {
+    if (SceneManager.state.workspace === 'designer' && this.target === AnimationManager.canvas) {
       this.target = undefined;
       this.down = false;
       this.m_moving = false;
@@ -398,7 +398,7 @@ abstract class InputManager {
   private static onWheel(e: WheelEvent) {
     e.preventDefault();
 
-    if (e.target === AnimationManager.canvas) {
+    if (SceneManager.state.workspace === 'designer' && e.target === AnimationManager.canvas) {
       AnimationManager.onWheel(e);
       return;
     } else if (e.target !== Renderer.canvas) return;

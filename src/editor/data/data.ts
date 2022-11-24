@@ -9,7 +9,7 @@ export function save() {
   const data: GraphickFile = {
     type: 'graphick',
     name: SceneManager.state.name,
-    workspace: SceneManager.state.mode,
+    workspace: SceneManager.state.workspace,
     viewport: SceneManager.viewport.toJSON(),
     artboards: SceneManager.toJSON()
   };
