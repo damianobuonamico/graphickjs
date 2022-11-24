@@ -173,7 +173,7 @@ abstract class SceneManager {
 
     this.viewport = new Viewport({});
     this.clear();
-    const artboard = new Artboard({ size: <vec2>size });
+    const artboard = new Artboard({ size: <vec2>size, grid: 'rows' });
     const layer = new Layer({});
 
     artboard.add(layer);
