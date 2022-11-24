@@ -3,6 +3,7 @@ import CommandHistory from './history/history';
 import { Renderer } from './renderer';
 import SceneManager from './scene';
 import SelectionManager from './selection';
+import { save, load } from './data/data';
 
 const actions: { [key: string]: ActionBinding } = {
   undo: {
@@ -32,6 +33,18 @@ const actions: { [key: string]: ActionBinding } = {
   import: {
     callback: () => SceneManager.import(),
     shortcut: { key: KEYS.I, ctrl: true }
+  },
+  saveAs: {
+    callback: save,
+    shortcut: { key: KEYS.S, ctrl: true, shift: true }
+  },
+  open: {
+    callback: load,
+    shortcut: { key: KEYS.O, ctrl: true }
+  },
+  new: {
+    callback: () => SceneManager.new(),
+    shortcut: { key: KEYS.N, ctrl: true, alt: true }
   }
 };
 

@@ -11,7 +11,7 @@ export default class Viewport {
   private m_minZoom: number;
   private m_viewport: vec2;
 
-  constructor(position?: vec2, zoom: number = 1, rotation: number = 0) {
+  constructor({ position, zoom = 1, rotation = 0 }: Partial<ViewportObject>) {
     this.m_position = position ? vec2.clone(position) : vec2.create();
     this.m_zoom = zoom;
     this.m_rotation = rotation;

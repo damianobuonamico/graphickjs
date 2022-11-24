@@ -28,9 +28,11 @@ const Editor: Component = () => {
   });
 
   Renderer.init();
-  SceneManager.init(state, (loading) => {
-    setState({ loading });
-  });
+  SceneManager.init(
+    state,
+    (loading) => setState({ loading }),
+    (workspace) => setState({ mode: workspace })
+  );
 
   createEffect(() => {
     SceneManager.onWorkspaceChange(state.mode);

@@ -24,3 +24,24 @@ export function fileDialog({ multiple, accept }: { multiple?: boolean; accept?: 
     input.dispatchEvent(event);
   });
 }
+
+export function download(
+  data: BlobPart,
+  name: string = 'Untitled',
+  format: string = 'application/json'
+) {
+  const file = new Blob([data], { type: format });
+
+  const a = document.createElement('a'),
+    url = URL.createObjectURL(file);
+
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(function () {
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, 0);
+}

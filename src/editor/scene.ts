@@ -33,11 +33,17 @@ abstract class SceneManager {
 
   static state: Readonly<State>;
   static setLoading: (loading: boolean) => void;
+  static setWorkspace: (workspace: Workspace) => void;
 
-  static init(state: State, setLoading: (loading: boolean) => void) {
+  static init(
+    state: State,
+    setLoading: (loading: boolean) => void,
+    setWorkspace: (workspace: Workspace) => void
+  ) {
     this.state = state;
 
     this.setLoading = setLoading;
+    this.setWorkspace = setWorkspace;
     this.load();
 
     CommandHistory.clear();
@@ -76,6 +82,10 @@ abstract class SceneManager {
     });
 
     SelectionManager.calculateRenderOverlay();
+  }
+
+  static createArtboard(artboard: ArtboardEntity) {
+    this.m_ecs.add(artboard);
   }
 
   static setViewportArea() {
@@ -133,6 +143,10 @@ abstract class SceneManager {
     return this.viewport.isVisible(box, Renderer.size);
   }
 
+  static toJSON(): EntityObject[] {
+    return this.m_ecs.map((entity) => entity.toJSON());
+  }
+
   static save() {
     localStorage.setItem(LOCAL_STORAGE_KEY_STATE, JSON.stringify(this.viewport));
     // localStorage.setItem(LOCAL_STORAGE_KEY_SEQUENCE, JSON.stringify(AnimationManager.toJSON()));
@@ -140,18 +154,33 @@ abstract class SceneManager {
       LOCAL_STORAGE_KEY,
       JSON.stringify(this.m_ecs.map((entity) => entity.toJSON()))
     );
+  }
 
-    const state = this.viewport.toJSON();
+  static clear() {
+    this.m_ecs = new ECS();
+  }
 
-    const worker = new Worker(new URL('./data/save.ts', import.meta.url), {
-      type: 'module'
-    });
-    // worker.onmessage = (event) => {
-    //   console.log(`Worker said : ${event.data}`);
-    // };
+  static new() {
+    // TODO: implement
+    const dimensions = prompt('Enter artboard dimentions', '2480, 3508');
+    if (!dimensions) return;
 
-    console.log('work');
-    worker.postMessage({ state });
+    const size = dimensions.split(',').map((value) => parseInt(value.trim()));
+    if (size.length !== 2) return;
+
+    this.viewport = new Viewport({});
+    this.clear();
+    const artboard = new Artboard({ size: <vec2>size });
+    const layer = new Layer({});
+
+    artboard.add(layer);
+    this.m_layer = layer;
+
+    this.createArtboard(artboard);
+
+    CommandHistory.clear();
+    SceneManager.setViewportArea();
+    SceneManager.render();
   }
 
   static load() {
@@ -162,7 +191,7 @@ abstract class SceneManager {
     this.m_ecs = new ECS();
 
     const viewport = state ? JSON.parse(state) : {};
-    this.viewport = new Viewport(viewport.position, viewport.zoom, viewport.rotation);
+    this.viewport = new Viewport(viewport);
 
     if (data) {
       const parsed = JSON.parse(data) as EntityObject[];

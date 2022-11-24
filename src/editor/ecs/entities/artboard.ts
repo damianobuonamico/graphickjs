@@ -5,6 +5,10 @@ import LayerCompositing from '../components/layerCompositing';
 import { RectTransform } from '../components/transform';
 import ECS from '../ecs';
 
+export const isArtboard = (b: Entity): b is Artboard => {
+  return b.type === 'artboard';
+};
+
 class Artboard extends ECS implements ArtboardEntity {
   readonly id: string;
   readonly type = 'artboard';
