@@ -9,6 +9,7 @@ import {
   getLineCircleIntersections,
   isPointInBox,
   isPointInCircle,
+  lerp,
   vec2
 } from '@/math';
 import { nanoid } from 'nanoid';
@@ -16,6 +17,8 @@ import { Cache } from '../components/cache';
 import LayerCompositing from '../components/layerCompositing';
 import { FreehandTransform, SimpleTransform } from '../components/transform';
 import { getStroke } from 'perfect-freehand';
+import CommandHistory from '@/editor/history/history';
+import { ChangeCommand } from '@/editor/history/command';
 
 export const isFreehand = (b: Entity): b is Freehand => {
   return b.type === 'freehand';
@@ -124,38 +127,118 @@ class Freehand implements FreehandEntity {
 
   pp: vec2[] = [];
 
+  // TODO: fix history (and optimize algorithm)
   erase(position: vec2, radius: number): void {
+    this.pp.length = 0;
+    this.pp.push(position);
+    const angle = this.transform.rotation.value;
+    const mid = this.transform.center;
+
+    if (angle !== 0) position = vec2.rotate(position, mid, -this.transform.rotation.value);
+
     position = vec2.sub(position, this.transform.position.value);
 
-    let fragments: [SimpleTransform, number][][] = [[]];
-
-    for (let i = 0, n = this.m_points.length; i < n; ++i) {
-      if (!isPointInCircle(this.m_points[i][0].position.value, position, radius)) {
-        fragments[fragments.length - 1].push(this.m_points[i]);
-      } else if (i !== 0 && i !== this.m_points.length) fragments.push([]);
-    }
-
-    fragments = fragments.filter((fragment) => fragment.length);
-
-    if (fragments.length === 0) {
+    if (
+      this.m_points.length === 0 ||
+      (this.m_points.length === 1 &&
+        isPointInCircle(this.m_points[0][0].position.value, position, radius))
+    ) {
       this.parent.remove(this.id);
       return;
-    } else if (fragments.length === 1) {
-      this.points = fragments[0].map((point) => [...point[0].position.value, point[1]]);
-      return;
     }
 
-    for (let i = 0, n = fragments.length; i < n; ++i) {
-      this.parent.add(
-        new Freehand({
+    let fragments: vec3[][] = [[]];
+    let dangling = false;
+
+    for (let i = 1, n = this.m_points.length; i < n; ++i) {
+      const a = this.m_points[i - 1][0].position.value;
+      const b = this.m_points[i][0].position.value;
+
+      if (isPointInCircle(a, position, radius) && isPointInCircle(b, position, radius)) continue;
+
+      let box: Box = [vec2.min(a, b), vec2.max(a, b)];
+
+      if (isPointInBox(position, box, radius)) {
+        const points = getLineCircleIntersections([a, b], position, radius);
+
+        this.pp.push(
+          ...points.map((point) => vec2.add(point.point, this.transform.position.value))
+        );
+
+        if (points.length === 1) {
+          if (dangling) {
+            fragments.push([
+              [...points[0].point, lerp(this.m_points[i - 1][1], this.m_points[i][1], points[0].t)]
+            ]);
+          } else {
+            fragments[fragments.length - 1].push([...a, this.m_points[i - 1][1]]);
+            fragments[fragments.length - 1].push([
+              ...points[0].point,
+              lerp(this.m_points[i - 1][1], this.m_points[i][1], points[0].t)
+            ]);
+
+            dangling = true;
+          }
+        } else if (points.length === 2) {
+          fragments[fragments.length - 1].push([...a, this.m_points[i - 1][1]]);
+          fragments[fragments.length - 1].push([
+            ...points[0].point,
+            lerp(this.m_points[i - 1][1], this.m_points[i][1], points[0].t)
+          ]);
+          fragments.push([
+            [...points[0].point, lerp(this.m_points[i - 1][1], this.m_points[i][1], points[0].t)]
+          ]);
+        } else {
+          fragments[fragments.length - 1].push([...a, this.m_points[i - 1][1]]);
+        }
+      } else {
+        fragments[fragments.length - 1].push([...a, this.m_points[i - 1][1]]);
+      }
+    }
+
+    if (
+      !isPointInCircle(this.m_points[this.m_points.length - 1][0].position.value, position, radius)
+    ) {
+      fragments[fragments.length - 1].push([
+        ...this.m_points[this.m_points.length - 1][0].position.value,
+        this.m_points[this.m_points.length - 1][1]
+      ]);
+    }
+
+    if (fragments.length === 0) return;
+    else if (fragments.length === 1) {
+      const backup = this.m_points;
+      this.points = fragments[0];
+      const points = this.m_points;
+
+      CommandHistory.add(
+        new ChangeCommand(
+          () => {
+            this.m_points = points;
+            this.m_cache.pause = true;
+            this.transform.keepCentered(mid);
+          },
+          () => {
+            this.m_points = backup;
+            this.m_cache.pause = true;
+            this.transform.keepCentered(mid);
+          }
+        )
+      );
+    } else {
+      fragments.forEach((fragment) => {
+        const freehand = new Freehand({
           position: this.transform.position.value,
           rotation: this.transform.rotation.value,
-          points: fragments[i].map((point) => [...point[0].position.value, point[1]])
-        })
-      );
-    }
+          points: fragment
+        });
+        this.parent.add(freehand);
 
-    this.parent.remove(this.id);
+        freehand.transform.keepCentered(mid);
+      });
+
+      this.parent.remove(this.id);
+    }
   }
 
   getEntityAt(
@@ -210,12 +293,12 @@ class Freehand implements FreehandEntity {
 
   render(): void {
     Renderer.freehand(this);
-    Renderer.debugPoints(
-      this.id,
-      this.m_points
-        .map((point) => vec2.add(point[0].position.value, this.transform.position.value))
-        .concat(this.pp)
-    );
+    // Renderer.debugPoints(
+    //   this.id,
+    //   this.m_points
+    //     .map((point) => vec2.add(point[0].position.value, this.transform.position.value))
+    //     .concat(this.pp)
+    // );
   }
 
   asObject(duplicate: boolean = false): FreehandObject {

@@ -277,6 +277,7 @@ abstract class InputManager {
     this.scene.delta = vec2.create();
     this.scene.origin = vec2.clone(this.scene.position);
 
+    console.log(e);
     this.setPointer(e);
     this.down = true;
     this.m_abort = false;
@@ -284,8 +285,13 @@ abstract class InputManager {
 
     if (this.button === BUTTONS.MIDDLE) {
       this.tool.active = this.keys.ctrlStateChanged ? 'zoom' : 'pan';
+    } else if (
+      this.button === BUTTONS.ERASER &&
+      this.tool.active === 'pencil' &&
+      SceneManager.state.workspace === 'whiteboard'
+    ) {
+      this.tool.active = 'eraser';
     }
-
     // this.lockCursor();
 
     const hover = this.hover.entity;

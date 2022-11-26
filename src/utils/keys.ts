@@ -59,7 +59,8 @@ export const BUTTONS = {
   TOUCH: -1,
   LEFT: 0,
   MIDDLE: 1,
-  RIGHT: 2
+  RIGHT: 2,
+  ERASER: 5
 };
 
 export function getShortcutString(shortcut: KeyBinding): string {

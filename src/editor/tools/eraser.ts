@@ -11,13 +11,15 @@ const onEraserPointerDown = () => {
   });
   SceneManager.overlays.add({ entity: eraser });
 
+  const radius = 20;
+
   function erase(position: vec2) {
-    eraser.set(position, 10 * (InputManager.pressure || 1));
+    eraser.set(position, radius * (InputManager.pressure || 1));
 
     SceneManager.forEach((entity) => {
       if (!entity || !isFreehand(entity)) return;
-      if (isPointInBox(position, entity.transform.boundingBox, 10)) {
-        entity.erase(position, 10 * (InputManager.pressure || 1));
+      if (isPointInBox(position, entity.transform.boundingBox, radius)) {
+        entity.erase(position, radius * (InputManager.pressure || 1));
       }
     });
   }
