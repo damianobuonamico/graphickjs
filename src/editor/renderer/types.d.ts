@@ -51,6 +51,7 @@ interface Canvas {
     radius?: number;
     color?: string;
   }): void;
+  debugPoints(id: string, points: vec2[]): void;
   draw(drawable: Drawable): void;
 
   entity(entity: Entity, options?: { inheritStrokeWidth?: boolean }): void;

@@ -1,10 +1,5 @@
 import { vec2 } from '@/math';
 
-export enum Status {
-  OK = 'OK',
-  Error = 'ERROR'
-}
-
 /**
  * Clamps the given value to the range [0, 1].
  */

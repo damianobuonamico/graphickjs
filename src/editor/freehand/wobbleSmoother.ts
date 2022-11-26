@@ -1,14 +1,14 @@
 import { vec2 } from '@/math';
 import { normalize01 } from './utils';
 
-class WobbleSmoother {
-  private m_samples: Sample[];
-  private m_weightedPositionSum: vec2 = [0, 0];
-  private m_distanceSum: number = 0;
-  private m_durationSum: number = 0;
-  private m_params: WobbleSmootherParams;
+abstract class WobbleSmoother {
+  private static m_samples: Sample[];
+  private static m_weightedPositionSum: vec2 = [0, 0];
+  private static m_distanceSum: number = 0;
+  private static m_durationSum: number = 0;
+  private static m_params: WobbleSmootherParams;
 
-  reset(params: WobbleSmootherParams, position: vec2, time: number): void {
+  static reset(params: WobbleSmootherParams, position: vec2, time: number): void {
     this.m_params = params;
     this.m_samples = [{ position, time, weightedPosition: [0, 0], distance: 0, duration: 0 }];
     this.m_weightedPositionSum = [0, 0];
@@ -16,7 +16,7 @@ class WobbleSmoother {
     this.m_durationSum = 0;
   }
 
-  update(position: vec2, time: number): vec2 {
+  static update(position: vec2, time: number): vec2 {
     const back = this.m_samples[this.m_samples.length - 1];
     const deltaTime = time - back.time;
 

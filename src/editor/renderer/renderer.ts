@@ -5,9 +5,9 @@ import Stats from './stats';
 abstract class Renderer {
   private static m_canvas: Canvas;
 
-  static debugging: boolean = false;
+  static debugging: boolean = true;
   static debug: DebugState = {
-    entityBox: true,
+    entityBox: false,
     segmentBox: false,
     vertices: false,
     opacity: 1
@@ -18,6 +18,7 @@ abstract class Renderer {
   static setup: Canvas['setup'];
   static debugRect: Canvas['debugRect'];
   static debugCircle: Canvas['debugCircle'];
+  static debugPoints: Canvas['debugPoints'];
   static draw: Canvas['draw'];
   static entity: Canvas['entity'];
   static element: Canvas['element'];
@@ -41,6 +42,7 @@ abstract class Renderer {
     this.setup = canvas.setup.bind(canvas);
     this.debugRect = canvas.debugRect.bind(canvas);
     this.debugCircle = canvas.debugCircle.bind(canvas);
+    this.debugPoints = canvas.debugPoints.bind(canvas);
     this.draw = canvas.draw.bind(canvas);
     this.entity = canvas.entity.bind(canvas);
     this.element = canvas.element.bind(canvas);

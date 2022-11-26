@@ -6,6 +6,7 @@ import {
   ChangeCommand,
   ChangePrimitiveCommand,
   ChangeVec2Command,
+  FunctionCallCommand,
   PauseCacheCommand
 } from '@/editor/history/command';
 import Handle from '../entities/handle';
@@ -678,10 +679,12 @@ export class ElementTransform extends Transform implements ElementTransformCompo
 
 export class FreehandTransform extends Transform implements FreehandTransformComponent {
   private m_parent: FreehandEntity;
+  private m_cache: CacheComponent;
 
-  constructor(parent: FreehandEntity, position?: vec2, rotation?: number) {
+  constructor(parent: FreehandEntity, cache: CacheComponent, position?: vec2, rotation?: number) {
     super(position, rotation);
     this.m_parent = parent;
+    this.m_cache = cache;
   }
 
   set origin(value: vec2) {
@@ -761,7 +764,6 @@ export class FreehandTransform extends Transform implements FreehandTransformCom
     const angle = this.rotation.value;
     if (angle === 0) return this.unrotatedBoundingBox;
 
-    // TODO: check
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
 
@@ -807,6 +809,7 @@ export class FreehandTransform extends Transform implements FreehandTransformCom
     });
 
     this.keepCentered(center, false);
+    CommandHistory.add(new PauseCacheCommand(this.m_cache));
 
     if (apply) this.applyScale();
   }

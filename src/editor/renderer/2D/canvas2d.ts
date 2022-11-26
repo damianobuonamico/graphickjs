@@ -12,7 +12,7 @@ import { isCompleteTransform } from '@/editor/ecs/components/transform';
 class Canvas2D extends CanvasBackend2D {
   private m_debuggerBinded: boolean = false;
   private m_debuggerEntities: Map<string, Entity> = new Map();
-  private m_debugCircles: { position: vec2; radius: number; color: string }[] = [];
+  private m_debugPoints: Map<string, vec2[]> = new Map();
 
   private m_outlineImageQueue: ImageEntity[] = [];
   private m_outlineCircleQueue: vec2[] = [];
@@ -182,11 +182,9 @@ class Canvas2D extends CanvasBackend2D {
       }
     });
 
-    this.m_debugCircles.forEach((circle) =>
-      super.debugCircle({ ...circle, radius: circle.radius / SceneManager.viewport.zoom })
+    this.m_debugPoints.forEach((points) =>
+      points.forEach((point) => this.debugCircle({ position: point }))
     );
-
-    this.m_debugCircles = [];
 
     if (!stats) return;
 
@@ -419,17 +417,22 @@ class Canvas2D extends CanvasBackend2D {
     radius?: number;
     color?: string;
   }) {
-    this.m_debugCircles.push({ position, radius, color });
+    super.debugCircle({ position, radius: radius / SceneManager.viewport.zoom, color });
   }
 
   debugRect(options: { position: vec2; size?: vec2 | number; centered?: boolean; color?: string }) {
     super.debugRect({
       ...options,
       size: vec2.divS(
-        typeof options.size === 'number' ? [options.size, options.size] : options.size || [10, 10],
+        typeof options.size === 'number' ? [options.size, options.size] : options.size || [8, 8],
         SceneManager.viewport.zoom
       )
     });
+  }
+
+  debugPoints(id: string, points: vec2[] | null) {
+    if (!points) this.m_debugPoints.delete(id);
+    else this.m_debugPoints.set(id, points);
   }
 
   beginOutline() {

@@ -1,3 +1,5 @@
+import WobbleSmoother from '@/editor/freehand/wobbleSmoother';
+import InputManager from '@/editor/input';
 import { Renderer } from '@/editor/renderer';
 import {
   average,
@@ -7,10 +9,10 @@ import {
   vec2
 } from '@/math';
 import { nanoid } from 'nanoid';
-import getStroke from 'perfect-freehand';
 import { Cache } from '../components/cache';
 import LayerCompositing from '../components/layerCompositing';
 import { FreehandTransform, SimpleTransform } from '../components/transform';
+import { getStroke } from 'perfect-freehand';
 
 export const isFreehand = (b: Entity): b is Freehand => {
   return b.type === 'freehand';
@@ -33,10 +35,10 @@ class Freehand implements FreehandEntity {
 
   constructor({ position, rotation, points, color = '#222' }: FreehandOptions) {
     this.id = nanoid();
-    this.transform = new FreehandTransform(this, position, rotation);
+    this.m_cache = new Cache();
+    this.transform = new FreehandTransform(this, this.m_cache, position, rotation);
     this.layer = new LayerCompositing();
 
-    this.m_cache = new Cache();
     this.points = points;
 
     this.color = color;
@@ -44,42 +46,32 @@ class Freehand implements FreehandEntity {
 
   set points(points: vec3[]) {
     this.m_points = points.map((point) => [new SimpleTransform([point[0], point[1]]), point[2]]);
+    this.m_cache.pause = true;
   }
 
   private onGetPath2DDataCacheMiss() {
-    let path = 'M0,0';
+    // let path = 'M0,0';
 
-    for (let i = 1, n = this.m_points.length; i < n; ++i) {
-      const position = this.m_points[i][0].position.value;
-      path += `L${position[0]},${position[1]}`;
-    }
-
-    // const len = this.m_points.length;
-
-    // if (len < 3) return new Path2D('M0,0');
-
-    // let a = this.m_points[0][0].position.value;
-    // let b = this.m_points[1][0].position.value;
-    // const c = this.m_points[2][0].position.value;
-
-    // let path = `M${a[0].toFixed(2)},${a[1].toFixed(2)} Q${b[0].toFixed(2)},${b[1].toFixed(
-    //   2
-    // )} ${average(b[0], c[0]).toFixed(2)},${average(b[1], c[1]).toFixed(2)} T`;
-
-    // for (let i = 2, max = len - 1; i < max; i++) {
-    //   a = this.m_points[i][0].position.value;
-    //   b = this.m_points[i + 1][0].position.value;
-    //   path += `${average(a[0], b[0]).toFixed(2)},${average(a[1], b[1]).toFixed(2)} `;
+    // for (let i = 1, n = this.m_points.length; i < n; ++i) {
+    //   const position = this.m_points[i][0].position.value;
+    //   path += `L${position[0]},${position[1]}`;
     // }
 
-    return new Path2D(path);
+    // return new Path2D(path);
 
-    // const stroke = getStroke(
-    //   this.m_points.map((point) => [...point[0].position.value, point[1]]),
-    //   { size: 8, simulatePressure: false }
-    // );
+    const stroke = getStroke(
+      this.m_points.map((point) => [...point[0].position.value, point[1]]),
+      {
+        size: 8,
+        simulatePressure: false,
+        thinning: 0.6,
+        smoothing: 0.5,
+        streamline: 0.1,
+        last: true
+      }
+    );
 
-    // return new Path2D(this.getSvgPathFromStroke(<vec2[]>stroke));
+    return new Path2D(this.getSvgPathFromStroke(<vec2[]>stroke));
   }
 
   private getPath2DData() {
@@ -119,7 +111,11 @@ class Freehand implements FreehandEntity {
   }
 
   add(point: vec2, pressure: number = 0.5) {
+    const corrected = WobbleSmoother.update(point, InputManager.time);
+
+    this.m_points[this.m_points.length - 1] = [new SimpleTransform(corrected), pressure];
     this.m_points.push([new SimpleTransform(point), pressure]);
+
     this.m_cache.pause = true;
   }
 
@@ -151,11 +147,11 @@ class Freehand implements FreehandEntity {
 
   getDrawable(): Drawable {
     const operations: DrawOp[] = [
-      { type: 'strokeColor', data: [this.color] },
-      { type: 'strokeWidth', data: [8] }
+      { type: 'fillColor', data: [this.color] }
+      // { type: 'strokeWidth', data: [8] }
     ];
 
-    operations.push({ type: 'path2D', data: [this.getPath2DData(), true, false] });
+    operations.push({ type: 'path2D', data: [this.getPath2DData(), false, true] });
 
     return { operations };
   }
