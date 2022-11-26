@@ -1,5 +1,5 @@
 import { fillObject } from '@utils/utils';
-import { clamp, round, vec2 } from '@math';
+import { clamp, mat4, round, vec2, vec4 } from '@math';
 import Artboard from './ecs/entities/artboard';
 import ECS, { isECS } from './ecs/ecs';
 import Element from './ecs/entities/element';
@@ -22,6 +22,7 @@ import Color from './ecs/components/color';
 import AnimationManager from './animation/animation';
 import Viewport from './viewport';
 import { getWorkspacePrimaryColor } from '@/utils/color';
+import Freehand from './ecs/entities/freehand';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -107,7 +108,8 @@ abstract class SceneManager {
 
   static onWorkspaceChange(workspace: Workspace) {
     this.setViewportArea();
-    const color = getWorkspacePrimaryColor(workspace);
+    // TODO: Preserve tool if available in new workspace
+    if (InputManager.tool) InputManager.tool.current = 'select';
     Renderer.primaryColor = getWorkspacePrimaryColor(workspace);
   }
 
@@ -274,6 +276,8 @@ abstract class SceneManager {
         return new Vertex({ ...(object as VertexObject) });
       case 'image':
         return new ImageMedia({ ...(object as ImageObject) });
+      case 'freehand':
+        return new Freehand({ ...(object as FreehandObject) });
     }
   }
 

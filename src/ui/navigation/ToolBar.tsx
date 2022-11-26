@@ -3,6 +3,7 @@ import { Button } from '@inputs';
 import {
   CircleIcon,
   HandIcon,
+  PencilIcon,
   PenIcon,
   PointerIcon,
   PointerVertexIcon,
@@ -25,6 +26,8 @@ export function getToolIcon(tool: Tool): JSX.Element {
       return <HandIcon />;
     case 'zoom':
       return <ZoomIcon />;
+    case 'pencil':
+      return <PencilIcon />;
     default:
       return <PointerIcon />;
   }

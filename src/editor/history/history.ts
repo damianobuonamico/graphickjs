@@ -1,4 +1,4 @@
-import { ChangeCommand, ChangePrimitiveCommand, ChangeVec2Command } from './command';
+import SceneManager from '../scene';
 
 class CommandBatch implements GenericCommand {
   private m_canMerge: boolean = true;
@@ -129,7 +129,11 @@ abstract class CommandHistory {
 
   static add<T>(command: GenericCommand): T {
     const value = <T>command.execute<T>();
-    if (this.m_ignore) return value as T;
+
+    if (this.m_ignore) {
+      this.m_ignore = false;
+      return value as T;
+    }
 
     if (this.m_miniBatch) {
       this.m_miniBatch.add(command);

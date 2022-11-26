@@ -1,5 +1,31 @@
-import { MATH_EPSILON } from '@/utils/constants';
+import { MATH_EPSILON, MATH_TWO_PI } from '@/utils/constants';
 import { vec2 } from '.';
+
+export function average(a: number, b: number) {
+  return (a + b) * 0.5;
+}
+
+export function lerp(a: number, b: number, t: number) {
+  return a + t * (b - a);
+}
+
+export function normalizeAngle(angle: number): number {
+  while (angle < 0) angle += MATH_TWO_PI;
+  while (angle > MATH_TWO_PI) angle -= MATH_TWO_PI;
+  return angle;
+}
+
+export function lerpAngle(start: number, end: number, interp_amount: number): number {
+  start = normalizeAngle(start);
+  end = normalizeAngle(end);
+
+  const delta = end - start;
+
+  if (delta < -Math.PI) end += MATH_TWO_PI;
+  else if (delta > Math.PI) end -= MATH_TWO_PI;
+
+  return normalizeAngle(lerp(start, end, interp_amount));
+}
 
 export function equals(a: number, b: number) {
   return Math.abs(a - b) <= MATH_EPSILON * Math.max(1, Math.abs(a), Math.abs(b));

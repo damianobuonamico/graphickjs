@@ -25,6 +25,7 @@
     "color-name": "^1.1.4",
     "debounce": "^1.2.1",
     "nanoid": "^4.0.0",
+    "perfect-freehand": "^1.2.0",
     "solid-js": "^1.4.7",
     "zipson": "^0.2.12"
   },

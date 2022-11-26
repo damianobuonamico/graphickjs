@@ -9,7 +9,8 @@ type EntityType =
   | 'manipulator'
   | 'generichandle'
   | 'selector'
-  | 'pen';
+  | 'pen'
+  | 'freehand';
 
 interface Entity {
   readonly id: string;

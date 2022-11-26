@@ -283,12 +283,14 @@ class Canvas2D extends CanvasBackend2D {
       this.entity = this.drawEntity;
       this.element = this.drawElement;
       this.image = this.drawImage;
+      this.freehand = this.drawFreehand;
 
       this.m_debuggerBinded = false;
     } else {
       this.entity = this.drawEntityDebugged;
       this.element = this.drawElementDebugged;
       this.image = this.drawImageDebugged;
+      this.freehand = this.drawFreehandDebugged;
 
       this.m_debuggerBinded = true;
     }
@@ -360,6 +362,22 @@ class Canvas2D extends CanvasBackend2D {
     this.m_ctx.restore();
   }
 
+  private drawFreehand(freehand: FreehandEntity) {
+    if (!SceneManager.isVisible(freehand)) return false;
+
+    this.m_ctx.save();
+
+    this.m_ctx.lineCap = 'round';
+    this.m_ctx.lineJoin = 'round';
+    this.m_ctx.globalAlpha = freehand.layer.opacity.value;
+    this.transform(freehand.transform.mat3);
+    this.beginPath();
+    this.draw(freehand.getDrawable());
+    this.stroke();
+
+    this.m_ctx.restore();
+  }
+
   private drawEntityDebugged(entity: Entity, options: { inheritStrokeWidth?: boolean }) {
     if (this.drawEntity(entity, options) === false) return;
 
@@ -378,11 +396,19 @@ class Canvas2D extends CanvasBackend2D {
     this.m_debuggerEntities.set(image.id, image);
   }
 
+  private drawFreehandDebugged(freehand: FreehandEntity) {
+    if (this.drawFreehand(freehand) === false) return;
+
+    this.m_debuggerEntities.set(freehand.id, freehand);
+  }
+
   entity: (entity: Entity, options: { inheritStrokeWidth?: boolean }) => void = this.drawEntity;
 
   element: (element: Element, options: { inheritStrokeWidth?: boolean }) => void = this.drawElement;
 
   image: (image: ImageEntity) => void = this.drawImage;
+
+  freehand: (freehand: FreehandEntity) => void = this.drawFreehand;
 
   debugCircle({
     position,

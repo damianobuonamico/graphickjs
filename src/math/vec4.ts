@@ -167,6 +167,24 @@ export function multiplyScalar(a: ReadonlyVec4, b: number, out: vec4 = [0, 0, 0,
   return out;
 }
 
+// TODO: optimize
+/**
+ * Multiplies a vec4 and a mat4
+ *
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyMat4} b the second operand
+ * @param {vec4} out the receiving vector
+ * @returns {vec4} out
+ */
+export function multiplyMat4(a: ReadonlyVec4, b: ReadonlyMat4, out: vec4 = [0, 0, 0, 0]): vec4 {
+  for (let i = 0; i < 4; ++i) {
+    for (let j = 0; j < 4; ++j) {
+      out[i] += a[j] * b[4 * j + i];
+    }
+  }
+  return out;
+}
+
 /**
  * Divides two vec4's
  *
@@ -378,6 +396,23 @@ export function normalize(a: ReadonlyVec4, out: vec4 = [0, 0, 0, 0]): vec4 {
  */
 export function dot(a: ReadonlyVec4, b: ReadonlyVec4): number {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+}
+
+/**
+ * Calculates the outer product of two vec4's
+ *
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {mat4} outer product of a and b
+ */
+export function outer(a: ReadonlyVec4, b: ReadonlyVec4): mat4 {
+  const out: mat4 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  for (let i = 0; i < 4; ++i) {
+    for (let j = 0; j < 4; ++j) {
+      out[4 * i + j] = a[i] * b[j];
+    }
+  }
+  return out;
 }
 
 /**
@@ -603,6 +638,12 @@ export const mul = multiply;
  * @function
  */
 export const mulS = multiplyScalar;
+
+/**
+ * Alias for {@link vec4.multiplyMat4}
+ * @function
+ */
+export const mulMat4 = multiplyMat4;
 
 /**
  * Alias for {@link vec4.divide}

@@ -9,6 +9,7 @@ import CircleIcon from './CircleIcon';
 import EyeDropperIcon from './EyeDropperIcon';
 import HandIcon from './HandIcon';
 import LoadingIcon from './LoadingIcon';
+import PencilIcon from './PencilIcon';
 import PenIcon from './PenIcon';
 import PointerIcon from './PointerIcon';
 import PointerVertexIcon from './PointerVertexIcon';
@@ -43,6 +44,7 @@ export { HandIcon };
 export { LoadingIcon };
 export { MinusIcon };
 export { PauseIcon };
+export { PencilIcon };
 export { PenIcon };
 export { PlayIcon };
 export { PlusIcon };
@@ -88,6 +90,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <MinusIcon {...props} />;
     case 'pause':
       return <PauseIcon {...props} />;
+    case 'pencil':
+      return <PencilIcon {...props} />;
     case 'pen':
       return <PenIcon {...props} />;
     case 'play':

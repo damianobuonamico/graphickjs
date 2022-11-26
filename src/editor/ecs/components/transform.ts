@@ -162,6 +162,7 @@ class CachedTransformFloatValue extends TransformFloatValue {
   }
 }
 
+// TODO: fix
 class UntrackedTransformVec2Value implements TransformComponentValue<vec2> {
   private m_value: vec2;
 
@@ -193,6 +194,8 @@ class UntrackedTransformVec2Value implements TransformComponentValue<vec2> {
     if (amount[0] === 0 && amount[1] === 0) return;
     vec2.add(this.m_value, amount);
   }
+
+  animateTo(value: vec2 | null): void {}
 
   apply(): void {}
 }
@@ -227,6 +230,8 @@ class UntrackedTransformFloatValue implements TransformComponentValue<number> {
   add(amount: number): void {
     this.m_value += amount;
   }
+
+  animateTo(value: number | null): void {}
 
   apply(): void {}
 }
@@ -320,7 +325,7 @@ export class Transform implements TransformComponent {
   }
 
   set origin(value: vec2) {
-    vec2.copy(this.origin, value);
+    vec2.copy(this.m_origin, value);
   }
 
   get size(): vec2 {
@@ -641,6 +646,169 @@ export class ElementTransform extends Transform implements ElementTransformCompo
     const untransformed = angle === 0 ? vec2.clone(point) : vec2.rotate(point, this.center, -angle);
 
     return vec2.sub(untransformed, this.position.value, untransformed);
+  }
+
+  keepCentered(center: vec2, apply: boolean = false): void {
+    const angle = this.rotation.value;
+    if (angle === 0) return;
+
+    const updated = this.center;
+    const sin = Math.sin(angle),
+      cos = Math.cos(angle);
+
+    this.position.add([
+      center[0] -
+        center[0] * cos +
+        center[1] * sin -
+        (updated[0] - updated[0] * cos + updated[1] * sin),
+      center[1] -
+        center[0] * sin -
+        center[1] * cos -
+        (updated[1] - updated[0] * sin - updated[1] * cos)
+    ]);
+
+    if (apply) this.position.apply();
+  }
+
+  apply() {
+    super.apply();
+    this.applyScale();
+  }
+}
+
+export class FreehandTransform extends Transform implements FreehandTransformComponent {
+  private m_parent: FreehandEntity;
+
+  constructor(parent: FreehandEntity, position?: vec2, rotation?: number) {
+    super(position, rotation);
+    this.m_parent = parent;
+  }
+
+  set origin(value: vec2) {
+    vec2.rotate(value, this.center, -this.rotation.value, this.m_origin);
+  }
+
+  get size(): vec2 {
+    const box = this.unrotatedBoundingBox;
+    return vec2.sub(box[1], box[0]);
+  }
+
+  get center() {
+    const box = this.unrotatedBoundingBox;
+    return vec2.mid(box[0], box[1]);
+  }
+
+  get staticCenter() {
+    const box = this.staticBoundingBox;
+    return vec2.mid(box[0], box[1]);
+  }
+
+  get staticBoundingBox(): Box {
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.m_parent.forEach((point) => {
+      const position = point.position.value;
+      vec2.min(min, position, min);
+      vec2.max(max, position, max);
+    });
+
+    const position = this.position.static;
+
+    return [vec2.add(min, position, min), vec2.add(max, position, max)];
+  }
+
+  get unrotatedBoundingBox(): Box {
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    this.m_parent.forEach((point) => {
+      const position = point.position.value;
+      vec2.min(min, position, min);
+      vec2.max(max, position, max);
+    });
+
+    const position = this.position.value;
+
+    return [vec2.add(min, position, min), vec2.add(max, position, max)];
+  }
+
+  // TODO: Move common methods in Transform class
+  get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+    const box = this.unrotatedBoundingBox;
+    const angle = this.rotation.value;
+
+    const points: [vec2, vec2, vec2, vec2] = [
+      vec2.clone(box[0]),
+      [box[1][0], box[0][1]],
+      vec2.clone(box[1]),
+      [box[0][0], box[1][1]]
+    ];
+
+    if (angle === 0) return points;
+
+    const center = this.center;
+
+    return [
+      vec2.rotate(points[0], center, angle, points[0]),
+      vec2.rotate(points[1], center, angle, points[1]),
+      vec2.rotate(points[2], center, angle, points[2]),
+      vec2.rotate(points[3], center, angle, points[3])
+    ];
+  }
+
+  get boundingBox(): Box {
+    const angle = this.rotation.value;
+    if (angle === 0) return this.unrotatedBoundingBox;
+
+    // TODO: check
+    let min: vec2 = [Infinity, Infinity];
+    let max: vec2 = [-Infinity, -Infinity];
+
+    const box = this.rotatedBoundingBox;
+    box.forEach((point) => {
+      vec2.min(point, min, min);
+      vec2.max(point, max, max);
+    });
+
+    return [min, max];
+  }
+
+  get mat3(): mat3 {
+    return mat3.fromTranslationRotation(
+      this.position.value,
+      this.rotation.value,
+      this.position.static,
+      this.staticCenter
+    );
+  }
+
+  private applyScale() {
+    this.m_parent.forEach((point) => {
+      point.apply();
+    });
+  }
+
+  scale(amount: vec2, normalizeRotation: boolean = false, apply: boolean = true): void {
+    const center = this.center;
+    const origin = vec2.sub(this.m_origin, this.position.value);
+    const rotation = this.rotation.value;
+
+    this.m_parent.forEach((point) => {
+      const position = point.position.static;
+
+      if (normalizeRotation) vec2.rotate(position, origin, rotation, position);
+
+      vec2.scale(position, origin, amount, position);
+
+      if (normalizeRotation) vec2.rotate(position, origin, -rotation, position);
+
+      point.position.value = position;
+    });
+
+    this.keepCentered(center, false);
+
+    if (apply) this.applyScale();
   }
 
   keepCentered(center: vec2, apply: boolean = false): void {

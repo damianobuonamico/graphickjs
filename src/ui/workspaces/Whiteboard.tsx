@@ -17,7 +17,16 @@ const Whiteboard: Component<{ state: State; setState: (state: Partial<State>) =>
       />
       <div class="grid grid-cols-whiteboard">
         <ToolBar
-          tools={['select', 'separator', ['rectangle', 'ellipse'], 'separator', 'pan', 'zoom']}
+          tools={[
+            'select',
+            'separator',
+            'pencil',
+            'separator',
+            ['rectangle', 'ellipse'],
+            'separator',
+            'pan',
+            'zoom'
+          ]}
           tool={state.tool}
           setTool={(tool: Tool) => {
             setState({ tool });

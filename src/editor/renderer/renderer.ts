@@ -22,6 +22,7 @@ abstract class Renderer {
   static entity: Canvas['entity'];
   static element: Canvas['element'];
   static image: Canvas['image'];
+  static freehand: Canvas['freehand'];
   static rect: Canvas['rectangle'];
   static beginOutline: Canvas['beginOutline'];
   static outline: Canvas['outline'];
@@ -44,6 +45,7 @@ abstract class Renderer {
     this.entity = canvas.entity.bind(canvas);
     this.element = canvas.element.bind(canvas);
     this.image = canvas.image.bind(canvas);
+    this.freehand = canvas.freehand.bind(canvas);
     this.rect = canvas.rectangle.bind(canvas);
     this.beginOutline = canvas.beginOutline.bind(canvas);
     this.outline = canvas.outline.bind(canvas);

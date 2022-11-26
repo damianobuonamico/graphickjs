@@ -31,6 +31,7 @@ interface ToolMap<T> {
   zoom: T;
   scale: T;
   rotate: T;
+  pencil: T;
 }
 
 type Tool = keyof ToolMap<any>;

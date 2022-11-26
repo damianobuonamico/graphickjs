@@ -22,6 +22,8 @@ abstract class InputManager {
 
   public static down: boolean = false;
   public static inside: boolean = true;
+  public static pressure: number | undefined = undefined;
+  public static time: number = 0;
 
   public static button: number = 0;
   public static keys: KeysState;
@@ -152,6 +154,8 @@ abstract class InputManager {
 
   private static setPointer(e: PointerEvent) {
     this.setKey(e);
+    this.pressure = e.pressure;
+    this.time = e.timeStamp;
 
     if (this.down) return;
   }
@@ -230,9 +234,12 @@ abstract class InputManager {
   //* Helper Events
   private static calculateDeviceType(e: PointerEvent) {
     if (this.m_type !== e.pointerType) {
-      this.m_type = e.pointerType as typeof this.m_type;
+      this.m_type = <typeof this.m_type>e.pointerType;
       this.unmount();
       this.mount();
+
+      if (this.m_type === 'touch') this.onTouchStart(new TouchEvent('touchdown', e));
+      else this.onPointerDown(e);
     }
   }
 
@@ -319,8 +326,9 @@ abstract class InputManager {
 
     if (!this.m_moving && this.down) {
       if (
+        this.tool.active === 'pencil' ||
         vec2.length(this.client.delta) >
-        INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[this.m_type]
+          INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[this.m_type]
       ) {
         this.m_moving = true;
       } else return;

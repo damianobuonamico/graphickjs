@@ -52,6 +52,10 @@ interface ElementTransformComponent extends TransformComponent {
   keepCentered(center: vec2, apply?: boolean): void;
 }
 
+interface FreehandTransformComponent extends TransformComponent {
+  keepCentered(center: vec2, apply?: boolean): void;
+}
+
 interface RectTransformComponent extends TransformComponent {
   size: vec2;
   reflection: Value<vec2>;

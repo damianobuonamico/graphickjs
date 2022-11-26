@@ -54,8 +54,9 @@ interface Canvas {
   draw(drawable: Drawable): void;
 
   entity(entity: Entity, options?: { inheritStrokeWidth?: boolean }): void;
-  element(element: Entity, options?: { inheritStrokeWidth?: boolean }): void;
-  image(image: Entity): void;
+  element(element: ElementEntity, options?: { inheritStrokeWidth?: boolean }): void;
+  image(image: ImageEntity): void;
+  freehand(freehand: FreehandEntity): void;
   rectangle({
     position,
     size,
@@ -120,6 +121,11 @@ interface LineDashDrawOp {
   data: [number[] | undefined];
 }
 
+interface Path2DDrawOp {
+  type: 'path2D';
+  data: [Path2D, boolean, boolean];
+}
+
 type DrawOp =
   | GeometryDrawOp
   | BezierDrawOp
@@ -129,7 +135,8 @@ type DrawOp =
   | ColorDrawOp
   | ParameterDrawOp
   | RoundedRectDrawOp
-  | LineDashDrawOp;
+  | LineDashDrawOp
+  | Path2DDrawOp;
 
 interface Drawable {
   operations: DrawOp[];
