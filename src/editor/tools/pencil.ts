@@ -21,13 +21,9 @@ const onPencilPointerDown = () => {
     unprocessedFreehand.add(InputManager.scene.delta, InputManager.pressure);
   }
 
-  function onPointerUp() {
-    onPointerMove();
-  }
-
   return {
     onPointerMove,
-    onPointerUp
+    onPointerUp: onPointerMove
   };
 };
 

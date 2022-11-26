@@ -177,3 +177,24 @@ export function closestPointToBox(point: vec2, box: Box): [vec2, number] {
 
   return closest;
 }
+
+export function getLineCircleIntersections(line: Box, center: vec2, radius: number): vec2[] {
+  const v1 = vec2.sub(line[1], line[0]);
+  const v2 = vec2.sub(line[0], center);
+
+  const b = -2 * vec2.dot(v1, v2);
+  const c = 2 * vec2.sqrLen(v1);
+  const d = Math.sqrt(b * b - 2 * c * (vec2.sqrLen(v2) - radius * radius));
+
+  if (isNaN(d)) return [];
+
+  const u1 = (b - d) / c;
+  const u2 = (b + d) / c;
+
+  const ret = [];
+
+  if (u1 <= 1 && u1 >= 0) ret.push(vec2.add(line[0], vec2.mulS(v1, u1)));
+  if (u2 <= 1 && u2 >= 0) ret.push(vec2.add(line[0], vec2.mulS(v1, u2)));
+
+  return ret;
+}

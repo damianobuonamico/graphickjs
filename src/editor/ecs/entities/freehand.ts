@@ -3,9 +3,12 @@ import InputManager from '@/editor/input';
 import { Renderer } from '@/editor/renderer';
 import {
   average,
+  closestPointToLine,
   doesBoxIntersectBox,
   doesBoxIntersectRotatedBox,
+  getLineCircleIntersections,
   isPointInBox,
+  isPointInCircle,
   vec2
 } from '@/math';
 import { nanoid } from 'nanoid';
@@ -119,6 +122,42 @@ class Freehand implements FreehandEntity {
     this.m_cache.pause = true;
   }
 
+  pp: vec2[] = [];
+
+  erase(position: vec2, radius: number): void {
+    position = vec2.sub(position, this.transform.position.value);
+
+    let fragments: [SimpleTransform, number][][] = [[]];
+
+    for (let i = 0, n = this.m_points.length; i < n; ++i) {
+      if (!isPointInCircle(this.m_points[i][0].position.value, position, radius)) {
+        fragments[fragments.length - 1].push(this.m_points[i]);
+      } else if (i !== 0 && i !== this.m_points.length) fragments.push([]);
+    }
+
+    fragments = fragments.filter((fragment) => fragment.length);
+
+    if (fragments.length === 0) {
+      this.parent.remove(this.id);
+      return;
+    } else if (fragments.length === 1) {
+      this.points = fragments[0].map((point) => [...point[0].position.value, point[1]]);
+      return;
+    }
+
+    for (let i = 0, n = fragments.length; i < n; ++i) {
+      this.parent.add(
+        new Freehand({
+          position: this.transform.position.value,
+          rotation: this.transform.rotation.value,
+          points: fragments[i].map((point) => [...point[0].position.value, point[1]])
+        })
+      );
+    }
+
+    this.parent.remove(this.id);
+  }
+
   getEntityAt(
     position: vec2,
     lowerLevel: boolean = false,
@@ -168,13 +207,15 @@ class Freehand implements FreehandEntity {
       ]
     };
   }
+
   render(): void {
     Renderer.freehand(this);
-    // this.m_points.forEach((point) =>
-    //   Renderer.debugRect({
-    //     position: vec2.add(this.transform.position.value, point[0].position.value)
-    //   })
-    // );
+    Renderer.debugPoints(
+      this.id,
+      this.m_points
+        .map((point) => vec2.add(point[0].position.value, this.transform.position.value))
+        .concat(this.pp)
+    );
   }
 
   asObject(duplicate: boolean = false): FreehandObject {

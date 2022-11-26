@@ -307,6 +307,8 @@ abstract class SceneManager {
 
   static forEach(callback: (entity: Entity) => any) {
     function forEachECS(entity: Entity) {
+      if (!entity) return;
+
       callback(entity);
       if (entity.type !== 'element' && 'forEach' in entity) {
         (entity as any).forEach((e: Entity) => {

@@ -26,6 +26,7 @@ import CornerRoundIcon from './CornerRoundIcon';
 import PauseIcon from './PauseIcon';
 import PlayIcon from './PlayIcon';
 import StopIcon from './StopIcon';
+import EraserIcon from './EraserIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
@@ -37,6 +38,7 @@ export { CircleIcon };
 export { CornerBevelIcon };
 export { CornerMiterIcon };
 export { CornerRoundIcon };
+export { EraserIcon };
 export { EyeClosedIcon };
 export { EyeDropperIcon };
 export { EyeOpenIcon };
@@ -76,6 +78,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <CornerMiterIcon {...props} />;
     case 'cornerRound':
       return <CornerRoundIcon {...props} />;
+    case 'eraser':
+      return <EraserIcon {...props} />;
     case 'eyeClosed':
       return <EyeClosedIcon {...props} />;
     case 'eyeDropper':

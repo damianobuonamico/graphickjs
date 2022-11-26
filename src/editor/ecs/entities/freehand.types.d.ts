@@ -5,6 +5,7 @@ interface FreehandEntity extends Entity {
 
   forEach(callback: (point: SimpleTransformComponent) => void): void;
   add(point: vec2, pressure?: number): void;
+  erase(position: vec2, radius: number): void;
 }
 
 interface FreehandOptions {

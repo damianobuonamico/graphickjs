@@ -10,7 +10,8 @@ type EntityType =
   | 'generichandle'
   | 'selector'
   | 'pen'
-  | 'freehand';
+  | 'freehand'
+  | 'eraser';
 
 interface Entity {
   readonly id: string;

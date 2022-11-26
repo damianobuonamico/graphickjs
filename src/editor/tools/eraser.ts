@@ -1,0 +1,41 @@
+import { isPointInBox } from '@/math';
+import Eraser from '../ecs/entities/eraser';
+import { isFreehand } from '../ecs/entities/freehand';
+import InputManager from '../input';
+import { Renderer } from '../renderer';
+import SceneManager from '../scene';
+
+const onEraserPointerDown = () => {
+  const eraser = new Eraser({
+    position: InputManager.scene.position
+  });
+  SceneManager.overlays.add({ entity: eraser });
+
+  function erase(position: vec2) {
+    eraser.set(position, 10 * (InputManager.pressure || 1));
+
+    SceneManager.forEach((entity) => {
+      if (!entity || !isFreehand(entity)) return;
+      if (isPointInBox(position, entity.transform.boundingBox, 10)) {
+        entity.erase(position, 10 * (InputManager.pressure || 1));
+      }
+    });
+  }
+
+  erase(InputManager.scene.position);
+
+  function onPointerMove() {
+    erase(InputManager.scene.position);
+  }
+
+  function onPointerUp() {
+    erase(InputManager.scene.position);
+  }
+
+  return {
+    onPointerMove,
+    onPointerUp
+  };
+};
+
+export default onEraserPointerDown;

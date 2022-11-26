@@ -10,6 +10,7 @@ import onSelectPointerDown from './select';
 import onDirectSelectPointerDown from './directSelect';
 import onZoomPointerDown from './zoom';
 import onPencilPointerDown from './pencil';
+import onEraserPointerDown from './eraser';
 
 class ToolState {
   private m_current: Tool;
@@ -26,7 +27,8 @@ class ToolState {
     zoom: onZoomPointerDown,
     scale: onScalePointerDown,
     rotate: onRotatePointerDown,
-    pencil: onPencilPointerDown
+    pencil: onPencilPointerDown,
+    eraser: onEraserPointerDown
   };
   private m_data: ToolMap<ToolData> = {
     select: {},
@@ -38,7 +40,8 @@ class ToolState {
     zoom: {},
     scale: {},
     rotate: {},
-    pencil: {}
+    pencil: {},
+    eraser: {}
   };
   private m_hovers: Partial<ToolMap<() => void>> = {
     pen: onPenPointerHover

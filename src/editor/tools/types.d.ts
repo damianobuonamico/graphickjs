@@ -32,6 +32,7 @@ interface ToolMap<T> {
   scale: T;
   rotate: T;
   pencil: T;
+  eraser: T;
 }
 
 type Tool = keyof ToolMap<any>;

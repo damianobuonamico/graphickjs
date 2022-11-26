@@ -2,6 +2,7 @@ import { Component, createEffect, For, JSX } from 'solid-js';
 import { Button } from '@inputs';
 import {
   CircleIcon,
+  EraserIcon,
   HandIcon,
   PencilIcon,
   PenIcon,
@@ -28,6 +29,8 @@ export function getToolIcon(tool: Tool): JSX.Element {
       return <ZoomIcon />;
     case 'pencil':
       return <PencilIcon />;
+    case 'eraser':
+      return <EraserIcon />;
     default:
       return <PointerIcon />;
   }

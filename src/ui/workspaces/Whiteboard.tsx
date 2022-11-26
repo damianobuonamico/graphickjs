@@ -21,6 +21,7 @@ const Whiteboard: Component<{ state: State; setState: (state: Partial<State>) =>
             'select',
             'separator',
             'pencil',
+            'eraser',
             'separator',
             ['rectangle', 'ellipse'],
             'separator',
