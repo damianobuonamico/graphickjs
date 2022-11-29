@@ -27,6 +27,7 @@ class CanvasBackendFreehand {
   private m_maxVertexBufferSize: number = 500000;
   private m_maxVertexCount: number = this.m_maxVertexBufferSize / 8;
   private m_maxIndexCount: number = this.m_maxVertexCount * 3;
+  private m_maxIndexBufferSize: number = this.m_maxIndexCount * 4;
 
   private m_indexBufferArray: Uint32Array;
 
@@ -53,6 +54,14 @@ class CanvasBackendFreehand {
       this.m_maxVertexBufferSize,
       this.m_gl.DYNAMIC_DRAW
     );
+
+    this.m_indexBuffer = this.m_gl.createBuffer()!;
+    this.m_gl.bindBuffer(this.m_gl.ELEMENT_ARRAY_BUFFER, this.m_indexBuffer);
+    this.m_gl.bufferData(
+      this.m_gl.ELEMENT_ARRAY_BUFFER,
+      this.m_maxIndexBufferSize,
+      this.m_gl.DYNAMIC_DRAW
+    );
   }
 
   get src(): CanvasImageSource {
@@ -76,15 +85,7 @@ class CanvasBackendFreehand {
   }
 
   private flush() {
-    this.m_gl.deleteBuffer(this.m_indexBuffer);
-    this.m_indexBuffer = this.m_gl.createBuffer()!;
-    this.m_gl.bindBuffer(this.m_gl.ELEMENT_ARRAY_BUFFER, this.m_indexBuffer);
-
-    this.m_gl.bufferData(
-      this.m_gl.ELEMENT_ARRAY_BUFFER,
-      this.m_indexBufferArray,
-      this.m_gl.STATIC_DRAW
-    );
+    this.m_gl.bufferSubData(this.m_gl.ELEMENT_ARRAY_BUFFER, 0, this.m_indexBufferArray);
 
     this.m_gl.drawElements(
       this.m_gl.TRIANGLES,
