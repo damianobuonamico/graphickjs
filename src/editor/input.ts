@@ -277,7 +277,6 @@ abstract class InputManager {
     this.scene.delta = vec2.create();
     this.scene.origin = vec2.clone(this.scene.position);
 
-    console.log(e);
     this.setPointer(e);
     this.down = true;
     this.m_abort = false;

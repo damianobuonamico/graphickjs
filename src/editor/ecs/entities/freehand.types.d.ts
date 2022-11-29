@@ -2,6 +2,7 @@ interface FreehandEntity extends Entity {
   readonly type: 'freehand';
   readonly selectable: true;
   readonly transform: TransformComponent;
+  readonly geometry: [Float32Array, number[]];
 
   forEach(callback: (point: SimpleTransformComponent) => void): void;
   add(point: vec2, pressure?: number): void;

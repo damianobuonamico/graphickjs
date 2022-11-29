@@ -8,8 +8,11 @@ import { MATH_TWO_PI } from '@/utils/constants';
 import Renderer from '../renderer';
 import SelectionManager from '@/editor/selection';
 import { isCompleteTransform } from '@/editor/ecs/components/transform';
+import CanvasBackendFreehand from '../WebGL/backendFreehand';
 
 class Canvas2D extends CanvasBackend2D {
+  private m_freehand: CanvasBackendFreehand;
+
   private m_debuggerBinded: boolean = false;
   private m_debuggerEntities: Map<string, Entity> = new Map();
   private m_debugPoints: Map<string, vec2[]> = new Map();
@@ -24,6 +27,7 @@ class Canvas2D extends CanvasBackend2D {
 
   constructor() {
     super();
+    this.m_freehand = new CanvasBackendFreehand();
   }
 
   get primaryColor() {
@@ -363,17 +367,21 @@ class Canvas2D extends CanvasBackend2D {
   private drawFreehand(freehand: FreehandEntity) {
     if (!SceneManager.isVisible(freehand)) return false;
 
-    this.m_ctx.save();
+    const [positions, indices] = freehand.geometry;
 
-    this.m_ctx.lineCap = 'round';
-    this.m_ctx.lineJoin = 'round';
-    this.m_ctx.globalAlpha = freehand.layer.opacity.value;
-    this.transform(freehand.transform.mat3);
-    this.beginPath();
-    this.draw(freehand.getDrawable());
-    this.stroke();
+    this.m_freehand.draw(positions, indices);
 
-    this.m_ctx.restore();
+    // this.m_ctx.save();
+
+    // this.m_ctx.lineCap = 'round';
+    // this.m_ctx.lineJoin = 'round';
+    // this.m_ctx.globalAlpha = freehand.layer.opacity.value;
+    // this.transform(freehand.transform.mat3);
+    // this.beginPath();
+    // this.draw(freehand.getDrawable());
+    // this.stroke();
+
+    // this.m_ctx.restore();
   }
 
   private drawEntityDebugged(entity: Entity, options: { inheritStrokeWidth?: boolean }) {
@@ -398,6 +406,10 @@ class Canvas2D extends CanvasBackend2D {
     if (this.drawFreehand(freehand) === false) return;
 
     this.m_debuggerEntities.set(freehand.id, freehand);
+  }
+
+  resize() {
+    return (this.m_freehand.size = super.resize());
   }
 
   entity: (entity: Entity, options: { inheritStrokeWidth?: boolean }) => void = this.drawEntity;
@@ -537,12 +549,14 @@ class Canvas2D extends CanvasBackend2D {
 
   beginFrame(options: {
     color?: string;
-    zoom?: number;
-    position?: vec2;
+    zoom: number;
+    position: vec2;
     stats?: RendererStats;
     debugging?: boolean;
   }): void {
     super.beginFrame({ ...options, stats: options.debugging ? options.stats : undefined });
+
+    this.m_freehand.beginFrame(options.position, options.zoom);
 
     if (this.m_debuggerBinded !== options.debugging) this.bindDebugger(!options.debugging);
   }
@@ -556,6 +570,44 @@ class Canvas2D extends CanvasBackend2D {
     debugging?: boolean;
     debug?: DebugState;
   }): void {
+    this.m_freehand.draw(
+      Float32Array.from([0, 0, 100, 0, 100, 100, 0, 100]),
+      // [
+      // [0, 0],
+      // [100, 0],
+      // [100, 100],
+      // [0, 100]
+      // ],
+      // [
+      //   [0, 0],
+      //   [1, 0],
+      //   [1, 1],
+      //   [0, 1]
+      // ],
+      Uint16Array.from([0, 1, 2, 2, 3, 0])
+      // [0, 1, 2, 2, 3, 0]
+    );
+
+    // this.m_freehand.draw(
+    //   [
+    //     [400, 200],
+    //     [200, 200],
+    //     [200, 500],
+    //     [400, 500]
+    //   ],
+    //   // [
+    //   //   [0, 0],
+    //   //   [1, 0],
+    //   //   [1, 1],
+    //   //   [0, 1]
+    //   // ],
+    //   [4, 5, 6, 6, 7, 4]
+    // );
+
+    this.m_freehand.endFrame();
+    this.m_ctx.resetTransform();
+    this.m_ctx.drawImage(this.m_freehand.src, 0, 0);
+
     super.endFrame(debugging ? { stats } : {});
 
     if (debugging) this.debugging(stats, debug);

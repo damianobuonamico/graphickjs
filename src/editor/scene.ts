@@ -91,7 +91,7 @@ abstract class SceneManager {
   }
 
   static setViewportArea() {
-    this.viewport.viewport = Renderer.size;
+    this.viewport.viewport = vec2.divS(Renderer.size, window.devicePixelRatio ** 2);
 
     if (this.state.workspace === 'whiteboard') {
       this.viewport.setBounds([[0, 0], this.m_layer.parent.transform.size]);

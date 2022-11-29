@@ -19,6 +19,8 @@ import { FreehandTransform, SimpleTransform } from '../components/transform';
 import { getStroke } from 'perfect-freehand';
 import CommandHistory from '@/editor/history/history';
 import { ChangeCommand } from '@/editor/history/command';
+import { getFreehandGeometry } from '@/editor/freehand/strokeBuilder';
+import SceneManager from '@/editor/scene';
 
 export const isFreehand = (b: Entity): b is Freehand => {
   return b.type === 'freehand';
@@ -53,6 +55,18 @@ class Freehand implements FreehandEntity {
   set points(points: vec3[]) {
     this.m_points = points.map((point) => [new SimpleTransform([point[0], point[1]]), point[2]]);
     this.m_cache.pause = true;
+  }
+
+  private onGeometryCacheMiss(): [Float32Array, number[]] {
+    return getFreehandGeometry(
+      this.m_points.map((point) => [...point[0].position.value, point[1]]),
+      SceneManager.viewport.zoom,
+      this.transform.position.value
+    );
+  }
+
+  get geometry() {
+    return this.m_cache.cached('geometry', this.onGeometryCacheMiss.bind(this));
   }
 
   private onGetPath2DDataCacheMiss() {

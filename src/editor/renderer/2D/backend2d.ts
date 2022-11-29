@@ -168,11 +168,15 @@ class CanvasBackend2D {
 
     this.m_offset = [this.m_canvas.offsetLeft, this.m_canvas.offsetTop];
 
-    this.m_canvas.style.width = this.m_container.offsetWidth + 'px';
-    this.m_canvas.style.height = this.m_container.offsetHeight + 'px';
+    const size: vec2 = [this.m_container.offsetWidth, this.m_container.offsetHeight];
 
-    this.m_canvas.width = this.m_container.offsetWidth * this.m_dpr;
-    this.m_canvas.height = this.m_container.offsetHeight * this.m_dpr;
+    this.m_canvas.style.width = size[0] + 'px';
+    this.m_canvas.style.height = size[1] + 'px';
+
+    this.m_canvas.width = size[0] * this.m_dpr;
+    this.m_canvas.height = size[1] * this.m_dpr;
+
+    return size;
   }
 
   beginFrame({

@@ -22,8 +22,7 @@ const onPencilPointerDown = () => {
   }
 
   return {
-    onPointerMove,
-    onPointerUp: onPointerMove
+    onPointerMove
   };
 };
 
