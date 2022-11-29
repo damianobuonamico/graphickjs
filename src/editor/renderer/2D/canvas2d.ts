@@ -570,40 +570,6 @@ class Canvas2D extends CanvasBackend2D {
     debugging?: boolean;
     debug?: DebugState;
   }): void {
-    this.m_freehand.draw(
-      Float32Array.from([0, 0, 100, 0, 100, 100, 0, 100]),
-      // [
-      // [0, 0],
-      // [100, 0],
-      // [100, 100],
-      // [0, 100]
-      // ],
-      // [
-      //   [0, 0],
-      //   [1, 0],
-      //   [1, 1],
-      //   [0, 1]
-      // ],
-      Uint16Array.from([0, 1, 2, 2, 3, 0])
-      // [0, 1, 2, 2, 3, 0]
-    );
-
-    // this.m_freehand.draw(
-    //   [
-    //     [400, 200],
-    //     [200, 200],
-    //     [200, 500],
-    //     [400, 500]
-    //   ],
-    //   // [
-    //   //   [0, 0],
-    //   //   [1, 0],
-    //   //   [1, 1],
-    //   //   [0, 1]
-    //   // ],
-    //   [4, 5, 6, 6, 7, 4]
-    // );
-
     this.m_freehand.endFrame();
     this.m_ctx.resetTransform();
     this.m_ctx.drawImage(this.m_freehand.src, 0, 0);

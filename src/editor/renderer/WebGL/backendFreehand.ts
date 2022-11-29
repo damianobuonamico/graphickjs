@@ -17,15 +17,20 @@ class CanvasBackendFreehand {
   private m_canvas: HTMLCanvasElement;
   private m_gl: WebGL2RenderingContext;
   private m_shaders: ShaderManager;
-  private m_arrayBuffer: WebGLBuffer;
+
+  private m_vertexBuffer: WebGLBuffer;
   private m_indexBuffer: WebGLBuffer;
-  private m_arrayBufferOffset: number;
-  private m_indexBufferOffset: number;
+
   private m_indexBufferLength: number;
-  private m_bufferSize = 2 ** 15;
+  private m_vertexBufferLength: number;
+
+  private m_maxVertexBufferSize: number = 500000;
+  private m_maxVertexCount: number = this.m_maxVertexBufferSize / 8;
+  private m_maxIndexCount: number = this.m_maxVertexCount * 3;
+
+  private m_indexBufferArray: Uint32Array;
 
   private m_dpr = 1;
-  private m_zoom = 1;
 
   constructor() {
     this.m_canvas = createOffscreenCanvas([0, 0]);
@@ -40,6 +45,14 @@ class CanvasBackendFreehand {
 
     this.m_shaders = new ShaderManager(this.m_gl);
     this.m_shaders.create('default', penShader);
+
+    this.m_vertexBuffer = this.m_gl.createBuffer()!;
+    this.m_gl.bindBuffer(this.m_gl.ARRAY_BUFFER, this.m_vertexBuffer);
+    this.m_gl.bufferData(
+      this.m_gl.ARRAY_BUFFER,
+      this.m_maxVertexBufferSize,
+      this.m_gl.DYNAMIC_DRAW
+    );
   }
 
   get src(): CanvasImageSource {
@@ -55,27 +68,35 @@ class CanvasBackendFreehand {
     this.m_gl.viewport(0, 0, value[0] * this.m_dpr, value[1] * this.m_dpr);
   }
 
+  private beginBatch() {
+    this.m_indexBufferLength = 0;
+    this.m_vertexBufferLength = 0;
+
+    this.m_indexBufferArray = new Uint32Array(this.m_maxIndexCount);
+  }
+
   private flush() {
-    this.endFrame();
-
-    this.m_arrayBufferOffset = 0;
-    this.m_arrayBuffer = this.m_gl.createBuffer()!;
-    this.m_gl.bindBuffer(this.m_gl.ARRAY_BUFFER, this.m_arrayBuffer);
-    this.m_gl.bufferData(this.m_gl.ARRAY_BUFFER, this.m_bufferSize, this.m_gl.DYNAMIC_DRAW);
-
-    this.m_indexBufferOffset = 0;
+    this.m_gl.deleteBuffer(this.m_indexBuffer);
     this.m_indexBuffer = this.m_gl.createBuffer()!;
     this.m_gl.bindBuffer(this.m_gl.ELEMENT_ARRAY_BUFFER, this.m_indexBuffer);
-    this.m_gl.bufferData(this.m_gl.ELEMENT_ARRAY_BUFFER, this.m_bufferSize, this.m_gl.DYNAMIC_DRAW);
 
-    this.m_indexBufferLength = 0;
+    this.m_gl.bufferData(
+      this.m_gl.ELEMENT_ARRAY_BUFFER,
+      this.m_indexBufferArray,
+      this.m_gl.STATIC_DRAW
+    );
 
-    this.m_shaders.setAttribute('aPosition', 2, this.m_gl.FLOAT, 'default');
+    this.m_gl.drawElements(
+      this.m_gl.TRIANGLES,
+      this.m_indexBufferLength,
+      this.m_gl.UNSIGNED_INT,
+      0
+    );
+
+    this.beginBatch();
   }
 
   beginFrame(position: vec2, zoom: number): void {
-    this.m_zoom = zoom;
-
     this.m_gl.clearColor(0, 0, 0, 0);
     this.m_gl.clear(this.m_gl.COLOR_BUFFER_BIT);
 
@@ -98,69 +119,32 @@ class CanvasBackendFreehand {
       )
     );
     this.m_shaders.use('default');
-
-    this.m_arrayBufferOffset = 0;
-    this.m_arrayBuffer = this.m_gl.createBuffer()!;
-    this.m_gl.bindBuffer(this.m_gl.ARRAY_BUFFER, this.m_arrayBuffer);
-    this.m_gl.bufferData(this.m_gl.ARRAY_BUFFER, this.m_bufferSize, this.m_gl.STATIC_DRAW);
-
-    this.m_indexBufferOffset = 0;
-    this.m_indexBuffer = this.m_gl.createBuffer()!;
-    this.m_gl.bindBuffer(this.m_gl.ELEMENT_ARRAY_BUFFER, this.m_indexBuffer);
-    this.m_gl.bufferData(this.m_gl.ELEMENT_ARRAY_BUFFER, this.m_bufferSize, this.m_gl.STATIC_DRAW);
-
-    this.m_indexBufferLength = 0;
-
-    this.drawn = false;
-
-    // this.m_arrayBufferArray = [];
-    // this.m_indexBufferArray = [];
-
     this.m_shaders.setAttribute('aPosition', 2, this.m_gl.FLOAT, 'default');
-  }
 
-  private m_arrayBufferArray: number[];
-  private m_indexBufferArray: number[];
-
-  drawn = false;
-
-  draw(positions: Float32Array, indices: number[]) {
-    if (this.m_arrayBufferOffset + 2 * positions.byteLength > this.m_bufferSize) this.flush();
-
-    // if (this.drawn) return;
-    // this.m_arrayBufferArray.push(...positions);
-    // this.m_indexBufferArray.push(...indices);
-
-    this.m_gl.bufferSubData(
-      this.m_gl.ARRAY_BUFFER,
-      this.m_arrayBufferOffset,
-      positions
-      // Float32Array.from(positions.flat())
-    );
-    this.m_gl.bufferSubData(
-      this.m_gl.ELEMENT_ARRAY_BUFFER,
-      this.m_indexBufferOffset,
-      Uint16Array.from(indices.map((index) => index + this.m_indexBufferLength))
-      // Uint16Array.from(indices)
-    );
-
-    this.m_arrayBufferOffset += 2 * positions.byteLength;
-    this.m_indexBufferOffset += 2 * indices.length;
-    this.m_indexBufferLength += positions.length;
-
-    this.drawn = true;
+    this.beginBatch();
   }
 
   endFrame(): void {
-    this.m_gl.drawElements(
-      this.m_gl.TRIANGLES,
-      this.m_indexBufferLength,
-      this.m_gl.UNSIGNED_SHORT,
-      0
-    );
+    this.flush();
+  }
 
-    this.m_gl.deleteBuffer(this.m_arrayBuffer);
-    this.m_gl.deleteBuffer(this.m_indexBuffer);
+  draw(positions: Float32Array, indices: number[]): void {
+    if (
+      this.m_vertexBufferLength + positions.length > this.m_maxVertexCount ||
+      this.m_indexBufferLength + indices.length > this.m_maxIndexCount
+    ) {
+      this.flush();
+    }
+
+    this.m_gl.bufferSubData(this.m_gl.ARRAY_BUFFER, this.m_vertexBufferLength * 8, positions);
+
+    for (let i = 0, n = indices.length; i < n; ++i) {
+      this.m_indexBufferArray[this.m_indexBufferLength + i] =
+        indices[i] + this.m_vertexBufferLength;
+    }
+
+    this.m_vertexBufferLength += positions.length;
+    this.m_indexBufferLength += indices.length;
   }
 }
 

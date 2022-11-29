@@ -327,7 +327,8 @@ abstract class InputManager {
 
     this.setPointer(e);
 
-    this.hover.entity = SceneManager.getEntityAt(this.scene.position, this.tool.isVertex);
+    if (!((this.down && this.tool.active === 'pan') || this.tool.active === 'zoom'))
+      this.hover.entity = SceneManager.getEntityAt(this.scene.position, this.tool.isVertex);
 
     if (!this.m_moving && this.down) {
       if (
