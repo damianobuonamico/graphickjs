@@ -60,7 +60,6 @@ class Freehand implements FreehandEntity {
   private onGeometryCacheMiss(): [Float32Array, number[]] {
     return getFreehandGeometry(
       this.m_points.map((point) => [...point[0].position.value, point[1]]),
-      SceneManager.viewport.zoom,
       this.transform.position.value
     );
   }
@@ -133,7 +132,7 @@ class Freehand implements FreehandEntity {
   add(point: vec2, pressure: number = 0.5) {
     const corrected = WobbleSmoother.update(point, InputManager.time);
 
-    this.m_points[this.m_points.length - 1] = [new SimpleTransform(corrected), pressure];
+    this.m_points[this.m_points.length - 1][0] = new SimpleTransform(corrected);
     this.m_points.push([new SimpleTransform(point), pressure]);
 
     this.m_cache.pause = true;

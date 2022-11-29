@@ -29,14 +29,9 @@ const onEraserPointerDown = () => {
   function onPointerMove() {
     erase(InputManager.scene.position);
   }
-
-  function onPointerUp() {
-    erase(InputManager.scene.position);
-  }
-
+ 
   return {
-    onPointerMove,
-    onPointerUp
+    onPointerMove
   };
 };
 

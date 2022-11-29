@@ -85,6 +85,7 @@ class CanvasBackendFreehand {
   }
 
   private flush() {
+    console.log(this.m_vertexBufferLength / 2, this.m_indexBufferLength);
     this.m_gl.bufferSubData(this.m_gl.ELEMENT_ARRAY_BUFFER, 0, this.m_indexBufferArray);
 
     this.m_gl.drawElements(
@@ -98,6 +99,7 @@ class CanvasBackendFreehand {
   }
 
   beginFrame(position: vec2, zoom: number): void {
+    console.log('----------------');
     this.m_gl.clearColor(0, 0, 0, 0);
     this.m_gl.clear(this.m_gl.COLOR_BUFFER_BIT);
 
@@ -129,22 +131,22 @@ class CanvasBackendFreehand {
     this.flush();
   }
 
-  draw(positions: Float32Array, indices: number[]): void {
+  draw(vertices: Float32Array, indices: number[]): void {
     if (
-      this.m_vertexBufferLength + positions.length > this.m_maxVertexCount ||
+      this.m_vertexBufferLength + vertices.length > this.m_maxVertexCount ||
       this.m_indexBufferLength + indices.length > this.m_maxIndexCount
     ) {
       this.flush();
     }
 
-    this.m_gl.bufferSubData(this.m_gl.ARRAY_BUFFER, this.m_vertexBufferLength * 8, positions);
+    this.m_gl.bufferSubData(this.m_gl.ARRAY_BUFFER, this.m_vertexBufferLength * 8, vertices);
 
     for (let i = 0, n = indices.length; i < n; ++i) {
       this.m_indexBufferArray[this.m_indexBufferLength + i] =
         indices[i] + this.m_vertexBufferLength;
     }
 
-    this.m_vertexBufferLength += positions.length;
+    this.m_vertexBufferLength += vertices.length;
     this.m_indexBufferLength += indices.length;
   }
 }
