@@ -1,5 +1,5 @@
 import { MATH_EPSILON, MATH_TWO_PI } from '@/utils/constants';
-import { vec2 } from '.';
+import { mat2, vec2 } from '.';
 
 export function average(a: number, b: number) {
   return (a + b) * 0.5;
@@ -201,4 +201,41 @@ export function getLineCircleIntersections(
   if (u2 <= 1 && u2 >= 0) ret.push({ point: vec2.add(line[0], vec2.mulS(v1, u2)), t: u2 });
 
   return ret;
+}
+
+export function getLineLineIntersection([p0, p1]: Box, [p2, p3]: Box): vec2 | null {
+  const s10_x = p1[0] - p0[0],
+    s10_y = p1[1] - p0[1],
+    s32_x = p3[0] - p2[0],
+    s32_y = p3[1] - p2[1];
+  const denom = s10_x * s32_y - s32_x * s10_y;
+  if (denom == 0) return null; // collinear
+  const s02_x = p0[0] - p2[0],
+    s02_y = p0[1] - p2[1];
+  const s_numer = s10_x * s02_y - s10_y * s02_x;
+  if (s_numer < 0 == denom > 0) return null; // no collision
+  const t_numer = s32_x * s02_y - s32_y * s02_x;
+  if (t_numer < 0 == denom > 0) return null; // no collision
+  if (s_numer > denom == denom > 0 || t_numer > denom == denom > 0) return null; // no collision
+  // collision detected
+  const t = t_numer / denom;
+  return [p0[0] + t * s10_x, p0[1] + t * s10_y];
+  // const v1 = vec2.sub(b1, a1);
+  // const v2 = vec2.sub(b2, a2);
+
+  // const A: mat2 = [...v1, -v2[0], -v2[1]];
+  // mat2.inv(A);
+
+  // const B: vec2 = [a2[0] - a1[0], a2[1] - a1[1]];
+  // mat2.mulVec2(A, B, B);
+
+  // if (B[0] >= 0 && B[0] <= 1 && B[1] >= 0 && B[1] <= 1) vec2.add(a1, vec2.mulS(v1, B[0], v1), v1);
+  // return null;
+}
+
+export function pointLineSquaredDistance(p: vec2, [a, b]: Box) {
+  const d = vec2.sqrDist(a, b);
+  if (d === 0) return vec2.sqrDist(p, a);
+  const t = ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / d;
+  return vec2.sqrDist(p, [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
 }

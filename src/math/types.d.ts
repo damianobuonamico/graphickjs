@@ -3,6 +3,12 @@ declare type vec3 = [number, number, number];
 declare type vec4 = [number, number, number, number];
 
 // prettier-ignore
+declare type mat2 = [
+  number, number,
+  number, number,
+];
+
+// prettier-ignore
 declare type mat3 = [
   number, number, number,
   number, number, number,
@@ -20,6 +26,12 @@ declare type mat4 = [
 declare type ReadonlyVec2 = readonly [number, number];
 declare type ReadonlyVec3 = readonly [number, number, number];
 declare type ReadonlyVec4 = readonly [number, number, number, number];
+
+// prettier-ignore
+declare type ReadonlyMat2 = [
+  number, number,
+  number, number,
+];
 
 // prettier-ignore
 declare type ReadonlyMat3 = [

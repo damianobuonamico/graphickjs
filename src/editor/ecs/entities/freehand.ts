@@ -58,14 +58,29 @@ class Freehand implements FreehandEntity {
   }
 
   private onGeometryCacheMiss(): [Float32Array, number[]] {
+    const position = this.transform.position.value;
     return getFreehandGeometry(
-      this.m_points.map((point) => [...point[0].position.value, point[1]]),
-      this.transform.position.value
+      this.m_points.map((point) => {
+        const pos = point[0].position.value;
+        return [pos[0] + position[0], pos[1] + position[1], point[1]];
+      }),
+      SceneManager.viewport.zoom,
+      {
+        size: 2,
+        thinning: 0.6,
+        smoothing: 0.5,
+        streamline: 0.1
+      }
     );
   }
 
   get geometry() {
-    return this.m_cache.cached('geometry', this.onGeometryCacheMiss.bind(this));
+    // TODO: don't recalculate at each zoom level (maybe randomize it?)
+    return this.m_cache.cached(
+      `geometry-${SceneManager.viewport.zoom}`,
+      this.onGeometryCacheMiss.bind(this),
+      'geometry '
+    );
   }
 
   private onGetPath2DDataCacheMiss() {

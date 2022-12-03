@@ -323,6 +323,34 @@ export function negate(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
 }
 
 /**
+ * Perpendicular rotation of a vector
+ *
+ * @param {ReadonlyVec2} a vector to rotate
+ * @param {vec2} out the receiving vector
+ * @returns {vec2} out
+ */
+export function perpendicular(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
+  out[0] = a[1];
+  out[1] = -a[0];
+  return out;
+}
+
+/**
+ * Projects a vector in the direction of another vector by a scalar
+ *
+ * @param {ReadonlyVec2} a vector to project
+ * @param {ReadonlyVec2} b direction vector
+ * @param {Number} t projection amount
+ * @param {vec2} out the receiving vector
+ * @returns {vec2} out
+ */
+export function project(a: ReadonlyVec2, b: ReadonlyVec2, t: number, out: vec2 = [0, 0]): vec2 {
+  out[0] = a[0] + b[0] * t;
+  out[1] = a[1] + b[1] * t;
+  return out;
+}
+
+/**
  * Returns the inverse of the components of a vec2
  *
  * @param {ReadonlyVec2} a vector to invert
@@ -658,6 +686,19 @@ export function equals(a: ReadonlyVec2, b: ReadonlyVec2): boolean {
   );
 }
 
+export function direction(a: ReadonlyVec2, b: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
+  out[0] = b[0] - a[0];
+  out[1] = b[1] - a[1];
+
+  let len = out[0] * out[0] + out[1] * out[1];
+  if (len > 0) len = 1 / Math.sqrt(len);
+
+  out[0] *= len;
+  out[1] *= len;
+
+  return out;
+}
+
 /**
  * Alias for {@link vec2.length}
  * @function
@@ -731,7 +772,25 @@ export const sqrLen = squaredLength;
 export const neg = negate;
 
 /**
+ * Alias for {@link vec2.perpendicular}
+ * @function
+ */
+export const perp = perpendicular;
+
+/**
+ * Alias for {@link vec2.project}
+ * @function
+ */
+export const proj = project;
+
+/**
  * Alias for {@link vec2.midpoint}
  * @function
  */
 export const mid = midpoint;
+
+/**
+ * Alias for {@link vec2.direction}
+ * @function
+ */
+export const dir = direction;
