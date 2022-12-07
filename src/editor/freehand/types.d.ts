@@ -59,3 +59,8 @@ interface StrokeParsedJoint {
   collapsedLeft: boolean;
   collapsedRight: boolean;
 }
+
+interface FreehandStrokeOptions {
+  width?: number;
+  enableLineSmoothing?: boolean;
+}

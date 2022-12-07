@@ -23,6 +23,7 @@ import AnimationManager from './animation/animation';
 import Viewport from './viewport';
 import { getWorkspacePrimaryColor } from '@/utils/color';
 import Freehand from './ecs/entities/freehand';
+import Tesselator from './freehand/tesselator';
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -50,6 +51,7 @@ abstract class SceneManager {
 
     CommandHistory.clear();
     AnimationManager.renderFn = this.renderFn.bind(this);
+    Tesselator.init();
   }
 
   static get(id: string) {

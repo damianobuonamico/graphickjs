@@ -26,6 +26,7 @@
     "color-name": "^1.1.4",
     "debounce": "^1.2.1",
     "earcut": "^2.2.4",
+    "libtess": "^1.2.2",
     "nanoid": "^4.0.0",
     "perfect-freehand": "^1.2.0",
     "solid-js": "^1.4.7",

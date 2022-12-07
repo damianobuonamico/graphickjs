@@ -330,8 +330,8 @@ export function negate(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
  * @returns {vec2} out
  */
 export function perpendicular(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
-  out[0] = a[1];
-  out[1] = -a[0];
+  out[0] = -a[1];
+  out[1] = a[0];
   return out;
 }
 
@@ -375,6 +375,14 @@ export function normalize(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
   if (len > 0) len = 1 / Math.sqrt(len);
   out[0] = a[0] * len;
   out[1] = a[1] * len;
+  return out;
+}
+
+export function normalizeLength(a: ReadonlyVec2, t: number, out: vec2 = [0, 0]): vec2 {
+  let len = a[0] * a[0] + a[1] * a[1];
+  if (len > 0) len = 1 / Math.sqrt(len);
+  out[0] = a[0] * len * t;
+  out[1] = a[1] * len * t;
   return out;
 }
 
@@ -437,10 +445,8 @@ export function dot(a: ReadonlyVec2, b: ReadonlyVec2): number {
  * @param {vec3} out the receiving vector
  * @returns {vec3} out
  */
-export function cross(a: ReadonlyVec2, b: ReadonlyVec2, out: vec3 = [0, 0, 0]): vec3 {
-  out[0] = out[1] = 0;
-  out[2] = a[0] * b[1] - a[1] * b[0];
-  return out;
+export function cross(a: ReadonlyVec2, b: ReadonlyVec2): number {
+  return a[0] * b[1] - a[1] * b[0];
 }
 
 /**
@@ -600,6 +606,16 @@ export function rotate(a: ReadonlyVec2, b: ReadonlyVec2, rad: number, out: vec2 
   return out;
 }
 
+export function rotateOrigin(a: ReadonlyVec2, rad: number, out: vec2 = [0, 0]): vec2 {
+  const sin = Math.sin(rad);
+  const cos = Math.cos(rad);
+
+  out[0] = cos * a[0] - sin * a[1];
+  out[1] = sin * a[0] + cos * a[1];
+
+  return out;
+}
+
 /**
  * Get the angle between two 2D vectors
  * @param {ReadonlyVec2} a The first operand
@@ -651,6 +667,10 @@ export function zero(out: vec2): vec2 {
   return out;
 }
 
+export function isZero(a: vec2): boolean {
+  return a[0] === 0 && a[1] === 0;
+}
+
 /**
  * Returns a string representation of a vector
  *
@@ -679,10 +699,10 @@ export function exactEquals(a: ReadonlyVec2, b: ReadonlyVec2): boolean {
  * @param {ReadonlyVec2} b The second vector.
  * @returns {Boolean} True if the vectors are equal, false otherwise.
  */
-export function equals(a: ReadonlyVec2, b: ReadonlyVec2): boolean {
+export function equals(a: ReadonlyVec2, b: ReadonlyVec2, epsilon: number = MATH_EPSILON): boolean {
   return (
-    Math.abs(a[0] - b[0]) <= MATH_EPSILON * Math.max(1, Math.abs(a[0]), Math.abs(b[0])) &&
-    Math.abs(a[1] - b[1]) <= MATH_EPSILON * Math.max(1, Math.abs(a[1]), Math.abs(b[1]))
+    Math.abs(a[0] - b[0]) <= epsilon * Math.max(1, Math.abs(a[0]), Math.abs(b[0])) &&
+    Math.abs(a[1] - b[1]) <= epsilon * Math.max(1, Math.abs(a[1]), Math.abs(b[1]))
   );
 }
 
