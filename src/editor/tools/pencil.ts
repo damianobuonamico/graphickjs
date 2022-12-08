@@ -6,7 +6,7 @@ import SceneManager from '../scene';
 const onPencilPointerDown = () => {
   const unprocessedFreehand = new Freehand({
     position: InputManager.scene.position,
-    points: [[0, 0, 0.5]]
+    points: [[0, 0, InputManager.pressure || 0.5]]
   });
 
   SceneManager.add(unprocessedFreehand);

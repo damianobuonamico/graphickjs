@@ -64,3 +64,8 @@ interface FreehandStrokeOptions {
   width?: number;
   enableLineSmoothing?: boolean;
 }
+
+interface StrokerPoint {
+  position: vec2;
+  pressure: number;
+}

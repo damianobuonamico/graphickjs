@@ -97,7 +97,7 @@ function simplifyDouglasPeucker(points: vec3[], sqTolerance: number) {
   return simplified;
 }
 
-function simplify(points: vec3[], tolerance: number) {
+export function simplify(points: vec3[], tolerance: number) {
   if (points.length <= 2) return points;
   const sqTolerance = tolerance * tolerance;
 
@@ -1019,7 +1019,7 @@ export function getFreehandGeometry(
   const points = simplify(inputPoints, 0 / zoom);
 
   let offset = 0;
-  const penResolution = 12 ;
+  const penResolution = 12;
 
   if (points.length < 2) return [Float32Array.from(positions), indices];
 
