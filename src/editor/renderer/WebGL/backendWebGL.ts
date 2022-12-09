@@ -1,6 +1,7 @@
-import { mat3, mat4, vec3 } from '@/math';
+import { mat3, vec2 } from '@/math';
 import { ShaderManager } from './shaderManager';
-import { default as penShader } from './pen.glsl';
+import { default as penShader } from './shaders/pen.glsl';
+import { FrameBuffer } from './backbuffer';
 
 declare global {
   interface Window {
@@ -13,10 +14,14 @@ function createOffscreenCanvas(size: vec2): HTMLCanvasElement {
   return document.createElement('canvas');
 }
 
+const MSAA = false;
+
 class CanvasBackendFreehand {
   private m_canvas: HTMLCanvasElement;
   private m_gl: WebGL2RenderingContext;
   private m_shaders: ShaderManager;
+
+  private m_frameBuffer: FrameBuffer;
 
   private m_vertexBuffer: WebGLBuffer;
   private m_indexBuffer: WebGLBuffer;
@@ -36,7 +41,7 @@ class CanvasBackendFreehand {
   constructor() {
     this.m_canvas = createOffscreenCanvas([0, 0]);
     this.m_gl = this.m_canvas.getContext('webgl2', {
-      antialias: true,
+      antialias: !MSAA,
       alpha: true,
       premultipliedAlpha: true
     })!;
@@ -62,6 +67,8 @@ class CanvasBackendFreehand {
       this.m_maxIndexBufferSize,
       this.m_gl.DYNAMIC_DRAW
     );
+
+    this.m_frameBuffer = new FrameBuffer(this.m_gl, this.m_shaders, [0, 0]);
   }
 
   get src(): CanvasImageSource {
@@ -75,6 +82,25 @@ class CanvasBackendFreehand {
     this.m_canvas.height = value[1] * this.m_dpr;
 
     this.m_gl.viewport(0, 0, value[0] * this.m_dpr, value[1] * this.m_dpr);
+
+    this.m_frameBuffer.size = vec2.mulS(value, this.m_dpr);
+  }
+
+  private setBuffer(buffer?: FrameBuffer) {
+    const gl = this.m_gl;
+
+    if (buffer) {
+      buffer.bind();
+      return;
+      console.log('clear');
+      gl.bindFramebuffer(gl.FRAMEBUFFER, buffer.fBuffer);
+      // gl.bindRenderbuffer(gl.RENDERBUFFER, buffer.rBuffer);
+
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    } else {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
   }
 
   private beginBatch() {
@@ -99,9 +125,16 @@ class CanvasBackendFreehand {
   }
 
   beginFrame(position: vec2, zoom: number): void {
+    // /*if (this._options.antialiasing === 'FXAA')*/ this.setBuffer(this.m_frameBuffer);
+    if (MSAA) this.m_frameBuffer.bind();
+    else {
+      this.m_gl.clearColor(0, 0, 0, 0);
+      this.m_gl.clear(this.m_gl.COLOR_BUFFER_BIT);
+    }
+
+    this.m_gl.bindBuffer(this.m_gl.ARRAY_BUFFER, this.m_vertexBuffer);
+
     console.log('----------------');
-    this.m_gl.clearColor(0, 0, 0, 0);
-    this.m_gl.clear(this.m_gl.COLOR_BUFFER_BIT);
 
     const size = [this.m_canvas.width, this.m_canvas.height];
 
@@ -129,6 +162,11 @@ class CanvasBackendFreehand {
 
   endFrame(): void {
     this.flush();
+
+    // if (this._options.antialiasing === 'FXAA') {
+    // this.setBuffer();
+    if (MSAA) this.m_frameBuffer.render();
+    // }
   }
 
   draw(vertices: Float32Array, indices: number[]): void {

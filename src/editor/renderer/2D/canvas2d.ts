@@ -8,7 +8,7 @@ import { MATH_TWO_PI } from '@/utils/constants';
 import Renderer from '../renderer';
 import SelectionManager from '@/editor/selection';
 import { isCompleteTransform } from '@/editor/ecs/components/transform';
-import CanvasBackendFreehand from '../WebGL/backendFreehand';
+import CanvasBackendFreehand from '../WebGL/backendWebGL';
 
 class Canvas2D extends CanvasBackend2D {
   private m_freehand: CanvasBackendFreehand;
