@@ -8,7 +8,7 @@ import { MATH_TWO_PI } from '@/utils/constants';
 import Renderer from '../renderer';
 import SelectionManager from '@/editor/selection';
 import { isCompleteTransform } from '@/editor/ecs/components/transform';
-import CanvasBackendFreehand from '../WebGL/backendWebGL';
+import CanvasBackendFreehand, { Antialiasing } from '../WebGL/backendWebGL';
 
 class Canvas2D extends CanvasBackend2D {
   private m_freehand: CanvasBackendFreehand;
@@ -27,7 +27,7 @@ class Canvas2D extends CanvasBackend2D {
 
   constructor() {
     super();
-    this.m_freehand = new CanvasBackendFreehand();
+    this.m_freehand = new CanvasBackendFreehand(Antialiasing.MSAA);
   }
 
   get primaryColor() {
@@ -192,7 +192,7 @@ class Canvas2D extends CanvasBackend2D {
 
     if (!stats) return;
 
-    const WIDTH = 100;
+    const WIDTH = 105;
     const PADDING = 3;
 
     this.m_ctx.setTransform(
@@ -255,7 +255,12 @@ class Canvas2D extends CanvasBackend2D {
     const properties: [string, string][] = [
       ['ENTITY BOX', (entityBox || false).toString().toUpperCase()],
       ['SEGMENT BOX', (segmentBox || false).toString().toUpperCase()],
+      ['', ''],
       ['ENTITIES', this.m_debuggerEntities.size.toString()],
+      ['VERTICES', stats.vertices.toString()],
+      ['TRIANGLES', Math.round(stats.vertices / 3).toString()],
+      ['', ''],
+      ['ANTIALIAS', stats.antialiasing],
       ['', ''],
       ['POS X', round(SceneManager.viewport.position[0], 2).toString()],
       ['POS Y', round(SceneManager.viewport.position[1], 2).toString()],
@@ -570,7 +575,7 @@ class Canvas2D extends CanvasBackend2D {
     debugging?: boolean;
     debug?: DebugState;
   }): void {
-    this.m_freehand.endFrame();
+    this.m_freehand.endFrame(stats);
     this.m_ctx.resetTransform();
     this.m_ctx.drawImage(this.m_freehand.src, 0, 0);
 

@@ -166,6 +166,9 @@ interface RendererStats {
   minMemory: number;
   maxMemory: number;
 
+  vertices: number;
+  antialiasing: string;
+
   readonly availableMemory: number;
   readonly hasMemoryStats: boolean;
 

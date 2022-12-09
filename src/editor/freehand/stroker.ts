@@ -1,6 +1,5 @@
-import { vec2, vec3 } from '@/math';
+import { vec2 } from '@/math';
 import { GEOMETRY_CURVE_ERROR } from '@/utils/constants';
-import SceneManager from '../scene';
 
 const DEBUG = false;
 const DISTANCE_SQR_EPSILON = 0.1;
@@ -269,7 +268,7 @@ function smoothStroke(points: StrokerPoint[], influence: number, iterations: num
     }
 
     // THICKNESS
-    if (SMOOTH_PRESSURE) {
+    {
       let pressure = 0;
       const n_half = (iterations * iterations) / 4 + iterations;
       let w = 1.0;
@@ -300,76 +299,6 @@ function smoothStroke(points: StrokerPoint[], influence: number, iterations: num
 
   return result;
 }
-
-let ITERATIONS = 1;
-let INFLUENCE = 0.5;
-let SMOOTH_PRESSURE = true;
-
-const iterationsSlider = document.createElement('input');
-iterationsSlider.style.position = 'absolute';
-iterationsSlider.style.zIndex = '10000';
-iterationsSlider.style.left = '50px';
-iterationsSlider.style.top = '40px';
-iterationsSlider.type = 'range';
-iterationsSlider.min = '0';
-iterationsSlider.max = '10';
-iterationsSlider.value = `${ITERATIONS}`;
-iterationsSlider.step = '1';
-document.body.appendChild(iterationsSlider);
-
-const influenceSlider = document.createElement('input');
-influenceSlider.style.position = 'absolute';
-influenceSlider.style.zIndex = '10000';
-influenceSlider.style.left = '50px';
-influenceSlider.style.top = '60px';
-influenceSlider.type = 'range';
-influenceSlider.min = '0';
-influenceSlider.max = '2';
-influenceSlider.value = `${INFLUENCE}`;
-influenceSlider.step = '0.1';
-document.body.appendChild(influenceSlider);
-
-const pressureToggle = document.createElement('input');
-pressureToggle.style.position = 'absolute';
-pressureToggle.style.zIndex = '10000';
-pressureToggle.style.left = '50px';
-pressureToggle.style.top = '80px';
-pressureToggle.type = 'checkbox';
-pressureToggle.checked = SMOOTH_PRESSURE;
-document.body.appendChild(pressureToggle);
-
-iterationsSlider.addEventListener('input', (event) => {
-  ITERATIONS = parseInt(event.target.value);
-  SceneManager.viewport.zoom = SceneManager.viewport.zoom + 0.001;
-  SceneManager.render();
-
-  setTimeout(() => {
-    SceneManager.viewport.zoom = SceneManager.viewport.zoom - 0.001;
-    SceneManager.render();
-  }, 50);
-});
-
-influenceSlider.addEventListener('input', (event) => {
-  INFLUENCE = parseFloat(event.target.value);
-  SceneManager.viewport.zoom = SceneManager.viewport.zoom + 0.001;
-  SceneManager.render();
-
-  setTimeout(() => {
-    SceneManager.viewport.zoom = SceneManager.viewport.zoom - 0.001;
-    SceneManager.render();
-  }, 50);
-});
-
-pressureToggle.addEventListener('input', (event) => {
-  SMOOTH_PRESSURE = event.target.checked;
-  SceneManager.viewport.zoom = SceneManager.viewport.zoom + 0.001;
-  SceneManager.render();
-
-  setTimeout(() => {
-    SceneManager.viewport.zoom = SceneManager.viewport.zoom - 0.001;
-    SceneManager.render();
-  }, 50);
-});
 
 function smooth(arr: StrokerPoint[]) {
   const windowSize = 5;

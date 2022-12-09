@@ -18,6 +18,9 @@ class Stats implements RendererStats {
   minMemory: number = Infinity;
   maxMemory: number = 0;
 
+  vertices: number = 0;
+  antialiasing: string = 'BROWSER';
+
   readonly availableMemory: number;
   readonly hasMemoryStats: boolean;
 

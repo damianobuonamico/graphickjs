@@ -23,17 +23,7 @@ uniform vec2 uResolution;
   #define FXAA_SPAN_MAX     8.0
 #endif
 
-float smooth_step( float edge0, float edge1, float x )
-{
-    float p = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
-    float v = p * p * (3.0 - 2.0 * p); // smoothstep formula
-    
-    //v = smoothstep( edge0, edge1, x ); // Compare with built-in
-    
-    return v;
-}
-
-
+// TODO: Reimplement to support alpha
 void main() {
   
   // Texture coordinates
@@ -95,5 +85,5 @@ void main() {
   
   // Output 
   
-  gl_FragColor = texColor;
+  gl_FragColor = color;
 }

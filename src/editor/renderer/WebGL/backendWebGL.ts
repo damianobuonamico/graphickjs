@@ -14,12 +14,30 @@ function createOffscreenCanvas(size: vec2): HTMLCanvasElement {
   return document.createElement('canvas');
 }
 
-const MSAA = false;
+export enum Antialiasing {
+  BROWSER = 0,
+  MSAA = 1,
+  FXAA = 2
+}
+
+function antialiasingToString(antialiasing: Antialiasing, samples: number) {
+  switch (antialiasing) {
+    case Antialiasing.BROWSER:
+      return 'BROWSER';
+    case Antialiasing.MSAA:
+      return `MSAA ${samples}x`;
+    case Antialiasing.FXAA:
+      return 'FXAA';
+  }
+}
 
 class CanvasBackendFreehand {
   private m_canvas: HTMLCanvasElement;
   private m_gl: WebGL2RenderingContext;
   private m_shaders: ShaderManager;
+
+  private m_vertices: number;
+  private m_samples: number;
 
   private m_frameBuffer: FrameBuffer;
 
@@ -36,15 +54,18 @@ class CanvasBackendFreehand {
 
   private m_indexBufferArray: Uint32Array;
 
+  private m_antialasing: Antialiasing;
   private m_dpr = 1;
 
-  constructor() {
+  constructor(antialiasing: Antialiasing) {
     this.m_canvas = createOffscreenCanvas([0, 0]);
     this.m_gl = this.m_canvas.getContext('webgl2', {
-      antialias: !MSAA,
+      antialias: antialiasing === Antialiasing.BROWSER,
       alpha: true,
       premultipliedAlpha: true
     })!;
+
+    this.m_antialasing = antialiasing;
 
     this.m_gl.enable(this.m_gl.BLEND);
     this.m_gl.blendFunc(this.m_gl.SRC_ALPHA, this.m_gl.ONE_MINUS_SRC_ALPHA);
@@ -68,7 +89,12 @@ class CanvasBackendFreehand {
       this.m_gl.DYNAMIC_DRAW
     );
 
-    this.m_frameBuffer = new FrameBuffer(this.m_gl, this.m_shaders, [0, 0]);
+    this.m_frameBuffer = new FrameBuffer(this.m_gl, this.m_shaders, [0, 0], antialiasing);
+
+    this.m_samples =
+      antialiasing === Antialiasing.MSAA
+        ? this.m_gl.getParameter(this.m_gl.MAX_SAMPLES)
+        : this.m_gl.getParameter(this.m_gl.SAMPLES);
   }
 
   get src(): CanvasImageSource {
@@ -86,23 +112,6 @@ class CanvasBackendFreehand {
     this.m_frameBuffer.size = vec2.mulS(value, this.m_dpr);
   }
 
-  private setBuffer(buffer?: FrameBuffer) {
-    const gl = this.m_gl;
-
-    if (buffer) {
-      buffer.bind();
-      return;
-      console.log('clear');
-      gl.bindFramebuffer(gl.FRAMEBUFFER, buffer.fBuffer);
-      // gl.bindRenderbuffer(gl.RENDERBUFFER, buffer.rBuffer);
-
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-    } else {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-  }
-
   private beginBatch() {
     this.m_indexBufferLength = 0;
     this.m_vertexBufferLength = 0;
@@ -111,7 +120,6 @@ class CanvasBackendFreehand {
   }
 
   private flush() {
-    console.log(this.m_vertexBufferLength / 2, this.m_indexBufferLength);
     this.m_gl.bufferSubData(this.m_gl.ELEMENT_ARRAY_BUFFER, 0, this.m_indexBufferArray);
 
     this.m_gl.drawElements(
@@ -121,20 +129,22 @@ class CanvasBackendFreehand {
       0
     );
 
+    this.m_vertices += this.m_indexBufferLength;
+
     this.beginBatch();
   }
 
   beginFrame(position: vec2, zoom: number): void {
-    // /*if (this._options.antialiasing === 'FXAA')*/ this.setBuffer(this.m_frameBuffer);
-    if (MSAA) this.m_frameBuffer.bind();
-    else {
+    if (this.m_antialasing === Antialiasing.BROWSER) {
       this.m_gl.clearColor(0, 0, 0, 0);
       this.m_gl.clear(this.m_gl.COLOR_BUFFER_BIT);
+    } else {
+      this.m_frameBuffer.bind();
     }
 
-    this.m_gl.bindBuffer(this.m_gl.ARRAY_BUFFER, this.m_vertexBuffer);
+    this.m_vertices = 0;
 
-    console.log('----------------');
+    this.m_gl.bindBuffer(this.m_gl.ARRAY_BUFFER, this.m_vertexBuffer);
 
     const size = [this.m_canvas.width, this.m_canvas.height];
 
@@ -160,13 +170,15 @@ class CanvasBackendFreehand {
     this.beginBatch();
   }
 
-  endFrame(): void {
+  endFrame(stats?: RendererStats): void {
     this.flush();
 
-    // if (this._options.antialiasing === 'FXAA') {
-    // this.setBuffer();
-    if (MSAA) this.m_frameBuffer.render();
-    // }
+    if (this.m_antialasing !== Antialiasing.BROWSER) this.m_frameBuffer.render();
+
+    if (stats) {
+      stats.vertices = this.m_vertices;
+      stats.antialiasing = antialiasingToString(this.m_antialasing, this.m_samples);
+    }
   }
 
   draw(vertices: Float32Array, indices: number[]): void {
