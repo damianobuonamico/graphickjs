@@ -691,22 +691,34 @@ export class FreehandTransform extends Transform implements FreehandTransformCom
     vec2.rotate(value, this.center, -this.rotation.value, this.m_origin);
   }
 
-  get size(): vec2 {
+  private onSizeCacheMiss(): vec2 {
     const box = this.unrotatedBoundingBox;
     return vec2.sub(box[1], box[0]);
   }
 
-  get center() {
+  get size(): vec2 {
+    return this.m_cache.cached('size', this.onSizeCacheMiss.bind(this));
+  }
+
+  private onCenterCacheMiss(): vec2 {
     const box = this.unrotatedBoundingBox;
     return vec2.mid(box[0], box[1]);
   }
 
-  get staticCenter() {
+  get center() {
+    return this.m_cache.cached('center', this.onCenterCacheMiss.bind(this));
+  }
+
+  private onStaticCenterCacheMiss(): vec2 {
     const box = this.staticBoundingBox;
     return vec2.mid(box[0], box[1]);
   }
 
-  get staticBoundingBox(): Box {
+  get staticCenter() {
+    return this.m_cache.cached('staticCenter', this.onStaticCenterCacheMiss.bind(this));
+  }
+
+  private onStaticBoundingBoxCacheMiss(): Box {
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
 
@@ -721,7 +733,11 @@ export class FreehandTransform extends Transform implements FreehandTransformCom
     return [vec2.add(min, position, min), vec2.add(max, position, max)];
   }
 
-  get unrotatedBoundingBox(): Box {
+  get staticBoundingBox(): Box {
+    return this.m_cache.cached('staticBoundingBox', this.onStaticBoundingBoxCacheMiss.bind(this));
+  }
+
+  private onUnrotatedBoundingBoxCacheMiss(): Box {
     let min: vec2 = [Infinity, Infinity];
     let max: vec2 = [-Infinity, -Infinity];
 
@@ -736,8 +752,14 @@ export class FreehandTransform extends Transform implements FreehandTransformCom
     return [vec2.add(min, position, min), vec2.add(max, position, max)];
   }
 
-  // TODO: Move common methods in Transform class
-  get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+  get unrotatedBoundingBox(): Box {
+    return this.m_cache.cached(
+      'unrotatedBoundingBox',
+      this.onUnrotatedBoundingBoxCacheMiss.bind(this)
+    );
+  }
+
+  private onRotatedBoundingBoxCacheMiss(): [vec2, vec2, vec2, vec2] {
     const box = this.unrotatedBoundingBox;
     const angle = this.rotation.value;
 
@@ -760,7 +782,12 @@ export class FreehandTransform extends Transform implements FreehandTransformCom
     ];
   }
 
-  get boundingBox(): Box {
+  // TODO: Move common methods in Transform class
+  get rotatedBoundingBox(): [vec2, vec2, vec2, vec2] {
+    return this.m_cache.cached('rotatedBoundingBox', this.onRotatedBoundingBoxCacheMiss.bind(this));
+  }
+
+  private onBoundingBoxCacheMiss(): Box {
     const angle = this.rotation.value;
     if (angle === 0) return this.unrotatedBoundingBox;
 
@@ -776,13 +803,21 @@ export class FreehandTransform extends Transform implements FreehandTransformCom
     return [min, max];
   }
 
-  get mat3(): mat3 {
+  get boundingBox(): Box {
+    return this.m_cache.cached('boundingBox', this.onBoundingBoxCacheMiss.bind(this));
+  }
+
+  private onMat3CacheMiss() {
     return mat3.fromTranslationRotation(
       this.position.value,
       this.rotation.value,
       this.position.static,
       this.staticCenter
     );
+  }
+
+  get mat3(): mat3 {
+    return this.m_cache.cached('mat3', this.onMat3CacheMiss.bind(this));
   }
 
   private applyScale() {
@@ -839,6 +874,12 @@ export class FreehandTransform extends Transform implements FreehandTransformCom
   apply() {
     super.apply();
     this.applyScale();
+  }
+
+  translate(amount: vec2, apply?: boolean): void {
+    super.translate(amount);
+    this.m_cache.pause;
+    if (apply) this.position.apply();
   }
 }
 

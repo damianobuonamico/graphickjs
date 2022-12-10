@@ -11,7 +11,7 @@ import {
   vec2
 } from '@/math';
 import { nanoid } from 'nanoid';
-import { Cache } from '../components/cache';
+import { Cache, ElementCache } from '../components/cache';
 import LayerCompositing from '../components/layerCompositing';
 import { FreehandTransform, SimpleTransform } from '../components/transform';
 import CommandHistory from '@/editor/history/history';
@@ -35,13 +35,12 @@ class Freehand implements FreehandEntity {
 
   parent: LayerEntity;
 
-  private m_cache: CacheComponent;
+  private m_cache: ElementCache = new ElementCache();
   private m_points: [SimpleTransform, number][];
 
   constructor({ position, rotation, points, color = '#222' }: FreehandOptions) {
     this.id = nanoid();
-    this.m_cache = new Cache();
-    this.transform = new FreehandTransform(this, this.m_cache, position, rotation);
+    this.transform = new FreehandTransform(this, this.m_cache.last, position, rotation);
     this.layer = new LayerCompositing();
 
     this.points = points;
@@ -62,15 +61,15 @@ class Freehand implements FreehandEntity {
       return { position: [pos[0] + position[0], pos[1] + position[1]], pressure: point[1] };
     });
 
-    return triangulateStroke(points, 4, SceneManager.viewport.zoom);
+    return triangulateStroke(points, 8, SceneManager.viewport.zoom);
   }
 
   get geometry() {
     // TODO: don't recalculate at each zoom level (maybe randomize it?)
-    return this.m_cache.cached(
-      `geometry-${SceneManager.viewport.zoom}`,
+    return this.m_cache.cachedZoom(
+      `geometry`,
       this.onGeometryCacheMiss.bind(this),
-      'geometry '
+      SceneManager.viewport.zoom
     );
   }
 
