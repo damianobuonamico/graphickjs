@@ -1,5 +1,15 @@
-import editor from './editor.js';
+import wasm from './editor';
 
-editor().then((module) => {
-  module._alive();
+const fallback: any = () => {};
+
+const API: Api = {
+  _init: fallback
+};
+
+wasm().then((module: any) => {
+  API._init = module._init;
+
+  module._init();
 });
+
+export default API;

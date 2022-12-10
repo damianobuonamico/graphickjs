@@ -14,13 +14,18 @@ const Canvas: Component = () => {
   return (
     <div class="flex grow overflow-hidden first-line:z-0">
       <canvas
+        id="canvas"
         class="absolute overflow-hidden"
         ref={(ref) => {
-          if (ref !== null) Renderer.setup(ref);
           ref.style.opacity = '0';
           canvas = ref;
         }}
       />
+      <canvas
+        ref={(ref) => {
+          if (ref !== null) Renderer.setup(ref);
+        }}
+      ></canvas>
     </div>
   );
 };

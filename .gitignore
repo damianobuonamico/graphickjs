@@ -88,3 +88,6 @@ dist/
 
 # Build files
 build/
+
+# VSCode files
+.vscode/
