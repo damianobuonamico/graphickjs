@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import vitePluginString from 'vite-plugin-string';
+import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
 import { fileURLToPath, URL } from 'url';
 
 export default defineConfig({
-  plugins: [vitePluginString(), solidPlugin()],
+  plugins: [vitePluginString(), solidPlugin(), wasm(), topLevelAwait()],
   server: {
     port: 3000
   },
