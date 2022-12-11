@@ -8,10 +8,12 @@ import { MATH_TWO_PI } from '@/utils/constants';
 import Renderer from '../renderer';
 import SelectionManager from '@/editor/selection';
 import { isCompleteTransform } from '@/editor/ecs/components/transform';
+import API from '@/wasm/loader';
 import CanvasBackendFreehand, { Antialiasing } from '../WebGL/backendWebGL';
 
 class Canvas2D extends CanvasBackend2D {
-  private m_freehand: CanvasBackendFreehand;
+  // private m_freehand: CanvasBackendFreehand;
+  private m_wasmCanvas: HTMLCanvasElement;
 
   private m_debuggerBinded: boolean = false;
   private m_debuggerEntities: Map<string, Entity> = new Map();
@@ -27,7 +29,7 @@ class Canvas2D extends CanvasBackend2D {
 
   constructor() {
     super();
-    this.m_freehand = new CanvasBackendFreehand(Antialiasing.MSAA);
+    // this.m_freehand = new CanvasBackendFreehand(Antialiasing.MSAA);
   }
 
   get primaryColor() {
@@ -36,6 +38,10 @@ class Canvas2D extends CanvasBackend2D {
 
   set primaryColor(color: string) {
     this.m_primaryColor = color;
+  }
+
+  set wasmCanvas(canvas: HTMLCanvasElement) {
+    this.m_wasmCanvas = canvas;
   }
 
   private vertexOutline(vertex: VertexEntity, selected?: boolean) {
@@ -374,7 +380,7 @@ class Canvas2D extends CanvasBackend2D {
 
     const [positions, indices] = freehand.geometry;
 
-    this.m_freehand.draw(positions, indices);
+    // this.m_freehand.draw(positions, indices);
 
     // this.m_ctx.save();
 
@@ -414,7 +420,15 @@ class Canvas2D extends CanvasBackend2D {
   }
 
   resize() {
-    return (this.m_freehand.size = super.resize());
+    const size = super.resize();
+
+    this.m_wasmCanvas.width = size[0];
+    this.m_wasmCanvas.height = size[1];
+
+    API._resize(...size);
+
+    return size;
+    // return (this.m_freehand.size = super.resize());
   }
 
   entity: (entity: Entity, options: { inheritStrokeWidth?: boolean }) => void = this.drawEntity;
@@ -561,7 +575,10 @@ class Canvas2D extends CanvasBackend2D {
   }): void {
     super.beginFrame({ ...options, stats: options.debugging ? options.stats : undefined });
 
-    this.m_freehand.beginFrame(options.position, options.zoom);
+    const position = API._to_heap(Float32Array.from(options.position));
+
+    API._begin_frame(position, options.zoom);
+    API._free(position);
 
     if (this.m_debuggerBinded !== options.debugging) this.bindDebugger(!options.debugging);
   }
@@ -575,9 +592,11 @@ class Canvas2D extends CanvasBackend2D {
     debugging?: boolean;
     debug?: DebugState;
   }): void {
-    this.m_freehand.endFrame(stats);
+    // this.m_freehand.endFrame(stats);
+    API._end_frame();
+
     this.m_ctx.resetTransform();
-    this.m_ctx.drawImage(this.m_freehand.src, 0, 0);
+    this.m_ctx.drawImage(this.m_wasmCanvas, 0, 0);
 
     super.endFrame(debugging ? { stats } : {});
 

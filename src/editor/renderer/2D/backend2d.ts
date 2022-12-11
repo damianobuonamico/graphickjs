@@ -173,10 +173,12 @@ class CanvasBackend2D {
     this.m_canvas.style.width = size[0] + 'px';
     this.m_canvas.style.height = size[1] + 'px';
 
-    this.m_canvas.width = size[0] * this.m_dpr;
-    this.m_canvas.height = size[1] * this.m_dpr;
+    const dprSize = vec2.mulS(size, this.m_dpr);
 
-    return size;
+    this.m_canvas.width = dprSize[0];
+    this.m_canvas.height = dprSize[1];
+
+    return dprSize;
   }
 
   beginFrame({

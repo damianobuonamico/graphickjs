@@ -1,8 +1,12 @@
 #include "renderer.h"
+
+#include "../common.h"
+
 #include <emscripten/html5.h>
 #include <GLES2/gl2.h>
 #include <stdlib.h>
 
+#if 0 
 GLuint compile_shader(GLenum shaderType, const char *src)
 {
   GLuint shader = glCreateShader(shaderType);
@@ -40,6 +44,11 @@ void Renderer::init() {
   printf("Init renderer\n");
 
   EmscriptenWebGLContextAttributes attr;
+
+  attr.alpha = true;
+  attr.antialias = true;
+  attr.premultipliedAlpha = true;
+
   emscripten_webgl_init_context_attributes(&attr);
 #ifdef EXPLICIT_SWAP
   attr.explicitSwapControl = 1;
@@ -51,6 +60,9 @@ void Renderer::init() {
 
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
   emscripten_webgl_make_context_current(ctx);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   static const char vertex_shader[] =
       "attribute vec4 apos;"
@@ -106,7 +118,7 @@ void Renderer::init() {
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
 
-  glClearColor(0.3f, 0.3f, 0.3f, 1);
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -118,3 +130,37 @@ void Renderer::init() {
   REPORT_RESULT(0);
 #endif
 }
+#else 
+ShaderManager Renderer::s_shaders;
+
+void Renderer::init() {
+  EmscriptenWebGLContextAttributes attr;
+
+  attr.alpha = true;
+  attr.antialias = true;
+  attr.premultipliedAlpha = true;
+
+  emscripten_webgl_init_context_attributes(&attr);
+  
+  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
+  emscripten_webgl_make_context_current(ctx);
+  
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  s_shaders.create_shaders();
+}
+#endif
+
+void Renderer::resize(const int width, const int height) {
+  glViewport(0, 0, width, height);
+}
+
+void Renderer::begin_frame(const float* position, const float zoom) {
+  // glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  // glClear(GL_COLOR_BUFFER_BIT);
+
+
+}
+
+void Renderer::end_frame() {}

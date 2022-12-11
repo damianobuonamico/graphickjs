@@ -16,14 +16,17 @@ const Canvas: Component = () => {
       <canvas
         id="canvas"
         class="absolute overflow-hidden"
+        style={{ visibility: 'hidden' }}
         ref={(ref) => {
-          ref.style.opacity = '0';
-          canvas = ref;
+          if (ref !== null) Renderer.wasmCanvas = ref;
         }}
       />
       <canvas
+        class="absolute overflow-hidden"
         ref={(ref) => {
           if (ref !== null) Renderer.setup(ref);
+          ref.style.opacity = '0';
+          canvas = ref;
         }}
       ></canvas>
     </div>

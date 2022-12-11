@@ -1,7 +1,13 @@
+#pragma once
+
 #include <emscripten.h>
 
 #ifdef __INTELLISENSE__
   #define EMSCRIPTEN_KEEPALIVE
 #endif
 
-#include <stdio.h>
+#include <stdint.h>
+#include <string>
+
+#include "utils/uuid.h"
+#include "utils/console.h"

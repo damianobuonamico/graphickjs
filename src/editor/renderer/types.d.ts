@@ -1,5 +1,6 @@
 interface Canvas {
   DOM: HTMLCanvasElement;
+  wasmCanvas: HTMLCanvasElement;
 
   size: vec2;
   offset: vec2;

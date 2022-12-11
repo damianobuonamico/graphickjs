@@ -74,6 +74,10 @@ abstract class Renderer {
     return this.m_canvas.primaryColor;
   }
 
+  static set wasmCanvas(canvas: HTMLCanvasElement) {
+    this.m_canvas.wasmCanvas = canvas;
+  }
+
   static beginFrame(options: { color?: string; zoom?: number; position?: vec2 }) {
     this.m_canvas.beginFrame({ ...options, debugging: this.debugging, stats: this.stats });
   }
