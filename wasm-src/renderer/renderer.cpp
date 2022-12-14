@@ -1,137 +1,25 @@
 #include "renderer.h"
 
 #include "../common.h"
+#include "vertex.h"
 
 #include <emscripten/html5.h>
 #include <GLES2/gl2.h>
-#include <stdlib.h>
 
-#if 0 
-GLuint compile_shader(GLenum shaderType, const char *src)
-{
-  GLuint shader = glCreateShader(shaderType);
-  glShaderSource(shader, 1, &src, NULL);
-  glCompileShader(shader);
+static const size_t max_vertex_buffer_size = 2 * 100000;
+static const size_t max_vertex_count = max_vertex_buffer_size / sizeof(Vertex);
+static const size_t max_index_count = max_vertex_count * 3;
 
-  GLint isCompiled = 0;
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-  if (!isCompiled)
-  {
-    GLint maxLength = 0;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-    char *buf = (char *)malloc(maxLength + 1);
-    glGetShaderInfoLog(shader, maxLength, &maxLength, buf);
-    printf("%s\n", buf);
-    free(buf);
-    return 0;
-  }
-
-  return shader;
-}
-
-GLuint create_program(GLuint vertexShader, GLuint fragmentShader)
-{
-  GLuint program = glCreateProgram();
-  glAttachShader(program, vertexShader);
-  glAttachShader(program, fragmentShader);
-  glBindAttribLocation(program, 0, "apos");
-  glBindAttribLocation(program, 1, "acolor");
-  glLinkProgram(program);
-  return program;
-}
-
-void Renderer::init() {
-  printf("Init renderer\n");
-
-  EmscriptenWebGLContextAttributes attr;
-
-  attr.alpha = true;
-  attr.antialias = true;
-  attr.premultipliedAlpha = true;
-
-  emscripten_webgl_init_context_attributes(&attr);
-#ifdef EXPLICIT_SWAP
-  attr.explicitSwapControl = 1;
-#endif
-#ifdef DRAW_FROM_CLIENT_MEMORY
-  // This test verifies that drawing from client-side memory when enableExtensionsByDefault==false works.
-  attr.enableExtensionsByDefault = 0;
-#endif
-
-  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
-  emscripten_webgl_make_context_current(ctx);
-
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  static const char vertex_shader[] =
-      "attribute vec4 apos;"
-      "attribute vec4 acolor;"
-      "varying vec4 color;"
-      "void main() {"
-      "color = acolor;"
-      "gl_Position = apos;"
-      "}";
-  GLuint vs = compile_shader(GL_VERTEX_SHADER, vertex_shader);
-
-  static const char fragment_shader[] =
-      "precision lowp float;"
-      "varying vec4 color;"
-      "void main() {"
-      "gl_FragColor = color;"
-      "}";
-  GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fragment_shader);
-
-  GLuint program = create_program(vs, fs);
-  glUseProgram(program);
-
-  static const float pos_and_color[] = {
-      //     x,     y, r, g, b
-      -0.6f,
-      -0.6f,
-      1,
-      0,
-      0,
-      0.6f,
-      -0.6f,
-      0,
-      1,
-      0,
-      0.f,
-      0.6f,
-      0,
-      0,
-      1,
-  };
-
-#ifdef DRAW_FROM_CLIENT_MEMORY
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 20, pos_and_color);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 20, (void *)(pos_and_color + 2));
-#else
-  GLuint vbo;
-  glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(pos_and_color), pos_and_color, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 20, 0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 20, (void *)8);
-#endif
-  glEnableVertexAttribArray(0);
-  glEnableVertexAttribArray(1);
-
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glDrawArrays(GL_TRIANGLES, 0, 3);
-
-#ifdef EXPLICIT_SWAP
-  emscripten_webgl_commit_frame();
-#endif
-
-#ifdef REPORT_RESULT
-  REPORT_RESULT(0);
-#endif
-}
-#else 
 ShaderManager Renderer::s_shaders;
+Renderer::RendererData Renderer::s_data;
+vec2 Renderer::s_size;
+
+void Renderer::resize(const int width, const int height) {
+  s_size.x = width;
+  s_size.y = height;
+
+  glViewport(0, 0, width, height);
+}
 
 void Renderer::init() {
   EmscriptenWebGLContextAttributes attr;
@@ -141,26 +29,89 @@ void Renderer::init() {
   attr.premultipliedAlpha = true;
 
   emscripten_webgl_init_context_attributes(&attr);
-  
+
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
   emscripten_webgl_make_context_current(ctx);
-  
+
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   s_shaders.create_shaders();
-}
-#endif
 
-void Renderer::resize(const int width, const int height) {
-  glViewport(0, 0, width, height);
+  s_data.vertex_buffer = new Vertex[max_vertex_count];
+  s_data.index_buffer = new uint32_t[max_index_count];
+
+  glGenBuffers(1, &s_data.vertex_buffer_object);
+  glBindBuffer(GL_ARRAY_BUFFER, s_data.vertex_buffer_object);
+  glBufferData(GL_ARRAY_BUFFER, max_vertex_count * sizeof(Vertex), nullptr, GL_STREAM_DRAW);
+
+  s_shaders.use("pen");
+  s_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, position));
+
+  glGenBuffers(1, &s_data.index_buffer_object);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_data.index_buffer_object);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_index_count * sizeof(uint32_t), nullptr, GL_STREAM_DRAW);
 }
 
 void Renderer::begin_frame(const float* position, const float zoom) {
-  // glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  // glClear(GL_COLOR_BUFFER_BIT);
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
 
+  mat3 scaling = { 2.0f * zoom / s_size.x, 0.0f, 0.0f, 0.0f, -2.0f * zoom / s_size.y, 0.0f, 0.0f, 0.0f, 1.0f };
+  mat3 translation = { 1.0f, 0.0f, (-s_size.x / zoom + 2 * position[0]) / 2.0f, 0.0f, 1.0f, (-s_size.y / zoom + 2 * position[1]) / 2.0f, 0.0f, 0.0f, 1.0f };
 
+  mat3 view_projection_matrix = scaling * translation;
+
+  s_shaders.set_global_uniform("uViewProjectionMatrix", view_projection_matrix);
+
+  begin_batch();
 }
 
-void Renderer::end_frame() {}
+void Renderer::end_frame() {
+  end_batch();
+  flush();
+}
+
+
+void Renderer::draw(const Geometry& geometry) {
+  if (s_data.index_count + geometry.indices.size() >= max_index_count ||
+    s_data.vertex_count + geometry.vertices.size() >= max_vertex_count) {
+    end_batch();
+    flush();
+    begin_batch();
+  }
+
+  for (size_t i = 0; i < geometry.vertices.size(); i++) {
+    const Vertex& vertex = geometry.vertices[i];
+    s_data.vertex_buffer_ptr->position = vertex.position;
+    s_data.vertex_buffer_ptr++;
+  }
+
+  for (size_t i = 0; i < geometry.indices.size(); i++) {
+    *(s_data.index_buffer_ptr) = s_data.vertex_count + geometry.indices[i];
+    s_data.index_buffer_ptr++;
+  }
+
+  s_data.vertex_count += (uint32_t)geometry.vertices.size();
+  s_data.index_count += (uint32_t)geometry.indices.size();
+}
+
+void Renderer::begin_batch() {
+  s_data.vertex_buffer_ptr = s_data.vertex_buffer;
+  s_data.index_buffer_ptr = s_data.index_buffer;
+}
+
+void Renderer::end_batch() {
+  GLsizeiptr vertex_buffer_size = (uint8_t*)s_data.vertex_buffer_ptr - (uint8_t*)s_data.vertex_buffer;
+  GLsizeiptr index_buffer_size = (uint8_t*)s_data.index_buffer_ptr - (uint8_t*)s_data.index_buffer;
+
+  glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_buffer_size, s_data.vertex_buffer);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_buffer_size, s_data.index_buffer);
+}
+
+void Renderer::flush() {
+  glDrawElements(GL_TRIANGLES, s_data.index_count, GL_UNSIGNED_INT, nullptr);
+
+  s_data.vertex_count = 0;
+  s_data.index_count = 0;
+}

@@ -1,7 +1,3 @@
-#pragma once
-
-#include "vec2.h"
-
 #include <assert.h>
 
 /* -- Component accesses -- */
@@ -17,7 +13,7 @@ constexpr float& vec2::operator[](uint8_t i) {
   }
 }
 
-constexpr float const& vec2::operator[](uint8_t i) const {
+constexpr const float& vec2::operator[](uint8_t i) const {
   assert(i >= 0 && i < this->length());
   switch (i) {
   default:
@@ -197,9 +193,13 @@ constexpr vec2 operator||(const vec2& v1, const vec2& v2) {
   return vec2(v1.x || v2.x, v1.y || v2.y);
 }
 
+/* -- Address operator -- */
+
+constexpr const float* operator&(const vec2& v) { return &(v.x); }
+
 /* -- Stream operator -- */
 
-std::ostream& operator<<(std::ostream& os, const vec2& v) {
+inline std::ostream& operator<<(std::ostream& os, const vec2& v) {
   os << "(" << v.x << ", " << v.y << ")";
   return os;
 }

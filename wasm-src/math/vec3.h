@@ -72,6 +72,10 @@ constexpr bool operator!=(const vec3& v1, const vec3& v2);
 constexpr vec3 operator&&(const vec3& v1, const vec3& v2);
 constexpr vec3 operator||(const vec3& v1, const vec3& v2);
 
+/* -- Address operator -- */
+
+constexpr const float* operator&(const vec3& v);
+
 /* -- Stream operator -- */
 
 std::ostream& operator<<(std::ostream& os, const vec3& v);

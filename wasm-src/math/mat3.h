@@ -60,18 +60,20 @@ mat3 operator-(const mat3& m1, const mat3& m2);
 mat3 operator*(const mat3& m, float scalar);
 mat3 operator*(float scalar, const mat3& m);
 vec3 operator*(const mat3& m, const vec3& v);
-vec3 operator*(const vec3& v, const mat3& m);
 mat3 operator*(const mat3& m1, const mat3& m2);
 mat3 operator/(const mat3& m, float scalar);
 mat3 operator/(float scalar, const mat3& m);
 vec3 operator/(const mat3& m, const vec3& v);
-vec3 operator/(const vec3& v, const mat3& m);
 mat3 operator/(const mat3& m1, const mat3& m2);
 
 /* -- Boolean operators -- */
 
 bool operator==(const mat3& m1, const mat3& m2);
 bool operator!=(const mat3& m1, const mat3& m2);
+
+/* -- Address operator -- */
+
+const float* operator&(const mat3& m);
 
 /* -- Stream operator -- */
 

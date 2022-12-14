@@ -1,4 +1,4 @@
-import wasm from './editor';
+import wasm from "./editor";
 
 const fallback: any = () => {};
 
@@ -8,7 +8,8 @@ const API: Api = {
   _to_heap: fallback,
   _free: fallback,
   _begin_frame: fallback,
-  _end_frame: fallback
+  _end_frame: fallback,
+  _draw: fallback,
 };
 
 wasm().then((module: any) => {
@@ -28,6 +29,7 @@ wasm().then((module: any) => {
 
   API._begin_frame = module._begin_frame;
   API._end_frame = module._end_frame;
+  API._draw = module._draw;
 
   module._init();
 });

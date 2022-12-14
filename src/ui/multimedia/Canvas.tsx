@@ -1,13 +1,18 @@
-import { Component, createEffect } from 'solid-js';
-import { Renderer } from '@renderer';
+import { Component, createEffect } from "solid-js";
+import { Renderer } from "@renderer";
+import SceneManager from "@editor/scene";
 
 const Canvas: Component = () => {
   let canvas: HTMLCanvasElement | undefined;
 
   createEffect(() => {
     if (canvas) {
-      Renderer.resize();
-      canvas.style.opacity = '1';
+      // TODO: Fix wasm loading timing issues
+      setTimeout(() => {
+        Renderer.resize();
+        SceneManager.render();
+        if (canvas) canvas.style.opacity = "1";
+      }, 100);
     }
   });
 
@@ -16,7 +21,7 @@ const Canvas: Component = () => {
       <canvas
         id="canvas"
         class="absolute overflow-hidden"
-        style={{ visibility: 'hidden' }}
+        style={{ visibility: "hidden" }}
         ref={(ref) => {
           if (ref !== null) Renderer.wasmCanvas = ref;
         }}
@@ -25,7 +30,7 @@ const Canvas: Component = () => {
         class="absolute overflow-hidden"
         ref={(ref) => {
           if (ref !== null) Renderer.setup(ref);
-          ref.style.opacity = '0';
+          ref.style.opacity = "0";
           canvas = ref;
         }}
       ></canvas>

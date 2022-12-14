@@ -1,15 +1,14 @@
-import Element, { isElement } from '@/editor/ecs/entities/element';
-import SceneManager from '@editor/scene';
-import { round, vec2 } from '@math';
-import InputManager from '@/editor/input';
-import ImageMedia, { isImage } from '@/editor/ecs/entities/image';
-import CanvasBackend2D from './backend2d';
-import { MATH_TWO_PI } from '@/utils/constants';
-import Renderer from '../renderer';
-import SelectionManager from '@/editor/selection';
-import { isCompleteTransform } from '@/editor/ecs/components/transform';
-import API from '@/wasm/loader';
-import CanvasBackendFreehand, { Antialiasing } from '../WebGL/backendWebGL';
+import Element, { isElement } from "@/editor/ecs/entities/element";
+import SceneManager from "@editor/scene";
+import { round, vec2 } from "@math";
+import InputManager from "@/editor/input";
+import ImageMedia, { isImage } from "@/editor/ecs/entities/image";
+import CanvasBackend2D from "./backend2d";
+import { MATH_TWO_PI } from "@/utils/constants";
+import Renderer from "../renderer";
+import SelectionManager from "@/editor/selection";
+import { isCompleteTransform } from "@/editor/ecs/components/transform";
+import API from "@/wasm/loader";
 
 class Canvas2D extends CanvasBackend2D {
   // private m_freehand: CanvasBackendFreehand;
@@ -25,11 +24,10 @@ class Canvas2D extends CanvasBackend2D {
   private m_outlineFilledSquareQueue: vec2[] = [];
   private m_outlineCurrentTransform: mat3;
 
-  private m_primaryColor: string = '#38c3f2';
+  private m_primaryColor: string = "#38c3f2";
 
   constructor() {
     super();
-    // this.m_freehand = new CanvasBackendFreehand(Antialiasing.MSAA);
   }
 
   get primaryColor() {
@@ -50,7 +48,9 @@ class Canvas2D extends CanvasBackend2D {
     // TODO: Check if caching improves performance
 
     if (!selected) {
-      this.m_outlineSquareQueue.push(vec2.transformMat3(position, this.m_outlineCurrentTransform));
+      this.m_outlineSquareQueue.push(
+        vec2.transformMat3(position, this.m_outlineCurrentTransform)
+      );
       return;
     }
 
@@ -121,11 +121,11 @@ class Canvas2D extends CanvasBackend2D {
   }
 
   private drawDebuggingProperty(name: string, value: string, width: number) {
-    this.m_ctx.textAlign = 'right';
+    this.m_ctx.textAlign = "right";
     this.m_ctx.fillText(value, width, 0);
 
-    this.m_ctx.textAlign = 'left';
-    if (name.length) this.m_ctx.fillText(name + ':', 0, 0);
+    this.m_ctx.textAlign = "left";
+    if (name.length) this.m_ctx.fillText(name + ":", 0, 0);
 
     return 10;
   }
@@ -141,14 +141,15 @@ class Canvas2D extends CanvasBackend2D {
 
     this.m_debuggerEntities.forEach((entity) => {
       if (
-        (InputManager.hover.element && InputManager.hover.element.id === entity.id) ||
+        (InputManager.hover.element &&
+          InputManager.hover.element.id === entity.id) ||
         SelectionManager.has(entity.id)
       ) {
-        this.m_ctx.fillStyle = 'rgba(220, 20, 60, 0.1)';
-        this.m_ctx.strokeStyle = 'rgba(220, 20, 60, 0.5)';
+        this.m_ctx.fillStyle = "rgba(220, 20, 60, 0.1)";
+        this.m_ctx.strokeStyle = "rgba(220, 20, 60, 0.5)";
       } else {
-        this.m_ctx.fillStyle = 'rgba(0, 255, 127, 0.1)';
-        this.m_ctx.strokeStyle = 'rgba(0, 255, 127, 0.5)';
+        this.m_ctx.fillStyle = "rgba(0, 255, 127, 0.1)";
+        this.m_ctx.strokeStyle = "rgba(0, 255, 127, 0.5)";
       }
 
       this.beginPath();
@@ -165,7 +166,12 @@ class Canvas2D extends CanvasBackend2D {
 
         entity.forEachBezier((b) => {
           const box = b.boundingBox;
-          this.m_ctx.rect(box[0][0], box[0][1], box[1][0] - box[0][0], box[1][1] - box[0][1]);
+          this.m_ctx.rect(
+            box[0][0],
+            box[0][1],
+            box[1][0] - box[0][0],
+            box[1][1] - box[0][1]
+          );
         });
 
         this.m_ctx.restore();
@@ -179,9 +185,10 @@ class Canvas2D extends CanvasBackend2D {
           this.beginPath();
 
           this.m_ctx.fillStyle =
-            InputManager.hover.entity === vertex.position || entity.selection.has(vertex.id)
-              ? 'rgba(220, 20, 60, 0.5)'
-              : 'rgba(0, 255, 127, 0.5)';
+            InputManager.hover.entity === vertex.position ||
+            entity.selection.has(vertex.id)
+              ? "rgba(220, 20, 60, 0.5)"
+              : "rgba(0, 255, 127, 0.5)";
 
           this.circle(
             entity.transform.transform(vertex.transform.position.value),
@@ -210,17 +217,19 @@ class Canvas2D extends CanvasBackend2D {
       0
     );
 
-    this.m_ctx.font = 'bold ' + 9 + 'px Helvetica,Arial,sans-serif';
-    this.m_ctx.textBaseline = 'top';
+    this.m_ctx.font = "bold " + 9 + "px Helvetica,Arial,sans-serif";
+    this.m_ctx.textBaseline = "top";
 
     this.m_ctx.translate(
       0,
       this.drawMonitor(
-        `${Math.round(stats.fps[stats.fps.length - 1] || 0)} FPS (${stats.minFps}-${stats.maxFps})`,
+        `${Math.round(stats.fps[stats.fps.length - 1] || 0)} FPS (${
+          stats.minFps
+        }-${stats.maxFps})`,
         stats.fps,
         100,
-        '#002',
-        '#0FF',
+        "#002",
+        "#0FF",
         WIDTH,
         PADDING
       )
@@ -229,11 +238,13 @@ class Canvas2D extends CanvasBackend2D {
     this.m_ctx.translate(
       0,
       this.drawMonitor(
-        `${Math.round(stats.ms[stats.ms.length - 1] || 0)} MS (${stats.minMs}-${stats.maxMs})`,
+        `${Math.round(stats.ms[stats.ms.length - 1] || 0)} MS (${stats.minMs}-${
+          stats.maxMs
+        })`,
         stats.ms,
         30,
-        '#020',
-        '#0F0',
+        "#020",
+        "#0F0",
         WIDTH,
         PADDING
       )
@@ -243,13 +254,13 @@ class Canvas2D extends CanvasBackend2D {
       this.m_ctx.translate(
         0,
         this.drawMonitor(
-          `${Math.round(stats.memory[stats.memory.length - 1] || 0)} MB (${stats.minMemory}-${
-            stats.maxMemory
-          } / ${stats.availableMemory})`,
+          `${Math.round(stats.memory[stats.memory.length - 1] || 0)} MB (${
+            stats.minMemory
+          }-${stats.maxMemory} / ${stats.availableMemory})`,
           stats.memory,
           stats.availableMemory,
-          '#201',
-          '#F08',
+          "#201",
+          "#F08",
           WIDTH,
           PADDING
         )
@@ -259,33 +270,41 @@ class Canvas2D extends CanvasBackend2D {
     // TODO: Draw checkboxes
 
     const properties: [string, string][] = [
-      ['ENTITY BOX', (entityBox || false).toString().toUpperCase()],
-      ['SEGMENT BOX', (segmentBox || false).toString().toUpperCase()],
-      ['', ''],
-      ['ENTITIES', this.m_debuggerEntities.size.toString()],
-      ['VERTICES', stats.vertices.toString()],
-      ['TRIANGLES', Math.round(stats.vertices / 3).toString()],
-      ['', ''],
-      ['ANTIALIAS', stats.antialiasing],
-      ['', ''],
-      ['POS X', round(SceneManager.viewport.position[0], 2).toString()],
-      ['POS Y', round(SceneManager.viewport.position[1], 2).toString()],
-      ['ZOOM', round(SceneManager.viewport.zoom, 2).toString()],
-      ['', ''],
-      ['MOUSE X', round(InputManager.scene.position[0], 2).toString()],
-      ['MOUSE Y', round(InputManager.scene.position[1], 2).toString()]
+      ["ENTITY BOX", (entityBox || false).toString().toUpperCase()],
+      ["SEGMENT BOX", (segmentBox || false).toString().toUpperCase()],
+      ["", ""],
+      ["ENTITIES", this.m_debuggerEntities.size.toString()],
+      ["VERTICES", stats.vertices.toString()],
+      ["TRIANGLES", Math.round(stats.vertices / 3).toString()],
+      ["", ""],
+      ["ANTIALIAS", stats.antialiasing],
+      ["", ""],
+      ["POS X", round(SceneManager.viewport.position[0], 2).toString()],
+      ["POS Y", round(SceneManager.viewport.position[1], 2).toString()],
+      ["ZOOM", round(SceneManager.viewport.zoom, 2).toString()],
+      ["", ""],
+      ["MOUSE X", round(InputManager.scene.position[0], 2).toString()],
+      ["MOUSE Y", round(InputManager.scene.position[1], 2).toString()],
     ];
 
     this.m_ctx.globalAlpha = 0.8;
-    this.m_ctx.fillStyle = '#0E1117';
-    this.m_ctx.fillRect(0, 0, WIDTH + PADDING * 2, properties.length * 10 + PADDING);
+    this.m_ctx.fillStyle = "#0E1117";
+    this.m_ctx.fillRect(
+      0,
+      0,
+      WIDTH + PADDING * 2,
+      properties.length * 10 + PADDING
+    );
 
     this.m_ctx.globalAlpha = 1;
     this.m_ctx.translate(PADDING, PADDING);
-    this.m_ctx.fillStyle = '#FFF';
+    this.m_ctx.fillStyle = "#FFF";
 
     for (const property of properties) {
-      this.m_ctx.translate(0, this.drawDebuggingProperty(property[0], property[1], WIDTH));
+      this.m_ctx.translate(
+        0,
+        this.drawDebuggingProperty(property[0], property[1], WIDTH)
+      );
     }
 
     this.m_ctx.restore();
@@ -311,7 +330,10 @@ class Canvas2D extends CanvasBackend2D {
     Renderer.refresh();
   }
 
-  private drawEntity(entity: Entity, options: { inheritStrokeWidth?: boolean } = {}) {
+  private drawEntity(
+    entity: Entity,
+    options: { inheritStrokeWidth?: boolean } = {}
+  ) {
     if (isElement(entity)) {
       this.element(entity, options);
       return;
@@ -326,13 +348,17 @@ class Canvas2D extends CanvasBackend2D {
 
     this.m_ctx.save();
 
-    if (isCompleteTransform(entity.transform)) this.transform(entity.transform.mat3);
+    if (isCompleteTransform(entity.transform))
+      this.transform(entity.transform.mat3);
     this.draw(entity.getDrawable());
 
     this.m_ctx.restore();
   }
 
-  private drawElement(element: Element, options: { inheritStrokeWidth?: boolean } = {}) {
+  private drawElement(
+    element: Element,
+    options: { inheritStrokeWidth?: boolean } = {}
+  ) {
     if (!SceneManager.isVisible(element)) return false;
 
     this.m_ctx.save();
@@ -350,8 +376,10 @@ class Canvas2D extends CanvasBackend2D {
     if (element.stroke && element.stroke.visible) {
       this.m_ctx.strokeStyle = element.stroke.color.toString();
       this.m_ctx.lineJoin = element.stroke.corner;
-      if (!options.inheritStrokeWidth) this.m_ctx.lineWidth = element.stroke.width;
-      if (Array.isArray(element.stroke.style)) this.m_ctx.setLineDash(element.stroke.style);
+      if (!options.inheritStrokeWidth)
+        this.m_ctx.lineWidth = element.stroke.width;
+      if (Array.isArray(element.stroke.style))
+        this.m_ctx.setLineDash(element.stroke.style);
 
       // TODO: inside/outside strokes
       // this.m_ctx.clip();
@@ -378,30 +406,30 @@ class Canvas2D extends CanvasBackend2D {
   private drawFreehand(freehand: FreehandEntity) {
     if (!SceneManager.isVisible(freehand)) return false;
 
-    const [positions, indices] = freehand.geometry;
+    const [vertices, indices] = freehand.geometry;
 
-    // this.m_freehand.draw(positions, indices);
+    const verticesHeap = API._to_heap(Float32Array.from(vertices));
+    const indicesHeap = API._to_heap(Float32Array.from(indices));
 
-    // this.m_ctx.save();
+    API._draw(verticesHeap, vertices.length, indicesHeap, indices.length);
 
-    // this.m_ctx.lineCap = 'round';
-    // this.m_ctx.lineJoin = 'round';
-    // this.m_ctx.globalAlpha = freehand.layer.opacity.value;
-    // this.transform(freehand.transform.mat3);
-    // this.beginPath();
-    // this.draw(freehand.getDrawable());
-    // this.stroke();
-
-    // this.m_ctx.restore();
+    API._free(verticesHeap);
+    API._free(indicesHeap);
   }
 
-  private drawEntityDebugged(entity: Entity, options: { inheritStrokeWidth?: boolean }) {
+  private drawEntityDebugged(
+    entity: Entity,
+    options: { inheritStrokeWidth?: boolean }
+  ) {
     if (this.drawEntity(entity, options) === false) return;
 
     this.m_debuggerEntities.set(entity.id, entity);
   }
 
-  private drawElementDebugged(element: Element, options: { inheritStrokeWidth?: boolean }) {
+  private drawElementDebugged(
+    element: Element,
+    options: { inheritStrokeWidth?: boolean }
+  ) {
     if (this.drawElement(element, options) === false) return;
 
     this.m_debuggerEntities.set(element.id, element);
@@ -428,12 +456,15 @@ class Canvas2D extends CanvasBackend2D {
     API._resize(...size);
 
     return size;
-    // return (this.m_freehand.size = super.resize());
   }
 
-  entity: (entity: Entity, options: { inheritStrokeWidth?: boolean }) => void = this.drawEntity;
+  entity: (entity: Entity, options: { inheritStrokeWidth?: boolean }) => void =
+    this.drawEntity;
 
-  element: (element: Element, options: { inheritStrokeWidth?: boolean }) => void = this.drawElement;
+  element: (
+    element: Element,
+    options: { inheritStrokeWidth?: boolean }
+  ) => void = this.drawElement;
 
   image: (image: ImageEntity) => void = this.drawImage;
 
@@ -442,22 +473,33 @@ class Canvas2D extends CanvasBackend2D {
   debugCircle({
     position,
     radius = 4,
-    color = 'rgb(220, 20, 60)'
+    color = "rgb(220, 20, 60)",
   }: {
     position: vec2;
     radius?: number;
     color?: string;
   }) {
-    super.debugCircle({ position, radius: radius / SceneManager.viewport.zoom, color });
+    super.debugCircle({
+      position,
+      radius: radius / SceneManager.viewport.zoom,
+      color,
+    });
   }
 
-  debugRect(options: { position: vec2; size?: vec2 | number; centered?: boolean; color?: string }) {
+  debugRect(options: {
+    position: vec2;
+    size?: vec2 | number;
+    centered?: boolean;
+    color?: string;
+  }) {
     super.debugRect({
       ...options,
       size: vec2.divS(
-        typeof options.size === 'number' ? [options.size, options.size] : options.size || [8, 8],
+        typeof options.size === "number"
+          ? [options.size, options.size]
+          : options.size || [8, 8],
         SceneManager.viewport.zoom
-      )
+      ),
     });
   }
 
@@ -519,7 +561,10 @@ class Canvas2D extends CanvasBackend2D {
     let radius = 3 / SceneManager.viewport.zoom;
     let size = 2 * radius;
 
-    if (this.m_outlineCircleQueue.length || this.m_outlineFilledSquareQueue.length) {
+    if (
+      this.m_outlineCircleQueue.length ||
+      this.m_outlineFilledSquareQueue.length
+    ) {
       this.beginPath();
 
       for (let i = 0, n = this.m_outlineCircleQueue.length; i < n; i++) {
@@ -548,7 +593,7 @@ class Canvas2D extends CanvasBackend2D {
       radius = 2 / SceneManager.viewport.zoom;
       size = 2 * radius;
 
-      this.m_ctx.fillStyle = '#FFFFFF';
+      this.m_ctx.fillStyle = "#FFFFFF";
       this.m_ctx.lineWidth = 1 / SceneManager.viewport.zoom;
 
       this.beginPath();
@@ -573,26 +618,29 @@ class Canvas2D extends CanvasBackend2D {
     stats?: RendererStats;
     debugging?: boolean;
   }): void {
-    super.beginFrame({ ...options, stats: options.debugging ? options.stats : undefined });
+    super.beginFrame({
+      ...options,
+      stats: options.debugging ? options.stats : undefined,
+    });
 
     const position = API._to_heap(Float32Array.from(options.position));
 
     API._begin_frame(position, options.zoom);
     API._free(position);
 
-    if (this.m_debuggerBinded !== options.debugging) this.bindDebugger(!options.debugging);
+    if (this.m_debuggerBinded !== options.debugging)
+      this.bindDebugger(!options.debugging);
   }
 
   endFrame({
     stats,
     debugging,
-    debug
+    debug,
   }: {
     stats?: RendererStats;
     debugging?: boolean;
     debug?: DebugState;
   }): void {
-    // this.m_freehand.endFrame(stats);
     API._end_frame();
 
     this.m_ctx.resetTransform();

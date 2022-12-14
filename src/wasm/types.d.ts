@@ -7,6 +7,12 @@ interface Api {
 
   _begin_frame(position: Pointer, zoom: number): void;
   _end_frame(): void;
+  _draw(
+    vertices: number,
+    verticesLength: number,
+    indices: number,
+    indicesLength: number
+  ): void;
 }
 
 type Pointer = number;

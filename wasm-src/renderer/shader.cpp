@@ -1,33 +1,32 @@
 #include "shader.h"
-#include "../math/mat3.h"
 
 Shader::Shader(const std::string& name, const std::string& source)
   : name(name) {
-  ShaderSource shader_source = parse(source);
+  ShaderSource shader_source = parse_source(source);
 
   GLuint vertex_shader = create_shader(GL_VERTEX_SHADER, shader_source.vertex.c_str());
   GLuint fragment_shader = create_shader(GL_FRAGMENT_SHADER, shader_source.fragment.c_str());
 
   m_program = create_program(vertex_shader, fragment_shader);
-
-  mat3 mat1;
-
-  console::log(mat1);
-
-  mat3 mat2(2);
-
-  console::log(mat2);
-
-  mat3 mat = mat1 + mat2;
-
-  console::log(mat);
-
-  mat3 mat4 = mat * mat2;
-
-  console::log(mat4);
 }
 
-Shader::ShaderSource Shader::parse(const std::string& source) {
+void Shader::set_uniform(const std::string& name, const mat3& value) {
+  GLuint location = get_uniform_location(name);
+
+  glUniformMatrix3fv(location, 1, true, &value);
+}
+
+void Shader::set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset) {
+  GLuint location = get_attribute_location(name);
+
+  console::log(name);
+  console::log(location);
+
+  glVertexAttribPointer(location, size, type, normalized, stride, offset);
+  glEnableVertexAttribArray(location);
+}
+
+Shader::ShaderSource Shader::parse_source(const std::string& source) {
   size_t vertex_offset = source.find("#vertex\n");
   size_t fragment_offset = source.find("#fragment\n");
 
@@ -50,7 +49,7 @@ Shader::ShaderSource Shader::parse(const std::string& source) {
 GLuint Shader::create_shader(const GLenum type, const char* source) {
   GLuint shader = glCreateShader(type);
 
-  glShaderSource(shader, 1, &source, NULL);
+  glShaderSource(shader, 1, &source, nullptr);
   glCompileShader(shader);
 
   GLint is_compiled = 0;
@@ -79,4 +78,22 @@ GLuint Shader::create_program(const GLuint vertex_shader, const GLuint fragment_
   glLinkProgram(program);
 
   return program;
+}
+
+GLuint Shader::get_uniform_location(const std::string& name) {
+  auto iterator = m_locations.find(name);
+  if (iterator != m_locations.end()) {
+    return iterator->second;
+  }
+
+  return m_locations[name] = glGetUniformLocation(m_program, name.c_str());
+}
+
+GLuint Shader::get_attribute_location(const std::string& name) {
+  auto iterator = m_locations.find(name);
+  if (iterator != m_locations.end()) {
+    return iterator->second;
+  }
+
+  return m_locations[name] = glGetAttribLocation(m_program, name.c_str());
 }

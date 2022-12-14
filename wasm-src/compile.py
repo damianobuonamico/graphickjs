@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 EMCC_PATH = '%EMSDK%/upstream/emscripten/emcc'
-OPTIMIZE = True
+OPTIMIZE = False
 
 output = '..\src\wasm\editor.js'
 files = []
@@ -11,4 +11,4 @@ options = ['ALLOW_MEMORY_GROWTH', 'EXPORT_ES6', 'MODULARIZE', 'MIN_WEBGL_VERSION
 for path in Path('./').rglob('*.cpp'):
   files.append(str(path))
 
-os.system(' '.join([EMCC_PATH, '-Os' if OPTIMIZE else '-O0 -g', *files, '-o ' + output, '-s ' + ' -s '.join(options), '-l embind']))
+os.system(' '.join([EMCC_PATH, '-Os' if OPTIMIZE else '-O0', *files, '-o ' + output, '-s ' + ' -s '.join(options), '-l embind']))

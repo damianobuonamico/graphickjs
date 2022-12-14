@@ -1,7 +1,3 @@
-#pragma once
-
-#include "vec3.h"
-
 #include <assert.h>
 
 /* -- Component accesses -- */
@@ -19,7 +15,7 @@ constexpr float& vec3::operator[](uint8_t i) {
   }
 }
 
-constexpr float const& vec3::operator[](uint8_t i) const {
+constexpr const float& vec3::operator[](uint8_t i) const {
   assert(i >= 0 && i < this->length());
   switch (i) {
   default:
@@ -212,9 +208,13 @@ constexpr vec3 operator||(const vec3& v1, const vec3& v2) {
   return vec3(v1.x || v2.x, v1.y || v2.y, v1.z || v2.z);
 }
 
+/* -- Address operator -- */
+
+constexpr const float* operator&(const vec3& v) { return &(v.x); }
+
 /* -- Stream operator -- */
 
-std::ostream& operator<<(std::ostream& os, const vec3& v) {
+inline std::ostream& operator<<(std::ostream& os, const vec3& v) {
   os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
   return os;
 }
