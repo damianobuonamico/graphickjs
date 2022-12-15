@@ -6,19 +6,27 @@
 
 class Renderer {
 public:
-  Renderer() {};
+  Renderer(const Renderer&) = delete;
+  Renderer(Renderer&&) = delete;
+
+  inline static Renderer* get() { return s_instance; }
 
   static void init();
-  static void resize(const int width, const int height);
+  static void shutdown();
 
-  static void begin_frame(const float* position, const float zoom);
-  static void end_frame();
+  void resize(const int width, const int height);
 
-  static void draw(const Geometry& geometry);
+  void begin_frame(const float* position, const float zoom);
+  void end_frame();
+
+  void draw(const Geometry& geometry);
 private:
-  static void begin_batch();
-  static void end_batch();
-  static void flush();
+  Renderer() = default;
+  ~Renderer() = default;
+
+  void begin_batch();
+  void end_batch();
+  void flush();
 private:
   struct RendererData {
     GLuint vertex_buffer_object = 0;
@@ -33,7 +41,9 @@ private:
     uint32_t* index_buffer_ptr = nullptr;
   };
 
-  static ShaderManager s_shaders;
-  static RendererData s_data;
-  static vec2 s_size;
+  ShaderManager m_shaders;
+  RendererData m_data;
+  vec2 m_size;
+private:
+  static Renderer* s_instance;
 };

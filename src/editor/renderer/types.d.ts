@@ -7,14 +7,14 @@ interface Canvas {
   primaryColor: string;
 
   setup(canvas: HTMLCanvasElement): void;
-  resize(): void;
+  resize(): vec2;
 
   beginFrame({
     color,
     zoom,
     position,
     stats,
-    debugging
+    debugging,
   }: {
     color?: string;
     zoom?: number;
@@ -25,7 +25,7 @@ interface Canvas {
   endFrame({
     stats,
     debugging,
-    debug
+    debug,
   }: {
     stats?: RendererStats;
     debugging?: boolean;
@@ -36,7 +36,7 @@ interface Canvas {
     position,
     size,
     centered,
-    color
+    color,
   }: {
     position: vec2;
     size?: vec2 | number;
@@ -46,7 +46,7 @@ interface Canvas {
   debugCircle({
     position,
     radius,
-    color
+    color,
   }: {
     position: vec2;
     radius?: number;
@@ -56,7 +56,10 @@ interface Canvas {
   draw(drawable: Drawable): void;
 
   entity(entity: Entity, options?: { inheritStrokeWidth?: boolean }): void;
-  element(element: ElementEntity, options?: { inheritStrokeWidth?: boolean }): void;
+  element(
+    element: ElementEntity,
+    options?: { inheritStrokeWidth?: boolean }
+  ): void;
   image(image: ImageEntity): void;
   freehand(freehand: FreehandEntity): void;
   rectangle({
@@ -64,7 +67,7 @@ interface Canvas {
     size,
     centered,
     stroke,
-    fill
+    fill,
   }: {
     position: vec2;
     size: vec2 | number;
@@ -79,52 +82,52 @@ interface Canvas {
 }
 
 interface GeometryDrawOp {
-  type: 'geometry';
+  type: "geometry";
   data?: undefined;
 }
 
 interface BezierDrawOp {
-  type: 'lineTo' | 'cubicTo' | 'moveTo';
+  type: "lineTo" | "cubicTo" | "moveTo";
   data: vec2[];
 }
 
 interface PathDrawOp {
-  type: 'stroke' | 'fill' | 'beginPath' | 'closePath';
+  type: "stroke" | "fill" | "beginPath" | "closePath";
   data?: undefined;
 }
 
 interface ShapeDrawOp {
-  type: 'rect';
+  type: "rect";
   data: [vec2, vec2];
 }
 
 interface RoundedRectDrawOp {
-  type: 'roundedRect';
+  type: "roundedRect";
   data: [vec2, vec2, number];
 }
 
 interface CenteredShapeDrawOp {
-  type: 'circle' | 'square';
+  type: "circle" | "square";
   data: [vec2, number];
 }
 
 interface ColorDrawOp {
-  type: 'strokeColor' | 'fillColor';
+  type: "strokeColor" | "fillColor";
   data: [string];
 }
 
 interface ParameterDrawOp {
-  type: 'strokeWidth';
+  type: "strokeWidth";
   data: [number];
 }
 
 interface LineDashDrawOp {
-  type: 'lineDash';
+  type: "lineDash";
   data: [number[] | undefined];
 }
 
 interface Path2DDrawOp {
-  type: 'path2D';
+  type: "path2D";
   data: [Path2D, boolean, boolean];
 }
 

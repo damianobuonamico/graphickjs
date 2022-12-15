@@ -1,6 +1,6 @@
-import SceneManager from '../scene';
-import Canvas2D from './2D/canvas2d';
-import Stats from './stats';
+import SceneManager from "../scene";
+import Canvas2D from "./2D/canvas2d";
+import Stats from "./stats";
 
 abstract class Renderer {
   private static m_canvas: Canvas;
@@ -10,24 +10,24 @@ abstract class Renderer {
     entityBox: false,
     segmentBox: false,
     vertices: false,
-    opacity: 1
+    opacity: 1,
   };
 
   static stats: RendererStats = new Stats();
 
-  static setup: Canvas['setup'];
-  static debugRect: Canvas['debugRect'];
-  static debugCircle: Canvas['debugCircle'];
-  static debugPoints: Canvas['debugPoints'];
-  static draw: Canvas['draw'];
-  static entity: Canvas['entity'];
-  static element: Canvas['element'];
-  static image: Canvas['image'];
-  static freehand: Canvas['freehand'];
-  static rect: Canvas['rectangle'];
-  static beginOutline: Canvas['beginOutline'];
-  static outline: Canvas['outline'];
-  static endOutline: Canvas['endOutline'];
+  static setup: Canvas["setup"];
+  static debugRect: Canvas["debugRect"];
+  static debugCircle: Canvas["debugCircle"];
+  static debugPoints: Canvas["debugPoints"];
+  static draw: Canvas["draw"];
+  static entity: Canvas["entity"];
+  static element: Canvas["element"];
+  static image: Canvas["image"];
+  static freehand: Canvas["freehand"];
+  static rect: Canvas["rectangle"];
+  static beginOutline: Canvas["beginOutline"];
+  static outline: Canvas["outline"];
+  static endOutline: Canvas["endOutline"];
 
   static init() {
     this.m_canvas = new Canvas2D();
@@ -78,17 +78,31 @@ abstract class Renderer {
     this.m_canvas.wasmCanvas = canvas;
   }
 
-  static beginFrame(options: { color?: string; zoom?: number; position?: vec2 }) {
-    this.m_canvas.beginFrame({ ...options, debugging: this.debugging, stats: this.stats });
+  static beginFrame(options: {
+    color?: string;
+    zoom?: number;
+    position?: vec2;
+  }) {
+    this.m_canvas.beginFrame({
+      ...options,
+      debugging: this.debugging,
+      stats: this.stats,
+    });
   }
 
   static endFrame() {
-    this.m_canvas.endFrame({ debugging: this.debugging, debug: this.debug, stats: this.stats });
+    this.m_canvas.endFrame({
+      debugging: this.debugging,
+      debug: this.debug,
+      stats: this.stats,
+    });
   }
 
   static resize() {
-    this.m_canvas.resize();
+    const size = this.m_canvas.resize();
     SceneManager.setViewportArea();
+
+    return size;
   }
 }
 

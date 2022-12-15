@@ -4,7 +4,13 @@ const fallback: any = () => {};
 
 const API: Api = {
   _init: fallback,
+  _shutdown: fallback,
   _resize: fallback,
+  _on_pointer_event: fallback,
+  _on_keyboard_event: fallback,
+  _on_resize_event: fallback,
+  _on_wheel_event: fallback,
+  _on_clipboard_event: fallback,
   _to_heap: fallback,
   _free: fallback,
   _begin_frame: fallback,
@@ -14,7 +20,14 @@ const API: Api = {
 
 wasm().then((module: any) => {
   API._init = module._init;
+  API._shutdown = module._shutdown;
   API._resize = module._resize;
+
+  API._on_pointer_event = module._on_pointer_event;
+  API._on_keyboard_event = module._on_keyboard_event;
+  API._on_resize_event = module._on_resize_event;
+  API._on_wheel_event = module._on_wheel_event;
+  API._on_clipboard_event = module._on_clipboard_event;
 
   API._to_heap = (array: Float32Array) => {
     const bytes = array.length * array.BYTES_PER_ELEMENT;

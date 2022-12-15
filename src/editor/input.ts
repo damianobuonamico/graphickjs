@@ -1,18 +1,19 @@
 import {
   INPUT_MOVEMENT_THRESHOLD,
   INPUT_MOVEMENT_THRESHOLD_MULTIPLIER,
-  ZOOM_STEP
-} from '@utils/constants';
-import { BUTTONS, KEYS } from '@utils/keys';
-import { fillObject, isInputLike, isShortcut } from '@utils/utils';
-import { map, vec2 } from '@math';
-import { Renderer } from './renderer';
-import SceneManager from './scene';
-import actions from './actions';
-import HoverState from './hover';
-import { ToolState } from './tools';
-import AnimationManager from './animation/animation';
-import CommandHistory from './history/history';
+  ZOOM_STEP,
+} from "@utils/constants";
+import { BUTTONS, KEYS } from "@utils/keys";
+import { fillObject, isInputLike, isShortcut } from "@utils/utils";
+import { map, vec2 } from "@math";
+import { Renderer } from "./renderer";
+import SceneManager from "./scene";
+import actions from "./actions";
+import HoverState from "./hover";
+import { ToolState } from "./tools";
+import AnimationManager from "./animation/animation";
+import CommandHistory from "./history/history";
+import API from "@/wasm/loader";
 
 abstract class InputManager {
   public static target: EventTarget | undefined;
@@ -36,12 +37,15 @@ abstract class InputManager {
 
   public static tool: ToolState;
 
-  private static m_type: 'touch' | 'pen' | 'mouse' = 'mouse';
+  private static m_type: "touch" | "pen" | "mouse" = "mouse";
 
   private static m_listeners: Listeners;
   private static m_mountedListeners: MountedListener[] = [];
 
-  public static init(listeners: Partial<Listeners>, setTool: (tool: Tool) => void) {
+  public static init(
+    listeners: Partial<Listeners>,
+    setTool: (tool: Tool) => void
+  ) {
     this.m_listeners = fillObject<Listeners>(listeners, {
       copy: () => {},
       paste: () => {},
@@ -55,7 +59,7 @@ abstract class InputManager {
       pointercancel: () => {},
       pointerleave: () => {},
       pointerenter: () => {},
-      wheel: () => {}
+      wheel: () => {},
     });
 
     this.client = fillObject(
@@ -64,7 +68,7 @@ abstract class InputManager {
         position: vec2.create(),
         movement: vec2.create(),
         delta: vec2.create(),
-        origin: vec2.create()
+        origin: vec2.create(),
       }
     );
 
@@ -74,7 +78,7 @@ abstract class InputManager {
         position: vec2.create(),
         movement: vec2.create(),
         delta: vec2.create(),
-        origin: vec2.create()
+        origin: vec2.create(),
       }
     );
 
@@ -84,16 +88,19 @@ abstract class InputManager {
         ctrl: false,
         shift: false,
         alt: false,
-        space: false
+        space: false,
       }
     );
 
-    this.tool = new ToolState(setTool, 'select');
+    this.tool = new ToolState(setTool, "select");
 
     this.mount();
   }
 
-  private static addListener<K extends keyof HTMLElementEventMap, T extends keyof WindowEventMap>(
+  private static addListener<
+    K extends keyof HTMLElementEventMap,
+    T extends keyof WindowEventMap
+  >(
     type: K | T,
     callback: (this: Window, e: any) => any,
     target: HTMLElement | Window | Document = window,
@@ -106,32 +113,45 @@ abstract class InputManager {
   private static mount() {
     if (this.m_mountedListeners.length) return;
 
-    this.addListener('cut', this.onCut.bind(this));
-    this.addListener('copy', this.onCopy.bind(this));
-    this.addListener('paste', this.onPaste.bind(this));
+    this.addListener("cut", this.onCut.bind(this));
+    this.addListener("copy", this.onCopy.bind(this));
+    this.addListener("paste", this.onPaste.bind(this));
 
-    this.addListener('keydown', this.onKeyDown.bind(this));
-    this.addListener('keyup', this.onKeyUp.bind(this));
+    this.addListener("keydown", this.onKeyDown.bind(this));
+    this.addListener("keyup", this.onKeyUp.bind(this));
 
-    this.addListener('pointerdown', this.calculateDeviceType.bind(this));
+    this.addListener("pointerdown", this.calculateDeviceType.bind(this));
 
-    if (this.m_type === 'touch') {
-      this.addListener('touchstart', this.onTouchStart.bind(this));
-      this.addListener('touchmove', this.onTouchMove.bind(this));
-      this.addListener('touchend', this.onTouchEnd.bind(this));
-      this.addListener('touchcancel', this.onTouchEnd.bind(this));
+    if (this.m_type === "touch") {
+      this.addListener("touchstart", this.onTouchStart.bind(this));
+      this.addListener("touchmove", this.onTouchMove.bind(this));
+      this.addListener("touchend", this.onTouchEnd.bind(this));
+      this.addListener("touchcancel", this.onTouchEnd.bind(this));
     } else {
-      this.addListener('pointerdown', this.onPointerDown.bind(this));
-      this.addListener('pointermove', this.onPointerMove.bind(this));
-      this.addListener('pointerup', this.onPointerUp.bind(this));
-      this.addListener('pointercancel', this.onPointerUp.bind(this));
-      this.addListener('pointerenter', this.onPointerEnter.bind(this), document);
-      this.addListener('pointerleave', this.onPointerLeave.bind(this), document);
+      this.addListener("pointerdown", this.onPointerDown.bind(this));
+      this.addListener("pointermove", this.onPointerMove.bind(this));
+      this.addListener("pointerup", this.onPointerUp.bind(this));
+      this.addListener("pointercancel", this.onPointerUp.bind(this));
+      this.addListener(
+        "pointerenter",
+        this.onPointerEnter.bind(this),
+        document
+      );
+      this.addListener(
+        "pointerleave",
+        this.onPointerLeave.bind(this),
+        document
+      );
     }
 
-    this.addListener('resize', this.onResize.bind(this));
-    this.addListener('contextmenu', (e: UIEvent) => e.preventDefault());
-    this.addListener('wheel', this.onWheel.bind(this), window, { passive: false });
+    this.addListener("resize", this.onResize.bind(this));
+    this.addListener("contextmenu", (e: UIEvent) => e.preventDefault());
+    this.addListener("wheel", this.onWheel.bind(this), window, {
+      passive: false,
+    });
+    this.addListener("beforeunload", () => {
+      API._shutdown();
+    });
   }
 
   private static unmount() {
@@ -161,14 +181,17 @@ abstract class InputManager {
   }
 
   private static onCut(e: ClipboardEvent) {
+    API._on_clipboard_event(2);
     this.m_listeners.cut(e);
   }
 
   private static onCopy(e: ClipboardEvent) {
+    API._on_clipboard_event(0);
     this.m_listeners.copy(e);
   }
 
   private static onPaste(e: ClipboardEvent) {
+    API._on_clipboard_event(1);
     this.m_listeners.paste(e);
   }
 
@@ -193,7 +216,8 @@ abstract class InputManager {
       return;
     }
 
-    if (this.keys.ctrlStateChanged || this.keys.spaceStateChanged) this.tool.recalculate();
+    if (this.keys.ctrlStateChanged || this.keys.spaceStateChanged)
+      this.tool.recalculate();
 
     // if (this.__alt) {
     //   this.setCursor();
@@ -202,6 +226,15 @@ abstract class InputManager {
   }
 
   private static onKeyDown(e: KeyboardEvent) {
+    API._on_keyboard_event(
+      0,
+      this.getKeyCode(e.key),
+      e.repeat,
+      e.altKey,
+      e.ctrlKey,
+      e.shiftKey
+    );
+
     if (e.repeat && e.key.toUpperCase() !== KEYS.Z.toUpperCase()) return;
 
     this.onKey(e);
@@ -223,7 +256,44 @@ abstract class InputManager {
     this.m_listeners.keydown(e);
   }
 
+  private static getKeyCode(key: string): number {
+    switch (key) {
+      case KEYS.BACKSPACE:
+        return 8;
+      case KEYS.SHIFT:
+        return 16;
+      case KEYS.CTRL_KEY:
+        return 17;
+      case KEYS.ALT:
+        return 18;
+      case KEYS.ESCAPE:
+        return 27;
+      case KEYS.SPACEBAR:
+        return 32;
+      case KEYS.DELETE:
+        return 46;
+      default: {
+        if (key.length > 1) return -1;
+
+        const code = key.toLowerCase().charCodeAt(0);
+
+        if (code < 97 || code > 172) return -1;
+
+        return code;
+      }
+    }
+  }
+
   private static onKeyUp(e: KeyboardEvent) {
+    API._on_keyboard_event(
+      1,
+      this.getKeyCode(e.key),
+      e.repeat,
+      e.altKey,
+      e.ctrlKey,
+      e.shiftKey
+    );
+
     this.onKey(e, true);
 
     if (this.down) this.tool.onKey(e);
@@ -238,16 +308,46 @@ abstract class InputManager {
       this.unmount();
       this.mount();
 
-      if (this.m_type === 'touch') this.onTouchStart(new TouchEvent('touchdown', e));
+      if (this.m_type === "touch")
+        this.onTouchStart(new TouchEvent("touchdown", e));
       else this.onPointerDown(e);
+    }
+  }
+
+  private static getPointerTypeCode(type: string): number {
+    switch (type) {
+      case "pen":
+        return 1;
+      case "touch":
+        return 2;
+      default:
+      case "mouse":
+        return 0;
     }
   }
 
   //* Pointer Events
   private static onPointerDown(e: PointerEvent) {
+    API._on_pointer_event(
+      e.target === Renderer.canvas ? 1 : 0,
+      0,
+      this.getPointerTypeCode(e.type),
+      e.button,
+      e.clientX,
+      e.clientY,
+      e.pressure,
+      e.timeStamp,
+      e.altKey,
+      e.ctrlKey,
+      e.shiftKey
+    );
+
     CommandHistory.endBatch();
 
-    if (SceneManager.state.workspace === 'designer' && e.target === AnimationManager.canvas) {
+    if (
+      SceneManager.state.workspace === "designer" &&
+      e.target === AnimationManager.canvas
+    ) {
       this.target = e.target;
 
       this.client.movement = vec2.create();
@@ -283,30 +383,50 @@ abstract class InputManager {
     this.button = e.button;
 
     if (this.button === BUTTONS.MIDDLE) {
-      this.tool.active = this.keys.ctrlStateChanged ? 'zoom' : 'pan';
+      this.tool.active = this.keys.ctrlStateChanged ? "zoom" : "pan";
     } else if (
       this.button === BUTTONS.ERASER &&
-      this.tool.active === 'pencil' &&
-      SceneManager.state.workspace === 'whiteboard'
+      this.tool.active === "pencil" &&
+      SceneManager.state.workspace === "whiteboard"
     ) {
-      this.tool.active = 'eraser';
+      this.tool.active = "eraser";
     }
     // this.lockCursor();
 
     const hover = this.hover.entity;
 
-    this.tool.onPointerDown(hover && hover.type === 'generichandle' && (hover as any).handleType);
+    this.tool.onPointerDown(
+      hover && hover.type === "generichandle" && (hover as any).handleType
+    );
     this.m_listeners.pointerdown(e);
 
     SceneManager.render();
   }
 
   private static onPointerMove(e: PointerEvent) {
+    API._on_pointer_event(
+      e.target === Renderer.canvas ? 1 : 0,
+      1,
+      this.getPointerTypeCode(e.type),
+      e.button,
+      e.clientX,
+      e.clientY,
+      e.pressure,
+      e.timeStamp,
+      e.altKey,
+      e.ctrlKey,
+      e.shiftKey
+    );
+
     if (
-      (SceneManager.state.workspace === 'designer' && this.target === AnimationManager.canvas) ||
+      (SceneManager.state.workspace === "designer" &&
+        this.target === AnimationManager.canvas) ||
       (!this.down && e.target === AnimationManager.canvas)
     ) {
-      this.client.movement = vec2.sub([e.clientX, e.clientY], this.client.position);
+      this.client.movement = vec2.sub(
+        [e.clientX, e.clientY],
+        this.client.position
+      );
       this.client.position = vec2.fromValues(e.clientX, e.clientY);
       this.client.delta = vec2.sub(this.client.position, this.client.origin);
 
@@ -315,26 +435,42 @@ abstract class InputManager {
       AnimationManager.onPointerMove();
 
       return;
-    } else if (this.target !== Renderer.canvas && e.target !== Renderer.canvas) return;
+    } else if (this.target !== Renderer.canvas && e.target !== Renderer.canvas)
+      return;
 
-    this.client.movement = vec2.sub([e.clientX, e.clientY], this.client.position);
+    this.client.movement = vec2.sub(
+      [e.clientX, e.clientY],
+      this.client.position
+    );
     this.client.position = vec2.fromValues(e.clientX, e.clientY);
     this.client.delta = vec2.sub(this.client.position, this.client.origin);
 
-    this.scene.movement = vec2.divS(this.client.movement, SceneManager.viewport.zoom);
+    this.scene.movement = vec2.divS(
+      this.client.movement,
+      SceneManager.viewport.zoom
+    );
     this.scene.position = SceneManager.clientToScene(this.client.position);
     this.scene.delta = vec2.sub(this.scene.position, this.scene.origin);
 
     this.setPointer(e);
 
-    if (!((this.down && this.tool.active === 'pan') || this.tool.active === 'zoom'))
-      this.hover.entity = SceneManager.getEntityAt(this.scene.position, this.tool.isVertex);
+    if (
+      !(
+        (this.down && this.tool.active === "pan") ||
+        this.tool.active === "zoom"
+      )
+    )
+      this.hover.entity = SceneManager.getEntityAt(
+        this.scene.position,
+        this.tool.isVertex
+      );
 
     if (!this.m_moving && this.down) {
       if (
-        this.tool.active === 'pencil' ||
+        this.tool.active === "pencil" ||
         vec2.length(this.client.delta) >
-          INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[this.m_type]
+          INPUT_MOVEMENT_THRESHOLD *
+            INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[this.m_type]
       ) {
         this.m_moving = true;
       } else return;
@@ -351,10 +487,27 @@ abstract class InputManager {
   }
 
   private static onPointerUp(e: PointerEvent) {
+    API._on_pointer_event(
+      e.target === Renderer.canvas ? 1 : 0,
+      2,
+      this.getPointerTypeCode(e.type),
+      e.button,
+      e.clientX,
+      e.clientY,
+      e.pressure,
+      e.timeStamp,
+      e.altKey,
+      e.ctrlKey,
+      e.shiftKey
+    );
+
     this.setPointer(e);
     if (!this.down) return;
 
-    if (SceneManager.state.workspace === 'designer' && this.target === AnimationManager.canvas) {
+    if (
+      SceneManager.state.workspace === "designer" &&
+      this.target === AnimationManager.canvas
+    ) {
       this.target = undefined;
       this.down = false;
       this.m_moving = false;
@@ -385,11 +538,39 @@ abstract class InputManager {
   }
 
   private static onPointerEnter(e: PointerEvent) {
+    API._on_pointer_event(
+      e.target === Renderer.canvas ? 1 : 0,
+      3,
+      this.getPointerTypeCode(e.type),
+      e.button,
+      e.clientX,
+      e.clientY,
+      e.pressure,
+      e.timeStamp,
+      e.altKey,
+      e.ctrlKey,
+      e.shiftKey
+    );
+
     this.inside = true;
     this.m_listeners.pointerenter(e);
   }
 
   private static onPointerLeave(e: PointerEvent) {
+    API._on_pointer_event(
+      e.target === Renderer.canvas ? 1 : 0,
+      4,
+      this.getPointerTypeCode(e.type),
+      e.button,
+      e.clientX,
+      e.clientY,
+      e.pressure,
+      e.timeStamp,
+      e.altKey,
+      e.ctrlKey,
+      e.shiftKey
+    );
+
     this.inside = false;
     this.m_listeners.pointerleave(e);
   }
@@ -403,16 +584,27 @@ abstract class InputManager {
 
   //* Window Events
   public static onResize(e: UIEvent) {
-    Renderer.resize();
+    const size = Renderer.resize();
+    API._on_resize_event(...size);
+
     AnimationManager.resize();
     SceneManager.render();
     this.m_listeners.resize(e);
   }
 
   private static onWheel(e: WheelEvent) {
+    API._on_wheel_event(
+      e.target === Renderer.canvas ? 1 : 0,
+      e.deltaX,
+      e.deltaY
+    );
+
     e.preventDefault();
 
-    if (SceneManager.state.workspace === 'designer' && e.target === AnimationManager.canvas) {
+    if (
+      SceneManager.state.workspace === "designer" &&
+      e.target === AnimationManager.canvas
+    ) {
       AnimationManager.onWheel(e);
       return;
     } else if (e.target !== Renderer.canvas) return;
@@ -424,7 +616,7 @@ abstract class InputManager {
     SceneManager.viewport.zoom = [
       map(-e.deltaY, -100, 100, 1 - ZOOM_STEP / 10, 1 + ZOOM_STEP / 10) *
         SceneManager.viewport.zoom,
-      InputManager.client.position
+      InputManager.client.position,
     ];
 
     SceneManager.render();

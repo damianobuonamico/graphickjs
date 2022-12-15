@@ -361,34 +361,62 @@ class Canvas2D extends CanvasBackend2D {
   ) {
     if (!SceneManager.isVisible(element)) return false;
 
-    this.m_ctx.save();
+    const position = element.transform.position.value;
 
-    this.m_ctx.globalAlpha = element.layer.opacity.value;
-    this.transform(element.transform.mat3);
-    this.beginPath();
-    this.draw(element.getDrawable());
+    if (!element.stroke) return false;
 
-    if (element.fill && element.fill.visible) {
-      this.m_ctx.fillStyle = element.fill.color.toString();
-      this.fill();
-    }
+    element.forEachBezier((bezier) => {
+      const p0 = vec2.add(bezier.p0, position);
+      const p3 = vec2.add(bezier.p3, position);
 
-    if (element.stroke && element.stroke.visible) {
-      this.m_ctx.strokeStyle = element.stroke.color.toString();
-      this.m_ctx.lineJoin = element.stroke.corner;
-      if (!options.inheritStrokeWidth)
-        this.m_ctx.lineWidth = element.stroke.width;
-      if (Array.isArray(element.stroke.style))
-        this.m_ctx.setLineDash(element.stroke.style);
+      const dir = vec2.dir(p0, p3);
+      const normal = vec2.mulS(vec2.perp(dir), element.stroke!.width / 2);
 
-      // TODO: inside/outside strokes
-      // this.m_ctx.clip();
-      // this.m_ctx.lineWidth *= 2;
+      const a0 = vec2.add(p0, normal);
+      const a1 = vec2.sub(p0, normal);
+      const a2 = vec2.add(p3, normal);
+      const a3 = vec2.sub(p3, normal);
 
-      this.stroke();
-    }
+      const vertices = Float32Array.from([...a0, ...a1, ...a2, ...a3]);
+      const indices = Float32Array.from([0, 1, 2, 1, 2, 3]);
 
-    this.m_ctx.restore();
+      const verticesHeap = API._to_heap(Float32Array.from(vertices));
+      const indicesHeap = API._to_heap(Float32Array.from(indices));
+
+      API._draw(verticesHeap, vertices.length, indicesHeap, indices.length);
+
+      API._free(verticesHeap);
+      API._free(indicesHeap);
+    });
+
+    // this.m_ctx.save();
+
+    // this.m_ctx.globalAlpha = element.layer.opacity.value;
+    // this.transform(element.transform.mat3);
+    // this.beginPath();
+    // this.draw(element.getDrawable());
+
+    // if (element.fill && element.fill.visible) {
+    //   this.m_ctx.fillStyle = element.fill.color.toString();
+    //   this.fill();
+    // }
+
+    // if (element.stroke && element.stroke.visible) {
+    //   this.m_ctx.strokeStyle = element.stroke.color.toString();
+    //   this.m_ctx.lineJoin = element.stroke.corner;
+    //   if (!options.inheritStrokeWidth)
+    //     this.m_ctx.lineWidth = element.stroke.width;
+    //   if (Array.isArray(element.stroke.style))
+    //     this.m_ctx.setLineDash(element.stroke.style);
+
+    //   // TODO: inside/outside strokes
+    //   // this.m_ctx.clip();
+    //   // this.m_ctx.lineWidth *= 2;
+
+    //   this.stroke();
+    // }
+
+    // this.m_ctx.restore();
   }
 
   private drawImage(image: ImageEntity) {

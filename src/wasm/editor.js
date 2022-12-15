@@ -33,7 +33,7 @@ Module['ready'] = new Promise(function(resolve, reject) {
   readyPromiseResolve = resolve;
   readyPromiseReject = reject;
 });
-["_main","_begin_frame","_draw","___getTypeName","__embind_initialize_bindings","_fflush","onRuntimeInitialized"].forEach((prop) => {
+["_main","_resize","_begin_frame","_end_frame","_draw","_on_pointer_event","_on_keyboard_event","_on_resize_event","_on_wheel_event","_on_clipboard_event","___getTypeName","__embind_initialize_bindings","_fflush","onRuntimeInitialized"].forEach((prop) => {
   if (!Object.getOwnPropertyDescriptor(Module['ready'], prop)) {
     Object.defineProperty(Module['ready'], prop, {
       get: () => abort('You are getting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
@@ -3700,10 +3700,31 @@ var asm = createWasm();
 var ___wasm_call_ctors = Module["___wasm_call_ctors"] = createExportWrapper("__wasm_call_ctors");
 
 /** @type {function(...*):?} */
+var _resize = Module["_resize"] = createExportWrapper("resize");
+
+/** @type {function(...*):?} */
 var _begin_frame = Module["_begin_frame"] = createExportWrapper("begin_frame");
 
 /** @type {function(...*):?} */
+var _end_frame = Module["_end_frame"] = createExportWrapper("end_frame");
+
+/** @type {function(...*):?} */
 var _draw = Module["_draw"] = createExportWrapper("draw");
+
+/** @type {function(...*):?} */
+var _on_pointer_event = Module["_on_pointer_event"] = createExportWrapper("on_pointer_event");
+
+/** @type {function(...*):?} */
+var _on_keyboard_event = Module["_on_keyboard_event"] = createExportWrapper("on_keyboard_event");
+
+/** @type {function(...*):?} */
+var _on_resize_event = Module["_on_resize_event"] = createExportWrapper("on_resize_event");
+
+/** @type {function(...*):?} */
+var _on_wheel_event = Module["_on_wheel_event"] = createExportWrapper("on_wheel_event");
+
+/** @type {function(...*):?} */
+var _on_clipboard_event = Module["_on_clipboard_event"] = createExportWrapper("on_clipboard_event");
 
 /** @type {function(...*):?} */
 var _malloc = Module["_malloc"] = createExportWrapper("malloc");
