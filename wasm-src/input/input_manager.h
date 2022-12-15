@@ -93,7 +93,7 @@ public:
     KeyboardEvent event, KeyboardKey key,
     bool repeat, bool alt, bool ctrl, bool shift
   );
-  static bool on_resize_event(int x, int y);
+  static bool on_resize_event(int x, int y, int offset_x, int offset_y);
   static bool on_wheel_event(PointerTarget target, int delta_x, int delta_y);
   static bool on_clipboard_event(ClipboardEvent event);
 private:
@@ -111,7 +111,7 @@ private:
   bool on_key_down();
   bool on_key_up();
 
-  bool on_resize(int x, int y);
+  bool on_resize(int x, int y, int offset_x, int offset_y);
   bool on_wheel(PointerTarget target, int delta_x, int delta_y);
   bool on_clipboard_copy();
   bool on_clipboard_paste();

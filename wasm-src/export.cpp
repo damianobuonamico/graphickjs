@@ -55,8 +55,8 @@ extern "C" {
     );
   }
 
-  bool EMSCRIPTEN_KEEPALIVE on_resize_event(int x, int y) {
-    return InputManager::on_resize_event(x, y);
+  bool EMSCRIPTEN_KEEPALIVE on_resize_event(int x, int y, int offset_x, int offset_y) {
+    return InputManager::on_resize_event(x, y, offset_x, offset_y);
   }
 
   bool EMSCRIPTEN_KEEPALIVE on_wheel_event(int target, int delta_x, int delta_y) {

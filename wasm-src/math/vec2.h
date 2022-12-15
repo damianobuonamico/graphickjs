@@ -75,8 +75,4 @@ constexpr vec2 operator||(const vec2& v1, const vec2& v2);
 
 constexpr const float* operator&(const vec2& v);
 
-/* -- Stream operator -- */
-
-std::ostream& operator<<(std::ostream& os, const vec2& v);
-
 #include "vec2.inl"

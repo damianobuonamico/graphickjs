@@ -197,9 +197,20 @@ constexpr vec2 operator||(const vec2& v1, const vec2& v2) {
 
 constexpr const float* operator&(const vec2& v) { return &(v.x); }
 
-/* -- Stream operator -- */
+/* -- Std -- */
 
-inline std::ostream& operator<<(std::ostream& os, const vec2& v) {
-  os << "(" << v.x << ", " << v.y << ")";
-  return os;
+namespace std {
+
+  inline ostream& operator<<(ostream& os, const vec2& v) {
+    os << "(" << v.x << ", " << v.y << ")";
+    return os;
+  }
+
+  template<> class numeric_limits<vec2> {
+  public:
+    static inline vec2 min() { return vec2{ numeric_limits<float>::min(),  numeric_limits<float>::min() }; }
+    static inline vec2 max() { return vec2{ numeric_limits<float>::max(),  numeric_limits<float>::max() }; }
+  };
+
 }
+

@@ -4,6 +4,7 @@
 #include "../renderer/renderer.h"
 
 Editor* Editor::s_instance = nullptr;
+Viewport Editor::viewport{};
 
 void Editor::init() {
   // TODO: Editor reinitialization

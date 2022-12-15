@@ -1,6 +1,7 @@
 #include "input_manager.h"
 
 #include "../common.h"
+#include "../editor/editor.h"
 
 #include <assert.h>
 
@@ -63,8 +64,8 @@ bool InputManager::on_keyboard_event(
   return false;
 }
 
-bool InputManager::on_resize_event(int x, int y) {
-  return get()->on_resize(x, y);
+bool InputManager::on_resize_event(int x, int y, int offset_x, int offset_y) {
+  return get()->on_resize(x, y, offset_x, offset_y);
 }
 
 bool InputManager::on_wheel_event(PointerTarget target, int delta_x, int delta_y) {
@@ -182,12 +183,19 @@ bool InputManager::on_key_up() {
   return false;
 }
 
-bool InputManager::on_resize(int x, int y) {
+bool InputManager::on_resize(int x, int y, int offset_x, int offset_y) {
   console::log("Resize");
+  vec2 size = vec2{ (float)x, (float)y };
+  vec2 offset = vec2{ (float)offset_x, (float)offset_y };
+
+  Editor::viewport.resize(size, offset);
+
   return false;
 }
 bool InputManager::on_wheel(PointerTarget target, int delta_x, int delta_y) {
   console::log("Wheel");
+  Editor::viewport.zoom_to(1.0f, vec2{ 0.0f, 0.0f });
+
   return false;
 }
 bool InputManager::on_clipboard_copy() {

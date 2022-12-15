@@ -1,6 +1,10 @@
 #pragma once
 
+#include "viewport.h"
+
 class Editor {
+public:
+  static Viewport viewport;
 public:
   Editor(const Editor&) = delete;
   Editor(Editor&&) = delete;
@@ -12,6 +16,7 @@ public:
 private:
   Editor() = default;
   ~Editor() = default;
+private:
 private:
   static Editor* s_instance;
 };

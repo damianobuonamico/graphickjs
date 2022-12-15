@@ -1,5 +1,5 @@
-import { clamp, round, vec2 } from '@/math';
-import { ZOOM_MAX, ZOOM_MIN } from '@/utils/constants';
+import { clamp, round, vec2 } from "@/math";
+import { ZOOM_MAX, ZOOM_MIN } from "@/utils/constants";
 
 export default class Viewport {
   private m_position: vec2;
@@ -34,22 +34,26 @@ export default class Viewport {
       return;
     }
 
-    const minX = (this.m_viewport[0] - this.m_max[0] * this.m_zoom) / this.m_zoom;
-    const minY = (this.m_viewport[1] - this.m_max[1] * this.m_zoom) / this.m_zoom;
+    const minX =
+      (this.m_viewport[0] - this.m_max[0] * this.m_zoom) / this.m_zoom;
+    const minY =
+      (this.m_viewport[1] - this.m_max[1] * this.m_zoom) / this.m_zoom;
     let maxX = this.m_min[0];
     let maxY = this.m_min[1];
 
     if (this.m_max[0] * this.m_zoom < this.m_viewport[0]) {
-      maxX = -(this.m_max[0] * this.m_zoom - this.m_viewport[0]) / 2 / this.m_zoom;
+      maxX =
+        -(this.m_max[0] * this.m_zoom - this.m_viewport[0]) / 2 / this.m_zoom;
     }
 
     if (this.m_max[1] * this.m_zoom < this.m_viewport[1]) {
-      maxY = -(this.m_max[1] * this.m_zoom - this.m_viewport[1]) / 2 / this.m_zoom;
+      maxY =
+        -(this.m_max[1] * this.m_zoom - this.m_viewport[1]) / 2 / this.m_zoom;
     }
 
     this.m_position = [
       Math.min(Math.max(minX, value[0]), maxX),
-      Math.min(Math.max(minY, value[1]), maxY)
+      Math.min(Math.max(minY, value[1]), maxY),
     ];
   }
 
@@ -60,7 +64,11 @@ export default class Viewport {
   set zoom(value: number | [number, vec2]) {
     const isArray = Array.isArray(value);
     const zoom = round(
-      clamp(isArray ? value[0] : value, Math.max(ZOOM_MIN, this.m_minZoom), ZOOM_MAX),
+      clamp(
+        isArray ? value[0] : value,
+        Math.max(ZOOM_MIN, this.m_minZoom),
+        ZOOM_MAX
+      ),
       4
     );
 
@@ -82,7 +90,8 @@ export default class Viewport {
   setBounds(bounds: Box) {
     vec2.copy(this.m_min, bounds[0]);
     vec2.copy(this.m_max, bounds[1]);
-    if (bounds[0] > bounds[1]) this.m_minZoom = this.m_viewport[0] / bounds[1][0];
+    if (bounds[0] > bounds[1])
+      this.m_minZoom = this.m_viewport[0] / bounds[1][0];
     else this.m_minZoom = this.m_viewport[1] / bounds[1][1];
   }
 
@@ -94,7 +103,11 @@ export default class Viewport {
     const scene = vec2.create();
 
     vec2.sub(
-      vec2.divS(vec2.sub(position, offset, scene), override.zoom || this.m_zoom, scene),
+      vec2.divS(
+        vec2.sub(position, offset, scene),
+        override.zoom || this.m_zoom,
+        scene
+      ),
       override.position || this.m_position,
       scene
     );
@@ -102,7 +115,11 @@ export default class Viewport {
     return scene;
   }
 
-  localToClient(position: vec2, offset: vec2, override: { position?: vec2; zoom?: number } = {}) {
+  localToClient(
+    position: vec2,
+    offset: vec2,
+    override: { position?: vec2; zoom?: number } = {}
+  ) {
     const client = vec2.create();
 
     vec2.add(
@@ -132,6 +149,10 @@ export default class Viewport {
   }
 
   toJSON() {
-    return { position: this.position, zoom: this.m_zoom, rotation: this.m_rotation };
+    return {
+      position: this.position,
+      zoom: this.m_zoom,
+      rotation: this.m_rotation,
+    };
   }
 }
