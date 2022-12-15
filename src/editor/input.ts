@@ -331,7 +331,7 @@ abstract class InputManager {
     API._on_pointer_event(
       e.target === Renderer.canvas ? 1 : 0,
       0,
-      this.getPointerTypeCode(e.type),
+      this.getPointerTypeCode(e.pointerType),
       e.button,
       e.clientX,
       e.clientY,
@@ -407,7 +407,7 @@ abstract class InputManager {
     API._on_pointer_event(
       e.target === Renderer.canvas ? 1 : 0,
       1,
-      this.getPointerTypeCode(e.type),
+      this.getPointerTypeCode(e.pointerType),
       e.button,
       e.clientX,
       e.clientY,
@@ -490,7 +490,7 @@ abstract class InputManager {
     API._on_pointer_event(
       e.target === Renderer.canvas ? 1 : 0,
       2,
-      this.getPointerTypeCode(e.type),
+      this.getPointerTypeCode(e.pointerType),
       e.button,
       e.clientX,
       e.clientY,
@@ -541,7 +541,7 @@ abstract class InputManager {
     API._on_pointer_event(
       e.target === Renderer.canvas ? 1 : 0,
       3,
-      this.getPointerTypeCode(e.type),
+      this.getPointerTypeCode(e.pointerType),
       e.button,
       e.clientX,
       e.clientY,
@@ -560,7 +560,7 @@ abstract class InputManager {
     API._on_pointer_event(
       e.target === Renderer.canvas ? 1 : 0,
       4,
-      this.getPointerTypeCode(e.type),
+      this.getPointerTypeCode(e.pointerType),
       e.button,
       e.clientX,
       e.clientY,

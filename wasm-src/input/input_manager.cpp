@@ -2,6 +2,7 @@
 
 #include "../common.h"
 #include "../editor/editor.h"
+#include "../math/vector.h"
 
 #include <assert.h>
 
@@ -109,11 +110,10 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, i
   pointer.client.delta = { 0.0f, 0.0f };
   pointer.client.origin = current_position;
 
-  // TODO: client_to_scene
   pointer.scene.movement = { 0.0f, 0.0f };
-  pointer.scene.position = current_position;
+  pointer.scene.position = Editor::viewport.client_to_scene(current_position);
   pointer.scene.delta = { 0.0f, 0.0f };
-  pointer.scene.origin = current_position;
+  pointer.scene.origin = pointer.scene.position;
 
   pointer.down = true;
   pointer.button = button;
@@ -133,14 +133,14 @@ bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
   pointer.client.position = current_position;
   pointer.client.delta = current_position - pointer.client.origin;
 
-  // TODO: client_to_scene
-  pointer.scene.movement = current_position - pointer.client.position;
-  pointer.scene.position = current_position;
-  pointer.scene.delta = current_position - pointer.client.origin;
+  pointer.scene.movement = pointer.client.movement / Editor::viewport.zoom();
+  pointer.scene.position = Editor::viewport.client_to_scene(current_position);
+  pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
   if (!m_moving && pointer.down) {
-    // TODO: check pointer delta
-    if (true) {
+    if (
+      length(pointer.client.delta) > INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)m_pointer_type]
+      ) {
       m_moving = true;
     } else {
       return false;
@@ -194,7 +194,6 @@ bool InputManager::on_resize(int x, int y, int offset_x, int offset_y) {
 }
 bool InputManager::on_wheel(PointerTarget target, int delta_x, int delta_y) {
   console::log("Wheel");
-  Editor::viewport.zoom_to(1.0f, vec2{ 0.0f, 0.0f });
 
   return false;
 }
