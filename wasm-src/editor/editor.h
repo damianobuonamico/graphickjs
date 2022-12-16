@@ -9,7 +9,7 @@ public:
   Editor(const Editor&) = delete;
   Editor(Editor&&) = delete;
 
-  inline static Editor* get() { return s_instance; }
+  static inline Editor* get() { return s_instance; }
 
   static void init();
   static void shutdown();

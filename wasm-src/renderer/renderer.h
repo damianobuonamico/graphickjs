@@ -9,7 +9,7 @@ public:
   Renderer(const Renderer&) = delete;
   Renderer(Renderer&&) = delete;
 
-  inline static Renderer* get() { return s_instance; }
+  static inline Renderer* get() { return s_instance; }
 
   static void init();
   static void shutdown();

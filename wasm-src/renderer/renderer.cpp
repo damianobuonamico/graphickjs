@@ -12,13 +12,6 @@ static const size_t max_vertex_buffer_size = 2 * 100000;
 static const size_t max_vertex_count = max_vertex_buffer_size / sizeof(Vertex);
 static const size_t max_index_count = max_vertex_count * 3;
 
-void Renderer::resize(const int width, const int height) {
-  m_size.x = width;
-  m_size.y = height;
-
-  glViewport(0, 0, width, height);
-}
-
 void Renderer::init() {
   assert(!s_instance);
   s_instance = new Renderer();
@@ -59,6 +52,13 @@ void Renderer::shutdown() {
   delete[] get()->m_data.index_buffer;
 
   delete s_instance;
+}
+
+void Renderer::resize(const int width, const int height) {
+  m_size.x = width;
+  m_size.y = height;
+
+  glViewport(0, 0, width, height);
 }
 
 void Renderer::begin_frame(const float* position, const float zoom) {
