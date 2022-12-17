@@ -1,7 +1,7 @@
 #pragma once
 
-#include "command.h"
-#include "../math/vec2.h"
+#include "../command.h"
+#include "../../math/vec2.h"
 
 class ChangeVec2Command: public Command {
 public:
@@ -19,11 +19,15 @@ public:
 
   virtual bool merge_with(std::unique_ptr<Command>& command) override {
     ChangeVec2Command* casted_command = dynamic_cast<ChangeVec2Command*>(command.get());
-    if (casted_command != nullptr || &casted_command->m_value != &this->m_value) return false;
+    if (casted_command == nullptr || &casted_command->m_value != &this->m_value) return false;
 
     casted_command->m_new_value = this->m_new_value;
 
     return true;
+  }
+
+  virtual uintptr_t pointer() override {
+    return reinterpret_cast<uintptr_t>(&m_value);
   }
 private:
   vec2& m_value;

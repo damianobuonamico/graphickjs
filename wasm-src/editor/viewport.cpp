@@ -3,7 +3,6 @@
 #include "../math/math.h"
 #include "../math/vector.h"
 #include "../utils/defines.h"
-#include "../utils/console.h"
 
 Viewport::Viewport(const vec2& position, float zoom, float rotation)
   : m_position(position), m_zoom(zoom), m_rotation(rotation) {}

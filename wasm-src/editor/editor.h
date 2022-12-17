@@ -1,6 +1,8 @@
 #pragma once
 
 #include "viewport.h"
+#include "../values/ordered_map.h"
+#include "../utils/console.h"
 
 class Editor {
 public:
@@ -14,7 +16,7 @@ public:
   static void init();
   static void shutdown();
 private:
-  Editor() = default;
+  Editor() {}
   ~Editor() = default;
 private:
 private:

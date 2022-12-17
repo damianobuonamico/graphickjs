@@ -3,7 +3,6 @@
 #include "../input/input_manager.h"
 #include "../renderer/renderer.h"
 #include "../history/command_history.h"
-#include "../history/change_vec2_command.h"
 
 Editor* Editor::s_instance = nullptr;
 Viewport Editor::viewport{};

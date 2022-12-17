@@ -6,7 +6,7 @@ OPTIMIZE = False
 
 output = '..\src\wasm\editor.js'
 files = []
-options = ['ALLOW_MEMORY_GROWTH', 'EXPORT_ES6', 'MODULARIZE', 'MIN_WEBGL_VERSION=2', 'MAX_WEBGL_VERSION=2', 'USE_WEBGL2']
+options = ['ALLOW_MEMORY_GROWTH', 'EXPORT_ES6', 'MODULARIZE', 'MIN_WEBGL_VERSION=2', 'MAX_WEBGL_VERSION=2', 'USE_WEBGL2', 'NO_DISABLE_EXCEPTION_CATCHING']
 
 for path in Path('./').rglob('*.cpp'):
   files.append(str(path))

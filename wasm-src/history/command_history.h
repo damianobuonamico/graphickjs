@@ -19,6 +19,7 @@ public:
   static void undo();
   static void redo();
 
+  static void end_batch();
   static void seal();
   static void pop();
   static void clear();
