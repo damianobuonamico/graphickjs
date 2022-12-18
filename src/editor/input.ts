@@ -585,10 +585,10 @@ abstract class InputManager {
   //* Window Events
   public static onResize(e: UIEvent) {
     const size = Renderer.resize();
-    API._on_resize_event(...size);
+    API._on_resize_event(...size, ...Renderer.canvasOffset);
 
-    AnimationManager.resize();
-    SceneManager.render();
+    // AnimationManager.resize();
+    // SceneManager.render();
     this.m_listeners.resize(e);
   }
 

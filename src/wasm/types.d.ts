@@ -1,7 +1,6 @@
 interface Api {
   _init(): void;
   _shutdown(): void;
-  _resize(width: number, height: number): void;
 
   _on_pointer_event(
     target: number,
@@ -24,21 +23,17 @@ interface Api {
     ctrl: boolean,
     shift: boolean
   ): boolean;
-  _on_resize_event(x: number, y: number): boolean;
+  _on_resize_event(
+    width: number,
+    height: number,
+    offsetX: number,
+    offsetY: number
+  ): boolean;
   _on_wheel_event(target: number, deltaX: number, deltaY: number): boolean;
   _on_clipboard_event(event: number): boolean;
 
   _to_heap(array: Float32Array): Pointer;
   _free(pointer: Pointer): void;
-
-  _begin_frame(position: Pointer, zoom: number): void;
-  _end_frame(): void;
-  _draw(
-    vertices: number,
-    verticesLength: number,
-    indices: number,
-    indicesLength: number
-  ): void;
 }
 
 type Pointer = number;

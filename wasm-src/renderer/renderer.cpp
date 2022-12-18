@@ -18,7 +18,7 @@ void Renderer::init() {
 
   EmscriptenWebGLContextAttributes attr;
 
-  attr.alpha = true;
+  attr.alpha = false;
   attr.antialias = true;
   attr.premultipliedAlpha = true;
 
@@ -54,25 +54,18 @@ void Renderer::shutdown() {
   delete s_instance;
 }
 
-void Renderer::resize(const int width, const int height) {
-  m_size.x = width;
-  m_size.y = height;
+void Renderer::resize(const vec2& size) {
+  get()->m_size = size;
 
-  glViewport(0, 0, width, height);
+  glViewport(0, 0, size.x, size.y);
 }
 
-void Renderer::begin_frame(const float* position, const float zoom) {
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+void Renderer::begin_frame(const vec2& position, float zoom) {
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  mat3 scaling = { 2.0f * zoom / m_size.x, 0.0f, 0.0f, 0.0f, -2.0f * zoom / m_size.y, 0.0f, 0.0f, 0.0f, 1.0f };
-  mat3 translation = { 1.0f, 0.0f, (-m_size.x / zoom + 2 * position[0]) / 2.0f, 0.0f, 1.0f, (-m_size.y / zoom + 2 * position[1]) / 2.0f, 0.0f, 0.0f, 1.0f };
-
-  mat3 view_projection_matrix = scaling * translation;
-
-  m_shaders.set_global_uniform("uViewProjectionMatrix", view_projection_matrix);
-
-  begin_batch();
+  get()->set_viewport(position, zoom);
+  get()->begin_batch();
 }
 
 void Renderer::end_frame() {
@@ -82,6 +75,24 @@ void Renderer::end_frame() {
 
 
 void Renderer::draw(const Geometry& geometry) {
+  get()->add_to_batch(geometry);
+}
+
+void Renderer::set_viewport(const vec2& position, float zoom) {
+  mat3 scaling = { 2.0f * zoom / m_size.x, 0.0f, 0.0f, 0.0f, -2.0f * zoom / m_size.y, 0.0f, 0.0f, 0.0f, 1.0f };
+  mat3 translation = { 1.0f, 0.0f, (-m_size.x / zoom + 2 * position[0]) / 2.0f, 0.0f, 1.0f, (-m_size.y / zoom + 2 * position[1]) / 2.0f, 0.0f, 0.0f, 1.0f };
+
+  mat3 view_projection_matrix = scaling * translation;
+
+  m_shaders.set_global_uniform("uViewProjectionMatrix", view_projection_matrix);
+}
+
+void Renderer::begin_batch() {
+  m_data.vertex_buffer_ptr = m_data.vertex_buffer;
+  m_data.index_buffer_ptr = m_data.index_buffer;
+}
+
+void Renderer::add_to_batch(const Geometry& geometry) {
   if (m_data.index_count + geometry.indices.size() >= max_index_count ||
     m_data.vertex_count + geometry.vertices.size() >= max_vertex_count) {
     end_batch();
@@ -102,11 +113,6 @@ void Renderer::draw(const Geometry& geometry) {
 
   m_data.vertex_count += (uint32_t)geometry.vertices.size();
   m_data.index_count += (uint32_t)geometry.indices.size();
-}
-
-void Renderer::begin_batch() {
-  m_data.vertex_buffer_ptr = m_data.vertex_buffer;
-  m_data.index_buffer_ptr = m_data.index_buffer;
 }
 
 void Renderer::end_batch() {

@@ -12,3 +12,7 @@ inline float round(float t, float precision) noexcept {
 
   return integer_part + std::round(decimal_part / precision) * precision;
 }
+
+inline float map(float t, float old_min, float old_max, float new_min, float new_max) {
+  return ((t - old_min) * (new_max - new_min)) / (old_max - old_min) + new_min;
+}

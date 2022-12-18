@@ -19,14 +19,6 @@ const Canvas: Component = () => {
   return (
     <div class="flex grow overflow-hidden first-line:z-0">
       <canvas
-        id="canvas"
-        class="absolute overflow-hidden"
-        style={{ visibility: "hidden" }}
-        ref={(ref) => {
-          if (ref !== null) Renderer.wasmCanvas = ref;
-        }}
-      />
-      <canvas
         class="absolute overflow-hidden"
         ref={(ref) => {
           if (ref !== null) Renderer.setup(ref);
@@ -34,6 +26,13 @@ const Canvas: Component = () => {
           canvas = ref;
         }}
       ></canvas>
+      <canvas
+        id="canvas"
+        class="absolute overflow-hidden"
+        ref={(ref) => {
+          if (ref !== null) Renderer.wasmCanvas = ref;
+        }}
+      />
     </div>
   );
 };

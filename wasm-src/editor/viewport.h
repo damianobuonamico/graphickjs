@@ -5,7 +5,7 @@
 
 class Viewport {
 public:
-  Viewport() = default;
+  Viewport();
   Viewport(const vec2& position, float zoom, float rotation);
   Viewport(const Viewport&) = delete;
   Viewport(Viewport&&) = delete;
@@ -17,6 +17,7 @@ public:
 
   void resize(const vec2& size, const vec2& offset);
 
+  void move(const vec2& movement);
   void move_to(const vec2& position);
   void zoom_to(float zoom);
   void zoom_to(float zoom, const vec2& zoom_origin);
@@ -39,7 +40,7 @@ private:
   float m_zoom;
   float m_rotation;
 
-  vec2 m_min_position;
-  vec2 m_max_position;
-  float m_min_zoom;
+  vec2 m_min_position = std::numeric_limits<vec2>::min();
+  vec2 m_max_position = std::numeric_limits<vec2>::max();
+  float m_min_zoom{ 0.01f };
 };

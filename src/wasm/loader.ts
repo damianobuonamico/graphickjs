@@ -5,7 +5,6 @@ const fallback: any = () => {};
 const API: Api = {
   _init: fallback,
   _shutdown: fallback,
-  _resize: fallback,
   _on_pointer_event: fallback,
   _on_keyboard_event: fallback,
   _on_resize_event: fallback,
@@ -13,15 +12,11 @@ const API: Api = {
   _on_clipboard_event: fallback,
   _to_heap: fallback,
   _free: fallback,
-  _begin_frame: fallback,
-  _end_frame: fallback,
-  _draw: fallback,
 };
 
 wasm().then((module: any) => {
   API._init = module._init;
   API._shutdown = module._shutdown;
-  API._resize = module._resize;
 
   API._on_pointer_event = module._on_pointer_event;
   API._on_keyboard_event = module._on_keyboard_event;
@@ -39,10 +34,6 @@ wasm().then((module: any) => {
     return dataHeap.byteOffset;
   };
   API._free = module._free;
-
-  API._begin_frame = module._begin_frame;
-  API._end_frame = module._end_frame;
-  API._draw = module._draw;
 
   module._init();
 });

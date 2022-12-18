@@ -14,17 +14,20 @@ public:
   static void init();
   static void shutdown();
 
-  void resize(const int width, const int height);
+  static void resize(const vec2& size);
 
-  void begin_frame(const float* position, const float zoom);
-  void end_frame();
+  static void begin_frame(const vec2& position, float zoom);
+  static void end_frame();
 
-  void draw(const Geometry& geometry);
+  static void draw(const Geometry& geometry);
 private:
   Renderer() = default;
   ~Renderer() = default;
 
+  void set_viewport(const vec2& position, float zoom);
+
   void begin_batch();
+  void add_to_batch(const Geometry& geometry);
   void end_batch();
   void flush();
 private:

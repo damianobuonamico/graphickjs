@@ -2,7 +2,9 @@
 
 #include "../common.h"
 #include "../editor/editor.h"
+#include "../renderer/renderer.h"
 #include "../math/vector.h"
+#include "../math/math.h"
 
 #include <assert.h>
 
@@ -101,7 +103,8 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, i
   console::log("PointerDown");
   pointer.target = target;
 
-  if (target != PointerTarget::Canvas) return false;
+  // TODO: fix canvas target
+  // if (target != PointerTarget::Canvas) return false;
 
   vec2 current_position = { (float)x, (float)y };
 
@@ -125,7 +128,8 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, i
 
 bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
   console::log("PointerMove");
-  if (pointer.target != PointerTarget::Canvas && target != PointerTarget::Canvas) return false;
+  // TODO: fix canvas target
+  // if (pointer.target != PointerTarget::Canvas && target != PointerTarget::Canvas) return false;
 
   vec2 current_position = { (float)x, (float)y };
 
@@ -137,6 +141,7 @@ bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
   pointer.scene.position = Editor::viewport.client_to_scene(current_position);
   pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
+
   if (!m_moving && pointer.down) {
     if (
       length(pointer.client.delta) > INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)m_pointer_type]
@@ -144,6 +149,14 @@ bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
       m_moving = true;
     } else {
       return false;
+    }
+  }
+
+  if (m_moving) {
+    if (pointer.button == PointerButton::Middle) {
+
+      Editor::viewport.move(pointer.scene.movement);
+      Editor::render();
     }
   }
 
@@ -183,19 +196,27 @@ bool InputManager::on_key_up() {
   return false;
 }
 
-bool InputManager::on_resize(int x, int y, int offset_x, int offset_y) {
+bool InputManager::on_resize(int width, int height, int offset_x, int offset_y) {
   console::log("Resize");
-  vec2 size = vec2{ (float)x, (float)y };
+  vec2 size = vec2{ (float)width, (float)height };
   vec2 offset = vec2{ (float)offset_x, (float)offset_y };
 
+  Renderer::resize(size);
   Editor::viewport.resize(size, offset);
+
+  Editor::render();
 
   return false;
 }
-bool InputManager::on_wheel(PointerTarget target, int delta_x, int delta_y) {
+bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y) {
   console::log("Wheel");
 
-  return false;
+  if (!pointer.keys.ctrl) return false;
+
+  Editor::viewport.zoom_to(map(-delta_y, -100.0f, 100.0f, 1.0f - ZOOM_STEP / 10.0f, 1.0f + ZOOM_STEP / 10.0f) * Editor::viewport.zoom(), pointer.client.position);
+  Editor::render();
+
+  return true;
 }
 bool InputManager::on_clipboard_copy() {
   console::log("ClipboardCopy");

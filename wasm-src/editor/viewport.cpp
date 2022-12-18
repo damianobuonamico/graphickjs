@@ -3,6 +3,10 @@
 #include "../math/math.h"
 #include "../math/vector.h"
 #include "../utils/defines.h"
+#include "../utils/console.h"
+
+Viewport::Viewport()
+  : m_position({ 0.0f, 0.0f }), m_zoom(1.0f), m_rotation(0.0f) {}
 
 Viewport::Viewport(const vec2& position, float zoom, float rotation)
   : m_position(position), m_zoom(zoom), m_rotation(rotation) {}
@@ -12,12 +16,17 @@ void Viewport::resize(const vec2& size, const vec2& offset) {
   m_offset = offset;
 }
 
+void Viewport::move(const vec2& movement) {
+  move_to(m_position + movement);
+}
+
 void Viewport::move_to(const vec2& position) {
   if (
     m_min_position == std::numeric_limits<vec2>::min() &&
     m_max_position == std::numeric_limits<vec2>::max()
     ) {
     m_position = position;
+    return;
   }
 
   vec2 min_position = (m_size - m_max_position * m_zoom) / m_zoom;
@@ -44,7 +53,7 @@ void Viewport::zoom_to(float zoom, const vec2& zoom_origin) {
   vec2 position_delta = client_to_scene(zoom_origin, zoom_value) - client_to_scene(zoom_origin);
 
   m_zoom = zoom_value;
-  m_position += position_delta;
+  move(position_delta);
 }
 
 void Viewport::set_bounds(const Box& bounds) {
@@ -72,7 +81,7 @@ bool Viewport::is_visible(const Box& box) {
 }
 
 vec2 Viewport::client_to_scene(const vec2& position) {
-  return  (position - m_offset) / m_zoom - m_position;
+  return (position - m_offset) / m_zoom - m_position;
 }
 
 vec2 Viewport::scene_to_client(const vec2& position) {
@@ -80,7 +89,8 @@ vec2 Viewport::scene_to_client(const vec2& position) {
 }
 
 vec2 Viewport::client_to_scene(const vec2& position, float zoom_override) {
-  return  (position - m_offset) / zoom_override - m_position;
+  console::log(m_offset);
+  return (position - m_offset) / zoom_override - m_position;
 }
 
 vec2 Viewport::scene_to_client(const vec2& position, float zoom_override) {

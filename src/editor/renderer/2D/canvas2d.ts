@@ -380,13 +380,13 @@ class Canvas2D extends CanvasBackend2D {
       const vertices = Float32Array.from([...a0, ...a1, ...a2, ...a3]);
       const indices = Float32Array.from([0, 1, 2, 1, 2, 3]);
 
-      const verticesHeap = API._to_heap(Float32Array.from(vertices));
-      const indicesHeap = API._to_heap(Float32Array.from(indices));
+      // const verticesHeap = API._to_heap(Float32Array.from(vertices));
+      // const indicesHeap = API._to_heap(Float32Array.from(indices));
 
-      API._draw(verticesHeap, vertices.length, indicesHeap, indices.length);
+      // API._draw(verticesHeap, vertices.length, indicesHeap, indices.length);
 
-      API._free(verticesHeap);
-      API._free(indicesHeap);
+      // API._free(verticesHeap);
+      // API._free(indicesHeap);
     });
 
     // this.m_ctx.save();
@@ -436,13 +436,13 @@ class Canvas2D extends CanvasBackend2D {
 
     const [vertices, indices] = freehand.geometry;
 
-    const verticesHeap = API._to_heap(Float32Array.from(vertices));
-    const indicesHeap = API._to_heap(Float32Array.from(indices));
+    // const verticesHeap = API._to_heap(Float32Array.from(vertices));
+    // const indicesHeap = API._to_heap(Float32Array.from(indices));
 
-    API._draw(verticesHeap, vertices.length, indicesHeap, indices.length);
+    // API._draw(verticesHeap, vertices.length, indicesHeap, indices.length);
 
-    API._free(verticesHeap);
-    API._free(indicesHeap);
+    // API._free(verticesHeap);
+    // API._free(indicesHeap);
   }
 
   private drawEntityDebugged(
@@ -481,7 +481,7 @@ class Canvas2D extends CanvasBackend2D {
     this.m_wasmCanvas.width = size[0];
     this.m_wasmCanvas.height = size[1];
 
-    API._resize(...size);
+    // API._resize(...size);
 
     return size;
   }
@@ -651,10 +651,10 @@ class Canvas2D extends CanvasBackend2D {
       stats: options.debugging ? options.stats : undefined,
     });
 
-    const position = API._to_heap(Float32Array.from(options.position));
+    // const position = API._to_heap(Float32Array.from(options.position));
 
-    API._begin_frame(position, options.zoom);
-    API._free(position);
+    // API._begin_frame(position, options.zoom);
+    // API._free(position);
 
     if (this.m_debuggerBinded !== options.debugging)
       this.bindDebugger(!options.debugging);
@@ -669,7 +669,7 @@ class Canvas2D extends CanvasBackend2D {
     debugging?: boolean;
     debug?: DebugState;
   }): void {
-    API._end_frame();
+    // API._end_frame();
 
     this.m_ctx.resetTransform();
     this.m_ctx.drawImage(this.m_wasmCanvas, 0, 0);

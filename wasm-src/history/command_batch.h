@@ -2,6 +2,7 @@
 
 #include "command.h"
 
+#include <unordered_map>
 #include <vector>
 #include <iterator>
 
@@ -79,28 +80,3 @@ private:
   std::vector<CommandPointer> m_commands;
   std::unordered_map<uintptr_t, int> m_commands_indices;
 };
-
-
-/**
- *
- * #include <unordered_map>
-#include <iostream>
-
-int main()
-{
-    // Create a hash table that maps memory addresses to values
-    std::unordered_map<void*, int> memory_map;
-
-    // Insert some values into the hash table
-    int x = 5;
-    memory_map[&x] = x;
-    int y = 10;
-    memory_map[&y] = y;
-
-    // Print the values stored at the memory addresses
-    std::cout << memory_map[&x] << std::endl; // prints 5
-    std::cout << memory_map[&y] << std::endl; // prints 10
-
-    return 0;
-}
-*/

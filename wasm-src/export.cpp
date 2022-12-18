@@ -8,32 +8,6 @@
 using namespace emscripten;
 
 extern "C" {
-  void EMSCRIPTEN_KEEPALIVE resize(const float width, const float height) {
-    Renderer::get()->resize(width, height);
-  }
-
-  void EMSCRIPTEN_KEEPALIVE begin_frame(const float* position, const float zoom) {
-    Renderer::get()->begin_frame(position, zoom);
-  }
-
-  void EMSCRIPTEN_KEEPALIVE end_frame() {
-    Renderer::get()->end_frame();
-  }
-
-  void EMSCRIPTEN_KEEPALIVE draw(const float* vertices, const float vertices_length, const float* indices, const float indices_length) {
-    Geometry geometry;
-
-    for (int i = 0; i < vertices_length; i += 2) {
-      geometry.vertices.push_back({ {vertices[i], vertices[i + 1]} });
-    }
-
-    for (int i = 0; i < indices_length; ++i) {
-      geometry.indices.push_back(indices[i]);
-    }
-
-    Renderer::get()->draw(geometry);
-  }
-
   bool EMSCRIPTEN_KEEPALIVE on_pointer_event(
     int target, int event, int type, int button,
     int x, int y, float pressure, float time_stamp,
@@ -55,11 +29,11 @@ extern "C" {
     );
   }
 
-  bool EMSCRIPTEN_KEEPALIVE on_resize_event(int x, int y, int offset_x, int offset_y) {
-    return InputManager::on_resize_event(x, y, offset_x, offset_y);
+  bool EMSCRIPTEN_KEEPALIVE on_resize_event(int width, int height, int offset_x, int offset_y) {
+    return InputManager::on_resize_event(width, height, offset_x, offset_y);
   }
 
-  bool EMSCRIPTEN_KEEPALIVE on_wheel_event(int target, int delta_x, int delta_y) {
+  bool EMSCRIPTEN_KEEPALIVE on_wheel_event(int target, float delta_x, float delta_y) {
     return InputManager::on_wheel_event((InputManager::PointerTarget)target, delta_x, delta_y);
   }
 
