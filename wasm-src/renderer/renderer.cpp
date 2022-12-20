@@ -18,7 +18,7 @@ void Renderer::init() {
 
   EmscriptenWebGLContextAttributes attr;
 
-  attr.alpha = false;
+  // attr.alpha = false;
   attr.antialias = true;
   attr.premultipliedAlpha = true;
 

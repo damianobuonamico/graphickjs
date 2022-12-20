@@ -1,15 +1,16 @@
 #include "input_manager.h"
 
-#include "../common.h"
-#include "../editor/editor.h"
-#include "../renderer/renderer.h"
-#include "../math/vector.h"
-#include "../math/math.h"
+#include "../../common.h"
+#include "../../renderer/renderer.h"
+#include "../../math/vector.h"
+#include "../../math/math.h"
+#include "../editor.h"
 
 #include <assert.h>
 
 InputManager* InputManager::s_instance = nullptr;
 InputManager::Pointer InputManager::pointer{};
+InputManager::KeysState InputManager::keys{};
 
 void InputManager::init() {
   // TODO: InputManager reinitialization
@@ -51,17 +52,26 @@ bool InputManager::on_keyboard_event(
   KeyboardEvent event, KeyboardKey key,
   bool repeat, bool alt, bool ctrl, bool shift
 ) {
-  get()->set_keys_state(alt, ctrl, shift);
+  InputManager* instance = get();
+
+  instance->set_keys_state(alt, ctrl, shift);
 
   if (key == KeyboardKey::Escape) {
-    get()->m_abort = true;
+    instance->m_abort = true;
+  } else if (key == KeyboardKey::Space) {
+    keys.space_state_changed = keys.space == (event == KeyboardEvent::Up);
+    keys.space = event == KeyboardEvent::Down;
+  }
+
+  if (keys.ctrl_state_changed || keys.space_state_changed) {
+    instance->m_tool_state.recalculate_active();
   }
 
   switch (event) {
   case KeyboardEvent::Down:
-    return get()->on_key_down();
+    return instance->on_key_down();
   case KeyboardEvent::Up:
-    return get()->on_key_up();
+    return instance->on_key_up();
   }
 
   return false;
@@ -88,15 +98,19 @@ bool InputManager::on_clipboard_event(ClipboardEvent event) {
   return false;
 }
 
+void InputManager::set_tool(Tool::ToolType tool) {
+  get()->m_tool_state.set_current(tool);
+}
+
 void InputManager::set_keys_state(bool alt, bool ctrl, bool shift) {
-  pointer.keys.alt_state_changed = pointer.keys.alt != alt;
-  pointer.keys.alt = alt;
+  keys.alt_state_changed = keys.alt != alt;
+  keys.alt = alt;
 
-  pointer.keys.ctrl_state_changed = pointer.keys.ctrl != ctrl;
-  pointer.keys.ctrl = ctrl;
+  keys.ctrl_state_changed = keys.ctrl != ctrl;
+  keys.ctrl = ctrl;
 
-  pointer.keys.shift_state_changed = pointer.keys.shift != shift;
-  pointer.keys.shift = shift;
+  keys.shift_state_changed = keys.shift != shift;
+  keys.shift = shift;
 }
 
 bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, int x, int y) {
@@ -122,6 +136,10 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, i
   pointer.button = button;
 
   m_abort = false;
+
+  m_tool_state.on_pointer_down();
+
+  Editor::render();
 
   return false;
 }
@@ -152,12 +170,12 @@ bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
     }
   }
 
-  if (m_moving) {
-    if (pointer.button == PointerButton::Middle) {
-
-      Editor::viewport.move(pointer.scene.movement);
-      Editor::render();
-    }
+  if (m_moving && !m_abort) {
+    m_tool_state.on_pointer_move();
+    Editor::render();
+  } else if (!pointer.down) {
+    m_tool_state.on_pointer_hover();
+    Editor::render();
   }
 
   return false;
@@ -171,6 +189,10 @@ bool InputManager::on_pointer_up() {
   pointer.down = false;
 
   m_moving = false;
+
+  m_tool_state.on_pointer_up();
+
+  Editor::render();
 
   return false;
 }
@@ -211,7 +233,7 @@ bool InputManager::on_resize(int width, int height, int offset_x, int offset_y) 
 bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y) {
   console::log("Wheel");
 
-  if (!pointer.keys.ctrl) return false;
+  if (!keys.ctrl) return false;
 
   Editor::viewport.zoom_to(map(-delta_y, -100.0f, 100.0f, 1.0f - ZOOM_STEP / 10.0f, 1.0f + ZOOM_STEP / 10.0f) * Editor::viewport.zoom(), pointer.client.position);
   Editor::render();

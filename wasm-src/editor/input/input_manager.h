@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../math/vec2.h"
+#include "../../math/vec2.h"
 #include "keys.h"
+#include "tool_state.h"
 
 #include <string>
 
@@ -71,9 +72,9 @@ public:
     float time = 0.0f;
 
     PointerButton button = PointerButton::Left;
-    KeysState keys{};
   };
 
+  static KeysState keys;
   static Pointer pointer;
 public:
   InputManager(const InputManager&) = delete;
@@ -96,6 +97,8 @@ public:
   static bool on_resize_event(int x, int y, int offset_x, int offset_y);
   static bool on_wheel_event(PointerTarget target, int delta_x, int delta_y);
   static bool on_clipboard_event(ClipboardEvent event);
+
+  static void set_tool(Tool::ToolType type);
 private:
   InputManager() = default;
   ~InputManager() = default;
@@ -119,8 +122,11 @@ private:
   bool on_clipboard_cut();
 private:
   PointerType m_pointer_type = PointerType::Mouse;
+
   bool m_moving = false;
   bool m_abort = false;
+
+  ToolState m_tool_state;
 private:
   static InputManager* s_instance;
 };

@@ -1,6 +1,6 @@
 #include "editor.h"
 
-#include "../input/input_manager.h"
+#include "input/input_manager.h"
 #include "../renderer/renderer.h"
 #include "../history/command_history.h"
 #include "../utils/console.h"

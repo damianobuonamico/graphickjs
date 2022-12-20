@@ -1,16 +1,23 @@
-import InputManager from '../input';
-import SceneManager from '../scene';
-import SelectionManager from '../selection';
-import onPanPointerDown from './pan';
-import onPenPointerDown, { onPenPointerHover } from './pen';
-import onPolygonPointerDown from './polygon';
-import onRotatePointerDown from './rotate';
-import onScalePointerDown from './scale';
-import onSelectPointerDown from './select';
-import onDirectSelectPointerDown from './directSelect';
-import onZoomPointerDown from './zoom';
-import onPencilPointerDown from './pencil';
-import onEraserPointerDown from './eraser';
+import InputManager from "../input";
+import SceneManager from "../scene";
+import SelectionManager from "../selection";
+import onPanPointerDown from "./pan";
+import onPenPointerDown, { onPenPointerHover } from "./pen";
+import onPolygonPointerDown from "./polygon";
+import onRotatePointerDown from "./rotate";
+import onScalePointerDown from "./scale";
+import onSelectPointerDown from "./select";
+import onDirectSelectPointerDown from "./directSelect";
+import onZoomPointerDown from "./zoom";
+import onPencilPointerDown from "./pencil";
+import onEraserPointerDown from "./eraser";
+import API from "@/wasm/loader";
+
+declare global {
+  interface Window {
+    _set_tool(type: number): void;
+  }
+}
 
 class ToolState {
   private m_current: Tool;
@@ -21,14 +28,14 @@ class ToolState {
     select: onSelectPointerDown,
     directSelect: onDirectSelectPointerDown,
     pen: onPenPointerDown,
-    rectangle: () => onPolygonPointerDown('rectangle'),
-    ellipse: () => onPolygonPointerDown('ellipse'),
+    rectangle: () => onPolygonPointerDown("rectangle"),
+    ellipse: () => onPolygonPointerDown("ellipse"),
     pan: onPanPointerDown,
     zoom: onZoomPointerDown,
     scale: onScalePointerDown,
     rotate: onRotatePointerDown,
     pencil: onPencilPointerDown,
-    eraser: onEraserPointerDown
+    eraser: onEraserPointerDown,
   };
   private m_data: ToolMap<ToolData> = {
     select: {},
@@ -41,10 +48,10 @@ class ToolState {
     scale: {},
     rotate: {},
     pencil: {},
-    eraser: {}
+    eraser: {},
   };
   private m_hovers: Partial<ToolMap<() => void>> = {
-    pen: onPenPointerHover
+    pen: onPenPointerHover,
   };
 
   private m_vertexTools = { directSelect: true, pen: true };
@@ -57,6 +64,19 @@ class ToolState {
   constructor(setTool: (tool: Tool) => void, tool: Tool) {
     this.m_setTool = setTool;
     this.current = tool;
+
+    // TODO: fix
+    window._set_tool = (type: number) => {
+      console.log(type);
+      switch (type) {
+        case 0:
+          this.m_setTool("pan");
+          break;
+        case 1:
+          this.m_setTool("zoom");
+          break;
+      }
+    };
   }
 
   public get current() {
@@ -64,8 +84,17 @@ class ToolState {
   }
 
   public set current(tool: Tool) {
-    this.m_current = tool;
-    this.recalculate();
+    // TODO: fix
+    switch (tool) {
+      case "pan":
+        API._set_tool(0);
+        break;
+      case "zoom":
+        API._set_tool(1);
+        break;
+    }
+    // this.m_current = tool;
+    // this.recalculate();
   }
 
   public get active() {
@@ -73,16 +102,13 @@ class ToolState {
   }
 
   public set active(tool: Tool) {
-    this.m_last = this.m_active;
-    this.m_active = tool;
-    this.m_setTool(tool);
-
-    SceneManager.overlays.clear();
-    SceneManager.render();
-
-    this.onPointerHover();
-
-    SelectionManager.calculateRenderOverlay();
+    // this.m_last = this.m_active;
+    // this.m_active = tool;
+    // this.m_setTool(tool);
+    // SceneManager.overlays.clear();
+    // SceneManager.render();
+    // this.onPointerHover();
+    // SelectionManager.calculateRenderOverlay();
   }
 
   public get isVertex() {
@@ -96,17 +122,18 @@ class ToolState {
   public recalculate() {
     if (InputManager.keys.space) {
       if (InputManager.keys.ctrl) {
-        this.active = 'zoom';
+        this.active = "zoom";
       } else {
-        this.active = 'pan';
+        this.active = "pan";
       }
     } else if (InputManager.keys.ctrl) {
       if (
-        (SceneManager.state.workspace !== 'whiteboard' && this.m_current === 'select') ||
-        this.m_current === 'pen'
+        (SceneManager.state.workspace !== "whiteboard" &&
+          this.m_current === "select") ||
+        this.m_current === "pen"
       )
-        this.active = 'directSelect';
-      else this.active = 'select';
+        this.active = "directSelect";
+      else this.active = "select";
     } else {
       this.active = this.current;
     }
@@ -116,12 +143,13 @@ class ToolState {
     this.m_data[this.m_active] = {};
   }
 
-  public onPointerDown(override?: 'scale' | 'rotate') {
+  public onPointerDown(override?: "scale" | "rotate") {
     let active = this.m_active;
 
-    if (override && (override === 'scale' || override === 'rotate')) active = override;
+    if (override && (override === "scale" || override === "rotate"))
+      active = override;
 
-    if (this.m_last !== active && active !== 'pan' && active !== 'zoom')
+    if (this.m_last !== active && active !== "pan" && active !== "zoom")
       this.m_data[this.m_last] = {};
 
     const callbacks = this.m_callbacks[active]();

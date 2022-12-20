@@ -1,7 +1,7 @@
 #include "common.h"
 #include "editor/editor.h"
 #include "renderer/renderer.h"
-#include "input/input_manager.h"
+#include "editor/input/input_manager.h"
 
 #include <emscripten/bind.h>
 
@@ -39,6 +39,12 @@ extern "C" {
 
   bool EMSCRIPTEN_KEEPALIVE on_clipboard_event(int event) {
     return InputManager::on_clipboard_event((InputManager::ClipboardEvent)event);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE set_tool(int tool) {
+    if (tool < 0 || tool >= static_cast<int>(Tool::ToolType::None)) return;
+
+    InputManager::set_tool((Tool::ToolType)tool);
   }
 }
 

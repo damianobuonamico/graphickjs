@@ -32,6 +32,8 @@ interface Api {
   _on_wheel_event(target: number, deltaX: number, deltaY: number): boolean;
   _on_clipboard_event(event: number): boolean;
 
+  _set_tool(type: number): void;
+
   _to_heap(array: Float32Array): Pointer;
   _free(pointer: Pointer): void;
 }

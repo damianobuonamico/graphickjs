@@ -89,7 +89,6 @@ vec2 Viewport::scene_to_client(const vec2& position) {
 }
 
 vec2 Viewport::client_to_scene(const vec2& position, float zoom_override) {
-  console::log(m_offset);
   return (position - m_offset) / zoom_override - m_position;
 }
 
