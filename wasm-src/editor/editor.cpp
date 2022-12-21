@@ -15,6 +15,7 @@ int render_callback(double time, void* user_data) {
 
 Editor* Editor::s_instance = nullptr;
 Viewport Editor::viewport{};
+Scene Editor::scene{};
 
 void Editor::init() {
   // TODO: Editor reinitialization
@@ -25,7 +26,7 @@ void Editor::init() {
   Renderer::init();
   CommandHistory::init();
 
-  get()->m_scene.load();
+  scene.load();
 }
 
 void Editor::shutdown() {
@@ -44,7 +45,7 @@ void Editor::render() {
 void Editor::render_frame(double time) {
   Renderer::begin_frame(viewport.position(), viewport.zoom());
 
-  m_scene.render();
+  scene.render();
 
   Renderer::end_frame();
 }

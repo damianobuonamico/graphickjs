@@ -1,26 +1,18 @@
 #pragma once
 
-// #include <functional>
-
 class Tool {
 public:
-  // struct ReturnValue {
-  //   std::function<void(void)> on_pointer_move;
-  //   std::function<void(void)> on_pointer_up;
-
-  //   // TODO: event argument 
-  //   std::function<void(void)> on_key;
-  // };
-
   enum class ToolType {
     Pan = 0,
     Zoom = 1,
+    Pencil = 2,
     None
   };
 
   enum Category {
     CategoryNone = 0,
     CategoryDirect = 1 << 0,
+    CategoryImmediate = 1 << 1,
   };
 public:
   Tool() = delete;

@@ -3,6 +3,7 @@
 #include "tool.h"
 #include "tools/pan_tool.h"
 #include "tools/zoom_tool.h"
+#include "tools/pencil_tool.h"
 
 class ToolState {
 public:
@@ -28,8 +29,9 @@ public:
   void recalculate_active();
 private:
   Tool* m_tools[static_cast<int>(Tool::ToolType::None)] = {
-   new PanTool(),
-   new ZoomTool(),
+    new PanTool(),
+    new ZoomTool(),
+    new PencilTool(),
   };
 
   Tool::ToolType m_current;

@@ -19,9 +19,6 @@ void Shader::set_uniform(const std::string& name, const mat3& value) {
 void Shader::set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset) {
   GLuint location = get_attribute_location(name);
 
-  console::log(name);
-  console::log(location);
-
   glVertexAttribPointer(location, size, type, normalized, stride, offset);
   glEnableVertexAttribArray(location);
 }
@@ -40,8 +37,8 @@ Shader::ShaderSource Shader::parse_source(const std::string& source) {
     shader_source.fragment = source.substr(fragment_offset + 10);
   }
 
-  printf("%s", shader_source.vertex.c_str());
-  printf("%s", shader_source.fragment.c_str());
+  // printf("%s", shader_source.vertex.c_str());
+  // printf("%s", shader_source.fragment.c_str());
 
   return shader_source;
 }

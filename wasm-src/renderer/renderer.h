@@ -2,7 +2,7 @@
 
 #include "shader_manager.h"
 #include "../math/vec2.h"
-#include "geometry.h"
+#include "geometry/geometry.h"
 
 class Renderer {
 public:

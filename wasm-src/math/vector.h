@@ -16,4 +16,12 @@ float length(const vec2& v);
 float length(const vec3& v);
 float length(const vec4& v);
 
+float distance(const vec2& v1, const vec2& v2);
+float distance(const vec3& v1, const vec3& v2);
+float distance(const vec4& v1, const vec4& v2);
+
+vec2 lerp(const vec2& v1, const vec2& v2, float t);
+vec3 lerp(const vec3& v1, const vec3& v2, float t);
+vec4 lerp(const vec4& v1, const vec4& v2, float t);
+
 #include "vector.inl"

@@ -63,7 +63,7 @@ bool InputManager::on_keyboard_event(
     keys.space = event == KeyboardEvent::Down;
   }
 
-  if (keys.ctrl_state_changed || keys.space_state_changed) {
+  if (!pointer.down && (keys.ctrl_state_changed || keys.space_state_changed)) {
     instance->m_tool_state.recalculate_active();
   }
 
@@ -114,11 +114,9 @@ void InputManager::set_keys_state(bool alt, bool ctrl, bool shift) {
 }
 
 bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, int x, int y) {
-  console::log("PointerDown");
   pointer.target = target;
 
-  // TODO: fix canvas target
-  // if (target != PointerTarget::Canvas) return false;
+  if (target != PointerTarget::Canvas) return false;
 
   vec2 current_position = { (float)x, (float)y };
 
@@ -137,6 +135,10 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, i
 
   m_abort = false;
 
+  if (pointer.button == PointerButton::Middle) {
+    m_tool_state.set_active(keys.ctrl_state_changed ? Tool::ToolType::Zoom : Tool::ToolType::Pan);
+  }
+
   m_tool_state.on_pointer_down();
 
   Editor::render();
@@ -145,9 +147,7 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, i
 }
 
 bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
-  console::log("PointerMove");
-  // TODO: fix canvas target
-  // if (pointer.target != PointerTarget::Canvas && target != PointerTarget::Canvas) return false;
+  if (pointer.target != PointerTarget::Canvas && target != PointerTarget::Canvas) return false;
 
   vec2 current_position = { (float)x, (float)y };
 
@@ -162,6 +162,7 @@ bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
 
   if (!m_moving && pointer.down) {
     if (
+      m_tool_state.active().is_in_category(Tool::CategoryImmediate) ||
       length(pointer.client.delta) > INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)m_pointer_type]
       ) {
       m_moving = true;
@@ -182,7 +183,6 @@ bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
 }
 
 bool InputManager::on_pointer_up() {
-  console::log("PointerUp");
   if (!pointer.down) return false;
 
   pointer.target = PointerTarget::Other;
@@ -192,34 +192,35 @@ bool InputManager::on_pointer_up() {
 
   m_tool_state.on_pointer_up();
 
+  if (pointer.button == PointerButton::Middle) {
+    m_tool_state.set_active(m_tool_state.current().type());
+  } else {
+    m_tool_state.recalculate_active();
+  }
+
   Editor::render();
 
   return false;
 }
 
 bool InputManager::on_pointer_enter() {
-  console::log("PointerEnter");
   pointer.inside = true;
   return false;
 }
 
 bool InputManager::on_pointer_leave() {
-  console::log("PointerLeave");
   pointer.inside = false;
   return false;
 }
 
 bool InputManager::on_key_down() {
-  console::log("KeyDown");
   return false;
 }
 bool InputManager::on_key_up() {
-  console::log("KeyUp");
   return false;
 }
 
 bool InputManager::on_resize(int width, int height, int offset_x, int offset_y) {
-  console::log("Resize");
   vec2 size = vec2{ (float)width, (float)height };
   vec2 offset = vec2{ (float)offset_x, (float)offset_y };
 
@@ -231,8 +232,6 @@ bool InputManager::on_resize(int width, int height, int offset_x, int offset_y) 
   return false;
 }
 bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y) {
-  console::log("Wheel");
-
   if (!keys.ctrl) return false;
 
   Editor::viewport.zoom_to(map(-delta_y, -100.0f, 100.0f, 1.0f - ZOOM_STEP / 10.0f, 1.0f + ZOOM_STEP / 10.0f) * Editor::viewport.zoom(), pointer.client.position);
@@ -241,14 +240,11 @@ bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y) 
   return true;
 }
 bool InputManager::on_clipboard_copy() {
-  console::log("ClipboardCopy");
   return false;
 }
 bool InputManager::on_clipboard_paste() {
-  console::log("ClipboardPaste");
   return false;
 }
 bool InputManager::on_clipboard_cut() {
-  console::log("ClipboardCut");
   return false;
 }

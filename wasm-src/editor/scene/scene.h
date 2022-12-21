@@ -14,6 +14,10 @@ public:
 
   ~Scene() = default;
 
+  void add_entity(const std::shared_ptr<Entity>& entity) {
+    m_children.insert({ entity->id, entity });
+  }
+private:
   void load() {
     m_children.insert({ {}, std::make_shared<Entity>() });
   }
@@ -25,4 +29,6 @@ public:
   }
 private:
   OrderedMap<UUID, std::shared_ptr<Entity>> m_children;
+
+  friend class Editor;
 };

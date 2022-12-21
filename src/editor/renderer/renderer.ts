@@ -78,6 +78,10 @@ abstract class Renderer {
     this.m_canvas.wasmCanvas = canvas;
   }
 
+  static get wasmCanvas() {
+    return this.m_canvas.wasmCanvas;
+  }
+
   static beginFrame(options: {
     color?: string;
     zoom?: number;

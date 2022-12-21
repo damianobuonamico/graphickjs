@@ -67,13 +67,15 @@ class ToolState {
 
     // TODO: fix
     window._set_tool = (type: number) => {
-      console.log(type);
       switch (type) {
         case 0:
           this.m_setTool("pan");
           break;
         case 1:
           this.m_setTool("zoom");
+          break;
+        case 2:
+          this.m_setTool("pencil");
           break;
       }
     };
@@ -91,6 +93,9 @@ class ToolState {
         break;
       case "zoom":
         API._set_tool(1);
+        break;
+      case "pencil":
+        API._set_tool(2);
         break;
     }
     // this.m_current = tool;

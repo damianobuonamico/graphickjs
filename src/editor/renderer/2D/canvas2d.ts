@@ -38,6 +38,10 @@ class Canvas2D extends CanvasBackend2D {
     this.m_primaryColor = color;
   }
 
+  get wasmCanvas() {
+    return this.m_wasmCanvas;
+  }
+
   set wasmCanvas(canvas: HTMLCanvasElement) {
     this.m_wasmCanvas = canvas;
   }
