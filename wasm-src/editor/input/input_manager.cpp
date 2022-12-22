@@ -69,9 +69,9 @@ bool InputManager::on_keyboard_event(
 
   switch (event) {
   case KeyboardEvent::Down:
-    return instance->on_key_down();
+    return instance->on_key_down(key);
   case KeyboardEvent::Up:
-    return instance->on_key_up();
+    return instance->on_key_up(key);
   }
 
   return false;
@@ -139,6 +139,8 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, i
     m_tool_state.set_active(keys.ctrl_state_changed ? Tool::ToolType::Zoom : Tool::ToolType::Pan);
   }
 
+  CommandHistory::end_batch();
+
   m_tool_state.on_pointer_down();
 
   Editor::render();
@@ -192,6 +194,8 @@ bool InputManager::on_pointer_up() {
 
   m_tool_state.on_pointer_up();
 
+  CommandHistory::end_batch();
+
   if (pointer.button == PointerButton::Middle) {
     m_tool_state.set_active(m_tool_state.current().type());
   } else {
@@ -213,10 +217,18 @@ bool InputManager::on_pointer_leave() {
   return false;
 }
 
-bool InputManager::on_key_down() {
+bool InputManager::on_key_down(KeyboardKey key) {
+  if (key == KeyboardKey::Z && keys.ctrl) {
+    if (keys.shift) {
+      CommandHistory::redo();
+    } else {
+      CommandHistory::undo();
+    }
+  }
+
   return false;
 }
-bool InputManager::on_key_up() {
+bool InputManager::on_key_up(KeyboardKey key) {
   return false;
 }
 

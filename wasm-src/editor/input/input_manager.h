@@ -111,8 +111,8 @@ private:
   bool on_pointer_enter();
   bool on_pointer_leave();
 
-  bool on_key_down();
-  bool on_key_up();
+  bool on_key_down(KeyboardKey key);
+  bool on_key_up(KeyboardKey key);
 
   bool on_resize(int x, int y, int offset_x, int offset_y);
   bool on_wheel(PointerTarget target, float delta_x, float delta_y);
