@@ -22,9 +22,9 @@ private:
     m_children.insert({ {}, std::make_shared<Entity>() });
   }
 
-  void render() {
+  void render(float zoom) {
     for (const auto& [uuid, entity] : m_children) {
-      entity->render();
+      entity->render(zoom);
     }
   }
 private:

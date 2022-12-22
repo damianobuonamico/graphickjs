@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 EMCC_PATH = '%EMSDK%/upstream/emscripten/emcc'
-OPTIMIZE = False
+OPTIMIZE = True
 
 output = '..\src\wasm\editor.js'
 files = []

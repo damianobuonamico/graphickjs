@@ -20,8 +20,50 @@ float distance(const vec2& v1, const vec2& v2);
 float distance(const vec3& v1, const vec3& v2);
 float distance(const vec4& v1, const vec4& v2);
 
+float squared_distance(const vec2& v1, const vec2& v2);
+float squared_distance(const vec3& v1, const vec3& v2);
+float squared_distance(const vec4& v1, const vec4& v2);
+
 vec2 lerp(const vec2& v1, const vec2& v2, float t);
 vec3 lerp(const vec3& v1, const vec3& v2, float t);
 vec4 lerp(const vec4& v1, const vec4& v2, float t);
+
+vec2 midpoint(const vec2& v1, const vec2& v2);
+vec3 midpoint(const vec3& v1, const vec3& v2);
+vec4 midpoint(const vec4& v1, const vec4& v2);
+
+vec2 normalize(const vec2& v);
+vec3 normalize(const vec3& v);
+vec4 normalize(const vec4& v);
+vec2& normalize(const vec2& v, vec2& out);
+vec3& normalize(const vec3& v, vec3& out);
+vec4& normalize(const vec4& v, vec4& out);
+
+vec2 normalize_length(const vec2& v, float t);
+vec3 normalize_length(const vec3& v, float t);
+vec4 normalize_length(const vec4& v, float t);
+vec2& normalize_length(const vec2& v, float t, vec2& out);
+vec3& normalize_length(const vec3& v, float t, vec3& out);
+vec4& normalize_length(const vec4& v, float t, vec4& out);
+
+vec2 negate(const vec2& v);
+vec3 negate(const vec3& v);
+vec4 negate(const vec4& v);
+vec2& negate(const vec2& v, vec2& out);
+vec3& negate(const vec3& v, vec3& out);
+vec4& negate(const vec4& v, vec4& out);
+
+bool is_zero(const vec2& v);
+bool is_zero(const vec3& v);
+bool is_zero(const vec4& v);
+
+float dot(const vec2& v1, const vec2& v2);
+float dot(const vec3& v1, const vec3& v2);
+float dot(const vec4& v1, const vec4& v2);
+
+float angle(const vec2& v1, const vec2& v2);
+float atan2(const vec2& v1, const vec2& v2);
+
+vec2 rotate(const vec2& v, const vec2& c, float t);
 
 #include "vector.inl"
