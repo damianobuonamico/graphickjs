@@ -91,3 +91,14 @@ build/
 
 # VSCode files
 .vscode/
+
+# VisualStudio files
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+
+# Binaries
+bin/
+bin-int/
