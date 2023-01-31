@@ -179,15 +179,15 @@ constexpr vec3 operator/(const vec3& v1, const vec3& v2) {
 }
 
 constexpr vec3 operator%(const vec3& v, float scalar) {
-  return vec3((int)v.x % (int)scalar, (int)v.y % (int)scalar, (int)v.z % (int)scalar);
+  return vec3(std::fmod(v.x, scalar), std::fmod(v.y, scalar), std::fmod(v.z, scalar));
 }
 
 constexpr vec3 operator%(float scalar, const vec3& v) {
-  return vec3((int)scalar % (int)v.x, (int)scalar % (int)v.y, (int)scalar % (int)v.z);
+  return vec3(std::fmod(scalar, v.x), std::fmod(scalar, v.y), std::fmod(scalar, v.z));
 }
 
 constexpr vec3 operator%(const vec3& v1, const vec3& v2) {
-  return vec3((int)v1.x % (int)v2.x, (int)v1.y % (int)v2.y, (int)v1.z % (int)v2.z);
+  return vec3(std::fmod(v1.x, v2.x), std::fmod(v1.y, v2.y), std::fmod(v1.z, v2.z));
 }
 
 /* -- Boolean operators -- */

@@ -3,6 +3,7 @@
 
 #include "../wasm-src/math/mat3.h"
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 int main() {
@@ -26,12 +27,14 @@ int main() {
   }
 
   glfwMakeContextCurrent(window);
+  gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-  while (true) {
+  while (!glfwWindowShouldClose(window)) {
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
     glfwPollEvents();
     glfwSwapBuffers(window);
   }
-
-  printf("Hello, world!\n");
-  printf("Hello, world!\n");
+  
+  glfwTerminate();
 }

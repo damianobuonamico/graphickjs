@@ -2,8 +2,7 @@ workspace "debug"
   architecture "x64"
   startproject "graphick-debug"
 
-  configurations
-  {
+  configurations {
     "Debug",
     "Release",
     "Dist"
@@ -13,8 +12,10 @@ workspace "debug"
   
   IncludeDir = {}
   IncludeDir["glfw"] = "graphick-debug/lib/glfw/include"
+  IncludeDir["glad"] = "graphick-debug/lib/glad/include"
   
   include "graphick-debug/lib/glfw"
+  include "graphick-debug/lib/glad"
   
   project "graphick-debug"
   kind "ConsoleApp"
@@ -27,16 +28,15 @@ workspace "debug"
   objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
 
-  files
-  {
+  files {
     "%{prj.name}/src/**.h",
     "%{prj.name}/src/**.cpp",
   }
 
-  includedirs
-  {
+  includedirs {
     "%{prj.name}/src",
     "%{IncludeDir.glfw}",
+    "%{IncludeDir.glad}",
     "../../editor",
     "../../history",
     "../../math",
@@ -45,22 +45,20 @@ workspace "debug"
     "../../values",
   }
 
-  links
-  {
-    "GLFW",
+  links {
+    "glfw",
+    "glad",
     "opengl32.lib"
   }
 
-  defines
-  {
+  defines {
     "GLFW_INCLUDE_NONE"
   }
 
   filter "system:windows"
     systemversion "latest"
 
-    defines
-    {
+    defines {
       "GK_PLATFORM_WINDOWS"
     }
 

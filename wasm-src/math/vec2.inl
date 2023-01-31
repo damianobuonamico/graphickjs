@@ -164,15 +164,15 @@ constexpr vec2 operator/(const vec2& v1, const vec2& v2) {
 }
 
 constexpr vec2 operator%(const vec2& v, float scalar) {
-  return vec2((int)v.x % (int)scalar, (int)v.y % (int)scalar);
+  return vec2(std::fmod(v.x, scalar), std::fmod(v.y, scalar));
 }
 
 constexpr vec2 operator%(float scalar, const vec2& v) {
-  return vec2((int)scalar % (int)v.x, (int)scalar % (int)v.y);
+  return vec2(std::fmod(scalar, v.x), std::fmod(scalar, v.y));
 }
 
 constexpr vec2 operator%(const vec2& v1, const vec2& v2) {
-  return vec2((int)v1.x % (int)v2.x, (int)v1.y % (int)v2.y);
+  return vec2(std::fmod(v1.x, v2.x), std::fmod(v1.y, v2.y));
 }
 
 /* -- Boolean operators -- */
