@@ -18,9 +18,9 @@ public:
 
   ~WobbleSmoother() = default;
 
-  static void reset(const WobbleSmootherParams& params, const vec2& position, float time);
-  static void reset(const vec2& position, float time);
-  static vec2 update(const vec2& position, float time);
+  static void reset(const WobbleSmootherParams& params, const vec2& position, double time);
+  static void reset(const vec2& position, double time);
+  static vec2 update(const vec2& position, double time);
 private:
   static float normalize(float value);
 private:
@@ -28,14 +28,14 @@ private:
     vec2 position = { 0.0f, 0.0f };
     vec2 weighted_position = { 0.0f, 0.0f };
     float distance = 0.0f;
-    float duration = 0.0f;
-    float time = 0.0f;
+    double duration = 0.0f;
+    double time = 0.0f;
   };
 
   static std::deque<Sample> s_samples;
   static vec2 s_weighted_position_sum;
   static float s_distance_sum;
-  static float s_duration_sum;
+  static double s_duration_sum;
 
   static WobbleSmootherParams s_params;
 };

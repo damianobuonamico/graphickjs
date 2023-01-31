@@ -20,7 +20,7 @@ public:
     console::log("FreehandEntity destroyed");
   }
 
-  void add_point(const vec2& position, float pressure, float time) {
+  void add_point(const vec2& position, float pressure, double time) {
     vec2 smoothed_position = WobbleSmoother::update(m_position + position, time);
 
     m_points[m_points.size() - 1].position = smoothed_position;

@@ -2,6 +2,7 @@
 
 #include "input_manager.h"
 
+#ifdef EMSCRIPTEN
 #include <emscripten.h>
 
 #ifndef __INTELLISENSE__
@@ -12,8 +13,12 @@ EM_JS(void, update_tool_ui, (int type), {
 void update_tool_ui(int type) {}
 #endif
 
+#else
+void update_tool_ui(int type) {}
+#endif
+
 ToolState::ToolState()
-  :m_active(Tool::ToolType::Pan), m_current(Tool::ToolType::Pan), m_last_tool(m_current) {}
+  :m_active(Tool::ToolType::Pencil), m_current(Tool::ToolType::Pencil), m_last_tool(m_current) {}
 
 ToolState::~ToolState() {
   for (auto tool : m_tools) {

@@ -2,8 +2,12 @@
 
 #include "../common.h"
 
+#ifdef EMSCRIPTEN
 #include <emscripten/html5.h>
 #include <GLES2/gl2.h>
+#else
+#include <glad/glad.h>
+#endif
 
 Renderer* Renderer::s_instance = nullptr;
 
@@ -15,6 +19,7 @@ void Renderer::init() {
   assert(!s_instance);
   s_instance = new Renderer();
 
+#ifdef EMSCRIPTEN
   EmscriptenWebGLContextAttributes attr;
 
   // attr.alpha = false;
@@ -25,6 +30,7 @@ void Renderer::init() {
 
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
   emscripten_webgl_make_context_current(ctx);
+#endif
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -56,7 +62,7 @@ void Renderer::shutdown() {
 void Renderer::resize(const vec2& size) {
   get()->m_size = size;
 
-  glViewport(0, 0, size.x, size.y);
+  glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
 }
 
 void Renderer::begin_frame(const vec2& position, float zoom) {

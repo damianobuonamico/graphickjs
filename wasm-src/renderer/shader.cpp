@@ -27,18 +27,20 @@ Shader::ShaderSource Shader::parse_source(const std::string& source) {
   size_t vertex_offset = source.find("#vertex\n");
   size_t fragment_offset = source.find("#fragment\n");
 
-  ShaderSource shader_source;
+
+#ifdef EMSCRIPTEN
+  ShaderSource shader_source{};
+#else
+  ShaderSource shader_source{ "#version 330 core\n", "#version 330 core\n" };
+#endif
 
   if (vertex_offset > fragment_offset) {
-    shader_source.vertex = source.substr(vertex_offset + 8);
-    shader_source.fragment = source.substr(10, vertex_offset - 10);
+    shader_source.vertex.append(source.substr(vertex_offset + 8));
+    shader_source.fragment.append(source.substr(10, vertex_offset - 10));
   } else {
-    shader_source.vertex = source.substr(8, fragment_offset - 8);
-    shader_source.fragment = source.substr(fragment_offset + 10);
+    shader_source.vertex.append(source.substr(8, fragment_offset - 8));
+    shader_source.fragment.append(source.substr(fragment_offset + 10));
   }
-
-  // printf("%s", shader_source.vertex.c_str());
-  // printf("%s", shader_source.fragment.c_str());
 
   return shader_source;
 }

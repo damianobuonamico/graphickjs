@@ -4,7 +4,11 @@
 #include "../math/mat3.h"
 
 #include <unordered_map>
+#ifdef EMSCRIPTEN
 #include <GLES2/gl2.h>
+#else
+#include <glad/glad.h>
+#endif
 
 class Shader {
 public:

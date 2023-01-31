@@ -6,28 +6,28 @@
 std::deque<WobbleSmoother::Sample> WobbleSmoother::s_samples{};
 vec2 WobbleSmoother::s_weighted_position_sum = { 0.0f, 0.0f };
 float WobbleSmoother::s_distance_sum = 0.0f;
-float WobbleSmoother::s_duration_sum = 0.0f;
+double WobbleSmoother::s_duration_sum = 0.0;
 WobbleSmoother::WobbleSmootherParams WobbleSmoother::s_params{};
 
-void WobbleSmoother::reset(const WobbleSmootherParams& params, const vec2& position, float time) {
+void WobbleSmoother::reset(const WobbleSmootherParams& params, const vec2& position, double time) {
   s_params = params;
 
   s_samples.clear();
   s_weighted_position_sum = { 0.0f, 0.0f };
   s_distance_sum = 0.0f;
-  s_duration_sum = 0.0f;
+  s_duration_sum = 0.0;
 
   s_samples.push_back({ position, {0.0f, 0.0f}, 0.0f, 0.0f, time });
 }
 
-void WobbleSmoother::reset(const vec2& position, float time) {
+void WobbleSmoother::reset(const vec2& position, double time) {
   reset({}, position, time);
 }
 
-vec2 WobbleSmoother::update(const vec2& position, float time) {
-  float delta_time = time - s_samples.back().time;
+vec2 WobbleSmoother::update(const vec2& position, double time) {
+  double delta_time = time - s_samples.back().time;
 
-  s_samples.push_back({ position, position * delta_time, distance(position, s_samples.back().position), delta_time, time });
+  s_samples.push_back({ position, position * (float)delta_time, distance(position, s_samples.back().position), delta_time, time });
 
   s_weighted_position_sum += s_samples.back().weighted_position;
   s_distance_sum += s_samples.back().distance;
@@ -45,8 +45,8 @@ vec2 WobbleSmoother::update(const vec2& position, float time) {
     return position;
   }
 
-  vec2 average_position = s_weighted_position_sum / s_duration_sum;
-  float average_speed = s_distance_sum / s_duration_sum;
+  vec2 average_position = s_weighted_position_sum / (float)s_duration_sum;
+  float average_speed = s_distance_sum / (float)s_duration_sum;
 
   return lerp(average_position, position, normalize(average_speed));
 }

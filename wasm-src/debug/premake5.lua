@@ -29,8 +29,12 @@ workspace "debug"
 
 
   files {
-    "%{prj.name}/src/**.h",
-    "%{prj.name}/src/**.cpp",
+    "../**.h",
+    "../**.cpp",
+  }
+
+  removefiles {
+    "../export.cpp"
   }
 
   includedirs {

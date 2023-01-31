@@ -17,7 +17,7 @@ uint32_t generate_round_cap(
   float cap_angle = MATH_PI;
 
   float increment = 2.0f * std::acos(1 - GEOMETRY_CURVE_ERROR / (radius * zoom));
-  int sides = std::abs(cap_angle) / increment;
+  int sides = (int)(std::abs(cap_angle) / increment);
   increment = cap_angle / sides;
 
   if (!sides || sides < 1) {
@@ -77,7 +77,7 @@ uint32_t generate_round_join(
   if (std::abs(join_angle) < GEOMETRY_MAX_INTERSECTION_ERROR) join_angle = MATH_PI;
 
   float increment = 2.0f * std::acos(1 - GEOMETRY_CURVE_ERROR / (radius * zoom));
-  int sides = std::abs(join_angle) / increment;
+  int sides = (int)(std::abs(join_angle) / increment);
   increment = join_angle / sides;
 
   if (!sides || sides < 1) {
@@ -119,7 +119,7 @@ uint32_t generate_round_join(
 Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, float thickness, float zoom) {
   using Point = FreehandPathPoint;
 
-  const float totpoints = points.size();
+  const size_t totpoints = points.size();
 
   Geometry geometry{};
 

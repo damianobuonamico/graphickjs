@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#define MATH_PI 3.14159265358979323846
+#define MATH_PI 3.14159265358979323846f
 
 float round(float t, float decimals) noexcept;
 float map(float t, float old_min, float old_max, float new_min, float new_max);

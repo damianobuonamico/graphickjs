@@ -10,7 +10,7 @@ using namespace emscripten;
 extern "C" {
   bool EMSCRIPTEN_KEEPALIVE on_pointer_event(
     int target, int event, int type, int button,
-    int x, int y, float pressure, float time_stamp,
+    float x, float y, float pressure, double time_stamp,
     bool alt, bool ctrl, bool shift
   ) {
     return InputManager::on_pointer_event(

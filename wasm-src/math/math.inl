@@ -24,5 +24,5 @@ inline float clamp(float t, float min, float max) {
 }
 
 inline float sign(float t) {
-  return (t > 0) - (t < 0);
+  return (float)((t > 0) - (t < 0));
 }

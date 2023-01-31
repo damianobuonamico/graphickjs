@@ -24,7 +24,7 @@ void InputManager::shutdown() {
 
 bool InputManager::on_pointer_event(
   PointerTarget target, PointerEvent event, PointerType type, PointerButton button,
-  int x, int y, float pressure, float time_stamp,
+  float x, float y, float pressure, double time_stamp,
   bool alt, bool ctrl, bool shift
 ) {
   get()->set_keys_state(alt, ctrl, shift);
@@ -77,11 +77,11 @@ bool InputManager::on_keyboard_event(
   return false;
 }
 
-bool InputManager::on_resize_event(int x, int y, int offset_x, int offset_y) {
-  return get()->on_resize(x, y, offset_x, offset_y);
+bool InputManager::on_resize_event(int width, int height, int offset_x, int offset_y) {
+  return get()->on_resize(width, height, offset_x, offset_y);
 }
 
-bool InputManager::on_wheel_event(PointerTarget target, int delta_x, int delta_y) {
+bool InputManager::on_wheel_event(PointerTarget target, float delta_x, float delta_y) {
   return get()->on_wheel(target, delta_x, delta_y);
 }
 
@@ -113,12 +113,12 @@ void InputManager::set_keys_state(bool alt, bool ctrl, bool shift) {
   keys.shift = shift;
 }
 
-bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, int x, int y) {
+bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, float x, float y) {
   pointer.target = target;
 
   if (target != PointerTarget::Canvas) return false;
 
-  vec2 current_position = { (float)x, (float)y };
+  vec2 current_position = { x, y };
 
   pointer.client.movement = { 0.0f, 0.0f };
   pointer.client.position = current_position;
@@ -148,10 +148,10 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, i
   return false;
 }
 
-bool InputManager::on_pointer_move(PointerTarget target, int x, int y) {
+bool InputManager::on_pointer_move(PointerTarget target, float x, float y) {
   if (pointer.target != PointerTarget::Canvas && target != PointerTarget::Canvas) return false;
 
-  vec2 current_position = { (float)x, (float)y };
+  vec2 current_position = { x, y };
 
   pointer.client.movement = current_position - pointer.client.position;
   pointer.client.position = current_position;

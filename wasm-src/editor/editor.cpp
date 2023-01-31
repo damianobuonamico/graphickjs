@@ -6,7 +6,10 @@
 #include "../utils/console.h"
 
 #include <functional>
+
+#ifdef EMSCRIPTEN
 #include <emscripten/html5.h>
+#endif
 
 int render_callback(double time, void* user_data) {
   Editor::get()->render_frame(time);
@@ -39,7 +42,11 @@ void Editor::shutdown() {
 
 
 void Editor::render() {
+#ifdef EMSCRIPTEN
   emscripten_request_animation_frame(render_callback, nullptr);
+#else
+  render_callback(0, nullptr);
+#endif
 }
 
 void Editor::render_frame(double time) {

@@ -1,14 +1,352 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{61705900-4DFC-870B-B6AA-880BA255880B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\editor">
+      <UniqueIdentifier>{976A2469-03D5-D8DF-4C13-8A85B8BCB634}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\editor\input">
+      <UniqueIdentifier>{F67F322E-620B-A0F2-6B1C-23E7D726FCF2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\editor\input\tools">
+      <UniqueIdentifier>{1675601E-82E1-1B19-4BD5-B376B7003E81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\editor\scene">
+      <UniqueIdentifier>{143DE12E-80C8-4EF3-89D9-D1E7F5E3AAF3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\editor\scene\entities">
+      <UniqueIdentifier>{68E80414-540D-5494-7D58-392469DC52B2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\history">
+      <UniqueIdentifier>{6234FF80-4EEC-40CE-B7F3-192AA3CADBBE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\history\commands">
+      <UniqueIdentifier>{037A61E8-6FDB-3EF6-F848-85A864A975B5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\math">
+      <UniqueIdentifier>{FAC59347-66A5-12E3-6FBD-9DB9DB1B7944}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\renderer">
+      <UniqueIdentifier>{474DBE9A-B302-3790-3CF7-3067A8AB2D94}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\renderer\geometry">
+      <UniqueIdentifier>{A2F6FCB7-8E85-8681-37A4-9A7C23129727}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\utils">
+      <UniqueIdentifier>{A186A73A-8D53-0246-B66C-F0EDA29837D4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\values">
+      <UniqueIdentifier>{E07B9790-4CE6-4B07-9524-FDAC01CE295C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib">
+      <UniqueIdentifier>{3C8C880B-A895-887C-3111-9F7C9D19947C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glad">
+      <UniqueIdentifier>{C36442A2-AF31-9DAD-D84A-8B55C476D23B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glad\include">
+      <UniqueIdentifier>{369FBD15-2298-DC67-4BCA-C1EC3722BC73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glad\include\KHR">
+      <UniqueIdentifier>{AA5861ED-96E7-EAB6-3F06-FFB12B74FB5C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glad\include\glad">
+      <UniqueIdentifier>{FD639C99-69D0-5794-32C4-EFF19EEF79FC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glfw">
+      <UniqueIdentifier>{7B6542A2-6732-9DAD-904B-8B557C77D23B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glfw\deps">
+      <UniqueIdentifier>{761CFF16-E2DC-7A4D-AB17-C4CA1797BF29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glfw\deps\glad">
+      <UniqueIdentifier>{3D299EB5-290D-5F0B-926D-595E7E70498D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glfw\deps\mingw">
+      <UniqueIdentifier>{E776CE69-53D8-AB77-DC45-F22948A6E236}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glfw\deps\vs2008">
+      <UniqueIdentifier>{D8DC2EB9-C46B-B882-6D8A-CC7D59F8C828}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glfw\include">
+      <UniqueIdentifier>{EED72ECF-DAD0-4D21-0303-33A6EF5A2D2D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glfw\include\GLFW">
+      <UniqueIdentifier>{EDB7B32F-5924-6F2A-2218-07888E439192}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\glfw\src">
+      <UniqueIdentifier>{1269BA1F-FECB-49C4-A751-827A93931547}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src">
       <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\test.h" />
+    <ClInclude Include="..\..\common.h">
+      <Filter>..</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\editor.h">
+      <Filter>..\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\input\input_manager.h">
+      <Filter>..\editor\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\input\keys.h">
+      <Filter>..\editor\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\input\tool.h">
+      <Filter>..\editor\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\input\tool_state.h">
+      <Filter>..\editor\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\input\tools\pan_tool.h">
+      <Filter>..\editor\input\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\input\tools\pencil_tool.h">
+      <Filter>..\editor\input\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\input\tools\zoom_tool.h">
+      <Filter>..\editor\input\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\input\wobble_smoother.h">
+      <Filter>..\editor\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\scene\entities\freehand_entity.h">
+      <Filter>..\editor\scene\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\scene\entity.h">
+      <Filter>..\editor\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\scene\scene.h">
+      <Filter>..\editor\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\editor\viewport.h">
+      <Filter>..\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\history\command.h">
+      <Filter>..\history</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\history\command_batch.h">
+      <Filter>..\history</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\history\command_history.h">
+      <Filter>..\history</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\history\commands\ordered_map_commands.h">
+      <Filter>..\history\commands</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\history\commands\vec2_commands.h">
+      <Filter>..\history\commands</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\math\box.h">
+      <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\math\mat3.h">
+      <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\math\math.h">
+      <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\math\matrix.h">
+      <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\math\vec2.h">
+      <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\math\vec3.h">
+      <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\math\vec4.h">
+      <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\math\vector.h">
+      <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer\geometry\geometry.h">
+      <Filter>..\renderer\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer\geometry\stroker.h">
+      <Filter>..\renderer\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer\geometry\vertex.h">
+      <Filter>..\renderer\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer\renderer.h">
+      <Filter>..\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer\shader.h">
+      <Filter>..\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer\shader_manager.h">
+      <Filter>..\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\console.h">
+      <Filter>..\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\defines.h">
+      <Filter>..\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\uuid.h">
+      <Filter>..\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\values\ordered_map.h">
+      <Filter>..\values</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glad\include\KHR\khrplatform.h">
+      <Filter>lib\glad\include\KHR</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glad\include\glad\glad.h">
+      <Filter>lib\glad\include\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\getopt.h">
+      <Filter>lib\glfw\deps</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\glad\gl.h">
+      <Filter>lib\glfw\deps\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\glad\gles2.h">
+      <Filter>lib\glfw\deps\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\glad\vulkan.h">
+      <Filter>lib\glfw\deps\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\linmath.h">
+      <Filter>lib\glfw\deps</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\mingw\_mingw_dxhelper.h">
+      <Filter>lib\glfw\deps\mingw</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\mingw\dinput.h">
+      <Filter>lib\glfw\deps\mingw</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\mingw\xinput.h">
+      <Filter>lib\glfw\deps\mingw</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\nuklear.h">
+      <Filter>lib\glfw\deps</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\nuklear_glfw_gl2.h">
+      <Filter>lib\glfw\deps</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\stb_image_write.h">
+      <Filter>lib\glfw\deps</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\tinycthread.h">
+      <Filter>lib\glfw\deps</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\deps\vs2008\stdint.h">
+      <Filter>lib\glfw\deps\vs2008</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\include\GLFW\glfw3.h">
+      <Filter>lib\glfw\include\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\include\GLFW\glfw3native.h">
+      <Filter>lib\glfw\include\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\cocoa_joystick.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\cocoa_platform.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\cocoa_time.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\internal.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\linux_joystick.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\mappings.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\null_joystick.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\null_platform.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\platform.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\posix_poll.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\posix_thread.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\posix_time.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\win32_joystick.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\win32_platform.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\win32_thread.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\win32_time.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\wl_platform.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\x11_platform.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\glfw\src\xkb_unicode.h">
+      <Filter>lib\glfw\src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\editor\editor.cpp">
+      <Filter>..\editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\editor\input\input_manager.cpp">
+      <Filter>..\editor\input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\editor\input\tool_state.cpp">
+      <Filter>..\editor\input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\editor\input\tools\pan_tool.cpp">
+      <Filter>..\editor\input\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\editor\input\tools\pencil_tool.cpp">
+      <Filter>..\editor\input\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\editor\input\tools\zoom_tool.cpp">
+      <Filter>..\editor\input\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\editor\input\wobble_smoother.cpp">
+      <Filter>..\editor\input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\editor\viewport.cpp">
+      <Filter>..\editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\history\command_history.cpp">
+      <Filter>..\history</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer\geometry\stroker.cpp">
+      <Filter>..\renderer\geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer\renderer.cpp">
+      <Filter>..\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer\shader.cpp">
+      <Filter>..\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\renderer\shader_manager.cpp">
+      <Filter>..\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\utils\uuid.cpp">
+      <Filter>..\utils</Filter>
+    </ClCompile>
     <ClCompile Include="src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>

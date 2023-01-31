@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef EMSCRIPTEN
 #include <emscripten.h>
+#endif
 
 #ifdef __INTELLISENSE__
 #define EMSCRIPTEN_KEEPALIVE

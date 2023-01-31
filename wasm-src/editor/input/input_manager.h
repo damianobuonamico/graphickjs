@@ -18,8 +18,13 @@ public:
   enum class PointerButton {
     Touch = -1,
     Left = 0,
+#ifdef EMSCRIPTEN
     Middle = 1,
     Right = 2,
+#else
+    Right = 1,
+    Middle = 2,
+#endif
     Eraser = 5
   };
   enum class PointerTarget {
@@ -69,7 +74,7 @@ public:
     bool down = false;
     bool inside = true;
     float pressure = 1.0f;
-    float time = 0.0f;
+    double time = 0.0f;
 
     PointerButton button = PointerButton::Left;
   };
@@ -87,15 +92,15 @@ public:
 
   static bool on_pointer_event(
     PointerTarget target, PointerEvent event, PointerType type, PointerButton button,
-    int x, int y, float pressure, float time_stamp,
+    float x, float y, float pressure, double time_stamp,
     bool alt, bool ctrl, bool shift
   );
   static bool on_keyboard_event(
     KeyboardEvent event, KeyboardKey key,
     bool repeat, bool alt, bool ctrl, bool shift
   );
-  static bool on_resize_event(int x, int y, int offset_x, int offset_y);
-  static bool on_wheel_event(PointerTarget target, int delta_x, int delta_y);
+  static bool on_resize_event(int width, int height, int offset_x, int offset_y);
+  static bool on_wheel_event(PointerTarget target, float delta_x, float delta_y);
   static bool on_clipboard_event(ClipboardEvent event);
 
   static void set_tool(Tool::ToolType type);
@@ -105,8 +110,8 @@ private:
 
   void set_keys_state(bool alt, bool ctrl, bool shift);
 
-  bool on_pointer_down(PointerTarget target, PointerButton button, int x, int y);
-  bool on_pointer_move(PointerTarget target, int x, int y);
+  bool on_pointer_down(PointerTarget target, PointerButton button, float x, float y);
+  bool on_pointer_move(PointerTarget target, float x, float y);
   bool on_pointer_up();
   bool on_pointer_enter();
   bool on_pointer_leave();
