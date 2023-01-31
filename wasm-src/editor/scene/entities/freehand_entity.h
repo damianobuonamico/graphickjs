@@ -8,7 +8,7 @@
 
 class FreehandEntity: public Entity {
 public:
-  FreehandEntity(const vec2& position, float pressure, float time)
+  FreehandEntity(const vec2& position, float pressure, double time)
     : m_position(position), m_points({ {m_position, pressure} }) {
     console::log("FreehandEntity created");
     WobbleSmoother::reset(m_position, time);

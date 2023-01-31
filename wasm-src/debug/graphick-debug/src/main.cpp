@@ -23,7 +23,7 @@ static void cursor_position_callback(GLFWwindow* window, double x, double y) {
   InputManager::on_pointer_event(
     InputManager::PointerTarget::Canvas, InputManager::PointerEvent::Move,
     InputManager::PointerType::Mouse, pointer_state.button,
-    pointer_state.position.x, pointer_state.position.y, 1.0f, glfwGetTime(),
+    pointer_state.position.x, pointer_state.position.y, 1.0f, glfwGetTime() * 1000,
     pointer_state.alt, pointer_state.ctrl, pointer_state.shift
   );
 }
@@ -34,7 +34,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   InputManager::on_pointer_event(
     InputManager::PointerTarget::Canvas, action == GLFW_PRESS ? InputManager::PointerEvent::Down : InputManager::PointerEvent::Up,
     InputManager::PointerType::Mouse, pointer_state.button,
-    pointer_state.position.x, pointer_state.position.y, 1.0f, 0.0f,
+    pointer_state.position.x, pointer_state.position.y, 1.0f, glfwGetTime() * 1000,
     pointer_state.alt, pointer_state.ctrl, pointer_state.shift
   );
 }
@@ -51,7 +51,7 @@ static void cursor_enter_callback(GLFWwindow* window, int entered) {
   InputManager::on_pointer_event(
     InputManager::PointerTarget::Canvas, entered ? InputManager::PointerEvent::Enter : InputManager::PointerEvent::Leave,
     InputManager::PointerType::Mouse, pointer_state.button,
-    pointer_state.position.x, pointer_state.position.y, 1.0f, glfwGetTime(), 
+    pointer_state.position.x, pointer_state.position.y, 1.0f, glfwGetTime() * 1000, 
     pointer_state.alt, pointer_state.ctrl, pointer_state.shift
   );
 }
@@ -75,7 +75,10 @@ int main() {
     return -1;
   }
 
-  window = glfwCreateWindow(640, 480, "Hello World", nullptr, nullptr);
+  int width = 960;
+  int height = 680;
+
+  window = glfwCreateWindow(width, height, "Hello World", nullptr, nullptr);
 
   if (!window) {
     printf("Failed to create window\n");
@@ -94,6 +97,7 @@ int main() {
   glfwSetKeyCallback(window, key_callback);
 
   Editor::init();
+  InputManager::on_resize_event(width, height, 0, 0);
 
   while (!glfwWindowShouldClose(window)) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
