@@ -16,6 +16,10 @@ float length(const vec2& v);
 float length(const vec3& v);
 float length(const vec4& v);
 
+float squared_length(const vec2& v);
+float squared_length(const vec3& v);
+float squared_length(const vec4& v);
+
 float distance(const vec2& v1, const vec2& v2);
 float distance(const vec3& v1, const vec3& v2);
 float distance(const vec4& v1, const vec4& v2);
@@ -53,9 +57,17 @@ vec2& negate(const vec2& v, vec2& out);
 vec3& negate(const vec3& v, vec3& out);
 vec4& negate(const vec4& v, vec4& out);
 
+void zero(const vec2& v);
+void zero(const vec3& v);
+void zero(const vec4& v);
+
 bool is_zero(const vec2& v);
 bool is_zero(const vec3& v);
 bool is_zero(const vec4& v);
+
+bool is_almost_zero(const vec2& v, const float eps);
+bool is_almost_zero(const vec3& v, const float eps);
+bool is_almost_zero(const vec4& v, const float eps);
 
 float dot(const vec2& v1, const vec2& v2);
 float dot(const vec3& v1, const vec3& v2);

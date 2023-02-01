@@ -168,6 +168,9 @@
     <ClInclude Include="..\..\renderer\geometry\geometry.h">
       <Filter>..\renderer\geometry</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\renderer\geometry\path_fitter.h">
+      <Filter>..\renderer\geometry</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\renderer\geometry\stroker.h">
       <Filter>..\renderer\geometry</Filter>
     </ClInclude>

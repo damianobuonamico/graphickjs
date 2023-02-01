@@ -68,6 +68,20 @@ inline float length(const vec4& v) {
   return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
 }
 
+/* -- squared_length -- */
+
+inline float squared_length(const vec2& v) {
+  return v.x * v.x + v.y * v.y;
+}
+
+inline float squared_length(const vec3& v) {
+  return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+
+inline float squared_length(const vec4& v) {
+  return v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+}
+
 /* -- distance -- */
 
 inline float distance(const vec2& v1, const vec2& v2) {
@@ -285,6 +299,7 @@ inline vec4& normalize_length(const vec4& v, float t, vec4& out) {
 
   return out;
 }
+
 /* -- negate -- */
 
 inline vec2 negate(const vec2& v) {
@@ -335,6 +350,20 @@ inline vec4& negate(const vec4& v, vec4& out) {
   return out;
 }
 
+/* -- zero -- */
+
+inline void zero(vec2& v) {
+  v.x = v.y = 0.0f;
+}
+
+inline void zero(vec3& v) {
+  v.x = v.y = v.z = 0.0f;
+}
+
+inline void zero(vec4& v) {
+  v.x = v.y = v.z = v.w = 0.0f;
+}
+
 /* -- is_zero -- */
 
 inline bool is_zero(const vec2& v) {
@@ -347,6 +376,20 @@ inline bool is_zero(const vec3& v) {
 
 inline bool is_zero(const vec4& v) {
   return v.x == 0 && v.y == 0 && v.z == 0 && v.w == 0;
+}
+
+/* -- is_almost_zero -- */
+
+inline bool is_almost_zero(const vec2& v, const float eps = FLT_EPSILON) {
+  return abs(v.x) <= eps && abs(v.y) <= eps;
+}
+
+inline bool is_almost_zero(const vec3& v, const float eps = FLT_EPSILON) {
+  return abs(v.x) <= eps && abs(v.y) <= eps && abs(v.z) <= eps;
+}
+
+inline bool is_almost_zero(const vec4& v, const float eps = FLT_EPSILON) {
+  return abs(v.x) <= eps && abs(v.y) <= eps && abs(v.z) <= eps && abs(v.w) <= eps;
 }
 
 /* -- dot -- */

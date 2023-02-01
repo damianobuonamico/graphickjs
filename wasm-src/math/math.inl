@@ -26,3 +26,7 @@ inline float clamp(float t, float min, float max) {
 inline float sign(float t) {
   return (float)((t > 0) - (t < 0));
 }
+
+inline bool is_almost_zero(const float t, const float eps = FLT_EPSILON) {
+  return abs(t) <= eps;
+}
