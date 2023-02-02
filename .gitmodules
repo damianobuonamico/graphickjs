@@ -1,3 +1,6 @@
 [submodule "wasm-src/debug/lib/glfw"]
 	path = wasm-src/debug/lib/glfw
 	url = https://github.com/glfw/glfw
+[submodule "wasm-src/debug/graphick-debug/lib/imgui"]
+	path = wasm-src/debug/graphick-debug/lib/imgui
+	url = https://github.com/TheCherno/imgui

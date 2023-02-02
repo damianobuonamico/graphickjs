@@ -13,9 +13,11 @@ workspace "debug"
   IncludeDir = {}
   IncludeDir["glfw"] = "graphick-debug/lib/glfw/include"
   IncludeDir["glad"] = "graphick-debug/lib/glad/include"
+  IncludeDir["imgui"] = "graphick-debug/lib/imgui"
   
   include "graphick-debug/lib/glfw"
   include "graphick-debug/lib/glad"
+  include "graphick-debug/lib/imgui"
   
   project "graphick-debug"
   kind "ConsoleApp"
@@ -26,7 +28,6 @@ workspace "debug"
 
   targetdir ("bin/" .. outputdir .. "/%{prj.name}")
   objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
-
 
   files {
     "../**.h",
@@ -41,6 +42,7 @@ workspace "debug"
     "%{prj.name}/src",
     "%{IncludeDir.glfw}",
     "%{IncludeDir.glad}",
+    "%{IncludeDir.imgui}",
     "../../editor",
     "../../history",
     "../../math",
@@ -52,6 +54,7 @@ workspace "debug"
   links {
     "glfw",
     "glad",
+    "imgui",
     "opengl32.lib"
   }
 

@@ -79,6 +79,21 @@
     <Filter Include="lib\glfw\src">
       <UniqueIdentifier>{1269BA1F-FECB-49C4-A751-827A93931547}</UniqueIdentifier>
     </Filter>
+    <Filter Include="lib\imgui">
+      <UniqueIdentifier>{A6D6B3EA-1241-6861-5B7F-1907C72846B6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\imgui\backends">
+      <UniqueIdentifier>{902BD405-7C0F-955B-E56F-8FAED1727FDD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\imgui\misc">
+      <UniqueIdentifier>{41015249-2DCF-454F-1663-B67502D021B4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\imgui\misc\cpp">
+      <UniqueIdentifier>{93331EB9-7F17-DF0E-E877-D961D47AC990}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\imgui\misc\single_file">
+      <UniqueIdentifier>{B1B33670-9DC3-E240-067D-475FF2ABD1D9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src">
       <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
     </Filter>
@@ -164,6 +179,9 @@
     </ClInclude>
     <ClInclude Include="..\..\math\vector.h">
       <Filter>..\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\renderer\geometry\corners_detection.h">
+      <Filter>..\renderer\geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\renderer\geometry\geometry.h">
       <Filter>..\renderer\geometry</Filter>
@@ -306,6 +324,39 @@
     <ClInclude Include="lib\glfw\src\xkb_unicode.h">
       <Filter>lib\glfw\src</Filter>
     </ClInclude>
+    <ClInclude Include="lib\imgui\backends\imgui_impl_glfw.h">
+      <Filter>lib\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\backends\imgui_impl_opengl3.h">
+      <Filter>lib\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>lib\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\imconfig.h">
+      <Filter>lib\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\imgui.h">
+      <Filter>lib\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\imgui_internal.h">
+      <Filter>lib\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\imstb_rectpack.h">
+      <Filter>lib\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\imstb_textedit.h">
+      <Filter>lib\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\imstb_truetype.h">
+      <Filter>lib\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\misc\cpp\imgui_stdlib.h">
+      <Filter>lib\imgui\misc\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\imgui\misc\single_file\imgui_single_file.h">
+      <Filter>lib\imgui\misc\single_file</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\editor\editor.cpp">
@@ -349,6 +400,30 @@
     </ClCompile>
     <ClCompile Include="..\..\utils\uuid.cpp">
       <Filter>..\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>lib\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>lib\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\imgui\imgui.cpp">
+      <Filter>lib\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\imgui\imgui_demo.cpp">
+      <Filter>lib\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\imgui\imgui_draw.cpp">
+      <Filter>lib\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\imgui\imgui_tables.cpp">
+      <Filter>lib\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\imgui\imgui_widgets.cpp">
+      <Filter>lib\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\imgui\misc\cpp\imgui_stdlib.cpp">
+      <Filter>lib\imgui\misc\cpp</Filter>
     </ClCompile>
     <ClCompile Include="src\main.cpp">
       <Filter>src</Filter>

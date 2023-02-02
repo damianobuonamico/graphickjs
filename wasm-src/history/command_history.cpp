@@ -107,7 +107,7 @@ void CommandHistory::pop() {
   CommandHistory* instance = get();
 
   instance->m_commands.erase(std::next(instance->m_commands.begin(), instance->m_index - 1), instance->m_commands.end());
-  instance->m_index = instance->m_commands.size() - 1;
+  instance->m_index = (int)instance->m_commands.size() - 1;
 }
 
 void CommandHistory::clear() {

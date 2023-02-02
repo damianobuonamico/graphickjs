@@ -3,6 +3,11 @@
 
 #include "../wasm-src/editor/editor.h"
 #include "../wasm-src/editor/input/input_manager.h"
+#include "../wasm-src/renderer/geometry/corners_detection.h"
+
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -51,7 +56,7 @@ static void cursor_enter_callback(GLFWwindow* window, int entered) {
   InputManager::on_pointer_event(
     InputManager::PointerTarget::Canvas, entered ? InputManager::PointerEvent::Enter : InputManager::PointerEvent::Leave,
     InputManager::PointerType::Mouse, pointer_state.button,
-    pointer_state.position.x, pointer_state.position.y, 1.0f, glfwGetTime() * 1000, 
+    pointer_state.position.x, pointer_state.position.y, 1.0f, glfwGetTime() * 1000,
     pointer_state.alt, pointer_state.ctrl, pointer_state.shift
   );
 }
@@ -87,7 +92,31 @@ int main() {
   }
 
   glfwMakeContextCurrent(window);
+  glfwSwapInterval(1); // Enable vsync
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+  //io.ConfigViewportsNoAutoMerge = true;
+  //io.ConfigViewportsNoTaskBarIcon = true;
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  //ImGui::StyleColorsClassic();
+
+  // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+  ImGuiStyle& style = ImGui::GetStyle();
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+  {
+    style.WindowRounding = 0.0f;
+    style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+  }
 
   glfwSetCursorPosCallback(window, cursor_position_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -96,19 +125,68 @@ int main() {
   glfwSetCursorEnterCallback(window, cursor_enter_callback);
   glfwSetKeyCallback(window, key_callback);
 
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init("#version 330 core");
+
   Editor::init();
   InputManager::on_resize_event(width, height, 0, 0);
 
   while (!glfwWindowShouldClose(window)) {
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
     glfwPollEvents();
 
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+    {
+      static float f = 0.0f;
+      static int counter = 0;
+
+      ImGui::Begin("Debug Settings");                          // Create a window called "Debug Settings" and append into it.
+
+      ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+
+      ImGui::SliderFloat("min_radius", &min_radius, 0.0f, 100.0f);
+      ImGui::SliderFloat("max_radius", &max_radius, 0.0f, 100.0f);
+      ImGui::SliderInt("max_iterations", (int*)&max_iterations, 0, 100);
+      ImGui::SliderAngle("min_angle", &min_angle, 0.0f, 360.0f);
+
+      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+      ImGui::End();
+    }
+
+    // Rendering
+    ImGui::Render();
+    int display_w, display_h;
+    glfwGetFramebufferSize(window, &display_w, &display_h);
+    glViewport(0, 0, display_w, display_h);
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     Editor::render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+      GLFWwindow* backup_current_context = glfwGetCurrentContext();
+      ImGui::UpdatePlatformWindows();
+      ImGui::RenderPlatformWindowsDefault();
+      glfwMakeContextCurrent(backup_current_context);
+    }
     glfwSwapBuffers(window);
   }
 
   Editor::shutdown();
+
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
+
+  glfwDestroyWindow(window);
   glfwTerminate();
 
   return 0;

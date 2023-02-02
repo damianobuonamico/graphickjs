@@ -46,6 +46,7 @@ void Renderer::init() {
 
   get()->m_shaders.use("pen");
   get()->m_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, position));
+  get()->m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
 
   glGenBuffers(1, &get()->m_data.index_buffer_object);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, get()->m_data.index_buffer_object);
@@ -108,6 +109,7 @@ void Renderer::add_to_batch(const Geometry& geometry) {
   for (size_t i = 0; i < geometry.vertices.size(); i++) {
     const Vertex& vertex = geometry.vertices[i];
     m_data.vertex_buffer_ptr->position = vertex.position;
+    m_data.vertex_buffer_ptr->color = vertex.color;
     m_data.vertex_buffer_ptr++;
   }
 
