@@ -102,3 +102,6 @@ build/
 # Binaries
 bin/
 bin-int/
+
+# ImGui files
+imgui.ini

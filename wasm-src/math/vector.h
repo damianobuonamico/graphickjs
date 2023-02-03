@@ -65,6 +65,10 @@ bool is_zero(const vec2& v);
 bool is_zero(const vec3& v);
 bool is_zero(const vec4& v);
 
+bool not_zero(const vec2& v);
+bool not_zero(const vec3& v);
+bool not_zero(const vec4& v);
+
 bool is_almost_zero(const vec2& v, const float eps);
 bool is_almost_zero(const vec3& v, const float eps);
 bool is_almost_zero(const vec4& v, const float eps);
@@ -77,5 +81,14 @@ float angle(const vec2& v1, const vec2& v2);
 float atan2(const vec2& v1, const vec2& v2);
 
 vec2 rotate(const vec2& v, const vec2& c, float t);
+
+// #define len length
+// #define sq_len squared_length
+// #define dist distance
+// #define sq_dist squared_distance
+// #define mid midpoint
+// #define norm normalize
+// #define norm_len normalize_length
+// #define neg negate
 
 #include "vector.inl"

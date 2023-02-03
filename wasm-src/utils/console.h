@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sstream>
 #include <ostream>
+#include <chrono>
 
 struct console {
   template <typename T>
@@ -20,4 +21,14 @@ struct console {
 
     printf("%s\n", stream.str().c_str());
   }
+
+  static inline void time_start() {
+    last_time = std::chrono::high_resolution_clock::now();
+  }
+
+  static inline void time_end(const std::string& name = "Time Elapsed") {
+    log(name, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - last_time).count());
+  }
+private:
+  static inline std::chrono::steady_clock::time_point last_time;
 };

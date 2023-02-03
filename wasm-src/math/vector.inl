@@ -378,6 +378,20 @@ inline bool is_zero(const vec4& v) {
   return v.x == 0 && v.y == 0 && v.z == 0 && v.w == 0;
 }
 
+/* -- not_zero -- */
+
+inline bool not_zero(const vec2& v) {
+  return v.x != 0 || v.y != 0;
+}
+
+inline bool not_zero(const vec3& v) {
+  return v.x != 0 || v.y != 0 || v.z != 0;
+}
+
+inline bool not_zero(const vec4& v) {
+  return v.x != 0 || v.y != 0 || v.z != 0 || v.w != 0;
+}
+
 /* -- is_almost_zero -- */
 
 inline bool is_almost_zero(const vec2& v, const float eps = FLT_EPSILON) {

@@ -30,12 +30,26 @@ workspace "debug"
   objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
   files {
-    "../**.h",
-    "../**.cpp",
-  }
-
-  removefiles {
-    "../export.cpp"
+    "../editor/**.cpp",
+    "../editor/**.h",
+    "../history/**.cpp",
+    "../history/**.h",
+    "../math/**.cpp",
+    "../math/**.h",
+    "../math/**.inl",
+    "../renderer/**.cpp",
+    "../renderer/**.h",
+    "../utils/**.cpp",
+    "../utils/**.h",
+    "../values/**.cpp",
+    "../values/**.h",
+    "../common.h",
+    "%{prj.name}/src/**.h",
+    "%{prj.name}/src/**.cpp",
+    "%{prj.name}/lib/imgui/backends/imgui_impl_glfw.cpp",
+    "%{prj.name}/lib/imgui/backends/imgui_impl_glfw.h",
+    "%{prj.name}/lib/imgui/backends/imgui_impl_opengl3.cpp",
+    "%{prj.name}/lib/imgui/backends/imgui_impl_opengl3.h",
   }
 
   includedirs {
@@ -43,12 +57,7 @@ workspace "debug"
     "%{IncludeDir.glfw}",
     "%{IncludeDir.glad}",
     "%{IncludeDir.imgui}",
-    "../../editor",
-    "../../history",
-    "../../math",
-    "../../renderer",
-    "../../utils",
-    "../../values",
+    "../../",
   }
 
   links {

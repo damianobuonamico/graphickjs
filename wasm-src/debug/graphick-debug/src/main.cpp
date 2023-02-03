@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <iostream>
 
-#include "../wasm-src/editor/editor.h"
-#include "../wasm-src/editor/input/input_manager.h"
-#include "../wasm-src/renderer/geometry/corners_detection.h"
+#include "wasm-src/editor/editor.h"
+#include "wasm-src/editor/input/input_manager.h"
+#include "wasm-src/renderer/geometry/corners_detection.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -153,6 +153,9 @@ int main() {
       ImGui::SliderFloat("max_radius", &max_radius, 0.0f, 100.0f);
       ImGui::SliderInt("max_iterations", (int*)&max_iterations, 0, 100);
       ImGui::SliderAngle("min_angle", &min_angle, 0.0f, 360.0f);
+      ImGui::Checkbox("simplify_first", &simplify_first);
+      ImGui::SliderFloat("simplification_tolerance", &simplification_tolerance, 0.0f, 10.0f);
+      ImGui::SliderFloat("max_error", &max_error, 0.0f, 10.0f);
 
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();
