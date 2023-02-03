@@ -40,7 +40,7 @@ inline extern uint max_iterations = 50;
 inline extern float min_angle = MATH_PI / 8.8f;
 inline extern bool simplify_first = false;
 inline extern float simplification_tolerance = 2.45f;
-inline extern float max_error = 0.7f;
+inline extern float max_error = 0.05f;
 
 
 static float cos(const vec2& v0, const vec2& v1, const vec2& v2) {
