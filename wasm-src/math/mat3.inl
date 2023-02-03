@@ -1,6 +1,8 @@
-#include "matrix.h"
-
 #include <assert.h>
+
+/* -- Forward declarations -- */
+
+mat3 inverse(const mat3& m);
 
 /* -- Component accesses -- */
 

@@ -1,6 +1,8 @@
-#include "matrix.h"
-
 #include <assert.h>
+
+/* -- Forward declarations -- */
+
+mat2 inverse(const mat2& m);
 
 /* -- Component accesses -- */
 
@@ -84,8 +86,7 @@ inline mat2& mat2::operator/=(float scalar) {
 }
 
 inline mat2& mat2::operator/=(const mat2& m) {
-  return *this;
-  // return *this *= inverse(m);
+  return *this *= inverse(m);
 }
 
 /* -- Increment/Decrement operators -- */
@@ -212,8 +213,7 @@ inline mat2 operator/(float scalar, const mat2& m) {
 }
 
 inline vec2 operator/(const mat2& m, const vec2& v) {
-  return v;
-  // return inverse(m) * v;
+  return inverse(m) * v;
 }
 
 inline mat2 operator/(const mat2& m1, const mat2& m2) {
