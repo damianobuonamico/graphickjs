@@ -4,6 +4,7 @@
 #include "bezier_fitter.h"
 
 inline extern float max_angle = 0.01f;
+inline extern float stroke_width = 1.0f;
 
 Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, float thickness, float zoom);
 

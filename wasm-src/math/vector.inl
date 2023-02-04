@@ -444,6 +444,12 @@ inline vec2 rotate(const vec2& v, const vec2& c, float t) {
   };
 }
 
+/* -- orthogonal -- */
+
+inline vec2 orthogonal(const vec2& v) {
+  return vec2{ -v.y, v.x };
+}
+
 /* -- swap -- */
 inline vec2& swap_coordinates(const vec2& v, vec2& out) {
   float temp = v.x;

@@ -587,20 +587,25 @@ static float absolute_angle_difference(float theta1, float theta0) {
   return absolute_difference;
 }
 
+struct BadIndex {
+  size_t index;
+  uint32_t offset;
+};
+
 void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
   vec2 points[4] = { curve.p0, curve.p1, curve.p2, curve.p3 };
   int resolution = 100;
 
-  for (int i = 0; i <= resolution; i++) {
-    float t = (float)i / (float)resolution;
+  // for (int i = 0; i <= resolution; i++) {
+  //   float t = (float)i / (float)resolution;
 
-    add_point(bezier_t(curve, t), vec4{ 0.2f, 0.2f, 1.0f, 1.0f }, offset, geo);
-    add_point(bezier_derivative_t(curve, t), vec4{ 0.2f, 0.8f, 0.8f, 1.0f }, offset, geo);
-  }
+  //   add_point(bezier_t(curve, t), vec4{ 0.2f, 0.2f, 1.0f, 1.0f }, offset, geo);
+  //   add_point(bezier_derivative_t(curve, t), vec4{ 0.2f, 0.8f, 0.8f, 1.0f }, offset, geo);
+  // }
 
-  for (vec2& point : points) {
-    add_point(point, vec4{ 1.0f, 0.2f, 0.2f, 1.0f }, offset, geo, 1.0f);
-  }
+  // for (vec2& point : points) {
+  //   add_point(point, vec4{ 1.0f, 0.2f, 0.2f, 1.0f }, offset, geo, 1.0f);
+  // }
 
   // vec2 inflections = (-curve.p0 + 2.0f * curve.p1 - curve.p2) / (-curve.p0 + 3.0f * curve.p1 - 3.0f * curve.p2 + curve.p3);
   vec2 inflections = find_inflections(curve);
@@ -613,26 +618,34 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
   vec2 P0 = bezier_derivative_t(curve, 0.0f);
   turning_points.push_back(atan2(P0.y, P0.x));
 
+  std::vector<float> inflection_points{};
+  inflection_points.reserve(4);
+
+  inflection_points.push_back(0.0f);
+
   // Sort inflections
   if (inflections.x > inflections.y) swap_coordinates(inflections, inflections);
-
   if (inflections.x > 0.0f && inflections.x < 1.0f) {
     vec2 P1 = bezier_derivative_t(curve, inflections.x);
 
-    add_point(bezier_t(curve, inflections.x), inflection_col, offset, geo, 1.0f);
-    add_point(P1, inflection_col, offset, geo, 1.0f);
+    // add_point(bezier_t(curve, inflections.x), inflection_col, offset, geo, 1.0f);
+    // add_point(P1, inflection_col, offset, geo, 1.0f);
 
+    inflection_points.push_back(inflections.x);
     turning_points.push_back(atan2(P1.y, P1.x));
   }
 
   if (inflections.y > 0.0f && inflections.y < 1.0f && inflections.y != inflections.x) {
     vec2 P2 = bezier_derivative_t(curve, inflections.y);
 
-    add_point(bezier_t(curve, inflections.y), inflection_col, offset, geo, 1.0f);
-    add_point(P2, inflection_col, offset, geo, 1.0f);
+    // add_point(bezier_t(curve, inflections.y), inflection_col, offset, geo, 1.0f);
+    // add_point(P2, inflection_col, offset, geo, 1.0f);
 
+    inflection_points.push_back(inflections.y);
     turning_points.push_back(atan2(P2.y, P2.x));
   }
+
+  inflection_points.push_back(1.0f);
 
   // TODO: inline
   vec2 P3 = bezier_derivative_t(curve, 1.0f);
@@ -644,69 +657,173 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
 
   for (int i = 0; i < (int)turning_points.size() - 1; i++) {
     float difference = turning_points[i + 1] - turning_points[i];
-    int increments = abs((int)ceilf(difference / max_angle_difference));
+    int increments = std::max(abs((int)ceilf(difference / max_angle_difference)), 1);
     float increment = difference / (float)increments;
-
-    if (i == 2) {
-      console::log("difference", difference);
-      console::log("increments", increments);
-      console::log("increment", increment);
-    }
 
     t_values.reserve(increments);
 
-    for (int j = 0; j <= increments; j++) {
+    t_values.push_back(vec2{ inflection_points[i], -666.17f });
+    for (int j = 1; j < increments; j++) {
       float theta = turning_points[i] + (float)j * increment;
       t_values.push_back(t_from_theta(curve, theta));
 
-      if (i == 2) {
-        for (int h = 0; h <= 300; h += 20) {
-          add_point(vec2{ h * cosf(theta), h * sinf(theta) }, vec4{ 0.2f, 0.2f, 0.8f, 0.5f }, offset, geo);
-        }
-      }
+      // if (i == 2) {
+      //   for (int h = 0; h <= 300; h += 20) {
+      //     add_point(vec2{ h * cosf(theta), h * sinf(theta) }, vec4{ 0.2f, 0.2f, 0.8f, 0.5f }, offset, geo);
+      //   }
+      // }
     }
   }
 
+  t_values.push_back({ 1.0f, 1.0f });
+
   size_t t_values_len = t_values.size();
   std::vector<float> parsed_t_values(t_values_len);
-  parsed_t_values[t_values_len - 1] = 1;
-  int parsed = 2;
+  parsed_t_values[t_values_len - 1] = 1.0f;
+
+  geo.vertices.reserve(t_values_len * 2);
+  geo.indices.reserve(t_values_len * 6);
 
   float max_t = 0.0f;
+
+  {
+    vec2 point = bezier_t(curve, 0.0f);
+    vec2 tangent = bezier_derivative_t(curve, 0.0f);
+    normalize(tangent, tangent);
+    vec2 normal = stroke_width * orthogonal(tangent);
+
+    vec4 color = vec4{ 0.8f, 0.0f, 0.0f, 1.0f };
+
+    geo.vertices.insert(geo.vertices.end(), {
+      {point + normal, color},
+      {point - normal, color}
+      });
+
+    offset += 2;
+  }
+
+  std::vector<BadIndex> bad_indices{};
 
   for (size_t i = 1; i < t_values_len - 1; i++) {
     vec2& prev = t_values[i - 1];
     vec2& values = t_values[i];
     vec2& next = t_values[i + 1];
+
     bool x_bad = values.x <= max_t || values.x >= 1 ||
       (values.x <= prev.x && values.x <= prev.y) ||
-      (values.x >= next.x && values.x >= next.y);
+      ((next.x > 0 || next.y > 0) && values.x >= next.x && values.x >= next.y);
     bool y_bad = values.y <= max_t || values.y >= 1 ||
       (values.y <= prev.x && values.y <= prev.y) ||
-      (values.y >= next.x && values.y >= next.y);
+      ((next.x > 0 || next.y > 0) && values.y >= next.x && values.y >= next.y);
 
-    if (x_bad) {
-      if (!y_bad) {
-        parsed_t_values[i] = values.y;
-        parsed++;
+    if (x_bad && y_bad) {
+      float avg = (values.x + values.y) / 2.0f;
+      bool avg_bad = avg <= max_t || avg >= 1 ||
+        (avg <= prev.x && avg <= prev.y) ||
+        (avg >= next.x && avg >= next.y);
+
+      if (avg_bad) {
+        geo.vertices.insert(geo.vertices.end(), { {},{} });
+
+        geo.indices.insert(geo.indices.end(), {
+          offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
+          });
+
+        bad_indices.push_back({ i, offset });
+        offset += 2;
+
+        // parsed_t_values[i] = parsed_t_values[i - 1];
+        continue;
       } else {
-        // TODO: Check if it is problematic
-        parsed_t_values[i] = (values.x + values.y) / 2.0f;
+        parsed_t_values[i] = avg;
       }
+    } else if (x_bad) {
+      parsed_t_values[i] = values.y;
     } else {
-      if (y_bad) {
-        parsed_t_values[i] = values.x;
-        parsed++;
-      } else {
-        // TODO: Check if it is problematic
-        parsed_t_values[i] = (values.x + values.y) / 2.0f;
-      }
+      parsed_t_values[i] = values.x;
     }
 
     max_t = std::max(max_t, parsed_t_values[i]);
 
-    add_point(bezier_t(curve, parsed_t_values[i]), vec4{ 0.8f, 0.0f, 0.0f, 1.0f }, offset, geo, 0.2f);
-    add_point(bezier_derivative_t(curve, parsed_t_values[i]), vec4{ 0.8f, 0.0f, 0.0f, 1.0f }, offset, geo, 0.2f);
+    vec2 point = bezier_t(curve, parsed_t_values[i]);
+    vec2 tangent = bezier_derivative_t(curve, parsed_t_values[i]);
+    normalize(tangent, tangent);
+    vec2 normal = stroke_width * orthogonal(tangent);
+
+    vec4 color = vec4{ 0.8f, 0.0f, 0.0f, 1.0f };
+
+    geo.vertices.insert(geo.vertices.end(), {
+      {point + normal, color},
+      {point - normal, color}
+      });
+
+    geo.indices.insert(geo.indices.end(), {
+      offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
+      });
+
+    offset += 2;
+
+
+    // add_point(bezier_t(curve, parsed_t_values[i]), vec4{ 0.8f, 0.0f, 0.0f, 1.0f }, offset, geo, 0.2f);
+    // add_point(bezier_derivative_t(curve, parsed_t_values[i]), vec4{ 0.8f, 0.0f, 0.0f, 1.0f }, offset, geo, 0.2f);
+  }
+
+  int bad_size = (int)bad_indices.size();
+
+  for (int i = 0; i < bad_size; i++) {
+    BadIndex& bad_index = bad_indices[i];
+
+    float prev = parsed_t_values[bad_index.index - 1];
+    float next;
+
+
+    // for (int j = i + 1; j < (int)bad_indices.size(); j++) {
+    //   if (bad_indices[j].index == bad_index.index + j - i)
+    // }
+
+    int j = 1;
+    while (i + j < bad_size && bad_indices[i + j].index == bad_index.index + j) {
+      j++;
+    }
+
+    next = parsed_t_values[bad_index.index + j];
+
+
+    float t = (j * prev + next) / (float)(1 + j);
+
+    parsed_t_values[bad_index.index] = t;
+
+    vec2 point = bezier_t(curve, t);
+    vec2 tangent = bezier_derivative_t(curve, t);
+    normalize(tangent, tangent);
+    vec2 normal = stroke_width * orthogonal(tangent);
+
+    vec4 color = vec4{ 0.8f, 1.0f, 0.0f, 1.0f };
+
+    //geo.vertices[bad_index.offset + 0].position += point + normal;
+    //geo.vertices[bad_index.offset + 1].position += 10.0f;
+    geo.vertices[bad_index.offset + 0] = { point + normal, color };
+    geo.vertices[bad_index.offset + 1] = { point - normal, color };
+  }
+
+  {
+    vec2 point = bezier_t(curve, 1.0f);
+    vec2 tangent = bezier_derivative_t(curve, 1.0f);
+    normalize(tangent, tangent);
+    vec2 normal = stroke_width * orthogonal(tangent);
+
+    vec4 color = vec4{ 0.8f, 0.0f, 0.0f, 1.0f };
+
+    geo.vertices.insert(geo.vertices.end(), {
+      {point + normal, color},
+      {point - normal, color}
+      });
+
+    geo.indices.insert(geo.indices.end(), {
+      offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
+      });
+
+    offset += 2;
   }
 }
 
@@ -719,8 +836,12 @@ Geometry stroke_curves(const std::vector<Bezier>& curves) {
   Bezier test2{ {120.0f, 0.0f}, {120.0f, -45.0f}, {190.0f, -45.0f}, {190.0f, -100.0f} };
   Bezier test3{ {0.0f, 0.0f}, {100.0f, -55.0f}, {0.0f, -140.0f}, {85.0f, -100.0f} };
   Bezier test4{ {0.0f, 0.0f}, {60.0f, -50.0f}, {15.0f, -45.0f}, {100.0f, -10.0f} };
+  Bezier test5{ {0.0f, 0.0f}, {110.0f, -100.0f}, {-10.0f, -100.0f}, {100.0f, 0.0f} };
+  Bezier test6{ {0.0f, 0.0f}, {101.0f, -100.0f}, {-1.0f, -100.0f}, {100.0f, 0.0f} };
+  Bezier test7{ {0.0f, 0.0f}, {100.0f, -100.0f}, {0.0f, -100.0f}, {100.0f, 0.0f} };
+  Bezier test8{ {0.0f, 0.0f}, {10.0f, -60.0f}, {0.0f, -60.0f}, {10.0f, -50.0f} };
 
-  stroke_curve(test1, offset, geo);
+  stroke_curve(test4, offset, geo);
   // stroke_curve(test2, offset, geo);
 
   // for (const Bezier& curve : curves) {
