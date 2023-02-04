@@ -7,53 +7,19 @@
 
 #pragma once
 
-#include "stroker.h"
 #include "../../math/vector.h"
 #include "../../math/matrix.h"
 #include "../../utils/console.h"
 
 #include <vector>
 
- // struct Bezier {
- //   vec2 p0;
- //   vec2 p1;
- //   vec2 p2;
- //   vec2 p3;
- // };
-
- // static std::vector<float> chordlength_parameterization(const std::vector<FreehandPathPoint>& points, size_t start, size_t end, const FreehandPathPoint& start_point) {
- //   std::vector<float> cumulative_length(end - start + 1);
-
- //   float total_length = distance(points[start].position, start_point.position);
- //   cumulative_length.push_back(total_length);
-
- //   for (size_t i = start + 1; i <= end; i++) {
- //     total_length += distance(points[i].position, points[i - 1].position);
- //     cumulative_length.push_back(total_length);
- //   }
-
- //   for (size_t i = 0; i < cumulative_length.size(); i++) {
- //     cumulative_length[i] /= total_length;
- //   }
-
- //   return cumulative_length;
- // }
-
- // static std::vector<std::vector<float>> initialize_parameterization(std::vector<FreehandPathPoint>& points, size_t start, size_t end) {
- //   std::vector<std::vector<float>> parameterization;
-
- //   for (size_t i = start; i <= end; i++) {
- //     if (i != start) {
- //       parameterization.push_back(chordlength_parameterization(points, i, end, points[i - 1]));
- //     } else {
- //       parameterization.push_back(chordlength_parameterization(points, i, end, points[i]));
- //     }
- //   }
-
- //   return parameterization;
- // }
-
 #define MAXPOINTS	1000
+
+ // TODO: Move
+struct FreehandPathPoint {
+  vec2 position;
+  float pressure;
+};
 
 using PathPoints = std::vector<FreehandPathPoint>;
 
@@ -133,8 +99,8 @@ static Bezier generate_bezier(
   vec2 X{ 0.0f }; /* Matrix X */
   float det_C0_C1, det_C0_X, det_X_C1; /* Determinants of matrices */
   float alpha_l, alpha_r; /* Alpha values, left and right	*/
-  vec2 tmp;			/* Utility variable	*/
-  Bezier bez_curve;	/* RETURN bezier curve ctl pts */
+  vec2 tmp{};			/* Utility variable	*/
+  Bezier bez_curve{};	/* RETURN bezier curve ctl pts */
   float seg_length;
   float epsilon;
 
@@ -299,7 +265,7 @@ static vec2 compute_left_tangent(const PathPoints& points, size_t end) {
 }
 
 static vec2 compute_right_tangent(const PathPoints& points, size_t end) {
-  vec2	t_hat_2;
+  vec2 t_hat_2;
 
   t_hat_2 = points[end - 1].position - points[end].position;
   t_hat_2 = normalize(t_hat_2);
@@ -445,7 +411,7 @@ static std::vector<Bezier> fit_to_bezier_curves(const PathPoints& points, const 
   vec2 t_hat_1 = compute_left_tangent(points, start);
   vec2 t_hat_2 = compute_right_tangent(points, end);
 
-  std::vector<Bezier> curves;
+  std::vector<Bezier> curves{};
 
   fit_cubic(points, start, end, t_hat_1, t_hat_2, error, curves);
 

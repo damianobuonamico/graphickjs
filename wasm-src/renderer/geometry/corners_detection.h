@@ -42,7 +42,6 @@ inline extern bool simplify_first = false;
 inline extern float simplification_tolerance = 2.45f;
 inline extern float max_error = 0.05f;
 
-
 static float cos(const vec2& v0, const vec2& v1, const vec2& v2) {
   vec2 dvec0 = normalize(v0 - v1);
   vec2 dvec1 = normalize(v1 - v2);

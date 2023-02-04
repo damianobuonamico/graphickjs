@@ -443,3 +443,13 @@ inline vec2 rotate(const vec2& v, const vec2& c, float t) {
     cx * sin + cy * cos + c.y,
   };
 }
+
+/* -- swap -- */
+inline vec2& swap_coordinates(const vec2& v, vec2& out) {
+  float temp = v.x;
+
+  out.x = v.y;
+  out.y = temp;
+
+  return out;
+}

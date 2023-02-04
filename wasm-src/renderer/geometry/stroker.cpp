@@ -435,3 +435,297 @@ std::vector<FreehandPathPoint> smooth_freehand_path(const std::vector<FreehandPa
 
   return result;
 }
+
+// TODO: Optimize
+static vec2 bezier_t(const Bezier& curve, float t) {
+  vec2 a = -curve.p0 + 3.0f * curve.p1 - 3.0f * curve.p2 + curve.p3;
+  vec2 b = 3.0f * (curve.p0 - 2 * curve.p1 + curve.p2);
+  vec2 c = -3.0f * (curve.p0 - curve.p1);
+  vec2 d = curve.p0;
+
+  return a * t * t * t + b * t * t + c * t + d;
+}
+
+static vec2 bezier_derivative_t(const Bezier& curve, float t) {
+  vec2 a = 3.0f * (-curve.p0 + 3.0f * curve.p1 - 3.0f * curve.p2 + curve.p3);
+  vec2 b = 6.0f * (curve.p0 - 2.0f * curve.p1 + curve.p2);
+  vec2 c = -3.0f * (curve.p0 - curve.p1);
+
+  return a * t * t + b * t + c;
+}
+
+static vec2 bezier_second_derivative_t(const Bezier& curve, float t) {
+  vec2 a = 6.0f * (-curve.p0 + 3.0f * curve.p1 - 3.0f * curve.p2 + curve.p3);
+  vec2 b = 6.0f * (curve.p0 - 2.0f * curve.p1 + curve.p2);
+
+  return a * t + b;
+}
+
+static vec2 t_from_theta(const Bezier& curve, float theta) {
+  vec2 A = 3.0f * (-curve.p0 + 3.0f * curve.p1 - 3.0f * curve.p2 + curve.p3);
+  vec2 B = 6.0f * (curve.p0 - 2.0f * curve.p1 + curve.p2);
+  vec2 C = -3.0f * (curve.p0 - curve.p1);
+
+  float tan = tanf(theta);
+
+  float a = A.y - tan * A.x;
+  float b = B.y - tan * B.x;
+  float c = C.y - tan * C.x;
+
+  if (is_almost_zero(a)) {
+    if (is_almost_zero(b)) {
+      return { -1.0f, -1.0f };
+    }
+    return { -c / b, -1.0f };
+  }
+
+  float delta = b * b - 4.0f * a * c;
+
+  if (is_almost_zero(delta)) {
+    return { -b / (2.0f * a), -1.0f };
+  } else if (delta > 0.0f) {
+    float sqrt_delta = sqrtf(delta);
+    float t1 = (-b + sqrt_delta) / (2.0f * a);
+    float t2 = (-b - sqrt_delta) / (2.0f * a);
+
+    return { t1, t2 };
+  }
+
+  return { -1.0f, -1.0f };
+}
+
+static void add_point(const vec2& point, const vec4& color, uint32_t& offset, Geometry& geo, float size = 0.5f) {
+  vec2 off_d1{ size, size };
+  vec2 off_d2{ -size, size };
+
+  geo.vertices.insert(geo.vertices.end(), {
+      {point - off_d1, color}, {point + off_d2, color}, {point + off_d1, color}, {point - off_d2, color}
+    });
+  geo.indices.insert(geo.indices.end(), {
+    offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0
+    });
+
+  offset += 4;
+}
+
+/* "Inflection points of a cubic Bezier"
+ * http://web.archive.org/web/20191210155614/http://www.caffeineowl.com/graphics/2d/vectorial/cubic-inflexion.html
+ * 0 = cross(P'(t),P"(t)) = Px*Pyy-Py*Pxx
+ *
+ * Developed in Maple:
+ *
+ * with(linalg):
+ * > unprotect(D);
+ * > A:=vector([Ax,Ay,0]):
+ * > B:=vector([Bx,By,0]):
+ * > C:=vector([Cx,Cy,0]):
+ * > D:=vector([Dx,Dy,0]):
+ * > P:=A*t^3+B*t^2+C*t+D;
+ * P := A*t^3+B*t^2+C*t+D
+ * > Pt:=(diff(P,t));Ptt:=(diff(P,t,t));
+ * Pt := 3*A*t^2+2*B*t+C
+ * Ptt := 6*A*t+2*B
+ * > v:=crossprod(Pt,Ptt);
+ * v := vector([0, 0, (3*t^2*Ax+2*t*Bx+Cx)*(6*t*Ay+2*By)-(3*t^2*Ay+2*t*By+Cy)*(6*t*Ax+2*Bx)])
+ * > collect(v[3]/2,t);  % dividing by 2 just scales coefficients without changing polynomial's roots
+ * (3*Bx*Ay-3*Ax*By)*t^2+(3*Cx*Ay-3*Cy*Ax)*t+Cx*By-Cy*Bx
+ *
+ * So the inflection points are at the solutions (roots) of
+ *
+ *   0 = (3*Bx*Ay-3*Ax*By)*t^2+(3*Cx*Ay-3*Cy*Ax)*t+Cx*By-Cy*Bx
+ *     = a*t^2+b*t+c
+ *
+ * where a, b, & c are:
+ *   a = 3*(Bx*Ay-Ax*By)
+ *   b = 3*(Cx*Ay-Cy*Ax)
+ *   c = Cx*By-Cy*Bx
+ * These are determinants!  Scaled by 3 for a & b.
+ */
+static vec2 find_inflections(const Bezier& curve) {
+  vec2 A = curve.p1 - curve.p0;
+  vec2 B = curve.p2 - curve.p1 - A;
+  vec2 C = curve.p3 - curve.p2 - A - 2.0f * B;
+
+  float a = B.x * C.y - B.y * C.x;
+  float b = A.x * C.y - A.y * C.x;
+  float c = A.x * B.y - A.y * B.x;
+
+  // TODO: Check if other cases need to be handled
+  if (is_almost_zero(a)) {
+    if (is_almost_zero(b)) {
+      return { 0.0f, 0.0f };
+    }
+    return { -c / b, -1.0f };
+  }
+
+  float delta = b * b - 4.0f * a * c;
+
+  if (is_almost_zero(delta)) {
+    return { -b / (2.0f * a), -1.0f };
+  } else if (delta > 0.0f) {
+    float sqrt_delta = sqrtf(delta);
+    float t1 = (-b + sqrt_delta) / (2.0f * a);
+    float t2 = (-b - sqrt_delta) / (2.0f * a);
+
+    return { t1, t2 };
+  }
+
+  return { -1.0f, -1.0f };
+}
+
+// Compute absolute angle difference of theta1 and theta0 in radians.
+static float absolute_angle_difference(float theta1, float theta0) {
+  const float absolute_difference = abs(theta1 - theta0);
+
+  // Is absolute difference between angles greater than 180 degrees?
+  if (absolute_difference > MATH_PI) {
+    // Yes, return absolute difference minus 360 degrees.
+    return abs(absolute_difference - MATH_TWO_PI);
+  }
+
+  // No, return absolute difference as is.
+  return absolute_difference;
+}
+
+void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
+  vec2 points[4] = { curve.p0, curve.p1, curve.p2, curve.p3 };
+  int resolution = 100;
+
+  for (int i = 0; i <= resolution; i++) {
+    float t = (float)i / (float)resolution;
+
+    add_point(bezier_t(curve, t), vec4{ 0.2f, 0.2f, 1.0f, 1.0f }, offset, geo);
+    add_point(bezier_derivative_t(curve, t), vec4{ 0.2f, 0.8f, 0.8f, 1.0f }, offset, geo);
+  }
+
+  for (vec2& point : points) {
+    add_point(point, vec4{ 1.0f, 0.2f, 0.2f, 1.0f }, offset, geo, 1.0f);
+  }
+
+  // vec2 inflections = (-curve.p0 + 2.0f * curve.p1 - curve.p2) / (-curve.p0 + 3.0f * curve.p1 - 3.0f * curve.p2 + curve.p3);
+  vec2 inflections = find_inflections(curve);
+  vec4 inflection_col{ 0.2f, 1.0f, 0.2f, 1.0f };
+
+  std::vector<float> turning_points{};
+  turning_points.reserve(4);
+
+  // TODO: inline
+  vec2 P0 = bezier_derivative_t(curve, 0.0f);
+  turning_points.push_back(atan2(P0.y, P0.x));
+
+  // Sort inflections
+  if (inflections.x > inflections.y) swap_coordinates(inflections, inflections);
+
+  if (inflections.x > 0.0f && inflections.x < 1.0f) {
+    vec2 P1 = bezier_derivative_t(curve, inflections.x);
+
+    add_point(bezier_t(curve, inflections.x), inflection_col, offset, geo, 1.0f);
+    add_point(P1, inflection_col, offset, geo, 1.0f);
+
+    turning_points.push_back(atan2(P1.y, P1.x));
+  }
+
+  if (inflections.y > 0.0f && inflections.y < 1.0f && inflections.y != inflections.x) {
+    vec2 P2 = bezier_derivative_t(curve, inflections.y);
+
+    add_point(bezier_t(curve, inflections.y), inflection_col, offset, geo, 1.0f);
+    add_point(P2, inflection_col, offset, geo, 1.0f);
+
+    turning_points.push_back(atan2(P2.y, P2.x));
+  }
+
+  // TODO: inline
+  vec2 P3 = bezier_derivative_t(curve, 1.0f);
+  turning_points.push_back(atan2(P3.y, P3.x));
+
+  const float max_angle_difference = std::max(max_angle, MATH_PI / 300.0f);
+
+  std::vector<vec2> t_values{};
+
+  for (int i = 0; i < (int)turning_points.size() - 1; i++) {
+    float difference = turning_points[i + 1] - turning_points[i];
+    int increments = abs((int)ceilf(difference / max_angle_difference));
+    float increment = difference / (float)increments;
+
+    if (i == 2) {
+      console::log("difference", difference);
+      console::log("increments", increments);
+      console::log("increment", increment);
+    }
+
+    t_values.reserve(increments);
+
+    for (int j = 0; j <= increments; j++) {
+      float theta = turning_points[i] + (float)j * increment;
+      t_values.push_back(t_from_theta(curve, theta));
+
+      if (i == 2) {
+        for (int h = 0; h <= 300; h += 20) {
+          add_point(vec2{ h * cosf(theta), h * sinf(theta) }, vec4{ 0.2f, 0.2f, 0.8f, 0.5f }, offset, geo);
+        }
+      }
+    }
+  }
+
+  size_t t_values_len = t_values.size();
+  std::vector<float> parsed_t_values(t_values_len);
+  parsed_t_values[t_values_len - 1] = 1;
+  int parsed = 2;
+
+  float max_t = 0.0f;
+
+  for (size_t i = 1; i < t_values_len - 1; i++) {
+    vec2& prev = t_values[i - 1];
+    vec2& values = t_values[i];
+    vec2& next = t_values[i + 1];
+    bool x_bad = values.x <= max_t || values.x >= 1 ||
+      (values.x <= prev.x && values.x <= prev.y) ||
+      (values.x >= next.x && values.x >= next.y);
+    bool y_bad = values.y <= max_t || values.y >= 1 ||
+      (values.y <= prev.x && values.y <= prev.y) ||
+      (values.y >= next.x && values.y >= next.y);
+
+    if (x_bad) {
+      if (!y_bad) {
+        parsed_t_values[i] = values.y;
+        parsed++;
+      } else {
+        // TODO: Check if it is problematic
+        parsed_t_values[i] = (values.x + values.y) / 2.0f;
+      }
+    } else {
+      if (y_bad) {
+        parsed_t_values[i] = values.x;
+        parsed++;
+      } else {
+        // TODO: Check if it is problematic
+        parsed_t_values[i] = (values.x + values.y) / 2.0f;
+      }
+    }
+
+    max_t = std::max(max_t, parsed_t_values[i]);
+
+    add_point(bezier_t(curve, parsed_t_values[i]), vec4{ 0.8f, 0.0f, 0.0f, 1.0f }, offset, geo, 0.2f);
+    add_point(bezier_derivative_t(curve, parsed_t_values[i]), vec4{ 0.8f, 0.0f, 0.0f, 1.0f }, offset, geo, 0.2f);
+  }
+}
+
+Geometry stroke_curves(const std::vector<Bezier>& curves) {
+  Geometry geo;
+  uint32_t offset = 0;
+
+  //Bezier test{ {0.0f, 0.0f}, {110.0f, 100.0f}, {-10.0f, 100.0f}, {100.0f, 0.0f} };
+  Bezier test1{ {0.0f, 0.0f}, {25.0f, -45.0f}, {75.0f, -45.0f}, {100.0f, 0.0f} };
+  Bezier test2{ {120.0f, 0.0f}, {120.0f, -45.0f}, {190.0f, -45.0f}, {190.0f, -100.0f} };
+  Bezier test3{ {0.0f, 0.0f}, {100.0f, -55.0f}, {0.0f, -140.0f}, {85.0f, -100.0f} };
+  Bezier test4{ {0.0f, 0.0f}, {60.0f, -50.0f}, {15.0f, -45.0f}, {100.0f, -10.0f} };
+
+  stroke_curve(test1, offset, geo);
+  // stroke_curve(test2, offset, geo);
+
+  // for (const Bezier& curve : curves) {
+  //   stroke_curve(curve, offset, geo);
+  //}
+
+  return geo;
+}

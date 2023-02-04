@@ -9,6 +9,8 @@
 #include <glad/glad.h>
 #endif
 
+#include <stdexcept>
+
 Renderer* Renderer::s_instance = nullptr;
 
 static const size_t max_vertex_buffer_size = 2 * 100000;
@@ -104,6 +106,11 @@ void Renderer::add_to_batch(const Geometry& geometry) {
     end_batch();
     flush();
     begin_batch();
+
+    if (geometry.indices.size() >= max_index_count || geometry.vertices.size() >= max_vertex_count) {
+      throw std::invalid_argument("Geometry is too large to fit in a single batch.");
+      return;
+    }
   }
 
   for (size_t i = 0; i < geometry.vertices.size(); i++) {

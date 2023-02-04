@@ -33,7 +33,8 @@ static std::vector<FreehandPathPoint> simplify_radial_dist(const std::vector<Fre
   const FreehandPathPoint* point = prev_point;
   const size_t size = points.size();
 
-  std::vector<FreehandPathPoint> new_points(size / 2);
+  std::vector<FreehandPathPoint> new_points{};
+  new_points.reserve(size / 2);
   new_points.push_back(*prev_point);
 
   for (size_t i = 1; i < size; i++) {
@@ -75,7 +76,8 @@ static void simplify_dp_step(const std::vector<FreehandPathPoint>& points, size_
 // simplification using Ramer-Douglas-Peucker algorithm
 static std::vector<FreehandPathPoint> simplify_douglas_peucker(const std::vector<FreehandPathPoint>& points, float sq_tolerance) {
   const size_t last = points.size() - 1;
-  std::vector<FreehandPathPoint> simplified(last / 2);
+  std::vector<FreehandPathPoint> simplified{};
+  simplified.reserve(last / 2);
 
   simplified.push_back(points[0]);
 

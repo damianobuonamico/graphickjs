@@ -4,6 +4,7 @@
 #include "wasm-src/editor/editor.h"
 #include "wasm-src/editor/input/input_manager.h"
 #include "wasm-src/renderer/geometry/corners_detection.h"
+#include "wasm-src/renderer/geometry/stroker.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -156,6 +157,7 @@ int main() {
       ImGui::Checkbox("simplify_first", &simplify_first);
       ImGui::SliderFloat("simplification_tolerance", &simplification_tolerance, 0.0f, 10.0f);
       ImGui::SliderFloat("max_error", &max_error, 0.0f, 10.0f);
+      ImGui::SliderAngle("max_angle", &max_angle, 0.0f, 20.0f);
 
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();

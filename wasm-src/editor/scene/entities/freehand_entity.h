@@ -42,6 +42,10 @@ public:
 
     // Geometry geometry = stroke_freehand_path(points, 8.0f, zoom);
 
+    Renderer::get()->draw(stroke_curves({}));
+
+    return;
+
     Geometry geometry{};
 
     vec2 off_d1{ 1.0f, 1.0f };
