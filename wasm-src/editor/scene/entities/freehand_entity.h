@@ -42,14 +42,14 @@ public:
 
     // Geometry geometry = stroke_freehand_path(points, 8.0f, zoom);
 
-    Renderer::get()->draw(stroke_curves({}));
+   // Renderer::get()->draw(stroke_curves({}));
 
-    return;
+    //return;
 
     Geometry geometry{};
 
-    vec2 off_d1{ 1.0f, 1.0f };
-    vec2 off_d2{ -1.0f, 1.0f };
+    vec2 off_d1{ 0.4f, 0.4f };
+    vec2 off_d2{ -0.4f, 0.4f };
 
     uint32_t offset = 0;
 
@@ -58,7 +58,7 @@ public:
 
     for (const FreehandPathPoint& point : points) {
       geometry.vertices.insert(geometry.vertices.end(), {
-        {point.position - off_d1, vec4{1.0f, 0.0f, 0.0f, 1.0f}}, point.position + off_d2, point.position + off_d1, point.position - off_d2
+        point.position - off_d1, point.position + off_d2, point.position + off_d1, point.position - off_d2
         });
       geometry.indices.insert(geometry.indices.end(), {
         offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0
@@ -82,66 +82,81 @@ public:
         size_t start = corners[i];
         size_t end = corners[i + 1];
 
-        auto curves = fit_to_bezier_curves(points, start, end, max_error);
+        auto curves = fit_to_bezier_curves(points, start, end, max_fit_error);
 
-        for (size_t j = 0; j < curves.size(); j++) {
-          Bezier& cubic = curves[j];
+        Renderer::get()->draw(stroke_curves(curves));
 
-          for (int i = 0; i <= 10; i++) {
-            float t = (float)i / 10.0f;
+        for (auto curve : curves) {
+          for (int i = 0; i < 4; i++) {
+            geometry.vertices.insert(geometry.vertices.end(), {
+            {curve[i] - off_d1, curve_color}, {curve[i] + off_d2, curve_color}, {curve[i] + off_d1,curve_color}, {curve[i] - off_d2, curve_color}
+              });
+            geometry.indices.insert(geometry.indices.end(), {
+              offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0
+              });
 
-            vec2 m = -3.0f * powf(1.0f - t, 2) * cubic.p0 + 3.0f * powf(1.0f - t, 2) * cubic.p1 - 6.0f * t * (1 - t) * cubic.p1 - 3.0f * t * t * cubic.p2 + 6.0f * t * (1 - t) * cubic.p2 + 3.0f * t * t * cubic.p3;
-            normalize(m, m);
-            vec2 m1 = width * rotate(m, vec2{ 0.0f }, MATH_PI / 2.0f);
-
-            // console::log(m);
-
-            float c0 = std::powf(1.0f - t, 3.0f);
-            float c1 = 3.0f * t * std::powf(1.0f - t, 2.0f);
-            float c2 = 3.0f * std::powf(t, 2.0f) * (1.0f - t);
-            float c3 = std::powf(t, 3.0f);
-
-            vec2 pt = cubic.p0 * c0 + cubic.p1 * c1 + cubic.p2 * c2 + cubic.p3 * c3;
-
-            vec2 a = pt + m1;
-            vec2 b = pt - m1;
-
-            geometry.vertices.insert(geometry.vertices.end(), { {a, curve_color}, {b, curve_color} });
-
-            if (j != 0 || i != 0) {
-              geometry.indices.insert(geometry.indices.end(), {
-                offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
-                });
-            }
-
-            offset += 2;
-
-            // geometry.vertices.insert(geometry.vertices.end(), {
-            //   {a - off_d1, curve_color}, {a + off_d2, curve_color}, {a + off_d1,curve_color}, {a - off_d2, curve_color}
-            //   });
-            // geometry.indices.insert(geometry.indices.end(), {
-            //   offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0
-            //   });
-
-            // offset += 4;
+            offset += 4;
           }
         }
+
+        // for (size_t j = 0; j < curves.size(); j++) {
+        //   Bezier& cubic = curves[j];
+
+        //   for (int i = 0; i <= 10; i++) {
+        //     float t = (float)i / 10.0f;
+
+        //     vec2 m = -3.0f * powf(1.0f - t, 2) * cubic.p0 + 3.0f * powf(1.0f - t, 2) * cubic.p1 - 6.0f * t * (1 - t) * cubic.p1 - 3.0f * t * t * cubic.p2 + 6.0f * t * (1 - t) * cubic.p2 + 3.0f * t * t * cubic.p3;
+        //     normalize(m, m);
+        //     vec2 m1 = width * rotate(m, vec2{ 0.0f }, MATH_PI / 2.0f);
+
+        //     // console::log(m);
+
+        //     float c0 = std::powf(1.0f - t, 3.0f);
+        //     float c1 = 3.0f * t * std::powf(1.0f - t, 2.0f);
+        //     float c2 = 3.0f * std::powf(t, 2.0f) * (1.0f - t);
+        //     float c3 = std::powf(t, 3.0f);
+
+        //     vec2 pt = cubic.p0 * c0 + cubic.p1 * c1 + cubic.p2 * c2 + cubic.p3 * c3;
+
+        //     vec2 a = pt + m1;
+        //     vec2 b = pt - m1;
+
+        //     geometry.vertices.insert(geometry.vertices.end(), { {a, curve_color}, {b, curve_color} });
+
+        //     if (j != 0 || i != 0) {
+        //       geometry.indices.insert(geometry.indices.end(), {
+        //         offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
+        //         });
+        //     }
+
+        //     offset += 2;
+
+        //     // geometry.vertices.insert(geometry.vertices.end(), {
+        //     //   {a - off_d1, curve_color}, {a + off_d2, curve_color}, {a + off_d1,curve_color}, {a - off_d2, curve_color}
+        //     //   });
+        //     // geometry.indices.insert(geometry.indices.end(), {
+        //     //   offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0
+        //     //   });
+
+        //     // offset += 4;
+        //   }
+        // }
       }
     }
 
-    // for (size_t i = 0; i < corners.size(); i++) {
-    //   uint corner = corners[i];
+    for (size_t i = 0; i < corners.size(); i++) {
+      uint corner = corners[i];
 
-    //   geometry.vertices.insert(geometry.vertices.end(), {
-    //     {points[corner].position - off_d1, corner_color}, {points[corner].position + off_d2, corner_color},
-    //     {points[corner].position + off_d1, corner_color}, {points[corner].position - off_d2, corner_color}
-    //     });
-    //   geometry.indices.insert(geometry.indices.end(), {
-    //     offset + 0, offset + 1, offset + 2, offset + 3, offset + 2, offset + 0
-    //     });
+      geometry.vertices.insert(geometry.vertices.end(), {
+        {points[corner].position - off_d1, corner_color}, {points[corner].position + off_d2, corner_color},
+        {points[corner].position + off_d1, corner_color}, {points[corner].position - off_d2, corner_color}
+        });
+      geometry.indices.insert(geometry.indices.end(), {
+        offset + 0, offset + 1, offset + 2, offset + 3, offset + 2, offset + 0
+        });
 
-    //   offset += 4;
-    // }
+      offset += 4;
+    }
 
     // for (Cubic& cubic : curves) {
     //   for (int i = 0; i < 10; i++) {

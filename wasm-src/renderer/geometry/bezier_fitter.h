@@ -99,8 +99,8 @@ static Bezier generate_bezier(
   vec2 X{ 0.0f }; /* Matrix X */
   float det_C0_C1, det_C0_X, det_X_C1; /* Determinants of matrices */
   float alpha_l, alpha_r; /* Alpha values, left and right	*/
-  vec2 tmp{};			/* Utility variable	*/
-  Bezier bez_curve{};	/* RETURN bezier curve ctl pts */
+  vec2 tmp;			/* Utility variable	*/
+  Bezier bez_curve;	/* RETURN bezier curve ctl pts */
   float seg_length;
   float epsilon;
 
@@ -190,7 +190,7 @@ static vec2 BII(int degree, const vec2* V, float t) {
   Q = V_temp[0];
   delete[] V_temp;
 
-  return V_temp[0];
+  return Q;
 }
 
 /*
@@ -411,7 +411,7 @@ static std::vector<Bezier> fit_to_bezier_curves(const PathPoints& points, const 
   vec2 t_hat_1 = compute_left_tangent(points, start);
   vec2 t_hat_2 = compute_right_tangent(points, end);
 
-  std::vector<Bezier> curves{};
+  std::vector<Bezier> curves;
 
   fit_cubic(points, start, end, t_hat_1, t_hat_2, error, curves);
 

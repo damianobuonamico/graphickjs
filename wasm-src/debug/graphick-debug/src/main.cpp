@@ -156,7 +156,7 @@ int main() {
       ImGui::SliderAngle("min_angle", &min_angle, 0.0f, 360.0f);
       ImGui::Checkbox("simplify_first", &simplify_first);
       ImGui::SliderFloat("simplification_tolerance", &simplification_tolerance, 0.0f, 10.0f);
-      ImGui::SliderFloat("max_error", &max_error, 0.0f, 10.0f);
+      ImGui::SliderFloat("max_fit_error", &max_fit_error, 0.0f, 5.0f);
       ImGui::SliderAngle("max_angle", &max_angle, 0.0f, 20.0f);
       ImGui::SliderFloat("stroke_width", &stroke_width, 0.01f, 50.0f);
 

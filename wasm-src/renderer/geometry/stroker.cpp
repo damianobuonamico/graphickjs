@@ -831,7 +831,6 @@ Geometry stroke_curves(const std::vector<Bezier>& curves) {
   Geometry geo;
   uint32_t offset = 0;
 
-  //Bezier test{ {0.0f, 0.0f}, {110.0f, 100.0f}, {-10.0f, 100.0f}, {100.0f, 0.0f} };
   Bezier test1{ {0.0f, 0.0f}, {25.0f, -45.0f}, {75.0f, -45.0f}, {100.0f, 0.0f} };
   Bezier test2{ {120.0f, 0.0f}, {120.0f, -45.0f}, {190.0f, -45.0f}, {190.0f, -100.0f} };
   Bezier test3{ {0.0f, 0.0f}, {100.0f, -55.0f}, {0.0f, -140.0f}, {85.0f, -100.0f} };
@@ -840,13 +839,13 @@ Geometry stroke_curves(const std::vector<Bezier>& curves) {
   Bezier test6{ {0.0f, 0.0f}, {101.0f, -100.0f}, {-1.0f, -100.0f}, {100.0f, 0.0f} };
   Bezier test7{ {0.0f, 0.0f}, {100.0f, -100.0f}, {0.0f, -100.0f}, {100.0f, 0.0f} };
   Bezier test8{ {0.0f, 0.0f}, {10.0f, -60.0f}, {0.0f, -60.0f}, {10.0f, -50.0f} };
+  Bezier test9{ {0.0f, 0.0f}, {62.78f / 10.0f, -21.56f / 10.0f}, {135.89f / 10.0f, 49.17f / 10.0f}, {46.88f / 10.0f, 104.0f / 10.0f} };
 
-  stroke_curve(test4, offset, geo);
-  // stroke_curve(test2, offset, geo);
+  stroke_curve(test9, offset, geo);
 
-  // for (const Bezier& curve : curves) {
-  //   stroke_curve(curve, offset, geo);
-  //}
+  for (const Bezier& curve : curves) {
+    //stroke_curve(curve, offset, geo);
+  }
 
   return geo;
 }

@@ -108,6 +108,7 @@ void Renderer::add_to_batch(const Geometry& geometry) {
     begin_batch();
 
     if (geometry.indices.size() >= max_index_count || geometry.vertices.size() >= max_vertex_count) {
+      console::log("Geometry is too large to fit in a single batch.");
       throw std::invalid_argument("Geometry is too large to fit in a single batch.");
       return;
     }
