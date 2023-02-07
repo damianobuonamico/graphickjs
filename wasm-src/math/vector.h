@@ -7,10 +7,16 @@
 vec2 min(const vec2& v1, const vec2& v2);
 vec3 min(const vec3& v1, const vec3& v2);
 vec4 min(const vec4& v1, const vec4& v2);
+void min(const vec2& v1, const vec2& v2, vec2& out);
+void min(const vec3& v1, const vec3& v2, vec3& out);
+void min(const vec4& v1, const vec4& v2, vec4& out);
 
 vec2 max(const vec2& v1, const vec2& v2);
 vec3 max(const vec3& v1, const vec3& v2);
 vec4 max(const vec4& v1, const vec4& v2);
+void max(const vec2& v1, const vec2& v2, vec2& out);
+void max(const vec3& v1, const vec3& v2, vec3& out);
+void max(const vec4& v1, const vec4& v2, vec4& out);
 
 float length(const vec2& v);
 float length(const vec3& v);

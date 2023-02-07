@@ -1,0 +1,17 @@
+#pragma once
+
+#include <stdint.h>
+#include <float.h>
+#include <cmath>
+
+#define MATH_PI 3.14159265358979323846f
+#define MATH_TWO_PI 3.14159265358979323846f * 2.0f
+
+float round(float t, float decimals) noexcept;
+float map(float t, float old_min, float old_max, float new_min, float new_max);
+float clamp(float t, float min, float max);
+float sign(float t);
+
+bool is_almost_zero(const float t, const float eps);
+
+#include "scalar.inl"

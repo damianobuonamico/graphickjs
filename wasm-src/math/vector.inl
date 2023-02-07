@@ -1,6 +1,6 @@
-#include <algorithm>
+#include "scalar.h"
 
-#include "math.h"
+#include <algorithm>
 
 /* -- min -- */
 
@@ -28,6 +28,24 @@ inline vec4 min(const vec4& v1, const vec4& v2) {
   };
 }
 
+inline void min(const vec2& v1, const vec2& v2, vec2& out) {
+  out.x = std::min(v1.x, v2.x);
+  out.y = std::min(v1.y, v2.y);
+}
+
+inline void min(const vec3& v1, const vec3& v2, vec3& out) {
+  out.x = std::min(v1.x, v2.x);
+  out.y = std::min(v1.y, v2.y);
+  out.z = std::min(v1.z, v2.z);
+}
+
+inline void min(const vec4& v1, const vec4& v2, vec4& out) {
+  out.x = std::min(v1.x, v2.x);
+  out.y = std::min(v1.y, v2.y);
+  out.z = std::min(v1.z, v2.z);
+  out.w = std::min(v1.w, v2.w);
+}
+
 /* -- max -- */
 
 inline vec2 max(const vec2& v1, const vec2& v2) {
@@ -52,6 +70,24 @@ inline vec4 max(const vec4& v1, const vec4& v2) {
     std::max(v1.z, v2.z),
     std::max(v1.w, v2.w),
   };
+}
+
+inline void max(const vec2& v1, const vec2& v2, vec2& out) {
+  out.x = std::max(v1.x, v2.x);
+  out.y = std::max(v1.y, v2.y);
+}
+
+inline void max(const vec3& v1, const vec3& v2, vec3& out) {
+  out.x = std::max(v1.x, v2.x);
+  out.y = std::max(v1.y, v2.y);
+  out.z = std::max(v1.z, v2.z);
+}
+
+inline void max(const vec4& v1, const vec4& v2, vec4& out) {
+  out.x = std::max(v1.x, v2.x);
+  out.y = std::max(v1.y, v2.y);
+  out.z = std::max(v1.z, v2.z);
+  out.w = std::max(v1.w, v2.w);
 }
 
 /* -- length -- */

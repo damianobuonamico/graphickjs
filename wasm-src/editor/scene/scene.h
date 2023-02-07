@@ -3,6 +3,7 @@
 #include "../../values/ordered_map.h"
 #include "../../utils/uuid.h"
 #include "entity.h"
+#include "entities/element_entity.h"
 
 #include <memory>
 
@@ -19,7 +20,7 @@ public:
   }
 private:
   void load() {
-    m_children.insert({ {}, std::make_shared<Entity>() });
+    m_children.insert({ {}, std::make_shared<ElementEntity>(vec2{ 0.0f })});
   }
 
   void render(float zoom) {

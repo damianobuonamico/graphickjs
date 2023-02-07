@@ -1,32 +1,14 @@
 #include "math.h"
 
-#include <cmath>
-
-inline float round(float t, float precision) noexcept {
-  if (precision >= 1.0f) {
-    return std::round(t / precision) * precision;
-  }
-
-  float integer_part = std::floor(t);
-  float decimal_part = t - integer_part;
-
-  return integer_part + std::round(decimal_part / precision) * precision;
+inline bool is_point_in_circle(const vec2& point, const vec2& center, const float radius) {
+  return squared_distance(point, center) <= radius * radius;
 }
 
-inline float map(float t, float old_min, float old_max, float new_min, float new_max) {
-  return ((t - old_min) * (new_max - new_min)) / (old_max - old_min) + new_min;
-}
-
-inline float clamp(float t, float min, float max) {
-  if (t < min) return min;
-  if (t > max) return max;
-  return t;
-}
-
-inline float sign(float t) {
-  return (float)((t > 0) - (t < 0));
-}
-
-inline bool is_almost_zero(const float t, const float eps = FLT_EPSILON) {
-  return abs(t) <= eps;
+inline bool is_point_in_box(const vec2& point, const Box& box, const float threshold = 0.0f) {
+  return (
+    point.x + threshold >= box.min.x &&
+    point.x - threshold <= box.max.x &&
+    point.y + threshold >= box.min.y &&
+    point.y - threshold <= box.max.y
+    );
 }

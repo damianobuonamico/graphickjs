@@ -5,7 +5,7 @@
 
 class ChangeVec2Command: public Command {
 public:
-  ChangeVec2Command(vec2& old_value, vec2& new_value)
+  ChangeVec2Command(vec2& old_value, const vec2& new_value)
     : m_value(old_value), m_new_value(new_value), m_old_value({}) {}
 
   virtual void execute() override {

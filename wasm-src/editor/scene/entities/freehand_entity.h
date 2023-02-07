@@ -13,7 +13,7 @@
 class FreehandEntity: public Entity {
 public:
   FreehandEntity(const vec2& position, float pressure, double time)
-    : m_position(position), m_points({ {m_position, pressure} }) {
+    : m_transform(TransformComponent{ this }), m_position(position), m_points({ {m_position, pressure} }) {
     console::log("FreehandEntity created");
     WobbleSmoother::reset(m_position, time);
   };
@@ -23,6 +23,8 @@ public:
   ~FreehandEntity() {
     console::log("FreehandEntity destroyed");
   }
+
+  inline virtual TransformComponent& transform() { return m_transform; }
 
   void add_point(const vec2& position, float pressure, double time) {
     vec2 smoothed_position = WobbleSmoother::update(m_position + position, time);
@@ -197,4 +199,6 @@ public:
 private:
   vec2 m_position;
   std::vector<FreehandPathPoint> m_points;
+
+  TransformComponent m_transform;
 };
