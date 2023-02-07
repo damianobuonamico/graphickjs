@@ -36,7 +36,7 @@ public:
     m_points.push_back({ m_position + position, pressure });
   }
 
-  virtual void render(float zoom) const override {
+  virtual void render(float zoom) override {
     console::time_start();
     std::vector<FreehandPathPoint> points = simplify_first ? simplify_path(smooth_freehand_path(m_points, 4), simplification_tolerance, true) : smooth_freehand_path(m_points, 4);
     // console::time_end("simplify");

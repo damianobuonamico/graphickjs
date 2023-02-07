@@ -20,11 +20,11 @@ public:
   }
 private:
   void load() {
-    m_children.insert({ {}, std::make_shared<ElementEntity>(vec2{ 0.0f })});
+    m_children.insert({ {}, std::make_shared<ElementEntity>(vec2{ 0.0f }) });
   }
 
   void render(float zoom) {
-    for (const auto& [uuid, entity] : m_children) {
+    for (const auto& [id, entity] : m_children) {
       entity->render(zoom);
     }
   }

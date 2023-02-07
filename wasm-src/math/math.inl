@@ -12,3 +12,16 @@ inline bool is_point_in_box(const vec2& point, const Box& box, const float thres
     point.y - threshold <= box.max.y
     );
 }
+
+inline bool does_box_intersect_box(const Box& a, const Box& b) {
+  return b.max.x >= a.min.x && a.max.x >= b.min.x && b.max.y >= a.min.y && a.max.y >= b.min.y;
+}
+
+inline std::vector<Box> get_lines_from_box(const Box& box) {
+  return {
+    { box.min, { box.max.x, box.min.y }},
+    { { box.max.x, box.min.y }, box.max },
+    { box.max, { box.min.x, box.max.y } },
+    { { box.min.x, box.max.y }, box.min }
+  };
+}

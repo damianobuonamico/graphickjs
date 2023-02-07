@@ -1,6 +1,6 @@
 #include "handle_entity.h"
 
-void HandleEntity::render(float zoom) const {
+void HandleEntity::render(float zoom) {
   // TODO: Implement square geometry and refactor
   Geometry geo;
   const vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f };

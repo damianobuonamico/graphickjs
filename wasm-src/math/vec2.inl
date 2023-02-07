@@ -208,8 +208,8 @@ namespace std {
 
   template <> class numeric_limits<vec2> {
   public:
-    static inline vec2 min() { return vec2{ numeric_limits<float>::min(),  numeric_limits<float>::min() }; }
-    static inline vec2 max() { return vec2{ numeric_limits<float>::max(),  numeric_limits<float>::max() }; }
+    static inline vec2 min() { return vec2{ numeric_limits<float>::min() }; }
+    static inline vec2 max() { return vec2{ numeric_limits<float>::max() }; }
   };
 
 }

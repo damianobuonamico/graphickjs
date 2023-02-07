@@ -218,12 +218,14 @@ bool InputManager::on_pointer_leave() {
 }
 
 bool InputManager::on_key_down(KeyboardKey key) {
-  if (key == KeyboardKey::Z && keys.ctrl) {
+  if ((key == KeyboardKey::Z || (int)key == 90 /* TEMP: GLFW */) && keys.ctrl) {
     if (keys.shift) {
       CommandHistory::redo();
     } else {
       CommandHistory::undo();
     }
+
+    Editor::render();
   }
 
   return false;

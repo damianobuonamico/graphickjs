@@ -65,6 +65,7 @@ public:
 
   inline virtual void disable_merge() override {
     m_commands_indices.clear();
+    m_can_merge = false;
   }
 
   virtual bool merge_with(CommandPointer& command) override {

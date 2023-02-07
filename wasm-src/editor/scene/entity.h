@@ -18,7 +18,7 @@ public:
 
   virtual TransformComponent& transform() = 0;
 
-  virtual void render(float zoom) const {
+  virtual void render(float zoom) {
     std::vector<Vertex> vertices = { {{0.0f, 0.0f}}, {{100.0f, 0.0f}}, {{100.0f, 100.0f}}, {{0.0f, 100.0f}} };
     std::vector<uint32_t> indices = { 0, 1, 2, 2, 3, 0 };
 

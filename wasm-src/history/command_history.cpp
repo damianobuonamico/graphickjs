@@ -85,12 +85,14 @@ void CommandHistory::end_batch() {
   auto& command = instance->m_commands[instance->m_index];
 
   if (CommandBatch* command_batch = dynamic_cast<CommandBatch*>(command.get())) {
-    if (command_batch->size() == 0) {
+    size_t batch_size = command_batch->size();
+
+    if (batch_size == 0) {
       instance->m_commands.erase(instance->m_commands.begin() + instance->m_index);
       instance->m_commands[instance->m_index--]->disable_merge();
 
       return;
-    } else if (command_batch->size() == 1) {
+    } else if (batch_size == 1) {
       auto& first_command = command_batch->front();
 
       first_command->disable_merge();

@@ -11,6 +11,7 @@ class OrderedMap {
   using Map = std::unordered_map<K, V>;
   using Order = std::vector<K>;
 
+  // TODO: const iterator
   struct Iterator {
     using iterator_category = std::forward_iterator_tag;
     using value_type = std::pair<const K, V>;
