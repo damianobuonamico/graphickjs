@@ -44,7 +44,7 @@ public:
 
     // Geometry geometry = stroke_freehand_path(points, 8.0f, zoom);
 
-   // Renderer::get()->draw(stroke_curves({}));
+   // Renderer::draw(stroke_curves({}));
 
     //return;
 
@@ -86,7 +86,7 @@ public:
 
         auto curves = fit_to_bezier_curves(points, start, end, max_fit_error);
 
-        Renderer::get()->draw(stroke_curves(curves));
+        Renderer::draw(stroke_curves(curves));
 
         for (auto curve : curves) {
           for (int i = 0; i < 4; i++) {
@@ -194,7 +194,7 @@ public:
     //   // offset += 8;
     // }
 
-    Renderer::get()->draw(geometry);
+    Renderer::draw(geometry);
   };
 private:
   vec2 m_position;

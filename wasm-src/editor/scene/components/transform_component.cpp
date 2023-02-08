@@ -38,6 +38,10 @@ Box CircleTransformComponent::bounding_box() const {
 
 /* -- VertexTransformComponent -- */
 
+Vec2Value& VertexTransformComponent::position() {
+  return static_cast<VertexEntity*>(parent)->position()->transform().position();
+}
+
 Vec2Value* VertexTransformComponent::left() {
   if (parent) {
     HandleEntity* left = static_cast<VertexEntity*>(parent)->left();
@@ -83,6 +87,14 @@ Box VertexTransformComponent::bounding_box() const {
   box.max += position;
 
   return box;
+}
+
+void VertexTransformComponent::translate(const vec2& amount, bool apply) {
+  static_cast<VertexEntity*>(parent)->position()->transform().translate(amount, apply);
+}
+
+void VertexTransformComponent::translate_to(const vec2& value, bool apply) {
+  static_cast<VertexEntity*>(parent)->position()->transform().translate_to(value, apply);
 }
 
 void VertexTransformComponent::translate_left(const vec2& amount, bool mirror = false, bool apply = false) {

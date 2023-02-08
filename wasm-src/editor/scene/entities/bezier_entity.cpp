@@ -1,4 +1,5 @@
 #include "bezier_entity.h"
+#include "../../../renderer/geometry/stroker.h"
 
 #define BEZIER_CALL(func, ...) type() == Type::Linear ? linear_##func(__VA_ARGS__) : cubic_##func(__VA_ARGS__)
 
@@ -441,7 +442,31 @@ std::vector<float> BezierEntity::cubic_line_intersections(const Box& line) {
 }
 
 void BezierEntity::linear_render(float zoom) {
+  Geometry geo;
+
+  vec2 A = p0();
+  vec2 B = p3();
+
+  float width = 2.0f / zoom;
+  float dx = B.x - A.x;
+
+  if (is_almost_zero(dx)) {
+    vec2 offset{ width, 0.0f };
+    geo.vertices.insert(geo.vertices.end(), { A - offset, A + offset, B + offset, B - offset });
+  } else {
+    vec2 direction{ dx, B.y - A.y };
+    normalize_length(direction, width, direction);
+    orthogonal(direction, direction);
+
+    geo.vertices.insert(geo.vertices.end(), { A - direction, A + direction, B + direction, B - direction });
+  }
+
+  geo.indices = { 0, 1, 2, 2, 3, 0 };
+
+  Renderer::draw(geo);
 }
 
 void BezierEntity::cubic_render(float zoom) {
+  Geometry geo = stroke_curves({ Bezier{ p0(), p1(), p2(), p3() } });
+  Renderer::draw(geo);
 }

@@ -23,7 +23,7 @@ public:
     std::vector<uint32_t> indices = { 0, 1, 2, 2, 3, 0 };
 
     const Geometry geometry = { vertices, indices };
-    Renderer::get()->draw(geometry);
+    Renderer::draw(geometry);
   };
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) { return nullptr; };

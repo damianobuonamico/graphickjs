@@ -486,6 +486,13 @@ inline vec2 orthogonal(const vec2& v) {
   return vec2{ -v.y, v.x };
 }
 
+inline void orthogonal(const vec2& v, vec2& out) {
+  float temp = v.x;
+
+  out.x = -v.y;
+  out.y = temp;
+}
+
 /* -- swap -- */
 inline vec2& swap_coordinates(const vec2& v, vec2& out) {
   float temp = v.x;

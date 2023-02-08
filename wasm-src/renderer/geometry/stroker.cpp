@@ -841,10 +841,10 @@ Geometry stroke_curves(const std::vector<Bezier>& curves) {
   Bezier test8{ {0.0f, 0.0f}, {10.0f, -60.0f}, {0.0f, -60.0f}, {10.0f, -50.0f} };
   Bezier test9{ {0.0f, 0.0f}, {62.78f / 10.0f, -21.56f / 10.0f}, {135.89f / 10.0f, 49.17f / 10.0f}, {46.88f / 10.0f, 104.0f / 10.0f} };
 
-  stroke_curve(test9, offset, geo);
+  //stroke_curve(test9, offset, geo);
 
   for (const Bezier& curve : curves) {
-    //stroke_curve(curve, offset, geo);
+    stroke_curve(curve, offset, geo);
   }
 
   return geo;

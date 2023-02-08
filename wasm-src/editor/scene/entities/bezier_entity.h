@@ -5,7 +5,7 @@
 
 #include <vector>
 
-// TOOD: Cache
+// TODO: Cache
 class BezierEntity: public Entity {
 public:
   enum class Type {
@@ -15,6 +15,11 @@ public:
 public:
   BezierEntity(VertexEntity& start, VertexEntity& end)
     : m_transform(TransformComponent{ this }), m_start(start), m_end(end) {
+    console::log("BezierEntity created");
+  };
+  BezierEntity(VertexEntity& start, VertexEntity& end, Entity* parent)
+    : BezierEntity(start, end) {
+    this->parent = parent;
     console::log("BezierEntity created");
   };
   BezierEntity(const BezierEntity&) = default;
