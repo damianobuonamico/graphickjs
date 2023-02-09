@@ -24,7 +24,8 @@ public:
     console::log("FreehandEntity destroyed");
   }
 
-  inline virtual TransformComponent& transform() { return m_transform; }
+  inline virtual TransformComponent& transform() override { return m_transform; }
+  inline virtual const TransformComponent& transform() const override { return m_transform; }
 
   void add_point(const vec2& position, float pressure, double time) {
     vec2 smoothed_position = WobbleSmoother::update(m_position + position, time);
@@ -36,7 +37,7 @@ public:
     m_points.push_back({ m_position + position, pressure });
   }
 
-  virtual void render(float zoom) override {
+  virtual void render(float zoom) const override {
     console::time_start();
     std::vector<FreehandPathPoint> points = simplify_first ? simplify_path(smooth_freehand_path(m_points, 4), simplification_tolerance, true) : smooth_freehand_path(m_points, 4);
     // console::time_end("simplify");

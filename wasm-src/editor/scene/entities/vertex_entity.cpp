@@ -1,6 +1,6 @@
 #include "vertex_entity.h"
 
-void VertexEntity::render(float zoom) {
+void VertexEntity::render(float zoom) const {
   // TODO: Implement instanced rendering, offset by transform.position
   m_position.render(zoom);
 }

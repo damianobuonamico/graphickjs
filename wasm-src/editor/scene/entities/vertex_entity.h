@@ -34,12 +34,13 @@ public:
   }
 
   inline virtual VertexTransformComponent& transform() override { return m_transform; }
+  inline virtual const VertexTransformComponent& transform() const override { return m_transform; }
 
   inline HandleEntity* position() { return &m_position; };
   inline HandleEntity* left() { return m_left.has_value() ? &m_left.value() : nullptr; };
   inline HandleEntity* right() { return m_right.has_value() ? &m_right.value() : nullptr; };
 
-  virtual void render(float zoom) override;
+  virtual void render(float zoom) const override;
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
   virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) override;

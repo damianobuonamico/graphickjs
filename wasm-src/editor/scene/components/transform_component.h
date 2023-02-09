@@ -6,7 +6,7 @@
 
 class TransformComponent: public Component {
 public:
-  TransformComponent(Entity* entity) : Component(entity) {};
+  TransformComponent(Entity* entity): Component(entity) {};
   TransformComponent(Entity* entity, const vec2& position)
     : Component(entity), m_position({ position }) {};
   TransformComponent(const TransformComponent&) = default;
@@ -14,9 +14,13 @@ public:
 
   ~TransformComponent() = default;
 
+  // TODO: fix const
   virtual inline Vec2Value& position() { return m_position; };
+  virtual inline const Vec2Value& position() const { return m_position; };
 
   virtual Box bounding_box() const;
+  virtual vec2 size() const;
+  virtual vec2 center() const;
 
   virtual void translate(const vec2& amount, bool apply);
   virtual void translate_to(const vec2& value, bool apply);
@@ -56,7 +60,7 @@ public:
   Vec2Value* right();
 
   virtual Box bounding_box() const override;
-  
+
   virtual void translate(const vec2& amount, bool apply) override;
   virtual void translate_to(const vec2& value, bool apply) override;
   void translate_left(const vec2& amount, bool mirror, bool apply);
@@ -65,4 +69,19 @@ public:
   void translate_right_to(const vec2& value, bool mirror, bool apply);
 
   virtual void apply() override;
+};
+
+class ElementTransformComponent: public TransformComponent {
+public:
+  ElementTransformComponent(Entity* entity)
+    : TransformComponent(entity) {};
+  ElementTransformComponent(const ElementTransformComponent&) = default;
+  ElementTransformComponent(ElementTransformComponent&&) = default;
+
+  ~ElementTransformComponent() = default;
+
+  virtual Box bounding_box() const override;
+  Box large_bounding_box() const;
+private:
+  vec2 m_origin{};
 };

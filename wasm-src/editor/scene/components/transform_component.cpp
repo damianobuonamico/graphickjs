@@ -1,12 +1,22 @@
 #include "transform_component.h"
 
 #include "../../../math/vector.h"
-#include "../entities/vertex_entity.h"
+#include "../entities/element_entity.h"
 
 /* -- TransformComponent -- */
 
 Box TransformComponent::bounding_box() const {
   return { { 0.0f, 0.0f }, { 0.0f, 0.0f } };
+}
+
+vec2 TransformComponent::size() const {
+  Box box = bounding_box();
+  return box.max - box.min;
+}
+
+vec2 TransformComponent::center() const {
+  Box box = bounding_box();
+  return midpoint(box.max, box.min);
 }
 
 void TransformComponent::translate(const vec2& amount, bool apply = false) {
@@ -187,4 +197,49 @@ void VertexTransformComponent::apply() {
 
   if (left) left->transform().apply();
   if (right) right->transform().apply();
+}
+
+Box ElementTransformComponent::bounding_box() const {
+  Box box{ std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
+  ElementEntity* parent = static_cast<ElementEntity*>(this->parent);
+
+  if (!parent) return box;
+
+  vec2 position = m_position.get();
+
+  if (parent->curves_count() > 0) {
+    for (auto it = parent->curves_begin(); it != parent->curves_end(); ++it) {
+      Box curve_box = it->bounding_box();
+      min(box.min, curve_box.min, box.min);
+      max(box.max, curve_box.max, box.max);
+    }
+  } else {
+    box.min = { 0.0f, 0.0f };
+    box.max = { 0.0f, 0.0f };
+  }
+
+  box.min += position;
+  box.max += position;
+
+  return box;
+}
+
+Box ElementTransformComponent::large_bounding_box() const {
+  Box box = bounding_box();
+  ElementEntity* parent = static_cast<ElementEntity*>(this->parent);
+  vec2 position = m_position.get();
+
+  box.min -= position;
+  box.max -= position;
+
+  for (auto& [id, vertex] : *parent) {
+    Box vertex_box = vertex->transform().bounding_box();
+    min(box.min, vertex_box.min, box.min);
+    max(box.max, vertex_box.max, box.max);
+  }
+
+  box.min += position;
+  box.max += position;
+
+  return box;
 }

@@ -49,25 +49,25 @@ vec2 BezierEntity::get(float t) const {
   return BEZIER_CALL(get, t);
 }
 
-float BezierEntity::closest_t_to(const vec2& position, int iterations) {
+float BezierEntity::closest_t_to(const vec2& position, int iterations) const {
   return (BEZIER_CALL(closest_to, position, iterations)).t;
 }
 
-vec2 BezierEntity::closest_point_to(const vec2& position, int iterations) {
+vec2 BezierEntity::closest_point_to(const vec2& position, int iterations) const {
   return (BEZIER_CALL(closest_to, position, iterations)).point;
 }
 
-float BezierEntity::distance_from(const vec2& position, int iterations) {
+float BezierEntity::distance_from(const vec2& position, int iterations) const {
   return std::sqrtf((BEZIER_CALL(closest_to, position, iterations)).sq_distance);
 }
 
-std::vector<float> BezierEntity::line_intersections(const Box& line) {
+std::vector<float> BezierEntity::line_intersections(const Box& line) const {
   if (!does_box_intersect_box(bounding_box(), line)) return {};
 
   return BEZIER_CALL(line_intersections, line);
 }
 
-std::vector<vec2> BezierEntity::line_intersection_points(const Box& line) {
+std::vector<vec2> BezierEntity::line_intersection_points(const Box& line) const {
   std::vector<float> intersections = line_intersections(line);
   std::vector<vec2> points{};
 
@@ -83,11 +83,11 @@ std::vector<vec2> BezierEntity::line_intersection_points(const Box& line) {
   return points;
 }
 
-bool BezierEntity::intersects_line(const Box& line) {
+bool BezierEntity::intersects_line(const Box& line) const {
   return line_intersection_points(line).size() > 0;
 }
 
-std::vector<vec2> BezierEntity::box_intersection_points(const Box& box) {
+std::vector<vec2> BezierEntity::box_intersection_points(const Box& box) const {
   std::vector<Box> lines = get_lines_from_box(box);
   std::vector<vec2> points{};
 
@@ -99,11 +99,11 @@ std::vector<vec2> BezierEntity::box_intersection_points(const Box& box) {
   return points;
 }
 
-bool BezierEntity::intersects_box(const Box& box) {
+bool BezierEntity::intersects_box(const Box& box) const {
   return box_intersection_points(box).size() > 0;
 }
 
-void BezierEntity::render(float zoom) {
+void BezierEntity::render(float zoom) const {
   BEZIER_CALL(render, zoom);
 }
 
@@ -180,7 +180,7 @@ vec2 BezierEntity::cubic_get(float t) const {
   return a * t_sq * t + b * t_sq + c * t + A;
 }
 
-BezierEntity::BezierPointDistance BezierEntity::linear_closest_to(const vec2& position, int iterations = 4) {
+BezierEntity::BezierPointDistance BezierEntity::linear_closest_to(const vec2& position, int iterations = 4) const {
   vec2 A = p0();
   vec2 B = p3();
 
@@ -203,7 +203,7 @@ BezierEntity::BezierPointDistance BezierEntity::linear_closest_to(const vec2& po
 }
 
 // TODO: Cache
-BezierEntity::BezierPointDistance BezierEntity::cubic_closest_to(const vec2& position, int iterations = 4) {
+BezierEntity::BezierPointDistance BezierEntity::cubic_closest_to(const vec2& position, int iterations = 4) const {
   vec2 A = p0();
   vec2 B = p1();
   vec2 C = p2();
@@ -322,7 +322,7 @@ BezierEntity::BezierPointDistance BezierEntity::cubic_closest_to(const vec2& pos
   return params;
 }
 
-std::vector<float> BezierEntity::linear_line_intersections(const Box& line) {
+std::vector<float> BezierEntity::linear_line_intersections(const Box& line) const {
   const vec2 A = p0();
   const vec2 B = p3();
 
@@ -347,7 +347,7 @@ std::vector<float> BezierEntity::linear_line_intersections(const Box& line) {
   return {};
 }
 
-std::vector<float> BezierEntity::cubic_line_intersections(const Box& line) {
+std::vector<float> BezierEntity::cubic_line_intersections(const Box& line) const {
   vec2 A = p0();
   vec2 B = p1();
   vec2 C = p2();
@@ -441,7 +441,7 @@ std::vector<float> BezierEntity::cubic_line_intersections(const Box& line) {
   return parsed_roots;
 }
 
-void BezierEntity::linear_render(float zoom) {
+void BezierEntity::linear_render(float zoom) const {
   Geometry geo;
 
   vec2 A = p0();
@@ -466,7 +466,7 @@ void BezierEntity::linear_render(float zoom) {
   Renderer::draw(geo);
 }
 
-void BezierEntity::cubic_render(float zoom) {
+void BezierEntity::cubic_render(float zoom) const {
   Geometry geo = stroke_curves({ Bezier{ p0(), p1(), p2(), p3() } });
   Renderer::draw(geo);
 }

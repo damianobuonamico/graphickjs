@@ -12,7 +12,7 @@
 
 class ElementEntity: public Entity {
 public:
-  ElementEntity(const vec2& position): m_transform(TransformComponent{ this }), m_position(position) {
+  ElementEntity(const vec2& position): m_transform(ElementTransformComponent{ this }), m_position(position) {
     add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 0.0f }, vec2{ 20.0f, -20.0f }, false));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
@@ -27,19 +27,38 @@ public:
     console::log("ElementEntity destroyed");
   }
 
-  inline virtual TransformComponent& transform() { return m_transform; }
+  inline std::vector<BezierEntity>::const_iterator curves_begin() const { return m_curves.begin(); }
+  inline std::vector<BezierEntity>::const_iterator curves_end() const { return m_curves.end(); }
+
+  inline OrderedMap<UUID, std::shared_ptr<VertexEntity>>::iterator begin() { return m_vertices.begin(); }
+  inline OrderedMap<UUID, std::shared_ptr<VertexEntity>>::iterator end() { return m_vertices.end(); }
+  inline OrderedMap<UUID, std::shared_ptr<VertexEntity>>::const_iterator begin() const { return m_vertices.begin(); }
+  inline OrderedMap<UUID, std::shared_ptr<VertexEntity>>::const_iterator end() const { return m_vertices.end(); }
+
+  inline virtual ElementTransformComponent& transform() override { return m_transform; }
+  inline virtual const ElementTransformComponent& transform() const override { return m_transform; }
+
+  inline size_t vertex_count() const { return m_vertices.size(); }
+  inline size_t curves_count() const { return m_curves.size(); }
+  inline VertexEntity& first_vertex() const { return *m_vertices.begin()->second; }
+  inline VertexEntity& last_vertex() const { return *(--m_vertices.end())->second; }
 
   void add_vertex(const std::shared_ptr<VertexEntity>& vertex);
 
-  // TODO: const
-  virtual void render(float zoom) override;
+  virtual void render(float zoom) const override;
+
+  bool intersects_box(const Box& box) const;
+
+  virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
+  virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) override;
 private:
   void regenerate();
+  const BezierEntity closing_curve() const;
 private:
   OrderedMap<UUID, std::shared_ptr<VertexEntity>> m_vertices;
   std::vector<BezierEntity> m_curves;
 
-  TransformComponent m_transform;
+  ElementTransformComponent m_transform;
 
   vec2 m_position;
   BoolValue m_closed{ true };

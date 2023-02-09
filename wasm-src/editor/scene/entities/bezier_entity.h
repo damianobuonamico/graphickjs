@@ -30,6 +30,7 @@ public:
   }
 
   inline virtual TransformComponent& transform() override { return m_transform; }
+  inline virtual const TransformComponent& transform() const override { return m_transform; }
 
   inline Type type() const {
     if (m_start.right() || m_end.left()) return Type::Cubic;
@@ -56,18 +57,18 @@ public:
   bool clockwise(int resolution) const;
 
   vec2 get(float t) const;
-  float closest_t_to(const vec2& position, int iterations);
-  vec2 closest_point_to(const vec2& position, int iterations);
-  float distance_from(const vec2& position, int iterations);
+  float closest_t_to(const vec2& position, int iterations) const;
+  vec2 closest_point_to(const vec2& position, int iterations) const;
+  float distance_from(const vec2& position, int iterations) const;
 
-  std::vector<float> line_intersections(const Box& line);
-  std::vector<vec2> line_intersection_points(const Box& line);
-  bool intersects_line(const Box& line);
+  std::vector<float> line_intersections(const Box& line) const;
+  std::vector<vec2> line_intersection_points(const Box& line) const;
+  bool intersects_line(const Box& line) const;
 
-  std::vector<vec2> box_intersection_points(const Box& box);
-  bool intersects_box(const Box& box);
+  std::vector<vec2> box_intersection_points(const Box& box) const;
+  bool intersects_box(const Box& box) const;
 
-  virtual void render(float zoom) override;
+  virtual void render(float zoom) const override;
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
 private:
@@ -82,14 +83,14 @@ private:
 
   vec2 linear_get(float t) const;
   vec2 cubic_get(float t) const;
-  BezierPointDistance linear_closest_to(const vec2& position, int iterations);
-  BezierPointDistance cubic_closest_to(const vec2& position, int iterations);
+  BezierPointDistance linear_closest_to(const vec2& position, int iterations) const;
+  BezierPointDistance cubic_closest_to(const vec2& position, int iterations) const;
 
-  std::vector<float> linear_line_intersections(const Box& line);
-  std::vector<float> cubic_line_intersections(const Box& line);
+  std::vector<float> linear_line_intersections(const Box& line) const;
+  std::vector<float> cubic_line_intersections(const Box& line) const;
 
-  void linear_render(float zoom);
-  void cubic_render(float zoom);
+  void linear_render(float zoom) const;
+  void cubic_render(float zoom) const;
 private:
   VertexEntity& m_start;
   VertexEntity& m_end;

@@ -1,10 +1,10 @@
 #include "handle_entity.h"
 
-void HandleEntity::render(float zoom) {
+void HandleEntity::render(float zoom) const {
   // TODO: Implement square geometry and refactor
   Geometry geo;
   const vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f };
-  const vec2 position = m_transform.position().get();
+  const vec2 position = transform().position().get();
 
   geo.vertices.push_back({ position, color });
 
