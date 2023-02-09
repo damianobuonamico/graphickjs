@@ -24,7 +24,7 @@ void ElementEntity::regenerate() {
   VertexEntity* first_vertex = nullptr;
   VertexEntity* last_vertex = nullptr;
 
-  for (auto& [id, vertex] : m_vertices) {
+  for (const auto& [id, vertex] : m_vertices) {
     VertexEntity* current_vertex = vertex.get();
 
     if (last_vertex) {
@@ -48,10 +48,10 @@ const BezierEntity ElementEntity::closing_curve() const {
     return m_curves.back();
   }
 
-  return {
-    VertexEntity{ last_vertex().transform().position().get() },
-    VertexEntity{ first_vertex().transform().position().get() }
-  };
+  VertexEntity start_vertex{ last_vertex().transform().position().get() };
+  VertexEntity end_vertex{ first_vertex().transform().position().get() };
+
+  return { start_vertex, end_vertex };
 }
 
 bool ElementEntity::intersects_box(const Box& box) const {
@@ -83,7 +83,7 @@ Entity* ElementEntity::entity_at(const vec2& position, bool lower_level, float t
   vec2 pos = position - m_transform.position().get();
   Entity* entity = nullptr;
 
-  for (auto& [id, vertex] : m_vertices) {
+  for (const auto& [id, vertex] : m_vertices) {
     entity = vertex->entity_at(pos, lower_level, threshold);
     if (entity) return entity;
   }
@@ -162,7 +162,7 @@ void ElementEntity::entities_in(const Box& box, std::vector<Entity*>& entities, 
     vec2 position = m_transform.position().get();
     Box translated_box = { box.min - position, box.max - position };
 
-    for (auto& [id, vertex] : m_vertices) {
+    for (const auto& [id, vertex] : m_vertices) {
       vertex->entities_in(translated_box, entities, lower_level);
     }
   } else if (intersects_box(box)) {

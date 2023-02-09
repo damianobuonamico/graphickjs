@@ -232,7 +232,7 @@ Box ElementTransformComponent::large_bounding_box() const {
   box.min -= position;
   box.max -= position;
 
-  for (auto& [id, vertex] : *parent) {
+  for (const auto& [id, vertex] : *parent) {
     Box vertex_box = vertex->transform().bounding_box();
     min(box.min, vertex_box.min, box.min);
     max(box.max, vertex_box.max, box.max);

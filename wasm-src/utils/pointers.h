@@ -9,6 +9,10 @@ public:
   D* operator->() {
     return &m_data;
   }
+
+  const D* operator->() const {
+    return &m_data;
+  }
 private:
   D m_data;
 };
