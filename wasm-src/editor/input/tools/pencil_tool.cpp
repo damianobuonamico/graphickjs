@@ -17,6 +17,6 @@ void PencilTool::on_pointer_move() {
   m_entity->add_point(InputManager::pointer.scene.delta, InputManager::pointer.pressure, InputManager::pointer.time);
 }
 
-void PencilTool::on_pointer_up() {
+void PencilTool::on_pointer_up(bool abort) {
   m_entity = nullptr;
 }

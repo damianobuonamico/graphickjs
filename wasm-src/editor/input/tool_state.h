@@ -3,6 +3,7 @@
 #include "tool.h"
 #include "tools/pan_tool.h"
 #include "tools/zoom_tool.h"
+#include "tools/select_tool.h"
 #include "tools/pencil_tool.h"
 
 class ToolState {
@@ -14,8 +15,8 @@ public:
 
   ~ToolState();
 
-  inline  Tool& current() const { return *m_tools[(int)m_current]; }
-  inline  Tool& active() const { return *m_tools[(int)m_active]; }
+  inline Tool& current() const { return *m_tools[(int)m_current]; }
+  inline Tool& active() const { return *m_tools[(int)m_active]; }
 
   void set_current(Tool::ToolType tool);
   void set_active(Tool::ToolType tool);
@@ -31,6 +32,7 @@ private:
   Tool* m_tools[static_cast<int>(Tool::ToolType::None)] = {
     new PanTool(),
     new ZoomTool(),
+    new SelectTool(),
     new PencilTool(),
   };
 

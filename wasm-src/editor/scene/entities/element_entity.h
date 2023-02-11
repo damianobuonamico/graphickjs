@@ -12,7 +12,7 @@
 
 class ElementEntity: public Entity {
 public:
-  ElementEntity(const vec2& position): m_transform(ElementTransformComponent{ this }), m_position(position) {
+  ElementEntity(const vec2& position) : Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this }), m_selection({ this }) {
     add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 0.0f }, vec2{ 20.0f, -20.0f }, false));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
@@ -37,6 +37,8 @@ public:
 
   inline virtual ElementTransformComponent& transform() override { return m_transform; }
   inline virtual const ElementTransformComponent& transform() const override { return m_transform; }
+  inline SelectionComponent* selection() { return &m_selection; }
+  inline const SelectionComponent* selection() const { return &m_selection; }
 
   inline size_t vertex_count() const { return m_vertices.size(); }
   inline size_t curves_count() const { return m_curves.size(); }
@@ -59,7 +61,7 @@ private:
   std::vector<BezierEntity> m_curves;
 
   ElementTransformComponent m_transform;
+  SelectionComponent m_selection;
 
-  vec2 m_position;
   BoolValue m_closed{ true };
 };

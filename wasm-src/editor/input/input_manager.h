@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../../math/vec2.h"
-#include "keys.h"
 #include "tool_state.h"
+#include "hover_state.h"
+#include "keys.h"
 
 #include <string>
 
@@ -67,7 +68,6 @@ public:
   struct Pointer {
     PointerTarget target = PointerTarget::Other;
 
-
     PointerCoord client{};
     PointerCoord scene{};
 
@@ -81,6 +81,7 @@ public:
 
   static KeysState keys;
   static Pointer pointer;
+  static HoverState hover;
 public:
   InputManager(const InputManager&) = delete;
   InputManager(InputManager&&) = delete;

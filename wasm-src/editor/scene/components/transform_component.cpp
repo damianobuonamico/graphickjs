@@ -19,7 +19,7 @@ vec2 TransformComponent::center() const {
   return midpoint(box.max, box.min);
 }
 
-void TransformComponent::translate(const vec2& amount, bool apply = false) {
+void TransformComponent::translate(const vec2& amount, bool apply) {
   if (apply) {
     m_position.add(amount);
   } else {
@@ -27,7 +27,7 @@ void TransformComponent::translate(const vec2& amount, bool apply = false) {
   }
 }
 
-void TransformComponent::translate_to(const vec2& value, bool apply = false) {
+void TransformComponent::translate_to(const vec2& value, bool apply) {
   if (apply) {
     m_position.set(value);
   } else {
@@ -107,7 +107,7 @@ void VertexTransformComponent::translate_to(const vec2& value, bool apply) {
   static_cast<VertexEntity*>(parent)->position()->transform().translate_to(value, apply);
 }
 
-void VertexTransformComponent::translate_left(const vec2& amount, bool mirror = false, bool apply = false) {
+void VertexTransformComponent::translate_left(const vec2& amount, bool mirror, bool apply) {
   if (!parent) return;
 
   HandleEntity* left = static_cast<VertexEntity*>(parent)->left();
@@ -128,7 +128,7 @@ void VertexTransformComponent::translate_left(const vec2& amount, bool mirror = 
   }
 }
 
-void VertexTransformComponent::translate_right(const vec2& amount, bool mirror = false, bool apply = false) {
+void VertexTransformComponent::translate_right(const vec2& amount, bool mirror, bool apply) {
   if (!parent) return;
 
   HandleEntity* left = static_cast<VertexEntity*>(parent)->left();
@@ -149,7 +149,7 @@ void VertexTransformComponent::translate_right(const vec2& amount, bool mirror =
   }
 }
 
-void VertexTransformComponent::translate_left_to(const vec2& value, bool mirror = false, bool apply = false) {
+void VertexTransformComponent::translate_left_to(const vec2& value, bool mirror, bool apply) {
   if (!parent) return;
 
   HandleEntity* left = static_cast<VertexEntity*>(parent)->left();
@@ -169,7 +169,7 @@ void VertexTransformComponent::translate_left_to(const vec2& value, bool mirror 
   }
 }
 
-void VertexTransformComponent::translate_right_to(const vec2& value, bool mirror = false, bool apply = false) {
+void VertexTransformComponent::translate_right_to(const vec2& value, bool mirror, bool apply) {
   if (!parent) return;
 
   HandleEntity* left = static_cast<VertexEntity*>(parent)->left();

@@ -12,20 +12,20 @@ public:
 public:
   VertexEntity(const vec2& position)
     : m_transform(VertexTransformComponent{ this }),
-    m_position(position, HandleEntity::Type::Square),
+    m_position(position, HandleEntity::Type::Square, this),
     m_left(std::nullopt), m_right(std::nullopt) {
     console::log("VertexEntity created");
   };
   VertexEntity(const vec2& position, const vec2& handle, bool is_left)
     : m_transform(VertexTransformComponent{ this }),
-    m_position(position, HandleEntity::Type::Square),
-    m_left(is_left ? OptionalHandle{ {handle, HandleEntity::Type::Circle} } : std::nullopt),
-    m_right(is_left ? std::nullopt : OptionalHandle{ {handle, HandleEntity::Type::Circle} }) {}
+    m_position(position, HandleEntity::Type::Square, this),
+    m_left(is_left ? OptionalHandle{ {handle, HandleEntity::Type::Circle, this} } : std::nullopt),
+    m_right(is_left ? std::nullopt : OptionalHandle{ {handle, HandleEntity::Type::Circle, this} }) {}
   VertexEntity(const vec2& position, const vec2& left, const vec2& right)
     : m_transform(VertexTransformComponent{ this }),
-    m_position(position, HandleEntity::Type::Square),
-    m_left(OptionalHandle{ {left, HandleEntity::Type::Circle} }),
-    m_right(OptionalHandle{ {right, HandleEntity::Type::Circle} }) {}
+    m_position(position, HandleEntity::Type::Square, this),
+    m_left(OptionalHandle{ {left, HandleEntity::Type::Circle, this} }),
+    m_right(OptionalHandle{ {right, HandleEntity::Type::Circle, this} }) {}
   VertexEntity(const VertexEntity&) = default;
   VertexEntity(VertexEntity&&) = default;
 

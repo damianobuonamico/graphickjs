@@ -447,6 +447,12 @@ void BezierEntity::linear_render(float zoom) const {
   vec2 A = p0();
   vec2 B = p3();
 
+  if (parent) {
+    vec2 offset = parent->transform().position().get();
+    A += offset;
+    B += offset;
+  }
+
   float width = 2.0f / zoom;
   float dx = B.x - A.x;
 
@@ -467,6 +473,9 @@ void BezierEntity::linear_render(float zoom) const {
 }
 
 void BezierEntity::cubic_render(float zoom) const {
-  Geometry geo = stroke_curves({ Bezier{ p0(), p1(), p2(), p3() } });
+  vec2 offset{ 0.0f };
+  if (parent) offset = parent->transform().position().get();
+
+  Geometry geo = stroke_curves({ Bezier{ offset + p0(), offset + p1(), offset + p2(), offset + p3() } });
   Renderer::draw(geo);
 }

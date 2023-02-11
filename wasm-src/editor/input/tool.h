@@ -4,8 +4,9 @@ class Tool {
 public:
   enum class ToolType {
     Pan = 0,
-    Zoom = 1,
-    Pencil = 2,
+    Zoom,
+    Select,
+    Pencil,
     None
   };
 
@@ -27,7 +28,7 @@ public:
 
   virtual void on_pointer_down() {};
   virtual void on_pointer_move() {};
-  virtual void on_pointer_up() {};
+  virtual void on_pointer_up(bool abort = false) {};
 
   virtual void on_pointer_hover() {};
 protected:

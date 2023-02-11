@@ -11,6 +11,7 @@
 InputManager* InputManager::s_instance = nullptr;
 InputManager::Pointer InputManager::pointer{};
 InputManager::KeysState InputManager::keys{};
+HoverState InputManager::hover{};
 
 void InputManager::init() {
   // TODO: InputManager reinitialization
@@ -161,6 +162,13 @@ bool InputManager::on_pointer_move(PointerTarget target, float x, float y) {
   pointer.scene.position = Editor::viewport.client_to_scene(current_position);
   pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
+  hover.set(
+    Editor::scene.entity_at(
+      pointer.scene.position,
+      m_tool_state.active().is_in_category(Tool::CategoryDirect),
+      5.0f / Editor::viewport.zoom()
+    )
+  );
 
   if (!m_moving && pointer.down) {
     if (

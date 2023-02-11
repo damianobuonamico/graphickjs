@@ -18,7 +18,7 @@ void update_tool_ui(int type) {}
 #endif
 
 ToolState::ToolState()
-  :m_active(Tool::ToolType::Pencil), m_current(Tool::ToolType::Pencil), m_last_tool(m_current) {}
+  :m_active(Tool::ToolType::Select), m_current(Tool::ToolType::Select), m_last_tool(m_current) {}
 
 ToolState::~ToolState() {
   for (auto tool : m_tools) {

@@ -22,8 +22,8 @@ public:
   virtual vec2 size() const;
   virtual vec2 center() const;
 
-  virtual void translate(const vec2& amount, bool apply);
-  virtual void translate_to(const vec2& value, bool apply);
+  virtual void translate(const vec2& amount, bool apply = false);
+  virtual void translate_to(const vec2& value, bool apply = false);
 
   inline virtual void apply() { m_position.apply(); };
 
@@ -61,12 +61,12 @@ public:
 
   virtual Box bounding_box() const override;
 
-  virtual void translate(const vec2& amount, bool apply) override;
-  virtual void translate_to(const vec2& value, bool apply) override;
-  void translate_left(const vec2& amount, bool mirror, bool apply);
-  void translate_right(const vec2& amount, bool mirror, bool apply);
-  void translate_left_to(const vec2& value, bool mirror, bool apply);
-  void translate_right_to(const vec2& value, bool mirror, bool apply);
+  virtual void translate(const vec2& amount, bool apply = false) override;
+  virtual void translate_to(const vec2& value, bool apply = false) override;
+  void translate_left(const vec2& amount, bool mirror = false, bool apply = false);
+  void translate_right(const vec2& amount, bool mirror = false, bool apply = false);
+  void translate_left_to(const vec2& value, bool mirror = false, bool apply = false);
+  void translate_right_to(const vec2& value, bool mirror = false, bool apply = false);
 
   virtual void apply() override;
 };

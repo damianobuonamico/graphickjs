@@ -7,6 +7,8 @@ void ElementEntity::add_vertex(const std::shared_ptr<VertexEntity>& vertex) {
 }
 
 void ElementEntity::render(float zoom) const {
+  vec2 position = transform().position().get();
+
   for (auto& curve : m_curves) {
     curve.render(zoom);
   }

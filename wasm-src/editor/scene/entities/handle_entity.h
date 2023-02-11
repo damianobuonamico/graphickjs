@@ -12,8 +12,8 @@ public:
 
   Type type;
 public:
-  HandleEntity(const vec2& position, Type type = Type::Circle)
-    : m_transform(CircleTransformComponent{ this, position, &m_radius }), type(type) {
+  HandleEntity(const vec2& position, Type type = Type::Circle, Entity* parent = nullptr)
+    : Entity(parent), m_transform(CircleTransformComponent{ this, position, &m_radius }), type(type) {
     console::log("HandleEntity created");
   };
   HandleEntity(const HandleEntity&) = default;
