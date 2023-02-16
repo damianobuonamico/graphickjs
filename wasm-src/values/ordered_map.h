@@ -19,9 +19,10 @@ public:
     using pointer = value_type*;
     using difference_type = std::ptrdiff_t;
 
-    iterator(typename std::vector<K>::iterator key_iterator,
-      std::unordered_map<K, V>& map)
-      : m_key_iterator(key_iterator), m_map(map) {}
+    iterator(
+      typename std::vector<K>::iterator key_iterator,
+      std::unordered_map<K, V>& map
+    ): m_key_iterator(key_iterator), m_map(map) {}
 
     iterator& operator++() {
       ++m_key_iterator;

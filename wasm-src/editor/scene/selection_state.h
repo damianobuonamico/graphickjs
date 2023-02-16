@@ -24,8 +24,6 @@ public:
 
     iterator& operator++();
     iterator operator++(int);
-    iterator& operator--();
-    iterator operator--(int);
 
     bool operator==(const iterator& other) const;
     bool operator!=(const iterator& other) const;
@@ -42,7 +40,7 @@ public:
   struct const_iterator {
     using iterator_category = std::forward_iterator_tag;
     using value_type = std::pair<const UUID, const Entity*>;
-    using reference = const std::pair<const UUID, const Entity*>&;
+    using reference = const std::pair<const UUID&, const Entity*>;
     using pointer = DataPointer<value_type>;
     using difference_type = std::ptrdiff_t;
 
@@ -55,8 +53,6 @@ public:
 
     const_iterator& operator++();
     const_iterator operator++(int);
-    const_iterator& operator--();
-    const_iterator operator--(int);
 
     bool operator==(const const_iterator& other) const;
     bool operator!=(const const_iterator& other) const;
@@ -99,7 +95,6 @@ public:
       m_temp_selected.begin(), m_temp_selected.end()
     };
   }
-
 
   inline size_t size() const { return m_selected.size() + m_temp_selected.size(); }
   inline bool empty() const { return size() < 1; }

@@ -51,23 +51,10 @@ public:
 
     Geometry geometry{};
 
-    vec2 off_d1{ 0.4f, 0.4f };
-    vec2 off_d2{ -0.4f, 0.4f };
-
-    uint32_t offset = 0;
-
-    geometry.vertices.reserve(points.size() * 4);
-    geometry.indices.reserve(points.size() * 6);
+    geometry.reserve(points.size() * 4, points.size() * 6);
 
     for (const FreehandPathPoint& point : points) {
-      geometry.vertices.insert(geometry.vertices.end(), {
-        point.position - off_d1, point.position + off_d2, point.position + off_d1, point.position - off_d2
-        });
-      geometry.indices.insert(geometry.indices.end(), {
-        offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0
-        });
-
-      offset += 4;
+      geometry.push_quad(point.position, 0.4f);
     }
 
 
@@ -91,14 +78,7 @@ public:
 
         for (auto curve : curves) {
           for (int i = 0; i < 4; i++) {
-            geometry.vertices.insert(geometry.vertices.end(), {
-            {curve[i] - off_d1, curve_color}, {curve[i] + off_d2, curve_color}, {curve[i] + off_d1,curve_color}, {curve[i] - off_d2, curve_color}
-              });
-            geometry.indices.insert(geometry.indices.end(), {
-              offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0
-              });
-
-            offset += 4;
+            geometry.push_quad(curve[i], 0.4f, curve_color);
           }
         }
 
@@ -148,17 +128,7 @@ public:
     }
 
     for (size_t i = 0; i < corners.size(); i++) {
-      uint corner = corners[i];
-
-      geometry.vertices.insert(geometry.vertices.end(), {
-        {points[corner].position - off_d1, corner_color}, {points[corner].position + off_d2, corner_color},
-        {points[corner].position + off_d1, corner_color}, {points[corner].position - off_d2, corner_color}
-        });
-      geometry.indices.insert(geometry.indices.end(), {
-        offset + 0, offset + 1, offset + 2, offset + 3, offset + 2, offset + 0
-        });
-
-      offset += 4;
+      geometry.push_quad(points[corners[i]].position, 0.4f, corner_color);
     }
 
     // for (Cubic& cubic : curves) {

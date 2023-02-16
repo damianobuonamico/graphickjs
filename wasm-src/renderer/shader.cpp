@@ -16,6 +16,12 @@ void Shader::set_uniform(const std::string& name, const mat3& value) {
   glUniformMatrix3fv(location, 1, true, &value);
 }
 
+void Shader::set_uniform(const std::string& name, const vec4& value) {
+  GLuint location = get_uniform_location(name);
+
+  glUniform4fv(location, 1, &value);
+}
+
 void Shader::set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset) {
   GLuint location = get_attribute_location(name);
 
@@ -29,7 +35,7 @@ Shader::ShaderSource Shader::parse_source(const std::string& source) {
 
 
 #ifdef EMSCRIPTEN
-  ShaderSource shader_source{};
+  ShaderSource shader_source{ "#version 300 es\n", "#version 300 es\n" };
 #else
   ShaderSource shader_source{ "#version 330 core\n", "#version 330 core\n" };
 #endif

@@ -8,23 +8,25 @@ void HandleEntity::render(float zoom) const {
 
   if (parent && parent->parent) position += parent->parent->transform().position().get();
 
-  geo.vertices.push_back({ position, color });
+  geo.push_circle(position, m_radius / zoom, color);
 
-  const float radius = m_radius / zoom;
-  const float step = 0.1f;
-  for (float angle = 0.0f; angle < MATH_TWO_PI; angle += step) {
-    geo.vertices.push_back({ position + radius * vec2(cos(angle), sin(angle)), color });
-  }
+  // geo.vertices.push_back({ position, color });
 
-  for (uint32_t i = 0; i < geo.vertices.size() - 1; i++) {
-    geo.indices.push_back(0);
-    geo.indices.push_back(i);
-    geo.indices.push_back(i + 1);
-  }
+  // const float radius = m_radius / zoom;
+  // const float step = 0.1f;
+  // for (float angle = 0.0f; angle < MATH_TWO_PI; angle += step) {
+  //   geo.vertices.push_back({ position + radius * vec2(cos(angle), sin(angle)), color });
+  // }
 
-  geo.indices.push_back(0);
-  geo.indices.push_back((uint32_t)geo.vertices.size() - 1);
-  geo.indices.push_back(1);
+  // for (uint32_t i = 0; i < geo.vertices.size() - 1; i++) {
+  //   geo.indices.push_back(0);
+  //   geo.indices.push_back(i);
+  //   geo.indices.push_back(i + 1);
+  // }
+
+  // geo.indices.push_back(0);
+  // geo.indices.push_back((uint32_t)geo.vertices.size() - 1);
+  // geo.indices.push_back(1);
 
   Renderer::draw(geo);
 }

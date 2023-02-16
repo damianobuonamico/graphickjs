@@ -1,8 +1,8 @@
 #pragma once
 
 #include "shader_manager.h"
-#include "../math/vec2.h"
 #include "geometry/geometry.h"
+#include "../math/vec2.h"
 
 class Renderer {
 public:
@@ -20,9 +20,16 @@ public:
   static void end_frame();
 
   static void draw(const Geometry& geometry);
+  static void draw(const InstancedGeometry& geometry);
 private:
   Renderer() = default;
   ~Renderer() = default;
+
+  void init_batch_renderer();
+  void init_instance_renderer();
+
+  void bind_batch_renderer();
+  void bind_instance_renderer();
 
   void set_viewport(const vec2& position, float zoom);
 
@@ -30,7 +37,15 @@ private:
   void add_to_batch(const Geometry& geometry);
   void end_batch();
   void flush();
+
+  void draw_instanced(const InstancedGeometry& geometry);
 private:
+  enum class RenderCall {
+    Batch = 0,
+    Instance,
+    None
+  };
+
   struct RendererData {
     GLuint vertex_buffer_object = 0;
     GLuint index_buffer_object = 0;
@@ -42,10 +57,33 @@ private:
     Vertex* vertex_buffer_ptr = nullptr;
     uint32_t* index_buffer = nullptr;
     uint32_t* index_buffer_ptr = nullptr;
+
+    uint32_t max_vertex_buffer_size = (uint32_t)std::pow(2, 18);
+    uint32_t max_vertex_count = max_vertex_buffer_size / sizeof(Vertex);
+    uint32_t max_index_count = max_vertex_count * 2;
   };
 
-  ShaderManager m_shaders;
+  struct InstancedRendererData {
+    GLuint vertex_array_object = 0;
+    GLuint vertex_buffer_object = 0;
+    GLuint index_buffer_object = 0;
+    GLuint instance_buffer_object = 0;
+
+    uint32_t instances;
+
+    uint32_t max_vertex_count = 100;
+    uint32_t max_index_count = max_vertex_count * 2;
+    uint32_t max_instance_count = 100;
+
+    uint32_t last_allocation_usage = 0;
+  };
+private:
   RendererData m_data;
+  InstancedRendererData m_instanced_data;
+
+  ShaderManager m_shaders;
+  RenderCall m_last_call = RenderCall::None;
+
   vec2 m_size;
 private:
   static Renderer* s_instance;

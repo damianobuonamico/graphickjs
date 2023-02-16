@@ -83,6 +83,9 @@ int main() {
 
   int width = 960;
   int height = 680;
+  int samples = 4;
+
+  glfwWindowHint(GLFW_SAMPLES, samples);
 
   window = glfwCreateWindow(width, height, "Hello World", nullptr, nullptr);
 
@@ -169,9 +172,6 @@ int main() {
     int display_w, display_h;
     glfwGetFramebufferSize(window, &display_w, &display_h);
     glViewport(0, 0, display_w, display_h);
-
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
 
     Editor::render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

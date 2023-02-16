@@ -26,22 +26,6 @@ SelectionState::iterator SelectionState::iterator::operator++(int) {
   return tmp;
 }
 
-SelectionState::iterator& SelectionState::iterator::operator--() {
-  if (m_second_iterator != m_second_begin_iterator) {
-    --m_second_iterator;
-  } else {
-    --m_first_iterator;
-  }
-
-  return *this;
-}
-
-SelectionState::iterator SelectionState::iterator::operator--(int) {
-  iterator tmp(*this);
-  operator--();
-  return tmp;
-}
-
 bool SelectionState::iterator::operator==(const iterator& other) const {
   return m_first_iterator == other.m_first_iterator && m_second_iterator == other.m_second_iterator;
 }
@@ -88,22 +72,6 @@ SelectionState::const_iterator SelectionState::const_iterator::operator++(int) {
   return tmp;
 }
 
-SelectionState::const_iterator& SelectionState::const_iterator::operator--() {
-  if (m_second_iterator != m_second_begin_iterator) {
-    --m_second_iterator;
-  } else {
-    --m_first_iterator;
-  }
-
-  return *this;
-}
-
-SelectionState::const_iterator SelectionState::const_iterator::operator--(int) {
-  const_iterator tmp(*this);
-  operator--();
-  return tmp;
-}
-
 bool SelectionState::const_iterator::operator==(const const_iterator& other) const {
   return m_first_iterator == other.m_first_iterator && m_second_iterator == other.m_second_iterator;
 }
@@ -114,7 +82,7 @@ bool SelectionState::const_iterator::operator!=(const const_iterator& other) con
 
 SelectionState::const_iterator::reference SelectionState::const_iterator::operator*() {
   if (m_first_iterator != m_first_end_iterator) {
-    return *m_first_iterator;
+    return { m_first_iterator->first, m_first_iterator->second };
   } else {
     return *m_second_iterator;
   }
@@ -203,8 +171,8 @@ void SelectionState::sync(bool sync_children) {
       if (entity->is_in_category(Entity::CategorySelectableChildren)) {
         entity->selection()->sync();
 
-        if (entity->selection()->size()) { 
-          select(entity, false); 
+        if (entity->selection()->size()) {
+          select(entity, false);
         }
       }
     }

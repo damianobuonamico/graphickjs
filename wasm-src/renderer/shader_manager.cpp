@@ -1,24 +1,46 @@
 #include "shader_manager.h"
 
 void ShaderManager::create_shaders() {
-  static const char pen_shader_source[] =
+  static const char instanced_shader_source[] =
     "#vertex\n"
     "uniform mat3 uViewProjectionMatrix;\n"
-    "attribute vec2 aPosition;\n"
-    "attribute vec4 aColor;\n"
-    "varying vec4 vColor;\n"
+    "in vec2 aPosition;\n"
+    "in vec4 aColor;\n"
+    "in vec2 aTranslation;\n"
+    "out vec4 vColor;\n"
+    "void main() {\n"
+    "  gl_Position = vec4((uViewProjectionMatrix * vec3(aPosition + aTranslation, 1.0)).xy, 0.0, 1.0);\n"
+    "  vColor = aColor;\n"
+    "}\n"
+    "#fragment\n"
+    "precision mediump float;\n"
+    "in highp vec4 vColor;\n"
+    "out vec4 fragColor;\n"
+    "void main() {\n"
+    "  fragColor = vColor;\n"
+    "}\n";
+
+  m_shaders.insert(std::make_pair<std::string, Shader>("instanced", { "instanced", instanced_shader_source }));
+
+  static const char batched_shader_source[] =
+    "#vertex\n"
+    "uniform mat3 uViewProjectionMatrix;\n"
+    "in vec2 aPosition;\n"
+    "in vec4 aColor;\n"
+    "out vec4 vColor;\n"
     "void main() {\n"
     "  gl_Position = vec4((uViewProjectionMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);\n"
     "  vColor = aColor;\n"
     "}\n"
     "#fragment\n"
     "precision mediump float;\n"
-    "varying highp vec4 vColor;\n"
+    "in highp vec4 vColor;\n"
+    "out vec4 fragColor;\n"
     "void main() {\n"
-    "  gl_FragColor = vColor;\n"
+    "  fragColor = vColor;\n"
     "}\n";
 
-  m_shaders.insert(std::make_pair<std::string, Shader>("pen", { "pen", pen_shader_source }));
+  m_shaders.insert(std::make_pair<std::string, Shader>("batched", { "batched", batched_shader_source }));
 }
 
 void ShaderManager::use(const std::string& name) {
@@ -26,6 +48,7 @@ void ShaderManager::use(const std::string& name) {
   if (iterator != m_shaders.end()) {
     m_current = &iterator->second;
     m_current->use();
+    m_current->set_uniform("uViewProjectionMatrix", view_projection_matrix);
   }
 }
 
@@ -35,10 +58,21 @@ void ShaderManager::set_uniform(const std::string& name, const mat3& value) {
   }
 }
 
+void ShaderManager::set_uniform(const std::string& name, const vec4& value) {
+  if (m_current != nullptr) {
+    m_current->set_uniform(name, value);
+  }
+}
+
 void ShaderManager::set_global_uniform(const std::string& name, const mat3& value) {
   for (auto i = m_shaders.begin(); i != m_shaders.end(); ++i) {
+    i->second.use();
     i->second.set_uniform(name, value);
   }
+}
+
+void ShaderManager::set_view_projection_matrix(const mat3& value) {
+  view_projection_matrix = value;
 }
 
 void ShaderManager::set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset) {

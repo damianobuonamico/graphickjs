@@ -7,6 +7,7 @@
 SelectTool::SelectTool(): Tool(ToolType::Select, CategoryNone) {}
 
 void SelectTool::on_pointer_down() {
+  console::log("SelectTool::on_pointer_down");
   m_element = InputManager::hover.element();
 
   if (!InputManager::keys.shift && (!m_element || Editor::scene.selection.has(m_element->id))) {
@@ -32,6 +33,8 @@ void SelectTool::on_pointer_down() {
   } else {
     // TODO: Selection box
   }
+
+  console::log("SelectTool::end_pointer_down");
 }
 
 void SelectTool::on_pointer_move() {

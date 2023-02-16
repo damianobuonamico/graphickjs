@@ -458,16 +458,16 @@ void BezierEntity::linear_render(float zoom) const {
 
   if (is_almost_zero(dx)) {
     vec2 offset{ width, 0.0f };
-    geo.vertices.insert(geo.vertices.end(), { A - offset, A + offset, B + offset, B - offset });
+    geo.push_vertices({ A - offset, A + offset, B + offset, B - offset });
   } else {
     vec2 direction{ dx, B.y - A.y };
     normalize_length(direction, width, direction);
     orthogonal(direction, direction);
 
-    geo.vertices.insert(geo.vertices.end(), { A - direction, A + direction, B + direction, B - direction });
+    geo.push_vertices({ A - direction, A + direction, B + direction, B - direction });
   }
 
-  geo.indices = { 0, 1, 2, 2, 3, 0 };
+  geo.push_indices({ 0, 1, 2, 2, 3, 0 });
 
   Renderer::draw(geo);
 }

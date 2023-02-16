@@ -1,20 +1,20 @@
-import { Component, createEffect, Match, onMount, Switch } from 'solid-js';
-import { createStore } from 'solid-js/store';
-import Renderer from './renderer/renderer';
-import SceneManager from './scene';
-import InputManager from './input';
-import Whiteboard from '@/ui/workspaces/Whiteboard';
-import Designer from '@/ui/workspaces/Designer';
-import { getWorkspacePrimaryColor } from '@/utils/color';
+import { Component, createEffect, Match, onMount, Switch } from "solid-js";
+import { createStore } from "solid-js/store";
+import Renderer from "./renderer/renderer";
+import SceneManager from "./scene";
+import InputManager from "./input";
+import Whiteboard from "@/ui/workspaces/Whiteboard";
+import Designer from "@/ui/workspaces/Designer";
+import { getWorkspacePrimaryColor } from "@/utils/color";
 
 const Editor: Component = () => {
   const [state, setState] = createStore<State>({
-    name: 'Untitled',
-    workspace: 'whiteboard',
-    tool: 'select',
+    name: "Untitled",
+    workspace: "whiteboard",
+    tool: "select",
     loading: true,
     timeline: true,
-    timelineHeight: 500
+    timelineHeight: 500,
   });
 
   Renderer.init();
@@ -27,7 +27,7 @@ const Editor: Component = () => {
   createEffect(() => {
     SceneManager.onWorkspaceChange(state.workspace);
     document.documentElement.style.setProperty(
-      '--primary-color',
+      "--primary-color",
       getWorkspacePrimaryColor(state.workspace)
     );
   });
@@ -43,7 +43,7 @@ const Editor: Component = () => {
 
   return (
     <Switch fallback={<Designer state={state} setState={setState} />}>
-      <Match when={state.workspace === 'whiteboard'}>
+      <Match when={state.workspace === "whiteboard"}>
         <Whiteboard state={state} setState={setState} />
       </Match>
     </Switch>

@@ -75,6 +75,9 @@ class ToolState {
           this.m_setTool("zoom");
           break;
         case 2:
+          this.m_setTool("select");
+          break;
+        case 3:
           this.m_setTool("pencil");
           break;
       }

@@ -21,37 +21,28 @@ uint32_t generate_round_cap(
   increment = cap_angle / sides;
 
   if (!sides || sides < 1) {
-    geometry.vertices.insert(geometry.vertices.end(), { from, to });
+    geometry.push_vertices({ from, to });
     return 2;
   }
 
-  geometry.vertices.push_back(center);
+  geometry.push_vertex(center);
   uint32_t offset = static_cast<uint32_t>(start_offset + 1);
 
   uint32_t center_index = offset;
   uint32_t from_index = offset + sides;
 
-  geometry.vertices.push_back(rotate(from, center, increment));
-  geometry.indices.insert(
-    geometry.indices.end(),
-    { center_index, from_index, offset + 1 }
-  );
+  geometry.push_vertex(rotate(from, center, increment));
+  geometry.push_indices({ center_index, from_index, offset + 1 });
   offset += 1;
 
   for (int i = 2; i < sides; ++i) {
-    geometry.vertices.push_back(rotate(from, center, i * increment));
-    geometry.indices.insert(
-      geometry.indices.end(),
-      { offset + 1, center_index, offset }
-    );
+    geometry.push_vertex(rotate(from, center, i * increment));
+    geometry.push_indices({ offset + 1, center_index, offset });
     offset += 1;
   }
 
-  geometry.vertices.insert(geometry.vertices.end(), { from, to });
-  geometry.indices.insert(
-    geometry.indices.end(),
-    { offset + 2, center_index, offset }
-  );
+  geometry.push_vertices({ from, to });
+  geometry.push_indices({ offset + 2, center_index, offset });
   offset += 2;
 
   return offset - center_index + 1;
@@ -66,8 +57,8 @@ uint32_t generate_round_join(
   uint32_t offset,
   float zoom
 ) {
-  vec2& from = geometry.vertices[from_index].position;
-  vec2& to = geometry.vertices[to_index].position;
+  const vec2& from = geometry.vertices()[from_index].position;
+  const vec2& to = geometry.vertices()[to_index].position;
 
   vec2 direction_from = from - center;
   vec2 direction_to = to - center;
@@ -81,36 +72,24 @@ uint32_t generate_round_join(
   increment = join_angle / sides;
 
   if (!sides || sides < 1) {
-    geometry.indices.insert(
-      geometry.indices.end(),
-      { from_index, center_index, to_index }
-    );
+    geometry.push_indices({ from_index, center_index, to_index });
     return 0;
   }
 
   uint32_t added = 0;
 
-  geometry.vertices.push_back(rotate(from, center, increment));
-  geometry.indices.insert(
-    geometry.indices.end(),
-    { from_index, center_index, offset + added + 1 }
-  );
+  geometry.push_vertex(rotate(from, center, increment));
+  geometry.push_indices({ from_index, center_index, offset + added + 1 });
   added += 1;
 
   for (int i = 2; i < sides; ++i) {
-    geometry.vertices.push_back(rotate(from, center, i * increment));
-    geometry.indices.insert(
-      geometry.indices.end(),
-      { offset + added, center_index, offset + added + 1 }
-    );
+    geometry.push_vertex(rotate(from, center, i * increment));
+    geometry.push_indices({ offset + added, center_index, offset + added + 1 });
     added += 1;
   }
 
-  geometry.vertices.insert(geometry.vertices.end(), { from, to });
-  geometry.indices.insert(
-    geometry.indices.end(),
-    { offset + added + 2, center_index, offset + added }
-  );
+  geometry.push_vertices({ from, to });
+  geometry.push_indices({ offset + added + 2, center_index, offset + added });
   added += 2;
 
   return added;
@@ -255,13 +234,10 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
       negate(nvec_next, nvec_next);
       nvec_next_pt = curr_pt + nvec_next;
 
-      geometry.vertices.insert(geometry.vertices.end(), { nvec_prev_pt, nvec_next_pt });
+      geometry.push_vertices({ nvec_prev_pt, nvec_next_pt });
       offset += 2;
 
-      geometry.indices.insert(
-        geometry.indices.end(),
-        { last_left_index, last_right_index, offset - 1, last_right_index, offset - 1, offset }
-      );
+      geometry.push_indices({ last_left_index, last_right_index, offset - 1, last_right_index, offset - 1, offset });
 
       last_left_index = offset - 1;
       last_right_index = offset;
@@ -277,13 +253,10 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
         float distance = squared_distance(nvec_next_pt, nvec_prev_pt);
 
         if (distance > GEOMETRY_SQR_EPSILON) {
-          geometry.vertices.insert(geometry.vertices.end(), { nvec_prev_pt, nvec_next_pt });
+          geometry.push_vertices({ nvec_prev_pt, nvec_next_pt });
           offset += 2;
 
-          geometry.indices.insert(
-            geometry.indices.end(),
-            { last_left_index, last_right_index, offset - 1 }
-          );
+          geometry.push_indices({ last_left_index, last_right_index, offset - 1 });
 
           last_left_index = offset;
 
@@ -297,13 +270,10 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
             zoom
           );
         } else {
-          geometry.vertices.push_back(nvec_prev_pt);
+          geometry.push_vertex(nvec_prev_pt);
           offset += 1;
 
-          geometry.indices.insert(
-            geometry.indices.end(),
-            { last_left_index, last_right_index, offset }
-          );
+          geometry.push_indices({ last_left_index, last_right_index, offset });
 
           last_left_index = offset;
         }
@@ -315,13 +285,10 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
           miter_right_pt = curr_pt + nvec_next;
         }
 
-        geometry.vertices.push_back(miter_right_pt);
+        geometry.push_vertex(miter_right_pt);
         offset += 1;
 
-        geometry.indices.insert(
-          geometry.indices.end(),
-          { last_left_index, last_right_index, offset }
-        );
+        geometry.push_indices({ last_left_index, last_right_index, offset });
 
         last_right_index = offset;
       } else {
@@ -335,13 +302,10 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
         float distance = squared_distance(nvec_next_pt, nvec_prev_pt);
 
         if (distance > GEOMETRY_SQR_EPSILON) {
-          geometry.vertices.insert(geometry.vertices.end(), { nvec_prev_pt, nvec_next_pt });
+          geometry.push_vertices({ nvec_prev_pt, nvec_next_pt });
           offset += 2;
 
-          geometry.indices.insert(
-            geometry.indices.end(),
-            { last_left_index, last_right_index, offset - 1 }
-          );
+          geometry.push_indices({ last_left_index, last_right_index, offset - 1 });
 
           last_right_index = offset;
 
@@ -355,13 +319,10 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
             zoom
           );
         } else {
-          geometry.vertices.push_back(nvec_prev_pt);
+          geometry.push_vertex(nvec_prev_pt);
           offset += 1;
 
-          geometry.indices.insert(
-            geometry.indices.end(),
-            { last_left_index, last_right_index, offset }
-          );
+          geometry.push_indices({ last_left_index, last_right_index, offset });
 
           last_right_index = offset;
         }
@@ -373,13 +334,10 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
           miter_left_pt = curr_pt + nvec_prev;
         }
 
-        geometry.vertices.push_back(miter_left_pt);
+        geometry.push_vertex(miter_left_pt);
         offset += 1;
 
-        geometry.indices.insert(
-          geometry.indices.end(),
-          { last_left_index, last_right_index, offset }
-        );
+        geometry.push_indices({ last_left_index, last_right_index, offset });
 
         last_left_index = offset;
       }
@@ -407,10 +365,7 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
     zoom
   );
 
-  geometry.indices.insert(
-    geometry.indices.end(),
-    { last_left_index, last_right_index, offset - 1, last_left_index, offset - 1, offset }
-  );
+  geometry.push_indices({ last_left_index, last_right_index, offset - 1, last_left_index, offset - 1, offset });
 
   return geometry;
 }
@@ -498,12 +453,8 @@ static void add_point(const vec2& point, const vec4& color, uint32_t& offset, Ge
   vec2 off_d1{ size, size };
   vec2 off_d2{ -size, size };
 
-  geo.vertices.insert(geo.vertices.end(), {
-      {point - off_d1, color}, {point + off_d2, color}, {point + off_d1, color}, {point - off_d2, color}
-    });
-  geo.indices.insert(geo.indices.end(), {
-    offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0
-    });
+  geo.push_vertices({ {point - off_d1, color}, {point + off_d2, color}, {point + off_d1, color}, {point - off_d2, color} });
+  geo.push_indices({ offset + 0, offset + 1, offset + 2, offset + 2, offset + 3, offset + 0 });
 
   offset += 4;
 }
@@ -681,8 +632,7 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
   std::vector<float> parsed_t_values(t_values_len);
   parsed_t_values[t_values_len - 1] = 1.0f;
 
-  geo.vertices.reserve(t_values_len * 2);
-  geo.indices.reserve(t_values_len * 6);
+  geo.reserve(t_values_len * 2, t_values_len * 6);
 
   float max_t = 0.0f;
 
@@ -694,7 +644,7 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
 
     vec4 color = vec4{ 0.8f, 0.0f, 0.0f, 1.0f };
 
-    geo.vertices.insert(geo.vertices.end(), {
+    geo.push_vertices({
       {point + normal, color},
       {point - normal, color}
       });
@@ -723,9 +673,9 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
         (avg >= next.x && avg >= next.y);
 
       if (avg_bad) {
-        geo.vertices.insert(geo.vertices.end(), { {},{} });
+        geo.push_vertices({ {},{} });
 
-        geo.indices.insert(geo.indices.end(), {
+        geo.push_indices({
           offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
           });
 
@@ -752,12 +702,12 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
 
     vec4 color = vec4{ 0.8f, 0.0f, 0.0f, 1.0f };
 
-    geo.vertices.insert(geo.vertices.end(), {
+    geo.push_vertices({
       {point + normal, color},
       {point - normal, color}
       });
 
-    geo.indices.insert(geo.indices.end(), {
+    geo.push_indices({
       offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
       });
 
@@ -802,8 +752,8 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
 
     //geo.vertices[bad_index.offset + 0].position += point + normal;
     //geo.vertices[bad_index.offset + 1].position += 10.0f;
-    geo.vertices[bad_index.offset + 0] = { point + normal, color };
-    geo.vertices[bad_index.offset + 1] = { point - normal, color };
+    geo.vertices()[bad_index.offset + 0] = { point + normal, color };
+    geo.vertices()[bad_index.offset + 1] = { point - normal, color };
   }
 
   {
@@ -814,12 +764,12 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo) {
 
     vec4 color = vec4{ 0.8f, 0.0f, 0.0f, 1.0f };
 
-    geo.vertices.insert(geo.vertices.end(), {
+    geo.push_vertices({
       {point + normal, color},
       {point - normal, color}
       });
 
-    geo.indices.insert(geo.indices.end(), {
+    geo.push_indices({
       offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
       });
 

@@ -26,6 +26,7 @@ private:
   void load();
 
   void render(float zoom) const;
+  void render_selection(float zoom) const;
 private:
   OrderedMap<UUID, std::shared_ptr<Entity>> m_children;
 private:
