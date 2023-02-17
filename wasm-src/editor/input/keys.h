@@ -1,3 +1,5 @@
+#pragma once
+
 enum class KeyboardKey {
   Undefined = -1,
   Backspace = 8,

@@ -42,7 +42,7 @@ void ShaderManager::create_shaders() {
 
   m_shaders.insert(std::make_pair<std::string, Shader>("batched", { "batched", batched_shader_source }));
 
-  static const char framebuffer_shader_source[] =
+  static const char msaa_shader_source[] =
     "#vertex\n"
     "in vec2 aPosition;\n"
     "in vec2 aTexCoords;\n"
@@ -60,7 +60,10 @@ void ShaderManager::create_shaders() {
     "  fragColor = texture(uScreenTexture, vTexCoords);\n"
     "}\n";
 
-  m_shaders.insert(std::make_pair<std::string, Shader>("framebuffer", { "framebuffer", framebuffer_shader_source }));
+  m_shaders.insert(std::make_pair<std::string, Shader>("msaa", { "msaa", msaa_shader_source }));
+
+  // TODO: Implement FXAA
+  m_shaders.insert(std::make_pair<std::string, Shader>("fxaa", { "fxaa", msaa_shader_source }));
 }
 
 void ShaderManager::use(const std::string& name) {

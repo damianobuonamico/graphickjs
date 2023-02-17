@@ -5,6 +5,17 @@
 #include "../math/vec2.h"
 
 class Renderer {
+  enum class Antialiasing {
+    None = 0,
+    Hardware,
+    FXAA,
+    MSAA
+  };
+
+  struct RendererSettings {
+    const Antialiasing antialiasing = Antialiasing::Hardware;
+    const uint16_t msaa_samples = 4;
+  };
 public:
   Renderer(const Renderer&) = delete;
   Renderer(Renderer&&) = delete;
@@ -78,19 +89,11 @@ private:
 
     uint32_t last_allocation_usage = 0;
   };
-
-  struct FrameBufferData {
-    GLuint frame_buffer_object = 0;
-    GLuint texture_object = 0;
-    GLuint render_buffer_object = 0;
-
-    GLuint vertex_array_object = 0;
-    GLuint vertex_buffer_object = 0;
-  };
 private:
+  RendererSettings m_settings;
+
   BatchedRendererData m_data;
   InstancedRendererData m_instanced_data;
-  // FrameBufferData m_frame_buffer_data;
 
   ShaderManager m_shaders;
   FrameBuffer m_frame_buffer;

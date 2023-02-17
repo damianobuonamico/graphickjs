@@ -17,79 +17,33 @@ void Renderer::init() {
   assert(!s_instance);
   s_instance = new Renderer();
 
+  const RendererSettings& settings = get()->m_settings;
+
 #ifdef EMSCRIPTEN
   EmscriptenWebGLContextAttributes attr;
 
   attr.alpha = true;
-  attr.antialias = false;
   attr.premultipliedAlpha = true;
   attr.majorVersion = 2;
+  attr.antialias = settings.antialiasing == Antialiasing::Hardware;
 
   emscripten_webgl_init_context_attributes(&attr);
 
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
   emscripten_webgl_make_context_current(ctx);
 #else
-  // glEnable(GL_MULTISAMPLE);
+  if (settings.antialiasing == Antialiasing::Hardware) {
+    glEnable(GL_MULTISAMPLE);
+  }
 #endif
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  // FrameBufferData& data = get()->m_frame_buffer_data;
-
-  // glGenFramebuffers(1, &data.frame_buffer_object);
-  // glBindFramebuffer(GL_FRAMEBUFFER, data.frame_buffer_object);
-
-  // // Create Framebuffer Texture
-  // glGenTextures(1, &data.texture_object);
-  // glBindTexture(GL_TEXTURE_2D, data.texture_object);
-  // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, get()->m_size.x, get()->m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
-  // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data.texture_object, 0);
-
-  // // Create Render Buffer Object
-  // glGenRenderbuffers(1, &data.render_buffer_object);
-  // glBindRenderbuffer(GL_RENDERBUFFER, data.render_buffer_object);
-  // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, get()->m_size.x, get()->m_size.y);
-  // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, data.render_buffer_object);
-
-  // // Error checking framebuffer
-  // auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  // if (fboStatus != GL_FRAMEBUFFER_COMPLETE) {
-  //   console::log("Framebuffer error: ", (int)fboStatus);
-  // }
-
-  // float rectangleVertices[] = {
-  //   // Coords    // texCoords
-  //    1.0f, -1.0f,  1.0f, 0.0f,
-  //   -1.0f, -1.0f,  0.0f, 0.0f,
-  //   -1.0f,  1.0f,  0.0f, 1.0f,
-
-  //    1.0f,  1.0f,  1.0f, 1.0f,
-  //    1.0f, -1.0f,  1.0f, 0.0f,
-  //   -1.0f,  1.0f,  0.0f, 1.0f
-  // };
-
-  // Prepare framebuffer rectangle VBO and VAO
-  // glGenVertexArrays(1, &data.vertex_array_object);
-  // glGenBuffers(1, &data.vertex_buffer_object);
-  // glBindVertexArray(data.vertex_array_object);
-  // glBindBuffer(GL_ARRAY_BUFFER, data.vertex_buffer_object);
-  // glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVertices), &rectangleVertices, GL_STATIC_DRAW);
-  // glEnableVertexAttribArray(0);
-  // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-  // glEnableVertexAttribArray(1);
-  // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
   get()->m_shaders.create_shaders();
-  get()->m_frame_buffer.init();
-
-  // get()->m_shaders.use("framebuffer");
-  // get()->m_shaders.set_uniform("uScreenTexture", data.texture_object);
+  if (settings.antialiasing == Antialiasing::FXAA || settings.antialiasing == Antialiasing::MSAA) {
+    get()->m_frame_buffer.init(settings.antialiasing == Antialiasing::MSAA, settings.msaa_samples);
+  }
 
   get()->init_batch_renderer();
   get()->init_instance_renderer();
@@ -110,38 +64,6 @@ void Renderer::resize(const vec2& size) {
 
 void Renderer::begin_frame(const vec2& position, float zoom) {
   get()->set_viewport(position, zoom);
-
-  /*
-  FrameBufferData& data = get()->m_frame_buffer_data;
-
-  glGenFramebuffers(1, &data.frame_buffer_object);
-  glBindFramebuffer(GL_FRAMEBUFFER, data.frame_buffer_object);
-
-  // Create Framebuffer Texture
-  glGenTextures(1, &data.texture_object);
-  glBindTexture(GL_TEXTURE_2D, data.texture_object);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, get()->m_size.x, get()->m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data.texture_object, 0);
-
-  // Create Render Buffer Object
-  glGenRenderbuffers(1, &data.render_buffer_object);
-  glBindRenderbuffer(GL_RENDERBUFFER, data.render_buffer_object);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, get()->m_size.x, get()->m_size.y);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, data.render_buffer_object);
-
-  // Error checking framebuffer
-  auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  if (fboStatus != GL_FRAMEBUFFER_COMPLETE) {
-    console::log("Framebuffer error: ", (int)fboStatus);
-  }
-
-  glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
-  glBindFramebuffer(GL_FRAMEBUFFER, get()->m_frame_buffer_data.frame_buffer_object);*/
-
   get()->m_frame_buffer.bind();
 
   glClearColor(1.0f, 1.0f, 0.5f, 1.0f);
@@ -157,44 +79,6 @@ void Renderer::end_frame() {
   }
 
   get()->m_last_call = RenderCall::None;
-
-  /*FrameBufferData& data = get()->m_frame_buffer_data;
-
-  float rectangleVertices[] = {
-    // Coords    // texCoords
-     1.0f, -1.0f,  1.0f, 0.0f,
-    -1.0f, -1.0f,  0.0f, 0.0f,
-    -1.0f,  1.0f,  0.0f, 1.0f,
-
-     1.0f,  1.0f,  1.0f, 1.0f,
-     1.0f, -1.0f,  1.0f, 0.0f,
-    -1.0f,  1.0f,  0.0f, 1.0f
-  };
-
-  get()->m_shaders.use("framebuffer");
-  get()->m_shaders.set_uniform("uScreenTexture", 0);
-
-  glGenVertexArrays(1, &data.vertex_array_object);
-  glGenBuffers(1, &data.vertex_buffer_object);
-  glBindVertexArray(data.vertex_array_object);
-  glBindBuffer(GL_ARRAY_BUFFER, data.vertex_buffer_object);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVertices), &rectangleVertices, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  // Draw the framebuffer rectangle
-
-
-  // get()->m_shaders.use("framebuffer");
-  glBindVertexArray(get()->m_frame_buffer_data.vertex_array_object);
-  glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
-  glBindTexture(GL_TEXTURE_2D, get()->m_frame_buffer_data.texture_object);
-  glDrawArrays(GL_TRIANGLES, 0, 6);*/
-
-  get()->m_frame_buffer.unbind();
   get()->m_frame_buffer.render();
 }
 
