@@ -4,7 +4,7 @@
 #include "bezier_entity.h"
 #include "vertex_entity.h"
 #include "handle_entity.h"
-#include "../../../values/ordered_map.h"
+#include "../../../values/map_value.h"
 #include "../../../values/bool_value.h"
 
 #include <vector>
@@ -30,10 +30,10 @@ public:
   inline std::vector<BezierEntity>::const_iterator curves_begin() const { return m_curves.begin(); }
   inline std::vector<BezierEntity>::const_iterator curves_end() const { return m_curves.end(); }
 
-  inline OrderedMap<UUID, std::shared_ptr<VertexEntity>>::iterator begin() { return m_vertices.begin(); }
-  inline OrderedMap<UUID, std::shared_ptr<VertexEntity>>::iterator end() { return m_vertices.end(); }
-  inline OrderedMap<UUID, std::shared_ptr<VertexEntity>>::const_iterator begin() const { return m_vertices.begin(); }
-  inline OrderedMap<UUID, std::shared_ptr<VertexEntity>>::const_iterator end() const { return m_vertices.end(); }
+  inline MapValue<UUID, std::shared_ptr<VertexEntity>>::iterator begin() { return m_vertices.begin(); }
+  inline MapValue<UUID, std::shared_ptr<VertexEntity>>::iterator end() { return m_vertices.end(); }
+  inline MapValue<UUID, std::shared_ptr<VertexEntity>>::const_iterator begin() const { return m_vertices.begin(); }
+  inline MapValue<UUID, std::shared_ptr<VertexEntity>>::const_iterator end() const { return m_vertices.end(); }
 
   inline virtual ElementTransformComponent& transform() override { return m_transform; }
   inline virtual const ElementTransformComponent& transform() const override { return m_transform; }
@@ -60,7 +60,7 @@ private:
   void regenerate();
   const BezierEntity closing_curve() const;
 private:
-  OrderedMap<UUID, std::shared_ptr<VertexEntity>> m_vertices;
+  MapValue<UUID, std::shared_ptr<VertexEntity>> m_vertices;
   std::vector<BezierEntity> m_curves;
 
   ElementTransformComponent m_transform;

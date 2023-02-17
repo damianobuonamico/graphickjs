@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../values/ordered_map.h"
+#include "../../values/map_value.h"
 #include "../../utils/uuid.h"
 #include "entity.h"
 #include "selection_state.h"
@@ -29,7 +29,7 @@ private:
   void render(float zoom) const;
   void render_selection(float zoom) const;
 private:
-  OrderedMap<UUID, std::shared_ptr<Entity>> m_children;
+  MapValue<UUID, std::shared_ptr<Entity>> m_children;
 private:
   friend class Editor;
 };

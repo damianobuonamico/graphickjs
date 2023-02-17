@@ -75,8 +75,8 @@ void Scene::render_selection(float zoom) const {
 }
 
 Entity* Scene::entity_at(const vec2& position, bool lower_level, float threshold) {
-  for (const auto& [id, entity] : m_children) {
-    Entity* hovered = entity->entity_at(position, lower_level, threshold);
+  for (auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+    Entity* hovered = it->second->entity_at(position, lower_level, threshold);
     if (hovered) {
       return hovered;
     }

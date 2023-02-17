@@ -2,7 +2,7 @@
 
 #include "../math/vector.h"
 #include "../history/command_history.h"
-#include "../history/commands/vector_commands.h"
+#include "../history/commands/vec_commands.h"
 
 #include <memory>
 
