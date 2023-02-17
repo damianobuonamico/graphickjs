@@ -24,8 +24,9 @@ public:
 
   inline void use() { glUseProgram(m_program); }
 
-  void set_uniform(const std::string& name, const mat3& value);
+  void set_uniform(const std::string& name, const int value);
   void set_uniform(const std::string& name, const vec4& value);
+  void set_uniform(const std::string& name, const mat3& value);
   void set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset);
 private:
   struct ShaderSource {

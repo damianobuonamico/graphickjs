@@ -10,16 +10,22 @@ Shader::Shader(const std::string& name, const std::string& source)
   m_program = create_program(vertex_shader, fragment_shader);
 }
 
-void Shader::set_uniform(const std::string& name, const mat3& value) {
+void Shader::set_uniform(const std::string& name, const int value) {
   GLuint location = get_uniform_location(name);
 
-  glUniformMatrix3fv(location, 1, true, &value);
+  glUniform1i(location, value);
 }
 
 void Shader::set_uniform(const std::string& name, const vec4& value) {
   GLuint location = get_uniform_location(name);
 
   glUniform4fv(location, 1, &value);
+}
+
+void Shader::set_uniform(const std::string& name, const mat3& value) {
+  GLuint location = get_uniform_location(name);
+
+  glUniformMatrix3fv(location, 1, true, &value);
 }
 
 void Shader::set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset) {

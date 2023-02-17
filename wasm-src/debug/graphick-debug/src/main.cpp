@@ -83,9 +83,9 @@ int main() {
 
   int width = 960;
   int height = 680;
-  int samples = 4;
+  // int samples = 4;
 
-  glfwWindowHint(GLFW_SAMPLES, samples);
+  // glfwWindowHint(GLFW_SAMPLES, samples);
 
   window = glfwCreateWindow(width, height, "Hello World", nullptr, nullptr);
 

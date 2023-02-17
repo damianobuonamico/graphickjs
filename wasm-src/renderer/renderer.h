@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shader_manager.h"
+#include "frame_buffer.h"
 #include "geometry/geometry.h"
 #include "../math/vec2.h"
 
@@ -22,7 +22,7 @@ public:
   static void draw(const Geometry& geometry);
   static void draw(const InstancedGeometry& geometry);
 private:
-  Renderer() = default;
+  Renderer();
   ~Renderer() = default;
 
   void init_batch_renderer();
@@ -46,7 +46,8 @@ private:
     None
   };
 
-  struct RendererData {
+  struct BatchedRendererData {
+    GLuint vertex_array_object = 0;
     GLuint vertex_buffer_object = 0;
     GLuint index_buffer_object = 0;
 
@@ -77,11 +78,22 @@ private:
 
     uint32_t last_allocation_usage = 0;
   };
+
+  struct FrameBufferData {
+    GLuint frame_buffer_object = 0;
+    GLuint texture_object = 0;
+    GLuint render_buffer_object = 0;
+
+    GLuint vertex_array_object = 0;
+    GLuint vertex_buffer_object = 0;
+  };
 private:
-  RendererData m_data;
+  BatchedRendererData m_data;
   InstancedRendererData m_instanced_data;
+  // FrameBufferData m_frame_buffer_data;
 
   ShaderManager m_shaders;
+  FrameBuffer m_frame_buffer;
   RenderCall m_last_call = RenderCall::None;
 
   vec2 m_size;

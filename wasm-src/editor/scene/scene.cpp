@@ -22,7 +22,6 @@ void Scene::render_selection(float zoom) const {
   vertex_geometry.push_quad(vec2{ 0.0f }, 5.0f / zoom, vec4(0.35f, 0.35f, 1.0f, 1.0f));
 
   for (const auto& [id, entity] : selection) {
-    console::log("selected", entity->id);
     const ElementEntity* element = dynamic_cast<const ElementEntity*>(entity);
     if (element != nullptr) {
       vec2 position = element->transform().position().get();

@@ -41,6 +41,26 @@ void ShaderManager::create_shaders() {
     "}\n";
 
   m_shaders.insert(std::make_pair<std::string, Shader>("batched", { "batched", batched_shader_source }));
+
+  static const char framebuffer_shader_source[] =
+    "#vertex\n"
+    "in vec2 aPosition;\n"
+    "in vec2 aTexCoords;\n"
+    "out vec2 vTexCoords;\n"
+    "void main() {\n"
+    "  gl_Position = vec4(aPosition, 0.0, 1.0);\n"
+    "  vTexCoords = aTexCoords;\n"
+    "}\n"
+    "#fragment\n"
+    "precision mediump float;\n"
+    "in vec2 vTexCoords;\n"
+    "uniform sampler2D uScreenTexture;\n"
+    "out vec4 fragColor;\n"
+    "void main() {\n"
+    "  fragColor = texture(uScreenTexture, vTexCoords);\n"
+    "}\n";
+
+  m_shaders.insert(std::make_pair<std::string, Shader>("framebuffer", { "framebuffer", framebuffer_shader_source }));
 }
 
 void ShaderManager::use(const std::string& name) {
@@ -52,13 +72,19 @@ void ShaderManager::use(const std::string& name) {
   }
 }
 
-void ShaderManager::set_uniform(const std::string& name, const mat3& value) {
+void ShaderManager::set_uniform(const std::string& name, const int value) {
   if (m_current != nullptr) {
     m_current->set_uniform(name, value);
   }
 }
 
 void ShaderManager::set_uniform(const std::string& name, const vec4& value) {
+  if (m_current != nullptr) {
+    m_current->set_uniform(name, value);
+  }
+}
+
+void ShaderManager::set_uniform(const std::string& name, const mat3& value) {
   if (m_current != nullptr) {
     m_current->set_uniform(name, value);
   }

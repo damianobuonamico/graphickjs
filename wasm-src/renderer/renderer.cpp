@@ -3,7 +3,7 @@
 #include "../common.h"
 
 #ifdef EMSCRIPTEN
-#include <GLES3/gl3.h>
+#include <GLES3/gl32.h>
 #include <emscripten/html5.h>
 #else
 #include <glad/glad.h>
@@ -20,7 +20,7 @@ void Renderer::init() {
 #ifdef EMSCRIPTEN
   EmscriptenWebGLContextAttributes attr;
 
-  // attr.alpha = false;
+  attr.alpha = true;
   attr.antialias = false;
   attr.premultipliedAlpha = true;
   attr.majorVersion = 2;
@@ -30,13 +30,66 @@ void Renderer::init() {
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
   emscripten_webgl_make_context_current(ctx);
 #else
-  glEnable(GL_MULTISAMPLE);
+  // glEnable(GL_MULTISAMPLE);
 #endif
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  // FrameBufferData& data = get()->m_frame_buffer_data;
+
+  // glGenFramebuffers(1, &data.frame_buffer_object);
+  // glBindFramebuffer(GL_FRAMEBUFFER, data.frame_buffer_object);
+
+  // // Create Framebuffer Texture
+  // glGenTextures(1, &data.texture_object);
+  // glBindTexture(GL_TEXTURE_2D, data.texture_object);
+  // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, get()->m_size.x, get()->m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
+  // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data.texture_object, 0);
+
+  // // Create Render Buffer Object
+  // glGenRenderbuffers(1, &data.render_buffer_object);
+  // glBindRenderbuffer(GL_RENDERBUFFER, data.render_buffer_object);
+  // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, get()->m_size.x, get()->m_size.y);
+  // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, data.render_buffer_object);
+
+  // // Error checking framebuffer
+  // auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  // if (fboStatus != GL_FRAMEBUFFER_COMPLETE) {
+  //   console::log("Framebuffer error: ", (int)fboStatus);
+  // }
+
+  // float rectangleVertices[] = {
+  //   // Coords    // texCoords
+  //    1.0f, -1.0f,  1.0f, 0.0f,
+  //   -1.0f, -1.0f,  0.0f, 0.0f,
+  //   -1.0f,  1.0f,  0.0f, 1.0f,
+
+  //    1.0f,  1.0f,  1.0f, 1.0f,
+  //    1.0f, -1.0f,  1.0f, 0.0f,
+  //   -1.0f,  1.0f,  0.0f, 1.0f
+  // };
+
+  // Prepare framebuffer rectangle VBO and VAO
+  // glGenVertexArrays(1, &data.vertex_array_object);
+  // glGenBuffers(1, &data.vertex_buffer_object);
+  // glBindVertexArray(data.vertex_array_object);
+  // glBindBuffer(GL_ARRAY_BUFFER, data.vertex_buffer_object);
+  // glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVertices), &rectangleVertices, GL_STATIC_DRAW);
+  // glEnableVertexAttribArray(0);
+  // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+  // glEnableVertexAttribArray(1);
+  // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
   get()->m_shaders.create_shaders();
+  get()->m_frame_buffer.init();
+
+  // get()->m_shaders.use("framebuffer");
+  // get()->m_shaders.set_uniform("uScreenTexture", data.texture_object);
 
   get()->init_batch_renderer();
   get()->init_instance_renderer();
@@ -51,15 +104,49 @@ void Renderer::shutdown() {
 
 void Renderer::resize(const vec2& size) {
   get()->m_size = size;
-
+  get()->m_frame_buffer.resize(size);
   glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
 }
 
 void Renderer::begin_frame(const vec2& position, float zoom) {
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  get()->set_viewport(position, zoom);
+
+  /*
+  FrameBufferData& data = get()->m_frame_buffer_data;
+
+  glGenFramebuffers(1, &data.frame_buffer_object);
+  glBindFramebuffer(GL_FRAMEBUFFER, data.frame_buffer_object);
+
+  // Create Framebuffer Texture
+  glGenTextures(1, &data.texture_object);
+  glBindTexture(GL_TEXTURE_2D, data.texture_object);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, get()->m_size.x, get()->m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data.texture_object, 0);
+
+  // Create Render Buffer Object
+  glGenRenderbuffers(1, &data.render_buffer_object);
+  glBindRenderbuffer(GL_RENDERBUFFER, data.render_buffer_object);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, get()->m_size.x, get()->m_size.y);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, data.render_buffer_object);
+
+  // Error checking framebuffer
+  auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  if (fboStatus != GL_FRAMEBUFFER_COMPLETE) {
+    console::log("Framebuffer error: ", (int)fboStatus);
+  }
+
+  glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
+  glBindFramebuffer(GL_FRAMEBUFFER, get()->m_frame_buffer_data.frame_buffer_object);*/
+
+  get()->m_frame_buffer.bind();
+
+  glClearColor(1.0f, 1.0f, 0.5f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  get()->set_viewport(position, zoom);
   get()->begin_batch();
 }
 
@@ -70,6 +157,45 @@ void Renderer::end_frame() {
   }
 
   get()->m_last_call = RenderCall::None;
+
+  /*FrameBufferData& data = get()->m_frame_buffer_data;
+
+  float rectangleVertices[] = {
+    // Coords    // texCoords
+     1.0f, -1.0f,  1.0f, 0.0f,
+    -1.0f, -1.0f,  0.0f, 0.0f,
+    -1.0f,  1.0f,  0.0f, 1.0f,
+
+     1.0f,  1.0f,  1.0f, 1.0f,
+     1.0f, -1.0f,  1.0f, 0.0f,
+    -1.0f,  1.0f,  0.0f, 1.0f
+  };
+
+  get()->m_shaders.use("framebuffer");
+  get()->m_shaders.set_uniform("uScreenTexture", 0);
+
+  glGenVertexArrays(1, &data.vertex_array_object);
+  glGenBuffers(1, &data.vertex_buffer_object);
+  glBindVertexArray(data.vertex_array_object);
+  glBindBuffer(GL_ARRAY_BUFFER, data.vertex_buffer_object);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVertices), &rectangleVertices, GL_STATIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  // Draw the framebuffer rectangle
+
+
+  // get()->m_shaders.use("framebuffer");
+  glBindVertexArray(get()->m_frame_buffer_data.vertex_array_object);
+  glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
+  glBindTexture(GL_TEXTURE_2D, get()->m_frame_buffer_data.texture_object);
+  glDrawArrays(GL_TRIANGLES, 0, 6);*/
+
+  get()->m_frame_buffer.unbind();
+  get()->m_frame_buffer.render();
 }
 
 void Renderer::draw(const Geometry& geometry) {
@@ -82,8 +208,6 @@ void Renderer::draw(const Geometry& geometry) {
 };
 
 void Renderer::draw(const InstancedGeometry& geometry) {
-  console::log("instances_first", geometry.instances());
-
   if (geometry.instances() == 0) {
     return;
   } else if (geometry.instances() == 1) {
@@ -99,9 +223,14 @@ void Renderer::draw(const InstancedGeometry& geometry) {
   get()->draw_instanced(geometry);
 }
 
+Renderer::Renderer(): m_frame_buffer(m_shaders, m_size) {}
+
 void Renderer::init_batch_renderer() {
   m_data.vertex_buffer = new Vertex[m_data.max_vertex_count];
   m_data.index_buffer = new uint32_t[m_data.max_index_count];
+
+  glGenVertexArrays(1, &m_data.vertex_array_object);
+  glBindVertexArray(m_data.vertex_array_object);
 
   glGenBuffers(1, &m_data.vertex_buffer_object);
   glBindBuffer(GL_ARRAY_BUFFER, m_data.vertex_buffer_object);
@@ -130,6 +259,7 @@ void Renderer::init_instance_renderer() {
 }
 
 void Renderer::bind_batch_renderer() {
+  glBindVertexArray(m_data.vertex_array_object);
   glBindBuffer(GL_ARRAY_BUFFER, m_data.vertex_buffer_object);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_data.index_buffer_object);
 
@@ -220,8 +350,6 @@ void Renderer::flush() {
 
 void Renderer::draw_instanced(const InstancedGeometry& geometry) {
   m_instanced_data.instances = geometry.instances();
-
-  console::log("instances", geometry.instances());
 
   if (
     geometry.vertices().size() > m_instanced_data.max_vertex_count / 2 ||
