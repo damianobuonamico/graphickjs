@@ -5,10 +5,15 @@
 #include <vector>
 #include <initializer_list>
 
+#ifndef GL_TRIANGLES
+#define GL_TRIANGLES 0x0004
+#endif
+
 struct Geometry {
-  Geometry();
+  Geometry(unsigned int m_primitive = GL_TRIANGLES);
   Geometry(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);
 
+  inline const unsigned int primitive() const { return m_primitive; }
   inline std::vector<Vertex>& vertices() { return m_vertices; }
   inline const std::vector<Vertex>& vertices() const { return m_vertices; }
   inline std::vector<uint32_t>& indices() { return m_indices; }
@@ -31,6 +36,7 @@ private:
   std::vector<Vertex> m_vertices;
   std::vector<uint32_t> m_indices;
   uint32_t m_offset = 0;
+  unsigned int m_primitive = GL_TRIANGLES;
 };
 
 struct InstancedGeometry: public Geometry {

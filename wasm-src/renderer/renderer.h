@@ -37,7 +37,7 @@ private:
   ~Renderer() = default;
 
   void init_batch_renderer();
-  void init_instance_renderer();
+  void init_instance_renderer(bool create_vertex_array = true);
 
   void bind_batch_renderer();
   void bind_instance_renderer();
@@ -64,6 +64,7 @@ private:
 
     uint32_t vertex_count = 0;
     uint32_t index_count = 0;
+    GLenum primitive = 0;
 
     Vertex* vertex_buffer = nullptr;
     Vertex* vertex_buffer_ptr = nullptr;

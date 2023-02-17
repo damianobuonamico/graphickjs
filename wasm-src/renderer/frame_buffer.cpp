@@ -19,7 +19,7 @@ void FrameBuffer::init(bool use_msaa, uint16_t msaa_samples) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   // TODO: try RGB
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_size.x, m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   glBindTexture(GL_TEXTURE_2D, NULL);
 
   glGenFramebuffers(1, &m_frame_buffer_rb);
@@ -27,7 +27,7 @@ void FrameBuffer::init(bool use_msaa, uint16_t msaa_samples) {
 
   glGenRenderbuffers(1, &m_render_buffer_object);
   glBindRenderbuffer(GL_RENDERBUFFER, m_render_buffer_object);
-  glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa_samples, GL_RGBA8, m_size.x, m_size.y);
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa_samples, GL_RGBA8, (GLsizei)m_size.x, (GLsizei)m_size.y);
 
   glBindFramebuffer(GL_FRAMEBUFFER, m_frame_buffer_rb);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_render_buffer_object);
@@ -41,7 +41,7 @@ void FrameBuffer::init(bool use_msaa, uint16_t msaa_samples) {
 
   glGenTextures(1, &m_texture_object);
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_texture_object);
-  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa_samples, GL_RGB, m_size.x, m_size.y, GL_TRUE);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa_samples, GL_RGB, (GLsizei)m_size.x, (GLsizei)m_size.y, GL_TRUE);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -50,7 +50,7 @@ void FrameBuffer::init(bool use_msaa, uint16_t msaa_samples) {
 
   glGenRenderbuffers(1, &m_render_buffer_object);
   glBindRenderbuffer(GL_RENDERBUFFER, m_render_buffer_object);
-  glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa_samples, GL_DEPTH24_STENCIL8, m_size.x, m_size.y);
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa_samples, GL_DEPTH24_STENCIL8, (GLsizei)m_size.x, (GLsizei)m_size.y);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_render_buffer_object);
 
   // TODO: Error checking everywhere, maybe spdlog or custom alternative
@@ -64,7 +64,7 @@ void FrameBuffer::init(bool use_msaa, uint16_t msaa_samples) {
 
   glGenTextures(1, &m_post_processing_texture_object);
   glBindTexture(GL_TEXTURE_2D, m_post_processing_texture_object);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_size.x, m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -113,19 +113,19 @@ void FrameBuffer::resize(const vec2& size) {
 
 #ifdef EMSCRIPTEN
   glBindTexture(GL_TEXTURE_2D, m_texture_object);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_size.x, m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
   glBindRenderbuffer(GL_RENDERBUFFER, m_render_buffer_object);
-  glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_msaa_samples, GL_RGBA8, size.x, size.y);
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_msaa_samples, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y);
 #else
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_texture_object);
-  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_msaa_samples, GL_RGB, m_size.x, m_size.y, GL_TRUE);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_msaa_samples, GL_RGB, (GLsizei)m_size.x, (GLsizei)m_size.y, GL_TRUE);
 
   glBindRenderbuffer(GL_RENDERBUFFER, m_render_buffer_object);
-  glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_msaa_samples, GL_DEPTH24_STENCIL8, size.x, size.y);
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_msaa_samples, GL_DEPTH24_STENCIL8, (GLsizei)m_size.x, (GLsizei)m_size.y);
 
   glBindTexture(GL_TEXTURE_2D, m_post_processing_texture_object);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_size.x, m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 #endif
 }
 
@@ -145,7 +145,7 @@ void FrameBuffer::render() const {
 #ifdef EMSCRIPTEN
   glBindFramebuffer(GL_READ_FRAMEBUFFER, m_frame_buffer_rb);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_frame_buffer_cb);
-  glBlitFramebuffer(0, 0, m_size.x, m_size.y, 0, 0, m_size.x, m_size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  glBlitFramebuffer(0, 0, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, 0, (GLsizei)m_size.x, (GLsizei)m_size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -156,7 +156,7 @@ void FrameBuffer::render() const {
 #else
   glBindFramebuffer(GL_READ_FRAMEBUFFER, m_frame_buffer_object);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_post_processing_frame_buffer_object);
-  glBlitFramebuffer(0, 0, m_size.x, m_size.y, 0, 0, m_size.x, m_size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  glBlitFramebuffer(0, 0, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, 0, (GLsizei)m_size.x, (GLsizei)m_size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

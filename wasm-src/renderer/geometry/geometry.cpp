@@ -4,8 +4,8 @@
 
 /* -- Geometry -- */
 
-Geometry::Geometry()
-  : m_vertices(), m_indices() {}
+Geometry::Geometry(unsigned int primitive)
+  : m_primitive(primitive), m_vertices(), m_indices() {}
 
 Geometry::Geometry(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
   : m_vertices(vertices), m_indices(indices), m_offset((uint32_t)vertices.size()) {}

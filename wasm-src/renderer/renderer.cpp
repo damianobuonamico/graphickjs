@@ -66,7 +66,7 @@ void Renderer::begin_frame(const vec2& position, float zoom) {
   get()->set_viewport(position, zoom);
   get()->m_frame_buffer.bind();
 
-  glClearColor(1.0f, 1.0f, 0.5f, 1.0f);
+  glClearColor(0.09f, 0.11f, 0.13f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
   get()->begin_batch();
@@ -99,10 +99,8 @@ void Renderer::draw(const InstancedGeometry& geometry) {
     return;
   }
 
-  if (get()->m_last_call != RenderCall::Instance) {
-    get()->bind_instance_renderer();
-    get()->m_last_call = RenderCall::Instance;
-  }
+  get()->bind_instance_renderer();
+  get()->m_last_call = RenderCall::Instance;
 
   get()->draw_instanced(geometry);
 }
@@ -125,8 +123,8 @@ void Renderer::init_batch_renderer() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_data.max_index_count * sizeof(uint32_t), nullptr, GL_STREAM_DRAW);
 }
 
-void Renderer::init_instance_renderer() {
-  glGenVertexArrays(1, &m_instanced_data.vertex_array_object);
+void Renderer::init_instance_renderer(bool create_vertex_array) {
+  if (create_vertex_array) glGenVertexArrays(1, &m_instanced_data.vertex_array_object);
   glBindVertexArray(m_instanced_data.vertex_array_object);
 
   glGenBuffers(1, &m_instanced_data.vertex_buffer_object);
@@ -189,7 +187,8 @@ void Renderer::begin_batch() {
 
 void Renderer::add_to_batch(const Geometry& geometry) {
   if (m_data.index_count + geometry.indices().size() >= m_data.max_index_count ||
-    m_data.vertex_count + geometry.vertices().size() >= m_data.max_vertex_count) {
+    m_data.vertex_count + geometry.vertices().size() >= m_data.max_vertex_count ||
+    m_data.primitive != geometry.primitive()) {
     end_batch();
     flush();
     begin_batch();
@@ -215,18 +214,27 @@ void Renderer::add_to_batch(const Geometry& geometry) {
 
   m_data.vertex_count += (uint32_t)geometry.vertices().size();
   m_data.index_count += (uint32_t)geometry.indices().size();
+  m_data.primitive = geometry.primitive();
 }
 
 void Renderer::end_batch() {
   GLsizeiptr vertex_buffer_size = (uint8_t*)m_data.vertex_buffer_ptr - (uint8_t*)m_data.vertex_buffer;
   GLsizeiptr index_buffer_size = (uint8_t*)m_data.index_buffer_ptr - (uint8_t*)m_data.index_buffer;
 
+  if (vertex_buffer_size == 0 || index_buffer_size == 0) {
+    return;
+  }
+
   glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_buffer_size, m_data.vertex_buffer);
   glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_buffer_size, m_data.index_buffer);
 }
 
 void Renderer::flush() {
-  glDrawElements(GL_TRIANGLES, m_data.index_count, GL_UNSIGNED_INT, nullptr);
+  if (m_data.vertex_count == 0 || m_data.index_count == 0) {
+    return;
+  }
+
+  glDrawElements(m_data.primitive, m_data.index_count, GL_UNSIGNED_INT, nullptr);
 
   m_data.vertex_count = 0;
   m_data.index_count = 0;
@@ -245,7 +253,6 @@ void Renderer::draw_instanced(const InstancedGeometry& geometry) {
       geometry.indices().size() > m_instanced_data.max_index_count ||
       geometry.instances() > m_instanced_data.max_instance_count
       ) {
-      glDeleteVertexArrays(1, &m_instanced_data.vertex_array_object);
       glDeleteBuffers(1, &m_instanced_data.vertex_buffer_object);
       glDeleteBuffers(1, &m_instanced_data.index_buffer_object);
       glDeleteBuffers(1, &m_instanced_data.instance_buffer_object);
@@ -254,15 +261,20 @@ void Renderer::draw_instanced(const InstancedGeometry& geometry) {
       m_instanced_data.max_index_count = std::max((uint32_t)geometry.indices().size(), m_instanced_data.max_index_count);
       m_instanced_data.max_instance_count = std::max(geometry.instances(), m_instanced_data.max_instance_count);
 
-      init_instance_renderer();
+      init_instance_renderer(false);
       bind_instance_renderer();
     }
 
     m_instanced_data.last_allocation_usage = 0;
-  } else {
+  } {
     m_instanced_data.last_allocation_usage++;
 
-    if (m_instanced_data.last_allocation_usage > 1000) {
+    if (
+      m_instanced_data.last_allocation_usage > 1000 && (
+        m_instanced_data.max_vertex_count > 100 ||
+        m_instanced_data.max_index_count > 200 ||
+        m_instanced_data.max_instance_count > 100
+        )) {
       glDeleteVertexArrays(1, &m_instanced_data.vertex_array_object);
       glDeleteBuffers(1, &m_instanced_data.vertex_buffer_object);
       glDeleteBuffers(1, &m_instanced_data.index_buffer_object);
@@ -272,8 +284,10 @@ void Renderer::draw_instanced(const InstancedGeometry& geometry) {
       m_instanced_data.max_index_count = m_instanced_data.max_vertex_count * 2;
       m_instanced_data.max_instance_count = 100;
 
-      init_instance_renderer();
+      init_instance_renderer(false);
       bind_instance_renderer();
+
+      m_instanced_data.last_allocation_usage = 0;
     }
   }
 
@@ -283,5 +297,5 @@ void Renderer::draw_instanced(const InstancedGeometry& geometry) {
   glBindBuffer(GL_ARRAY_BUFFER, m_instanced_data.instance_buffer_object);
   glBufferSubData(GL_ARRAY_BUFFER, 0, geometry.translations().size() * sizeof(vec2), geometry.translations().data());
 
-  glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)geometry.indices().size(), GL_UNSIGNED_INT, nullptr, m_instanced_data.instances);
+  glDrawElementsInstanced(geometry.primitive(), (GLsizei)geometry.indices().size(), GL_UNSIGNED_INT, nullptr, m_instanced_data.instances);
 }

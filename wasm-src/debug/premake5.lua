@@ -71,6 +71,10 @@ workspace "debug"
     "GLFW_INCLUDE_NONE"
   }
 
+  linkoptions { 
+    "/NODEFAULTLIB:\"LIBCMTD\""
+  }
+
   filter "system:windows"
     systemversion "latest"
 
