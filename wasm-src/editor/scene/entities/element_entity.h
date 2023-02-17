@@ -12,7 +12,7 @@
 
 class ElementEntity: public Entity {
 public:
-  ElementEntity(const vec2& position) : Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this }), m_selection({ this }) {
+  ElementEntity(const vec2& position): Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this, position }), m_selection({ this }) {
     add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 0.0f }, vec2{ 20.0f, -20.0f }, false));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
@@ -53,6 +53,9 @@ public:
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
   virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) override;
+
+  // TODO: duplication (after implementing saving/loading)
+  inline virtual ElementEntity* duplicate() const override { return new ElementEntity(*this); };
 private:
   void regenerate();
   const BezierEntity closing_curve() const;

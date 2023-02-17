@@ -75,6 +75,8 @@ class ElementTransformComponent: public TransformComponent {
 public:
   ElementTransformComponent(Entity* entity)
     : TransformComponent(entity) {};
+  ElementTransformComponent(Entity* entity, const vec2& position)
+    : TransformComponent(entity, position) {};
   ElementTransformComponent(const ElementTransformComponent&) = default;
   ElementTransformComponent(ElementTransformComponent&&) = default;
 

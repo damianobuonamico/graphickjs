@@ -42,6 +42,8 @@ public:
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) { return nullptr; };
   virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) {};
+
+  virtual Entity* duplicate() const { return nullptr; };
 protected:
   const int m_category;
 };

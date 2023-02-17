@@ -7,9 +7,11 @@
 SelectTool::SelectTool(): Tool(ToolType::Select, CategoryNone) {}
 
 void SelectTool::on_pointer_down() {
+  m_is_element_added_to_selection = false;
+  m_dragging_occurred = false;
   m_element = InputManager::hover.element();
 
-  if (!InputManager::keys.shift && (!m_element || Editor::scene.selection.has(m_element->id))) {
+  if (!InputManager::keys.shift && (!m_element || !Editor::scene.selection.has(m_element->id))) {
     Editor::scene.selection.clear();
   }
 
@@ -24,10 +26,10 @@ void SelectTool::on_pointer_down() {
       Editor::scene.selection.clear();
 
       // TODO: Duplication
-      // for (Entity* entity : entities) {
-      //   Entity* duplicate = SceneManager::duplicate(entity);
-      //   if (duplicate) Editor::scene.selection.select(duplicate);
-      // }
+      for (Entity* entity : entities) {
+        Entity* duplicate = Editor::scene.duplicate(entity);
+        if (duplicate) Editor::scene.selection.select(duplicate);
+      }
     }
   } else {
     // TODO: Selection box

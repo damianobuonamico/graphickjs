@@ -22,6 +22,7 @@ public:
   }
 
   Entity* entity_at(const vec2& position, bool lower_level, float threshold);
+  Entity* duplicate(const Entity* entity);
 private:
   void load();
 

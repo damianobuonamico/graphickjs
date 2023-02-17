@@ -3,7 +3,13 @@
 #include "entities/element_entity.h"
 
 void Scene::load() {
-  m_children.insert({ {}, std::make_shared<ElementEntity>(vec2{ 0.0f }) });
+  std::shared_ptr<ElementEntity> element1 = std::make_shared<ElementEntity>(vec2{ 0.0f });
+  std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
+  m_children.insert({ element1->id, element1 });
+  m_children.insert({ element2->id, element2 });
+
+  console::log("id1", element1->id);
+  console::log("id2", element2->id);
 }
 
 void Scene::render(float zoom) const {
@@ -77,4 +83,16 @@ Entity* Scene::entity_at(const vec2& position, bool lower_level, float threshold
   }
 
   return nullptr;
+}
+
+Entity* Scene::duplicate(const Entity* entity) {
+  if (!entity) return nullptr;
+
+  Entity* duplicate = entity->duplicate();
+  if (!duplicate) return nullptr;
+
+  std::shared_ptr<Entity> shared_duplicate{duplicate};
+  m_children.insert({ shared_duplicate->id, shared_duplicate });
+
+  return shared_duplicate.get();
 }
