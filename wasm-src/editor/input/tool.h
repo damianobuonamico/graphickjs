@@ -6,6 +6,7 @@ public:
     Pan = 0,
     Zoom,
     Select,
+    DirectSelect,
     Pencil,
     None
   };

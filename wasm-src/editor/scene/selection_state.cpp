@@ -120,7 +120,7 @@ Box SelectionState::bounding_box() const {
 void SelectionState::clear() {
   for (auto& [id, entity] : *this) {
     if (entity->is_in_category(Entity::CategorySelectableChildren)) {
-      entity->selection()->clear();
+      entity->selection()->clear(false);
     }
   }
 

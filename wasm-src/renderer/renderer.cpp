@@ -95,9 +95,6 @@ void Renderer::draw(const Geometry& geometry) {
 void Renderer::draw(const InstancedGeometry& geometry) {
   if (geometry.instances() == 0) {
     return;
-  } else if (geometry.instances() == 1) {
-    draw((Geometry)geometry);
-    return;
   }
 
   get()->bind_instance_renderer();

@@ -190,7 +190,7 @@ void VertexTransformComponent::translate_right_to(const vec2& value, bool mirror
 }
 
 void VertexTransformComponent::apply() {
-  m_position.apply();
+  static_cast<VertexEntity*>(parent)->position()->transform().apply();
 
   HandleEntity* left = static_cast<VertexEntity*>(parent)->left();
   HandleEntity* right = static_cast<VertexEntity*>(parent)->right();
@@ -198,6 +198,8 @@ void VertexTransformComponent::apply() {
   if (left) left->transform().apply();
   if (right) right->transform().apply();
 }
+
+/* -- ElementTransformComponent -- */
 
 Box ElementTransformComponent::bounding_box() const {
   Box box{ std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
@@ -225,21 +227,39 @@ Box ElementTransformComponent::bounding_box() const {
 }
 
 Box ElementTransformComponent::large_bounding_box() const {
-  Box box = bounding_box();
+  Box box{ std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
   ElementEntity* parent = static_cast<ElementEntity*>(this->parent);
+
+  if (!parent) return box;
+
   vec2 position = m_position.get();
 
-  box.min -= position;
-  box.max -= position;
-
-  for (const auto& [id, vertex] : *parent) {
-    Box vertex_box = vertex->transform().bounding_box();
-    min(box.min, vertex_box.min, box.min);
-    max(box.max, vertex_box.max, box.max);
+  if (parent->curves_count() > 0) {
+    for (auto it = parent->curves_begin(); it != parent->curves_end(); ++it) {
+      Box curve_box = it->large_bounding_box();
+      min(box.min, curve_box.min, box.min);
+      max(box.max, curve_box.max, box.max);
+    }
+  } else {
+    box.min = { 0.0f, 0.0f };
+    box.max = { 0.0f, 0.0f };
   }
 
   box.min += position;
   box.max += position;
 
   return box;
+}
+
+void ElementTransformComponent::apply() {
+  TransformComponent::apply();
+
+  ElementEntity* parent = static_cast<ElementEntity*>(this->parent);
+  if (!parent) {
+    return;
+  }
+
+  for (const auto& [id, vertex] : *parent) {
+    vertex->transform().apply();
+  }
 }

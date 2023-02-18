@@ -13,9 +13,19 @@ void ElementEntity::render(float zoom) const {
     curve.render(zoom);
   }
 
-  for (const auto& [id, vertex] : m_vertices) {
-    vertex->position()->render(zoom);
-  }
+  // for (const auto& [id, vertex] : m_vertices) {
+  //   vertex->position()->render(zoom);
+  // }
+
+  Box box = transform().large_bounding_box();
+  Geometry box_geometry{};
+
+  box_geometry.push_quad(
+    box.min, vec2{ box.max.x, box.min.y }, box.max, vec2{ box.min.x, box.max.y },
+    vec4{ 0.0f, 1.0f, 0.5f, 0.2f }
+  );
+
+  Renderer::draw(box_geometry);
 }
 
 // TODO: diff algorithm
@@ -45,15 +55,11 @@ void ElementEntity::regenerate() {
   }
 }
 
-const BezierEntity ElementEntity::closing_curve() const {
-  if (m_closed.get()) {
-    return m_curves.back();
-  }
-
-  VertexEntity start_vertex{ last_vertex().transform().position().get() };
-  VertexEntity end_vertex{ first_vertex().transform().position().get() };
-
-  return { start_vertex, end_vertex };
+const Box ElementEntity::closing_line() const {
+  return {
+    last_vertex().transform().position().get(),
+    first_vertex().transform().position().get()
+  };
 }
 
 bool ElementEntity::intersects_box(const Box& box) const {
@@ -78,7 +84,7 @@ bool ElementEntity::intersects_box(const Box& box) const {
 }
 
 Entity* ElementEntity::entity_at(const vec2& position, bool lower_level, float threshold) {
-  if (!is_point_in_box(position, lower_level ? m_transform.large_bounding_box() : m_transform.bounding_box())) {
+  if (!is_point_in_box(position, lower_level ? m_transform.large_bounding_box() : m_transform.bounding_box(), threshold)) {
     return nullptr;
   }
 
@@ -110,7 +116,7 @@ Entity* ElementEntity::entity_at(const vec2& position, bool lower_level, float t
     }
 
     if (!m_closed.get() && vertex_count() > 1) {
-      intersections += (int)closing_curve().line_intersection_points(line).size();
+      intersections += (int)line_line_intersections(line, closing_line()).size();
     }
 
     if (intersections % 2 != 0) {
@@ -135,14 +141,14 @@ Entity* ElementEntity::entity_at(const vec2& position, bool lower_level, float t
     }
 
     if (!m_closed.get() && vertex_count() > 1) {
-      BezierEntity curve = closing_curve();
+      Box closing = closing_line();
 
-      for (float t : curve.line_intersections(line)) {
-        if (curve.get(t).x < position.x) continue;
+      for (float t : line_line_intersections(line, closing)) {
+        if (lerp(closing.min, closing.max, t).x < position.x) continue;
 
         if (
-          curve.get(t - GEOMETRY_MAX_INTERSECTION_ERROR).x <=
-          curve.get(t + GEOMETRY_MAX_INTERSECTION_ERROR).x
+          lerp(closing.min, closing.max, t - GEOMETRY_MAX_INTERSECTION_ERROR).x <=
+          lerp(closing.min, closing.max, t + GEOMETRY_MAX_INTERSECTION_ERROR).x
           ) {
           count++;
         } else {

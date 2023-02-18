@@ -52,6 +52,7 @@ public:
 
   std::vector<vec2> extrema() const;
   Box bounding_box() const;
+  Box large_bounding_box() const;
   vec2 size() const;
 
   bool clockwise(int resolution) const;

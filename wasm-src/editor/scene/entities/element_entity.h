@@ -58,7 +58,7 @@ public:
   inline virtual ElementEntity* duplicate() const override { return new ElementEntity(*this); };
 private:
   void regenerate();
-  const BezierEntity closing_curve() const;
+  const Box closing_line() const;
 private:
   MapValue<UUID, std::shared_ptr<VertexEntity>> m_vertices;
   std::vector<BezierEntity> m_curves;

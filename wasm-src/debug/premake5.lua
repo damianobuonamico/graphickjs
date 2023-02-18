@@ -72,7 +72,8 @@ workspace "debug"
   }
 
   linkoptions { 
-    "/NODEFAULTLIB:\"LIBCMTD\""
+    "/NODEFAULTLIB:\"LIBCMTD\"",
+    "/NODEFAULTLIB:\"LIBCMT\""
   }
 
   filter "system:windows"

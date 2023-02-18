@@ -4,6 +4,7 @@
 #include "tools/pan_tool.h"
 #include "tools/zoom_tool.h"
 #include "tools/select_tool.h"
+#include "tools/direct_select_tool.h"
 #include "tools/pencil_tool.h"
 
 class ToolState {
@@ -33,6 +34,7 @@ private:
     new PanTool(),
     new ZoomTool(),
     new SelectTool(),
+    new DirectSelectTool(),
     new PencilTool(),
   };
 

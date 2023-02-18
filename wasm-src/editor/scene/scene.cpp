@@ -5,11 +5,9 @@
 void Scene::load() {
   std::shared_ptr<ElementEntity> element1 = std::make_shared<ElementEntity>(vec2{ 0.0f });
   std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
+
   m_children.insert({ element1->id, element1 });
   m_children.insert({ element2->id, element2 });
-
-  console::log("id1", element1->id);
-  console::log("id2", element2->id);
 }
 
 void Scene::render(float zoom) const {
@@ -24,9 +22,11 @@ void Scene::render_selection(float zoom) const {
   if (selection.empty()) return;
 
   Geometry lines_geometry{ GL_LINES };
+  InstancedGeometry selected_vertex_geometry{};
   InstancedGeometry vertex_geometry{};
   InstancedGeometry handle_geometry{};
 
+  selected_vertex_geometry.push_quad(vec2{ 0.0f }, 4.0f / zoom, vec4(0.22f, 0.76f, 0.95f, 1.0f));
   vertex_geometry.push_quad(vec2{ 0.0f }, 4.0f / zoom, vec4(0.22f, 0.76f, 0.95f, 1.0f));
   vertex_geometry.push_quad(vec2{ 0.0f }, 2.5f / zoom, vec4(1.0f, 1.0f, 1.0f, 1.0f));
   handle_geometry.push_circle(vec2{ 0.0f }, 2.5f / zoom, vec4(0.22f, 0.76f, 0.95f, 1.0f), 10);
@@ -40,7 +40,11 @@ void Scene::render_selection(float zoom) const {
 
       for (const auto& [id, vertex] : *element) {
         vec2 vertex_position = position + vertex->transform().position().get();
-        vertex_geometry.push_instance(vertex_position);
+        if (element->selection()->has(id)) {
+          selected_vertex_geometry.push_instance(vertex_position);
+        } else {
+          vertex_geometry.push_instance(vertex_position);
+        }
 
         HandleEntity* left = vertex->left();
         HandleEntity* right = vertex->right();
@@ -71,6 +75,7 @@ void Scene::render_selection(float zoom) const {
 
   Renderer::draw(lines_geometry);
   Renderer::draw(vertex_geometry);
+  Renderer::draw(selected_vertex_geometry);
   Renderer::draw(handle_geometry);
 }
 

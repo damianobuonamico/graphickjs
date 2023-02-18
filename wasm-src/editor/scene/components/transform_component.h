@@ -84,6 +84,8 @@ public:
 
   virtual Box bounding_box() const override;
   Box large_bounding_box() const;
+
+  virtual void apply() override;
 private:
   vec2 m_origin{};
 };

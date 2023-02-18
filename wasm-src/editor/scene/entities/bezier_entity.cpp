@@ -27,6 +27,21 @@ Box BezierEntity::bounding_box() const {
   return box;
 }
 
+Box BezierEntity::large_bounding_box() const {
+  Box box = { std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
+
+  std::vector<vec2> points = {
+    p0(), p1(), p2(), p3()
+  };
+
+  for (vec2& point : points) {
+    box.min = min(box.min, point);
+    box.max = max(box.max, point);
+  }
+
+  return box;
+}
+
 vec2 BezierEntity::size() const {
   Box box = bounding_box();
   return box.max - box.min;
@@ -123,6 +138,7 @@ std::vector<float> BezierEntity::linear_extrema() const {
   return { 0.0f, 1.0f };
 }
 
+// TODO: check if is masquerading quadratic in every cubic method
 std::vector<float> BezierEntity::cubic_extrema() const {
   const vec2 A = p0();
   const vec2 B = p1();
@@ -136,6 +152,17 @@ std::vector<float> BezierEntity::cubic_extrema() const {
   std::vector<float> roots{ 0.0f, 1.0f };
 
   for (int i = 0; i < 2; i++) {
+    if (is_almost_zero(a[i])) {
+      if (is_almost_zero(b[i])) continue;
+
+      float t = -c[i] / b[i];
+      if (t > 0.0f && t < 1.0f) {
+        roots.push_back(t);
+      }
+
+      continue;
+    }
+
     float delta = b[i] * b[i] - 4.0f * a[i] * c[i];
 
     if (is_almost_zero(delta)) {
@@ -161,7 +188,7 @@ std::vector<float> BezierEntity::cubic_extrema() const {
 }
 
 vec2 BezierEntity::linear_get(float t) const {
-  return lerp(p0(), p1(), t);
+  return lerp(p0(), p3(), t);
 }
 
 // TODO: Cache
@@ -478,4 +505,14 @@ void BezierEntity::cubic_render(float zoom) const {
 
   Geometry geo = stroke_curves({ Bezier{ offset + p0(), offset + p1(), offset + p2(), offset + p3() } });
   Renderer::draw(geo);
+
+  Box box = bounding_box();
+  Geometry box_geometry{};
+
+  box_geometry.push_quad(
+    offset + box.min, offset + vec2{ box.max.x, box.min.y }, offset + box.max, offset + vec2{ box.min.x, box.max.y },
+    vec4{ 0.0f, 1.0f, 0.5f, 0.2f }
+  );
+
+  Renderer::draw(box_geometry);
 }
