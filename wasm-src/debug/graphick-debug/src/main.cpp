@@ -81,8 +81,8 @@ int main() {
     return -1;
   }
 
-  int width = 960;
-  int height = 680;
+  int width = 1300;
+  int height = 810;
   int samples = 8;
 
   glfwWindowHint(GLFW_SAMPLES, samples);

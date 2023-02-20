@@ -7,8 +7,8 @@
 Geometry::Geometry(unsigned int primitive)
   : m_primitive(primitive), m_vertices(), m_indices() {}
 
-Geometry::Geometry(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
-  : m_vertices(vertices), m_indices(indices), m_offset((uint32_t)vertices.size()) {}
+Geometry::Geometry(const std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, unsigned int primitive)
+  : m_vertices(vertices), m_indices(indices), m_offset((uint32_t)vertices.size()), m_primitive(primitive) {}
 
 void Geometry::reserve(size_t vertices, size_t indices) {
   reserve_vertices(vertices);
@@ -37,6 +37,10 @@ void Geometry::push_quad(const vec2& position, float radius, const vec4& color) 
   push_quad(position - offset_d1, position + offset_d2, position + offset_d1, position - offset_d2, color);
 }
 
+void Geometry::push_quad(const Box& box, const vec4& color) {
+  push_quad(box.min, vec2{ box.max.x, box.min.y }, box.max, vec2{ box.min.x, box.max.y }, color);
+}
+
 void Geometry::push_circle(const vec2& position, float radius, const vec4& color, uint32_t segments) {
   const float step = MATH_TWO_PI / segments;
   const uint32_t center = m_offset;
@@ -53,6 +57,55 @@ void Geometry::push_circle(const vec2& position, float radius, const vec4& color
   }
 
   push_indices({ center, center + 1, m_offset - 1 });
+}
+
+void Geometry::push_line(const vec2& v1, const vec2& v2, const vec4& color) {
+  push_vertices({ { v1, color }, { v2, color } });
+  push_indices({ m_offset - 2, m_offset - 1 });
+}
+
+void Geometry::push_line_strip(std::initializer_list<Vertex> vertices) {
+  m_vertices.insert(m_vertices.end(), vertices);
+  m_indices.reserve(vertices.size() * 2 - 2);
+
+  for (uint32_t i = m_offset; i < vertices.size() - 1 + m_offset; i++) {
+    m_indices.push_back(i);
+    m_indices.push_back(i + 1);
+  }
+
+  m_offset += (uint32_t)vertices.size();
+}
+
+void Geometry::push_line_strip(const std::vector<Vertex>& vertices) {
+  m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
+  m_indices.reserve(vertices.size() * 2 - 2);
+
+  for (uint32_t i = m_offset; i < vertices.size() - 1 + m_offset; i++) {
+    m_indices.push_back(i);
+    m_indices.push_back(i + 1);
+  }
+
+  m_offset += (uint32_t)vertices.size();
+}
+
+Geometry Geometry::wireframe() const {
+  Geometry geo{ m_vertices, std::vector<uint32_t>{}, GL_LINES };
+
+  if (m_primitive == GL_LINES) {
+    geo.push_indices(m_indices);
+    return geo;
+  }
+
+
+  if (m_primitive == GL_TRIANGLES) {
+    geo.reserve_indices(m_indices.size() * 2);
+
+    for (uint32_t i = 0; i < m_indices.size(); i += 3) {
+      geo.push_indices({ m_indices[i], m_indices[i + 1], m_indices[i + 1], m_indices[i + 2], m_indices[i + 2], m_indices[i] });
+    }
+  }
+
+  return geo;
 }
 
 /* -- InstancedGeometry -- */

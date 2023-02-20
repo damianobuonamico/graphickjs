@@ -30,6 +30,8 @@ public:
   static void begin_frame(const vec2& position, float zoom);
   static void end_frame();
 
+  static void push_overlay_layer(const vec2& position);
+
   static void draw(const Geometry& geometry);
   static void draw(const InstancedGeometry& geometry);
 private:

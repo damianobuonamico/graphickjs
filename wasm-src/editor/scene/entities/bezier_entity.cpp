@@ -14,6 +14,10 @@ std::vector<vec2> BezierEntity::extrema() const {
   return extrema;
 }
 
+std::vector<float> BezierEntity::inflections() const {
+  return BEZIER_CALL(inflections);
+};
+
 Box BezierEntity::bounding_box() const {
   std::vector<vec2> points = extrema();
 
@@ -185,6 +189,63 @@ std::vector<float> BezierEntity::cubic_extrema() const {
   }
 
   return roots;
+}
+
+std::vector<float> BezierEntity::cubic_inflections() const {
+  vec2 P1 = p1();
+  vec2 P2 = p2();
+
+  vec2 A = P1 - p0();
+  vec2 B = P2 - P1 - A;
+  vec2 C = p3() - P2 - A - 2.0f * B;
+
+  float a = B.x * C.y - B.y * C.x;
+  float b = A.x * C.y - A.y * C.x;
+  float c = A.x * B.y - A.y * B.x;
+
+  if (is_almost_zero(a)) {
+    if (is_almost_zero(b)) {
+      return { 0.0f, 1.0f };
+    }
+
+    float t = -c / b;
+    if (t > 0.0f && t < 1.0f) {
+      return { 0.0f, t, 1.0f };
+    }
+
+    return { 0.0f, 1.0f };
+  }
+
+  float delta = b * b - 4.0f * a * c;
+
+  if (is_almost_zero(delta)) {
+    float t = -b / (2.0f * a);
+    if (t > 0.0f && t < 1.0f) {
+      return { 0.0f, t, 1.0f };
+    }
+  } else if (delta > 0.0f) {
+    float sqrt_delta = sqrtf(delta);
+    float t1 = (-b + sqrt_delta) / (2.0f * a);
+    float t2 = (-b - sqrt_delta) / (2.0f * a);
+
+    if (t1 > t2) {
+      std::swap(t1, t2);
+    }
+
+    std::vector<float> values = { 0.0f };
+    if (t1 > 0.0f && t1 < 1.0f) {
+      values.push_back(t1);
+    }
+    if (t2 > 0.0f && t2 < 1.0f) {
+      values.push_back(t2);
+    }
+
+    values.push_back(1.0f);
+
+    return values;
+  }
+
+  return { 0.0f, 1.0f };
 }
 
 vec2 BezierEntity::linear_get(float t) const {
@@ -507,12 +568,11 @@ void BezierEntity::cubic_render(float zoom) const {
   Renderer::draw(geo);
 
   Box box = bounding_box();
-  Geometry box_geometry{};
+  box.min += offset;
+  box.max += offset;
 
-  box_geometry.push_quad(
-    offset + box.min, offset + vec2{ box.max.x, box.min.y }, offset + box.max, offset + vec2{ box.min.x, box.max.y },
-    vec4{ 0.0f, 1.0f, 0.5f, 0.2f }
-  );
+  Geometry box_geometry{};
+  box_geometry.push_quad(box, vec4{ 0.0f, 1.0f, 0.5f, 0.2f });
 
   Renderer::draw(box_geometry);
 }

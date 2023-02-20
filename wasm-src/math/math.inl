@@ -19,10 +19,6 @@ inline bool does_box_intersect_box(const Box& a, const Box& b) {
 }
 
 inline std::vector<float> line_line_intersections(const Box& a, const Box& b) {
-  if (!does_box_intersect_box(a, b)) {
-    return {};
-  }
-
   float den = b.max.x - b.min.x;
 
   if (is_almost_zero(den)) {
@@ -47,10 +43,11 @@ inline std::vector<float> line_line_intersections(const Box& a, const Box& b) {
 inline std::vector<vec2> line_line_intersection_points(const Box& a, const Box& b) {
   std::vector<float> values = line_line_intersections(a, b);
   std::vector<vec2> points{};
+  Box box = { min(b.min, b.max), max(b.min, b.max) };
 
   for (float value : values) {
     vec2 point = lerp(a.min, a.max, value);
-    if (is_point_in_box(point, b, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+    if (is_point_in_box(point, box, GEOMETRY_MAX_INTERSECTION_ERROR)) {
       points.push_back(point);
     }
   }
@@ -65,4 +62,14 @@ inline std::vector<Box> get_lines_from_box(const Box& box) {
     { box.max, { box.min.x, box.max.y } },
     { { box.min.x, box.max.y }, box.min }
   };
+}
+
+inline bool clockwise(const std::vector<vec2>& points) {
+  float sum = (points[0].x - points[points.size() - 1].x) * (points[0].y + points[points.size() - 1].y);
+
+  for (int i = 0; i < points.size() - 1; i++) {
+    sum += (points[i + 1].x - points[i].x) * (points[i + 1].y + points[i].y);
+  }
+
+  return sum >= 0.0f;
 }

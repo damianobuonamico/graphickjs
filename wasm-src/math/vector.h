@@ -38,6 +38,10 @@ vec2 lerp(const vec2& v1, const vec2& v2, float t);
 vec3 lerp(const vec3& v1, const vec3& v2, float t);
 vec4 lerp(const vec4& v1, const vec4& v2, float t);
 
+vec2 bezier(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t);
+vec2 bezier_derivative(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t);
+vec2 bezier_second_derivative(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t);
+
 vec2 midpoint(const vec2& v1, const vec2& v2);
 vec3 midpoint(const vec3& v1, const vec3& v2);
 vec4 midpoint(const vec4& v1, const vec4& v2);
@@ -78,6 +82,10 @@ bool not_zero(const vec4& v);
 bool is_almost_zero(const vec2& v, const float eps);
 bool is_almost_zero(const vec3& v, const float eps);
 bool is_almost_zero(const vec4& v, const float eps);
+
+bool is_almost_equal(const vec2& v1, const vec2& v2, const float eps);
+bool is_almost_equal(const vec3& v1, const vec3& v2, const float eps);
+bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps);
 
 float dot(const vec2& v1, const vec2& v2);
 float dot(const vec3& v1, const vec3& v2);

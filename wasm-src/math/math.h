@@ -14,4 +14,6 @@ std::vector<vec2> line_line_intersection_points(const Box& a, const Box& b);
 
 std::vector<Box> get_lines_from_box(const Box& box);
 
+bool clockwise(const std::vector<vec2>& points);
+
 #include "math.inl"

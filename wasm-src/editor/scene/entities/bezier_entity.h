@@ -37,6 +37,9 @@ public:
     return Type::Linear;
   }
 
+  inline VertexEntity& start() const { return m_start; }
+  inline VertexEntity& end() const { return m_end; }
+
   inline vec2 p0() const { return m_start.transform().position().get(); }
   inline vec2 p1() const {
     Vec2Value* right = m_start.transform().right();
@@ -51,6 +54,7 @@ public:
   inline vec2 p3() const { return m_end.transform().position().get(); }
 
   std::vector<vec2> extrema() const;
+  std::vector<float> inflections() const;
   Box bounding_box() const;
   Box large_bounding_box() const;
   vec2 size() const;
@@ -81,6 +85,8 @@ private:
 private:
   std::vector<float> linear_extrema() const;
   std::vector<float> cubic_extrema() const;
+  inline std::vector<float> linear_inflections() const { return { 0.0f, 1.0f }; }
+  std::vector<float> cubic_inflections() const;
 
   vec2 linear_get(float t) const;
   vec2 cubic_get(float t) const;

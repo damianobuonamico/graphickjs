@@ -211,7 +211,9 @@ void DirectSelectTool::on_handle_pointer_down() {
 
 /* -- on_pointer_move -- */
 
-void DirectSelectTool::on_none_pointer_move() {}
+void DirectSelectTool::on_none_pointer_move() {
+  // TODO: Implement
+}
 
 void DirectSelectTool::on_duplicate_pointer_move() {
   translate_selected();
@@ -225,7 +227,9 @@ void DirectSelectTool::on_element_pointer_move() {
   translate_selected();
 }
 
-void DirectSelectTool::on_bezier_pointer_move() {}
+void DirectSelectTool::on_bezier_pointer_move() {
+  // TODO: Implement
+}
 
 void DirectSelectTool::on_vertex_pointer_move() {
   translate_selected();

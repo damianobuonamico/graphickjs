@@ -175,6 +175,32 @@ inline vec4 lerp(const vec4& v1, const vec4& v2, float t) {
   };
 }
 
+/* -- bezier -- */
+
+inline vec2 bezier(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t) {
+  float c0 = std::powf(1 - t, 3);
+  float c1 = 3 * t * std::powf(1 - t, 2);
+  float c2 = 3 * std::powf(t, 2) * (1 - t);
+  float c3 = std::powf(t, 3);
+
+  return c0 * v1 + c1 * v2 + c2 * v3 + c3 * v4;
+}
+
+inline vec2 bezier_derivative(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t) {
+  vec2 a = 3.0f * (-v1 + 3.0f * v2 - 3.0f * v3 + v4);
+  vec2 b = 6.0f * (v1 - 2.0f * v2 + v3);
+  vec2 c = -3.0f * (v1 - v2);
+
+  return a * t * t + b * t + c;
+}
+
+inline vec2 bezier_second_derivative(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t) {
+  vec2 a = 6.0f * (-v1 + 3.0f * v2 - 3.0f * v3 + v4);
+  vec2 b = 6.0f * (v1 - 2.0f * v2 + v3);
+
+  return a * t + b;
+}
+
 /* -- midpoint -- */
 inline vec2 midpoint(const vec2& v1, const vec2& v2) {
   return vec2{
@@ -431,15 +457,29 @@ inline bool not_zero(const vec4& v) {
 /* -- is_almost_zero -- */
 
 inline bool is_almost_zero(const vec2& v, const float eps = FLT_EPSILON) {
-  return abs(v.x) <= eps && abs(v.y) <= eps;
+  return !(abs(v.x) > eps || abs(v.y) > eps);
 }
 
 inline bool is_almost_zero(const vec3& v, const float eps = FLT_EPSILON) {
-  return abs(v.x) <= eps && abs(v.y) <= eps && abs(v.z) <= eps;
+  return !(abs(v.x) > eps || abs(v.y) > eps || abs(v.z) > eps);
 }
 
 inline bool is_almost_zero(const vec4& v, const float eps = FLT_EPSILON) {
-  return abs(v.x) <= eps && abs(v.y) <= eps && abs(v.z) <= eps && abs(v.w) <= eps;
+  return !(abs(v.x) > eps || abs(v.y) > eps || abs(v.z) > eps || abs(v.w) > eps);
+}
+
+/* -- is_almost_equal -- */
+
+inline bool is_almost_equal(const vec2& v1, const vec2& v2, const float eps = FLT_EPSILON) {
+  return !(abs(v1.x - v2.x) > eps || abs(v1.y - v2.y) > eps);
+}
+
+inline bool is_almost_equal(const vec3& v1, const vec3& v2, const float eps = FLT_EPSILON) {
+  return !(abs(v1.x - v2.x) > eps || abs(v1.y - v2.y) > eps || abs(v1.z - v2.z) > eps);
+}
+
+inline bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps = FLT_EPSILON) {
+  return !(abs(v1.x - v2.x) > eps || abs(v1.y - v2.y) > eps || abs(v1.z - v2.z) > eps || abs(v1.w - v2.w) > eps);
 }
 
 /* -- dot -- */

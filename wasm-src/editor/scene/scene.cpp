@@ -1,6 +1,7 @@
 #include "scene.h"
 
 #include "entities/element_entity.h"
+#include "../../utils/debugger.h"
 
 void Scene::load() {
   std::shared_ptr<ElementEntity> element1 = std::make_shared<ElementEntity>(vec2{ 0.0f });
@@ -16,6 +17,8 @@ void Scene::render(float zoom) const {
   }
 
   render_selection(zoom);
+
+  DEBUGGER_UPDATE();
 }
 
 void Scene::render_selection(float zoom) const {

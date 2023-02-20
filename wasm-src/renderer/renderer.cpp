@@ -83,6 +83,18 @@ void Renderer::end_frame() {
   get()->m_frame_buffer.render();
 }
 
+void Renderer::push_overlay_layer(const vec2& position) {
+  if (get()->m_last_call == RenderCall::Batch) {
+    get()->end_batch();
+    get()->flush();
+  }
+
+  get()->m_last_call = RenderCall::None;
+
+  get()->set_viewport(position, 1.0f);
+  get()->begin_batch();
+}
+
 void Renderer::draw(const Geometry& geometry) {
   if (get()->m_last_call != RenderCall::Batch) {
     get()->bind_batch_renderer();

@@ -4,6 +4,7 @@
 #include "../renderer/renderer.h"
 #include "../history/command_history.h"
 #include "../utils/console.h"
+#include "../utils/debugger.h"
 
 #include <functional>
 
@@ -25,6 +26,7 @@ void Editor::init() {
   assert(!s_instance);
   s_instance = new Editor();
 
+  DEBUGGER_INIT();
   InputManager::init();
   Renderer::init();
   CommandHistory::init();
@@ -36,6 +38,7 @@ void Editor::shutdown() {
   CommandHistory::shutdown();
   Renderer::shutdown();
   InputManager::shutdown();
+  DEBUGGER_SHUTDOWN();
 
   delete s_instance;
 }

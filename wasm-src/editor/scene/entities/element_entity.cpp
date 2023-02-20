@@ -19,11 +19,7 @@ void ElementEntity::render(float zoom) const {
 
   Box box = transform().large_bounding_box();
   Geometry box_geometry{};
-
-  box_geometry.push_quad(
-    box.min, vec2{ box.max.x, box.min.y }, box.max, vec2{ box.min.x, box.max.y },
-    vec4{ 0.0f, 1.0f, 0.5f, 0.2f }
-  );
+  box_geometry.push_quad(box, vec4{ 0.0f, 1.0f, 0.5f, 0.2f });
 
   Renderer::draw(box_geometry);
 }

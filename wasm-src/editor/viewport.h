@@ -12,8 +12,9 @@ public:
 
   ~Viewport() = default;
 
-  inline const vec2& position() const { return m_position; };
+  inline const vec2 position() const { return m_position; };
   inline const float zoom() const { return m_zoom; };
+  inline const vec2 size() const { return m_size; };
 
   void resize(const vec2& size, const vec2& offset);
 

@@ -28,3 +28,23 @@ inline float sign(float t) {
 inline bool is_almost_zero(const float t, const float eps = FLT_EPSILON) {
   return abs(t) <= eps;
 }
+
+inline bool is_almost_equal(const float t1, const float t2, const float eps = FLT_EPSILON) {
+  return abs(t1 - t2) <= eps;
+}
+
+inline bool is_normalized(const float t, bool include_ends = true) {
+  if (include_ends) {
+    return t >= 0.0f && t <= 1.0f;
+  }
+
+  return t > 0.0f && t < 1.0f;
+}
+
+inline bool is_in_range(const float t, const float min, const float max, bool include_ends = true) {
+  if (include_ends) {
+    return t >= min && t <= max;
+  }
+
+  return t > min && t < max;
+}
