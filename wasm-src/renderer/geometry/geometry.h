@@ -15,6 +15,7 @@
 
 struct Geometry {
   Geometry(unsigned int primitive = GL_TRIANGLES);
+  Geometry(const std::vector<Vertex>& vertices, unsigned int primitive = GL_TRIANGLES);
   Geometry(const std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, unsigned int primitive = GL_TRIANGLES);
 
   inline const unsigned int primitive() const { return m_primitive; }

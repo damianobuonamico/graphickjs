@@ -2,6 +2,10 @@
 
 #include "../common.h"
 
+#ifdef __EMSCRIPTEN__
+#define EMSCRIPTEN
+#endif
+
 #ifdef EMSCRIPTEN
 #include <GLES3/gl32.h>
 #include <emscripten/html5.h>
@@ -158,6 +162,7 @@ void Renderer::bind_batch_renderer() {
   m_shaders.use("batched");
   m_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, position));
   m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
+  m_shaders.set_attribute("aNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, normal));
 }
 
 void Renderer::bind_instance_renderer() {
@@ -173,10 +178,11 @@ void Renderer::bind_instance_renderer() {
   m_shaders.use("instanced");
   m_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, position));
   m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
+  m_shaders.set_attribute("aNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, normal));
 
   glBindBuffer(GL_ARRAY_BUFFER, m_instanced_data.instance_buffer_object);
   m_shaders.set_attribute("aTranslation", 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (const void*)0);
-  glVertexAttribDivisor(2, 1);
+  glVertexAttribDivisor(3, 1);
 
   glBindBuffer(GL_ARRAY_BUFFER, m_instanced_data.vertex_buffer_object);
 }
@@ -214,6 +220,7 @@ void Renderer::add_to_batch(const Geometry& geometry) {
     const Vertex& vertex = geometry.vertices()[i];
     m_data.vertex_buffer_ptr->position = vertex.position;
     m_data.vertex_buffer_ptr->color = vertex.color;
+    m_data.vertex_buffer_ptr->normal = vertex.normal;
     m_data.vertex_buffer_ptr++;
   }
 

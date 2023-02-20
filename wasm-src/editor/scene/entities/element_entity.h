@@ -37,8 +37,8 @@ public:
 
   inline virtual ElementTransformComponent& transform() override { return m_transform; }
   inline virtual const ElementTransformComponent& transform() const override { return m_transform; }
-  inline SelectionComponent* selection() { return &m_selection; }
-  inline const SelectionComponent* selection() const { return &m_selection; }
+  inline virtual SelectionComponent* selection() override { return &m_selection; }
+  inline virtual const SelectionComponent* selection() const override { return &m_selection; }
 
   inline size_t vertex_count() const { return m_vertices.size(); }
   inline size_t curves_count() const { return m_curves.size(); }

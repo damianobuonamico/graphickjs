@@ -1,6 +1,6 @@
-#ifdef GK_CONF_DEBUG
-
 #include "debugger.h"
+
+#ifdef GK_CONF_DEBUG
 
 #include "../renderer/renderer.h"
 #include "../editor/scene/entities/bezier_entity.h"
@@ -66,12 +66,12 @@ void Debugger::render() {
 
   push_frame(vec2{ frame_size * 2 }, false);
   if (hovered) {
-    render_bezier_triangulation(hovered);
+    render_bezier_geometry(hovered);
   }
 
   push_frame(vec2{ frame_size }, false);
   if (hovered) {
-    render_bezier_geometry(hovered);
+    render_bezier_triangulation(hovered);
   }
 
   push_frame(vec2{ frame_size }, false);
@@ -82,7 +82,7 @@ void Debugger::render() {
   return;
 }
 
-void Debugger::push_frame(vec2& size, bool align_right) {
+void Debugger::push_frame(const vec2& size, bool align_right) {
   vec2 viewport_size = Editor::viewport.size();
   m_frame_width = size.x - 2.0f * m_padding;
   m_cursor = vec2{ m_padding, m_padding };
@@ -131,6 +131,7 @@ void Debugger::render_bezier_outline(const BezierEntity* entity) {
     float t = (float)i / (float)resolution;
     vertices[i].position = bezier(A, B, C, D, t);
     vertices[i].color = color;
+    vertices[i].normal = 0.0f;
   }
 
   InstancedGeometry points_geo{};
@@ -294,7 +295,7 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
       }
     }
 
-    int increments = std::max(abs((int)ceilf(difference / max_angle_difference)), 1) + 1;
+    int increments = std::max(abs((int)ceilf(difference / max_angle_difference)), 1);
     float increment = difference / (float)increments;
 
     m_t_values.reserve(increments);
@@ -444,7 +445,7 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
   vec2 C = center + (entity->p2() - box.min) / ratio;
   vec2 D = center + (entity->p3() - box.min) / ratio;
 
-  vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
+  vec4 color{ 1.0f, 1.0f, 1.0f, 1.0f };
   Geometry geo{};
 
   uint32_t offset = 0;
@@ -459,8 +460,8 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     vec2 normal = stroke_width * orthogonal(tangent);
 
     geo.push_vertices({
-      {point + normal, color},
-      {point - normal, color}
+      {point + normal, color, stroke_width},
+      {point - normal, color, -stroke_width}
       });
 
     offset += 2;
@@ -473,8 +474,8 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     vec2 normal = stroke_width * orthogonal(tangent);
 
     geo.push_vertices({
-      {point + normal, color},
-      {point - normal, color}
+      {point + normal, color, stroke_width},
+      {point - normal, color, -stroke_width}
       });
 
     geo.push_indices({
@@ -494,8 +495,8 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     vec2 normal = stroke_width * orthogonal(tangent);
 
     geo.push_vertices({
-      {point + normal, color},
-      {point - normal, color}
+      {point + normal, color, stroke_width},
+      {point - normal, color, -stroke_width}
       });
 
     geo.push_indices({
@@ -590,12 +591,10 @@ void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
     offset += 2;
   }
 
-  console::log("triangles", m_t_values.size() * 2);
-
   Renderer::draw(geo.wireframe());
 }
 
-void Debugger::draw_polar_line(vec2& origin, float angle, const Box& boundary, const vec4& color, Geometry& geo) {
+void Debugger::draw_polar_line(const vec2& origin, float angle, const Box& boundary, const vec4& color, Geometry& geo) {
   float tan = std::tanf(angle);
 
   vec2 p0 = origin;

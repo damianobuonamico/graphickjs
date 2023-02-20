@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 EMCC_PATH = '%EMSDK%/upstream/emscripten/emcc'
-OPTIMIZE = True
+OPTIMIZE = False
 
 output = '..\src\wasm\editor.js'
 files = []
@@ -12,4 +12,4 @@ for path in Path('./').rglob('*.cpp'):
   if str(path)[:5] != 'debug':
     files.append(str(path))
 
-os.system(' '.join([EMCC_PATH, '-Os' if OPTIMIZE else '-O0', *files, '-o ' + output, '-s ' + ' -s '.join(options), '-l embind']))
+os.system(' '.join([EMCC_PATH, '-Os' if OPTIMIZE else '-O0 -DGK_CONF_DEBUG=1', *files, '-o ' + output, '-s ' + ' -s '.join(options), '-l embind']))

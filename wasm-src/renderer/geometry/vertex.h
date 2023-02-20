@@ -6,10 +6,13 @@
 struct Vertex {
   Vertex() = default;
   Vertex(const vec2& position)
-    : position(position), color({ 0.5f, 0.5f, 0.5f, 1.0f }) {};
+    : position(position), color({ 0.5f, 0.5f, 0.5f, 1.0f }), normal(0.0f) {};
   Vertex(const vec2& position, const vec4& color)
-    : position(position), color(color) {};
+    : position(position), color(color), normal(0.0f) {};
+  Vertex(const vec2& position, const vec4& color, float normal)
+    : position(position), color(color), normal(normal) {};
 
   vec2 position;
   vec4 color;
+  float normal;
 };

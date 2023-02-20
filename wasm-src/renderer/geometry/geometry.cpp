@@ -7,6 +7,9 @@
 Geometry::Geometry(unsigned int primitive)
   : m_primitive(primitive), m_vertices(), m_indices() {}
 
+Geometry::Geometry(const std::vector<Vertex>& vertices, unsigned int primitive)
+  : m_vertices(vertices), m_indices(), m_offset((uint32_t)vertices.size()), m_primitive(primitive) {}
+
 Geometry::Geometry(const std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, unsigned int primitive)
   : m_vertices(vertices), m_indices(indices), m_offset((uint32_t)vertices.size()), m_primitive(primitive) {}
 
@@ -89,7 +92,7 @@ void Geometry::push_line_strip(const std::vector<Vertex>& vertices) {
 }
 
 Geometry Geometry::wireframe() const {
-  Geometry geo{ m_vertices, std::vector<uint32_t>{}, GL_LINES };
+  Geometry geo{ m_vertices, GL_LINES };
 
   if (m_primitive == GL_LINES) {
     geo.push_indices(m_indices);

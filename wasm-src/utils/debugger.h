@@ -29,7 +29,7 @@ private:
   Debugger() = default;
 
   void render();
-  void push_frame(vec2& size, bool align_right = true);
+  void push_frame(const vec2& size, bool align_right = true);
 
   void render_bezier_outline(const BezierEntity* entity);
   void render_bezier_hodograph(const BezierEntity* entity);
@@ -37,7 +37,7 @@ private:
   void render_bezier_geometry(const BezierEntity* entity);
   void render_bezier_triangulation(const BezierEntity* entity);
 
-  void draw_polar_line(vec2& origin, float angle, const Box& boundary, const vec4& color, Geometry& geo);
+  void draw_polar_line(const vec2& origin, float angle, const Box& boundary, const vec4& color, Geometry& geo);
 private:
   float m_frame_offset_left = 0.0f;
   float m_frame_offset_right = 0.0f;
