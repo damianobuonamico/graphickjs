@@ -52,19 +52,8 @@ void ShaderManager::create_shaders() {
     "    fragColor = vColor;\n"
     "    return;\n"
     "  }"
-    // "  float smoothing = smoothstep(0.0, 0.1, abs(vNormal));\n"
     "  float fade = 1.2;\n"
-    // "  float distance = (vMaxNormal - abs(vNormal)) / vMaxNormal;\n"
-    // "  float alpha = smoothstep(1.0, 1.0 - 0.005, 0.9);\n"
     "  fragColor = vec4(vColor.rgb, mix(vColor.a, 0.0, smoothstep(vMaxNormal - fade, vMaxNormal, abs(vNormal))));\n"
-    // "  else fragColor = vColor;\n"
-    "  \n"
-    // "  fragColor = vec4(vColor.rgb, mix(vColor.a, 0.0, smoothing));\n"
-    // "  if (width - abs(vNormal) < 5.0) {"
-    // "    fragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);"
-    // "  } else {"
-    // "    fragColor = vec4(vColor.rgb, vColor.a);\n"
-    // "  }"
     "}\n";
 
   m_shaders.insert(std::make_pair<std::string, Shader>("batched", { "batched", batched_shader_source }));

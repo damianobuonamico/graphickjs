@@ -18,6 +18,14 @@ std::vector<float> BezierEntity::inflections() const {
   return BEZIER_CALL(inflections);
 };
 
+std::vector<vec2> BezierEntity::turning_angles() const {
+  return BEZIER_CALL(turning_angles);
+}
+
+std::vector<float> BezierEntity::triangulation_params(float zoom, float facet_angle) const {
+  return BEZIER_CALL(triangulation_params, zoom, facet_angle);
+}
+
 Box BezierEntity::bounding_box() const {
   std::vector<vec2> points = extrema();
 
@@ -248,6 +256,119 @@ std::vector<float> BezierEntity::cubic_inflections() const {
   return { 0.0f, 1.0f };
 }
 
+std::vector<vec2> BezierEntity::cubic_turning_angles() const {
+  std::vector<float> inflections = cubic_inflections();
+  int inflections_num = (int)inflections.size();
+
+  std::vector<vec2> turning_angles(inflections_num);
+
+  for (int i = 0; i < inflections_num; i++) {
+    float inflection = inflections[i];
+    vec2 gradient = cubic_gradient(inflection);
+
+    if (is_almost_zero(gradient)) {
+      vec2 curvature = cubic_curvature(inflection);
+      turning_angles[i] = { inflection, std::atan2f(curvature.y, curvature.x) };
+    } else {
+      turning_angles[i] = { inflection, std::atan2f(gradient.y, gradient.x) };
+    }
+  }
+
+  return turning_angles;
+}
+
+
+// TODO: cache
+vec2 BezierEntity::cubic_t_from_theta(float theta) const {
+  vec2 P0 = p0();
+  vec2 P1 = p1();
+  vec2 P2 = p2();
+  vec2 P3 = p3();
+
+  vec2 A = 3.0f * (-P0 + 3.0f * P1 - 3.0f * P2 + P3);
+  vec2 B = 6.0f * (P0 - 2.0f * P1 + P2);
+  vec2 C = -3.0f * (P0 - P1);
+
+  float tan = std::tanf(theta);
+
+  float a = A.y - tan * A.x;
+  float b = B.y - tan * B.x;
+  float c = C.y - tan * C.x;
+
+  if (is_almost_zero(a)) {
+    if (is_almost_zero(b)) {
+      return { -1.0f, -1.0f };
+    }
+    return { -c / b, -1.0f };
+  }
+
+  float delta = b * b - 4.0f * a * c;
+
+  if (is_almost_zero(delta)) {
+    return { -b / (2.0f * a), -1.0f };
+  } else if (delta > 0.0f) {
+    float sqrt_delta = std::sqrtf(delta);
+    float t1 = (-b + sqrt_delta) / (2.0f * a);
+    float t2 = (-b - sqrt_delta) / (2.0f * a);
+
+    return { t1, t2 };
+  }
+
+  return { -1.0f, -1.0f };
+}
+
+std::vector<float> BezierEntity::cubic_triangulation_params(float zoom, float facet_angle) const {
+  std::vector<vec2> turning_angles = cubic_turning_angles();
+  std::vector<float> triangulation_params{};
+
+  facet_angle = std::max(facet_angle, GEOMETRY_MIN_FACET_ANGLE);
+  float last_t = 0.0f;
+
+  for (int i = 0; i < turning_angles.size() - 1; i++) {
+    vec2 checkpoint = cubic_gradient((turning_angles[i].x + turning_angles[i + 1].x) / 2.0f);
+    float checkpoint_angle = std::atan2f(checkpoint.y, checkpoint.x);
+
+    float difference = turning_angles[i + 1].y - turning_angles[i].y;
+
+    float k1 = (checkpoint_angle - turning_angles[i].y) / difference;
+    float k2 = (checkpoint_angle + MATH_TWO_PI - turning_angles[i].y) / difference;
+
+    if (!(is_normalized(k1) || is_normalized(k2))) {
+      difference += -sign(difference) * MATH_TWO_PI;
+    }
+
+    int increments = std::max(std::abs((int)std::ceilf(difference / facet_angle)), 1);
+    float increment = difference / (float)increments;
+
+    triangulation_params.reserve(increments);
+    triangulation_params.push_back(last_t = turning_angles[i].x);
+
+    for (int j = 1; j < increments; j++) {
+      float theta = turning_angles[i].y + (float)j * increment;
+
+      vec2 t_values = cubic_t_from_theta(theta);
+
+      bool is_t1_bad = !is_in_range(t_values.x, last_t, turning_angles[i + 1].x, false);
+      bool is_t2_bad = !is_in_range(t_values.y, last_t, turning_angles[i + 1].x, false);
+
+      if (is_t1_bad || is_t2_bad) {
+        if (is_t1_bad && is_t2_bad) {
+          continue;
+        }
+        triangulation_params.push_back(last_t = (float)is_t1_bad * t_values.y + (float)is_t2_bad * t_values.x);
+      } else if (t_values.x - last_t < t_values.y - last_t) {
+        triangulation_params.push_back(last_t = t_values.x);
+      } else {
+        triangulation_params.push_back(last_t = t_values.y);
+      }
+    }
+  }
+
+  triangulation_params.push_back(1.0f);
+
+  return triangulation_params;
+}
+
 vec2 BezierEntity::linear_get(float t) const {
   return lerp(p0(), p3(), t);
 }
@@ -266,6 +387,33 @@ vec2 BezierEntity::cubic_get(float t) const {
   float t_sq = t * t;
 
   return a * t_sq * t + b * t_sq + c * t + A;
+}
+
+// TODO: Cache
+vec2 BezierEntity::cubic_gradient(float t) const {
+  vec2 A = p0();
+  vec2 B = p1();
+  vec2 C = p2();
+  vec2 D = p3();
+
+  vec2 a = 3.0f * (-A + 3.0f * B - 3.0f * C + D);
+  vec2 b = 6.0f * (A - 2.0f * B + C);
+  vec2 c = -3.0f * (A - B);
+
+  return a * t * t + b * t + c;
+}
+
+// TODO: Cache
+vec2 BezierEntity::cubic_curvature(float t) const {
+  vec2 A = p0();
+  vec2 B = p1();
+  vec2 C = p2();
+  vec2 D = p3();
+
+  vec2 a = 6.0f * (-A + 3.0f * B - 3.0f * C + D);
+  vec2 b = 6.0f * (A - 2.0f * B + C);
+
+  return a * t + b;
 }
 
 BezierEntity::BezierPointDistance BezierEntity::linear_closest_to(const vec2& position, int iterations = 4) const {

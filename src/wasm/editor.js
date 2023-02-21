@@ -4279,6 +4279,7 @@ var asmLibraryArg = {
   "invoke_vifi": invoke_vifi,
   "invoke_vii": invoke_vii,
   "invoke_viif": invoke_viif,
+  "invoke_viiff": invoke_viiff,
   "invoke_viiffif": invoke_viiffif,
   "invoke_viifi": invoke_viifi,
   "invoke_viifii": invoke_viifii,
@@ -4725,6 +4726,17 @@ function invoke_viifiii(index,a1,a2,a3,a4,a5,a6) {
   var sp = stackSave();
   try {
     getWasmTableEntry(index)(a1,a2,a3,a4,a5,a6);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiff(index,a1,a2,a3,a4) {
+  var sp = stackSave();
+  try {
+    getWasmTableEntry(index)(a1,a2,a3,a4);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0) throw e;

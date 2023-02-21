@@ -55,6 +55,8 @@ public:
 
   std::vector<vec2> extrema() const;
   std::vector<float> inflections() const;
+  std::vector<vec2> turning_angles() const;
+  std::vector<float> triangulation_params(float zoom, float facet_angle) const;
   Box bounding_box() const;
   Box large_bounding_box() const;
   vec2 size() const;
@@ -85,11 +87,22 @@ private:
 private:
   std::vector<float> linear_extrema() const;
   std::vector<float> cubic_extrema() const;
+
   inline std::vector<float> linear_inflections() const { return { 0.0f, 1.0f }; }
   std::vector<float> cubic_inflections() const;
 
+  inline std::vector<vec2> linear_turning_angles() const { return { vec2{ 0.0f }, vec2{ 1.0f } }; };
+  std::vector<vec2> cubic_turning_angles() const;
+
+  vec2 cubic_t_from_theta(float theta) const;
+  inline std::vector<float> linear_triangulation_params(float zoom, float facet_angle) const { return { 0.0f, 1.0f }; }
+  std::vector<float> cubic_triangulation_params(float zoom, float facet_angle) const;
+
   vec2 linear_get(float t) const;
   vec2 cubic_get(float t) const;
+  vec2 cubic_gradient(float t) const;
+  vec2 cubic_curvature(float t) const;
+
   BezierPointDistance linear_closest_to(const vec2& position, int iterations) const;
   BezierPointDistance cubic_closest_to(const vec2& position, int iterations) const;
 

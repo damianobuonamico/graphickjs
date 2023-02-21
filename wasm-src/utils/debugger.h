@@ -37,10 +37,13 @@ private:
   void render_bezier_geometry(const BezierEntity* entity);
   void render_bezier_triangulation(const BezierEntity* entity);
 
+  void calculate_frame_boundaries(const Box& box, float padding, vec2& center, float* ratio, Box* boundaries);
   void draw_polar_line(const vec2& origin, float angle, const Box& boundary, const vec4& color, Geometry& geo);
+  void draw_polar_plane(const vec2& origin, const Box& boundaries, Geometry& geo);
 private:
-  float m_frame_offset_left = 0.0f;
-  float m_frame_offset_right = 0.0f;
+  vec2 m_frame_offset_left{ 0.0f };
+  vec2 m_frame_offset_right{ 0.0f };
+
   float m_frame_width = 0.0f;
   vec2 m_cursor{ 0.0f };
 

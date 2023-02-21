@@ -23,8 +23,8 @@ void Debugger::update() {
 }
 
 void Debugger::render() {
-  m_frame_offset_left = 0.0f;
-  m_frame_offset_right = 0.0f;
+  zero(m_frame_offset_left);
+  zero(m_frame_offset_right);
 
   float frame_size = 200.0f;
   const BezierEntity* hovered = dynamic_cast<BezierEntity*>(InputManager::hover.entity());
@@ -54,7 +54,7 @@ void Debugger::render() {
     }
   }
 
-  push_frame(vec2{ frame_size * 2 });
+  push_frame(vec2{ frame_size });
   if (hovered) {
     render_bezier_hodograph(hovered);
   }
@@ -64,7 +64,7 @@ void Debugger::render() {
     render_bezier_curvature(hovered);
   }
 
-  push_frame(vec2{ frame_size * 2 }, false);
+  push_frame(vec2{ frame_size }, false);
   if (hovered) {
     render_bezier_geometry(hovered);
   }
@@ -88,11 +88,21 @@ void Debugger::push_frame(const vec2& size, bool align_right) {
   m_cursor = vec2{ m_padding, m_padding };
 
   if (align_right) {
-    Renderer::push_overlay_layer(vec2{ viewport_size.x - size.x, m_frame_offset_right });
-    m_frame_offset_right += size.y + m_padding / 2.0f;
+    if (m_frame_offset_right.y + size.y > viewport_size.y) {
+      m_frame_offset_right.y = 0.0f;
+      m_frame_offset_right.x -= size.x + m_padding / 2.0f;
+    }
+
+    Renderer::push_overlay_layer(vec2{ viewport_size.x - size.x + m_frame_offset_right.x, m_frame_offset_right.y });
+    m_frame_offset_right.y += size.y + m_padding / 2.0f;
   } else {
-    Renderer::push_overlay_layer(vec2{ 0.0f, m_frame_offset_left });
-    m_frame_offset_left += size.y + m_padding / 2.0f;
+    if (m_frame_offset_left.y + size.y > viewport_size.y) {
+      m_frame_offset_left.y = 0.0f;
+      m_frame_offset_left.x += size.x + m_padding / 2.0f;
+    }
+
+    Renderer::push_overlay_layer(vec2{ m_frame_offset_left.x, m_frame_offset_left.y });
+    m_frame_offset_left.y += size.y + m_padding / 2.0f;
   }
 
   Geometry frame_geometry{};
@@ -102,190 +112,102 @@ void Debugger::push_frame(const vec2& size, bool align_right) {
 }
 
 void Debugger::render_bezier_outline(const BezierEntity* entity) {
+  const int resolution = 50;
+
+  vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
+  Geometry geo{ GL_LINES };
+  InstancedGeometry points_geo{};
+  points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
+
   Box box = entity->bounding_box();
-  vec2 box_size = box.max - box.min;
-  vec2 sizes_ratio = box_size / m_frame_width;
 
-  float ratio = 1;
-  vec2 center{ 0.0f };
+  float ratio;
+  vec2 center;
+  Box boundaries;
 
-  if (sizes_ratio.x > sizes_ratio.y) {
-    ratio = sizes_ratio.x;
-    center = m_cursor + vec2{ 0.0f, (m_frame_width - box_size.y / ratio) / 2.0f };
-  } else {
-    ratio = sizes_ratio.y;
-    center = m_cursor + vec2{ (m_frame_width - box_size.x / ratio) / 2.0f, 0.0f };
-  }
+  calculate_frame_boundaries(box, 0.0f, center, &ratio, &boundaries);
 
   vec2 A = center + (entity->p0() - box.min) / ratio;
   vec2 B = center + (entity->p1() - box.min) / ratio;
   vec2 C = center + (entity->p2() - box.min) / ratio;
   vec2 D = center + (entity->p3() - box.min) / ratio;
 
-  int resolution = 50;
-  vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
-  Geometry geo{ GL_LINES };
   std::vector<Vertex> vertices(resolution + 1);
 
   for (int i = 0; i <= resolution; i++) {
     float t = (float)i / (float)resolution;
     vertices[i].position = bezier(A, B, C, D, t);
     vertices[i].color = color;
-    vertices[i].normal = 0.0f;
   }
 
-  InstancedGeometry points_geo{};
-  points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
-  std::vector<vec2> debug_points{};
-
-  debug_points.reserve(m_t_values.size());
+  points_geo.reserve_instances(m_t_values.size());
   for (float t : m_t_values) {
     vec2 point = bezier(A, B, C, D, t);
-    debug_points.push_back(point);
+    points_geo.push_instance(point);
   }
 
   geo.push_line_strip(vertices);
-  points_geo.push_instances(debug_points);
 
   Renderer::draw(geo);
   Renderer::draw(points_geo);
 }
 
-static vec2 t_from_theta(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float theta) {
-  vec2 A = 3.0f * (-v1 + 3.0f * v2 - 3.0f * v3 + v4);
-  vec2 B = 6.0f * (v1 - 2.0f * v2 + v3);
-  vec2 C = -3.0f * (v1 - v2);
-
-  float tan = tanf(theta);
-
-  float a = A.y - tan * A.x;
-  float b = B.y - tan * B.x;
-  float c = C.y - tan * C.x;
-
-  if (is_almost_zero(a)) {
-    if (is_almost_zero(b)) {
-      return { -1.0f, -1.0f };
-    }
-    return { -c / b, -1.0f };
-  }
-
-  float delta = b * b - 4.0f * a * c;
-
-  if (is_almost_zero(delta)) {
-    return { -b / (2.0f * a), -1.0f };
-  } else if (delta > 0.0f) {
-    float sqrt_delta = sqrtf(delta);
-    float t1 = (-b + sqrt_delta) / (2.0f * a);
-    float t2 = (-b - sqrt_delta) / (2.0f * a);
-
-    return { t1, t2 };
-  }
-
-  return { -1.0f, -1.0f };
-}
-
-
 void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
-  int resolution = 50;
+  const int resolution = 50;
+
+  vec4 white{ 1.0f, 1.0f, 1.0f, 0.7f };
+  vec4 green{ 0.0f, 1.0f, 0.5f, 0.5f };
+  vec4 red{ 1.0f, 0.0f, 0.5f, 0.5f };
+
+  Geometry geo{ GL_LINES };
+  InstancedGeometry points_geo{};
+  points_geo.push_circle(vec2{ 0.0f }, 2.5f, white, 10);
+
   std::vector<vec2> points(resolution + 1);
   Box box = { vec2{ 0.0f }, vec2{ 0.0f } };
-
   vec2 A = entity->p0();
   vec2 B = entity->p1();
   vec2 C = entity->p2();
   vec2 D = entity->p3();
 
   for (int i = 0; i <= resolution; i++) {
-    float t = (float)i / (float)resolution;
-    vec2 point = bezier_derivative(A, B, C, D, t);
-
+    vec2 point = bezier_derivative(A, B, C, D, (float)i / (float)resolution);
     min(box.min, point, box.min);
     max(box.max, point, box.max);
     points[i] = point;
   }
 
+  float ratio;
+  vec2 center;
+  Box boundaries;
   vec2 box_size = box.max - box.min;
-  vec2 sizes_ratio = box_size / m_frame_width;
 
-  float ratio = 1;
-  vec2 center{ 0.0f };
+  calculate_frame_boundaries(box, 0.0f, center, &ratio, &boundaries);
 
-  if (sizes_ratio.x > sizes_ratio.y) {
-    ratio = sizes_ratio.x;
-    center = m_cursor + vec2{ 0.0f, (m_frame_width - box_size.y / ratio) / 2.0f };
-  } else {
-    ratio = sizes_ratio.y;
-    center = m_cursor + vec2{ (m_frame_width - box_size.x / ratio) / 2.0f, 0.0f };
-  }
-
-  vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
-  Geometry geo{ GL_LINES };
   std::vector<Vertex> vertices(resolution + 1);
-
   for (int i = 0; i < points.size(); i++) {
     vertices[i].position = center + (points[i] - box.min) / ratio;
-    vertices[i].color = color;
+    vertices[i].color = white;
   }
 
-  InstancedGeometry points_geo{};
-  points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
-  std::vector<vec2> debug_points{};
+  vec2 origin = center - box.min / ratio;
+  points_geo.push_instance(origin);
+  draw_polar_plane(origin, boundaries, geo);
 
-  vec2 origin = center + (vec2{ 0.0f } - box.min) / ratio;
-
-  debug_points.push_back(origin);
-
-  int increments = 30;
-  float angle_increment = MATH_TWO_PI / (float)increments;
-  vec4 line_color{ 0.3f, 0.3f, 0.3f, 0.5f };
-  Box boundary{ vec2{ m_padding }, vec2{ m_padding + m_frame_width } };
-
-  for (int i = 0; i < increments; i++) {
-    float angle = (float)i * angle_increment;
-    draw_polar_line(origin, angle, boundary, line_color, geo);
+  std::vector<vec2> turning_angles = entity->turning_angles();
+  for (const vec2& angle : turning_angles) {
+    draw_polar_line(origin, angle.y, boundaries, green, geo);
   }
 
-  vec4 green{ 0.0f, 1.0f, 0.5f, 0.5f };
-  vec4 red{ 1.0f, 0.0f, 0.5f, 0.5f };
-  vec4 purple{ 5.0f, 0.0f, 1.0f, 0.5f };
+  std::vector<float> t_values = m_t_values = entity->triangulation_params(1.0f, max_angle);
+  for (int i = 0; i < (int)turning_angles.size() - 1; i++) {
+    float difference = turning_angles[i + 1].y - turning_angles[i].y;
 
-  std::vector<float> inflections = entity->inflections();
-  std::vector<vec2> inflection_points(inflections.size());
-  std::vector<float> turning_points(inflections.size());
-
-  for (int i = 0; i < inflections.size(); i++) {
-    inflection_points[i] = bezier(A, B, C, D, inflections[i]);
-  }
-
-  bool is_derivative_clockwise = clockwise(inflection_points);
-
-  for (int i = 0; i < inflections.size(); i++) {
-    vec2 point = bezier_derivative(A, B, C, D, inflections[i]);
-    debug_points.push_back(center + (point - box.min) / ratio);
-    float angle;
-
-    if (is_almost_zero(point)) {
-      vec2 curvature = bezier_second_derivative(A, B, C, D, inflections[i]);
-      angle = std::atan2f(curvature.y, curvature.x);
-    } else {
-      angle = std::atan2f(point.y, point.x);
-    }
-
-    draw_polar_line(origin, angle, boundary, green, geo);
-    turning_points[i] = angle;
-  }
-
-  const float max_angle_difference = std::max(max_angle, MATH_PI / 300.0f);
-  m_t_values.clear();
-
-  for (int i = 0; i < (int)turning_points.size() - 1; i++) {
-    float difference = turning_points[i + 1] - turning_points[i];
-
-    vec2 midpoint = bezier_derivative(A, B, C, D, (inflections[i] + inflections[i + 1]) / 2);
+    vec2 midpoint = bezier_derivative(A, B, C, D, (turning_angles[i].x + turning_angles[i + 1].x) / 2);
     float mid_angle = std::atan2f(midpoint.y, midpoint.x);
 
-    float k1 = (mid_angle - turning_points[i]) / difference;
-    float k2 = (mid_angle + MATH_TWO_PI - turning_points[i]) / difference;
+    float k1 = (mid_angle - turning_angles[i].y) / difference;
+    float k2 = (mid_angle + MATH_TWO_PI - turning_angles[i].y) / difference;
 
     if (!(is_normalized(k1) || is_normalized(k2))) {
       if (difference < 0.0f) {
@@ -295,14 +217,11 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
       }
     }
 
-    int increments = std::max(abs((int)ceilf(difference / max_angle_difference)), 1);
+    int increments = std::max(std::abs((int)std::ceilf(difference / std::max(max_angle, GEOMETRY_MIN_FACET_ANGLE))), 1);
     float increment = difference / (float)increments;
 
-    m_t_values.reserve(increments);
-
-    m_t_values.push_back(inflections[i]);
     for (int j = 1; j < increments; j++) {
-      float theta = turning_points[i] + (float)j * increment;
+      float theta = turning_angles[i].y + (float)j * increment;
 
       if (theta > MATH_TWO_PI) {
         theta -= MATH_TWO_PI;
@@ -310,54 +229,32 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
         theta += MATH_TWO_PI;
       }
 
-      draw_polar_line(origin, theta, boundary, i % 2 == 0 ? red : green, geo);
-      vec2 t_values = t_from_theta(A, B, C, D, theta);
-
-      float last_t = m_t_values[m_t_values.size() - 1];
-      bool is_t1_bad = !is_in_range(t_values.x, last_t, inflections[i + 1], false);
-      bool is_t2_bad = !is_in_range(t_values.y, last_t, inflections[i + 1], false);
-
-      if (is_t1_bad) {
-        if (!is_t2_bad) {
-          m_t_values.push_back(t_values.y);
-        }
-        continue;
-      } else if (is_t2_bad) {
-        if (!is_t1_bad) {
-          m_t_values.push_back(t_values.x);
-        }
-        continue;
-      }
-
-
-      if (t_values.x - last_t < t_values.y - last_t) {
-        m_t_values.push_back(t_values.x);
-      } else {
-        m_t_values.push_back(t_values.y);
-      }
+      draw_polar_line(origin, theta, boundaries, i % 2 == 0 ? red : green, geo);
     }
   }
 
-  m_t_values.push_back(inflections[inflections.size() - 1]);
-
-  debug_points.reserve(m_t_values.size());
-  for (float t : m_t_values) {
-    vec2 point = bezier_derivative(A, B, C, D, t);
-    debug_points.push_back(center + (point - box.min) / ratio);
-  }
-
   geo.push_line_strip(vertices);
-  points_geo.push_instances(debug_points);
+
+  points_geo.reserve_instances(t_values.size());
+  for (float t : t_values) {
+    vec2 point = bezier_derivative(A, B, C, D, t);
+    points_geo.push_instance(center + (point - box.min) / ratio);
+  }
 
   Renderer::draw(geo);
   Renderer::draw(points_geo);
 }
 
 void Debugger::render_bezier_curvature(const BezierEntity* entity) {
-  int resolution = 50;
+  const int resolution = 50;
+
+  vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
+  Geometry geo{ GL_LINES };
+  InstancedGeometry points_geo{};
+  points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
+
   std::vector<vec2> points(resolution + 1);
   Box box = { vec2{ 0.0f }, vec2{ 0.0f } };
-
   vec2 A = entity->p0();
   vec2 B = entity->p1();
   vec2 C = entity->p2();
@@ -372,81 +269,44 @@ void Debugger::render_bezier_curvature(const BezierEntity* entity) {
     points[i] = point;
   }
 
-  vec2 box_size = box.max - box.min;
-  vec2 sizes_ratio = box_size / m_frame_width;
+  float ratio;
+  vec2 center;
+  Box boundaries;
 
-  float ratio = 1;
-  vec2 center{ 0.0f };
+  calculate_frame_boundaries(box, 0.0f, center, &ratio, &boundaries);
 
-  if (sizes_ratio.x > sizes_ratio.y) {
-    ratio = sizes_ratio.x;
-    center = m_cursor + vec2{ 0.0f, (m_frame_width - box_size.y / ratio) / 2.0f };
-  } else {
-    ratio = sizes_ratio.y;
-    center = m_cursor + vec2{ (m_frame_width - box_size.x / ratio) / 2.0f, 0.0f };
-  }
-
-  vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
-  Geometry geo{ GL_LINES };
   std::vector<Vertex> vertices(resolution + 1);
-
   for (int i = 0; i < points.size(); i++) {
     vertices[i].position = center + (points[i] - box.min) / ratio;
     vertices[i].color = color;
   }
 
-  InstancedGeometry points_geo{};
-  points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
-  std::vector<vec2> debug_points{};
-
   vec2 origin = center + (vec2{ 0.0f } - box.min) / ratio;
-
-  debug_points.push_back(origin);
-
-  int increments = 30;
-  float angle_increment = MATH_TWO_PI / (float)increments;
-  vec4 line_color{ 0.3f, 0.3f, 0.3f, 0.5f };
-  Box boundary{ vec2{ m_padding }, vec2{ m_padding + m_frame_width } };
-
-  for (int i = 0; i < increments; i++) {
-    float angle = (float)i * angle_increment;
-    draw_polar_line(origin, angle, boundary, line_color, geo);
-  }
-
-  vec4 green{ 0.0f, 1.0f, 0.5f, 0.5f };
-  vec4 red{ 1.0f, 0.0f, 0.5f, 0.5f };
-  vec4 purple{ 5.0f, 0.0f, 1.0f, 0.5f };
+  points_geo.push_instance(origin);
+  draw_polar_plane(origin, boundaries, geo);
 
   geo.push_line_strip(vertices);
-  points_geo.push_instances(debug_points);
 
   Renderer::draw(geo);
   Renderer::draw(points_geo);
 }
 
 void Debugger::render_bezier_geometry(const BezierEntity* entity) {
+  vec4 color{ 1.0f, 1.0f, 1.0f, 1.0f };
+  Geometry geo{};
+
   Box box = entity->bounding_box();
-  vec2 box_size = box.max - box.min;
-  vec2 sizes_ratio = box_size / (m_frame_width - stroke_width * 2);
 
-  float ratio = 1;
-  vec2 center{ 0.0f };
+  float ratio;
+  vec2 center;
+  Box boundaries;
 
-  if (sizes_ratio.x > sizes_ratio.y) {
-    ratio = sizes_ratio.x;
-    center = m_cursor + stroke_width + vec2{ 0.0f, (m_frame_width - stroke_width * 2 - box_size.y / ratio) / 2.0f };
-  } else {
-    ratio = sizes_ratio.y;
-    center = m_cursor + stroke_width + vec2{ (m_frame_width - stroke_width * 2 - box_size.x / ratio) / 2.0f, 0.0f };
-  }
+  calculate_frame_boundaries(box, stroke_width, center, &ratio, &boundaries);
 
   vec2 A = center + (entity->p0() - box.min) / ratio;
   vec2 B = center + (entity->p1() - box.min) / ratio;
   vec2 C = center + (entity->p2() - box.min) / ratio;
   vec2 D = center + (entity->p3() - box.min) / ratio;
-
-  vec4 color{ 1.0f, 1.0f, 1.0f, 1.0f };
-  Geometry geo{};
 
   uint32_t offset = 0;
 
@@ -459,11 +319,7 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({
-      {point + normal, color, stroke_width},
-      {point - normal, color, -stroke_width}
-      });
-
+    geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
     offset += 2;
   }
 
@@ -473,15 +329,8 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({
-      {point + normal, color, stroke_width},
-      {point - normal, color, -stroke_width}
-      });
-
-    geo.push_indices({
-      offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
-      });
-
+    geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
+    geo.push_indices({ offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1 });
     offset += 2;
   }
 
@@ -494,15 +343,8 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({
-      {point + normal, color, stroke_width},
-      {point - normal, color, -stroke_width}
-      });
-
-    geo.push_indices({
-      offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
-      });
-
+    geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
+    geo.push_indices({ offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1 });
     offset += 2;
   }
 
@@ -510,28 +352,21 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
 }
 
 void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
+  vec4 color{ 1.0f, 1.0f, 1.0f, 1.0f };
+  Geometry geo{};
+
   Box box = entity->bounding_box();
-  vec2 box_size = box.max - box.min;
-  vec2 sizes_ratio = box_size / (m_frame_width - stroke_width * 2);
 
-  float ratio = 1;
-  vec2 center{ 0.0f };
+  float ratio;
+  vec2 center;
+  Box boundaries;
 
-  if (sizes_ratio.x > sizes_ratio.y) {
-    ratio = sizes_ratio.x;
-    center = m_cursor + stroke_width + vec2{ 0.0f, (m_frame_width - stroke_width * 2 - box_size.y / ratio) / 2.0f };
-  } else {
-    ratio = sizes_ratio.y;
-    center = m_cursor + stroke_width + vec2{ (m_frame_width - stroke_width * 2 - box_size.x / ratio) / 2.0f, 0.0f };
-  }
+  calculate_frame_boundaries(box, stroke_width, center, &ratio, &boundaries);
 
   vec2 A = center + (entity->p0() - box.min) / ratio;
   vec2 B = center + (entity->p1() - box.min) / ratio;
   vec2 C = center + (entity->p2() - box.min) / ratio;
   vec2 D = center + (entity->p3() - box.min) / ratio;
-
-  vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
-  Geometry geo{ GL_TRIANGLES };
 
   uint32_t offset = 0;
 
@@ -544,11 +379,7 @@ void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({
-      {point + normal, color},
-      {point - normal, color}
-      });
-
+    geo.push_vertices({ {point + normal, color}, {point - normal, color} });
     offset += 2;
   }
 
@@ -558,15 +389,8 @@ void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({
-      {point + normal, color},
-      {point - normal, color}
-      });
-
-    geo.push_indices({
-      offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
-      });
-
+    geo.push_vertices({ {point + normal, color}, {point - normal, color} });
+    geo.push_indices({ offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1 });
     offset += 2;
   }
 
@@ -579,19 +403,30 @@ void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({
-      {point + normal, color},
-      {point - normal, color}
-      });
-
-    geo.push_indices({
-      offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1
-      });
-
+    geo.push_vertices({ {point + normal, color},{point - normal, color} });
+    geo.push_indices({ offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1 });
     offset += 2;
   }
 
   Renderer::draw(geo.wireframe());
+}
+
+void Debugger::calculate_frame_boundaries(const Box& box, float padding, vec2& center, float* ratio, Box* boundaries) {
+  float frame_width = m_frame_width - padding * 2.0f;
+
+  vec2 box_size = box.max - box.min;
+  vec2 sizes_ratio = box_size / frame_width;
+
+  if (sizes_ratio.x > sizes_ratio.y) {
+    *ratio = sizes_ratio.x;
+    center = m_cursor + padding + vec2{ 0.0f, (frame_width - box_size.y / *ratio) / 2.0f };
+  } else {
+    *ratio = sizes_ratio.y;
+    center = m_cursor + padding + vec2{ (frame_width - box_size.x / *ratio) / 2.0f, 0.0f };
+  }
+
+  boundaries->min = vec2{ m_padding };
+  boundaries->max = vec2{ m_padding + m_frame_width };
 }
 
 void Debugger::draw_polar_line(const vec2& origin, float angle, const Box& boundary, const vec4& color, Geometry& geo) {
@@ -634,6 +469,17 @@ void Debugger::draw_polar_line(const vec2& origin, float angle, const Box& bound
   }
 
   geo.push_line(p0, p1, color);
+}
+
+void Debugger::draw_polar_plane(const vec2& origin, const Box& boundaries, Geometry& geo) {
+  int increments = 30;
+  float angle_increment = MATH_TWO_PI / (float)increments;
+  vec4 line_color{ 0.3f, 0.3f, 0.3f, 0.5f };
+
+  for (int i = 0; i < increments; i++) {
+    float angle = (float)i * angle_increment;
+    draw_polar_line(origin, angle, boundaries, line_color, geo);
+  }
 }
 
 #endif
