@@ -35,7 +35,7 @@ Entity* HandleEntity::entity_at(const vec2& position, bool lower_level, float th
   const vec2 handle_position = m_transform.position().get();
 
   if (type == Type::Circle) {
-    if (is_point_in_circle(position, handle_position, m_radius + threshold)) {
+    if (is_point_in_circle(position, handle_position, threshold)) {
       return this;
     }
 

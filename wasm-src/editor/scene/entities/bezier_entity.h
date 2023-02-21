@@ -2,6 +2,7 @@
 
 #include "../entity.h"
 #include "vertex_entity.h"
+#include "../../../renderer/geometry/stroker.h"
 
 #include <vector>
 
@@ -75,6 +76,7 @@ public:
   std::vector<vec2> box_intersection_points(const Box& box) const;
   bool intersects_box(const Box& box) const;
 
+  void tessellate(TessellationParams& params, Geometry& geo) const;
   virtual void render(float zoom) const override;
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
@@ -108,6 +110,9 @@ private:
 
   std::vector<float> linear_line_intersections(const Box& line) const;
   std::vector<float> cubic_line_intersections(const Box& line) const;
+
+  void linear_tessellate(TessellationParams& params, Geometry& geo) const;
+  void cubic_tessellate(TessellationParams& params, Geometry& geo) const;
 
   void linear_render(float zoom) const;
   void cubic_render(float zoom) const;

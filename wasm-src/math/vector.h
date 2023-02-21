@@ -67,6 +67,13 @@ vec2& negate(const vec2& v, vec2& out);
 vec3& negate(const vec3& v, vec3& out);
 vec4& negate(const vec4& v, vec4& out);
 
+vec2 abs(const vec2& v);
+vec3 abs(const vec3& v);
+vec4 abs(const vec4& v);
+vec2& abs(const vec2& v, vec2& out);
+vec3& abs(const vec3& v, vec3& out);
+vec4& abs(const vec4& v, vec4& out);
+
 void zero(const vec2& v);
 void zero(const vec3& v);
 void zero(const vec4& v);

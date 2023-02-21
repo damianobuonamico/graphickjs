@@ -6,10 +6,6 @@ void VertexEntity::render(float zoom) const {
 }
 
 Entity* VertexEntity::entity_at(const vec2& position, bool lower_level = false, float threshold = 0.0f) {
-  if (m_position.entity_at(position, lower_level, threshold)) {
-    return &m_position;
-  }
-
   vec2 offset = position - transform().position().get();
 
   if (HandleEntity* handle = left(); handle && handle->entity_at(offset, lower_level, threshold)) {
@@ -18,6 +14,10 @@ Entity* VertexEntity::entity_at(const vec2& position, bool lower_level = false, 
 
   if (HandleEntity* handle = right(); handle && handle->entity_at(offset, lower_level, threshold)) {
     return handle;
+  }
+
+  if (m_position.entity_at(position, lower_level, threshold)) {
+    return &m_position;
   }
 
   return nullptr;

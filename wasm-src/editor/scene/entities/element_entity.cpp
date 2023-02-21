@@ -7,21 +7,47 @@ void ElementEntity::add_vertex(const std::shared_ptr<VertexEntity>& vertex) {
 }
 
 void ElementEntity::render(float zoom) const {
-  vec2 position = transform().position().get();
-
-  for (auto& curve : m_curves) {
-    curve.render(zoom);
+  if (m_curves.empty()) {
+    return;
   }
+
+  Geometry geo{};
+
+  bool is_closed = m_closed.get();
+  TessellationParams params = {
+    m_transform.position().get(), zoom, MATH_PI / 100.0f,
+    5.0f, vec4(0.5f, 0.5f, 0.5f, 1.0f),
+    JoinType::Miter, CapType::Butt, 10.0f,
+    false, false, !is_closed, false, true,
+    { vec2{}, vec2{}, 0 }
+  };
+
+  for (int i = 0; i < m_curves.size() - 1; i++) {
+    m_curves[i].tessellate(params, geo);
+
+    params.start_join = true;
+    params.start_cap = false;
+    params.is_first_segment = false;
+  }
+
+  if (is_closed) {
+    params.end_join = true;
+  } else {
+    params.end_cap = true;
+  }
+
+  m_curves[m_curves.size() - 1].tessellate(params, geo);
+
+  Renderer::draw(geo);
 
   // for (const auto& [id, vertex] : m_vertices) {
   //   vertex->position()->render(zoom);
   // }
 
-  Box box = transform().large_bounding_box();
-  Geometry box_geometry{};
-  box_geometry.push_quad(box, vec4{ 0.0f, 1.0f, 0.5f, 0.2f });
-
-  Renderer::draw(box_geometry);
+  // Box box = transform().large_bounding_box();
+  // Geometry box_geometry{};
+  // box_geometry.push_quad(box, vec4{ 0.0f, 1.0f, 0.5f, 0.2f });
+  // Renderer::draw(box_geometry);
 }
 
 // TODO: diff algorithm

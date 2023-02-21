@@ -22,10 +22,12 @@ public:
   void set_uniform(const std::string& name, const mat3& value);
   void set_global_uniform(const std::string& name, const mat3& value);
   void set_view_projection_matrix(const mat3& value);
+  void set_zoom(const float zoom);
   void set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset);
 private:
   std::unordered_map<std::string, Shader> m_shaders;
   Shader* m_current = nullptr;
 
-  mat3 view_projection_matrix;
+  mat3 m_view_projection_matrix;
+  float m_zoom;
 };

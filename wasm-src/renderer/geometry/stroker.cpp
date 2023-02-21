@@ -799,3 +799,29 @@ Geometry stroke_curves(const std::vector<Bezier>& curves) {
 
   return geo;
 }
+
+void tessellate_join(
+  const TessellationParams& params,
+  const vec2& point, const vec2& direction, const vec2& normal,
+  const uint32_t* override_end_index, Geometry& geo
+) {
+  uint32_t offset = geo.offset();
+  float angle = dot(direction, params.start_join_params.normal);
+
+  vec2 h = (normal + params.start_join_params.normal) / 2.0f;
+  float height = length(h);
+  float k = 2.0f * params.width - height;
+  vec2 inset = normalize_length(h, k);
+
+  uint32_t end_index = override_end_index ? *override_end_index : offset;
+
+  if (angle < 0.0f) {
+    geo.push_vertex({ point - inset, params.color, -params.width });
+    geo.push_indices({ params.start_join_params.index + 1, offset, end_index + 2 });
+  } else {
+    geo.push_vertex({ point + inset, params.color, params.width });
+    geo.push_indices({ params.start_join_params.index, offset, end_index + 1 });
+  }
+
+  offset++;
+}

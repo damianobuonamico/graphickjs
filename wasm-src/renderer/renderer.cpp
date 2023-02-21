@@ -194,6 +194,7 @@ void Renderer::set_viewport(const vec2& position, float zoom) {
   mat3 view_projection_matrix = scaling * translation;
 
   m_shaders.set_view_projection_matrix(view_projection_matrix);
+  m_shaders.set_zoom(zoom);
 }
 
 void Renderer::begin_batch() {

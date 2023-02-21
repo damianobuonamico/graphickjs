@@ -412,6 +412,56 @@ inline vec4& negate(const vec4& v, vec4& out) {
   return out;
 }
 
+/* -- abs -- */
+
+inline vec2 abs(const vec2& v) {
+  return vec2{
+    std::fabsf(v.x),
+    std::fabsf(v.y),
+  };
+}
+
+inline vec3 abs(const vec3& v) {
+  return vec3{
+    std::fabsf(v.x),
+    std::fabsf(v.y),
+    std::fabsf(v.z),
+  };
+}
+
+inline vec4 abs(const vec4& v) {
+  return vec4{
+    std::fabsf(v.x),
+    std::fabsf(v.y),
+    std::fabsf(v.z),
+    std::fabsf(v.w),
+  };
+}
+
+inline vec2& abs(const vec2& v, vec2& out) {
+  out.x = std::fabs(v.x);
+  out.y = std::fabs(v.y);
+
+  return out;
+}
+
+inline vec3& abs(const vec3& v, vec3& out) {
+  out.x = std::fabs(v.x);
+  out.y = std::fabs(v.y);
+  out.z = std::fabs(v.z);
+
+  return out;
+}
+
+inline vec4& abs(const vec4& v, vec4& out) {
+  out.x = std::fabs(v.x);
+  out.y = std::fabs(v.y);
+  out.z = std::fabs(v.z);
+  out.w = std::fabs(v.w);
+
+  return out;
+}
+
 /* -- zero -- */
 
 inline void zero(vec2& v) {

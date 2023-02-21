@@ -17,6 +17,7 @@ void ShaderManager::create_shaders() {
     "}\n"
     "#fragment\n"
     "precision mediump float;\n"
+    "uniform lowp float uZoom;\n"
     "in mediump vec4 vColor;\n"
     "in lowp float vNormal;\n"
     "out vec4 fragColor;\n"
@@ -43,16 +44,18 @@ void ShaderManager::create_shaders() {
     "}\n"
     "#fragment\n"
     "precision mediump float;\n"
+    "uniform lowp float uZoom;\n"
     "in mediump vec4 vColor;\n"
     "in lowp float vNormal;\n"
     "in lowp float vMaxNormal;\n"
     "out vec4 fragColor;\n"
     "void main() {\n"
+    // "  fragColor = vec4(vec3(abs(vNormal) / vMaxNormal), 0.5f);\n"
     "  if (vMaxNormal == 0.0) {\n"
     "    fragColor = vColor;\n"
     "    return;\n"
-    "  }"
-    "  float fade = 1.2;\n"
+    "  }\n"
+    "  float fade = 1.2 / uZoom;\n"
     "  fragColor = vec4(vColor.rgb, mix(vColor.a, 0.0, smoothstep(vMaxNormal - fade, vMaxNormal, abs(vNormal))));\n"
     "}\n";
 
@@ -87,7 +90,8 @@ void ShaderManager::use(const std::string& name) {
   if (iterator != m_shaders.end()) {
     m_current = &iterator->second;
     m_current->use();
-    m_current->set_uniform("uViewProjectionMatrix", view_projection_matrix);
+    m_current->set_uniform("uViewProjectionMatrix", m_view_projection_matrix);
+    m_current->set_uniform("uZoom", m_zoom);
   }
 }
 
@@ -117,7 +121,11 @@ void ShaderManager::set_global_uniform(const std::string& name, const mat3& valu
 }
 
 void ShaderManager::set_view_projection_matrix(const mat3& value) {
-  view_projection_matrix = value;
+  m_view_projection_matrix = value;
+}
+
+void ShaderManager::set_zoom(const float zoom) {
+  m_zoom = zoom;
 }
 
 void ShaderManager::set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset) {

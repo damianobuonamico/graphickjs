@@ -3775,6 +3775,10 @@ function update_tool_ui(type) { window._set_tool(type); }
         GL.recordError(0x502/*GL_INVALID_OPERATION*/);
       }
     }
+  function _glUniform1f(location, v0) {
+      GLctx.uniform1f(webglGetUniformLocation(location), v0);
+    }
+
   function _glUniform1i(location, v0) {
       GLctx.uniform1i(webglGetUniformLocation(location), v0);
     }
@@ -4247,6 +4251,7 @@ var asmLibraryArg = {
   "glShaderSource": _glShaderSource,
   "glTexImage2D": _glTexImage2D,
   "glTexParameteri": _glTexParameteri,
+  "glUniform1f": _glUniform1f,
   "glUniform1i": _glUniform1i,
   "glUniformMatrix3fv": _glUniformMatrix3fv,
   "glUseProgram": _glUseProgram,
@@ -4412,8 +4417,8 @@ var dynCall_iiiiijj = Module["dynCall_iiiiijj"] = createExportWrapper("dynCall_i
 /** @type {function(...*):?} */
 var dynCall_iiiiiijj = Module["dynCall_iiiiiijj"] = createExportWrapper("dynCall_iiiiiijj");
 
-var ___start_em_js = Module['___start_em_js'] = 100168;
-var ___stop_em_js = Module['___stop_em_js'] = 100210;
+var ___start_em_js = Module['___start_em_js'] = 100232;
+var ___stop_em_js = Module['___stop_em_js'] = 100274;
 function invoke_ii(index,a1) {
   var sp = stackSave();
   try {

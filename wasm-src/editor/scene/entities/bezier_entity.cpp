@@ -1,5 +1,4 @@
 #include "bezier_entity.h"
-#include "../../../renderer/geometry/stroker.h"
 
 #define BEZIER_CALL(func, ...) type() == Type::Linear ? linear_##func(__VA_ARGS__) : cubic_##func(__VA_ARGS__)
 
@@ -128,6 +127,10 @@ std::vector<vec2> BezierEntity::box_intersection_points(const Box& box) const {
 
 bool BezierEntity::intersects_box(const Box& box) const {
   return box_intersection_points(box).size() > 0;
+}
+
+void BezierEntity::tessellate(TessellationParams& params, Geometry& geo) const {
+  BEZIER_CALL(tessellate, params, geo);
 }
 
 void BezierEntity::render(float zoom) const {
@@ -675,6 +678,104 @@ std::vector<float> BezierEntity::cubic_line_intersections(const Box& line) const
   }
 
   return parsed_roots;
+}
+
+void BezierEntity::linear_tessellate(TessellationParams& params, Geometry& geo) const {
+  vec2 A = params.offset + p0();
+  vec2 B = params.offset + p3();
+
+  vec2 direction = B - A;
+  vec2 normal = orthogonal(direction);
+  normalize_length(normal, params.width, normal);
+
+  if (params.start_join) {
+    tessellate_join(params, A, direction, normal, nullptr, geo);
+  }
+
+  uint32_t offset = geo.offset();
+
+  if (params.is_first_segment) {
+    params.end_join_params.direction = direction;
+    params.end_join_params.normal = normal;
+    params.end_join_params.index = offset - 1;
+  }
+
+  geo.push_vertices({
+    { A - normal, params.color, -params.width }, { A + normal, params.color, params.width },
+    { B - normal, params.color, -params.width }, { B + normal, params.color, params.width }
+    });
+  geo.push_indices({ offset, offset + 1, offset + 2, offset + 2, offset + 3, offset + 1 });
+
+  params.start_join_params.direction = direction;
+  params.start_join_params.normal = normal;
+  params.start_join_params.index = offset + 2;
+
+  if (params.end_join) {
+
+    tessellate_join(params, B, params.end_join_params.direction, params.end_join_params.normal, &params.end_join_params.index, geo);
+  }
+}
+
+void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) const {
+  std::vector<float> triangulation_params = cubic_triangulation_params(params.zoom, params.facet_angle);
+  vec2 point, direction, normal;
+
+  point = params.offset + p0();
+  direction = cubic_gradient(0.0f);
+
+  if (is_almost_zero(direction)) {
+    direction = cubic_curvature(0.0f);
+  }
+
+  normal = orthogonal(direction);
+  normalize_length(normal, params.width, normal);
+
+  if (params.start_join) {
+    tessellate_join(params, point, direction, normal, nullptr, geo);
+  }
+
+  uint32_t offset = geo.offset();
+
+  if (params.is_first_segment) {
+    params.end_join_params.direction = direction;
+    params.end_join_params.normal = normal;
+    params.end_join_params.index = offset - 1;
+  }
+
+  geo.push_vertices({ { point - normal, params.color, -params.width }, { point + normal, params.color, params.width } });
+  offset += 2;
+
+  for (size_t i = 1; i < triangulation_params.size() - 1; i++) {
+    point = params.offset + cubic_get(triangulation_params[i]);
+    direction = cubic_gradient(triangulation_params[i]);
+    normal = orthogonal(direction);
+    normalize_length(normal, params.width, normal);
+
+    geo.push_vertices({ { point - normal, params.color, -params.width }, { point + normal, params.color, params.width } });
+    geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+    offset += 2;
+  }
+
+  point = params.offset + p3();
+  direction = cubic_gradient(1.0f);
+
+  if (is_almost_zero(direction)) {
+    direction = cubic_curvature(1.0f);
+  }
+
+  normal = orthogonal(direction);
+  normalize_length(normal, params.width, normal);
+
+  geo.push_vertices({ { point - normal, params.color, -params.width }, { point + normal, params.color, params.width } });
+  geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+
+  params.start_join_params.direction = direction;
+  params.start_join_params.normal = normal;
+  params.start_join_params.index = offset;
+
+  if (params.end_join) {
+    tessellate_join(params, point, params.end_join_params.direction, params.end_join_params.normal, &params.end_join_params.index, geo);
+  }
 }
 
 void BezierEntity::linear_render(float zoom) const {
