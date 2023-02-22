@@ -77,6 +77,7 @@ public:
   bool intersects_box(const Box& box) const;
 
   void tessellate(TessellationParams& params, Geometry& geo) const;
+  void tessellate_outline(TessellationParams& params, Geometry& geo) const;
   virtual void render(float zoom) const override;
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
@@ -113,6 +114,8 @@ private:
 
   void linear_tessellate(TessellationParams& params, Geometry& geo) const;
   void cubic_tessellate(TessellationParams& params, Geometry& geo) const;
+  void linear_tessellate_outline(TessellationParams& params, Geometry& geo) const;
+  void cubic_tessellate_outline(TessellationParams& params, Geometry& geo) const;
 
   void linear_render(float zoom) const;
   void cubic_render(float zoom) const;

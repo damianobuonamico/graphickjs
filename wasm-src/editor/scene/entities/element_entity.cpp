@@ -6,6 +6,20 @@ void ElementEntity::add_vertex(const std::shared_ptr<VertexEntity>& vertex) {
   regenerate();
 }
 
+void ElementEntity::tessellate_outline(const vec4& color, float zoom, Geometry& geo) const {
+  TessellationParams params = {
+    m_transform.position().get(), zoom, MATH_PI / 100.0f,
+    1.0f, color,
+    JoinType::Bevel, CapType::Butt, 10.0f,
+    false, false, false, false, true,
+    { vec2{}, vec2{}, 0 }
+  };
+
+  for (auto& curve : m_curves) {
+    curve.tessellate_outline(params, geo);
+  }
+}
+
 void ElementEntity::render(float zoom) const {
   if (m_curves.empty()) {
     return;
@@ -17,7 +31,7 @@ void ElementEntity::render(float zoom) const {
   TessellationParams params = {
     m_transform.position().get(), zoom, MATH_PI / 100.0f,
     5.0f, vec4(0.5f, 0.5f, 0.5f, 1.0f),
-    JoinType::Miter, CapType::Butt, 10.0f,
+    JoinType::Round, CapType::Round, 10.0f,
     false, false, !is_closed, false, true,
     { vec2{}, vec2{}, 0 }
   };

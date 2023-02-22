@@ -163,6 +163,7 @@ void Renderer::bind_batch_renderer() {
   m_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, position));
   m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
   m_shaders.set_attribute("aNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, normal));
+  m_shaders.set_attribute("aMaxNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, max_normal));
 }
 
 void Renderer::bind_instance_renderer() {
@@ -179,10 +180,11 @@ void Renderer::bind_instance_renderer() {
   m_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, position));
   m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
   m_shaders.set_attribute("aNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, normal));
+  m_shaders.set_attribute("aMaxNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, max_normal));
 
   glBindBuffer(GL_ARRAY_BUFFER, m_instanced_data.instance_buffer_object);
   m_shaders.set_attribute("aTranslation", 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (const void*)0);
-  glVertexAttribDivisor(3, 1);
+  glVertexAttribDivisor(4, 1);
 
   glBindBuffer(GL_ARRAY_BUFFER, m_instanced_data.vertex_buffer_object);
 }
@@ -222,6 +224,7 @@ void Renderer::add_to_batch(const Geometry& geometry) {
     m_data.vertex_buffer_ptr->position = vertex.position;
     m_data.vertex_buffer_ptr->color = vertex.color;
     m_data.vertex_buffer_ptr->normal = vertex.normal;
+    m_data.vertex_buffer_ptr->max_normal = vertex.max_normal;
     m_data.vertex_buffer_ptr++;
   }
 

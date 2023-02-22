@@ -113,7 +113,7 @@ void DirectSelectTool::translate_selected() {
     if (entity->is_in_category(Entity::CategorySelectableChildren)) {
       ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
 
-      if (element && !m_element->selection()->full()) {
+      if (element && !element->selection()->full()) {
         for (Entity* vertex : element->selection()->entities()) {
           vertex->transform().translate(InputManager::pointer.scene.movement);
         }

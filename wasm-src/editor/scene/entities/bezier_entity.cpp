@@ -133,6 +133,10 @@ void BezierEntity::tessellate(TessellationParams& params, Geometry& geo) const {
   BEZIER_CALL(tessellate, params, geo);
 }
 
+void BezierEntity::tessellate_outline(TessellationParams& params, Geometry& geo) const {
+  BEZIER_CALL(tessellate_outline, params, geo);
+}
+
 void BezierEntity::render(float zoom) const {
   BEZIER_CALL(render, zoom);
 }
@@ -328,7 +332,7 @@ std::vector<float> BezierEntity::cubic_triangulation_params(float zoom, float fa
   float last_t = 0.0f;
 
   for (int i = 0; i < turning_angles.size() - 1; i++) {
-    vec2 checkpoint = cubic_gradient((turning_angles[i].x + turning_angles[i + 1].x) / 2.0f);
+    vec2 checkpoint = cubic_gradient(0.5f * (turning_angles[i].x + turning_angles[i + 1].x));
     float checkpoint_angle = std::atan2f(checkpoint.y, checkpoint.x);
 
     float difference = turning_angles[i + 1].y - turning_angles[i].y;
@@ -657,7 +661,7 @@ std::vector<float> BezierEntity::cubic_line_intersections(const Box& line) const
     if (is_almost_zero(s)) {
       roots.insert(roots.begin(), { -1.5f * q / p, 3.0f * q / p });
     } else if (s > 0.0f) {
-      float u = std::cbrtf(-q / 2.0f - std::sqrtf(s));
+      float u = std::cbrtf(-0.5f * q - std::sqrtf(s));
       roots.push_back(u - p / (3.0f * u));
     } else {
       float u = 2.0f * std::sqrtf(-p / 3.0f);
@@ -690,6 +694,8 @@ void BezierEntity::linear_tessellate(TessellationParams& params, Geometry& geo) 
 
   if (params.start_join) {
     tessellate_join(params, A, direction, normal, nullptr, geo);
+  } else if (params.start_cap) {
+    tessellate_cap(params, A, normal, false, geo);
   }
 
   uint32_t offset = geo.offset();
@@ -711,8 +717,9 @@ void BezierEntity::linear_tessellate(TessellationParams& params, Geometry& geo) 
   params.start_join_params.index = offset + 2;
 
   if (params.end_join) {
-
     tessellate_join(params, B, params.end_join_params.direction, params.end_join_params.normal, &params.end_join_params.index, geo);
+  } else if (params.end_cap) {
+    tessellate_cap(params, B, normal, true, geo);
   }
 }
 
@@ -732,6 +739,8 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
 
   if (params.start_join) {
     tessellate_join(params, point, direction, normal, nullptr, geo);
+  } else if (params.start_cap) {
+    tessellate_cap(params, point, normal, false, geo);
   }
 
   uint32_t offset = geo.offset();
@@ -775,7 +784,30 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
 
   if (params.end_join) {
     tessellate_join(params, point, params.end_join_params.direction, params.end_join_params.normal, &params.end_join_params.index, geo);
+  } else if (params.end_cap) {
+    tessellate_cap(params, point, normal, true, geo);
   }
+}
+
+void BezierEntity::linear_tessellate_outline(TessellationParams& params, Geometry& geo) const {
+  uint32_t offset = geo.offset();
+
+  geo.push_vertices({ { params.offset + p0(), params.color }, { params.offset + p3(), params.color } });
+  geo.push_indices({ offset, offset + 1 });
+}
+
+// TODO: move std::vector.reserve() outside
+void BezierEntity::cubic_tessellate_outline(TessellationParams& params, Geometry& geo) const {
+  std::vector<float> triangulation_params = cubic_triangulation_params(params.zoom, params.facet_angle);
+  uint32_t offset = geo.offset();
+
+  geo.reserve(triangulation_params.size(), (triangulation_params.size() - 1) * 2);
+  for (int i = 0; i < triangulation_params.size() - 1; i++) {
+    geo.push_vertices({ { params.offset + cubic_get(triangulation_params[i]), params.color } });
+    geo.push_indices({ offset + i, offset + i + 1 });
+  }
+
+  geo.push_vertices({ { params.offset + p3(), params.color } });
 }
 
 void BezierEntity::linear_render(float zoom) const {

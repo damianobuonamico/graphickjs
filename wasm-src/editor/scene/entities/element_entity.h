@@ -13,10 +13,10 @@
 class ElementEntity: public Entity {
 public:
   ElementEntity(const vec2& position): Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this, position }), m_selection({ this }) {
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 100.0f }));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 0.0f }, vec2{ 20.0f, -20.0f }, false));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
+    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 100.0f }));
 
     console::log("ElementEntity created");
   };
@@ -47,6 +47,7 @@ public:
 
   void add_vertex(const std::shared_ptr<VertexEntity>& vertex);
 
+  virtual void tessellate_outline(const vec4& color, float zoom, Geometry& geo) const override;
   virtual void render(float zoom) const override;
 
   bool intersects_box(const Box& box) const;
@@ -66,5 +67,5 @@ private:
   ElementTransformComponent m_transform;
   SelectionComponent m_selection;
 
-  BoolValue m_closed{ true };
+  BoolValue m_closed{ false };
 };
