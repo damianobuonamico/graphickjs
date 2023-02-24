@@ -104,6 +104,7 @@ public:
   static bool on_wheel_event(PointerTarget target, float delta_x, float delta_y);
   static bool on_clipboard_event(ClipboardEvent event);
 
+  static inline const Tool& tool() { return get()->m_tool_state.active(); };
   static void set_tool(Tool::ToolType type);
 private:
   InputManager() = default;

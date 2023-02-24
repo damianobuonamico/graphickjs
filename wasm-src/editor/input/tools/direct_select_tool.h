@@ -2,12 +2,16 @@
 
 #include "../tool.h"
 #include "../../scene/entities/element_entity.h"
+#include "../../scene/entities/selection_rect_entity.h"
 
 class DirectSelectTool: public Tool {
 public:
   virtual void on_pointer_down() override;
   virtual void on_pointer_move() override;
   virtual void on_pointer_up(bool abort = false) override;
+
+  virtual void tessellate_overlays_outline(const vec4& color, float zoom, Geometry& geo) const override;
+  virtual void render_overlays(float zoom) const override;
 private:
   DirectSelectTool();
 
@@ -40,7 +44,7 @@ private:
 private:
   enum Mode {
     ModeNone = 0,
-    ModeDuplicate = 0,
+    ModeDuplicate,
     ModeElement,
     ModeVertex,
     ModeHandle,
@@ -50,6 +54,11 @@ private:
 private:
   bool m_dragging_occurred = false;
   bool m_is_entity_added_to_selection = false;
+  bool m_should_evaluate_selection = false;
+  vec2 m_last_bezier_point{};
+  vec2 m_last_bezier_p1{};
+  vec2 m_last_bezier_p2{};
+  BezierEntity::BezierPointDistance m_closest{};
 
   Mode m_mode = ModeNone;
 
@@ -58,6 +67,8 @@ private:
   BezierEntity* m_bezier = nullptr;
   VertexEntity* m_vertex = nullptr;
   HandleEntity* m_handle = nullptr;
+
+  SelectionRectEntity m_selection_rect{ true };
 private:
   friend class ToolState;
 };

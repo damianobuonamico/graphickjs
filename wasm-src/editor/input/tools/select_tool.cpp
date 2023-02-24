@@ -32,7 +32,7 @@ void SelectTool::on_pointer_down() {
       }
     }
   } else {
-    // TODO: Selection box
+    m_selection_rect.set(InputManager::pointer.scene.position);
   }
 }
 
@@ -47,13 +47,19 @@ void SelectTool::on_pointer_move() {
         entity->transform().translate(delta - entity->transform().position().delta());
       }
     }
-  } // TODO: Selection box
+  } else if (m_selection_rect.active()) {
+    m_selection_rect.size(InputManager::pointer.scene.delta);
+    Editor::scene.selection.temp_select(Editor::scene.entities_in(m_selection_rect.transform().bounding_box(), false));
+  }
 }
 
 void SelectTool::on_pointer_up(bool abort) {
   // TODO: abort
   Editor::scene.selection.sync();
-  // TODO: Selection box
+
+  if (m_selection_rect.active()) {
+    m_selection_rect.reset();
+  }
 
   if (m_dragging_occurred && !Editor::scene.selection.empty()) {
     for (auto& [id, entity] : Editor::scene.selection) {
@@ -69,4 +75,12 @@ void SelectTool::on_pointer_up(bool abort) {
       Editor::scene.selection.select(m_element);
     }
   }
+}
+
+void SelectTool::tessellate_overlays_outline(const vec4& color, float zoom, Geometry& geo) const {
+  m_selection_rect.tessellate_outline(color, zoom, geo);
+}
+
+void SelectTool::render_overlays(float zoom) const {
+  m_selection_rect.render(zoom);
 }

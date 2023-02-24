@@ -33,13 +33,7 @@ public:
   virtual const SelectionComponent* selection() const { return nullptr; }
 
   virtual void tessellate_outline(const vec4& color, float zoom, Geometry& geo) const {}
-  virtual void render(float zoom) const {
-    std::vector<Vertex> vertices = { {{0.0f, 0.0f}}, {{100.0f, 0.0f}}, {{100.0f, 100.0f}}, {{0.0f, 100.0f}} };
-    std::vector<uint32_t> indices = { 0, 1, 2, 2, 3, 0 };
-
-    const Geometry geometry = { vertices, indices };
-    Renderer::draw(geometry);
-  };
+  virtual void render(float zoom) const {};
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) { return nullptr; }
   virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) {}

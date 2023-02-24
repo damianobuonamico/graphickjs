@@ -107,6 +107,10 @@ bool ElementEntity::intersects_box(const Box& box) const {
     return is_point_in_box(first_vertex().transform().position().get(), box);
   }
 
+  if (!does_box_intersect_box(box, transform().bounding_box())) {
+    return false;
+  }
+
   vec2 position = m_transform.position().get();
   Box translated_box = { box.min - position, box.max - position };
 

@@ -19,7 +19,7 @@ public:
   virtual inline const Vec2Value& position() const { return m_position; };
 
   virtual Box bounding_box() const;
-  virtual vec2 size() const;
+  virtual vec2 dimensions() const;
   virtual vec2 center() const;
 
   virtual void translate(const vec2& amount, bool apply = false);
@@ -34,16 +34,35 @@ protected:
 
 class CircleTransformComponent: public TransformComponent {
 public:
-  CircleTransformComponent(Entity* entity, const vec2& position, float* radius)
+  CircleTransformComponent(Entity* entity, const vec2& position, float radius)
     : TransformComponent(entity, position), m_radius(radius) {};
   CircleTransformComponent(const CircleTransformComponent&) = default;
   CircleTransformComponent(CircleTransformComponent&&) = default;
 
   ~CircleTransformComponent() = default;
 
+  inline float radius() const { return m_radius; };
+
   virtual Box bounding_box() const override;
 private:
-  float* m_radius;
+  float m_radius;
+};
+
+class RectTransformComponent: public TransformComponent {
+public:
+  RectTransformComponent(Entity* entity, const vec2& position, const vec2& size)
+    : TransformComponent(entity, position), m_size(size) {};
+  RectTransformComponent(const RectTransformComponent&) = default;
+  RectTransformComponent(RectTransformComponent&&) = default;
+
+  ~RectTransformComponent() = default;
+
+  inline Vec2Value& size() { return m_size; };
+  inline const Vec2Value& size() const { return m_size; };
+
+  virtual Box bounding_box() const override;
+private:
+  Vec2Value m_size;
 };
 
 class VertexTransformComponent: public TransformComponent {

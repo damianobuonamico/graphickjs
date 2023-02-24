@@ -27,6 +27,7 @@ public:
   void temp_select(std::vector<Entity*> entities);
   void sync();
   void all();
+  void temp_all();
 private:
   std::unordered_map<UUID, Entity*> m_selected;
   std::unordered_map<UUID, Entity*> m_temp_selected;

@@ -91,6 +91,43 @@ void Geometry::push_line_strip(const std::vector<Vertex>& vertices) {
   m_offset += (uint32_t)vertices.size();
 }
 
+void Geometry::push_quad_outline(const Box& box, const vec4& color, float line_dash) {
+  if (line_dash <= 0.0f) {
+    push_line_strip({
+      { box.min, color }, { vec2{ box.max.x, box.min.y }, color },
+      { box.max, color }, { vec2{ box.min.x, box.max.y}, color }
+      });
+    push_indices({ m_offset - 1, m_offset - 4 });
+
+    return;
+  }
+
+  for (Box& line : lines_from_box(box)) {
+    float length = distance(line.min, line.max);
+    if (line_dash >= length) {
+      push_line(line.min, line.max, color);
+      continue;
+    }
+
+    vec2 direction = (line.max - line.min) / length;
+    int segments = (int)((length - line_dash) / line_dash);
+    float half_dash = line_dash / 2.0f;
+    vec2 start = line.min + direction * half_dash;
+
+    push_line(line.min, start, color);
+
+    for (int i = 1; i < segments; i += 2) {
+      push_line(start + direction * line_dash * (float)i, start + direction * line_dash * (float)(i + 1), color);
+    }
+
+    if (segments % 2 != 0) {
+      push_line(start + direction * (line_dash * (segments)), line.max, color);
+    }
+
+    push_line(line.max, line.max - direction * half_dash, color);
+  }
+}
+
 Geometry Geometry::wireframe() const {
   Geometry geo{ m_vertices, GL_LINES };
 

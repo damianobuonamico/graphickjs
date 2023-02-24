@@ -44,11 +44,18 @@ void Editor::shutdown() {
 }
 
 
-void Editor::render() {
+void Editor::render(
+#ifdef EMSCRIPTEN
+#else
+  bool is_main_loop
+#endif
+) {
 #ifdef EMSCRIPTEN
   emscripten_request_animation_frame(render_callback, nullptr);
 #else
-  render_callback(0, nullptr);
+  if (is_main_loop) {
+    render_callback(0, nullptr);
+  }
 #endif
 }
 

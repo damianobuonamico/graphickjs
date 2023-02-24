@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../../math/vec4.h"
+#include "../../renderer/geometry/geometry.h"
+
 class Tool {
 public:
   enum class ToolType {
@@ -27,11 +30,14 @@ public:
   inline int category() const { return m_category; }
   inline bool is_in_category(Category category) const { return m_category & category; }
 
-  virtual void on_pointer_down() {};
-  virtual void on_pointer_move() {};
-  virtual void on_pointer_up(bool abort = false) {};
+  virtual void on_pointer_down() {}
+  virtual void on_pointer_move() {}
+  virtual void on_pointer_up(bool abort = false) {}
 
-  virtual void on_pointer_hover() {};
+  virtual void on_pointer_hover() {}
+
+  virtual void tessellate_overlays_outline(const vec4& color, float zoom, Geometry& geo) const {}
+  virtual void render_overlays(float zoom) const {}
 protected:
   Tool(ToolType type, int category): m_type(type), m_category(category) {}
 protected:

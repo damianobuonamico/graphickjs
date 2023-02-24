@@ -8,7 +8,7 @@ void HandleEntity::render(float zoom) const {
 
   if (parent && parent->parent) position += parent->parent->transform().position().get();
 
-  geo.push_circle(position, m_radius / zoom, color);
+  geo.push_circle(position, transform().radius() / zoom, color);
 
   // geo.vertices.push_back({ position, color });
 

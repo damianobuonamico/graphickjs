@@ -175,13 +175,27 @@ inline vec4 lerp(const vec4& v1, const vec4& v2, float t) {
   };
 }
 
+/* -- quadratic -- */
+
+inline vec2 quadratic(const vec2& v1, const vec2& v2, const vec2& v3, float t) {
+  vec2 a = v1 - 2.0f * v2 + v3;
+  vec2 b = 2.0f * (v2 - v1);
+  vec2 c = v1;
+
+  return a * t * t + b * t + c;
+}
+
+inline vec2 quadratic_derivative(const vec2& v1, const vec2& v2, const vec2& v3, float t) {
+  return 2.0f * (v1 - 2.0f * v2 + v3) * t + 2.0f * (v2 - v1);
+}
+
 /* -- bezier -- */
 
 inline vec2 bezier(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t) {
-  float c0 = std::powf(1 - t, 3);
-  float c1 = 3 * t * std::powf(1 - t, 2);
-  float c2 = 3 * std::powf(t, 2) * (1 - t);
-  float c3 = std::powf(t, 3);
+  float c0 = (float)std::pow(1 - t, 3);
+  float c1 = 3 * t * (float)std::pow(1 - t, 2);
+  float c2 = 3 * (float)std::pow(t, 2) * (1 - t);
+  float c3 = (float)std::pow(t, 3);
 
   return c0 * v1 + c1 * v2 + c2 * v3 + c3 * v4;
 }

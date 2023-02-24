@@ -13,7 +13,7 @@ public:
   Type type;
 public:
   HandleEntity(const vec2& position, Type type = Type::Circle, Entity* parent = nullptr)
-    : Entity(parent), m_transform(CircleTransformComponent{ this, position, &m_radius }), type(type) {
+    : Entity(parent), m_transform(CircleTransformComponent{ this, position, 5.0f }), type(type) {
     console::log("HandleEntity created");
   };
   HandleEntity(const HandleEntity&) = default;
@@ -30,7 +30,5 @@ public:
 
   virtual Entity* entity_at(const vec2& position, bool lower_level = false, float threshold = 0.0f) override;
 private:
-  float m_radius = 5.0f;
-
   CircleTransformComponent m_transform;
 };

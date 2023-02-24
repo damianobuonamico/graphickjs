@@ -38,6 +38,9 @@ vec2 lerp(const vec2& v1, const vec2& v2, float t);
 vec3 lerp(const vec3& v1, const vec3& v2, float t);
 vec4 lerp(const vec4& v1, const vec4& v2, float t);
 
+vec2 quadratic(const vec2& v1, const vec2& v2, const vec2& v3, float t);
+vec2 quadratic_derivative(const vec2& v1, const vec2& v2, const vec2& v3, float t);
+
 vec2 bezier(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t);
 vec2 bezier_derivative(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t);
 vec2 bezier_second_derivative(const vec2& v1, const vec2& v2, const vec2& v3, const vec2& v4, float t);

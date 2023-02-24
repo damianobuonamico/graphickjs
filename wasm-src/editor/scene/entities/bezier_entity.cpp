@@ -75,6 +75,10 @@ vec2 BezierEntity::get(float t) const {
   return BEZIER_CALL(get, t);
 }
 
+BezierEntity::BezierPointDistance BezierEntity::closest_to(const vec2& position, int iterations) const {
+  return (BEZIER_CALL(closest_to, position, iterations));
+}
+
 float BezierEntity::closest_t_to(const vec2& position, int iterations) const {
   return (BEZIER_CALL(closest_to, position, iterations)).t;
 }
@@ -87,8 +91,15 @@ float BezierEntity::distance_from(const vec2& position, int iterations) const {
   return std::sqrtf((BEZIER_CALL(closest_to, position, iterations)).sq_distance);
 }
 
+BezierEntity::BezierABC BezierEntity::abc(float t, const vec2& B) const {
+  return BEZIER_CALL(abc, t, B);
+}
+
 std::vector<float> BezierEntity::line_intersections(const Box& line) const {
-  if (!does_box_intersect_box(bounding_box(), line)) return {};
+  Box box = { min(line.min, line.max), max(line.min, line.max) };
+  if (!does_box_intersect_box(bounding_box(), box)) {
+    return {};
+  }
 
   return BEZIER_CALL(line_intersections, line);
 }
@@ -114,7 +125,7 @@ bool BezierEntity::intersects_line(const Box& line) const {
 }
 
 std::vector<vec2> BezierEntity::box_intersection_points(const Box& box) const {
-  std::vector<Box> lines = get_lines_from_box(box);
+  std::vector<Box> lines = lines_from_box(box);
   std::vector<vec2> points{};
 
   for (Box& line : lines) {
@@ -126,6 +137,15 @@ std::vector<vec2> BezierEntity::box_intersection_points(const Box& box) const {
 }
 
 bool BezierEntity::intersects_box(const Box& box) const {
+  if (!does_box_intersect_box(box, bounding_box())) {
+    return false;
+  }
+
+  if (is_point_in_box(p0(), box)) {
+    return true;
+  }
+
+  console::log("no inter", box_intersection_points(box).size());
   return box_intersection_points(box).size() > 0;
 }
 
@@ -151,6 +171,35 @@ Entity* BezierEntity::entity_at(const vec2& position, bool lower_level, float th
   }
 
   return nullptr;
+}
+
+bool BezierEntity::is_masquerading_quadratic(vec2& B) const {
+  Vec2Value* d1 = m_start.transform().right();
+  Vec2Value* d2 = m_end.transform().left();
+
+  if (!d1 || !d2) {
+    return false;
+  }
+
+  vec2 P0 = p0();
+  vec2 P3 = p3();
+
+  vec2 D1 = 1.5f * d1->get();
+  vec2 D2 = 1.5f * d2->get();
+
+  vec2 P1 = P0 + D1;
+  vec2 P2 = P3 + D2;
+
+  B = midpoint(P1, P2);
+
+  // L1 norm
+  vec2 diff = abs(P1 - P2);
+  float mag = diff.x + diff.y;
+
+  // Manhattan distance of D1 and D2.
+  float edges = std::fabsf(D1.x) + std::fabsf(D1.y) + std::fabsf(D2.x) + std::fabsf(D2.y);
+
+  return mag * 4096 <= edges;
 }
 
 std::vector<float> BezierEntity::linear_extrema() const {
@@ -324,7 +373,48 @@ vec2 BezierEntity::cubic_t_from_theta(float theta) const {
   return { -1.0f, -1.0f };
 }
 
+std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, float zoom, float facet_angle) const {
+  vec2 A = p0();
+  vec2 C = p3();
+
+  vec2 a = 2.0f * (A - 2.0f * B + C);
+  vec2 b = 2.0f * (B - A);
+
+  vec2 start = b;
+  vec2 end = a + b;
+
+  float start_angle = std::atan2f(start.y, start.x);
+  float end_angle = std::atan2f(end.y, end.x);
+
+  std::vector<float> triangulation_params{};
+
+  facet_angle = std::max(facet_angle, GEOMETRY_MIN_FACET_ANGLE);
+
+  float difference = end_angle - start_angle;
+  int increments = std::max(std::abs((int)std::ceilf(difference / facet_angle)), 1);
+  float increment = difference / (float)increments;
+
+  triangulation_params.reserve(increments);
+  triangulation_params.push_back(0.0f);
+
+  for (int j = 1; j < increments; j++) {
+    float theta = start_angle + (float)j * increment;
+    float tan = std::tanf(theta);
+    float t = (tan * b.x - b.y) / (a.y - tan * a.x);
+
+    triangulation_params.push_back(t);
+  }
+
+  triangulation_params.push_back(1.0f);
+
+  return triangulation_params;
+}
+
 std::vector<float> BezierEntity::cubic_triangulation_params(float zoom, float facet_angle) const {
+  if (vec2 B; is_masquerading_quadratic(B)) {
+    return quadratic_triangulation_params(B, zoom, facet_angle);
+  }
+
   std::vector<vec2> turning_angles = cubic_turning_angles();
   std::vector<float> triangulation_params{};
 
@@ -563,6 +653,40 @@ BezierEntity::BezierPointDistance BezierEntity::cubic_closest_to(const vec2& pos
   }
 
   return params;
+}
+
+float BezierEntity::projection_ratio(float t) const {
+  if (t == 0.0f || t == 1.0f) {
+    return t;
+  }
+
+  float n = (float)std::pow(1.0f - t, 3);
+  return n / (n + (float)std::pow(t, 3));
+}
+
+float BezierEntity::abc_ratio(float t) const {
+  if (t == 0.0f || t == 1.0f) {
+    return t;
+  }
+
+  float d = (float)std::pow(t, 3) + (float)std::pow(1.0f - t, 3);
+  return std::fabsf((d - 1.0f) / d);
+}
+
+BezierEntity::BezierABC BezierEntity::linear_abc(float t, const vec2& B) const {
+  vec2 point = linear_get(t);
+  return { point, B, point };
+}
+
+BezierEntity::BezierABC BezierEntity::cubic_abc(float t, const vec2& B) const {
+  float u = projection_ratio(t);
+  float um = 1.0f - u;
+  float s = abc_ratio(t);
+
+  vec2 C = p0() * u + p3() * um;
+  vec2 A = B + (B - C) / s;
+
+  return { A, B, C };
 }
 
 std::vector<float> BezierEntity::linear_line_intersections(const Box& line) const {

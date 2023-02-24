@@ -17,7 +17,11 @@ public:
   static void init();
   static void shutdown();
 
+#ifdef EMSCRIPTEN
   static void render();
+#else
+  static void render(bool is_main_loop = false);
+#endif
 private:
   Editor() {}
   ~Editor() = default;

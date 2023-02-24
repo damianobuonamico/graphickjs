@@ -22,6 +22,10 @@ std::vector<Entity*> SelectionComponent::entities() {
     entities.push_back(entity);
   }
 
+  for (auto& [id, entity] : m_temp_selected) {
+    entities.push_back(entity);
+  }
+
   return entities;
 }
 
@@ -62,6 +66,8 @@ void SelectionComponent::sync() {
   for (auto& [id, entity] : m_temp_selected) {
     select(entity);
   }
+
+  m_temp_selected.clear();
 }
 
 void SelectionComponent::all() {
@@ -72,5 +78,16 @@ void SelectionComponent::all() {
 
   for (const auto& [id, entity] : *element) {
     select(entity.get());
+  }
+}
+
+void SelectionComponent::temp_all() {
+  ElementEntity* element = dynamic_cast<ElementEntity*>(parent);
+  if (!element) {
+    return;
+  }
+
+  for (const auto& [id, entity] : *element) {
+    m_temp_selected.insert({ entity->id, entity.get() });
   }
 }

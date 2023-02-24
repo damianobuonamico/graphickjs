@@ -13,6 +13,17 @@ public:
     Linear = 0,
     Cubic
   };
+
+  struct BezierPointDistance {
+    float t;
+    vec2 point;
+    float sq_distance;
+  };
+  struct BezierABC {
+    vec2 a;
+    vec2 b;
+    vec2 c;
+  };
 public:
   BezierEntity(VertexEntity& start, VertexEntity& end)
     : m_transform(TransformComponent{ this }), m_start(start), m_end(end) {
@@ -65,9 +76,12 @@ public:
   bool clockwise(int resolution) const;
 
   vec2 get(float t) const;
-  float closest_t_to(const vec2& position, int iterations) const;
-  vec2 closest_point_to(const vec2& position, int iterations) const;
-  float distance_from(const vec2& position, int iterations) const;
+  BezierPointDistance closest_to(const vec2& position, int iterations = 4) const;
+  float closest_t_to(const vec2& position, int iterations = 4) const;
+  vec2 closest_point_to(const vec2& position, int iterations = 4) const;
+  float distance_from(const vec2& position, int iterations = 8) const;
+
+  BezierABC abc(float t, const vec2& B) const;
 
   std::vector<float> line_intersections(const Box& line) const;
   std::vector<vec2> line_intersection_points(const Box& line) const;
@@ -82,12 +96,8 @@ public:
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
 private:
-  struct BezierPointDistance {
-    float t;
-    vec2 point;
-    float sq_distance;
-  };
-private:
+  bool is_masquerading_quadratic(vec2& B) const;
+
   std::vector<float> linear_extrema() const;
   std::vector<float> cubic_extrema() const;
 
@@ -99,6 +109,7 @@ private:
 
   vec2 cubic_t_from_theta(float theta) const;
   inline std::vector<float> linear_triangulation_params(float zoom, float facet_angle) const { return { 0.0f, 1.0f }; }
+  std::vector<float> quadratic_triangulation_params(const vec2& B, float zoom, float facet_angle) const;
   std::vector<float> cubic_triangulation_params(float zoom, float facet_angle) const;
 
   vec2 linear_get(float t) const;
@@ -108,6 +119,11 @@ private:
 
   BezierPointDistance linear_closest_to(const vec2& position, int iterations) const;
   BezierPointDistance cubic_closest_to(const vec2& position, int iterations) const;
+
+  float projection_ratio(float t) const;
+  float abc_ratio(float t) const;
+  BezierABC linear_abc(float t, const vec2& B) const;
+  BezierABC cubic_abc(float t, const vec2& B) const;
 
   std::vector<float> linear_line_intersections(const Box& line) const;
   std::vector<float> cubic_line_intersections(const Box& line) const;

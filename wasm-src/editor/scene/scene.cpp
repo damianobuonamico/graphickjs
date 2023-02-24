@@ -2,13 +2,14 @@
 
 #include "entities/element_entity.h"
 #include "../../utils/debugger.h"
+#include "../input/input_manager.h"
 
 void Scene::load() {
   std::shared_ptr<ElementEntity> element1 = std::make_shared<ElementEntity>(vec2{ 0.0f });
-  std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
+  // std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
 
   m_children.insert({ element1->id, element1 });
-  m_children.insert({ element2->id, element2 });
+  // m_children.insert({ element2->id, element2 });
 }
 
 void Scene::render(float zoom) const {
@@ -22,26 +23,49 @@ void Scene::render(float zoom) const {
 }
 
 void Scene::render_selection(float zoom) const {
-  if (selection.empty()) return;
+  const vec4 outline_color{ 0.22f, 0.76f, 0.95f, 1.0f };
+  const vec4 white{ 1.0f, 1.0f, 1.0f, 1.0f };
 
   Geometry outline_geometry{ GL_LINES };
+
+  const Tool& tool = InputManager::tool();
+  bool is_direct_tool = tool.is_in_category(Tool::CategoryDirect);
+
+  tool.render_overlays(zoom);
+  tool.tessellate_overlays_outline(outline_color, zoom, outline_geometry);
+
+  Entity* hovered = InputManager::hover.element();
+
+  if (hovered && !selection.has(hovered->id)) {
+    hovered->tessellate_outline(outline_color, zoom, outline_geometry);
+  }
+
+  if (selection.empty()) {
+    Renderer::draw(outline_geometry);
+    return;
+  }
+
   InstancedGeometry selected_vertex_geometry{};
   InstancedGeometry vertex_geometry{};
   InstancedGeometry handle_geometry{};
 
-  selected_vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / zoom, vec4(0.22f, 0.76f, 0.95f, 1.0f));
-  vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / zoom, vec4(0.22f, 0.76f, 0.95f, 1.0f));
-  vertex_geometry.push_quad(vec2{ 0.0f }, 2.0f / zoom, vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  handle_geometry.push_circle(vec2{ 0.0f }, 2.5f / zoom, vec4(0.22f, 0.76f, 0.95f, 1.0f), 10);
+  if (is_direct_tool) {
+    selected_vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / zoom, outline_color);
+    vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / zoom, outline_color);
+    vertex_geometry.push_quad(vec2{ 0.0f }, 2.0f / zoom, white);
+    handle_geometry.push_circle(vec2{ 0.0f }, 2.5f / zoom, outline_color, 10);
+  }
 
   for (const auto& [id, entity] : selection) {
     const ElementEntity* element = dynamic_cast<const ElementEntity*>(entity);
     if (element != nullptr) {
+      element->tessellate_outline(outline_color, zoom, outline_geometry);
+
+      if (!is_direct_tool) continue;
+
       vec2 position = element->transform().position().get();
       vertex_geometry.reserve_instances(element->vertex_count());
       handle_geometry.reserve_instances(element->vertex_count());
-
-      element->tessellate_outline(vec4(0.22f, 0.76f, 0.95f, 1.0f), zoom, outline_geometry);
 
       for (const auto& [id, vertex] : *element) {
         vec2 vertex_position = position + vertex->transform().position().get();
@@ -57,7 +81,7 @@ void Scene::render_selection(float zoom) const {
         uint32_t vertex_index = outline_geometry.offset();
 
         if (left || right) {
-          outline_geometry.push_vertex({ vertex_position, vec4(0.22f, 0.76f, 0.95f, 1.0f) });
+          outline_geometry.push_vertex({ vertex_position, outline_color });
         }
 
         if (left) {
@@ -65,23 +89,26 @@ void Scene::render_selection(float zoom) const {
           handle_geometry.push_instance(handle_position);
 
           outline_geometry.push_indices({ vertex_index, outline_geometry.offset() });
-          outline_geometry.push_vertex({ handle_position, vec4(0.22f, 0.76f, 0.95f, 1.0f) });
+          outline_geometry.push_vertex({ handle_position, outline_color });
         }
         if (right) {
           vec2 handle_position = vertex_position + right->transform().position().get();
           handle_geometry.push_instance(handle_position);
 
           outline_geometry.push_indices({ vertex_index, outline_geometry.offset() });
-          outline_geometry.push_vertex({ handle_position, vec4(0.22f, 0.76f, 0.95f, 1.0f) });
+          outline_geometry.push_vertex({ handle_position, outline_color });
         }
       }
     }
   }
 
   Renderer::draw(outline_geometry);
-  Renderer::draw(vertex_geometry);
-  Renderer::draw(selected_vertex_geometry);
-  Renderer::draw(handle_geometry);
+
+  if (is_direct_tool) {
+    Renderer::draw(vertex_geometry);
+    Renderer::draw(selected_vertex_geometry);
+    Renderer::draw(handle_geometry);
+  }
 }
 
 Entity* Scene::entity_at(const vec2& position, bool lower_level, float threshold) {
@@ -93,6 +120,16 @@ Entity* Scene::entity_at(const vec2& position, bool lower_level, float threshold
   }
 
   return nullptr;
+}
+
+std::vector<Entity*> Scene::entities_in(const Box& box, bool lower_level) {
+  std::vector<Entity*> entities;
+
+  for (auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+    it->second->entities_in(box, entities, lower_level);
+  }
+
+  return entities;
 }
 
 Entity* Scene::duplicate(const Entity* entity) {

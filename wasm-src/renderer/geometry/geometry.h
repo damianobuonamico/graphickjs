@@ -43,6 +43,8 @@ struct Geometry {
   void push_line_strip(std::initializer_list<Vertex> vertices);
   void push_line_strip(const std::vector<Vertex>& vertices);
 
+  void push_quad_outline(const Box& box, const vec4& color = vec4(0.5f, 0.5f, 0.5f, 1.0f), float line_dash = 0.0f);
+
   Geometry wireframe() const;
 private:
   std::vector<Vertex> m_vertices;

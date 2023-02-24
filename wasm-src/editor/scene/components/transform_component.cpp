@@ -9,7 +9,7 @@ Box TransformComponent::bounding_box() const {
   return { { 0.0f, 0.0f }, { 0.0f, 0.0f } };
 }
 
-vec2 TransformComponent::size() const {
+vec2 TransformComponent::dimensions() const {
   Box box = bounding_box();
   return box.max - box.min;
 }
@@ -43,7 +43,16 @@ vec2 TransformComponent::transform(const vec2& point) const {
 
 Box CircleTransformComponent::bounding_box() const {
   const vec2 position = m_position.get();
-  return { position - *m_radius, position + *m_radius };
+  return { position - m_radius, position + m_radius };
+}
+
+/* -- RectTransformComponent -- */
+
+Box RectTransformComponent::bounding_box() const {
+  const vec2 position = m_position.get();
+  const vec2 end = position + m_size.get();
+  
+  return { min(position, end), max(position, end) };
 }
 
 /* -- VertexTransformComponent -- */

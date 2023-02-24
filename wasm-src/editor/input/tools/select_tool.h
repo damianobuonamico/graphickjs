@@ -1,19 +1,24 @@
 #pragma once
 
 #include "../tool.h"
-#include "../../scene/entity.h"
+#include "../../scene/entities/selection_rect_entity.h"
 
 class SelectTool: public Tool {
 public:
   virtual void on_pointer_down() override;
   virtual void on_pointer_move() override;
   virtual void on_pointer_up(bool abort = false) override;
+
+  virtual void tessellate_overlays_outline(const vec4& color, float zoom, Geometry& geo) const override;
+  virtual void render_overlays(float zoom) const override;
 private:
   SelectTool();
 private:
   bool m_dragging_occurred = false;
   bool m_is_element_added_to_selection = false;
   Entity* m_element = nullptr;
+
+  SelectionRectEntity m_selection_rect;
 private:
   friend class ToolState;
 };

@@ -257,7 +257,7 @@ static void cubic_from_points(
         /* Do inline. */
         float dist_sq_test = 0.0f;
         for (uint j = 0; j < 2; j++) {
-          dist_sq_test += std::powf((pt->position[j] - center[j]) * clamp_scale, 2);
+          dist_sq_test += std::pow((pt->position[j] - center[j]) * clamp_scale, 2);
         }
 
         dist_sq_max = std::max(dist_sq_max, dist_sq_test);

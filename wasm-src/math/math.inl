@@ -55,12 +55,30 @@ inline std::vector<vec2> line_line_intersection_points(const Box& a, const Box& 
   return points;
 }
 
-inline std::vector<Box> get_lines_from_box(const Box& box) {
+inline std::vector<Box> lines_from_box(const Box& box) {
   return {
     { box.min, { box.max.x, box.min.y }},
     { { box.max.x, box.min.y }, box.max },
     { box.max, { box.min.x, box.max.y } },
     { { box.min.x, box.max.y }, box.min }
+  };
+}
+
+inline vec2 circle_center(const vec2& a, const vec2& b, const vec2& c) {
+  float offset = squared_length(b);
+  float bc = 0.5f * (squared_length(a) - offset);
+  float cd = 0.5f * (offset - (squared_length(c)));
+  float det = (a.x - b.x) * (b.y - c.y) - (b.x - c.x) * (a.y - b.y);
+
+  if (std::fabsf(det) < FLT_EPSILON) {
+    return { 0.0f, 0.0f };
+  }
+
+  float inverse_det = 1.0f / det;
+
+  return {
+    (bc * (b.y - c.y) - cd * (a.y - b.y)) * inverse_det,
+    (cd * (a.x - b.x) - bc * (b.x - c.x)) * inverse_det
   };
 }
 
