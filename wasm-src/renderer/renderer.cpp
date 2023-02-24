@@ -204,6 +204,7 @@ void Renderer::begin_batch() {
   m_data.index_buffer_ptr = m_data.index_buffer;
 }
 
+// TODO: handle large geometry
 void Renderer::add_to_batch(const Geometry& geometry) {
   if (m_data.index_count + geometry.indices().size() >= m_data.max_index_count ||
     m_data.vertex_count + geometry.vertices().size() >= m_data.max_vertex_count ||

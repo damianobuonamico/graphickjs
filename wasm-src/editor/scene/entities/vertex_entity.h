@@ -14,7 +14,7 @@ public:
     : m_transform(VertexTransformComponent{ this }),
     m_position(position, HandleEntity::Type::Square, this),
     m_left(std::nullopt), m_right(std::nullopt) {
-    console::log("VertexEntity created");
+    // console::log("VertexEntity created");
   };
   VertexEntity(const vec2& position, const vec2& handle, bool is_left)
     : m_transform(VertexTransformComponent{ this }),
@@ -30,7 +30,7 @@ public:
   VertexEntity(VertexEntity&&) = default;
 
   ~VertexEntity() {
-    console::log("VertexEntity destroyed");
+    // console::log("VertexEntity destroyed");
   }
 
   inline virtual VertexTransformComponent& transform() override { return m_transform; }
@@ -39,6 +39,9 @@ public:
   inline HandleEntity* position() { return &m_position; };
   inline HandleEntity* left() { return m_left.has_value() ? &m_left.value() : nullptr; };
   inline HandleEntity* right() { return m_right.has_value() ? &m_right.value() : nullptr; };
+
+  inline void set_left(const vec2& left) { m_left.emplace(left, HandleEntity::Type::Circle, this); }
+  inline void set_right(const vec2& right) { m_right.emplace(right, HandleEntity::Type::Circle, this); }
 
   virtual void render(float zoom) const override;
 

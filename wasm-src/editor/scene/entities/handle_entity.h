@@ -14,13 +14,13 @@ public:
 public:
   HandleEntity(const vec2& position, Type type = Type::Circle, Entity* parent = nullptr)
     : Entity(parent), m_transform(CircleTransformComponent{ this, position, 5.0f }), type(type) {
-    console::log("HandleEntity created");
+    // console::log("HandleEntity created");
   };
   HandleEntity(const HandleEntity&) = default;
   HandleEntity(HandleEntity&&) = default;
 
   ~HandleEntity() {
-    console::log("HandleEntity destroyed");
+    // console::log("HandleEntity destroyed");
   }
 
   inline virtual CircleTransformComponent& transform() override { return m_transform; }
