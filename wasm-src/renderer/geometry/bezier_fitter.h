@@ -29,6 +29,9 @@ struct Bezier {
   vec2 p2;
   vec2 p3;
 
+  float p0_pressure = 1.0f;
+  float p3_pressure = 1.0f;
+
   vec2& operator[](uint8_t i) {
     switch (i) {
     default:
@@ -161,6 +164,10 @@ static Bezier generate_bezier(
   bez_curve.p3 = points[last].position;
   bez_curve.p1 = bez_curve.p0 + t_hat_1 * alpha_l;
   bez_curve.p2 = bez_curve.p3 + t_hat_2 * alpha_r;
+
+  bez_curve.p0_pressure = points[first].pressure;
+  bez_curve.p3_pressure = points[last].pressure;
+
   return (bez_curve);
 }
 

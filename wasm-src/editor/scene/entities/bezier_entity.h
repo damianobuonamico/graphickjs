@@ -27,18 +27,18 @@ public:
 public:
   BezierEntity(VertexEntity& start, VertexEntity& end)
     : m_transform(TransformComponent{ this }), m_start(start), m_end(end) {
-    console::log("BezierEntity created");
+    // console::log("BezierEntity created");
   };
   BezierEntity(VertexEntity& start, VertexEntity& end, Entity* parent)
     : BezierEntity(start, end) {
     this->parent = parent;
-    console::log("BezierEntity created");
+    // console::log("BezierEntity created");
   };
   BezierEntity(const BezierEntity&) = default;
   BezierEntity(BezierEntity&&) = default;
 
   ~BezierEntity() {
-    console::log("BezierEntity destroyed");
+    // console::log("BezierEntity destroyed");
   }
 
   inline virtual TransformComponent& transform() override { return m_transform; }

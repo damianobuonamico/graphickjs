@@ -13,11 +13,7 @@
 
 class FreehandEntity: public Entity {
 public:
-  FreehandEntity(const vec2& position, float pressure, double time)
-    : m_transform(TransformComponent{ this }), m_position(position), m_points({ {m_position, pressure} }) {
-    console::log("FreehandEntity created");
-    WobbleSmoother::reset(m_position, time);
-  };
+  FreehandEntity(const vec2& position, float pressure, double time);
   FreehandEntity(const FreehandEntity&) = default;
   FreehandEntity(FreehandEntity&&) = default;
 

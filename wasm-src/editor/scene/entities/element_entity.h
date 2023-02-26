@@ -13,10 +13,13 @@
 class ElementEntity: public Entity {
 public:
   ElementEntity(const vec2& position): Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this, position }), m_selection({ this }) {
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 0.0f }, vec2{ 20.0f, -20.0f }, false));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
-    // add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
-    // add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 100.0f }));
+    add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
+    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 100.0f }, 1.5f));
+    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 0.0f }, vec2{ 20.0f, -20.0f }, vec2{ -20.0f, 20.0f }, 0.3f));
+    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, -100.0f }));
+    add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, -100.0f }, 2.3f));
+    add_vertex(std::make_shared<VertexEntity>(vec2{ 200.0f, 0.0f }));
 
     console::log("ElementEntity created");
   };

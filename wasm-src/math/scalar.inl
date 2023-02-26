@@ -25,6 +25,10 @@ inline float sign(float t) {
   return (float)((t > 0) - (t < 0));
 }
 
+inline float lerp(float a, float b, float t) {
+  return a + (b - a) * t;
+}
+
 inline bool is_almost_zero(const float t, const float eps = FLT_EPSILON) {
   return abs(t) <= eps;
 }

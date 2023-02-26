@@ -11,6 +11,7 @@ float round(float t, float decimals) noexcept;
 float map(float t, float old_min, float old_max, float new_min, float new_max);
 float clamp(float t, float min, float max);
 float sign(float t);
+float lerp(float a, float b, float t);
 
 bool is_almost_zero(const float t, const float eps);
 bool is_almost_equal(const float t1, const float t2, const float eps);

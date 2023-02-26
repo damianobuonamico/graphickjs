@@ -313,7 +313,14 @@ std::vector<float> BezierEntity::cubic_inflections() const {
 }
 
 std::vector<vec2> BezierEntity::cubic_turning_angles() const {
-  std::vector<float> inflections = cubic_inflections();
+  std::vector<float> inflections;
+
+  if (p0() == p1() || p2() == p3()) {
+    inflections = { 0.0f, 1.0f };
+  } else {
+    inflections = cubic_inflections();
+  }
+
   int inflections_num = (int)inflections.size();
 
   std::vector<vec2> turning_angles(inflections_num);
@@ -322,8 +329,8 @@ std::vector<vec2> BezierEntity::cubic_turning_angles() const {
     float inflection = inflections[i];
     vec2 gradient = cubic_gradient(inflection);
 
-    if (is_almost_zero(gradient)) {
-      vec2 curvature = cubic_curvature(inflection);
+    if (is_almost_zero(gradient, GEOMETRY_CURVE_ERROR)) {
+      vec2 curvature = -(inflections[i] * 2.0f - 1.0f) * cubic_curvature(inflection);
       turning_angles[i] = { inflection, std::atan2f(curvature.y, curvature.x) };
     } else {
       turning_angles[i] = { inflection, std::atan2f(gradient.y, gradient.x) };
@@ -812,38 +819,44 @@ void BezierEntity::linear_tessellate(TessellationParams& params, Geometry& geo) 
   vec2 A = params.offset + p0();
   vec2 B = params.offset + p3();
 
+  float width_start = params.width * m_start.taper().get();
+  float width_end = params.width * m_end.taper().get();
+
   vec2 direction = B - A;
   vec2 normal = orthogonal(direction);
-  normalize_length(normal, params.width, normal);
+  normalize(normal, normal);
+
+  vec2 normal_start = normal * width_start;
+  vec2 normal_end = normal * width_end;
 
   if (params.start_join) {
-    tessellate_join(params, A, direction, normal, nullptr, geo);
+    tessellate_join(params, A, direction, normal_start, width_start, nullptr, geo);
   } else if (params.start_cap) {
-    tessellate_cap(params, A, normal, false, geo);
+    tessellate_cap(params, A, normal_start, false, width_start, geo);
   }
 
   uint32_t offset = geo.offset();
 
   if (params.is_first_segment) {
     params.end_join_params.direction = direction;
-    params.end_join_params.normal = normal;
+    params.end_join_params.normal = normal_start;
     params.end_join_params.index = offset - 1;
   }
 
   geo.push_vertices({
-    { A - normal, params.color, -params.width }, { A + normal, params.color, params.width },
-    { B - normal, params.color, -params.width }, { B + normal, params.color, params.width }
+    { A - normal_start, params.color, -width_start }, { A + normal_start, params.color, width_start },
+    { B - normal_end, params.color, -width_end }, { B + normal_end, params.color, width_end }
     });
   geo.push_indices({ offset, offset + 1, offset + 2, offset + 2, offset + 3, offset + 1 });
 
   params.start_join_params.direction = direction;
-  params.start_join_params.normal = normal;
+  params.start_join_params.normal = normal_end;
   params.start_join_params.index = offset + 2;
 
   if (params.end_join) {
-    tessellate_join(params, B, params.end_join_params.direction, params.end_join_params.normal, &params.end_join_params.index, geo);
+    tessellate_join(params, B, params.end_join_params.direction, params.end_join_params.normal, width_end, &params.end_join_params.index, geo);
   } else if (params.end_cap) {
-    tessellate_cap(params, B, normal, true, geo);
+    tessellate_cap(params, B, normal_end, true, width_end, geo);
   }
 }
 
@@ -851,20 +864,23 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
   std::vector<float> triangulation_params = cubic_triangulation_params(params.zoom, params.facet_angle);
   vec2 point, direction, normal;
 
+  float width_start = params.width * m_start.taper().get();
+  float width_end = params.width * m_end.taper().get();
+
   point = params.offset + p0();
   direction = cubic_gradient(0.0f);
 
-  if (is_almost_zero(direction)) {
+  if (is_almost_zero(direction, GEOMETRY_CURVE_ERROR)) {
     direction = cubic_curvature(0.0f);
   }
 
   normal = orthogonal(direction);
-  normalize_length(normal, params.width, normal);
+  normalize_length(normal, width_start, normal);
 
   if (params.start_join) {
-    tessellate_join(params, point, direction, normal, nullptr, geo);
+    tessellate_join(params, point, direction, normal, width_start, nullptr, geo);
   } else if (params.start_cap) {
-    tessellate_cap(params, point, normal, false, geo);
+    tessellate_cap(params, point, normal, false, width_start, geo);
   }
 
   uint32_t offset = geo.offset();
@@ -875,16 +891,19 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
     params.end_join_params.index = offset - 1;
   }
 
-  geo.push_vertices({ { point - normal, params.color, -params.width }, { point + normal, params.color, params.width } });
+  geo.push_vertices({ { point - normal, params.color, -width_start }, { point + normal, params.color, width_start } });
   offset += 2;
 
   for (size_t i = 1; i < triangulation_params.size() - 1; i++) {
-    point = params.offset + cubic_get(triangulation_params[i]);
-    direction = cubic_gradient(triangulation_params[i]);
-    normal = orthogonal(direction);
-    normalize_length(normal, params.width, normal);
+    float t = triangulation_params[i];
+    float width = lerp(width_start, width_end, t);
 
-    geo.push_vertices({ { point - normal, params.color, -params.width }, { point + normal, params.color, params.width } });
+    point = params.offset + cubic_get(t);
+    direction = cubic_gradient(t);
+    normal = orthogonal(direction);
+    normalize_length(normal, width, normal);
+
+    geo.push_vertices({ { point - normal, params.color, -width }, { point + normal, params.color, width } });
     geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
     offset += 2;
   }
@@ -892,14 +911,14 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
   point = params.offset + p3();
   direction = cubic_gradient(1.0f);
 
-  if (is_almost_zero(direction)) {
-    direction = cubic_curvature(1.0f);
+  if (is_almost_zero(direction, GEOMETRY_CURVE_ERROR)) {
+    direction = -cubic_curvature(1.0f);
   }
 
   normal = orthogonal(direction);
-  normalize_length(normal, params.width, normal);
+  normalize_length(normal, width_end, normal);
 
-  geo.push_vertices({ { point - normal, params.color, -params.width }, { point + normal, params.color, params.width } });
+  geo.push_vertices({ { point - normal, params.color, -width_end }, { point + normal, params.color, width_end } });
   geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
 
   params.start_join_params.direction = direction;
@@ -907,9 +926,9 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
   params.start_join_params.index = offset;
 
   if (params.end_join) {
-    tessellate_join(params, point, params.end_join_params.direction, params.end_join_params.normal, &params.end_join_params.index, geo);
+    tessellate_join(params, point, params.end_join_params.direction, params.end_join_params.normal, width_end, &params.end_join_params.index, geo);
   } else if (params.end_cap) {
-    tessellate_cap(params, point, normal, true, geo);
+    tessellate_cap(params, point, normal, true, width_end, geo);
   }
 }
 

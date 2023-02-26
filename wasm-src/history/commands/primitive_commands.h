@@ -2,9 +2,10 @@
 
 #include "../command.h"
 
-class ChangeBoolCommand: public Command {
+template <typename T>
+class ChangePrimitiveCommand: public Command {
 public:
-  ChangeBoolCommand(bool& old_value, const bool new_value)
+  ChangePrimitiveCommand(T& old_value, const T new_value)
     : m_value(old_value), m_new_value(new_value), m_old_value(old_value) {}
 
   virtual void execute() override {
@@ -17,7 +18,7 @@ public:
   }
 
   virtual bool merge_with(std::unique_ptr<Command>& command) override {
-    ChangeBoolCommand* casted_command = dynamic_cast<ChangeBoolCommand*>(command.get());
+    ChangePrimitiveCommand<T>* casted_command = dynamic_cast<ChangePrimitiveCommand<T>*>(command.get());
     if (casted_command == nullptr || &casted_command->m_value != &this->m_value) return false;
 
     casted_command->m_new_value = this->m_new_value;
@@ -29,7 +30,7 @@ public:
     return reinterpret_cast<uintptr_t>(&m_value);
   }
 private:
-  bool& m_value;
-  bool m_new_value;
-  bool m_old_value;
+  T& m_value;
+  T m_new_value;
+  T m_old_value;
 };

@@ -73,7 +73,7 @@ private:
     uint32_t* index_buffer = nullptr;
     uint32_t* index_buffer_ptr = nullptr;
 
-    uint32_t max_vertex_buffer_size = (uint32_t)std::pow(2, 18);
+    uint32_t max_vertex_buffer_size = (uint32_t)std::pow(2, 22);
     uint32_t max_vertex_count = max_vertex_buffer_size / sizeof(Vertex);
     uint32_t max_index_count = max_vertex_count * 2;
   };

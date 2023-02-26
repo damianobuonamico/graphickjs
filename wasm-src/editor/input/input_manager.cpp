@@ -29,7 +29,7 @@ bool InputManager::on_pointer_event(
   bool alt, bool ctrl, bool shift
 ) {
   get()->set_keys_state(alt, ctrl, shift);
-  get()->m_pointer_type = type;
+  pointer.type = type;
   pointer.pressure = pressure;
   pointer.time = time_stamp;
 
@@ -173,7 +173,7 @@ bool InputManager::on_pointer_move(PointerTarget target, float x, float y) {
   if (!m_moving && pointer.down) {
     if (
       m_tool_state.active().is_in_category(Tool::CategoryImmediate) ||
-      length(pointer.client.delta) > INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)m_pointer_type]
+      length(pointer.client.delta) > INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type]
       ) {
       m_moving = true;
     } else {

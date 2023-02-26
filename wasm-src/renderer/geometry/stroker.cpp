@@ -800,27 +800,27 @@ Geometry stroke_curves(const std::vector<Bezier>& curves) {
   return geo;
 }
 
+// TODO: fix graduated joins
 void tessellate_join(
   const TessellationParams& params,
   const vec2& point, const vec2& direction, const vec2& normal,
-  const uint32_t* override_end_index, Geometry& geo
+  float width, const uint32_t* override_end_index, Geometry& geo
 ) {
   uint32_t offset = geo.offset();
   float bend_direction = dot(direction, params.start_join_params.normal);
 
   vec2 h = 0.5f * (normal + params.start_join_params.normal);
   float height = length(h);
-  float k = 2.0f * params.width - height;
+  float k = 2.0f * width - height;
   normalize(h, h);
 
   if (params.join == JoinType::Round) {
-    float angle = std::acosf(dot(normal, params.start_join_params.normal) / (params.width * params.width));
+    float angle = std::acosf(dot(normal, params.start_join_params.normal) / (width * width));
     int increments = (int)std::ceilf(angle / params.facet_angle);
 
     if (increments > 1) {
       uint32_t end_index = override_end_index ? *override_end_index : offset + increments - 1;
       float increment = angle / (float)increments;
-      float width = params.width;
       vec2 bended_normal = params.start_join_params.normal;
 
       geo.push_vertex({ point, params.color, 0.0f, width });
@@ -859,18 +859,18 @@ void tessellate_join(
   uint32_t end_index = override_end_index ? *override_end_index : offset;
 
   if (params.join == JoinType::Miter) {
-    float cos = dot(normal, params.start_join_params.normal) / (params.width * params.width);
-    float miter_length = params.width / std::sqrtf(0.5f * (1.0f + cos));
+    float cos = dot(normal, params.start_join_params.normal) / (width * width);
+    float miter_length = width / std::sqrtf(0.5f * (1.0f + cos));
 
-    if (miter_length < params.miter_limit * params.width) {
+    if (miter_length < params.miter_limit * width) {
       vec2 miter = h * miter_length;
 
       if (bend_direction < 0.0f) {
-        geo.push_vertex({ point + miter, params.color, 0.5f * (miter_length + params.width) });
+        geo.push_vertex({ point + miter, params.color, 0.5f * (miter_length + width) });
         geo.push_indices({ params.start_join_params.index, params.start_join_params.index + 1, offset });
         geo.push_indices({ offset, end_index + 1, end_index + 2 });
       } else {
-        geo.push_vertex({ point - miter, params.color, -0.5f * (miter_length + params.width) });
+        geo.push_vertex({ point - miter, params.color, -0.5f * (miter_length + width) });
         geo.push_indices({ params.start_join_params.index, params.start_join_params.index + 1, offset });
         geo.push_indices({ offset, end_index + 1, end_index + 2 });
       }
@@ -882,18 +882,19 @@ void tessellate_join(
   vec2 inset = h * k;
 
   if (bend_direction < 0.0f) {
-    geo.push_vertex({ point - inset, params.color, -params.width });
+    geo.push_vertex({ point - inset, params.color, -width });
     geo.push_indices({ params.start_join_params.index + 1, offset, end_index + 2 });
   } else {
-    geo.push_vertex({ point + inset, params.color, params.width });
+    geo.push_vertex({ point + inset, params.color, width });
     geo.push_indices({ params.start_join_params.index, offset, end_index + 1 });
   }
 }
 
+// TODO: fix graduated caps
 void tessellate_cap(
   const TessellationParams& params,
   const vec2& point, const vec2& normal,
-  bool is_end_cap, Geometry& geo
+  bool is_end_cap, float width, Geometry& geo
 ) {
   uint32_t offset = geo.offset();
   uint32_t end_index = params.start_join_params.index;
@@ -912,7 +913,7 @@ void tessellate_cap(
       }
 
       geo.reserve(increments + 1, (increments + 1) * 3);
-      geo.push_vertex({ point, params.color, 0.0f, params.width });
+      geo.push_vertex({ point, params.color, 0.0f, width });
       geo.push_indices({ offset, end_index + 1, offset + 1 });
 
       for (int i = 1; i <= increments; ++i) {
@@ -924,7 +925,7 @@ void tessellate_cap(
           normal.x * sin + normal.y * cos
         };
 
-        geo.push_vertex({ point + p, params.color, params.width });
+        geo.push_vertex({ point + p, params.color, width });
         geo.push_indices({ offset, offset + i, offset + i - 1 });
       }
 
@@ -934,7 +935,7 @@ void tessellate_cap(
 
   if (params.cap == CapType::Butt) {
     float cap_length = 120.0f * GEOMETRY_BUTT_CAP_LENGTH / params.zoom;
-    vec2 normal_ortho = cap_length * orthogonal(normal) / (params.width);
+    vec2 normal_ortho = cap_length * orthogonal(normal) / (width);
 
     if (!is_end_cap) {
       end_index = offset + 4;
@@ -942,7 +943,7 @@ void tessellate_cap(
       negate(normal_ortho, normal_ortho);
     }
 
-    vec2 offset_normal = normal / params.width * (params.width - cap_length);
+    vec2 offset_normal = normal / width * (width - cap_length);
 
     vec2 A = point + offset_normal;
     vec2 B = point - offset_normal;
@@ -967,10 +968,10 @@ void tessellate_cap(
   }
 
   geo.reserve(4, 9);
-  geo.push_vertex({ point, params.color, 0.0f, params.width });
-  geo.push_vertex({ point + normal + normal_ortho, params.color, params.width });
-  geo.push_vertex({ point - normal + normal_ortho, params.color, params.width });
-  geo.push_vertex({ point - normal, params.color, params.width });
+  geo.push_vertex({ point, params.color, 0.0f, width });
+  geo.push_vertex({ point + normal + normal_ortho, params.color, width });
+  geo.push_vertex({ point - normal + normal_ortho, params.color, width });
+  geo.push_vertex({ point - normal, params.color, width });
   geo.push_indices({ offset, offset + 1, offset + 2 });
   geo.push_indices({ offset, end_index + 1, offset + 1 });
   geo.push_indices({ offset, offset + 2, offset + 3 });

@@ -1,21 +1,28 @@
 #include "freehand_entity.h"
+#include "../../input/input_manager.h"
+
+FreehandEntity::FreehandEntity(const vec2& position, float pressure, double time)
+  : m_transform(TransformComponent{ this }), m_position(position), m_points({ {m_position, pressure} }) {
+  console::log("FreehandEntity created");
+  WobbleSmoother::reset({ InputManager::pointer.type != InputManager::PointerType::Pen, 10.0f, 40.0f, 1.31f, 1.44f }, m_position, pressure, time);
+};
 
 void FreehandEntity::add_point(const vec2& position, float pressure, double time) {
-  vec2 smoothed_position = WobbleSmoother::update(m_position + position, time);
+  vec3 smoothed_point = WobbleSmoother::update(m_position + position, pressure, time);
 
   if (m_points.size() > 1) {
-    m_points[m_points.size() - 1].position = smoothed_position;
+    m_points[m_points.size() - 1].position = { smoothed_point.x, smoothed_point.y };
+    m_points[m_points.size() - 1].pressure = smoothed_point.z;
   }
 
   m_points.push_back({ m_position + position, pressure });
 }
 
 void FreehandEntity::render(float zoom) const {
-  std::vector<FreehandPathPoint> points = simplify_first ? simplify_path(smooth_freehand_path(m_points, 4), simplification_tolerance, true) : smooth_freehand_path(m_points, 4);
+  // std::vector<FreehandPathPoint> points = simplify_first ? simplify_path(smooth_freehand_path(m_points, 4), simplification_tolerance, true) : smooth_freehand_path(m_points, 4);
+  std::vector<FreehandPathPoint> points = smooth_freehand_path(m_points, 10);
+  // std::vector<FreehandPathPoint> points = simplify_path(smooth_freehand_path(m_points, 10), simplification_tolerance, true);
 
-  if (m_vertices.size() > 10) {
-    console::log(m_vertices.size());
-  }
   std::vector<VertexEntity*> vertices{};
 
   std::vector<uint> corners = detect_corners(points, min_radius, max_radius, max_iterations, min_angle);
@@ -32,12 +39,13 @@ void FreehandEntity::render(float zoom) const {
 
       for (auto curve : curves) {
         if (vertices.empty()) {
-          vertices.push_back(new VertexEntity{ curve.p0, curve.p1 - curve.p0, false });
+          vertices.push_back(new VertexEntity{ curve.p0, curve.p1 - curve.p0, false, curve.p0_pressure });
         } else {
           vertices[vertices.size() - 1]->set_right(curve.p1 - curve.p0);
+          vertices[vertices.size() - 1]->taper().move_to(0.5f * (vertices[vertices.size() - 1]->taper().get() + curve.p0_pressure));
         }
 
-        vertices.push_back(new VertexEntity{ curve.p3, curve.p2 - curve.p3, true });
+        vertices.push_back(new VertexEntity{ curve.p3, curve.p2 - curve.p3, true, curve.p3_pressure });
       }
     }
   }
@@ -53,8 +61,6 @@ void FreehandEntity::render(float zoom) const {
 
     last_vertex = vertex;
   }
-
-  console::log(m_curves.size());
 
   if (m_curves.empty()) {
     return;
@@ -82,11 +88,24 @@ void FreehandEntity::render(float zoom) const {
 
   m_curves[m_curves.size() - 1].tessellate(params, geo);
 
-  Renderer::draw(geo);
 
   m_curves.clear();
 
+  vec4 vertex_color{ 239.0f / 255.0f, 89.0f / 255.0f, 88.0f / 255.0f, 1.0f };
+
+
   for (int i = 0; i < vertices.size(); i++) {
+    geo.push_circle(vertices[i]->transform().position().get(), 1.0f, vertex_color, 20);
     delete vertices[i];
   }
+
+  for (uint i : corners) {
+    geo.push_circle(points[i].position, 1.0f, vec4(92.0f / 255.0f, 200.0f / 255.0f, 134.0f / 255.0f, 1.0f), 20);
+  }
+
+  for (auto& point : points) {
+    geo.push_circle(point.position, 0.5f, vec4(40.0f / 255.0f, 87.0f / 255.0f, 147.0f / 255.0f, 1.0f), 10);
+  }
+
+  Renderer::draw(geo);
 };

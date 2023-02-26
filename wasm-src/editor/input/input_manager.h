@@ -76,6 +76,7 @@ public:
     float pressure = 1.0f;
     double time = 0.0f;
 
+    PointerType type = PointerType::Mouse;
     PointerButton button = PointerButton::Left;
   };
 
@@ -128,8 +129,6 @@ private:
   bool on_clipboard_paste();
   bool on_clipboard_cut();
 private:
-  PointerType m_pointer_type = PointerType::Mouse;
-
   bool m_moving = false;
   bool m_abort = false;
 

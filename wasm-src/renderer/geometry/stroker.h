@@ -54,6 +54,6 @@ void stroke_curve(const Bezier& curve, uint32_t& offset, Geometry& geo);
 
 Geometry stroke_curves(const std::vector<Bezier>& curves);
 
-void tessellate_join(const TessellationParams& params, const vec2& point, const vec2& direction, const vec2& normal, const uint32_t* override_end_index, Geometry& geo);
+void tessellate_join(const TessellationParams& params, const vec2& point, const vec2& direction, const vec2& normal, float width, const uint32_t* override_end_index, Geometry& geo);
 
-void tessellate_cap(const TessellationParams& params, const vec2& point, const vec2& normal, bool is_end_cap, Geometry& geo);
+void tessellate_cap(const TessellationParams& params, const vec2& point, const vec2& normal, bool is_end_cap, float width, Geometry& geo);

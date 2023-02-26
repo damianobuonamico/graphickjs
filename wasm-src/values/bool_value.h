@@ -15,7 +15,7 @@ public:
 
   void set(const bool value) {
     if (m_value == value) return;
-    CommandHistory::add(std::make_unique<ChangeBoolCommand>(m_value, value));
+    CommandHistory::add(std::make_unique<ChangePrimitiveCommand<bool>>(m_value, value));
   };
 private:
   bool m_value;
