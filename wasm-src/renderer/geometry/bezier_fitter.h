@@ -424,3 +424,387 @@ static std::vector<Bezier> fit_to_bezier_curves(const PathPoints& points, const 
 
   return curves;
 }
+
+// #define POOL_CHUNK_DEFAULT_NUM (((1 << 16) - sizeof(PoolChunk)) / sizeof(HeapNode))
+
+// static PoolChunk* pool_alloc_chunk(uint tot_elems, PoolChunk* chunk_prev) {
+//   PoolChunk* chunk = (PoolChunk*)malloc(sizeof(PoolChunk) + (sizeof(HeapNode) * tot_elems));
+
+//   chunk->prev = chunk_prev;
+//   chunk->bufsize = tot_elems;
+//   chunk->size = 0;
+
+//   return chunk;
+// }
+
+// static HeapNode* heap_pool_elem_alloc(HeapMemPool* pool) {
+//   HeapNode* elem;
+
+//   if (pool->free) {
+//     elem = (HeapNode*)pool->free;
+//     pool->free = pool->free->next;
+//   } else {
+//     PoolChunk* chunk = pool->chunk;
+//     if (chunk->size == chunk->bufsize) {
+//       chunk = pool->chunk = pool_alloc_chunk(POOL_CHUNK_DEFAULT_NUM, chunk);
+//     }
+//     elem = &chunk->buf[chunk->size++];
+//   }
+
+//   return elem;
+// }
+
+// static void heap_pool_create(HeapMemPool* pool, uint tot_reserve) {
+//   pool->chunk = pool_alloc_chunk((tot_reserve > 1) ? tot_reserve : POOL_CHUNK_DEFAULT_NUM, nullptr);
+//   pool->free = nullptr;
+// }
+
+// static void heap_pool_elem_free(HeapMemPool* pool, HeapNode* elem) {
+//   PoolChunkElemFree* elem_free = (PoolChunkElemFree*)elem;
+//   elem_free->next = pool->free;
+//   pool->free = elem_free;
+// }
+
+// static void heap_pool_destroy(HeapMemPool* pool) {
+//   PoolChunk* chunk = pool->chunk;
+//   do {
+//     PoolChunk* chunk_prev;
+//     chunk_prev = chunk->prev;
+//     free(chunk);
+//     chunk = chunk_prev;
+//   } while (chunk);
+
+//   pool->chunk = nullptr;
+//   pool->free = nullptr;
+// }
+
+// /* swap with a temp value */
+// #define SWAP_TVAL(tval, a, b)  {  \
+// 	(tval) = (a);                 \
+// 	(a) = (b);                    \
+// 	(b) = (tval);                 \
+// } (void)0
+
+// #define HEAP_PARENT(i) (((i) - 1) >> 1)
+// #define HEAP_LEFT(i)   (((i) << 1) + 1)
+// #define HEAP_RIGHT(i)  (((i) << 1) + 2)
+// #define HEAP_COMPARE(a, b) ((a)->value < (b)->value)
+
+// static Heap* heap_new(uint tot_reserve) {
+//   Heap* heap = new Heap;
+//   /* ensure we have at least one so we can keep doubling it */
+//   heap->size = 0;
+//   heap->bufsize = tot_reserve ? tot_reserve : 1;
+//   heap->tree = new HeapNode * [heap->bufsize];
+
+//   heap_pool_create(&heap->pool, tot_reserve);
+// }
+
+// static void heap_free(Heap* heap, HeapFreeFP ptrfreefp) {
+//   if (ptrfreefp) {
+//     uint i;
+
+//     for (i = 0; i < heap->size; i++) {
+//       ptrfreefp(heap->tree[i]->ptr);
+//     }
+//   }
+
+//   heap_pool_destroy(&heap->pool);
+
+//   free(heap->tree);
+//   free(heap);
+// }
+
+// static bool heap_is_empty(const Heap* heap) {
+//   return (heap->size == 0);
+// }
+
+// static float heap_top_value(const Heap* heap) {
+//   return heap->tree[0]->value;
+// }
+
+// static void heap_swap(Heap* heap, const uint i, const uint j) {
+//   HeapNode** tree = heap->tree;
+//   union {
+//     uint      index;
+//     HeapNode* node;
+//   } tmp;
+//   SWAP_TVAL(tmp.index, tree[i]->index, tree[j]->index);
+//   SWAP_TVAL(tmp.node, tree[i], tree[j]);
+// }
+
+// static void heap_down(Heap* heap, uint i) {
+//   /* size won't change in the loop */
+//   const uint size = heap->size;
+
+//   while (1) {
+//     const uint l = HEAP_LEFT(i);
+//     const uint r = HEAP_RIGHT(i);
+//     uint smallest;
+
+//     smallest = ((l < size) && HEAP_COMPARE(heap->tree[l], heap->tree[i])) ? l : i;
+
+//     if ((r < size) && HEAP_COMPARE(heap->tree[r], heap->tree[smallest])) {
+//       smallest = r;
+//     }
+
+//     if (smallest == i) {
+//       break;
+//     }
+
+//     heap_swap(heap, i, smallest);
+//     i = smallest;
+//   }
+// }
+
+// static void heap_up(Heap* heap, uint i) {
+//   while (i > 0) {
+//     const uint p = HEAP_PARENT(i);
+
+//     if (HEAP_COMPARE(heap->tree[p], heap->tree[i])) {
+//       break;
+//     }
+//     heap_swap(heap, p, i);
+//     i = p;
+//   }
+// }
+
+
+// static HeapNode* heap_insert(Heap* heap, float value, void* ptr) {
+//   HeapNode* node;
+
+//   if (heap->size >= heap->bufsize) {
+//     heap->bufsize *= 2;
+//     heap->tree = (HeapNode**)realloc(heap->tree, heap->bufsize * sizeof(*heap->tree));
+//   }
+
+//   node = heap_pool_elem_alloc(&heap->pool);
+
+//   node->ptr = ptr;
+//   node->value = value;
+//   node->index = heap->size;
+
+//   heap->tree[node->index] = node;
+
+//   heap->size++;
+
+//   heap_up(heap, node->index);
+
+//   return node;
+// }
+
+// static void* heap_popmin(Heap* heap) {
+//   void* ptr = heap->tree[0]->ptr;
+
+//   assert(heap->size != 0);
+
+//   heap_pool_elem_free(&heap->pool, heap->tree[0]);
+
+//   if (--heap->size) {
+//     heap_swap(heap, 0, heap->size);
+//     heap_down(heap, 0);
+//   }
+
+//   return ptr;
+// }
+
+// static void heap_remove(Heap* heap, HeapNode* node) {
+//   uint i = node->index;
+
+//   assert(heap->size != 0);
+
+//   while (i > 0) {
+//     uint p = HEAP_PARENT(i);
+
+//     heap_swap(heap, p, i);
+//     i = p;
+//   }
+
+//   heap_popmin(heap);
+// }
+
+// static void heap_node_value_update(Heap* heap, HeapNode* node, float value) {
+//   assert(heap->size != 0);
+//   if (node->value == value) {
+//     return;
+//   }
+//   node->value = value;
+//   /* Can be called in either order, makes no difference. */
+//   heap_up(heap, node->index);
+//   heap_down(heap, node->index);
+// }
+
+// static void heap_node_value_update_ptr(Heap* heap, HeapNode* node, float value, void* ptr) {
+//   node->ptr = ptr;
+//   heap_node_value_update(heap, node, value);
+// }
+
+// static void* heap_node_ptr(HeapNode* node) {
+//   return node->ptr;
+// }
+
+// void heap_insert_or_update(Heap* heap, HeapNode** node_p, float value, void* ptr) {
+//   if (*node_p == NULL) {
+//     *node_p = heap_insert(heap, value, ptr);
+//   } else {
+//     heap_node_value_update_ptr(heap, *node_p, value, ptr);
+//   }
+// }
+
+// static float knot_remove_error_value(
+//   const vec2* tan_l, const vec2* tan_r,
+//   const std::vector<PathPoint>& points,
+//   const uint points_offset, const uint points_offset_len,
+//   /* Avoid having to re-calculate again */
+//   vec2 r_handle_factors, uint* r_error_index
+// ) {
+//   float error_sq = FLT_MAX;
+
+//   vec2 handle_factor_l, handle_factor_r;
+
+//   fit_cubic(
+//     points, points_offset, points_offset_len,
+//     tan_l, tan_r, error_sq, 
+//   )
+
+//   fit_curve(
+//     points_offset, points_offset_len, points_offset_length_cache, dims, 0.0,
+//     tan_l, tan_r,
+//     handle_factor_l, handle_factor_r,
+//     &error_sq, r_error_index);
+
+//   assert(error_sq != DBL_MAX);
+
+//   handle_factor_l -= points[points_offset].position;
+//   r_handle_factors.x = dot(*tan_l, handle_factor_l);
+
+//   handle_factor_r -= points[points_offset_len - 1].position;
+//   r_handle_factors.y = dot(*tan_r, handle_factor_r);
+
+//   return error_sq;
+// }
+
+// static float knot_calc_curve_error_value(
+//   const std::vector<PathPoint>& points,
+//   const Knot* knot_l, const Knot* knot_r,
+//   const vec2* tan_l, const vec2* tan_r,
+//   vec2& r_handle_factors
+// ) {
+//   const uint points_offset_len = ((knot_l->index < knot_r->index) ?
+//     (knot_r->index - knot_l->index) :
+//     ((knot_r->index + points.size()) - knot_l->index)) + 1;
+
+//   if (points_offset_len != 2) {
+//     uint error_index_dummy;
+//     return knot_remove_error_value(
+//       tan_l, tan_r, points,
+//       knot_l->index, points_offset_len,
+//       r_handle_factors, &error_index_dummy
+//     );
+//   } else {
+//     /* No points between, use 1/3 handle length with no error as a fallback. */
+//     assert(points_offset_len == 2);
+//     r_handle_factors = vec2{ distance(points[knot_l->index + 0].position, points[knot_l->index + 1].position) / 3.0f };
+
+//     return 0.0f;
+//   }
+// }
+
+// static void knot_remove_error_recalculate(KnotRemoveParams* p, Knot* k, const float error_sq_max) {
+//   assert(k->can_remove);
+//   vec2 handles;
+
+//   const float cost_sq = knot_calc_curve_error_value(
+//     p->points, k->prev, k->next,
+//     k->prev->tan[1], k->next->tan[0],
+//     handles
+//   );
+
+//   if (cost_sq < error_sq_max) {
+//     KnotRemoveState* r;
+//     if (k->heap_node) {
+//       r = (KnotRemoveState*)heap_node_ptr(k->heap_node);
+//     } else {
+//       r = new KnotRemoveState;
+//       r->index = k->index;
+//     }
+
+//     r->handles[0] = handles[0];
+//     r->handles[1] = handles[1];
+
+//     heap_insert_or_update(p->heap, &k->heap_node, cost_sq, r);
+//   } else {
+//     if (k->heap_node) {
+//       KnotRemoveState* r;
+//       r = (KnotRemoveState*)heap_node_ptr(k->heap_node);
+//       heap_remove(p->heap, k->heap_node);
+
+//       free(r);
+
+//       k->heap_node = nullptr;
+//     }
+//   }
+// }
+
+// uint simplify_spline(
+//   const std::vector<PathPoint>& points,
+//   Knot* knots, const uint knots_len, uint knots_len_remaining,
+//   const float error_sq_max
+// ) {
+//   Heap* heap = heap_new(knots_len_remaining);
+
+//   KnotRemoveParams params = { points, heap };
+
+//   for (uint i = 0; i < knots_len; i++) {
+//     Knot* k = &knots[i];
+//     if (k->can_remove && k->is_removed == false) {
+//       knot_remove_error_recalculate(&params, k, error_sq_max);
+//     }
+//   }
+
+//   while (heap_is_empty(heap) == false) {
+//     Knot* k;
+
+//     {
+//       const float error_sq = heap_top_value(heap);
+//       KnotRemoveState* r = (KnotRemoveState*)heap_popmin(heap);
+//       k = &knots[r->index];
+//       k->heap_node = nullptr;
+//       k->prev->handles[1] = r->handles[0];
+//       k->next->handles[0] = r->handles[1];
+
+//       k->prev->error_sq_next = error_sq;
+
+//       free(r);
+//     }
+
+//     if (knots_len_remaining <= 2) {
+//       continue;
+//     }
+
+//     Knot* k_prev = k->prev;
+//     Knot* k_next = k->next;
+
+//     /* Remove ourselves */
+//     k_next->prev = k_prev;
+//     k_prev->next = k_next;
+
+//     k->next = nullptr;
+//     k->prev = nullptr;
+//     k->is_removed = true;
+
+//     if (k_prev->can_remove && (k_prev->prev && k_prev->next)) {
+//       knot_remove_error_recalculate(&params, k_prev, error_sq_max);
+//     }
+
+//     if (k_next->can_remove && (k_next->prev && k_next->next)) {
+//       knot_remove_error_recalculate(&params, k_next, error_sq_max);
+//     }
+
+//     knots_len_remaining -= 1;
+//   }
+
+//   heap_free(heap, free);
+
+//   return knots_len_remaining;
+// }

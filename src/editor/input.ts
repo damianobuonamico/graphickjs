@@ -246,7 +246,7 @@ abstract class InputManager {
         if (action.shortcut && isShortcut(e, action.shortcut)) {
           e.preventDefault();
           action.callback();
-          SceneManager.render();
+          // SceneManager.render();
           AnimationManager.renderSequencer();
           return;
         }

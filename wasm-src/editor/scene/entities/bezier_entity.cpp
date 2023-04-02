@@ -1,9 +1,40 @@
 #include "bezier_entity.h"
 
 #define BEZIER_CALL(func, ...) type() == Type::Linear ? linear_##func(__VA_ARGS__) : cubic_##func(__VA_ARGS__)
+#define STRICT_BEZIER_CALL(func, ...) strict_type() == Type::Linear ? linear_##func(__VA_ARGS__) : cubic_##func(__VA_ARGS__)
+
+BezierEntity::Type BezierEntity::strict_type() const {
+  if (type() == Type::Linear) {
+    return Type::Linear;
+  }
+
+  vec2 p0 = m_start.transform()->position().get();
+  Vec2Value* p1 = m_start.transform()->right();
+  Vec2Value* p2 = m_end.transform()->left();
+  vec2 p3 = m_end.transform()->position().get();
+
+  int linear = 0;
+  int handles = 0;
+  float dist = squared_distance(p0, p3);
+
+  if (p1) {
+    if (collinear(p0, p0 + p1->get(), p3, GEOMETRY_MAX_INTERSECTION_ERROR * dist)) {
+      linear++;
+    }
+    handles++;
+  }
+  if (p2) {
+    if (collinear(p0, p3 + p2->get(), p3, GEOMETRY_MAX_INTERSECTION_ERROR * dist)) {
+      linear++;
+    }
+    handles++;
+  }
+
+  return linear == handles ? Type::Linear : Type::Cubic;
+}
 
 std::vector<vec2> BezierEntity::extrema() const {
-  std::vector<float> roots = BEZIER_CALL(extrema);
+  std::vector<float> roots = STRICT_BEZIER_CALL(extrema);
   std::vector<vec2> extrema;
 
   for (float root : roots) {
@@ -73,6 +104,10 @@ bool BezierEntity::clockwise(int resolution = 50) const {
 
 vec2 BezierEntity::get(float t) const {
   return BEZIER_CALL(get, t);
+}
+
+vec2 BezierEntity::gradient(float t) const {
+  return BEZIER_CALL(gradient, t);
 }
 
 BezierEntity::BezierPointDistance BezierEntity::closest_to(const vec2& position, int iterations) const {
@@ -145,20 +180,19 @@ bool BezierEntity::intersects_box(const Box& box) const {
     return true;
   }
 
-  console::log("no inter", box_intersection_points(box).size());
   return box_intersection_points(box).size() > 0;
 }
 
 void BezierEntity::tessellate(TessellationParams& params, Geometry& geo) const {
-  BEZIER_CALL(tessellate, params, geo);
+  STRICT_BEZIER_CALL(tessellate, params, geo);
 }
 
 void BezierEntity::tessellate_outline(TessellationParams& params, Geometry& geo) const {
-  BEZIER_CALL(tessellate_outline, params, geo);
+  STRICT_BEZIER_CALL(tessellate_outline, params, geo);
 }
 
 void BezierEntity::render(float zoom) const {
-  BEZIER_CALL(render, zoom);
+  STRICT_BEZIER_CALL(render, zoom);
 }
 
 Entity* BezierEntity::entity_at(const vec2& position, bool lower_level, float threshold) {
@@ -174,8 +208,10 @@ Entity* BezierEntity::entity_at(const vec2& position, bool lower_level, float th
 }
 
 bool BezierEntity::is_masquerading_quadratic(vec2& B) const {
-  Vec2Value* d1 = m_start.transform().right();
-  Vec2Value* d2 = m_end.transform().left();
+  VertexEntity& start = m_start;
+  VertexTransformComponent* transform = start.transform();
+  Vec2Value* d1 = m_start.transform()->right();
+  Vec2Value* d2 = m_end.transform()->left();
 
   if (!d1 || !d2) {
     return false;
@@ -491,6 +527,10 @@ vec2 BezierEntity::cubic_get(float t) const {
   float t_sq = t * t;
 
   return a * t_sq * t + b * t_sq + c * t + A;
+}
+
+vec2 BezierEntity::linear_gradient(float t) const {
+  return p3() - p0();
 }
 
 // TODO: Cache
@@ -896,7 +936,13 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
 
   for (size_t i = 1; i < triangulation_params.size() - 1; i++) {
     float t = triangulation_params[i];
-    float width = lerp(width_start, width_end, t);
+    float width = lerp(width_start, width_end, t * t * t);
+    // float width = lerp(width_start, width_end, t == 0
+    //   ? 0
+    //   : t == 1
+    //   ? 1
+    //   : t < 0.5f ? std::powf(2, 20 * t - 10) / 2
+    //   : (2 - std::pow(2, -20 * t + 10)) / 2);
 
     point = params.offset + cubic_get(t);
     direction = cubic_gradient(t);
@@ -960,7 +1006,7 @@ void BezierEntity::linear_render(float zoom) const {
   vec2 B = p3();
 
   if (parent) {
-    vec2 offset = parent->transform().position().get();
+    vec2 offset = parent->transform()->position().get();
     A += offset;
     B += offset;
   }
@@ -986,7 +1032,7 @@ void BezierEntity::linear_render(float zoom) const {
 
 void BezierEntity::cubic_render(float zoom) const {
   vec2 offset{ 0.0f };
-  if (parent) offset = parent->transform().position().get();
+  if (parent) offset = parent->transform()->position().get();
 
   Geometry geo = stroke_curves({ Bezier{ offset + p0(), offset + p1(), offset + p2(), offset + p3() } });
   Renderer::draw(geo);

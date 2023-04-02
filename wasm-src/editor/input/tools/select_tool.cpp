@@ -44,12 +44,12 @@ void SelectTool::on_pointer_move() {
 
       m_dragging_occurred = true;
       for (auto& [id, entity] : Editor::scene.selection) {
-        entity->transform().translate(delta - entity->transform().position().delta());
+        entity->transform()->translate(delta - entity->transform()->position().delta());
       }
     }
   } else if (m_selection_rect.active()) {
     m_selection_rect.size(InputManager::pointer.scene.delta);
-    Editor::scene.selection.temp_select(Editor::scene.entities_in(m_selection_rect.transform().bounding_box(), false));
+    Editor::scene.selection.temp_select(Editor::scene.entities_in(m_selection_rect.transform()->bounding_box(), false));
   }
 }
 
@@ -63,7 +63,7 @@ void SelectTool::on_pointer_up(bool abort) {
 
   if (m_dragging_occurred && !Editor::scene.selection.empty()) {
     for (auto& [id, entity] : Editor::scene.selection) {
-      entity->transform().position().apply();
+      entity->transform()->position().apply();
     }
   } else if (m_element && Editor::scene.selection.has(m_element->id) && !m_is_element_added_to_selection) {
     if (InputManager::keys.shift) {

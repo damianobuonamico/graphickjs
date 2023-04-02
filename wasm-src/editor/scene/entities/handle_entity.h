@@ -23,8 +23,8 @@ public:
     // console::log("HandleEntity destroyed");
   }
 
-  inline virtual CircleTransformComponent& transform() override { return m_transform; }
-  inline const CircleTransformComponent& transform() const override { return m_transform; }
+  inline virtual CircleTransformComponent* transform() override { return &m_transform; }
+  inline const CircleTransformComponent* transform() const override { return &m_transform; }
 
   virtual void render(float zoom) const override;
 

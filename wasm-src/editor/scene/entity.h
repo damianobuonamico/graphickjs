@@ -26,8 +26,8 @@ public:
 
   inline bool is_in_category(Category category) const { return m_category & category; }
 
-  virtual TransformComponent& transform() = 0;
-  virtual const TransformComponent& transform() const = 0;
+  virtual TransformComponent* transform() { return nullptr; };
+  virtual const TransformComponent* transform() const { return nullptr; }
 
   virtual SelectionComponent* selection() { return nullptr; }
   virtual const SelectionComponent* selection() const { return nullptr; }

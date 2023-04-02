@@ -29,7 +29,7 @@ inline float lerp(float a, float b, float t) {
   return a + (b - a) * t;
 }
 
-inline bool is_almost_zero(const float t, const float eps = FLT_EPSILON) {
+inline bool is_almost_zero(const double t, const float eps = FLT_EPSILON) {
   return abs(t) <= eps;
 }
 

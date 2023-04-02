@@ -70,13 +70,15 @@ vec3 WobbleSmoother::update(const vec2& position, float pressure, double time) {
   float t = normalize(average_speed);
   vec2 value = lerp(average_position, position, t);
 
+  float sp = std::min(1.0f, dist / s_params.width);
+  float rp = std::min(1.0f, 1.0f - sp);
+  float simulated_pressure = std::min(1.0f, prev_pressure + (rp - prev_pressure) * (sp * 0.55f));
+
   if (s_params.simulate_pressure) {
-    float sp = std::min(1.0f, dist / s_params.width);
-    float rp = std::min(1.0f, 1.0f - sp);
-    return { value.x, value.y, std::min(1.0f, prev_pressure + (rp - prev_pressure) * (sp * 0.675f)) };
+    return { value.x, value.y, simulated_pressure };
   }
 
-  return { value.x, value.y, lerp(average_pressure, pressure, t) };
+  return { value.x, value.y, lerp(average_pressure, 0.5f * (simulated_pressure + pressure), t) };
 }
 
 float WobbleSmoother::normalize(float value) {

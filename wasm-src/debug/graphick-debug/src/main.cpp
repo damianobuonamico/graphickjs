@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "wasm-src/editor/editor.h"
+#include "wasm-src/editor/settings.h"
 #include "wasm-src/editor/input/input_manager.h"
 #include "wasm-src/renderer/geometry/corners_detection.h"
 #include "wasm-src/renderer/geometry/stroker.h"
@@ -153,13 +154,14 @@ int main() {
 
       ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 
-      ImGui::SliderFloat("min_radius", &min_radius, 0.0f, 100.0f);
-      ImGui::SliderFloat("max_radius", &max_radius, 0.0f, 100.0f);
-      ImGui::SliderInt("max_iterations", (int*)&max_iterations, 0, 100);
-      ImGui::SliderAngle("min_angle", &min_angle, 0.0f, 360.0f);
-      ImGui::Checkbox("simplify_first", &simplify_first);
-      ImGui::SliderFloat("simplification_tolerance", &simplification_tolerance, 0.0f, 10.0f);
-      ImGui::SliderFloat("max_fit_error", &max_fit_error, 0.0f, 5.0f);
+      ImGui::SliderFloat("Corners Min Radius", &Settings::corners_radius_min, 0.001f, 5.0f);
+      ImGui::SliderFloat("Corners Max Radius", &Settings::corners_radius_max, 0.0002f, 20.0f);
+      ImGui::SliderInt("Corners Max Samples", (int*)&Settings::corners_samples_max, 0, 20);
+      ImGui::SliderAngle("Corners Angle Threshold", &Settings::corners_angle_threshold, 0.1f, 90.0f);
+      ImGui::SliderFloat("Corners Min Distance", &Settings::corners_min_distance, 0.001f, 100.0f);
+      ImGui::SliderFloat("Simplification Threshold", &Settings::simplification_threshold, 0.0f, 10.0f);
+      ImGui::Checkbox("Upsample Before Fitting", &Settings::upsample_before_fitting);
+      ImGui::SliderFloat("Fit Max Error", &Settings::max_fit_error, 0.01f, 5.0f);
       ImGui::SliderAngle("max_angle", &max_angle, 0.0f, 20.0f);
       ImGui::SliderFloat("stroke_width", &stroke_width, 0.01f, 50.0f);
 

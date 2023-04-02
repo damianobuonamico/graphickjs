@@ -597,7 +597,8 @@ inline void orthogonal(const vec2& v, vec2& out) {
   out.y = temp;
 }
 
-/* -- swap -- */
+/* -- swap_coordinates -- */
+
 inline vec2& swap_coordinates(const vec2& v, vec2& out) {
   float temp = v.x;
 
@@ -605,4 +606,11 @@ inline vec2& swap_coordinates(const vec2& v, vec2& out) {
   out.y = temp;
 
   return out;
+}
+
+/* -- collinear -- */
+
+inline bool collinear(const vec2& v1, const vec2& v2, const vec2& v3, const float eps = FLT_EPSILON) {
+  float t = v1.x * (v2.y - v3.y) + v2.x * (v3.y - v1.y) + v3.x * (v1.y - v2.y);
+  return is_almost_zero(t, eps);
 }

@@ -1,5 +1,6 @@
 #include "common.h"
 #include "editor/editor.h"
+#include "editor/settings.h"
 #include "renderer/renderer.h"
 #include "editor/input/input_manager.h"
 
@@ -45,6 +46,10 @@ extern "C" {
     if (tool < 0 || tool >= static_cast<int>(Tool::ToolType::None)) return;
 
     InputManager::set_tool((Tool::ToolType)tool);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE set_upsample(bool upsample) {
+    Settings::upsample_before_fitting = upsample;
   }
 }
 

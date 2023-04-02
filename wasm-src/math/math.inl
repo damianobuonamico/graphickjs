@@ -55,6 +55,33 @@ inline std::vector<vec2> line_line_intersection_points(const Box& a, const Box& 
   return points;
 }
 
+inline std::vector<vec2> line_circle_intersection_points(const Box& line, const vec2& center, const float radius) {
+  vec2 ldir = line.max - line.min;
+  vec2 tvec = line.min - center;
+
+  const float a = squared_length(ldir);
+  const float b = 2.0f * dot(ldir, tvec);
+  const float c = squared_length(center) + squared_length(line.min) - (2.0f * dot(center, line.min)) - radius * radius;
+
+  const float i = b * b - 4.0f * a * c;
+
+  if ((i < 0.0f) || (a == 0.0f)) {
+    return {};
+  } else if (i == 0.0f) {
+    const float mu = -b / (2.0f * a);
+    return { ldir * mu + line.min };
+  } else if (i > 0.0f) {
+    const float i_sqrt = sqrt(i);
+
+    float mu1 = (-b + i_sqrt) / (2.0f * a);
+    float mu2 = (-b - i_sqrt) / (2.0f * a);
+
+    return { ldir * mu1 + line.min, ldir * mu2 + line.min };
+  } else {
+    return {};
+  }
+}
+
 inline std::vector<Box> lines_from_box(const Box& box) {
   return {
     { box.min, { box.max.x, box.min.y }},

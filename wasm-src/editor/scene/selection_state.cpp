@@ -109,7 +109,7 @@ Box SelectionState::bounding_box() const {
   Box box = { std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
 
   for (auto& [id, entity] : m_selected) {
-    Box entity_box = entity->transform().bounding_box();
+    Box entity_box = entity->transform()->bounding_box();
     min(box.min, entity_box.min, box.min);
     max(box.max, entity_box.max, box.max);
   }

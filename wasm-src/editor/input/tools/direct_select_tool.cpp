@@ -125,13 +125,13 @@ void DirectSelectTool::translate_selected() {
 
       if (element && !element->selection()->full()) {
         for (Entity* vertex : element->selection()->entities()) {
-          vertex->transform().translate(InputManager::pointer.scene.movement);
+          vertex->transform()->translate(InputManager::pointer.scene.movement);
         }
         continue;
       }
     }
 
-    entity->transform().translate(InputManager::pointer.scene.movement);
+    entity->transform()->translate(InputManager::pointer.scene.movement);
   }
 }
 
@@ -224,7 +224,7 @@ void DirectSelectTool::on_bezier_pointer_down() {
         Editor::scene.selection.clear();
         Editor::scene.selection.select(m_element, false);
 
-        m_last_bezier_point = InputManager::pointer.scene.origin - m_element->transform().position().get();
+        m_last_bezier_point = InputManager::pointer.scene.origin - m_element->transform()->position().get();
         m_last_bezier_p1 = m_bezier->p1();
         m_last_bezier_p2 = m_bezier->p2();
         m_closest = m_bezier->closest_to(m_last_bezier_point);
@@ -246,6 +246,10 @@ void DirectSelectTool::on_vertex_pointer_down() {
     m_is_entity_added_to_selection = true;
   }
 
+  console::log("vertex", m_vertex->transform()->position().get());
+  if (m_vertex->transform()->left()) console::log("left", m_vertex->transform()->left()->get());
+  if (m_vertex->transform()->right()) console::log("right", m_vertex->transform()->right()->get());
+
   m_mode = ModeVertex;
 }
 
@@ -261,7 +265,7 @@ void DirectSelectTool::on_handle_pointer_down() {
 void DirectSelectTool::on_none_pointer_move() {
   if (m_selection_rect.active()) {
     m_selection_rect.size(InputManager::pointer.scene.delta);
-    Box box = m_selection_rect.transform().bounding_box();
+    Box box = m_selection_rect.transform()->bounding_box();
     std::vector<Entity*> entities = Editor::scene.entities_in(box, false);
 
     for (Entity* entity : entities) {
@@ -317,7 +321,7 @@ void DirectSelectTool::on_bezier_pointer_move() {
   vec2 d1 = e1 - m_closest.point;
   vec2 d2 = e2 - m_closest.point;
 
-  vec2 position = InputManager::pointer.scene.position - m_element->transform().position().get();
+  vec2 position = InputManager::pointer.scene.position - m_element->transform()->position().get();
 
   vec2 ne1 = position + d1;
   vec2 ne2 = position + d2;
@@ -366,8 +370,8 @@ void DirectSelectTool::on_bezier_pointer_move() {
   vec2 lerp_np1 = lerp(np1, ideal_np1, u);
   vec2 lerp_np2 = lerp(np2, ideal_np2, u);
 
-  m_bezier->start().transform().translate_right_to(lerp_np1 - p0);
-  m_bezier->end().transform().translate_left_to(lerp_np2 - p3);
+  m_bezier->start().transform()->translate_right_to(lerp_np1 - p0);
+  m_bezier->end().transform()->translate_left_to(lerp_np2 - p3);
 }
 
 void DirectSelectTool::on_vertex_pointer_move() {
@@ -376,14 +380,14 @@ void DirectSelectTool::on_vertex_pointer_move() {
 
 void DirectSelectTool::on_handle_pointer_move() {
   if (InputManager::keys.space) {
-    m_vertex->transform().translate(InputManager::pointer.scene.movement);
+    m_vertex->transform()->translate(InputManager::pointer.scene.movement);
     return;
   }
 
   if (m_vertex->left() && m_handle->id == m_vertex->left()->id) {
-    m_vertex->transform().translate_left(InputManager::pointer.scene.movement, !InputManager::keys.alt);
+    m_vertex->transform()->translate_left(InputManager::pointer.scene.movement, !InputManager::keys.alt);
   } else if (m_vertex->right() && m_handle->id == m_vertex->right()->id) {
-    m_vertex->transform().translate_right(InputManager::pointer.scene.movement, !InputManager::keys.alt);
+    m_vertex->transform()->translate_right(InputManager::pointer.scene.movement, !InputManager::keys.alt);
   }
 }
 
@@ -400,7 +404,7 @@ void DirectSelectTool::on_none_pointer_up() {
 void DirectSelectTool::on_duplicate_pointer_up() {
   if (m_dragging_occurred) {
     for (const auto& [id, entity] : Editor::scene.selection) {
-      entity->transform().apply();
+      entity->transform()->apply();
     }
   }
 }
@@ -408,7 +412,7 @@ void DirectSelectTool::on_duplicate_pointer_up() {
 void DirectSelectTool::on_entity_pointer_up() {
   if (m_dragging_occurred) {
     for (const auto& [id, entity] : Editor::scene.selection) {
-      entity->transform().apply();
+      entity->transform()->apply();
     }
   } else if (Editor::scene.selection.has(m_entity->id) && !m_is_entity_added_to_selection) {
     shift_select_element(m_entity);
@@ -418,7 +422,7 @@ void DirectSelectTool::on_entity_pointer_up() {
 void DirectSelectTool::on_element_pointer_up() {
   if (m_dragging_occurred) {
     for (const auto& [id, entity] : Editor::scene.selection) {
-      entity->transform().apply();
+      entity->transform()->apply();
     }
   } else if (Editor::scene.selection.has(m_element->id) && !m_is_entity_added_to_selection) {
     shift_select_element(m_element);
@@ -428,7 +432,7 @@ void DirectSelectTool::on_element_pointer_up() {
 void DirectSelectTool::on_bezier_pointer_up() {
   if (m_dragging_occurred) {
     for (const auto& [id, entity] : Editor::scene.selection) {
-      entity->transform().apply();
+      entity->transform()->apply();
     }
   } else if (m_should_evaluate_selection) {
     m_element->selection()->select(&m_bezier->start());
@@ -456,7 +460,7 @@ void DirectSelectTool::on_bezier_pointer_up() {
 void DirectSelectTool::on_vertex_pointer_up() {
   if (m_dragging_occurred && !m_element->selection()->empty()) {
     for (const auto& [id, entity] : Editor::scene.selection) {
-      entity->transform().apply();
+      entity->transform()->apply();
     }
   } else if (m_element->selection()->has(m_vertex->id) && !m_is_entity_added_to_selection) {
     if (InputManager::keys.shift) {
@@ -473,6 +477,6 @@ void DirectSelectTool::on_vertex_pointer_up() {
 
 void DirectSelectTool::on_handle_pointer_up() {
   if (m_dragging_occurred) {
-    m_element->transform().apply();
+    m_element->transform()->apply();
   }
 }

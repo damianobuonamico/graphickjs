@@ -93,8 +93,8 @@ void ElementEntity::regenerate() {
 
 const Box ElementEntity::closing_line() const {
   return {
-    last_vertex().transform().position().get(),
-    first_vertex().transform().position().get()
+    last_vertex().transform()->position().get(),
+    first_vertex().transform()->position().get()
   };
 }
 
@@ -104,10 +104,10 @@ bool ElementEntity::intersects_box(const Box& box) const {
   if (num_vertices < 1) {
     return false;
   } else if (num_vertices == 1) {
-    return is_point_in_box(first_vertex().transform().position().get(), box);
+    return is_point_in_box(first_vertex().transform()->position().get(), box);
   }
 
-  if (!does_box_intersect_box(box, transform().bounding_box())) {
+  if (!does_box_intersect_box(box, transform()->bounding_box())) {
     return false;
   }
 

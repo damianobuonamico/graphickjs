@@ -111,6 +111,8 @@ void orthogonal(const vec2& v, vec2& out);
 
 vec2& swap_coordinates(const vec2& v, vec2& out);
 
+bool collinear(const vec2& v1, const vec2& v2, const vec2& v3, const float eps);
+
 // #define len length
 // #define sq_len squared_length
 // #define dist distance

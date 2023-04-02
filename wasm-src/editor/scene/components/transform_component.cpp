@@ -58,13 +58,13 @@ Box RectTransformComponent::bounding_box() const {
 /* -- VertexTransformComponent -- */
 
 Vec2Value& VertexTransformComponent::position() {
-  return static_cast<VertexEntity*>(parent)->position()->transform().position();
+  return static_cast<VertexEntity*>(parent)->position()->transform()->position();
 }
 
 Vec2Value* VertexTransformComponent::left() {
   if (parent) {
     HandleEntity* left = static_cast<VertexEntity*>(parent)->left();
-    if (left) return &left->transform().position();
+    if (left) return &(left->transform()->position());
     return nullptr;
   }
 
@@ -73,8 +73,13 @@ Vec2Value* VertexTransformComponent::left() {
 
 Vec2Value* VertexTransformComponent::right() {
   if (parent) {
+    VertexEntity* vertex_parent = dynamic_cast<VertexEntity*>(parent);
     HandleEntity* right = static_cast<VertexEntity*>(parent)->right();
-    if (right) return &right->transform().position();
+    if (right) { 
+      auto type = right->type;
+      CircleTransformComponent* transform = right->transform();
+      return &(transform->position()); 
+    }
     return nullptr;
   }
 
@@ -91,13 +96,13 @@ Box VertexTransformComponent::bounding_box() const {
   HandleEntity* right = static_cast<VertexEntity*>(parent)->right();
 
   if (left) {
-    vec2 left_pos = left->transform().position().get();
+    vec2 left_pos = left->transform()->position().get();
     min(box.min, left_pos, box.min);
     max(box.max, left_pos, box.max);
   }
 
   if (right) {
-    vec2 right_pos = right->transform().position().get();
+    vec2 right_pos = right->transform()->position().get();
     min(box.min, right_pos, box.min);
     max(box.max, right_pos, box.max);
   }
@@ -109,11 +114,11 @@ Box VertexTransformComponent::bounding_box() const {
 }
 
 void VertexTransformComponent::translate(const vec2& amount, bool apply) {
-  static_cast<VertexEntity*>(parent)->position()->transform().translate(amount, apply);
+  static_cast<VertexEntity*>(parent)->position()->transform()->translate(amount, apply);
 }
 
 void VertexTransformComponent::translate_to(const vec2& value, bool apply) {
-  static_cast<VertexEntity*>(parent)->position()->transform().translate_to(value, apply);
+  static_cast<VertexEntity*>(parent)->position()->transform()->translate_to(value, apply);
 }
 
 void VertexTransformComponent::translate_left(const vec2& amount, bool mirror, bool apply) {
@@ -124,14 +129,14 @@ void VertexTransformComponent::translate_left(const vec2& amount, bool mirror, b
 
   if (!left) return;
 
-  left->transform().translate(amount, apply);
+  left->transform()->translate(amount, apply);
 
   if (mirror && right) {
-    vec2 direction = left->transform().position().get();
+    vec2 direction = left->transform()->position().get();
     normalize_length(direction, -1.0f, direction);
 
     if (!is_almost_zero(direction)) {
-      float len = length(right->transform().position().get());
+      float len = length(right->transform()->position().get());
       translate_right_to(direction * len, false, apply);
     }
   }
@@ -145,14 +150,14 @@ void VertexTransformComponent::translate_right(const vec2& amount, bool mirror, 
 
   if (!right) return;
 
-  right->transform().translate(amount, apply);
+  right->transform()->translate(amount, apply);
 
   if (mirror && left) {
-    vec2 direction = right->transform().position().get();
+    vec2 direction = right->transform()->position().get();
     normalize_length(direction, -1.0f, direction);
 
     if (!is_almost_zero(direction)) {
-      float len = length(left->transform().position().get());
+      float len = length(left->transform()->position().get());
       translate_left_to(direction * len, false, apply);
     }
   }
@@ -166,13 +171,13 @@ void VertexTransformComponent::translate_left_to(const vec2& value, bool mirror,
 
   if (!left) return;
 
-  left->transform().translate_to(value, apply);
+  left->transform()->translate_to(value, apply);
 
   if (mirror && right) {
     vec2 direction = normalize_length(value, -1.0f);
 
     if (!is_almost_zero(direction)) {
-      float len = length(right->transform().position().get());
+      float len = length(right->transform()->position().get());
       translate_right_to(direction * len, false, apply);
     }
   }
@@ -186,26 +191,26 @@ void VertexTransformComponent::translate_right_to(const vec2& value, bool mirror
 
   if (!right) return;
 
-  right->transform().translate_to(value, apply);
+  right->transform()->translate_to(value, apply);
 
   if (mirror && left) {
     vec2 direction = normalize_length(value, -1.0f);
 
     if (!is_almost_zero(direction)) {
-      float len = length(left->transform().position().get());
+      float len = length(left->transform()->position().get());
       translate_left_to(direction * len, false, apply);
     }
   }
 }
 
 void VertexTransformComponent::apply() {
-  static_cast<VertexEntity*>(parent)->position()->transform().apply();
+  static_cast<VertexEntity*>(parent)->position()->transform()->apply();
 
   HandleEntity* left = static_cast<VertexEntity*>(parent)->left();
   HandleEntity* right = static_cast<VertexEntity*>(parent)->right();
 
-  if (left) left->transform().apply();
-  if (right) right->transform().apply();
+  if (left) left->transform()->apply();
+  if (right) right->transform()->apply();
 }
 
 /* -- ElementTransformComponent -- */
@@ -269,6 +274,6 @@ void ElementTransformComponent::apply() {
   }
 
   for (const auto& [id, vertex] : *parent) {
-    vertex->transform().apply();
+    vertex->transform()->apply();
   }
 }

@@ -801,6 +801,7 @@ Geometry stroke_curves(const std::vector<Bezier>& curves) {
 }
 
 // TODO: fix graduated joins
+// TODO: fix angle calculation when joining two vectors with the same direction
 void tessellate_join(
   const TessellationParams& params,
   const vec2& point, const vec2& direction, const vec2& normal,

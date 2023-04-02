@@ -26,6 +26,7 @@ wasm().then((module: any) => {
   API._on_clipboard_event = module._on_clipboard_event;
 
   API._set_tool = module._set_tool;
+  window.set_upsample = module._set_upsample;
 
   API._to_heap = (array: Float32Array) => {
     const bytes = array.length * array.BYTES_PER_ELEMENT;

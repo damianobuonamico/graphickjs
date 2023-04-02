@@ -4,11 +4,11 @@ void HandleEntity::render(float zoom) const {
   // TODO: Implement square geometry and refactor
   Geometry geo;
   const vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f };
-  vec2 position = transform().position().get();
+  vec2 position = transform()->position().get();
 
-  if (parent && parent->parent) position += parent->parent->transform().position().get();
+  if (parent && parent->parent) position += parent->parent->transform()->position().get();
 
-  geo.push_circle(position, transform().radius() / zoom, color);
+  geo.push_circle(position, transform()->radius() / zoom, color);
 
   // geo.vertices.push_back({ position, color });
 

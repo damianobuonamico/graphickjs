@@ -11,31 +11,31 @@ class VertexEntity: public Entity {
 public:
   using OptionalHandle = std::optional<HandleEntity>;
 public:
-  VertexEntity(const vec2& position, float taper = 1.0f)
-    : m_transform(VertexTransformComponent{ this }),
+  VertexEntity(const vec2& position, float taper = 1.0f, Entity* parent = nullptr)
+    : Entity(parent), m_transform(VertexTransformComponent{ this }),
     m_position(position, HandleEntity::Type::Square, this),
     m_left(std::nullopt), m_right(std::nullopt), m_taper(taper) {
     // console::log("VertexEntity created");
   };
-  VertexEntity(const vec2& position, const vec2& handle, bool is_left, float taper = 1.0f)
-    : m_transform(VertexTransformComponent{ this }),
+  VertexEntity(const vec2& position, const vec2& handle, bool is_left, float taper = 1.0f, Entity* parent = nullptr)
+    : Entity(parent), m_transform(VertexTransformComponent{ this }),
     m_position(position, HandleEntity::Type::Square, this), m_taper(taper),
-    m_left(is_left ? OptionalHandle{ {handle, HandleEntity::Type::Circle, this} } : std::nullopt),
-    m_right(is_left ? std::nullopt : OptionalHandle{ {handle, HandleEntity::Type::Circle, this} }) {}
-  VertexEntity(const vec2& position, const vec2& left, const vec2& right, float taper = 1.0f)
-    : m_transform(VertexTransformComponent{ this }),
+    m_left(is_left && !is_almost_zero(handle) ? OptionalHandle{ {handle, HandleEntity::Type::Circle, this} } : std::nullopt),
+    m_right(is_left && !is_almost_zero(handle) ? std::nullopt : OptionalHandle{ {handle, HandleEntity::Type::Circle, this} }) {}
+  VertexEntity(const vec2& position, const vec2& left, const vec2& right, float taper = 1.0f, Entity* parent = nullptr)
+    : Entity(parent), m_transform(VertexTransformComponent{ this }),
     m_position(position, HandleEntity::Type::Square, this), m_taper(taper),
-    m_left(OptionalHandle{ {left, HandleEntity::Type::Circle, this} }),
-    m_right(OptionalHandle{ {right, HandleEntity::Type::Circle, this} }) {}
+    m_left(!is_almost_zero(left) ? OptionalHandle{ {left, HandleEntity::Type::Circle, this} } : std::nullopt),
+    m_right(!is_almost_zero(right) ? OptionalHandle{ {right, HandleEntity::Type::Circle, this} } : std::nullopt) {}
   VertexEntity(const VertexEntity&) = default;
   VertexEntity(VertexEntity&&) = default;
 
   ~VertexEntity() {
-    // console::log("VertexEntity destroyed");
+    console::log("VertexEntity destroyed");
   }
 
-  inline virtual VertexTransformComponent& transform() override { return m_transform; }
-  inline virtual const VertexTransformComponent& transform() const override { return m_transform; }
+  inline virtual VertexTransformComponent* transform() override { return &m_transform; }
+  inline virtual const VertexTransformComponent* transform() const override { return &m_transform; }
 
   inline HandleEntity* position() { return &m_position; };
   inline HandleEntity* left() { return m_left.has_value() ? &m_left.value() : nullptr; };

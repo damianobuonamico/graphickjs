@@ -13,21 +13,23 @@
 class ElementEntity: public Entity {
 public:
   ElementEntity(const vec2& position): Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this, position }), m_selection({ this }) {
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 100.0f }, 1.5f));
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 0.0f }, vec2{ 20.0f, -20.0f }, vec2{ -20.0f, 20.0f }, 0.3f));
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, -100.0f }));
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, -100.0f }, 2.3f));
-    add_vertex(std::make_shared<VertexEntity>(vec2{ 200.0f, 0.0f }));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 100.0f }, 1.5f));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 0.0f }, vec2{ 20.0f, -20.0f }, vec2{ -20.0f, 20.0f }, 0.3f));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, -100.0f }));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, -100.0f }, 2.3f));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ 200.0f, 0.0f }));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ -1.66425f, 87.0f }, vec2{ 17.7766f, 2.28882e-05f }, vec2{ -54.7786f, -6.86646e-05f }));
+    // add_vertex(std::make_shared<VertexEntity>(vec2{ -166.0f, 87.0f }, vec2{ 54.7786f, -0.00502014f }, true));
 
-    console::log("ElementEntity created");
+    // console::log("ElementEntity created");
   };
   ElementEntity(const ElementEntity&) = default;
   ElementEntity(ElementEntity&&) = default;
 
   ~ElementEntity() {
-    console::log("ElementEntity destroyed");
+    // console::log("ElementEntity destroyed");
   }
 
   inline std::vector<BezierEntity>::const_iterator curves_begin() const { return m_curves.begin(); }
@@ -38,8 +40,8 @@ public:
   inline MapValue<UUID, std::shared_ptr<VertexEntity>>::const_iterator begin() const { return m_vertices.begin(); }
   inline MapValue<UUID, std::shared_ptr<VertexEntity>>::const_iterator end() const { return m_vertices.end(); }
 
-  inline virtual ElementTransformComponent& transform() override { return m_transform; }
-  inline virtual const ElementTransformComponent& transform() const override { return m_transform; }
+  inline virtual ElementTransformComponent* transform() override { return &m_transform; }
+  inline virtual const ElementTransformComponent* transform() const override { return &m_transform; }
   inline virtual SelectionComponent* selection() override { return &m_selection; }
   inline virtual const SelectionComponent* selection() const override { return &m_selection; }
 

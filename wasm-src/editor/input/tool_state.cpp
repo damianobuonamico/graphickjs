@@ -53,7 +53,6 @@ void ToolState::on_pointer_move() {
 
 void ToolState::on_pointer_up() {
   active().on_pointer_up();
-
 }
 
 void ToolState::on_pointer_hover() {

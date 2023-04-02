@@ -41,29 +41,30 @@ public:
     // console::log("BezierEntity destroyed");
   }
 
-  inline virtual TransformComponent& transform() override { return m_transform; }
-  inline virtual const TransformComponent& transform() const override { return m_transform; }
+  inline virtual TransformComponent* transform() override { return &m_transform; }
+  inline virtual const TransformComponent* transform() const override { return &m_transform; }
 
   inline Type type() const {
     if (m_start.right() || m_end.left()) return Type::Cubic;
     return Type::Linear;
   }
+  Type strict_type() const;
 
   inline VertexEntity& start() const { return m_start; }
   inline VertexEntity& end() const { return m_end; }
 
-  inline vec2 p0() const { return m_start.transform().position().get(); }
+  inline vec2 p0() const { return m_start.transform()->position().get(); }
   inline vec2 p1() const {
-    Vec2Value* right = m_start.transform().right();
+    Vec2Value* right = m_start.transform()->right();
     if (right) return p0() + right->get();
     return p0();
   }
   inline vec2 p2() const {
-    Vec2Value* left = m_end.transform().left();
+    Vec2Value* left = m_end.transform()->left();
     if (left) return p3() + left->get();
     return p3();
   }
-  inline vec2 p3() const { return m_end.transform().position().get(); }
+  inline vec2 p3() const { return m_end.transform()->position().get(); }
 
   std::vector<vec2> extrema() const;
   std::vector<float> inflections() const;
@@ -76,6 +77,7 @@ public:
   bool clockwise(int resolution) const;
 
   vec2 get(float t) const;
+  vec2 gradient(float t) const;
   BezierPointDistance closest_to(const vec2& position, int iterations = 4) const;
   float closest_t_to(const vec2& position, int iterations = 4) const;
   vec2 closest_point_to(const vec2& position, int iterations = 4) const;
@@ -114,6 +116,7 @@ private:
 
   vec2 linear_get(float t) const;
   vec2 cubic_get(float t) const;
+  vec2 linear_gradient(float t) const;
   vec2 cubic_gradient(float t) const;
   vec2 cubic_curvature(float t) const;
 

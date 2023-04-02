@@ -6,7 +6,7 @@ void VertexEntity::render(float zoom) const {
 }
 
 Entity* VertexEntity::entity_at(const vec2& position, bool lower_level = false, float threshold = 0.0f) {
-  vec2 offset = position - transform().position().get();
+  vec2 offset = position - transform()->position().get();
 
   if (HandleEntity* handle = left(); handle && handle->entity_at(offset, lower_level, threshold)) {
     return handle;
@@ -24,7 +24,7 @@ Entity* VertexEntity::entity_at(const vec2& position, bool lower_level = false, 
 }
 
 void VertexEntity::entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level = false) {
-  if (is_point_in_box(transform().position().get(), box)) {
+  if (is_point_in_box(transform()->position().get(), box)) {
     entities.push_back(this);
   }
 }

@@ -11,8 +11,8 @@ public:
 
   ~SelectionRectEntity() = default;
 
-  inline virtual RectTransformComponent& transform() override { return m_transform; }
-  inline const RectTransformComponent& transform() const override { return m_transform; }
+  inline virtual RectTransformComponent* transform() override { return &m_transform; }
+  inline const RectTransformComponent* transform() const override { return &m_transform; }
 
   inline bool active() const { return m_active; }
 

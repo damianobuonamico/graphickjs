@@ -5,10 +5,10 @@
 #include "../input/input_manager.h"
 
 void Scene::load() {
-  std::shared_ptr<ElementEntity> element1 = std::make_shared<ElementEntity>(vec2{ 0.0f });
+  // std::shared_ptr<ElementEntity> element1 = std::make_shared<ElementEntity>(vec2{ 0.0f });
   // std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
 
-  m_children.insert({ element1->id, element1 });
+  // m_children.insert({ element1->id, element1 });
   // m_children.insert({ element2->id, element2 });
 }
 
@@ -63,12 +63,12 @@ void Scene::render_selection(float zoom) const {
 
       if (!is_direct_tool) continue;
 
-      vec2 position = element->transform().position().get();
+      vec2 position = element->transform()->position().get();
       vertex_geometry.reserve_instances(element->vertex_count());
       handle_geometry.reserve_instances(element->vertex_count());
 
       for (const auto& [id, vertex] : *element) {
-        vec2 vertex_position = position + vertex->transform().position().get();
+        vec2 vertex_position = position + vertex->transform()->position().get();
         if (element->selection()->has(id)) {
           selected_vertex_geometry.push_instance(vertex_position);
         } else {
@@ -85,14 +85,14 @@ void Scene::render_selection(float zoom) const {
         }
 
         if (left) {
-          vec2 handle_position = vertex_position + left->transform().position().get();
+          vec2 handle_position = vertex_position + left->transform()->position().get();
           handle_geometry.push_instance(handle_position);
 
           outline_geometry.push_indices({ vertex_index, outline_geometry.offset() });
           outline_geometry.push_vertex({ handle_position, outline_color });
         }
         if (right) {
-          vec2 handle_position = vertex_position + right->transform().position().get();
+          vec2 handle_position = vertex_position + right->transform()->position().get();
           handle_geometry.push_instance(handle_position);
 
           outline_geometry.push_indices({ vertex_index, outline_geometry.offset() });
