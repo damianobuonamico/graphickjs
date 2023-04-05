@@ -154,6 +154,9 @@ int main() {
 
       ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 
+      ImGui::SliderFloat("Mass", &Settings::mass_constant, 0.001f, 1.0f);
+      ImGui::SliderFloat("Spring", &Settings::spring_constant, 0.01f, 10.0f);
+      ImGui::SliderFloat("Viscosity", &Settings::viscosity_constant, 0.01f, 1.8f);
       ImGui::SliderFloat("Corners Min Radius", &Settings::corners_radius_min, 0.001f, 5.0f);
       ImGui::SliderFloat("Corners Max Radius", &Settings::corners_radius_max, 0.0002f, 20.0f);
       ImGui::SliderInt("Corners Max Samples", (int*)&Settings::corners_samples_max, 0, 20);
@@ -162,7 +165,8 @@ int main() {
       ImGui::SliderFloat("Simplification Threshold", &Settings::simplification_threshold, 0.0f, 10.0f);
       ImGui::Checkbox("Upsample Before Fitting", &Settings::upsample_before_fitting);
       ImGui::SliderFloat("Fit Max Error", &Settings::max_fit_error, 0.01f, 5.0f);
-      ImGui::SliderAngle("max_angle", &max_angle, 0.0f, 20.0f);
+      ImGui::SliderAngle("Facet Angle", &Settings::facet_angle, 0.0f, 20.0f);
+      ImGui::SliderFloat("Tessellation Error", &Settings::tessellation_error, 0.01f, 1.0f);
       ImGui::SliderFloat("stroke_width", &stroke_width, 0.01f, 50.0f);
 
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

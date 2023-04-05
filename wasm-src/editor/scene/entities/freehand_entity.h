@@ -9,6 +9,49 @@
 #include "element_entity.h"
 #include "bezier_entity.h"
 
+#define USE_SPRING_FREEHAND
+
+#ifdef USE_SPRING_FREEHAND
+
+#include <vector>
+
+class FreehandEntity: public Entity {
+public:
+  FreehandEntity(vec2 position, float pressure, double time);
+  FreehandEntity(const FreehandEntity&) = default;
+  FreehandEntity(FreehandEntity&&) = default;
+
+  ~FreehandEntity() {
+    console::log("FreehandEntity destroyed");
+  }
+
+  inline virtual TransformComponent* transform() override { return &m_transform; }
+  inline virtual const TransformComponent* transform() const override { return &m_transform; }
+
+  void add_point(vec2 position, float pressure, double time);
+  void add_point(vec2 position, float pressure, double time, vec3 updated_data);
+
+  virtual void tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const override;
+  virtual void render(RenderingOptions options) const override;
+
+  std::shared_ptr<ElementEntity> to_element() const;
+private:
+  size_t index_from_t(double t) const;
+
+  Geometry tessellate(RenderingOptions options) const;
+private:
+  struct Point {
+    vec3 data;
+    double time;
+  };
+private:
+  std::vector<Point> m_points;
+
+  TransformComponent m_transform;
+};
+
+#else
+
 #include <vector>
 #include <memory>
 
@@ -62,3 +105,5 @@ private:
 
   TransformComponent m_transform;
 };
+
+#endif

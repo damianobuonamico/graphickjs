@@ -12,4 +12,11 @@ struct Settings {
 
   // inline static float max_fit_error = 0.216f;
   inline static float max_fit_error = 0.392f;
+
+  inline static float mass_constant = 0.16f;
+  inline static float spring_constant = 1.8f;
+  inline static float viscosity_constant = 1.0f;
+
+  inline static float facet_angle = 3.14159265358979323846f / 100.0f;
+  inline static float tessellation_error = 0.2f;
 };

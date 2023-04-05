@@ -2,6 +2,7 @@
 
 #include "../../math/vector.h"
 #include "../../utils/defines.h"
+#include "../renderer.h"
 
 uint32_t generate_round_cap(
   const vec2& from,
@@ -9,14 +10,15 @@ uint32_t generate_round_cap(
   float radius,
   Geometry& geometry,
   int start_offset,
-  float zoom
+  RenderingOptions options
 ) {
   vec2 center = midpoint(from, to);
   vec2 direction_from = from - center;
   vec2 direction_to = to - center;
   float cap_angle = MATH_PI;
 
-  float increment = 2.0f * std::acos(1 - GEOMETRY_CURVE_ERROR / (radius * zoom));
+  // TODO: use facet angle directly
+  float increment = 2.0f * std::acos(1 - GEOMETRY_CURVE_ERROR / (radius * options.zoom));
   int sides = (int)(std::abs(cap_angle) / increment);
   increment = cap_angle / sides;
 
@@ -55,7 +57,7 @@ uint32_t generate_round_join(
   const vec2& center,
   Geometry& geometry,
   uint32_t offset,
-  float zoom
+  RenderingOptions options
 ) {
   const vec2& from = geometry.vertices()[from_index].position;
   const vec2& to = geometry.vertices()[to_index].position;
@@ -67,7 +69,8 @@ uint32_t generate_round_join(
 
   if (std::abs(join_angle) < GEOMETRY_MAX_INTERSECTION_ERROR) join_angle = MATH_PI;
 
-  float increment = 2.0f * std::acos(1 - GEOMETRY_CURVE_ERROR / (radius * zoom));
+  // TODO: use facet angle directly
+  float increment = 2.0f * std::acos(1 - GEOMETRY_CURVE_ERROR / (radius * options.zoom));
   int sides = (int)(std::abs(join_angle) / increment);
   increment = join_angle / sides;
 
@@ -153,7 +156,8 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
     first_radius,
     geometry,
     -1,
-    zoom
+    // TEMP: could probably delete this entire code section
+    { zoom, zoom }
   ) - 1;
 
   uint32_t last_left_index = offset - 1;
@@ -267,7 +271,8 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
             curr_pt,
             geometry,
             offset,
-            zoom
+            // TEMP
+            { zoom, zoom }
           );
         } else {
           geometry.push_vertex(nvec_prev_pt);
@@ -316,7 +321,8 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
             curr_pt,
             geometry,
             offset,
-            zoom
+            // TEMP
+            { zoom, zoom }
           );
         } else {
           geometry.push_vertex(nvec_prev_pt);
@@ -362,7 +368,8 @@ Geometry stroke_freehand_path(const std::vector<FreehandPathPoint>& points, floa
     last_radius,
     geometry,
     offset,
-    zoom
+    // TEMP
+    { zoom, zoom }
   );
 
   geometry.push_indices({ last_left_index, last_right_index, offset - 1, last_left_index, offset - 1, offset });
@@ -817,7 +824,7 @@ void tessellate_join(
 
   if (params.join == JoinType::Round) {
     float angle = std::acosf(dot(normal, params.start_join_params.normal) / (width * width));
-    int increments = (int)std::ceilf(angle / params.facet_angle);
+    int increments = (int)std::ceilf(angle / params.rendering_options.facet_angle);
 
     if (increments > 1) {
       uint32_t end_index = override_end_index ? *override_end_index : offset + increments - 1;
@@ -902,7 +909,7 @@ void tessellate_cap(
 
   if (params.cap == CapType::Round) {
     float angle = MATH_PI;
-    int increments = (int)std::ceilf(angle / params.facet_angle);
+    int increments = (int)std::ceilf(angle / params.rendering_options.facet_angle);
 
     if (increments > 1) {
       float increment = angle / (float)increments;
@@ -935,7 +942,7 @@ void tessellate_cap(
   }
 
   if (params.cap == CapType::Butt) {
-    float cap_length = 120.0f * GEOMETRY_BUTT_CAP_LENGTH / params.zoom;
+    float cap_length = 120.0f * GEOMETRY_BUTT_CAP_LENGTH / params.rendering_options.zoom;
     vec2 normal_ortho = cap_length * orthogonal(normal) / (width);
 
     if (!is_end_cap) {

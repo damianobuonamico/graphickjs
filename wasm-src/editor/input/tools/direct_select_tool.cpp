@@ -109,12 +109,12 @@ void DirectSelectTool::on_pointer_up(bool abort) {
   }
 }
 
-void DirectSelectTool::tessellate_overlays_outline(const vec4& color, float zoom, Geometry& geo) const {
-  m_selection_rect.tessellate_outline(color, zoom, geo);
+void DirectSelectTool::tessellate_overlays_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {
+  m_selection_rect.tessellate_outline(color, options, geo);
 }
 
-void DirectSelectTool::render_overlays(float zoom) const {
-  m_selection_rect.render(zoom);
+void DirectSelectTool::render_overlays(RenderingOptions options) const {
+  m_selection_rect.render(options);
 }
 
 // TODO: Implement rotation

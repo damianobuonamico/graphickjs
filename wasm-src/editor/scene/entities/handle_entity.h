@@ -26,7 +26,7 @@ public:
   inline virtual CircleTransformComponent* transform() override { return &m_transform; }
   inline const CircleTransformComponent* transform() const override { return &m_transform; }
 
-  virtual void render(float zoom) const override;
+  virtual void render(RenderingOptions options) const override;
 
   virtual Entity* entity_at(const vec2& position, bool lower_level = false, float threshold = 0.0f) override;
 private:

@@ -4,6 +4,11 @@
 #include "geometry/geometry.h"
 #include "../math/vec2.h"
 
+struct RenderingOptions {
+  float zoom;
+  float facet_angle;
+};
+
 class Renderer {
   enum class Antialiasing {
     None = 0,

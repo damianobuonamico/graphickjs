@@ -11,6 +11,36 @@
 
 PencilTool::PencilTool(): Tool(ToolType::Pencil, CategoryImmediate | CategoryDirect) {}
 
+#ifdef SPRING_FREEHAND
+
+void PencilTool::on_pointer_down() {
+  m_entity = std::make_shared<FreehandEntity>(InputManager::pointer.scene.position, InputManager::pointer.pressure, InputManager::pointer.time);
+
+  WobbleSmoother::reset(
+    { InputManager::pointer.type != InputManager::PointerType::Pen, 20.0f, 40.0f, 1.31f, 1.44f },
+    vec2{ 0.0f }, InputManager::pointer.pressure, InputManager::pointer.time
+  );
+
+  Editor::scene.add_entity(m_entity);
+}
+
+void PencilTool::on_pointer_move() {
+  if (!m_entity) return;
+  vec3 smoothed_point = WobbleSmoother::update(InputManager::pointer.scene.delta, InputManager::pointer.pressure, InputManager::pointer.time);
+  m_entity->add_point(InputManager::pointer.scene.delta, InputManager::pointer.pressure, InputManager::pointer.time, smoothed_point);
+}
+
+void PencilTool::on_pointer_up(bool abort) {
+  m_entity = nullptr;
+}
+
+void PencilTool::render_overlays(RenderingOptions options) const {
+  // if (!m_entity) return;
+  // m_entity->render(zoom);
+}
+
+#else
+
 void PencilTool::on_pointer_down() {
   m_points.clear();
   m_curves.clear();
@@ -1022,5 +1052,7 @@ void PencilTool::render_overlays(float zoom) const {
 
   Renderer::draw(geo);
 }
+
+#endif
 
 #endif

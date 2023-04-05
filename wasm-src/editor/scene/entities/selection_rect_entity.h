@@ -20,8 +20,8 @@ public:
   void size(const vec2& size);
   void reset();
 
-  virtual void tessellate_outline(const vec4& color, float zoom, Geometry& geo) const override;
-  virtual void render(float zoom) const override;
+  virtual void tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const override;
+  virtual void render(RenderingOptions options) const override;
 private:
   bool m_dashed;
   bool m_active = false;

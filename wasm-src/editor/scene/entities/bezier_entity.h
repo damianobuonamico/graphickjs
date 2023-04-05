@@ -69,7 +69,7 @@ public:
   std::vector<vec2> extrema() const;
   std::vector<float> inflections() const;
   std::vector<vec2> turning_angles() const;
-  std::vector<float> triangulation_params(float zoom, float facet_angle) const;
+  std::vector<float> triangulation_params(RenderingOptions options) const;
   Box bounding_box() const;
   Box large_bounding_box() const;
   vec2 size() const;
@@ -94,7 +94,7 @@ public:
 
   void tessellate(TessellationParams& params, Geometry& geo) const;
   void tessellate_outline(TessellationParams& params, Geometry& geo) const;
-  virtual void render(float zoom) const override;
+  virtual void render(RenderingOptions options) const override;
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
 private:
@@ -110,9 +110,9 @@ private:
   std::vector<vec2> cubic_turning_angles() const;
 
   vec2 cubic_t_from_theta(float theta) const;
-  inline std::vector<float> linear_triangulation_params(float zoom, float facet_angle) const { return { 0.0f, 1.0f }; }
-  std::vector<float> quadratic_triangulation_params(const vec2& B, float zoom, float facet_angle) const;
-  std::vector<float> cubic_triangulation_params(float zoom, float facet_angle) const;
+  inline std::vector<float> linear_triangulation_params(RenderingOptions options) const { return { 0.0f, 1.0f }; }
+  std::vector<float> quadratic_triangulation_params(const vec2& B, RenderingOptions options) const;
+  std::vector<float> cubic_triangulation_params(RenderingOptions options) const;
 
   vec2 linear_get(float t) const;
   vec2 cubic_get(float t) const;
@@ -136,8 +136,8 @@ private:
   void linear_tessellate_outline(TessellationParams& params, Geometry& geo) const;
   void cubic_tessellate_outline(TessellationParams& params, Geometry& geo) const;
 
-  void linear_render(float zoom) const;
-  void cubic_render(float zoom) const;
+  void linear_render(RenderingOptions options) const;
+  void cubic_render(RenderingOptions options) const;
 private:
   VertexEntity& m_start;
   VertexEntity& m_end;

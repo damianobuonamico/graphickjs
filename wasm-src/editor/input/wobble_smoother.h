@@ -5,6 +5,7 @@
 
 #include <deque>
 
+// TODO: Move pressure simulation to FreehandEntity (already have ~exact velocity from integration)
 class WobbleSmoother {
 public:
   struct WobbleSmootherParams {

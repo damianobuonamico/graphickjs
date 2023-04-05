@@ -23,13 +23,13 @@ public:
 
   Entity* entity_at(const vec2& position, bool lower_level, float threshold);
   std::vector<Entity*> entities_in(const Box& box, bool lower_level = false);
-  
+
   Entity* duplicate(const Entity* entity);
 private:
   void load();
 
   void render(float zoom) const;
-  void render_selection(float zoom) const;
+  void render_selection(RenderingOptions options) const;
 private:
   MapValue<UUID, std::shared_ptr<Entity>> m_children;
 private:

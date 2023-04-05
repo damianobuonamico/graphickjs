@@ -2,6 +2,7 @@
 
 #include "../../math/vec4.h"
 #include "../../renderer/geometry/geometry.h"
+#include "../../renderer/renderer.h"
 
 class Tool {
 public:
@@ -36,8 +37,8 @@ public:
 
   virtual void on_pointer_hover() {}
 
-  virtual void tessellate_overlays_outline(const vec4& color, float zoom, Geometry& geo) const {}
-  virtual void render_overlays(float zoom) const {}
+  virtual void tessellate_overlays_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {}
+  virtual void render_overlays(RenderingOptions options) const {}
 protected:
   Tool(ToolType type, int category): m_type(type), m_category(category) {}
 protected:

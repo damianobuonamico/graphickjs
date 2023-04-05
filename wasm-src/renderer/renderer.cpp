@@ -247,8 +247,8 @@ void Renderer::end_batch() {
     return;
   }
 
-  glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_buffer_size, m_data.vertex_buffer);
   glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_buffer_size, m_data.index_buffer);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_buffer_size, m_data.vertex_buffer);
 }
 
 void Renderer::flush() {
@@ -260,6 +260,9 @@ void Renderer::flush() {
 
   m_data.vertex_count = 0;
   m_data.index_count = 0;
+
+  m_data.vertex_buffer_ptr = m_data.vertex_buffer;
+  m_data.index_buffer_ptr = m_data.index_buffer;
 }
 
 void Renderer::draw_instanced(const InstancedGeometry& geometry) {

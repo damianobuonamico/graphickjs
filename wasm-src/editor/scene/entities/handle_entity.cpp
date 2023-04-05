@@ -1,6 +1,6 @@
 #include "handle_entity.h"
 
-void HandleEntity::render(float zoom) const {
+void HandleEntity::render(RenderingOptions options) const {
   // TODO: Implement square geometry and refactor
   Geometry geo;
   const vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -8,7 +8,7 @@ void HandleEntity::render(float zoom) const {
 
   if (parent && parent->parent) position += parent->parent->transform()->position().get();
 
-  geo.push_circle(position, transform()->radius() / zoom, color);
+  geo.push_circle(position, transform()->radius() / options.zoom, color);
 
   // geo.vertices.push_back({ position, color });
 

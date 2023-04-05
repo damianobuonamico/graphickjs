@@ -199,7 +199,7 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
     draw_polar_line(origin, angle.y, boundaries, green, geo);
   }
 
-  std::vector<float> t_values = m_t_values = entity->triangulation_params(1.0f, max_angle);
+  std::vector<float> t_values = m_t_values = entity->triangulation_params({ 1.0f, max_angle });
   for (int i = 0; i < (int)turning_angles.size() - 1; i++) {
     float difference = turning_angles[i + 1].y - turning_angles[i].y;
 

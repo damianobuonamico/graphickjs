@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../renderer.h"
 #include "geometry.h"
 #include "bezier_fitter.h"
 
@@ -26,8 +27,7 @@ struct JoinParams {
 
 struct TessellationParams {
   vec2 offset;
-  float zoom;
-  float facet_angle;
+  RenderingOptions rendering_options;
 
   float width;
   vec4 color;

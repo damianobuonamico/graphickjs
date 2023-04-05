@@ -143,6 +143,10 @@ Geometry Geometry::wireframe() const {
     for (uint32_t i = 0; i < m_indices.size(); i += 3) {
       geo.push_indices({ m_indices[i], m_indices[i + 1], m_indices[i + 1], m_indices[i + 2], m_indices[i + 2], m_indices[i] });
     }
+
+    for (auto& vertex : geo.vertices()) {
+      vertex.max_normal = 0.0f;
+    }
   }
 
   return geo;

@@ -15,16 +15,16 @@ void SelectionRectEntity::reset() {
   m_transform.size().move_to(vec2{ 0.0f });
 }
 
-void SelectionRectEntity::tessellate_outline(const vec4& color, float zoom, Geometry& geo) const {
+void SelectionRectEntity::tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {
   if (!m_active || is_zero(m_transform.size().get())) {
     return;
   }
 
-  geo.push_quad_outline(m_transform.bounding_box(), color, 5.0f / zoom);
+  geo.push_quad_outline(m_transform.bounding_box(), color, 5.0f / options.zoom);
 }
 
 // TODO: check where headers are included to reduce compilation time
-void SelectionRectEntity::render(float zoom) const {
+void SelectionRectEntity::render(RenderingOptions options) const {
   if (!m_active || is_zero(m_transform.size().get())) {
     return;
   }

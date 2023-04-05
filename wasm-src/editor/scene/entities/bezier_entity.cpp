@@ -52,8 +52,8 @@ std::vector<vec2> BezierEntity::turning_angles() const {
   return BEZIER_CALL(turning_angles);
 }
 
-std::vector<float> BezierEntity::triangulation_params(float zoom, float facet_angle) const {
-  return BEZIER_CALL(triangulation_params, zoom, facet_angle);
+std::vector<float> BezierEntity::triangulation_params(RenderingOptions options) const {
+  return BEZIER_CALL(triangulation_params, options);
 }
 
 Box BezierEntity::bounding_box() const {
@@ -191,8 +191,8 @@ void BezierEntity::tessellate_outline(TessellationParams& params, Geometry& geo)
   STRICT_BEZIER_CALL(tessellate_outline, params, geo);
 }
 
-void BezierEntity::render(float zoom) const {
-  STRICT_BEZIER_CALL(render, zoom);
+void BezierEntity::render(RenderingOptions options) const {
+  STRICT_BEZIER_CALL(render, options);
 }
 
 Entity* BezierEntity::entity_at(const vec2& position, bool lower_level, float threshold) {
@@ -416,7 +416,7 @@ vec2 BezierEntity::cubic_t_from_theta(float theta) const {
   return { -1.0f, -1.0f };
 }
 
-std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, float zoom, float facet_angle) const {
+std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, RenderingOptions options) const {
   vec2 A = p0();
   vec2 C = p3();
 
@@ -431,7 +431,7 @@ std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, f
 
   std::vector<float> triangulation_params{};
 
-  facet_angle = std::max(facet_angle, GEOMETRY_MIN_FACET_ANGLE);
+  float facet_angle = std::max(options.facet_angle, GEOMETRY_MIN_FACET_ANGLE);
 
   float difference = end_angle - start_angle;
   int increments = std::max(std::abs((int)std::ceilf(difference / facet_angle)), 1);
@@ -453,15 +453,15 @@ std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, f
   return triangulation_params;
 }
 
-std::vector<float> BezierEntity::cubic_triangulation_params(float zoom, float facet_angle) const {
+std::vector<float> BezierEntity::cubic_triangulation_params(RenderingOptions options) const {
   if (vec2 B; is_masquerading_quadratic(B)) {
-    return quadratic_triangulation_params(B, zoom, facet_angle);
+    return quadratic_triangulation_params(B, options);
   }
 
   std::vector<vec2> turning_angles = cubic_turning_angles();
   std::vector<float> triangulation_params{};
 
-  facet_angle = std::max(facet_angle, GEOMETRY_MIN_FACET_ANGLE);
+  float facet_angle = std::max(options.facet_angle, GEOMETRY_MIN_FACET_ANGLE);
   float last_t = 0.0f;
 
   for (int i = 0; i < turning_angles.size() - 1; i++) {
@@ -901,7 +901,7 @@ void BezierEntity::linear_tessellate(TessellationParams& params, Geometry& geo) 
 }
 
 void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) const {
-  std::vector<float> triangulation_params = cubic_triangulation_params(params.zoom, params.facet_angle);
+  std::vector<float> triangulation_params = cubic_triangulation_params(params.rendering_options);
   vec2 point, direction, normal;
 
   float width_start = params.width * m_start.taper().get();
@@ -987,7 +987,7 @@ void BezierEntity::linear_tessellate_outline(TessellationParams& params, Geometr
 
 // TODO: move std::vector.reserve() outside
 void BezierEntity::cubic_tessellate_outline(TessellationParams& params, Geometry& geo) const {
-  std::vector<float> triangulation_params = cubic_triangulation_params(params.zoom, params.facet_angle);
+  std::vector<float> triangulation_params = cubic_triangulation_params(params.rendering_options);
   uint32_t offset = geo.offset();
 
   geo.reserve(triangulation_params.size(), (triangulation_params.size() - 1) * 2);
@@ -999,7 +999,7 @@ void BezierEntity::cubic_tessellate_outline(TessellationParams& params, Geometry
   geo.push_vertices({ { params.offset + p3(), params.color } });
 }
 
-void BezierEntity::linear_render(float zoom) const {
+void BezierEntity::linear_render(RenderingOptions options) const {
   Geometry geo;
 
   vec2 A = p0();
@@ -1011,7 +1011,7 @@ void BezierEntity::linear_render(float zoom) const {
     B += offset;
   }
 
-  float width = 2.0f / zoom;
+  float width = 2.0f / options.zoom;
   float dx = B.x - A.x;
 
   if (is_almost_zero(dx)) {
@@ -1030,7 +1030,7 @@ void BezierEntity::linear_render(float zoom) const {
   Renderer::draw(geo);
 }
 
-void BezierEntity::cubic_render(float zoom) const {
+void BezierEntity::cubic_render(RenderingOptions options) const {
   vec2 offset{ 0.0f };
   if (parent) offset = parent->transform()->position().get();
 

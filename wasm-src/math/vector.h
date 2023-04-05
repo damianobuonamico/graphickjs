@@ -113,6 +113,14 @@ vec2& swap_coordinates(const vec2& v, vec2& out);
 
 bool collinear(const vec2& v1, const vec2& v2, const vec2& v3, const float eps);
 
+#define XY(v) vec2{ v.x, v.y }
+#define RG(v) vec2{ v.r, v.g }
+#define ST(v) vec2{ v.s, v.t }
+
+#define XYZ(v) vec2{ v.x, v.y, v.z }
+#define RGB(v) vec2{ v.r, v.g, v.b }
+#define STP(v) vec2{ v.s, v.t, v.p }
+
 // #define len length
 // #define sq_len squared_length
 // #define dist distance

@@ -2,6 +2,7 @@
 
 #include "entities/element_entity.h"
 #include "../../utils/debugger.h"
+#include "../settings.h"
 #include "../input/input_manager.h"
 
 void Scene::load() {
@@ -13,16 +14,18 @@ void Scene::load() {
 }
 
 void Scene::render(float zoom) const {
+  RenderingOptions options = { zoom, std::acosf(2.0f * std::pow(1.0f - Settings::tessellation_error / std::fmaxf(zoom, 0.26f), 2.0f) - 1.0f) };
+
   for (const auto& [id, entity] : m_children) {
-    entity->render(zoom);
+    entity->render(options);
   }
 
-  render_selection(zoom);
+  render_selection(options);
 
   DEBUGGER_UPDATE();
 }
 
-void Scene::render_selection(float zoom) const {
+void Scene::render_selection(RenderingOptions options) const {
   const vec4 outline_color{ 0.22f, 0.76f, 0.95f, 1.0f };
   const vec4 white{ 1.0f, 1.0f, 1.0f, 1.0f };
 
@@ -31,13 +34,13 @@ void Scene::render_selection(float zoom) const {
   const Tool& tool = InputManager::tool();
   bool is_direct_tool = tool.is_in_category(Tool::CategoryDirect);
 
-  tool.render_overlays(zoom);
-  tool.tessellate_overlays_outline(outline_color, zoom, outline_geometry);
+  tool.render_overlays(options);
+  tool.tessellate_overlays_outline(outline_color, options, outline_geometry);
 
   Entity* hovered = InputManager::hover.element();
 
   if (hovered && !selection.has(hovered->id)) {
-    hovered->tessellate_outline(outline_color, zoom, outline_geometry);
+    hovered->tessellate_outline(outline_color, options, outline_geometry);
   }
 
   if (selection.empty()) {
@@ -50,16 +53,16 @@ void Scene::render_selection(float zoom) const {
   InstancedGeometry handle_geometry{};
 
   if (is_direct_tool) {
-    selected_vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / zoom, outline_color);
-    vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / zoom, outline_color);
-    vertex_geometry.push_quad(vec2{ 0.0f }, 2.0f / zoom, white);
-    handle_geometry.push_circle(vec2{ 0.0f }, 2.5f / zoom, outline_color, 10);
+    selected_vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / options.zoom, outline_color);
+    vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / options.zoom, outline_color);
+    vertex_geometry.push_quad(vec2{ 0.0f }, 2.0f / options.zoom, white);
+    handle_geometry.push_circle(vec2{ 0.0f }, 2.5f / options.zoom, outline_color, 10);
   }
 
   for (const auto& [id, entity] : selection) {
     const ElementEntity* element = dynamic_cast<const ElementEntity*>(entity);
     if (element != nullptr) {
-      element->tessellate_outline(outline_color, zoom, outline_geometry);
+      element->tessellate_outline(outline_color, options, outline_geometry);
 
       if (!is_direct_tool) continue;
 

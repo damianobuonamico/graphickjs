@@ -10,8 +10,8 @@ public:
   virtual void on_pointer_move() override;
   virtual void on_pointer_up(bool abort = false) override;
 
-  virtual void tessellate_overlays_outline(const vec4& color, float zoom, Geometry& geo) const override;
-  virtual void render_overlays(float zoom) const override;
+  virtual void tessellate_overlays_outline(const vec4& color, RenderingOptions options, Geometry& geo) const override;
+  virtual void render_overlays(RenderingOptions options) const override;
 private:
   DirectSelectTool();
 

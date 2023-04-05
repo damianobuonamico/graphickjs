@@ -5,6 +5,500 @@
 #include "../../../math/models/input_parser.h"
 #include "../../settings.h"
 
+#ifdef USE_SPRING_FREEHAND
+
+FreehandEntity::FreehandEntity(vec2 position, float pressure, double time)
+  : m_transform(TransformComponent{ this, position }), m_points({ {{0.0f, 0.0f, pressure}, time } }) {}
+
+void FreehandEntity::add_point(vec2 position, float pressure, double time) {
+  m_points.push_back({ {position.x, position.y, pressure }, time });
+}
+
+void FreehandEntity::add_point(vec2 position, float pressure, double time, vec3 updated_data) {
+  if (m_points.size() > 1) {
+    m_points.back().data = updated_data;
+  }
+
+  m_points.push_back({ { position.x, position.y, pressure }, time });
+}
+
+void FreehandEntity::tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {}
+
+size_t FreehandEntity::index_from_t(double t) const {
+  for (int i = 1; i < m_points.size(); i++) {
+    if (m_points[i].time > t) {
+      return i - 1;
+    }
+  }
+
+  return m_points.size() - 1;
+}
+
+Geometry FreehandEntity::tessellate(RenderingOptions options) const {
+  size_t points_num = m_points.size();
+  Geometry geo;
+
+  if (points_num == 0) return geo;
+
+  vec2 point, direction, normal;
+  float width;
+
+  uint32_t offset;
+
+  // TEMP: move to style component
+  vec4 color = { 0.7f, 0.7f, 0.7f, 1.0f };
+  float stroke_width = 5.0f;
+  float sq_stroke_width = std::powf((1.0f + Settings::tessellation_error) * stroke_width / options.zoom, 2.0f);
+  vec2 offset_position = m_transform.position().get();
+
+  TessellationParams params = {
+    offset_position, options, stroke_width, color, JoinType::Round, CapType::Round, 1.0f,
+    false, false, false, false, true, { {0, 0}, {0, 0}, 0 }, { {0, 0}, {0, 0}, 0 }
+  };
+
+  params.rendering_options.facet_angle = options.facet_angle / std::sqrtf(stroke_width);
+  float facet_angle = params.rendering_options.facet_angle * 0.25f;
+
+  console::log("facet_angle", facet_angle / MATH_PI * 180.0f);
+
+  if (points_num == 1) {
+    geo.push_circle(offset_position + XY(m_points[0].data), stroke_width * m_points[0].data.z, color, MATH_TWO_PI / facet_angle);
+    return geo;
+  } else if (points_num == 2) {
+    vec2 p0 = offset_position + XY(m_points[0].data);
+    vec2 p1 = offset_position + XY(m_points[1].data);
+
+    float width_start = stroke_width * m_points[0].data.z;
+    float width_end = stroke_width * m_points[1].data.z;
+
+    direction = p1 - p0;
+    normal = orthogonal(direction);
+    normalize(normal, normal);
+
+    vec2 normal_start = normal * width_start;
+    vec2 normal_end = normal * width_end;
+
+    tessellate_cap(params, p0, normal_start, false, width_start, geo);
+
+    uint32_t offset = geo.offset();
+
+    geo.push_vertices({
+      { p0 - normal_start, color, -width_start }, { p0 + normal_start, color, width_start },
+      { p1 - normal_end, color, -width_end }, { p1 + normal_end, color, width_end }
+      });
+    geo.push_indices({ offset, offset + 1, offset + 2, offset + 2, offset + 3, offset + 1 });
+
+    params.start_join_params.index = offset + 2;
+
+    tessellate_cap(params, p1, normal_end, true, width_end, geo);
+
+    return geo;
+  }
+
+  width = stroke_width * m_points[0].data.z;
+  point = offset_position + XY(m_points[0].data);
+  direction = midpoint(XY(m_points[1].data), XY(m_points[2].data)) - XY(m_points[0].data);
+  normal = orthogonal(direction);
+  normalize_length(normal, width, normal);
+
+  tessellate_cap(params, point, normal, false, width, geo);
+
+  geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+  offset = geo.offset();
+
+  double time = m_points[m_points.size() - 2].time;
+  double time_step = std::min(50.0 / options.zoom, 1.0);
+
+  float stiffness = Settings::spring_constant / Settings::mass_constant;
+  float drag = Settings::viscosity_constant;
+
+  vec3 position = m_points[0].data;
+  vec3 velocity{ 0.0f };
+  vec3 acceleration{ 0.0f };
+
+  vec3 last_position = position;
+  float last_width = width;
+  size_t last_index = 0;
+  int since_last_point = 100;
+  int since_last_stroked_point = 100;
+  int min_points_interval = (int)(std::max(1.0f / options.zoom, 1.0f) / time_step);
+
+  float theta = std::atan2f(m_points[1].data.y, m_points[1].data.x);
+  float new_theta, delta_theta;
+
+  vec3 anchor_start, anchor_end, anchor;
+
+  InstancedGeometry pt_geo;
+  pt_geo.push_circle(m_transform.position().get(), 1.0f, vec4{ 0.8f, 0.5f, 0.5f, 1.0f });
+
+  for (double t = m_points[0].time + time_step; t < time; t += time_step) {
+    size_t index = index_from_t(t);
+
+    if (index != last_index) {
+      zero(velocity);
+    }
+
+    anchor_start = m_points[index + 1].data;
+    anchor_end = m_points[index + 2].data;
+
+    anchor = lerp(anchor_start, anchor_end, (t - m_points[index].time) / (m_points[index + 1].time - m_points[index].time));
+
+    acceleration = (anchor - position) / stiffness - drag * velocity;
+    velocity += acceleration * time_step;
+    position += velocity * time_step;
+
+    if (since_last_point > min_points_interval) {
+      new_theta = std::atan2f(velocity.y, velocity.x);
+      delta_theta = std::fabsf(new_theta - theta);
+
+      // TEMP
+      pt_geo.push_instance(XY(position));
+
+      if (delta_theta >= facet_angle || (since_last_stroked_point >= min_points_interval * 10 && squared_distance(position, last_position) > sq_stroke_width)) {
+        width = stroke_width * position.z;
+        point = offset_position + XY(position);
+        normal = orthogonal(XY(velocity));
+        normalize_length(normal, width, normal);
+
+        if (delta_theta > params.rendering_options.facet_angle) {
+          float angle = std::acosf(dot(normal, params.start_join_params.normal) / (width * width));
+          int increments = (int)std::ceilf(angle / params.rendering_options.facet_angle);
+
+          if (increments < 2) {
+            geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+            geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+            offset += 2;
+          } else {
+            uint32_t end_index = offset + increments - 1;
+            float increment = angle / (float)increments;
+            float bend_direction = dot(XY(position) - XY(last_position), params.start_join_params.normal);
+            vec2 bended_normal = params.start_join_params.normal;
+
+            if (bend_direction < 0.0f) {
+              increment = -increment;
+            }
+
+            for (int i = 1; i < increments; ++i) {
+              float angle_offset = (float)i * increment;
+              float sin = std::sinf(angle_offset);
+              float cos = std::cosf(angle_offset);
+
+              float w = lerp(last_width, width, (float)i / (float)increments);
+
+              vec2 n = {
+                bended_normal.x * cos - bended_normal.y * sin,
+                bended_normal.x * sin + bended_normal.y * cos
+              };
+
+              geo.push_vertices({ { point - n, color, -w }, { point + n, color, w } });
+              geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+              offset += 2;
+            }
+
+            geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+            geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+            offset += 2;
+          }
+        } else {
+          geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+          geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+          offset += 2;
+        }
+
+        theta = new_theta;
+        last_position = position;
+        last_width = width;
+        since_last_stroked_point = -1;
+
+        params.start_join_params.direction = direction;
+        params.start_join_params.normal = normal;
+        params.start_join_params.index = offset;
+      }
+
+      since_last_point = -1;
+      since_last_stroked_point++;
+    }
+
+    since_last_point++;
+    last_index = index;
+  }
+
+
+  for (double t = time; t < m_points.back().time; t += time_step) {
+    size_t index = index_from_t(t);
+
+    if (index != last_index) {
+      zero(velocity);
+    }
+
+    anchor = m_points[index + 1].data;
+
+    acceleration = (anchor - position) / stiffness - drag * velocity;
+    velocity += acceleration * time_step;
+    position += velocity * time_step;
+
+    if (since_last_point > min_points_interval) {
+      new_theta = std::atan2f(velocity.y, velocity.x);
+      delta_theta = std::fabsf(new_theta - theta);
+
+      if (delta_theta >= facet_angle || (since_last_stroked_point >= min_points_interval * 10 && squared_distance(position, last_position) > sq_stroke_width)) {
+        width = stroke_width * position.z;
+        point = offset_position + XY(position);
+        normal = orthogonal(XY(velocity));
+        normalize_length(normal, width, normal);
+
+        geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+        geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+        offset += 2;
+
+        theta = new_theta;
+        last_position = position;
+        last_width = width;
+        since_last_stroked_point = -1;
+
+        params.start_join_params.direction = direction;
+        params.start_join_params.normal = normal;
+        params.start_join_params.index = offset;
+      }
+
+      since_last_point = -1;
+      since_last_stroked_point++;
+    }
+
+    since_last_point++;
+    last_index = index;
+  }
+
+
+
+  width = stroke_width * m_points.back().data.z;
+  point = offset_position + XY(m_points.back().data);
+  direction = XY(m_points.back().data) - midpoint(XY(m_points[points_num - 2].data), XY(m_points[points_num - 3].data));
+  normal = orthogonal(direction);
+  normalize_length(normal, width, normal);
+
+  geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+  geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+  offset += 2;
+
+  tessellate_cap(params, point, normal, true, width, geo);
+
+
+  // TEMP
+  // Renderer::draw(geo);
+  // Renderer::draw(pt_geo);
+
+  return geo;
+}
+
+void FreehandEntity::render(RenderingOptions options) const {
+#if 1
+  Renderer::draw(tessellate(options).wireframe());
+  return;
+#else
+  InstancedGeometry raw_geo;
+  raw_geo.push_circle(m_transform.position().get(), 2.0f, vec4{ 0.5f, 0.5f, 0.5f, 1.0f });
+
+  for (auto& point : m_points) {
+    raw_geo.push_instance(XY(point.data));
+  }
+
+  vec4 color = { 0.7f, 0.7f, 0.7f, 1.0f };
+  float width = 5.0f;
+
+  // Renderer::draw(raw_geo);
+
+  InstancedGeometry geo;
+  InstancedGeometry velocity_geo;
+  InstancedGeometry curvature_geo;
+  Geometry tris_geo;
+
+
+
+  TessellationParams params = {
+    m_transform.position().get(), options,
+    width, color,
+    JoinType::Round, CapType::Round, 10.0f,
+    false, false, true, false, true,
+    { vec2{}, vec2{}, 0 }
+  };
+
+  geo.push_circle(m_transform.position().get(), 1.0f, vec4{ 0.8f, 0.5f, 0.5f, 1.0f });
+  velocity_geo.push_circle(m_transform.position().get(), 0.2f, vec4{ 0.5f, 0.5f, 0.8f, 1.0f });
+  curvature_geo.push_circle(m_transform.position().get(), 0.2f, vec4{ 0.5f, 0.8f, 0.5f, 1.0f });
+
+  if (m_points.size() < 3) return;
+
+  double time = m_points[m_points.size() - 2].time;
+  double time_step = std::min(50.0 / options.zoom, 1.0);
+
+  vec3 s{ 0.0f, 0.0f, m_points[0].data.z };
+  vec3 v{ 0.0f };
+  vec3 a{ 0.0f };
+
+  float M = Settings::spring_constant / Settings::mass_constant;
+  float k = Settings::viscosity_constant;
+
+  uint last_index = 0;
+  int since_last_pt = 100;
+
+  vec2 pos = m_transform.position().get();
+
+  vec2 normal = normalize(orthogonal(XY(m_points[1].data))) * width * s.z;
+  // tessellate_cap(params, pos, normal, false, width * s.z, tris_geo);
+  uint32_t offset = tris_geo.offset();
+
+  tris_geo.push_vertices({ { pos - normal, color, -width * s.z }, { pos + normal, color, width * s.z } });
+  offset += 2;
+
+  vec2 last_point{ 0.0f };
+  vec2 last_last_point{ 0.0f };
+
+  double time_start = m_points.front().time;
+
+  float theta = std::atan2(m_points[1].data.y, m_points[1].data.x);
+
+  for (double t = m_points.front().time + time_step; t < time; t += time_step) {
+    uint index = index_from_t(t);
+
+    if (last_index != index) {
+      v = { 0.0f, 0.0f, 0.0f };
+    }
+
+    vec3 anchor_start = { m_points[index + 1].data.x, m_points[index + 1].data.y, m_points[index + 1].data.z };
+    vec3 anchor_end = { m_points[index + 2].data.x, m_points[index + 2].data.y, m_points[index + 2].data.z };
+
+    vec3 anchor = lerp(anchor_start, anchor_end, (t - m_points[index].time) / (m_points[index + 1].time - m_points[index].time));
+
+    a = (anchor - s) / M - k * v;
+    v += a * time_step;
+    s += v * time_step;
+
+
+    if (since_last_pt > std::min(1.0 / options.zoom, 1.0) / time_step) {
+      geo.push_instance({ s.x, s.y });
+
+      vec2 d1 = normalize(last_point - last_last_point);
+      vec2 d2 = normalize(vec2{ s.x, s.y } - last_point);
+
+
+      float new_theta = std::atan2(v.y, v.x);
+      float d_theta = std::abs(new_theta - theta);
+
+      if (d_theta >= Settings::facet_angle) {
+        theta = new_theta;
+        curvature_geo.push_instance({ s.x, s.y });
+
+        vec2 normal = orthogonal(d2) * width * s.z;
+        vec2 direction = vec2{ s.x, s.y } - last_point;
+
+        // if (angle > Settings::corners_angle_threshold && t > time_start + 2 * time_step) {
+        //   tessellate_join(params, pos + vec2{ s.x, s.y }, direction, normal, width* s.z, nullptr, tris_geo);
+        //   offset = tris_geo.offset();
+        // }
+
+        tris_geo.push_vertices({ { pos + vec2{ s.x, s.y } - normal, color, -width * s.z }, { pos + vec2{ s.x, s.y } + normal, color, width * s.z } });
+        tris_geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+        offset += 2;
+
+        params.start_join_params.direction = direction;
+        params.start_join_params.normal = normal;
+        params.start_join_params.index = offset;
+
+        velocity_geo.push_instance(vec2{ s.x, s.y });
+        last_last_point = last_point;
+        last_point = vec2{ s.x, s.y };
+      }
+
+      since_last_pt = -1;
+    }
+
+    since_last_pt++;
+    last_index = index;
+  }
+
+  for (double t = time; t <= m_points.back().time; t += time_step) {
+    uint index = index_from_t(t);
+
+    if (last_index != index) {
+      v = { 0.0f, 0.0f, 0.0f };
+    }
+
+    vec3 anchor = { m_points[index + 1].data.x, m_points[index + 1].data.y, m_points[index + 1].data.z };
+
+    a = (anchor - s) / M - k * v;
+    v += a * time_step;
+    s += v * time_step;
+
+    if (since_last_pt > std::min(1.0 / options.zoom, 1.0) / time_step) {
+      geo.push_instance({ s.x, s.y });
+
+      vec2 d1 = normalize(last_point - last_last_point);
+      vec2 d2 = normalize(vec2{ s.x, s.y } - last_point);
+
+      float angle = std::acos(dot(d1, d2));
+
+      if (angle >= Settings::facet_angle) {
+        vec2 normal = orthogonal(d2) * width * s.z;
+        // vec2 normal = normalize(orthogonal(midpoint(d1, d2))) * width;
+        vec2 direction = vec2{ s.x, s.y } - last_point;
+
+        if (angle > Settings::corners_angle_threshold && t > time_start + 2 * time_step) {
+          // tessellate_join(params, pos + vec2{ s.x, s.y }, direction, normal, width* s.z, nullptr, tris_geo);
+          offset = tris_geo.offset();
+        }
+
+        tris_geo.push_vertices({ { pos + vec2{ s.x, s.y } - normal, color, -width * s.z }, { pos + vec2{ s.x, s.y } + normal, color, width * s.z } });
+        tris_geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+        offset += 2;
+
+        params.start_join_params.direction = direction;
+        params.start_join_params.normal = normal;
+        params.start_join_params.index = offset;
+
+        velocity_geo.push_instance(vec2{ s.x, s.y });
+        last_last_point = last_point;
+        last_point = vec2{ s.x, s.y };
+      }
+
+      since_last_pt = -1;
+    }
+
+    since_last_pt++;
+    last_index = index;
+  }
+
+  // for (auto& pt : tess_points) {
+  //   curvature_geo.push_instance(pt.position + pt.normal * pt.curvature * 10);
+  // }
+
+  geo.push_instance(XY(m_points.back().data));
+  velocity_geo.push_instance(XY(m_points.back().data));
+
+  vec2 point = pos + XY(m_points.back().data);
+  vec2 direction = point - XY(m_points[m_points.size() - 2].data) - pos;
+  normal = orthogonal(direction);
+  normalize_length(normal, width * m_points.back().data.z, normal);
+
+  tris_geo.push_vertices({ { point - normal, params.color, -width * m_points.back().data.z }, { point + normal, params.color, width * m_points.back().data.z } });
+  tris_geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+
+  params.start_join_params.direction = direction;
+  params.start_join_params.normal = normal;
+  params.start_join_params.index = offset;
+
+  // tessellate_cap(params, point, normal, true, width * m_points.back().pressure, tris_geo);
+
+  Renderer::draw(tris_geo);
+  // Renderer::draw(geo);
+  // Renderer::draw(velocity_geo);
+  // Renderer::draw(curvature_geo);
+  Renderer::draw(tessellate(options).wireframe());
+#endif
+}
+
+#else
+
 FreehandEntity::FreehandEntity(const vec2& position, float pressure, double time)
   : m_transform(TransformComponent{ this, position }), m_creation_state({ vec2{ 0.0f }, 0.5f * pressure, time }), m_pressures({ 0.5f * pressure }) {
   WobbleSmoother::reset(
@@ -389,3 +883,5 @@ void FreehandEntity::render(float zoom) const {
   Renderer::draw(vertex_geometry);
   Renderer::draw(handle_geometry);
 };
+
+#endif

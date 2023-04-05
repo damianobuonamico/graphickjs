@@ -1,8 +1,8 @@
 #include "vertex_entity.h"
 
-void VertexEntity::render(float zoom) const {
+void VertexEntity::render(RenderingOptions options) const {
   // TODO: Implement instanced rendering, offset by transform.position
-  m_position.render(zoom);
+  m_position.render(options);
 }
 
 Entity* VertexEntity::entity_at(const vec2& position, bool lower_level = false, float threshold = 0.0f) {

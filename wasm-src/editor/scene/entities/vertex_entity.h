@@ -46,7 +46,7 @@ public:
   inline void set_left(const vec2& left) { m_left.emplace(left, HandleEntity::Type::Circle, this); }
   inline void set_right(const vec2& right) { m_right.emplace(right, HandleEntity::Type::Circle, this); }
 
-  virtual void render(float zoom) const override;
+  virtual void render(RenderingOptions options) const override;
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
   virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) override;
