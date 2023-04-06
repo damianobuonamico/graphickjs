@@ -7,10 +7,10 @@
 
 void Scene::load() {
   // std::shared_ptr<ElementEntity> element1 = std::make_shared<ElementEntity>(vec2{ 0.0f });
-  // std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
+  std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
 
   // m_children.insert({ element1->id, element1 });
-  // m_children.insert({ element2->id, element2 });
+  m_children.insert({ element2->id, element2 });
 }
 
 void Scene::render(float zoom) const {

@@ -61,10 +61,11 @@ void Renderer::shutdown() {
   delete s_instance;
 }
 
-void Renderer::resize(const vec2& size) {
+void Renderer::resize(const vec2& size, float dpr) {
   get()->m_size = size;
-  get()->m_frame_buffer.resize(size);
-  glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
+  get()->m_dpr = dpr;
+  get()->m_frame_buffer.resize(size * dpr);
+  glViewport(0, 0, (GLsizei)size.x * dpr, (GLsizei)size.y * dpr);
 }
 
 void Renderer::begin_frame(const vec2& position, float zoom) {
@@ -119,7 +120,7 @@ void Renderer::draw(const InstancedGeometry& geometry) {
   get()->draw_instanced(geometry);
 }
 
-Renderer::Renderer(): m_frame_buffer(m_shaders, m_size) {}
+Renderer::Renderer(): m_frame_buffer(m_shaders, m_size * m_dpr) {}
 
 void Renderer::init_batch_renderer() {
   m_data.vertex_buffer = new Vertex[m_data.max_vertex_count];

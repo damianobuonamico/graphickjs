@@ -27,6 +27,8 @@ void ElementEntity::render(RenderingOptions options) const {
 
   Geometry geo{};
 
+  options.facet_angle /= std::sqrtf(5.0f);
+
   bool is_closed = m_closed.get();
   TessellationParams params = {
     m_transform.position().get(), options,

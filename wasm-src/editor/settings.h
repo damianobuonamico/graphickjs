@@ -18,5 +18,5 @@ struct Settings {
   inline static float viscosity_constant = 1.0f;
 
   inline static float facet_angle = 3.14159265358979323846f / 100.0f;
-  inline static float tessellation_error = 0.2f;
+  inline static float tessellation_error = 0.04f;
 };

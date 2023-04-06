@@ -84,7 +84,7 @@ abstract class Renderer {
     this.m_canvas.width = dprSize[0];
     this.m_canvas.height = dprSize[1];
 
-    API._on_resize_event(...size, ...this.m_offset);
+    API._on_resize_event(...size, this.m_dpr, ...this.m_offset);
     SceneManager.setViewportArea();
 
     return size;

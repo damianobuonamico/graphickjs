@@ -26,6 +26,7 @@ interface Api {
   _on_resize_event(
     width: number,
     height: number,
+    dpr: number,
     offsetX: number,
     offsetY: number
   ): boolean;

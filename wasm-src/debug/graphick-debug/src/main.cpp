@@ -47,7 +47,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 }
 
 static void window_resize_callback(GLFWwindow* window, int width, int height) {
-  InputManager::on_resize_event(width, height, 0, 0);
+  InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 }
 
 static void scroll_callback(GLFWwindow* window, double delta_x, double delta_y) {
@@ -135,7 +135,7 @@ int main() {
   ImGui_ImplOpenGL3_Init("#version 330 core");
 
   Editor::init();
-  InputManager::on_resize_event(width, height, 0, 0);
+  InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();

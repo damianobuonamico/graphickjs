@@ -431,7 +431,7 @@ std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, R
 
   std::vector<float> triangulation_params{};
 
-  float facet_angle = std::max(options.facet_angle, GEOMETRY_MIN_FACET_ANGLE);
+  float facet_angle = std::max(options.facet_angle, GEOMETRY_MIN_FACET_ANGLE) * 0.25f;
 
   float difference = end_angle - start_angle;
   int increments = std::max(std::abs((int)std::ceilf(difference / facet_angle)), 1);
@@ -461,7 +461,7 @@ std::vector<float> BezierEntity::cubic_triangulation_params(RenderingOptions opt
   std::vector<vec2> turning_angles = cubic_turning_angles();
   std::vector<float> triangulation_params{};
 
-  float facet_angle = std::max(options.facet_angle, GEOMETRY_MIN_FACET_ANGLE);
+  float facet_angle = std::max(options.facet_angle, GEOMETRY_MIN_FACET_ANGLE) * 0.25f;
   float last_t = 0.0f;
 
   for (int i = 0; i < turning_angles.size() - 1; i++) {

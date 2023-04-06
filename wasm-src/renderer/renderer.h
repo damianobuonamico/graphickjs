@@ -30,7 +30,7 @@ public:
   static void init();
   static void shutdown();
 
-  static void resize(const vec2& size);
+  static void resize(const vec2& size, float dpr);
 
   static void begin_frame(const vec2& position, float zoom);
   static void end_frame();
@@ -108,6 +108,7 @@ private:
   RenderCall m_last_call = RenderCall::None;
 
   vec2 m_size;
+  float m_dpr;
 private:
   static Renderer* s_instance;
 };

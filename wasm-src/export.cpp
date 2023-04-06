@@ -30,8 +30,8 @@ extern "C" {
     );
   }
 
-  bool EMSCRIPTEN_KEEPALIVE on_resize_event(int width, int height, int offset_x, int offset_y) {
-    return InputManager::on_resize_event(width, height, offset_x, offset_y);
+  bool EMSCRIPTEN_KEEPALIVE on_resize_event(int width, int height, float dpr, int offset_x, int offset_y) {
+    return InputManager::on_resize_event(width, height, dpr, offset_x, offset_y);
   }
 
   bool EMSCRIPTEN_KEEPALIVE on_wheel_event(int target, float delta_x, float delta_y) {

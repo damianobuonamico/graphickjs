@@ -78,8 +78,8 @@ bool InputManager::on_keyboard_event(
   return false;
 }
 
-bool InputManager::on_resize_event(int width, int height, int offset_x, int offset_y) {
-  return get()->on_resize(width, height, offset_x, offset_y);
+bool InputManager::on_resize_event(int width, int height, float dpr, int offset_x, int offset_y) {
+  return get()->on_resize(width, height, dpr, offset_x, offset_y);
 }
 
 bool InputManager::on_wheel_event(PointerTarget target, float delta_x, float delta_y) {
@@ -244,11 +244,11 @@ bool InputManager::on_key_up(KeyboardKey key) {
   return false;
 }
 
-bool InputManager::on_resize(int width, int height, int offset_x, int offset_y) {
+bool InputManager::on_resize(int width, int height, float dpr, int offset_x, int offset_y) {
   vec2 size = vec2{ (float)width, (float)height };
   vec2 offset = vec2{ (float)offset_x, (float)offset_y };
 
-  Renderer::resize(size);
+  Renderer::resize(size, dpr);
   Editor::viewport.resize(size, offset);
 
   Editor::render();

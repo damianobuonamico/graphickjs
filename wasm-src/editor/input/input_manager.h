@@ -101,7 +101,7 @@ public:
     KeyboardEvent event, KeyboardKey key,
     bool repeat, bool alt, bool ctrl, bool shift
   );
-  static bool on_resize_event(int width, int height, int offset_x, int offset_y);
+  static bool on_resize_event(int width, int height, float dpr, int offset_x, int offset_y);
   static bool on_wheel_event(PointerTarget target, float delta_x, float delta_y);
   static bool on_clipboard_event(ClipboardEvent event);
 
@@ -122,7 +122,7 @@ private:
   bool on_key_down(KeyboardKey key);
   bool on_key_up(KeyboardKey key);
 
-  bool on_resize(int x, int y, int offset_x, int offset_y);
+  bool on_resize(int x, int y, float dpr, int offset_x, int offset_y);
   bool on_wheel(PointerTarget target, float delta_x, float delta_y);
 
   bool on_clipboard_copy();

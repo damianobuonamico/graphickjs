@@ -149,6 +149,11 @@ abstract class InputManager {
     this.addListener("wheel", this.onWheel.bind(this), window, {
       passive: false,
     });
+    this.addListener("load", () => {
+      setTimeout(() => {
+        Renderer.resize();
+      }, 100);
+    });
     this.addListener("beforeunload", () => {
       API._shutdown();
     });
