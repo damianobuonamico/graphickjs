@@ -20,7 +20,7 @@ void SelectionRectEntity::tessellate_outline(const vec4& color, RenderingOptions
     return;
   }
 
-  geo.push_quad_outline(m_transform.bounding_box(), color, 5.0f / options.zoom);
+  geo.push_quad_outline(m_transform.bounding_box(), color, m_dashed ? 5.0f / options.zoom : 0.0f);
 }
 
 // TODO: check where headers are included to reduce compilation time

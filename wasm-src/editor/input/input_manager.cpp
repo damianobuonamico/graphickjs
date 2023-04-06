@@ -117,6 +117,8 @@ void InputManager::set_keys_state(bool alt, bool ctrl, bool shift) {
 bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, float x, float y) {
   pointer.target = target;
 
+  console::log("tool_state", (int)m_tool_state.active().type());
+
   if (target != PointerTarget::Canvas) return false;
 
   vec2 current_position = { x, y };

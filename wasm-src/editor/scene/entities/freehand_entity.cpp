@@ -59,7 +59,7 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
   params.rendering_options.facet_angle = options.facet_angle / std::sqrtf(stroke_width);
   float facet_angle = params.rendering_options.facet_angle * 0.25f;
 
-  console::log("facet_angle", facet_angle / MATH_PI * 180.0f);
+  // console::log("facet_angle", facet_angle / MATH_PI * 180.0f);
 
   if (points_num == 1) {
     geo.push_circle(offset_position + XY(m_points[0].data), stroke_width * m_points[0].data.z, color, MATH_TWO_PI / facet_angle);
@@ -95,21 +95,33 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
     return geo;
   }
 
-  width = stroke_width * m_points[0].data.z;
-  point = offset_position + XY(m_points[0].data);
-  direction = midpoint(XY(m_points[1].data), XY(m_points[2].data)) - XY(m_points[0].data);
-  normal = orthogonal(direction);
-  normalize_length(normal, width, normal);
+  InstancedGeometry temp_geo;
+  temp_geo.push_circle(m_transform.position().get(), 2.0f, vec4{ 0.8f, 0.5f, 0.5f, 1.0f });
 
-  tessellate_cap(params, point, normal, false, width, geo);
+  {
+    width = stroke_width * m_points[0].data.z;
+    point = offset_position + XY(m_points[0].data);
+    direction = midpoint(XY(m_points[1].data), XY(m_points[2].data)) - XY(m_points[0].data);
+    normal = orthogonal(direction);
+    normalize_length(normal, width, normal);
 
-  geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
-  offset = geo.offset();
+    tessellate_cap(params, point, normal, false, width, geo);
+
+    geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+    offset = geo.offset();
+
+    temp_geo.push_instance(XY(m_points[0].data));
+  }
 
   double time = m_points[m_points.size() - 2].time;
-  double time_step = std::min(50.0 / options.zoom, 1.0);
+  // double time_step = std::min(50.0 / options.zoom, 1.0);
+  // double time_step = options.zoom > 15.0f ? 0.1 : 1.0;
+  double time_step = std::min(1.5, std::round((0.1 + 1 / options.zoom) * 10) / 10);
+  // console::log("time_step", time_step);
+  // console::log("zoom", options.zoom);
 
   float stiffness = Settings::spring_constant / Settings::mass_constant;
+  float pressure_stiffness = stiffness * 10.0f;
   float drag = Settings::viscosity_constant;
 
   vec3 position = m_points[0].data;
@@ -128,9 +140,6 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
 
   vec3 anchor_start, anchor_end, anchor;
 
-  InstancedGeometry pt_geo;
-  pt_geo.push_circle(m_transform.position().get(), 1.0f, vec4{ 0.8f, 0.5f, 0.5f, 1.0f });
-
   for (double t = m_points[0].time + time_step; t < time; t += time_step) {
     size_t index = index_from_t(t);
 
@@ -143,7 +152,10 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
 
     anchor = lerp(anchor_start, anchor_end, (t - m_points[index].time) / (m_points[index + 1].time - m_points[index].time));
 
-    acceleration = (anchor - position) / stiffness - drag * velocity;
+    acceleration.x = (anchor.x - position.x) / stiffness - drag * velocity.x;
+    acceleration.y = (anchor.y - position.y) / stiffness - drag * velocity.y;
+    acceleration.z = (anchor.z - position.z) / pressure_stiffness - drag * velocity.z;
+
     velocity += acceleration * time_step;
     position += velocity * time_step;
 
@@ -151,8 +163,7 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
       new_theta = std::atan2f(velocity.y, velocity.x);
       delta_theta = std::fabsf(new_theta - theta);
 
-      // TEMP
-      pt_geo.push_instance(XY(position));
+      temp_geo.push_instance(XY(position));
 
       if (delta_theta >= facet_angle || (since_last_stroked_point >= min_points_interval * 10 && squared_distance(position, last_position) > sq_stroke_width)) {
         width = stroke_width * position.z;
@@ -162,6 +173,10 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
 
         if (delta_theta > params.rendering_options.facet_angle) {
           float angle = std::acosf(dot(normal, params.start_join_params.normal) / (width * width));
+          if (is_almost_zero(angle)) {
+            angle = MATH_PI;
+          }
+
           int increments = (int)std::ceilf(angle / params.rendering_options.facet_angle);
 
           if (increments < 2) {
@@ -233,13 +248,18 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
 
     anchor = m_points[index + 1].data;
 
-    acceleration = (anchor - position) / stiffness - drag * velocity;
+    acceleration.x = (anchor.x - position.x) / stiffness - drag * velocity.x;
+    acceleration.y = (anchor.y - position.y) / stiffness - drag * velocity.y;
+    acceleration.z = (anchor.z - position.z) / pressure_stiffness - drag * velocity.z;
+
     velocity += acceleration * time_step;
     position += velocity * time_step;
 
     if (since_last_point > min_points_interval) {
       new_theta = std::atan2f(velocity.y, velocity.x);
       delta_theta = std::fabsf(new_theta - theta);
+
+      temp_geo.push_instance(XY(position));
 
       if (delta_theta >= facet_angle || (since_last_stroked_point >= min_points_interval * 10 && squared_distance(position, last_position) > sq_stroke_width)) {
         width = stroke_width * position.z;
@@ -269,31 +289,33 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
     last_index = index;
   }
 
+  {
+    width = stroke_width * last_position.z;
+    point = offset_position + XY(m_points.back().data);
+    direction = XY(m_points.back().data) - midpoint(XY(m_points[points_num - 2].data), XY(m_points[points_num - 3].data));
+    normal = orthogonal(direction);
+    normalize_length(normal, width, normal);
 
+    geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+    geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+    offset += 2;
 
-  width = stroke_width * m_points.back().data.z;
-  point = offset_position + XY(m_points.back().data);
-  direction = XY(m_points.back().data) - midpoint(XY(m_points[points_num - 2].data), XY(m_points[points_num - 3].data));
-  normal = orthogonal(direction);
-  normalize_length(normal, width, normal);
+    tessellate_cap(params, point, normal, true, width, geo);
 
-  geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
-  geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
-  offset += 2;
+    temp_geo.push_instance(XY(m_points.back().data));
+  }
 
-  tessellate_cap(params, point, normal, true, width, geo);
+  // console::log(temp_geo.instances());
 
-
-  // TEMP
-  // Renderer::draw(geo);
-  // Renderer::draw(pt_geo);
+  // Renderer::draw(geo.wireframe());
+  // Renderer::draw(temp_geo);
 
   return geo;
 }
 
 void FreehandEntity::render(RenderingOptions options) const {
 #if 1
-  Renderer::draw(tessellate(options).wireframe());
+  Renderer::draw(tessellate(options));
   return;
 #else
   InstancedGeometry raw_geo;

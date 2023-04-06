@@ -47,10 +47,6 @@ extern "C" {
 
     InputManager::set_tool((Tool::ToolType)tool);
   }
-
-  void EMSCRIPTEN_KEEPALIVE set_upsample(bool upsample) {
-    Settings::upsample_before_fitting = upsample;
-  }
 }
 
 EMSCRIPTEN_BINDINGS(Renderer) {

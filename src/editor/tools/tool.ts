@@ -19,6 +19,15 @@ declare global {
   }
 }
 
+enum ToolType {
+  Pan = 0,
+  Zoom,
+  Select,
+  DirectSelect,
+  Pencil,
+  None,
+}
+
 class ToolState {
   private m_current: Tool;
   private m_active: Tool;
@@ -65,23 +74,23 @@ class ToolState {
     this.m_setTool = setTool;
     this.current = tool;
 
-    // TODO: fix
-    window._set_tool = (type: number) => {
+    window._set_tool = (type: ToolType) => {
       switch (type) {
-        case 0:
+        case ToolType.Pan:
           this.m_setTool("pan");
           break;
-        case 1:
+        case ToolType.Zoom:
           this.m_setTool("zoom");
           break;
-        case 2:
-          this.m_setTool("select");
+        case ToolType.DirectSelect:
+          this.m_setTool("directSelect");
           break;
-        case 3:
-          this.m_setTool("select");
-          break;
-        case 4:
+        case ToolType.Pencil:
           this.m_setTool("pencil");
+          break;
+        case ToolType.Select:
+        default:
+          this.m_setTool("select");
           break;
       }
     };
@@ -92,20 +101,24 @@ class ToolState {
   }
 
   public set current(tool: Tool) {
-    // TODO: fix
     switch (tool) {
       case "pan":
-        API._set_tool(0);
+        API._set_tool(ToolType.Pan);
         break;
       case "zoom":
-        API._set_tool(1);
+        API._set_tool(ToolType.Zoom);
+        break;
+      case "directSelect":
+        API._set_tool(ToolType.DirectSelect);
         break;
       case "pencil":
-        API._set_tool(2);
+        API._set_tool(ToolType.Pencil);
+        break;
+      case "select":
+      default:
+        API._set_tool(ToolType.Select);
         break;
     }
-    // this.m_current = tool;
-    // this.recalculate();
   }
 
   public get active() {

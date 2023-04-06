@@ -329,7 +329,7 @@ abstract class InputManager {
   //* Pointer Events
   private static onPointerDown(e: PointerEvent) {
     API._on_pointer_event(
-      e.target === Renderer.wasmCanvas ? 1 : 0,
+      e.target === Renderer.canvas ? 1 : 0,
       0,
       this.getPointerTypeCode(e.pointerType),
       e.button,
@@ -395,9 +395,9 @@ abstract class InputManager {
 
     const hover = this.hover.entity;
 
-    this.tool.onPointerDown(
-      hover && hover.type === "generichandle" && (hover as any).handleType
-    );
+    // this.tool.onPointerDown(
+    //   hover && hover.type === "generichandle" && (hover as any).handleType
+    // );
     this.m_listeners.pointerdown(e);
 
     SceneManager.render();
@@ -405,7 +405,7 @@ abstract class InputManager {
 
   private static onPointerMove(e: PointerEvent) {
     API._on_pointer_event(
-      e.target === Renderer.wasmCanvas ? 1 : 0,
+      e.target === Renderer.canvas ? 1 : 0,
       1,
       this.getPointerTypeCode(e.pointerType),
       e.button,
@@ -488,7 +488,7 @@ abstract class InputManager {
 
   private static onPointerUp(e: PointerEvent) {
     API._on_pointer_event(
-      e.target === Renderer.wasmCanvas ? 1 : 0,
+      e.target === Renderer.canvas ? 1 : 0,
       2,
       this.getPointerTypeCode(e.pointerType),
       e.button,
@@ -539,7 +539,7 @@ abstract class InputManager {
 
   private static onPointerEnter(e: PointerEvent) {
     API._on_pointer_event(
-      e.target === Renderer.wasmCanvas ? 1 : 0,
+      e.target === Renderer.canvas ? 1 : 0,
       3,
       this.getPointerTypeCode(e.pointerType),
       e.button,
@@ -558,7 +558,7 @@ abstract class InputManager {
 
   private static onPointerLeave(e: PointerEvent) {
     API._on_pointer_event(
-      e.target === Renderer.wasmCanvas ? 1 : 0,
+      e.target === Renderer.canvas ? 1 : 0,
       4,
       this.getPointerTypeCode(e.pointerType),
       e.button,
@@ -585,8 +585,6 @@ abstract class InputManager {
   //* Window Events
   public static onResize(e: UIEvent) {
     const size = Renderer.resize();
-    API._on_resize_event(...size, ...Renderer.canvasOffset);
-
     // AnimationManager.resize();
     // SceneManager.render();
     this.m_listeners.resize(e);
@@ -594,7 +592,7 @@ abstract class InputManager {
 
   private static onWheel(e: WheelEvent) {
     API._on_wheel_event(
-      e.target === Renderer.wasmCanvas ? 1 : 0,
+      e.target === Renderer.canvas ? 1 : 0,
       e.deltaX,
       e.deltaY
     );

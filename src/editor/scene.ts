@@ -1,27 +1,27 @@
-import { vec2 } from '@math';
-import Artboard from './ecs/entities/artboard';
-import ECS, { isECS } from './ecs/ecs';
-import Element from './ecs/entities/element';
-import Layer from './ecs/entities/layer';
-import { Renderer } from './renderer';
-import Vertex from './ecs/entities/vertex';
-import CommandHistory from './history/history';
+import { vec2 } from "@math";
+import Artboard from "./ecs/entities/artboard";
+import ECS, { isECS } from "./ecs/ecs";
+import Element from "./ecs/entities/element";
+import Layer from "./ecs/entities/layer";
+import { Renderer } from "./renderer";
+import Vertex from "./ecs/entities/vertex";
+import CommandHistory from "./history/history";
 import {
   LOCAL_STORAGE_KEY,
   LOCAL_STORAGE_KEY_SEQUENCE,
-  LOCAL_STORAGE_KEY_STATE
-} from '@utils/constants';
-import SelectionManager from './selection';
-import InputManager from './input';
-import { fileDialog } from '@/utils/file';
-import { parseSVG } from '@/utils/svg';
-import ImageMedia from './ecs/entities/image';
-import OverlayState from './overlays';
-import Color from './ecs/components/color';
-import AnimationManager from './animation/animation';
-import Viewport from './viewport';
-import { getWorkspacePrimaryColor } from '@/utils/color';
-import Freehand from './ecs/entities/freehand';
+  LOCAL_STORAGE_KEY_STATE,
+} from "@utils/constants";
+import SelectionManager from "./selection";
+import InputManager from "./input";
+import { fileDialog } from "@/utils/file";
+import { parseSVG } from "@/utils/svg";
+import ImageMedia from "./ecs/entities/image";
+import OverlayState from "./overlays";
+import Color from "./ecs/components/color";
+import AnimationManager from "./animation/animation";
+import Viewport from "./viewport";
+import { getWorkspacePrimaryColor } from "@/utils/color";
+import Freehand from "./ecs/entities/freehand";
 
 abstract class SceneManager {
   private static m_ecs: ECS;
@@ -60,27 +60,29 @@ abstract class SceneManager {
   }
 
   static delete(selected: Entity | true, forceObject = false) {
-    (selected === true ? SelectionManager.entities : [selected]).forEach((entity) => {
-      if (
-        !forceObject &&
-        entity.type === 'element' &&
-        InputManager.tool.isVertex &&
-        (entity as Element).selection.size < (entity as Element).size - 1
-      ) {
-        (entity as Element).remove(true, false);
-      } else {
-        const backupSelection = (entity as Element).selection?.get();
+    (selected === true ? SelectionManager.entities : [selected]).forEach(
+      (entity) => {
+        if (
+          !forceObject &&
+          entity.type === "element" &&
+          InputManager.tool.isVertex &&
+          (entity as Element).selection.size < (entity as Element).size - 1
+        ) {
+          (entity as Element).remove(true, false);
+        } else {
+          const backupSelection = (entity as Element).selection?.get();
 
-        // TOCHECK
-        SelectionManager.deselect(entity.id);
+          // TOCHECK
+          SelectionManager.deselect(entity.id);
 
-        // SelectionManager.select(entity);
-        // if (backupSelection) (entity as Element).selection?.restore(backupSelection);
+          // SelectionManager.select(entity);
+          // if (backupSelection) (entity as Element).selection?.restore(backupSelection);
 
-        if (!isECS(entity.parent)) return;
-        entity.parent.remove(entity.id);
+          if (!isECS(entity.parent)) return;
+          entity.parent.remove(entity.id);
+        }
       }
-    });
+    );
 
     SelectionManager.calculateRenderOverlay();
   }
@@ -90,14 +92,17 @@ abstract class SceneManager {
   }
 
   static setViewportArea() {
-    this.viewport.viewport = vec2.divS(Renderer.size, window.devicePixelRatio ** 2);
+    this.viewport.viewport = vec2.divS(
+      Renderer.size,
+      window.devicePixelRatio ** 2
+    );
 
-    if (this.state.workspace === 'whiteboard') {
+    if (this.state.workspace === "whiteboard") {
       this.viewport.setBounds([[0, 0], this.m_layer.parent.transform.size]);
     } else {
       this.viewport.setBounds([
         [-Infinity, -Infinity],
-        [Infinity, Infinity]
+        [Infinity, Infinity],
       ]);
     }
 
@@ -108,24 +113,21 @@ abstract class SceneManager {
   static onWorkspaceChange(workspace: Workspace) {
     this.setViewportArea();
     // TODO: Preserve tool if available in new workspace
-    if (InputManager.tool) InputManager.tool.current = 'select';
-    Renderer.primaryColor = getWorkspacePrimaryColor(workspace);
+    if (InputManager.tool) InputManager.tool.current = "select";
+
+    Renderer.primaryColor = new Color(getWorkspacePrimaryColor(workspace)).vec4;
   }
 
   private static renderFn() {
-    Renderer.beginFrame({
-      color: this.background.hex,
-      position: this.viewport.position,
-      zoom: this.viewport.zoom
-    });
-
-    this.m_ecs.render();
-
-    SelectionManager.render();
-
-    this.overlays.render();
-
-    Renderer.endFrame();
+    // Renderer.beginFrame({
+    //   color: this.background.hex,
+    //   position: this.viewport.position,
+    //   zoom: this.viewport.zoom,
+    // });
+    // this.m_ecs.render();
+    // SelectionManager.render();
+    // this.overlays.render();
+    // Renderer.endFrame();
   }
 
   static render() {
@@ -133,11 +135,13 @@ abstract class SceneManager {
   }
 
   static clientToScene(position: vec2) {
-    return this.viewport.clientToLocal(position, Renderer.canvasOffset);
+    return [0, 0];
+    // return this.viewport.clientToLocal(position, Renderer.canvasOffset);
   }
 
   static sceneToClient(position: vec2) {
-    return this.viewport.localToClient(position, Renderer.canvasOffset);
+    return [0, 0];
+    // return this.viewport.localToClient(position, Renderer.canvasOffset);
   }
 
   static isVisible(entity: Entity) {
@@ -152,7 +156,10 @@ abstract class SceneManager {
   }
 
   static save() {
-    localStorage.setItem(LOCAL_STORAGE_KEY_STATE, JSON.stringify(this.viewport));
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY_STATE,
+      JSON.stringify(this.viewport)
+    );
     // localStorage.setItem(LOCAL_STORAGE_KEY_SEQUENCE, JSON.stringify(AnimationManager.toJSON()));
     localStorage.setItem(
       LOCAL_STORAGE_KEY,
@@ -166,15 +173,15 @@ abstract class SceneManager {
 
   static new() {
     // TODO: implement
-    const dimensions = prompt('Enter artboard dimentions', '2480, 3508');
+    const dimensions = prompt("Enter artboard dimentions", "2480, 3508");
     if (!dimensions) return;
 
-    const size = dimensions.split(',').map((value) => parseInt(value.trim()));
+    const size = dimensions.split(",").map((value) => parseInt(value.trim()));
     if (size.length !== 2) return;
 
     this.viewport = new Viewport({});
     this.clear();
-    const artboard = new Artboard({ size: <vec2>size, grid: 'rows' });
+    const artboard = new Artboard({ size: <vec2>size, grid: "rows" });
     const layer = new Layer({});
 
     artboard.add(layer);
@@ -212,8 +219,8 @@ abstract class SceneManager {
           new Vertex({ position: [0, 0] }),
           new Vertex({ position: [100, 0] }),
           new Vertex({ position: [100, 100] }),
-          new Vertex({ position: [0, 100] })
-        ]
+          new Vertex({ position: [0, 100] }),
+        ],
       });
 
       this.m_layer.add(element);
@@ -222,7 +229,7 @@ abstract class SceneManager {
       this.m_ecs.add(artboard);
     }
 
-    if (sequence && sequence !== 'undefined') {
+    if (sequence && sequence !== "undefined") {
       let entitiesMap: Map<string, Entity> = new Map();
       let seq = JSON.parse(sequence);
       let nodes: Set<string> = new Set(seq.nodes);
@@ -245,7 +252,7 @@ abstract class SceneManager {
     if (!object) return;
 
     switch (object.type) {
-      case 'artboard': {
+      case "artboard": {
         const artboard = new Artboard({ ...(object as ArtboardObject) });
         (object as ArtboardObject).children.forEach((obj) => {
           const entity = this.fromObject(obj);
@@ -253,7 +260,7 @@ abstract class SceneManager {
         });
         return artboard;
       }
-      case 'layer':
+      case "layer":
         const layer = new Layer({ ...(object as LayerObject) });
         (object as LayerObject).children.forEach((obj) => {
           const entity = this.fromObject(obj);
@@ -261,7 +268,7 @@ abstract class SceneManager {
         });
         this.m_layer = layer;
         return layer;
-      case 'element':
+      case "element":
         const vertices: Vertex[] = [];
         (object as ElementObject).vertices.forEach((obj) => {
           const vertex = this.fromObject(obj);
@@ -271,11 +278,11 @@ abstract class SceneManager {
         if (!vertices.length) return;
 
         return new Element({ ...{ ...(object as ElementObject), vertices } });
-      case 'vertex':
+      case "vertex":
         return new Vertex({ ...(object as VertexObject) });
-      case 'image':
+      case "image":
         return new ImageMedia({ ...(object as ImageObject) });
-      case 'freehand':
+      case "freehand":
         return new Freehand({ ...(object as FreehandObject) });
     }
   }
@@ -309,7 +316,7 @@ abstract class SceneManager {
       if (!entity) return;
 
       callback(entity);
-      if (entity.type !== 'element' && 'forEach' in entity) {
+      if (entity.type !== "element" && "forEach" in entity) {
         (entity as any).forEach((e: Entity) => {
           forEachECS(e);
         });
@@ -322,7 +329,10 @@ abstract class SceneManager {
   }
 
   static import() {
-    fileDialog({ accept: ['.svg', '.png', '.jpg', '.jpeg'], multiple: true }).then((files) => {
+    fileDialog({
+      accept: [".svg", ".png", ".jpg", ".jpeg"],
+      multiple: true,
+    }).then((files) => {
       this.setLoading(true);
 
       if (!files.length) {
@@ -338,14 +348,14 @@ abstract class SceneManager {
         const reader = new FileReader();
 
         reader.onload = () => {
-          if (!reader.result || typeof reader.result !== 'string') return;
+          if (!reader.result || typeof reader.result !== "string") return;
 
-          if (file.type === 'image/svg+xml') {
+          if (file.type === "image/svg+xml") {
             CommandHistory.endBatch();
 
-            console.time('svg');
+            console.time("svg");
             let entities = parseSVG(reader.result);
-            console.timeEnd('svg');
+            console.timeEnd("svg");
 
             if (entities) {
               if (!Array.isArray(entities)) entities = [entities];
@@ -355,7 +365,7 @@ abstract class SceneManager {
                 SceneManager.add(entities[i]);
               }
             }
-          } else if (file.type === 'image/png' || file.type === 'image/jpeg') {
+          } else if (file.type === "image/png" || file.type === "image/jpeg") {
             SceneManager.add(new ImageMedia({ source: reader.result }));
           }
 
@@ -367,8 +377,8 @@ abstract class SceneManager {
           }
         };
 
-        if (file.type === 'image/svg+xml') reader.readAsText(file);
-        else if (file.type === 'image/png' || file.type === 'image/jpeg')
+        if (file.type === "image/svg+xml") reader.readAsText(file);
+        else if (file.type === "image/png" || file.type === "image/jpeg")
           reader.readAsDataURL(file);
       });
     });
