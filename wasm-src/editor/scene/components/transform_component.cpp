@@ -2,6 +2,7 @@
 
 #include "../../../math/vector.h"
 #include "../entities/element_entity.h"
+#include "../entities/Freehand_entity.h"
 
 /* -- TransformComponent -- */
 
@@ -51,7 +52,7 @@ Box CircleTransformComponent::bounding_box() const {
 Box RectTransformComponent::bounding_box() const {
   const vec2 position = m_position.get();
   const vec2 end = position + m_size.get();
-  
+
   return { min(position, end), max(position, end) };
 }
 
@@ -75,10 +76,10 @@ Vec2Value* VertexTransformComponent::right() {
   if (parent) {
     VertexEntity* vertex_parent = dynamic_cast<VertexEntity*>(parent);
     HandleEntity* right = static_cast<VertexEntity*>(parent)->right();
-    if (right) { 
+    if (right) {
       auto type = right->type;
       CircleTransformComponent* transform = right->transform();
-      return &(transform->position()); 
+      return &(transform->position());
     }
     return nullptr;
   }
@@ -276,4 +277,31 @@ void ElementTransformComponent::apply() {
   for (const auto& [id, vertex] : *parent) {
     vertex->transform()->apply();
   }
+}
+
+/* -- FreehandTransformComponent -- */
+
+Box FreehandTransformComponent::bounding_box() const {
+  Box box{ std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
+  FreehandEntity* parent = static_cast<FreehandEntity*>(this->parent);
+
+  if (!parent) return box;
+
+  vec2 position = m_position.get();
+
+  if (parent->points_count() > 0) {
+    for (FreehandEntity::Point& point : *parent) {
+      vec2 point_position = XY(point.data);
+      min(box.min, point_position, box.min);
+      max(box.max, point_position, box.max);
+    }
+  } else {
+    box.min = { 0.0f, 0.0f };
+    box.max = { 0.0f, 0.0f };
+  }
+
+  box.min += position;
+  box.max += position;
+
+  return box;
 }

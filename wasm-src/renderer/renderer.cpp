@@ -120,7 +120,7 @@ void Renderer::draw(const InstancedGeometry& geometry) {
   get()->draw_instanced(geometry);
 }
 
-Renderer::Renderer(): m_frame_buffer(m_shaders, m_size * m_dpr) {}
+Renderer::Renderer(): m_frame_buffer(m_shaders, m_size* m_dpr) {}
 
 void Renderer::init_batch_renderer() {
   m_data.vertex_buffer = new Vertex[m_data.max_vertex_count];

@@ -108,3 +108,17 @@ public:
 private:
   vec2 m_origin{};
 };
+
+class FreehandTransformComponent: public TransformComponent {
+public:
+  FreehandTransformComponent(Entity* entity)
+    : TransformComponent(entity) {};
+  FreehandTransformComponent(Entity* entity, const vec2& position)
+    : TransformComponent(entity, position) {};
+  FreehandTransformComponent(const FreehandTransformComponent&) = default;
+  FreehandTransformComponent(FreehandTransformComponent&&) = default;
+
+  ~FreehandTransformComponent() = default;
+
+  virtual Box bounding_box() const override;
+};

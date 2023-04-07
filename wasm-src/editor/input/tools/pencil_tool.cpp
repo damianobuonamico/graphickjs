@@ -9,7 +9,7 @@
 #include "../../../math/matrix.h"
 #include "../../settings.h"
 
-PencilTool::PencilTool(): Tool(ToolType::Pencil, CategoryImmediate | CategoryDirect) {}
+PencilTool::PencilTool(): Tool(ToolType::Pencil, CategoryImmediate) {}
 
 #ifdef SPRING_FREEHAND
 

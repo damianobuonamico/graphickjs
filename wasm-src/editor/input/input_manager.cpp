@@ -164,13 +164,15 @@ bool InputManager::on_pointer_move(PointerTarget target, float x, float y) {
   pointer.scene.position = Editor::viewport.client_to_scene(current_position);
   pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
-  hover.set(
-    Editor::scene.entity_at(
-      pointer.scene.position,
-      m_tool_state.active().is_in_category(Tool::CategoryDirect),
-      5.0f / Editor::viewport.zoom()
-    )
-  );
+  if (!m_tool_state.active().is_in_category(Tool::CategoryImmediate)) {
+    hover.set(
+      Editor::scene.entity_at(
+        pointer.scene.position,
+        m_tool_state.active().is_in_category(Tool::CategoryDirect),
+        5.0f / Editor::viewport.zoom()
+      )
+    );
+  }
 
   if (!m_moving && pointer.down) {
     if (

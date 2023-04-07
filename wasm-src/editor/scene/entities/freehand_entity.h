@@ -9,13 +9,14 @@
 #include "element_entity.h"
 #include "bezier_entity.h"
 
-#define USE_SPRING_FREEHAND
-
-#ifdef USE_SPRING_FREEHAND
-
 #include <vector>
 
 class FreehandEntity: public Entity {
+public:
+  struct Point {
+    vec3 data;
+    double time;
+  };
 public:
   FreehandEntity(vec2 position, float pressure, double time);
   FreehandEntity(const FreehandEntity&) = default;
@@ -25,8 +26,15 @@ public:
     console::log("FreehandEntity destroyed");
   }
 
-  inline virtual TransformComponent* transform() override { return &m_transform; }
-  inline virtual const TransformComponent* transform() const override { return &m_transform; }
+  inline std::vector<Point>::iterator begin() { return m_points.begin(); }
+  inline std::vector<Point>::iterator end() { return m_points.end(); }
+  inline std::vector<Point>::const_iterator begin() const { return m_points.begin(); }
+  inline std::vector<Point>::const_iterator end() const { return m_points.end(); }
+
+  inline virtual FreehandTransformComponent* transform() override { return &m_transform; }
+  inline virtual const FreehandTransformComponent* transform() const override { return &m_transform; }
+
+  inline size_t points_count() const { return m_points.size(); }
 
   void add_point(vec2 position, float pressure, double time);
   void add_point(vec2 position, float pressure, double time, vec3 updated_data);
@@ -34,76 +42,13 @@ public:
   virtual void tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const override;
   virtual void render(RenderingOptions options) const override;
 
-  std::shared_ptr<ElementEntity> to_element() const;
+  virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
+  virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) override;
 private:
   size_t index_from_t(double t) const;
-
   Geometry tessellate(RenderingOptions options) const;
-private:
-  struct Point {
-    vec3 data;
-    double time;
-  };
 private:
   std::vector<Point> m_points;
 
-  TransformComponent m_transform;
+  FreehandTransformComponent m_transform;
 };
-
-#else
-
-#include <vector>
-#include <memory>
-
-class FreehandEntity: public Entity {
-public:
-  FreehandEntity(const vec2& position, float pressure, double time);
-  FreehandEntity(const FreehandEntity&) = default;
-  FreehandEntity(FreehandEntity&&) = default;
-
-  ~FreehandEntity() {
-    console::log("FreehandEntity destroyed");
-  }
-
-  inline virtual TransformComponent* transform() override { return &m_transform; }
-  inline virtual const TransformComponent* transform() const override { return &m_transform; }
-
-  void add_point(const vec2& position, float pressure, double time);
-
-  virtual void tessellate_outline(const vec4& color, float zoom, Geometry& geo) const override;
-  virtual void render(float zoom) const override;
-
-  std::shared_ptr<ElementEntity> to_element() const;
-private:
-  struct CreationState {
-    CreationState(const vec2& position, float pressure, double time)
-      : distance(0.0f), time(time),
-      points({ { position, pressure} }), can_modify(true) {}
-
-    bool can_modify;
-
-    float distance;
-    double time;
-    size_t deleted_offset = 0;
-
-    int last_committed_curve = -1;
-    int last_committed_vertex = -1;
-    std::vector<PathPoint> points;
-  };
-private:
-  vec2 m_position;
-  std::vector<FreehandPathPoint> m_points;
-  std::vector<float> m_pressures;
-  std::vector<PathPoint> m_input_points;
-
-  // TODO: make pointer
-  CreationState m_creation_state;
-
-  std::vector<BezierEntity*> m_curves;
-  std::vector<VertexEntity*> m_vertices;
-  std::vector<size_t> m_curves_indices;
-
-  TransformComponent m_transform;
-};
-
-#endif

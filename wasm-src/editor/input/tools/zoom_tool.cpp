@@ -6,7 +6,7 @@
 
 #include <cmath>
 
-ZoomTool::ZoomTool(): Tool(ToolType::Zoom, CategoryNone) {}
+ZoomTool::ZoomTool(): Tool(ToolType::Zoom, CategoryImmediate) {}
 
 void ZoomTool::on_pointer_move() {
   float delta =

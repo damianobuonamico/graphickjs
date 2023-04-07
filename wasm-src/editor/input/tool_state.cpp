@@ -66,6 +66,20 @@ void ToolState::recalculate_active() {
     } else {
       set_active(Tool::ToolType::Pan);
     }
+  } else if (InputManager::keys.ctrl) {
+    if (m_tools[(int)m_current]->is_in_category(Tool::CategoryDirect)) {
+      if (m_current == Tool::ToolType::DirectSelect) {
+        set_active(Tool::ToolType::Select);
+      } else {
+        set_active(Tool::ToolType::DirectSelect);
+      }
+    } else {
+      if (m_current == Tool::ToolType::Select) {
+        set_active(Tool::ToolType::DirectSelect);
+      } else {
+        set_active(Tool::ToolType::Select);
+      }
+    }
   } else {
     set_active(m_current);
   }

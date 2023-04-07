@@ -61,6 +61,17 @@ void ShaderManager::create_shaders() {
     "    return;\n"
     "  }\n"
     "  float fade = 1.2 / uZoom;\n"
+    "  if (vMaxNormal * uZoom < 1.2) {\n"
+    "    if (vMaxNormal * uZoom < 1.0) {\n"
+    "      fragColor = vec4(vColor.rgb, vColor.a * 0.9f);\n"
+    "      return;\n"
+    "    }\n"
+    "    float c = -1.562;\n"
+    "    float n = max(vMaxNormal, 1.0 / uZoom);\n"
+    "    fade = (-1.0/(n*uZoom+c)+c) / uZoom;\n"
+    "    fragColor = vec4(vColor.rgb, mix(vColor.a, 0.0, smoothstep(n - fade, n, abs(vNormal / vMaxNormal * n))));\n"
+    "    return;\n"
+    "  }\n"
     "  fragColor = vec4(vColor.rgb, mix(vColor.a, 0.0, smoothstep(vMaxNormal - fade, vMaxNormal, abs(vNormal))));\n"
     "}\n";
 

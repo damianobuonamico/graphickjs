@@ -39,7 +39,7 @@ void Scene::render_selection(RenderingOptions options) const {
 
   Entity* hovered = InputManager::hover.element();
 
-  if (hovered && !selection.has(hovered->id)) {
+  if (!tool.is_in_category(Tool::CategoryImmediate) && hovered && !selection.has(hovered->id)) {
     hovered->tessellate_outline(outline_color, options, outline_geometry);
   }
 
@@ -60,10 +60,10 @@ void Scene::render_selection(RenderingOptions options) const {
   }
 
   for (const auto& [id, entity] : selection) {
+    entity->tessellate_outline(outline_color, options, outline_geometry);
+
     const ElementEntity* element = dynamic_cast<const ElementEntity*>(entity);
     if (element != nullptr) {
-      element->tessellate_outline(outline_color, options, outline_geometry);
-
       if (!is_direct_tool) continue;
 
       vec2 position = element->transform()->position().get();
