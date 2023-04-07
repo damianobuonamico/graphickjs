@@ -39,7 +39,7 @@ void PencilTool::on_pointer_up(bool abort) {
   m_entity = nullptr;
 }
 
-void PencilTool::render_overlays(RenderingOptions options) const {
+void PencilTool::render_overlays(const RenderingOptions& options) const {
   // if (!m_entity) return;
   // m_entity->render(zoom);
 }

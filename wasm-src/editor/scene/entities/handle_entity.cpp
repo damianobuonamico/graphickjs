@@ -1,6 +1,6 @@
 #include "handle_entity.h"
 
-void HandleEntity::render(RenderingOptions options) const {
+void HandleEntity::render(const RenderingOptions& options) const {
   // TODO: Implement square geometry and refactor
   Geometry geo;
   const vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f };

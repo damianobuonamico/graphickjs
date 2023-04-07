@@ -70,14 +70,7 @@ void Viewport::set_bounds(const Box& bounds) {
 }
 
 bool Viewport::is_visible(const Box& box) {
-  vec2 visible_size = m_size / m_zoom - m_position;
-
-  return (
-    box.max.x >= -m_position.x &&
-    box.min.x <= visible_size.x &&
-    box.max.y >= -m_position.y &&
-    box.min.y <= visible_size.y
-    );
+  return does_box_intersect_box(box, visible());
 }
 
 vec2 Viewport::client_to_scene(const vec2& position) {

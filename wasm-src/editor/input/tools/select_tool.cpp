@@ -77,10 +77,10 @@ void SelectTool::on_pointer_up(bool abort) {
   }
 }
 
-void SelectTool::tessellate_overlays_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {
+void SelectTool::tessellate_overlays_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {
   m_selection_rect.tessellate_outline(color, options, geo);
 }
 
-void SelectTool::render_overlays(RenderingOptions options) const {
+void SelectTool::render_overlays(const RenderingOptions& options) const {
   m_selection_rect.render(options);
 }

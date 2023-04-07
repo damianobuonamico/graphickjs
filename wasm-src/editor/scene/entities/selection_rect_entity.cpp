@@ -15,7 +15,7 @@ void SelectionRectEntity::reset() {
   m_transform.size().move_to(vec2{ 0.0f });
 }
 
-void SelectionRectEntity::tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {
+void SelectionRectEntity::tessellate_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {
   if (!m_active || is_zero(m_transform.size().get())) {
     return;
   }
@@ -24,7 +24,7 @@ void SelectionRectEntity::tessellate_outline(const vec4& color, RenderingOptions
 }
 
 // TODO: check where headers are included to reduce compilation time
-void SelectionRectEntity::render(RenderingOptions options) const {
+void SelectionRectEntity::render(const RenderingOptions& options) const {
   if (!m_active || is_zero(m_transform.size().get())) {
     return;
   }

@@ -109,11 +109,11 @@ void DirectSelectTool::on_pointer_up(bool abort) {
   }
 }
 
-void DirectSelectTool::tessellate_overlays_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {
+void DirectSelectTool::tessellate_overlays_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {
   m_selection_rect.tessellate_outline(color, options, geo);
 }
 
-void DirectSelectTool::render_overlays(RenderingOptions options) const {
+void DirectSelectTool::render_overlays(const RenderingOptions& options) const {
   m_selection_rect.render(options);
 }
 

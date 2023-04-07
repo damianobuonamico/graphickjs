@@ -37,8 +37,8 @@ public:
 
   virtual void on_pointer_hover() {}
 
-  virtual void tessellate_overlays_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {}
-  virtual void render_overlays(RenderingOptions options) const {}
+  virtual void tessellate_overlays_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {}
+  virtual void render_overlays(const RenderingOptions& options) const {}
 protected:
   Tool(ToolType type, int category): m_type(type), m_category(category) {}
 protected:

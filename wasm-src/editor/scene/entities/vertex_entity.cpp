@@ -1,6 +1,6 @@
 #include "vertex_entity.h"
 
-void VertexEntity::render(RenderingOptions options) const {
+void VertexEntity::render(const RenderingOptions& options) const {
   // TODO: Implement instanced rendering, offset by transform.position
   m_position.render(options);
 }

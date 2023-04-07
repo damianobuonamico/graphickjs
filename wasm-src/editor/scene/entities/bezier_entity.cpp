@@ -52,7 +52,7 @@ std::vector<vec2> BezierEntity::turning_angles() const {
   return BEZIER_CALL(turning_angles);
 }
 
-std::vector<float> BezierEntity::triangulation_params(RenderingOptions options) const {
+std::vector<float> BezierEntity::triangulation_params(const RenderingOptions& options) const {
   return BEZIER_CALL(triangulation_params, options);
 }
 
@@ -191,7 +191,7 @@ void BezierEntity::tessellate_outline(TessellationParams& params, Geometry& geo)
   STRICT_BEZIER_CALL(tessellate_outline, params, geo);
 }
 
-void BezierEntity::render(RenderingOptions options) const {
+void BezierEntity::render(const RenderingOptions& options) const {
   STRICT_BEZIER_CALL(render, options);
 }
 
@@ -416,7 +416,7 @@ vec2 BezierEntity::cubic_t_from_theta(float theta) const {
   return { -1.0f, -1.0f };
 }
 
-std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, RenderingOptions options) const {
+std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, const RenderingOptions& options) const {
   vec2 A = p0();
   vec2 C = p3();
 
@@ -453,7 +453,7 @@ std::vector<float> BezierEntity::quadratic_triangulation_params(const vec2& B, R
   return triangulation_params;
 }
 
-std::vector<float> BezierEntity::cubic_triangulation_params(RenderingOptions options) const {
+std::vector<float> BezierEntity::cubic_triangulation_params(const RenderingOptions& options) const {
   if (vec2 B; is_masquerading_quadratic(B)) {
     return quadratic_triangulation_params(B, options);
   }
@@ -999,7 +999,7 @@ void BezierEntity::cubic_tessellate_outline(TessellationParams& params, Geometry
   geo.push_vertices({ { params.offset + p3(), params.color } });
 }
 
-void BezierEntity::linear_render(RenderingOptions options) const {
+void BezierEntity::linear_render(const RenderingOptions& options) const {
   Geometry geo;
 
   vec2 A = p0();
@@ -1030,7 +1030,7 @@ void BezierEntity::linear_render(RenderingOptions options) const {
   Renderer::draw(geo);
 }
 
-void BezierEntity::cubic_render(RenderingOptions options) const {
+void BezierEntity::cubic_render(const RenderingOptions& options) const {
   vec2 offset{ 0.0f };
   if (parent) offset = parent->transform()->position().get();
 

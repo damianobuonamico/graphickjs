@@ -3,6 +3,7 @@
 #include "../component.h"
 #include "../../../values/vec2_value.h"
 #include "../../../math/box.h"
+#include "../../../utils/cache.h"
 
 class TransformComponent: public Component {
 public:
@@ -121,4 +122,6 @@ public:
   ~FreehandTransformComponent() = default;
 
   virtual Box bounding_box() const override;
+private:
+  mutable Cached<Box> m_bounding_box;
 };

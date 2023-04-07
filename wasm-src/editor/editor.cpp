@@ -62,7 +62,7 @@ void Editor::render(
 void Editor::render_frame(double time) {
   Renderer::begin_frame(viewport.position(), viewport.zoom());
 
-  scene.render(viewport.zoom());
+  scene.render(viewport.zoom(), viewport.visible());
 
   Renderer::end_frame();
 }

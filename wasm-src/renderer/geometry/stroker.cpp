@@ -10,7 +10,7 @@ uint32_t generate_round_cap(
   float radius,
   Geometry& geometry,
   int start_offset,
-  RenderingOptions options
+  const RenderingOptions& options
 ) {
   vec2 center = midpoint(from, to);
   vec2 direction_from = from - center;
@@ -57,7 +57,7 @@ uint32_t generate_round_join(
   const vec2& center,
   Geometry& geometry,
   uint32_t offset,
-  RenderingOptions options
+  const RenderingOptions& options
 ) {
   const vec2& from = geometry.vertices()[from_index].position;
   const vec2& to = geometry.vertices()[to_index].position;

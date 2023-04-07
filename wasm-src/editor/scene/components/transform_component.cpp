@@ -282,12 +282,17 @@ void ElementTransformComponent::apply() {
 /* -- FreehandTransformComponent -- */
 
 Box FreehandTransformComponent::bounding_box() const {
-  Box box{ std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
   FreehandEntity* parent = static_cast<FreehandEntity*>(this->parent);
-
-  if (!parent) return box;
+  if (!parent) return {};
 
   vec2 position = m_position.get();
+  UUID id{ (uint32_t)parent->points_count(), (uint32_t)(std::abs(position.x) * 10000), (uint32_t)(std::abs(position.y) * 10000) };
+
+  if (m_bounding_box.id() == id) {
+    return m_bounding_box.get();
+  }
+
+  Box box{ std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
 
   if (parent->points_count() > 0) {
     for (FreehandEntity::Point& point : *parent) {
@@ -302,6 +307,8 @@ Box FreehandTransformComponent::bounding_box() const {
 
   box.min += position;
   box.max += position;
+
+  m_bounding_box.set(box, id);
 
   return box;
 }

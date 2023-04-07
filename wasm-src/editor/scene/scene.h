@@ -28,8 +28,8 @@ public:
 private:
   void load();
 
-  void render(float zoom) const;
-  void render_selection(RenderingOptions options) const;
+  void render(float zoom, const Box& viewport) const;
+  void render_selection(const RenderingOptions& options) const;
 private:
   MapValue<UUID, std::shared_ptr<Entity>> m_children;
 private:

@@ -6,7 +6,7 @@ void ElementEntity::add_vertex(const std::shared_ptr<VertexEntity>& vertex) {
   regenerate();
 }
 
-void ElementEntity::tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {
+void ElementEntity::tessellate_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {
   TessellationParams params = {
     m_transform.position().get(), options,
     1.0f, color,
@@ -20,14 +20,13 @@ void ElementEntity::tessellate_outline(const vec4& color, RenderingOptions optio
   }
 }
 
-void ElementEntity::render(RenderingOptions options) const {
+void ElementEntity::render(const RenderingOptions& options) const {
   if (m_curves.empty()) {
     return;
   }
 
   Geometry geo{};
 
-  options.facet_angle /= std::sqrtf(5.0f);
 
   bool is_closed = m_closed.get();
   TessellationParams params = {
@@ -37,6 +36,8 @@ void ElementEntity::render(RenderingOptions options) const {
     false, false, !is_closed, false, true,
     { vec2{}, vec2{}, 0 }
   };
+
+  params.rendering_options.facet_angle /= std::sqrtf(5.0f);
 
   for (int i = 0; i < m_curves.size() - 1; i++) {
     m_curves[i].tessellate(params, geo);

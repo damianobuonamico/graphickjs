@@ -17,6 +17,8 @@
 
 Renderer* Renderer::s_instance = nullptr;
 
+static int rendered = 0;
+
 void Renderer::init() {
   assert(!s_instance);
   s_instance = new Renderer();
@@ -65,10 +67,11 @@ void Renderer::resize(const vec2& size, float dpr) {
   get()->m_size = size;
   get()->m_dpr = dpr;
   get()->m_frame_buffer.resize(size * dpr);
-  glViewport(0, 0, (GLsizei)size.x * dpr, (GLsizei)size.y * dpr);
+  glViewport(0, 0, (GLsizei)(size.x * dpr), (GLsizei)(size.y * dpr));
 }
 
 void Renderer::begin_frame(const vec2& position, float zoom) {
+  rendered = 0;
   get()->set_viewport(position, zoom);
   get()->m_frame_buffer.bind();
 
@@ -79,6 +82,7 @@ void Renderer::begin_frame(const vec2& position, float zoom) {
 }
 
 void Renderer::end_frame() {
+  console::log("Entities Rendered", rendered);
   if (get()->m_last_call == RenderCall::Batch) {
     get()->end_batch();
     get()->flush();
@@ -101,6 +105,7 @@ void Renderer::push_overlay_layer(const vec2& position) {
 }
 
 void Renderer::draw(const Geometry& geometry) {
+  rendered++;
   if (get()->m_last_call != RenderCall::Batch) {
     get()->bind_batch_renderer();
     get()->m_last_call = RenderCall::Batch;

@@ -13,7 +13,7 @@ public:
   virtual void on_pointer_move() override;
   virtual void on_pointer_up(bool abort = false) override;
 
-  virtual void render_overlays(RenderingOptions options) const override;
+  virtual void render_overlays(const RenderingOptions& options) const override;
 private:
   PencilTool();
   ~PencilTool();

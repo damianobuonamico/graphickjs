@@ -52,8 +52,8 @@ public:
 
   void add_vertex(const std::shared_ptr<VertexEntity>& vertex);
 
-  virtual void tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const override;
-  virtual void render(RenderingOptions options) const override;
+  virtual void tessellate_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const override;
+  virtual void render(const RenderingOptions& options) const override;
 
   bool intersects_box(const Box& box) const;
 

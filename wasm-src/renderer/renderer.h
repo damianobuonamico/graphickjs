@@ -7,6 +7,7 @@
 struct RenderingOptions {
   float zoom;
   float facet_angle;
+  Box viewport;
 };
 
 class Renderer {

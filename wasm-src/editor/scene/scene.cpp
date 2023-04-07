@@ -13,8 +13,8 @@ void Scene::load() {
   m_children.insert({ element2->id, element2 });
 }
 
-void Scene::render(float zoom) const {
-  RenderingOptions options = { zoom, std::acosf(2.0f * std::pow(1.0f - Settings::tessellation_error / std::fmaxf(zoom, 0.26f), 2.0f) - 1.0f) };
+void Scene::render(float zoom, const Box& viewport) const {
+  RenderingOptions options = { zoom, std::acosf(2.0f * std::pow(1.0f - Settings::tessellation_error / std::fmaxf(zoom, 0.26f), 2.0f) - 1.0f), viewport };
 
   for (const auto& [id, entity] : m_children) {
     entity->render(options);
@@ -25,7 +25,7 @@ void Scene::render(float zoom) const {
   DEBUGGER_UPDATE();
 }
 
-void Scene::render_selection(RenderingOptions options) const {
+void Scene::render_selection(const RenderingOptions& options) const {
   const vec4 outline_color{ 0.22f, 0.76f, 0.95f, 1.0f };
   const vec4 white{ 1.0f, 1.0f, 1.0f, 1.0f };
 

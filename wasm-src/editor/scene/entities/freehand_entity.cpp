@@ -1,8 +1,7 @@
 #include "freehand_entity.h"
-#include "../../input/input_manager.h"
-#include "../../../math/models/corner_detector.h"
-#include "../../../math/models/path_fitter.h"
-#include "../../../math/models/input_parser.h"
+
+#include "../../../math/math.h"
+#include "../../../renderer/geometry/stroker.h"
 #include "../../settings.h"
 
 FreehandEntity::FreehandEntity(vec2 position, float pressure, double time)
@@ -20,7 +19,7 @@ void FreehandEntity::add_point(vec2 position, float pressure, double time, vec3 
   m_points.push_back({ { position.x, position.y, pressure }, time });
 }
 
-void FreehandEntity::tessellate_outline(const vec4& color, RenderingOptions options, Geometry& geo) const {
+void FreehandEntity::tessellate_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {
   size_t points_num = m_points.size();
 
   vec2 point;
@@ -78,7 +77,7 @@ void FreehandEntity::tessellate_outline(const vec4& color, RenderingOptions opti
     anchor_start = m_points[index + 1].data;
     anchor_end = m_points[index + 2].data;
 
-    anchor = lerp(anchor_start, anchor_end, (float)(t - m_points[index].time) / (m_points[index + 1].time - m_points[index].time));
+    anchor = lerp(anchor_start, anchor_end, (float)(t - m_points[index].time) / (float)(m_points[index + 1].time - m_points[index].time));
 
     acceleration.x = (anchor.x - position.x) / stiffness - drag * velocity.x;
     acceleration.y = (anchor.y - position.y) / stiffness - drag * velocity.y;
@@ -109,7 +108,6 @@ void FreehandEntity::tessellate_outline(const vec4& color, RenderingOptions opti
     since_last_point++;
     last_index = index;
   }
-
 
   for (double t = time; t < m_points.back().time; t += time_step) {
     size_t index = index_from_t(t);
@@ -159,15 +157,35 @@ void FreehandEntity::tessellate_outline(const vec4& color, RenderingOptions opti
   }
 }
 
-void FreehandEntity::render(RenderingOptions options) const {
-  Renderer::draw(tessellate(options));
+void FreehandEntity::render(const RenderingOptions& options) const {
+  if (m_points.empty()) return;
+
+  // TODO: replace with stroke width
+  Box box = m_transform.bounding_box();
+  box.min -= 5.0f;
+  box.max += 5.0f;
+
+  if (!does_box_intersect_box(box, options.viewport)) return;
+
+  // TODO: do not recalculate geometry if only position changed
+  vec2 position = m_transform.position().get();
+  UUID id{ (uint32_t)m_points.size(), (uint32_t)std::round(options.facet_angle * 100), (uint32_t)(std::abs(position.x) * 10000.0f), (uint32_t)(std::abs(position.y) * 10000.0f) };
+
+  if (m_geometry.id() == id) {
+    Renderer::draw(m_geometry.get());
+    return;
+  }
+
+  Geometry geo = tessellate(options);
+  m_geometry.set(geo, id);
+
+  Renderer::draw(geo);
 }
 
 Entity* FreehandEntity::entity_at(const vec2& position, bool lower_level, float threshold) {
   if (m_points.empty()) return nullptr;
 
   vec2 pos = position - m_transform.position().get();
-
   Box box = m_transform.bounding_box();
 
   if (is_point_in_box(position, box)) {
@@ -197,7 +215,7 @@ size_t FreehandEntity::index_from_t(double t) const {
   return m_points.size() - 1;
 }
 
-Geometry FreehandEntity::tessellate(RenderingOptions options) const {
+Geometry FreehandEntity::tessellate(const RenderingOptions& options) const {
   size_t points_num = m_points.size();
   Geometry geo;
 
@@ -223,7 +241,7 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
   float facet_angle = params.rendering_options.facet_angle * 0.25f;
 
   if (points_num == 1) {
-    geo.push_circle(offset_position + XY(m_points[0].data), stroke_width * m_points[0].data.z, color, (uint32_t)MATH_TWO_PI / facet_angle);
+    geo.push_circle(offset_position + XY(m_points[0].data), stroke_width * m_points[0].data.z, color, (uint32_t)(MATH_TWO_PI / facet_angle));
     return geo;
   } else if (points_num == 2) {
     vec2 p0 = offset_position + XY(m_points[0].data);
@@ -302,7 +320,7 @@ Geometry FreehandEntity::tessellate(RenderingOptions options) const {
     anchor_start = m_points[index + 1].data;
     anchor_end = m_points[index + 2].data;
 
-    anchor = lerp(anchor_start, anchor_end, (float)(t - m_points[index].time) / (m_points[index + 1].time - m_points[index].time));
+    anchor = lerp(anchor_start, anchor_end, (float)(t - m_points[index].time) / (float)(m_points[index + 1].time - m_points[index].time));
 
     acceleration.x = (anchor.x - position.x) / stiffness - drag * velocity.x;
     acceleration.y = (anchor.y - position.y) / stiffness - drag * velocity.y;
