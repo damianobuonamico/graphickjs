@@ -22,10 +22,19 @@ import AnimationManager from "./animation/animation";
 import Viewport from "./viewport";
 import { getWorkspacePrimaryColor } from "@/utils/color";
 import Freehand from "./ecs/entities/freehand";
+import API from "@/wasm/loader";
+
+declare global {
+  interface Window {
+    _save(data: string): void;
+  }
+}
 
 abstract class SceneManager {
   private static m_ecs: ECS;
   private static m_layer: Layer;
+
+  private static m_lastSave: number = 0;
 
   static viewport: Viewport;
   static overlays: OverlayState = new OverlayState();
@@ -49,6 +58,8 @@ abstract class SceneManager {
 
     CommandHistory.clear();
     AnimationManager.renderFn = this.renderFn.bind(this);
+
+    window._save = this.saveToLocalStorage;
   }
 
   static get(id: string) {
@@ -92,6 +103,8 @@ abstract class SceneManager {
   }
 
   static setViewportArea() {
+    return;
+
     this.viewport.viewport = vec2.divS(
       Renderer.size,
       window.devicePixelRatio ** 2
@@ -156,22 +169,40 @@ abstract class SceneManager {
   }
 
   static save() {
-    localStorage.setItem(
-      LOCAL_STORAGE_KEY_STATE,
-      JSON.stringify(this.viewport)
-    );
+    const now = Date.now();
+    if (now - this.m_lastSave < 10 * 1000) return;
+
+    API._save();
+
+    this.m_lastSave = now;
+
+    // console.log(localStorage.getItem(LOCAL_STORAGE_KEY));
+    // console.log(JSON.parse(data.replaceAll("'", '"')));
+
+    // localStorage.setItem(
+    //   LOCAL_STORAGE_KEY_STATE,
+    //   JSON.stringify(this.viewport)
+    // );
     // localStorage.setItem(LOCAL_STORAGE_KEY_SEQUENCE, JSON.stringify(AnimationManager.toJSON()));
-    localStorage.setItem(
-      LOCAL_STORAGE_KEY,
-      JSON.stringify(this.m_ecs.map((entity) => entity.toJSON()))
-    );
+    // localStorage.setItem(
+    //   LOCAL_STORAGE_KEY,
+    //   JSON.stringify(this.m_ecs.map((entity) => entity.toJSON()))
+    // );
+  }
+
+  static saveToLocalStorage(data: string) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, data);
+    console.log(data);
+    console.log(JSON.parse(data));
   }
 
   static clear() {
+    return;
     this.m_ecs = new ECS();
   }
 
   static new() {
+    return;
     // TODO: implement
     const dimensions = prompt("Enter artboard dimentions", "2480, 3508");
     if (!dimensions) return;
@@ -204,42 +235,54 @@ abstract class SceneManager {
     const viewport = state ? JSON.parse(state) : {};
     this.viewport = new Viewport(viewport);
 
-    if (data) {
-      const parsed = JSON.parse(data) as EntityObject[];
-      parsed.forEach((object) => {
-        const entity = this.fromObject(object);
-        if (entity) this.m_ecs.add(entity);
-      });
-    } else {
-      const artboard = new Artboard({ size: [1080, 1920] });
-      this.m_layer = new Layer({});
-      const element = new Element({
-        position: [100, 100],
-        vertices: [
-          new Vertex({ position: [0, 0] }),
-          new Vertex({ position: [100, 0] }),
-          new Vertex({ position: [100, 100] }),
-          new Vertex({ position: [0, 100] }),
-        ],
-      });
+    // TODO: check when wasm api is ready
+    setTimeout(() => {
+      if (data) {
+        API._load(data);
+      } else {
+        API._load("");
+      }
 
-      this.m_layer.add(element);
-      artboard.add(this.m_layer);
+      this.setLoading(false);
+    }, 100);
 
-      this.m_ecs.add(artboard);
-    }
+    return;
 
-    if (sequence && sequence !== "undefined") {
-      let entitiesMap: Map<string, Entity> = new Map();
-      let seq = JSON.parse(sequence);
-      let nodes: Set<string> = new Set(seq.nodes);
-      this.forEach((entity) => {
-        if (nodes.has(entity.id)) entitiesMap.set(entity.id, entity);
-      });
-      AnimationManager.load(Array.from(entitiesMap.values()));
-    }
+    // const parsed = JSON.parse(data) as EntityObject[];
+    // parsed.forEach((object) => {
+    //   const entity = this.fromObject(object);
+    //   if (entity) this.m_ecs.add(entity);
+    // });
 
-    this.setLoading(false);
+    // const artboard = new Artboard({ size: [1080, 1920] });
+    // this.m_layer = new Layer({});
+    // const element = new Element({
+    //   position: [100, 100],
+    //   vertices: [
+    //     new Vertex({ position: [0, 0] }),
+    //     new Vertex({ position: [100, 0] }),
+    //     new Vertex({ position: [100, 100] }),
+    //     new Vertex({ position: [0, 100] }),
+    //   ],
+    // });
+
+    // this.m_layer.add(element);
+    // artboard.add(this.m_layer);
+
+    // this.m_ecs.add(artboard);
+    // }
+
+    // if (sequence && sequence !== "undefined") {
+    //   let entitiesMap: Map<string, Entity> = new Map();
+    //   let seq = JSON.parse(sequence);
+    //   let nodes: Set<string> = new Set(seq.nodes);
+    //   this.forEach((entity) => {
+    //     if (nodes.has(entity.id)) entitiesMap.set(entity.id, entity);
+    //   });
+    //   AnimationManager.load(Array.from(entitiesMap.values()));
+    // }
+
+    // this.setLoading(false);
 
     //this.add(new Demo({}));
 

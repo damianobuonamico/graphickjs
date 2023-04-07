@@ -34,15 +34,15 @@ void SelectionComponent::clear(bool deselect) {
   m_temp_selected.clear();
 
   if (deselect && parent) {
-    Editor::scene.selection.deselect(parent->id, false);
+    Editor::scene().selection.deselect(parent->id, false);
   }
 }
 
 void SelectionComponent::select(Entity* entity) {
   m_selected.insert({ entity->id, entity });
 
-  if (parent && !Editor::scene.selection.has(parent->id)) {
-    Editor::scene.selection.select(parent, false);
+  if (parent && !Editor::scene().selection.has(parent->id)) {
+    Editor::scene().selection.select(parent, false);
   }
 }
 
@@ -50,7 +50,7 @@ void SelectionComponent::deselect(UUID id) {
   m_selected.erase(id);
 
   if (parent && m_selected.empty()) {
-    Editor::scene.selection.deselect(parent->id, false);
+    Editor::scene().selection.deselect(parent->id, false);
   }
 }
 

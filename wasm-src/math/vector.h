@@ -113,6 +113,10 @@ vec2& swap_coordinates(const vec2& v, vec2& out);
 
 bool collinear(const vec2& v1, const vec2& v2, const vec2& v3, const float eps);
 
+std::string stringify(const vec2& v);
+std::string stringify(const vec3& v);
+std::string stringify(const vec4& v);
+
 #define XY(v) vec2{ v.x, v.y }
 #define RG(v) vec2{ v.r, v.g }
 #define ST(v) vec2{ v.s, v.t }

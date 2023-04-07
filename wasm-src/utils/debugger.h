@@ -4,7 +4,7 @@
 
 #include "../math/vec2.h"
 #include "../math/vec4.h"
-#include "../math/Box.h"
+#include "../math/box.h"
 
 #include <vector>
 

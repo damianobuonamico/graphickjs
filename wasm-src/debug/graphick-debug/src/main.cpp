@@ -137,6 +137,8 @@ int main() {
   Editor::init();
   InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
+  Editor::save();
+
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 

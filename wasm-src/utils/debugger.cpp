@@ -32,8 +32,8 @@ void Debugger::render() {
     hovered = nullptr;
   }
 
-  if (!hovered && !Editor::scene.selection.empty()) {
-    ElementEntity* element = dynamic_cast<ElementEntity*>(Editor::scene.selection.begin()->second);
+  if (!hovered && !Editor::scene().selection.empty()) {
+    ElementEntity* element = dynamic_cast<ElementEntity*>(Editor::scene().selection.begin()->second);
     if (element && !element->selection()->empty()) {
       VertexEntity* vertex = dynamic_cast<VertexEntity*>(element->selection()->entities()[0]);
       for (auto it = element->curves_begin(); it != element->curves_end(); ++it) {
@@ -83,7 +83,7 @@ void Debugger::render() {
 }
 
 void Debugger::push_frame(const vec2& size, bool align_right) {
-  vec2 viewport_size = Editor::viewport.size();
+  vec2 viewport_size = Editor::scene().viewport.size();
   m_frame_width = size.x - 2.0f * m_padding;
   m_cursor = vec2{ m_padding, m_padding };
 

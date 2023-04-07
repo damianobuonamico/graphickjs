@@ -6,5 +6,5 @@
 PanTool::PanTool(): Tool(ToolType::Pan, CategoryImmediate) {}
 
 void PanTool::on_pointer_move() {
-  Editor::viewport.move(InputManager::pointer.scene.movement);
+  Editor::scene().viewport.move(InputManager::pointer.scene.movement);
 }

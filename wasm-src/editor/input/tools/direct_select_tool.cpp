@@ -119,7 +119,7 @@ void DirectSelectTool::render_overlays(const RenderingOptions& options) const {
 
 // TODO: Implement rotation
 void DirectSelectTool::translate_selected() {
-  for (const auto& [id, entity] : Editor::scene.selection) {
+  for (const auto& [id, entity] : Editor::scene().selection) {
     if (entity->is_in_category(Entity::CategorySelectableChildren)) {
       ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
 
@@ -137,12 +137,12 @@ void DirectSelectTool::translate_selected() {
 
 void DirectSelectTool::shift_select_element(Entity* entity) {
   if (InputManager::keys.shift) {
-    Editor::scene.selection.deselect(entity->id);
+    Editor::scene().selection.deselect(entity->id);
   } else {
     if (InputManager::pointer.button == InputManager::PointerButton::Left) {
-      Editor::scene.selection.clear();
+      Editor::scene().selection.clear();
     }
-    Editor::scene.selection.select(entity, true);
+    Editor::scene().selection.select(entity, true);
   }
 }
 
@@ -150,7 +150,7 @@ void DirectSelectTool::shift_select_element(Entity* entity) {
 
 void DirectSelectTool::on_none_pointer_down() {
   if (!InputManager::keys.shift) {
-    Editor::scene.selection.clear();
+    Editor::scene().selection.clear();
   }
 
   m_selection_rect.set(InputManager::pointer.scene.position);
@@ -159,29 +159,29 @@ void DirectSelectTool::on_none_pointer_down() {
 }
 
 void DirectSelectTool::on_duplicate_pointer_down() {
-  if (!Editor::scene.selection.has(m_entity->id)) {
-    if (!InputManager::keys.shift) Editor::scene.selection.clear();
+  if (!Editor::scene().selection.has(m_entity->id)) {
+    if (!InputManager::keys.shift) Editor::scene().selection.clear();
 
-    Editor::scene.selection.select(m_entity);
+    Editor::scene().selection.select(m_entity);
     m_is_entity_added_to_selection = true;
   }
 
-  std::vector<Entity*> entities = Editor::scene.selection.entities();
-  Editor::scene.selection.clear();
+  std::vector<Entity*> entities = Editor::scene().selection.entities();
+  Editor::scene().selection.clear();
 
   for (Entity* entity : entities) {
-    Entity* duplicate = Editor::scene.duplicate(entity);
-    if (duplicate) Editor::scene.selection.select(duplicate);
+    Entity* duplicate = Editor::scene().duplicate(entity);
+    if (duplicate) Editor::scene().selection.select(duplicate);
   }
 
   m_mode = ModeDuplicate;
 }
 
 void DirectSelectTool::on_entity_pointer_down() {
-  if (!Editor::scene.selection.has(m_entity->id)) {
-    if (!InputManager::keys.shift) Editor::scene.selection.clear();
+  if (!Editor::scene().selection.has(m_entity->id)) {
+    if (!InputManager::keys.shift) Editor::scene().selection.clear();
 
-    Editor::scene.selection.select(m_entity);
+    Editor::scene().selection.select(m_entity);
     m_is_entity_added_to_selection = true;
   }
 
@@ -189,10 +189,10 @@ void DirectSelectTool::on_entity_pointer_down() {
 }
 
 void DirectSelectTool::on_element_pointer_down() {
-  if (!Editor::scene.selection.has(m_element->id) || !m_element->selection()->full()) {
-    if (!InputManager::keys.shift) Editor::scene.selection.clear();
+  if (!Editor::scene().selection.has(m_element->id) || !m_element->selection()->full()) {
+    if (!InputManager::keys.shift) Editor::scene().selection.clear();
 
-    Editor::scene.selection.select(m_element, true);
+    Editor::scene().selection.select(m_element, true);
     m_is_entity_added_to_selection = true;
   }
 
@@ -201,13 +201,13 @@ void DirectSelectTool::on_element_pointer_down() {
 
 void DirectSelectTool::on_bezier_pointer_down() {
   if (
-    !Editor::scene.selection.has(m_element->id) ||
+    !Editor::scene().selection.has(m_element->id) ||
     !m_element->selection()->has(m_bezier->start().id) ||
     !m_element->selection()->has(m_bezier->end().id)
     ) {
     if (m_bezier->type() == BezierEntity::Type::Linear) {
       if (!InputManager::keys.shift) {
-        Editor::scene.selection.clear();
+        Editor::scene().selection.clear();
       }
 
       m_element->selection()->select(&m_bezier->start());
@@ -221,8 +221,8 @@ void DirectSelectTool::on_bezier_pointer_down() {
 
         m_is_entity_added_to_selection = true;
       } else {
-        Editor::scene.selection.clear();
-        Editor::scene.selection.select(m_element, false);
+        Editor::scene().selection.clear();
+        Editor::scene().selection.select(m_element, false);
 
         m_last_bezier_point = InputManager::pointer.scene.origin - m_element->transform()->position().get();
         m_last_bezier_p1 = m_bezier->p1();
@@ -240,7 +240,7 @@ void DirectSelectTool::on_bezier_pointer_down() {
 
 void DirectSelectTool::on_vertex_pointer_down() {
   if (!m_element->selection()->has(m_vertex->id)) {
-    if (!InputManager::keys.shift) Editor::scene.selection.clear();
+    if (!InputManager::keys.shift) Editor::scene().selection.clear();
 
     m_element->selection()->select(m_vertex);
     m_is_entity_added_to_selection = true;
@@ -266,7 +266,7 @@ void DirectSelectTool::on_none_pointer_move() {
   if (m_selection_rect.active()) {
     m_selection_rect.size(InputManager::pointer.scene.delta);
     Box box = m_selection_rect.transform()->bounding_box();
-    std::vector<Entity*> entities = Editor::scene.entities_in(box, false);
+    std::vector<Entity*> entities = Editor::scene().entities_in(box, false);
 
     for (Entity* entity : entities) {
       ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
@@ -281,7 +281,7 @@ void DirectSelectTool::on_none_pointer_move() {
       }
     }
 
-    Editor::scene.selection.temp_select(entities);
+    Editor::scene().selection.temp_select(entities);
   }
 }
 
@@ -394,7 +394,7 @@ void DirectSelectTool::on_handle_pointer_move() {
 /* -- on_pointer_up -- */
 
 void DirectSelectTool::on_none_pointer_up() {
-  Editor::scene.selection.sync(true);
+  Editor::scene().selection.sync(true);
 
   if (m_selection_rect.active()) {
     m_selection_rect.reset();
@@ -403,7 +403,7 @@ void DirectSelectTool::on_none_pointer_up() {
 
 void DirectSelectTool::on_duplicate_pointer_up() {
   if (m_dragging_occurred) {
-    for (const auto& [id, entity] : Editor::scene.selection) {
+    for (const auto& [id, entity] : Editor::scene().selection) {
       entity->transform()->apply();
     }
   }
@@ -411,27 +411,27 @@ void DirectSelectTool::on_duplicate_pointer_up() {
 
 void DirectSelectTool::on_entity_pointer_up() {
   if (m_dragging_occurred) {
-    for (const auto& [id, entity] : Editor::scene.selection) {
+    for (const auto& [id, entity] : Editor::scene().selection) {
       entity->transform()->apply();
     }
-  } else if (Editor::scene.selection.has(m_entity->id) && !m_is_entity_added_to_selection) {
+  } else if (Editor::scene().selection.has(m_entity->id) && !m_is_entity_added_to_selection) {
     shift_select_element(m_entity);
   }
 }
 
 void DirectSelectTool::on_element_pointer_up() {
   if (m_dragging_occurred) {
-    for (const auto& [id, entity] : Editor::scene.selection) {
+    for (const auto& [id, entity] : Editor::scene().selection) {
       entity->transform()->apply();
     }
-  } else if (Editor::scene.selection.has(m_element->id) && !m_is_entity_added_to_selection) {
+  } else if (Editor::scene().selection.has(m_element->id) && !m_is_entity_added_to_selection) {
     shift_select_element(m_element);
   }
 }
 
 void DirectSelectTool::on_bezier_pointer_up() {
   if (m_dragging_occurred) {
-    for (const auto& [id, entity] : Editor::scene.selection) {
+    for (const auto& [id, entity] : Editor::scene().selection) {
       entity->transform()->apply();
     }
   } else if (m_should_evaluate_selection) {
@@ -439,7 +439,7 @@ void DirectSelectTool::on_bezier_pointer_up() {
     m_element->selection()->select(&m_bezier->end());
   } else if (
     !m_is_entity_added_to_selection &&
-    Editor::scene.selection.has(m_element->id) &&
+    Editor::scene().selection.has(m_element->id) &&
     m_element->selection()->has(m_bezier->start().id) &&
     m_element->selection()->has(m_bezier->end().id)
     ) {
@@ -448,7 +448,7 @@ void DirectSelectTool::on_bezier_pointer_up() {
       m_element->selection()->deselect(m_bezier->end().id);
     } else {
       if (InputManager::pointer.button == InputManager::PointerButton::Left) {
-        Editor::scene.selection.clear();
+        Editor::scene().selection.clear();
       }
 
       m_element->selection()->select(&m_bezier->start());
@@ -459,7 +459,7 @@ void DirectSelectTool::on_bezier_pointer_up() {
 
 void DirectSelectTool::on_vertex_pointer_up() {
   if (m_dragging_occurred && !m_element->selection()->empty()) {
-    for (const auto& [id, entity] : Editor::scene.selection) {
+    for (const auto& [id, entity] : Editor::scene().selection) {
       entity->transform()->apply();
     }
   } else if (m_element->selection()->has(m_vertex->id) && !m_is_entity_added_to_selection) {
@@ -467,7 +467,7 @@ void DirectSelectTool::on_vertex_pointer_up() {
       m_element->selection()->deselect(m_vertex->id);
     } else {
       if (InputManager::pointer.button == InputManager::PointerButton::Left) {
-        Editor::scene.selection.clear();
+        Editor::scene().selection.clear();
       }
 
       m_element->selection()->select(m_vertex);

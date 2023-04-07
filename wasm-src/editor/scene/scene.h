@@ -4,12 +4,17 @@
 #include "../../utils/uuid.h"
 #include "entity.h"
 #include "selection_state.h"
+#include "viewport.h"
 
 #include <memory>
+#include <sstream>
 
 class Scene {
 public:
+  const UUID id;
+
   SelectionState selection;
+  Viewport viewport;
 public:
   Scene() = default;
   Scene(const Scene&) = default;
@@ -26,9 +31,11 @@ public:
 
   Entity* duplicate(const Entity* entity);
 private:
+  void save(std::stringstream& ss);
   void load();
+  void load(const char* data);
 
-  void render(float zoom, const Box& viewport) const;
+  void render() const;
   void render_selection(const RenderingOptions& options) const;
 private:
   MapValue<UUID, std::shared_ptr<Entity>> m_children;

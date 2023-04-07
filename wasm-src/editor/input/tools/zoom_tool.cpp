@@ -13,5 +13,5 @@ void ZoomTool::on_pointer_move() {
     std::abs(InputManager::pointer.client.movement.x) > std::abs(InputManager::pointer.client.movement.y) ?
     InputManager::pointer.client.movement.x : -InputManager::pointer.client.movement.y;
 
-  Editor::viewport.zoom_to(Editor::viewport.zoom() * (1.0f + (delta * ZOOM_STEP) / 500.0f), InputManager::pointer.client.origin);
+  Editor::scene().viewport.zoom_to(Editor::scene().viewport.zoom() * (1.0f + (delta * ZOOM_STEP) / 500.0f), InputManager::pointer.client.origin);
 }

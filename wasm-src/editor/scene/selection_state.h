@@ -66,8 +66,8 @@ public:
     std::unordered_map<UUID, Entity*>::const_iterator m_second_iterator;
   };
 public:
-  SelectionState(const SelectionState&) = delete;
-  SelectionState(SelectionState&&) = delete;
+  SelectionState(const SelectionState&) = default;
+  SelectionState(SelectionState&&) = default;
 
   ~SelectionState() = default;
 

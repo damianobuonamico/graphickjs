@@ -2,7 +2,7 @@
 
 #include "../../../math/vector.h"
 #include "../entities/element_entity.h"
-#include "../entities/Freehand_entity.h"
+#include "../entities/freehand_entity.h"
 
 /* -- TransformComponent -- */
 

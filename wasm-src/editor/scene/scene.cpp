@@ -6,15 +6,31 @@
 #include "../input/input_manager.h"
 
 void Scene::load() {
-  // std::shared_ptr<ElementEntity> element1 = std::make_shared<ElementEntity>(vec2{ 0.0f });
   std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
-
-  // m_children.insert({ element1->id, element1 });
   m_children.insert({ element2->id, element2 });
 }
 
-void Scene::render(float zoom, const Box& viewport) const {
-  RenderingOptions options = { zoom, std::acosf(2.0f * std::pow(1.0f - Settings::tessellation_error / std::fmaxf(zoom, 0.26f), 2.0f) - 1.0f), viewport };
+void Scene::save(std::stringstream& ss) {
+  ss << "{\"head\":{";
+
+  ss << "\"id\":\"" << id << "\",";
+  ss << "\"viewport\":";
+  viewport.json(ss);
+
+  ss << "},\"body\":{";
+
+  ss << "";
+
+  ss << "}}";
+}
+
+void Scene::load(const char* data) {
+  console::log(data);
+}
+
+void Scene::render() const {
+  float zoom = viewport.zoom();
+  RenderingOptions options = { zoom, std::acosf(2.0f * std::pow(1.0f - Settings::tessellation_error / std::fmaxf(zoom, 0.26f), 2.0f) - 1.0f), viewport.visible() };
 
   for (const auto& [id, entity] : m_children) {
     entity->render(options);

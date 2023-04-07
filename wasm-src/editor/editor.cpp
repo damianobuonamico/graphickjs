@@ -7,6 +7,7 @@
 #include "../utils/debugger.h"
 
 #include <functional>
+#include <sstream>
 
 #ifdef EMSCRIPTEN
 #include <emscripten/html5.h>
@@ -18,8 +19,6 @@ int render_callback(double time, void* user_data) {
 }
 
 Editor* Editor::s_instance = nullptr;
-Viewport Editor::viewport{};
-Scene Editor::scene{};
 
 void Editor::init() {
   // TODO: Editor reinitialization
@@ -31,7 +30,9 @@ void Editor::init() {
   Renderer::init();
   CommandHistory::init();
 
-  scene.load();
+  s_instance->m_scenes.emplace_back();
+
+  scene().load();
 }
 
 void Editor::shutdown() {
@@ -42,7 +43,6 @@ void Editor::shutdown() {
 
   delete s_instance;
 }
-
 
 void Editor::render(
 #ifdef EMSCRIPTEN
@@ -59,10 +59,37 @@ void Editor::render(
 #endif
 }
 
-void Editor::render_frame(double time) {
-  Renderer::begin_frame(viewport.position(), viewport.zoom());
+#ifdef EMSCRIPTEN
+EM_JS(void, save_print, (const char* data, int len_data), {
+  window._save(UTF8ToString(data, len_data));
+  });
+#endif
 
-  scene.render(viewport.zoom(), viewport.visible());
+
+
+void Editor::save() {
+  // TODO: optimize
+  std::stringstream ss;
+
+  ss << "{\"version\":\"0.1.0\",\"files\":[";
+
+  scene().save(ss);
+
+  ss << "]}";
+
+#ifdef EMSCRIPTEN
+  save_print(ss.str().c_str(), ss.str().length());
+#endif
+}
+
+void Editor::load(const char* data) {
+  scene().load(data);
+}
+
+void Editor::render_frame(double time) {
+  Renderer::begin_frame(scene().viewport.position(), scene().viewport.zoom());
+
+  scene().render();
 
   Renderer::end_frame();
 }

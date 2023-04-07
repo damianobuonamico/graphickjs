@@ -1,9 +1,9 @@
 #include "viewport.h"
 
-#include "../math/math.h"
-#include "../math/vector.h"
-#include "../utils/defines.h"
-#include "../utils/console.h"
+#include "../../math/math.h"
+#include "../../math/vector.h"
+#include "../../utils/defines.h"
+#include "../../utils/console.h"
 
 Viewport::Viewport()
   : m_position({ 0.0f, 0.0f }), m_zoom(1.0f), m_rotation(0.0f) {}
@@ -71,6 +71,15 @@ void Viewport::set_bounds(const Box& bounds) {
 
 bool Viewport::is_visible(const Box& box) {
   return does_box_intersect_box(box, visible());
+}
+
+void Viewport::json(std::stringstream& ss) const {
+  ss << "{\"position\":" << stringify(m_position);
+  ss << ",\"zoom\":" << m_zoom;
+  ss << ",\"rotation\":" << m_rotation;
+  ss << ",\"min_position\":" << stringify(m_min_position);
+  ss << ",\"max_position\":" << stringify(m_max_position);
+  ss << ",\"min_zoom\":" << m_min_zoom << "}";
 }
 
 vec2 Viewport::client_to_scene(const vec2& position) {

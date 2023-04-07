@@ -155,6 +155,7 @@ abstract class InputManager {
       }, 100);
     });
     this.addListener("beforeunload", () => {
+      SceneManager.save();
       API._shutdown();
     });
   }

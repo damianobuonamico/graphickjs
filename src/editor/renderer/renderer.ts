@@ -41,7 +41,11 @@ abstract class Renderer {
     setTimeout(() => {
       this.resize();
       canvas.style.opacity = "1";
-    }, 50);
+    }, 100);
+
+    setTimeout(() => {
+      this.resize();
+    }, 1000);
   }
 
   static get canvas() {

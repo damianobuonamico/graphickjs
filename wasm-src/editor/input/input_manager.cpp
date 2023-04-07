@@ -129,7 +129,7 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, f
   pointer.client.origin = current_position;
 
   pointer.scene.movement = { 0.0f, 0.0f };
-  pointer.scene.position = Editor::viewport.client_to_scene(current_position);
+  pointer.scene.position = Editor::scene().viewport.client_to_scene(current_position);
   pointer.scene.delta = { 0.0f, 0.0f };
   pointer.scene.origin = pointer.scene.position;
 
@@ -160,16 +160,16 @@ bool InputManager::on_pointer_move(PointerTarget target, float x, float y) {
   pointer.client.position = current_position;
   pointer.client.delta = current_position - pointer.client.origin;
 
-  pointer.scene.movement = pointer.client.movement / Editor::viewport.zoom();
-  pointer.scene.position = Editor::viewport.client_to_scene(current_position);
+  pointer.scene.movement = pointer.client.movement / Editor::scene().viewport.zoom();
+  pointer.scene.position = Editor::scene().viewport.client_to_scene(current_position);
   pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
   if (!m_tool_state.active().is_in_category(Tool::CategoryImmediate)) {
     hover.set(
-      Editor::scene.entity_at(
+      Editor::scene().entity_at(
         pointer.scene.position,
         m_tool_state.active().is_in_category(Tool::CategoryDirect),
-        5.0f / Editor::viewport.zoom()
+        5.0f / Editor::scene().viewport.zoom()
       )
     );
   }
@@ -251,7 +251,7 @@ bool InputManager::on_resize(int width, int height, float dpr, int offset_x, int
   vec2 offset = vec2{ (float)offset_x, (float)offset_y };
 
   Renderer::resize(size, dpr);
-  Editor::viewport.resize(size, offset);
+  Editor::scene().viewport.resize(size, offset);
 
   Editor::render();
 
@@ -260,7 +260,7 @@ bool InputManager::on_resize(int width, int height, float dpr, int offset_x, int
 bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y) {
   if (!keys.ctrl) return false;
 
-  Editor::viewport.zoom_to(map(-delta_y, -100.0f, 100.0f, 1.0f - ZOOM_STEP / 10.0f, 1.0f + ZOOM_STEP / 10.0f) * Editor::viewport.zoom(), pointer.client.position);
+  Editor::scene().viewport.zoom_to(map(-delta_y, -100.0f, 100.0f, 1.0f - ZOOM_STEP / 10.0f, 1.0f + ZOOM_STEP / 10.0f) * Editor::scene().viewport.zoom(), pointer.client.position);
   Editor::render();
 
   return true;

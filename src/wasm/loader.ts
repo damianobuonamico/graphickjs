@@ -11,6 +11,8 @@ const API: Api = {
   _on_wheel_event: fallback,
   _on_clipboard_event: fallback,
   _set_tool: fallback,
+  _save: fallback,
+  _load: fallback,
   _to_heap: fallback,
   _free: fallback,
 };
@@ -26,6 +28,9 @@ wasm().then((module: any) => {
   API._on_clipboard_event = module._on_clipboard_event;
 
   API._set_tool = module._set_tool;
+
+  API._save = module._save;
+  API._load = module.cwrap("load", null, ["string"]);
 
   API._to_heap = (array: Float32Array) => {
     const bytes = array.length * array.BYTES_PER_ELEMENT;

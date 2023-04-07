@@ -1,14 +1,14 @@
 #pragma once
 
-#include "../math/vec2.h"
-#include "../math/box.h"
+#include "../../math/vec2.h"
+#include "../../math/box.h"
 
 class Viewport {
 public:
   Viewport();
   Viewport(const vec2& position, float zoom, float rotation);
-  Viewport(const Viewport&) = delete;
-  Viewport(Viewport&&) = delete;
+  Viewport(const Viewport&) = default;
+  Viewport(Viewport&&) = default;
 
   ~Viewport() = default;
 
@@ -27,7 +27,7 @@ public:
   void set_bounds(const Box& bounds);
   bool is_visible(const Box& box);
 
-  // TODO: JSON
+  void json(std::stringstream& ss) const;
 
   vec2 client_to_scene(const vec2& position);
   vec2 scene_to_client(const vec2& position);

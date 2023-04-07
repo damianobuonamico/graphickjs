@@ -47,9 +47,14 @@ extern "C" {
 
     InputManager::set_tool((Tool::ToolType)tool);
   }
+
+  void EMSCRIPTEN_KEEPALIVE load(const char* data) {
+    Editor::load(data);
+  }
 }
 
-EMSCRIPTEN_BINDINGS(Renderer) {
+EMSCRIPTEN_BINDINGS(Editor) {
   function("_init", Editor::init);
   function("_shutdown", Editor::shutdown);
+  function("_save", Editor::save);
 }

@@ -35,6 +35,9 @@ interface Api {
 
   _set_tool(type: number): void;
 
+  _save(): string;
+  _load(data: string): void;
+
   _to_heap(array: Float32Array): Pointer;
   _free(pointer: Pointer): void;
 }
