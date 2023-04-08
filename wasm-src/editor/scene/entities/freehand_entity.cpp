@@ -7,6 +7,21 @@
 FreehandEntity::FreehandEntity(vec2 position, float pressure, double time)
   : Entity(CategorySelectable), m_transform({ this, position }), m_points({ {{0.0f, 0.0f, pressure}, time } }) {}
 
+FreehandEntity::FreehandEntity(const JSON& data)
+  : Entity(CategorySelectable), m_transform({ this, data.has("transform") ? data.at("transform") : JSON() }), m_points() {
+  if (!data.has("type") || data.at("type").to_string() != "freehand") {
+    console::error("Invalid entity type", data.at("type").to_string());
+    return;
+  }
+
+  if (data.has("points")) {
+    for (const auto& point : data.at("points").array_range()) {
+      vec4 point_data = point.to_vec4();
+      m_points.push_back({ XYZ(point_data), (double)point_data.w });
+    }
+  }
+}
+
 void FreehandEntity::add_point(vec2 position, float pressure, double time) {
   m_points.push_back({ {position.x, position.y, pressure }, time });
 }
@@ -203,6 +218,21 @@ void FreehandEntity::entities_in(const Box& box, std::vector<Entity*>& entities,
   if (does_box_intersect_box(box, entity_box)) {
     entities.push_back(this);
   }
+}
+
+JSON FreehandEntity::json() const {
+  JSON object = JSON::object();
+  JSON points = JSON::array();
+
+  for (const auto& point : m_points) {
+    points.append(JSON::array(point.data.x, point.data.y, point.data.z, (float)point.time));
+  }
+
+  object["type"] = "freehand";
+  object["points"] = points;
+  object["transform"] = m_transform.json();
+
+  return object;
 }
 
 size_t FreehandEntity::index_from_t(double t) const {

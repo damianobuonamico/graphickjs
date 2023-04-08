@@ -2,6 +2,7 @@
 
 #include "../../renderer/renderer.h"
 #include "../../utils/uuid.h"
+#include "../../utils/json.h"
 #include "../../math/box.h"
 #include "components/transform_component.h"
 #include "components/selection_component.h"
@@ -38,7 +39,8 @@ public:
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) { return nullptr; }
   virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) {}
 
-  virtual Entity* duplicate() const { return nullptr; };
+  virtual Entity* duplicate() const { return nullptr; }
+  virtual JSON json() const { return JSON(); }
 protected:
   const int m_category;
 };

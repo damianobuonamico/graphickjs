@@ -13,7 +13,11 @@ void Scene::load() {
 JSON Scene::json() const {
   JSON scene = JSON::object();
   JSON head = JSON::object();
-  JSON body = JSON::object();
+  JSON body = JSON::array();
+
+  for (const auto& [id, entity] : m_children) {
+    body.append(entity->json());
+  }
 
   head["id"] = id;
   head["viewport"] = viewport.json();
@@ -44,7 +48,18 @@ void Scene::load_head(const JSON& head) {
   }
 }
 
-void Scene::load_body(const JSON& body) {}
+void Scene::load_body(const JSON& body) {
+  for (const auto& object : body.array_range()) {
+    if (object.type() != JSON::Class::Object || !object.has("type")) continue;
+
+    std::string type = object.at("type").to_string();
+
+    if (type == "freehand") {
+      std::shared_ptr<FreehandEntity> element = std::make_shared<FreehandEntity>(object);
+      m_children.insert({ element->id, element });
+    }
+  }
+}
 
 void Scene::render() const {
   float zoom = viewport.zoom();

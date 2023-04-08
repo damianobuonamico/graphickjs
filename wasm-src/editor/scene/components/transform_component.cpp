@@ -40,6 +40,13 @@ vec2 TransformComponent::transform(const vec2& point) const {
   return point + m_position.get();
 }
 
+JSON TransformComponent::json() const {
+  JSON object = JSON::object();
+  object["position"] = m_position.get();
+
+  return object;
+}
+
 /* -- CircleTransformComponent -- */
 
 Box CircleTransformComponent::bounding_box() const {

@@ -4,12 +4,15 @@
 #include "../../../values/vec2_value.h"
 #include "../../../math/box.h"
 #include "../../../utils/cache.h"
+#include "../../../utils/json.h"
 
 class TransformComponent: public Component {
 public:
   TransformComponent(Entity* entity): Component(entity) {};
   TransformComponent(Entity* entity, const vec2& position)
     : Component(entity), m_position({ position }) {};
+  TransformComponent(Entity* entity, const JSON& data)
+    : Component(entity), m_position(data.has("position") ? data.at("position").to_vec2() : vec2{ 0.0f }) {};
   TransformComponent(const TransformComponent&) = default;
   TransformComponent(TransformComponent&&) = default;
 
@@ -29,6 +32,8 @@ public:
   inline virtual void apply() { m_position.apply(); };
 
   virtual vec2 transform(const vec2& point) const;
+
+  virtual JSON json() const;
 protected:
   Vec2Value m_position;
 };
@@ -116,6 +121,8 @@ public:
     : TransformComponent(entity) {};
   FreehandTransformComponent(Entity* entity, const vec2& position)
     : TransformComponent(entity, position) {};
+  FreehandTransformComponent(Entity* entity, const JSON& data)
+    : TransformComponent(entity, data) {};
   FreehandTransformComponent(const FreehandTransformComponent&) = default;
   FreehandTransformComponent(FreehandTransformComponent&&) = default;
 

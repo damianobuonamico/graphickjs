@@ -13,6 +13,7 @@ public:
   };
 public:
   FreehandEntity(vec2 position, float pressure, double time);
+  FreehandEntity(const JSON& data);
   FreehandEntity(const FreehandEntity&) = default;
   FreehandEntity(FreehandEntity&&) = default;
 
@@ -38,6 +39,8 @@ public:
 
   virtual Entity* entity_at(const vec2& position, bool lower_level, float threshold) override;
   virtual void entities_in(const Box& box, std::vector<Entity*>& entities, bool lower_level) override;
+
+  virtual JSON json() const override;
 private:
   size_t index_from_t(double t) const;
   Geometry tessellate(const RenderingOptions& options) const;

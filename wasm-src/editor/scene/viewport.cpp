@@ -77,6 +77,11 @@ void Viewport::load(const JSON& data) {
   if (data.has("position")) m_position = data.at("position").to_vec2();
   if (data.has("zoom")) m_zoom = data.at("zoom").to_float();
   if (data.has("rotation")) m_rotation = data.at("rotation").to_float();
+
+  if (data.has("bounds")) {
+    JSON bounds = data.at("bounds");
+    set_bounds({ bounds[0].to_vec2(), bounds[1].to_vec2() });
+  }
 }
 
 JSON Viewport::json() const {
@@ -86,9 +91,9 @@ JSON Viewport::json() const {
   if (!is_almost_equal(m_zoom, 1.0f)) viewport["zoom"] = m_zoom;
   if (!is_almost_zero(m_rotation)) viewport["rotation"] = m_rotation;
 
-  // TODO: replace with bounds
-  // ss << ",\"min_position\":" << stringify(m_min_position);
-  // ss << ",\"max_position\":" << stringify(m_max_position);
+  if (m_min_position != std::numeric_limits<vec2>::min() || m_max_position != std::numeric_limits<vec2>::max()) {
+    viewport["bounds"] = Box{ m_min_position, m_max_position };
+  }
 
   return viewport;
 }

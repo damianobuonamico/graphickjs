@@ -1,3 +1,4 @@
+import { Renderer } from "@/editor/renderer";
 import wasm from "./editor";
 
 const fallback: any = () => {};
@@ -30,7 +31,12 @@ wasm().then((module: any) => {
   API._set_tool = module._set_tool;
 
   API._save = module._save;
-  API._load = module.cwrap("load", null, ["string"]);
+  // API._load = module.cwrap("load", null, ["string"]);
+  API._load = (data: string) => {
+    const ptr = module.allocateUTF8(data);
+    module._load(ptr);
+    module._free(ptr);
+  };
 
   API._to_heap = (array: Float32Array) => {
     const bytes = array.length * array.BYTES_PER_ELEMENT;
@@ -44,6 +50,7 @@ wasm().then((module: any) => {
   API._free = module._free;
 
   module._init();
+  Renderer.resize();
 });
 
 export default API;

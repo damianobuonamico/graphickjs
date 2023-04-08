@@ -121,9 +121,9 @@ std::string stringify(const vec4& v);
 #define RG(v) vec2{ v.r, v.g }
 #define ST(v) vec2{ v.s, v.t }
 
-#define XYZ(v) vec2{ v.x, v.y, v.z }
-#define RGB(v) vec2{ v.r, v.g, v.b }
-#define STP(v) vec2{ v.s, v.t, v.p }
+#define XYZ(v) vec3{ v.x, v.y, v.z }
+#define RGB(v) vec3{ v.r, v.g, v.b }
+#define STP(v) vec3{ v.s, v.t, v.p }
 
 // #define len length
 // #define sq_len squared_length

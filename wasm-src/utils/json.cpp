@@ -348,7 +348,8 @@ JSON JSON::load(const std::string& str) {
 }
 
 JSON& JSON::operator[](const std::string& key) {
-  set_type(Class::Object); return m_internal.m_map->operator[](key);
+  set_type(Class::Object);
+  return m_internal.m_map->operator[](key);
 }
 
 JSON& JSON::operator[](unsigned int index) {
