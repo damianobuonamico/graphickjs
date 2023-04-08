@@ -10,23 +10,41 @@ void Scene::load() {
   m_children.insert({ element2->id, element2 });
 }
 
-void Scene::save(std::stringstream& ss) {
-  ss << "{\"head\":{";
+JSON Scene::json() const {
+  JSON scene = JSON::object();
+  JSON head = JSON::object();
+  JSON body = JSON::object();
 
-  ss << "\"id\":\"" << id << "\",";
-  ss << "\"viewport\":";
-  viewport.json(ss);
+  head["id"] = id;
+  head["viewport"] = viewport.json();
 
-  ss << "},\"body\":{";
+  scene["head"] = head;
+  scene["body"] = body;
 
-  ss << "";
-
-  ss << "}}";
+  return scene;
 }
 
-void Scene::load(const char* data) {
-  console::log(data);
+void Scene::load(const JSON& file) {
+  if (file.has("head")) {
+    load_head(file.at("head"));
+  }
+
+  if (file.has("body")) {
+    load_body(file.at("body"));
+  }
 }
+
+void Scene::load_head(const JSON& head) {
+  if (head.has("id")) {
+    // id = strtoll(head.at("id").to_string(), nullptr, 10);
+  }
+
+  if (head.has("viewport")) {
+    viewport.load(head.at("viewport"));
+  }
+}
+
+void Scene::load_body(const JSON& body) {}
 
 void Scene::render() const {
   float zoom = viewport.zoom();

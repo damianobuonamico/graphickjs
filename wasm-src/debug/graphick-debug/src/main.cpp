@@ -137,7 +137,7 @@ int main() {
   Editor::init();
   InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  Editor::save();
+  Editor::load("{\"version\":\"0.1.0\",\"files\":[{\"head\":{\"id\":\"12302782324244206606\",\"viewport\":{\"position\":[0,0],\"zoom\":2,\"rotation\":0,\"min_position\":[-3.40282e+38,-3.40282e+38],\"max_position\":[3.40282e+38,3.40282e+38],\"min_zoom\":0.01}},\"body\":{}}]}");
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();

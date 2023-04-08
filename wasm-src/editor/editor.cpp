@@ -5,6 +5,7 @@
 #include "../history/command_history.h"
 #include "../utils/console.h"
 #include "../utils/debugger.h"
+#include "../utils/json.h"
 
 #include <functional>
 #include <sstream>
@@ -68,22 +69,34 @@ EM_JS(void, save_print, (const char* data, int len_data), {
 
 
 void Editor::save() {
-  // TODO: optimize
-  std::stringstream ss;
+  JSON data = JSON::object();
+  JSON files = JSON::array();
 
-  ss << "{\"version\":\"0.1.0\",\"files\":[";
+  for (Scene& scene : s_instance->m_scenes) {
+    files.append(scene.json());
+  }
 
-  scene().save(ss);
+  data["version"] = "0.1.0";
+  data["files"] = files;
 
-  ss << "]}";
+  std::string dump = data.dump();
 
 #ifdef EMSCRIPTEN
-  save_print(ss.str().c_str(), ss.str().length());
+  save_print(dump.c_str(), dump.length());
 #endif
 }
 
 void Editor::load(const char* data) {
-  scene().load(data);
+  JSON json = JSON::load(data);
+
+  if (json.has("files")) {
+    JSON& files = json["files"];
+
+    for (JSON& file : files.array_range()) {
+      // TODO: support multiple scenes
+      scene().load(file);
+    }
+  }
 }
 
 void Editor::render_frame(double time) {

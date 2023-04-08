@@ -2,6 +2,7 @@
 
 #include "../../math/vec2.h"
 #include "../../math/box.h"
+#include "../../utils/json.h"
 
 class Viewport {
 public:
@@ -27,7 +28,8 @@ public:
   void set_bounds(const Box& bounds);
   bool is_visible(const Box& box);
 
-  void json(std::stringstream& ss) const;
+  void load(const JSON& data);
+  JSON json() const;
 
   vec2 client_to_scene(const vec2& position);
   vec2 scene_to_client(const vec2& position);

@@ -22,6 +22,14 @@ struct console {
     printf("%s\n", stream.str().c_str());
   }
 
+  template <typename T>
+  static inline void error(const std::string& name, T value) {
+    std::stringstream stream;
+    stream << name << ": " << value;
+
+    printf("%s\n", stream.str().c_str());
+  }
+
   static inline void time_start() {
     last_time = std::chrono::high_resolution_clock::now();
   }

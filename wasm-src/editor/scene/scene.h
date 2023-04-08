@@ -2,6 +2,7 @@
 
 #include "../../values/map_value.h"
 #include "../../utils/uuid.h"
+#include "../../utils/json.h"
 #include "entity.h"
 #include "selection_state.h"
 #include "viewport.h"
@@ -31,9 +32,11 @@ public:
 
   Entity* duplicate(const Entity* entity);
 private:
-  void save(std::stringstream& ss);
+  JSON json() const;
   void load();
-  void load(const char* data);
+  void load(const JSON& file);
+  void load_head(const JSON& head);
+  void load_body(const JSON& body);
 
   void render() const;
   void render_selection(const RenderingOptions& options) const;

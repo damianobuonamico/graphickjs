@@ -73,13 +73,24 @@ bool Viewport::is_visible(const Box& box) {
   return does_box_intersect_box(box, visible());
 }
 
-void Viewport::json(std::stringstream& ss) const {
-  ss << "{\"position\":" << stringify(m_position);
-  ss << ",\"zoom\":" << m_zoom;
-  ss << ",\"rotation\":" << m_rotation;
-  ss << ",\"min_position\":" << stringify(m_min_position);
-  ss << ",\"max_position\":" << stringify(m_max_position);
-  ss << ",\"min_zoom\":" << m_min_zoom << "}";
+void Viewport::load(const JSON& data) {
+  if (data.has("position")) m_position = data.at("position").to_vec2();
+  if (data.has("zoom")) m_zoom = data.at("zoom").to_float();
+  if (data.has("rotation")) m_rotation = data.at("rotation").to_float();
+}
+
+JSON Viewport::json() const {
+  JSON viewport = JSON::object();
+
+  if (!is_almost_zero(m_position)) viewport["position"] = m_position;
+  if (!is_almost_equal(m_zoom, 1.0f)) viewport["zoom"] = m_zoom;
+  if (!is_almost_zero(m_rotation)) viewport["rotation"] = m_rotation;
+
+  // TODO: replace with bounds
+  // ss << ",\"min_position\":" << stringify(m_min_position);
+  // ss << ",\"max_position\":" << stringify(m_max_position);
+
+  return viewport;
 }
 
 vec2 Viewport::client_to_scene(const vec2& position) {
