@@ -6,9 +6,17 @@ OPTIMIZE = True
 
 output = '..\src\wasm\editor.js'
 files = []
-options = ['ALLOW_MEMORY_GROWTH', 'EXPORT_ES6', 'MODULARIZE', 'MIN_WEBGL_VERSION=2', 'MAX_WEBGL_VERSION=2', 'USE_WEBGL2', 'FULL_ES3', 'NO_DISABLE_EXCEPTION_CATCHING', 'EXPORTED_RUNTIME_METHODS="["cwrap", "allocateUTF8"]"']
+options = ['ALLOW_MEMORY_GROWTH', 'EXPORT_ES6', 'MODULARIZE', 'MIN_WEBGL_VERSION=2', 'MAX_WEBGL_VERSION=2', 'USE_WEBGL2', 'FULL_ES3', 'NO_DISABLE_EXCEPTION_CATCHING', 'EXPORTED_RUNTIME_METHODS="["cwrap", "allocateUTF8"]"', 'USE_FREETYPE=1']
 
 for path in Path('./').rglob('*.cpp'):
+  if str(path)[:5] != 'debug':
+    files.append(str(path))
+
+for path in Path('./').rglob('*.c'):
+  if str(path)[:5] != 'debug':
+    files.append(str(path))
+
+for path in Path('./').rglob('*.cc'):
   if str(path)[:5] != 'debug':
     files.append(str(path))
 

@@ -999,50 +999,6 @@ void BezierEntity::cubic_tessellate_outline(TessellationParams& params, Geometry
   geo.push_vertices({ { params.offset + p3(), params.color } });
 }
 
-void BezierEntity::linear_render(const RenderingOptions& options) const {
-  Geometry geo;
+void BezierEntity::linear_render(const RenderingOptions& options) const {}
 
-  vec2 A = p0();
-  vec2 B = p3();
-
-  if (parent) {
-    vec2 offset = parent->transform()->position().get();
-    A += offset;
-    B += offset;
-  }
-
-  float width = 2.0f / options.zoom;
-  float dx = B.x - A.x;
-
-  if (is_almost_zero(dx)) {
-    vec2 offset{ width, 0.0f };
-    geo.push_vertices({ A - offset, A + offset, B + offset, B - offset });
-  } else {
-    vec2 direction{ dx, B.y - A.y };
-    normalize_length(direction, width, direction);
-    orthogonal(direction, direction);
-
-    geo.push_vertices({ A - direction, A + direction, B + direction, B - direction });
-  }
-
-  geo.push_indices({ 0, 1, 2, 2, 3, 0 });
-
-  Renderer::draw(geo);
-}
-
-void BezierEntity::cubic_render(const RenderingOptions& options) const {
-  vec2 offset{ 0.0f };
-  if (parent) offset = parent->transform()->position().get();
-
-  Geometry geo = stroke_curves({ Bezier{ offset + p0(), offset + p1(), offset + p2(), offset + p3() } });
-  Renderer::draw(geo);
-
-  Box box = bounding_box();
-  box.min += offset;
-  box.max += offset;
-
-  Geometry box_geometry{};
-  box_geometry.push_quad(box, vec4{ 0.0f, 1.0f, 0.5f, 0.2f });
-
-  Renderer::draw(box_geometry);
-}
+void BezierEntity::cubic_render(const RenderingOptions& options) const {}

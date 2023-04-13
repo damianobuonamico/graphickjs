@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
+#include <direct.h>
 
 #include "wasm-src/editor/editor.h"
+#include "wasm-src/editor/font_manager.h"
 #include "wasm-src/editor/settings.h"
 #include "wasm-src/editor/input/input_manager.h"
-#include "wasm-src/renderer/geometry/corners_detection.h"
-#include "wasm-src/renderer/geometry/stroker.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -139,6 +140,57 @@ int main() {
 
   Editor::load("{\"version\":\"0.1.0\",\"files\":[{\"head\":{\"id\":\"12302782324244206606\",\"viewport\":{\"position\":[0,0],\"zoom\":2,\"rotation\":0,\"min_position\":[-3.40282e+38,-3.40282e+38],\"max_position\":[3.40282e+38,3.40282e+38],\"min_zoom\":0.01}},\"body\":{}}]}");
 
+  // std::ifstream file("res\\Roboto-Regular.ttf", std::ios::binary | std::ios::ate);
+  // std::streamsize size = file.tellg();
+  // std::vector<char> buffer(size);
+  // file.read(buffer.data(), size);
+
+  // console::log("File size", size);
+  // console::log("File size", buffer.size());
+
+  // unsigned char* bytes = new unsigned char[buffer.size()];
+  // for (int i = 0; i < buffer.size(); i++) {
+  //   bytes[i] = (unsigned char)buffer[i];
+  // }
+
+  // char temp[100];
+  // getcwd(temp, sizeof(temp));
+  // console::log("Current dir", temp);
+
+  // unsigned char ch = file.get();
+  // while (file.good()) {
+  //   bytes.push_back(ch);
+  //   ch = file.get();
+  // }
+
+  // console::log("fsuz", bytes.size());
+  // FontManager::load_font(bytes, buffer.size());
+
+  const char* pathname = "res\\Roboto-Regular.woff2";
+
+  FILE* file = fopen(pathname, "rb");
+  if (!file) {
+    console::error("Failed to open font file", pathname);
+  }
+
+  fseek(file, 0, SEEK_END);
+  unsigned long size = ftell(file);
+  if (!size) {
+    console::error("Failed to get font file size", pathname);
+    fclose(file);
+  }
+
+  fseek(file, 0, SEEK_SET);
+
+  unsigned char* buffer = new unsigned char[size];
+  fread(buffer, 1, size, file);
+
+
+  FontManager::load_font(buffer, size);
+
+  // FT_Face face;
+  // error = FT_New_Face(library, "res\\Roboto-Regular.ttf", 0, &face);
+
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
@@ -169,7 +221,6 @@ int main() {
       ImGui::SliderFloat("Fit Max Error", &Settings::max_fit_error, 0.01f, 5.0f);
       ImGui::SliderAngle("Facet Angle", &Settings::facet_angle, 0.0f, 20.0f);
       ImGui::SliderFloat("Tessellation Error", &Settings::tessellation_error, 0.01f, 1.0f);
-      ImGui::SliderFloat("stroke_width", &stroke_width, 0.01f, 50.0f);
 
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();

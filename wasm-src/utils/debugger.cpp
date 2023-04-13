@@ -5,6 +5,7 @@
 #include "../renderer/renderer.h"
 #include "../editor/scene/entities/bezier_entity.h"
 #include "../editor/editor.h"
+#include "../editor/settings.h"
 #include "../editor/input/input_manager.h"
 
 Debugger* Debugger::s_instance = nullptr;
@@ -199,7 +200,7 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
     draw_polar_line(origin, angle.y, boundaries, green, geo);
   }
 
-  std::vector<float> t_values = m_t_values = entity->triangulation_params({ 1.0f, max_angle });
+  std::vector<float> t_values = m_t_values = entity->triangulation_params({ 1.0f, Settings::facet_angle });
   for (int i = 0; i < (int)turning_angles.size() - 1; i++) {
     float difference = turning_angles[i + 1].y - turning_angles[i].y;
 
@@ -217,7 +218,7 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
       }
     }
 
-    int increments = std::max(std::abs((int)std::ceilf(difference / std::max(max_angle, GEOMETRY_MIN_FACET_ANGLE))), 1);
+    int increments = std::max(std::abs((int)std::ceilf(difference / std::max(Settings::facet_angle, GEOMETRY_MIN_FACET_ANGLE))), 1);
     float increment = difference / (float)increments;
 
     for (int j = 1; j < increments; j++) {
@@ -301,6 +302,8 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
   vec2 center;
   Box boundaries;
 
+  float stroke_width = 5.0f;
+
   calculate_frame_boundaries(box, stroke_width, center, &ratio, &boundaries);
 
   vec2 A = center + (entity->p0() - box.min) / ratio;
@@ -360,6 +363,8 @@ void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
   float ratio;
   vec2 center;
   Box boundaries;
+
+  float stroke_width = 5.0f;
 
   calculate_frame_boundaries(box, stroke_width, center, &ratio, &boundaries);
 

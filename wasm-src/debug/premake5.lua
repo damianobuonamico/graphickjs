@@ -14,10 +14,12 @@ workspace "debug"
   IncludeDir["glfw"] = "graphick-debug/lib/glfw/include"
   IncludeDir["glad"] = "graphick-debug/lib/glad/include"
   IncludeDir["imgui"] = "graphick-debug/lib/imgui"
+  IncludeDir["freetype2"] = "graphick-debug/lib/freetype2/include"
   
   include "graphick-debug/lib/glfw"
   include "graphick-debug/lib/glad"
   include "graphick-debug/lib/imgui"
+  include "graphick-debug/lib/freetype2"
   
   project "graphick-debug"
   kind "ConsoleApp"
@@ -40,6 +42,8 @@ workspace "debug"
     "../renderer/**.cpp",
     "../renderer/**.h",
     "../utils/**.cpp",
+    "../utils/**.cc",
+    "../utils/**.c",
     "../utils/**.h",
     "../values/**.cpp",
     "../values/**.h",
@@ -57,6 +61,7 @@ workspace "debug"
     "%{IncludeDir.glfw}",
     "%{IncludeDir.glad}",
     "%{IncludeDir.imgui}",
+    "%{IncludeDir.freetype2}",
     "../../",
   }
 
@@ -64,6 +69,7 @@ workspace "debug"
     "glfw",
     "glad",
     "imgui",
+    "freetype2",
     "opengl32.lib"
   }
 

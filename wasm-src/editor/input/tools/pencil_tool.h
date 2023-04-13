@@ -3,7 +3,6 @@
 #include "../tool.h"
 #include "../../../utils/console.h"
 #include "../../scene/entities/freehand_entity.h"
-#include "../../../math/models/path_point.h"
 
 class PencilTool: public Tool {
 public:

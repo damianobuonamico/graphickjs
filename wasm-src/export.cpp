@@ -1,5 +1,6 @@
 #include "common.h"
 #include "editor/editor.h"
+#include "editor/font_manager.h"
 #include "editor/settings.h"
 #include "renderer/renderer.h"
 #include "editor/input/input_manager.h"
@@ -50,6 +51,10 @@ extern "C" {
 
   void EMSCRIPTEN_KEEPALIVE load(const char* data) {
     Editor::load(data);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE load_font(const unsigned char* buffer, long buffer_size) {
+    FontManager::load_font(buffer, buffer_size);
   }
 }
 

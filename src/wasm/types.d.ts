@@ -38,6 +38,8 @@ interface Api {
   _save(): string;
   _load(data: string): void;
 
+  _load_font(data: ArrayBuffer): void;
+
   _to_heap(array: Float32Array): Pointer;
   _free(pointer: Pointer): void;
 }

@@ -1,6 +1,7 @@
 #include "editor.h"
 
 #include "input/input_manager.h"
+#include "font_manager.h"
 #include "../renderer/renderer.h"
 #include "../history/command_history.h"
 #include "../utils/console.h"
@@ -30,6 +31,7 @@ void Editor::init() {
   InputManager::init();
   Renderer::init();
   CommandHistory::init();
+  FontManager::init();
 
   s_instance->m_scenes.emplace_back();
 
@@ -37,6 +39,7 @@ void Editor::init() {
 }
 
 void Editor::shutdown() {
+  FontManager::shutdown();
   CommandHistory::shutdown();
   Renderer::shutdown();
   InputManager::shutdown();

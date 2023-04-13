@@ -3,7 +3,9 @@
 #include "../common.h"
 
 #ifdef __EMSCRIPTEN__
+#ifndef EMSCRIPTEN
 #define EMSCRIPTEN
+#endif
 #endif
 
 #ifdef EMSCRIPTEN
@@ -82,7 +84,7 @@ void Renderer::begin_frame(const vec2& position, float zoom) {
 }
 
 void Renderer::end_frame() {
-  console::log("Entities Rendered", rendered);
+  // console::log("Entities Rendered", rendered);
   if (get()->m_last_call == RenderCall::Batch) {
     get()->end_batch();
     get()->flush();
@@ -125,7 +127,7 @@ void Renderer::draw(const InstancedGeometry& geometry) {
   get()->draw_instanced(geometry);
 }
 
-Renderer::Renderer(): m_frame_buffer(m_shaders, m_size* m_dpr) {}
+Renderer::Renderer(): m_frame_buffer(m_shaders, vec2{ 0.0f }) {}
 
 void Renderer::init_batch_renderer() {
   m_data.vertex_buffer = new Vertex[m_data.max_vertex_count];

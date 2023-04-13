@@ -14,6 +14,7 @@ const API: Api = {
   _set_tool: fallback,
   _save: fallback,
   _load: fallback,
+  _load_font: fallback,
   _to_heap: fallback,
   _free: fallback,
 };
@@ -31,10 +32,17 @@ wasm().then((module: any) => {
   API._set_tool = module._set_tool;
 
   API._save = module._save;
-  // API._load = module.cwrap("load", null, ["string"]);
   API._load = (data: string) => {
     const ptr = module.allocateUTF8(data);
     module._load(ptr);
+    module._free(ptr);
+  };
+
+  API._load_font = (data: ArrayBuffer) => {
+    const ptr = module._malloc(data.byteLength);
+    const heap = new Uint8Array(module.HEAPU8.buffer, ptr, data.byteLength);
+    heap.set(new Uint8Array(data));
+    module._load_font(ptr, data.byteLength);
     module._free(ptr);
   };
 
@@ -51,6 +59,14 @@ wasm().then((module: any) => {
 
   module._init();
   Renderer.resize();
+
+  fetch(
+    "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"
+  ).then((res) => {
+    res.arrayBuffer().then((buffer) => {
+      API._load_font(buffer);
+    });
+  });
 });
 
 export default API;

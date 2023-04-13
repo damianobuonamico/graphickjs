@@ -1,6 +1,7 @@
 #include "scene.h"
 
 #include "entities/element_entity.h"
+#include "entities/text_entity.h"
 #include "../../utils/debugger.h"
 #include "../settings.h"
 #include "../input/input_manager.h"
@@ -8,6 +9,9 @@
 void Scene::load() {
   std::shared_ptr<ElementEntity> element2 = std::make_shared<ElementEntity>(vec2{ 140.0f, 80.0f });
   m_children.insert({ element2->id, element2 });
+
+  std::shared_ptr<TextEntity> text = std::make_shared<TextEntity>(vec2{ 300.0f, 80.0f });
+  m_children.insert({ text->id, text });
 }
 
 JSON Scene::json() const {
