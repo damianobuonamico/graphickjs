@@ -2,6 +2,7 @@
 
 #include "frame_buffer.h"
 #include "geometry/geometry.h"
+#include "texture.h"
 #include "../math/vec2.h"
 
 struct RenderingOptions {
@@ -40,6 +41,7 @@ public:
 
   static void draw(const Geometry& geometry);
   static void draw(const InstancedGeometry& geometry);
+  static void draw(const Texture& texture);
 private:
   Renderer();
   ~Renderer() = default;
@@ -62,6 +64,7 @@ private:
   enum class RenderCall {
     Batch = 0,
     Instance,
+    Image,
     None
   };
 

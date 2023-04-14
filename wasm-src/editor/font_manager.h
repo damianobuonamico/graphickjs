@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../renderer/texture.h"
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -9,6 +11,7 @@ public:
   FontManager(FontManager&&) = delete;
 
   static inline FontManager* get() { return s_instance; }
+  static inline Texture* get_texture() { return s_instance->m_texture; }
 
   static void init();
   static void shutdown();
@@ -23,6 +26,7 @@ private:
   FT_Library m_library;
   // TODO: replace with face map
   FT_Face m_face;
+  Texture* m_texture;
 private:
   static FontManager* s_instance;
 };

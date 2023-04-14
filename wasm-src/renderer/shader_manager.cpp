@@ -77,6 +77,40 @@ void ShaderManager::create_shaders() {
 
   m_shaders.insert(std::make_pair<std::string, Shader>("batched", { "batched", batched_shader_source }));
 
+  static const char image_shader_source[] =
+    "#vertex\n"
+    "in vec4 aVertexPosition;\n"
+    // "in vec2 aTextureCoord;\n"
+    ""
+    "uniform mat3 uViewProjectionMatrix;\n"
+    ""
+    "out highp vec2 vTextureCoord;\n"
+    ""
+    "void main(void) {\n"
+    "  gl_Position = vec4((uViewProjectionMatrix * vec3(aVertexPosition.xy, 1.0)).xy, 0.0, 1.0);\n"
+    "  vTextureCoord = aVertexPosition.zw;\n"
+    "}\n"
+    "#fragment\n"
+    "in highp vec2 vTextureCoord;\n"
+    ""
+    "uniform sampler2D uSampler;\n"
+    ""
+    "out vec4 fragColor;\n"
+    ""
+    "void main(void) {\n"
+    // "  vec4 sampled = vec4(1.0, 1.0, 1.0, texture(uSampler, vTextureCoord).r);\n"
+    "  float d = texture(uSampler, vTextureCoord).r;\n"
+    "  float aaf = fwidth(d);\n"
+    "  float alpha = smoothstep(0.5 - aaf, 0.5 + aaf, d);\n"
+    "  fragColor = vec4(1.0, 1.0, 1.0, alpha);\n"
+    // "  fragColor = vec4(0.3, 0.3, 1.0, 1.0) * sampled;\n"
+    // "  fragColor = vec4(vTextureCoord, 0.3, 1.0);\n"
+    // "  fragColor = vec4(0.3, 0.9, 0.3, 1.0);\n"
+    // "  fragColor = texture(uSampler, vTextureCoord);\n"
+    "}\n";
+
+  m_shaders.insert(std::make_pair<std::string, Shader>("image", { "image", image_shader_source }));
+
   static const char msaa_shader_source[] =
     "#vertex\n"
     "in vec2 aPosition;\n"

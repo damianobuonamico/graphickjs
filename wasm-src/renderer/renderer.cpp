@@ -48,6 +48,7 @@ void Renderer::init() {
   glLineWidth(1.0f);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // TODO: Enable culling, CWW, depth testing, etc.
 
   get()->m_shaders.create_shaders();
   if (settings.antialiasing == Antialiasing::FXAA || settings.antialiasing == Antialiasing::MSAA) {
@@ -125,6 +126,55 @@ void Renderer::draw(const InstancedGeometry& geometry) {
   get()->m_last_call = RenderCall::Instance;
 
   get()->draw_instanced(geometry);
+}
+
+void Renderer::draw(const Texture& texture) {
+  GLuint position_buffer;
+  GLuint texture_buffer;
+  GLuint index_buffer;
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  float positions[] = {
+    -30.0f, -30.0f, 0.0f, 0.0f, 30.0f, -30.0f, 1.0f, 0.0f, 30.0f, 30.0f, 1.0f, 1.0f, -30.0f, 30.0f, 0.0f, 1.0f,
+  };
+
+  glGenBuffers(1, &position_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, position_buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
+
+  // float coordinates[] = {
+  //   0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+  // };
+
+  // glGenBuffers(1, &texture_buffer);
+  // glBindBuffer(GL_ARRAY_BUFFER, texture_buffer);
+  // glBufferData(GL_ARRAY_BUFFER, sizeof(coordinates), coordinates, GL_STATIC_DRAW);
+
+  uint32_t indices[] = {
+    0, 1, 2, 0, 2, 3
+  };
+
+  glGenBuffers(1, &index_buffer);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ARRAY_BUFFER, position_buffer);
+  get()->m_shaders.use("image");
+  get()->m_shaders.set_attribute("aVertexPosition", 4, GL_FLOAT, GL_FALSE, 0, 0);
+  // glBindBuffer(GL_ARRAY_BUFFER, texture_buffer);
+  // get()->m_shaders.set_attribute("aTextureCoord", 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+
+
+  texture.bind();
+
+  get()->m_shaders.set_uniform("uSampler", 0);
+
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+  get()->m_last_call = RenderCall::Image;
 }
 
 Renderer::Renderer(): m_frame_buffer(m_shaders, vec2{ 0.0f }) {}
