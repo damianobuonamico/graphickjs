@@ -6,11 +6,17 @@
 #include <vector>
 #include <initializer_list>
 
+#ifndef GL_LINES
+#define GL_LINES 0x0001
+#endif
 #ifndef GL_TRIANGLES
 #define GL_TRIANGLES 0x0004
 #endif
-#ifndef GL_LINES
-#define GL_LINES 0x0001
+#ifndef GL_TRIANGLE_STRIP
+#define GL_TRIANGLE_STRIP 0x0005
+#endif
+#ifndef GL_TRIANGLE_FAN
+#define GL_TRIANGLE_FAN 0x0006
 #endif
 
 struct Geometry {

@@ -18,6 +18,10 @@ inline bool does_box_intersect_box(const Box& a, const Box& b) {
   return b.max.x >= a.min.x && a.max.x >= b.min.x && b.max.y >= a.min.y && a.max.y >= b.min.y;
 }
 
+inline bool is_box_in_box(const Box& a, const Box& b) {
+  return a.min.x >= b.min.x && a.max.x <= b.max.x && a.min.y >= b.min.y && a.max.y <= b.max.y;
+}
+
 inline std::vector<float> line_line_intersections(const Box& a, const Box& b) {
   float den = b.max.x - b.min.x;
 

@@ -15,11 +15,13 @@ workspace "debug"
   IncludeDir["glad"] = "graphick-debug/lib/glad/include"
   IncludeDir["imgui"] = "graphick-debug/lib/imgui"
   IncludeDir["freetype2"] = "graphick-debug/lib/freetype2/include"
+  IncludeDir["harfbuzz"] = "graphick-debug/lib/harfbuzz/include"
   
   include "graphick-debug/lib/glfw"
   include "graphick-debug/lib/glad"
   include "graphick-debug/lib/imgui"
   include "graphick-debug/lib/freetype2"
+  include "graphick-debug/lib/harfbuzz"
   
   project "graphick-debug"
   kind "ConsoleApp"
@@ -62,6 +64,7 @@ workspace "debug"
     "%{IncludeDir.glad}",
     "%{IncludeDir.imgui}",
     "%{IncludeDir.freetype2}",
+    "%{IncludeDir.harfbuzz}",
     "../../",
   }
 
@@ -70,6 +73,7 @@ workspace "debug"
     "glad",
     "imgui",
     "freetype2",
+    "harfbuzz",
     "opengl32.lib"
   }
 

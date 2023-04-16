@@ -91,6 +91,7 @@ void ShaderManager::create_shaders() {
     "  vTextureCoord = aVertexPosition.zw;\n"
     "}\n"
     "#fragment\n"
+    "precision highp float;\n"
     "in highp vec2 vTextureCoord;\n"
     ""
     "uniform sampler2D uSampler;\n"

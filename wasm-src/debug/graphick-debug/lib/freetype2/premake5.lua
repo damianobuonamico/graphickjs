@@ -7,6 +7,7 @@ project "freetype2"
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
 	files {
+    "include/**.h",
 		"src/autofit/autofit.c",
     "src/bdf/bdf.c",
     "src/cff/cff.c",

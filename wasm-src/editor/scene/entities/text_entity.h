@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../entity.h"
+#include "../../text/text.h"
 
 class TextEntity: public Entity {
 public:
-  TextEntity(const vec2& position): m_transform(this, position) {};
+  TextEntity(const vec2& position);
   TextEntity(const TextEntity&) = default;
   TextEntity(TextEntity&&) = default;
 
@@ -16,4 +17,5 @@ public:
   virtual void render(const RenderingOptions& options) const override;
 private:
   TransformComponent m_transform;
+  Text m_text;
 };

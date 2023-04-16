@@ -4,7 +4,7 @@
 #include <direct.h>
 
 #include "wasm-src/editor/editor.h"
-#include "wasm-src/editor/font_manager.h"
+#include "wasm-src/editor/text/font_manager.h"
 #include "wasm-src/editor/settings.h"
 #include "wasm-src/editor/input/input_manager.h"
 

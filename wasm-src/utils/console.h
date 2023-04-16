@@ -23,6 +23,14 @@ struct console {
   }
 
   template <typename T>
+  static inline void error(T value) {
+    std::stringstream stream;
+    stream << value;
+
+    printf("%s\n", stream.str().c_str());
+  }
+
+  template <typename T>
   static inline void error(const std::string& name, T value) {
     std::stringstream stream;
     stream << name << ": " << value;
