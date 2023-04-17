@@ -1,7 +1,7 @@
 #include "font.h"
 
-#include "../../utils/woff2/include/woff2/output.h"
-#include "../../utils/woff2/include/woff2/decode.h"
+#include "../../io/woff2/include/woff2/output.h"
+#include "../../io/woff2/include/woff2/decode.h"
 #include "../../utils/console.h"
 
 #define WOFF2_SIGNATURE 0x774F4632

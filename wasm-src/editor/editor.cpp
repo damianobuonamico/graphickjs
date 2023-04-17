@@ -6,7 +6,7 @@
 #include "../history/command_history.h"
 #include "../utils/console.h"
 #include "../utils/debugger.h"
-#include "../utils/json.h"
+#include "../io/json/json.h"
 
 #include <functional>
 #include <sstream>

@@ -1,8 +1,8 @@
 #include "font_manager.h"
 
 #include "../../utils/console.h"
-#include "../../utils/woff2/include/woff2/output.h"
-#include "../../utils/woff2/include/woff2/decode.h"
+#include "../../io/woff2/include/woff2/output.h"
+#include "../../io/woff2/include/woff2/decode.h"
 
 // #include <hb.h>
 // #define HZ_IMPLEMENTATION

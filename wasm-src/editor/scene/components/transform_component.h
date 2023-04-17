@@ -4,7 +4,7 @@
 #include "../../../values/vec2_value.h"
 #include "../../../math/box.h"
 #include "../../../utils/cache.h"
-#include "../../../utils/json.h"
+#include "../../../io/json/json.h"
 
 class TransformComponent: public Component {
 public:

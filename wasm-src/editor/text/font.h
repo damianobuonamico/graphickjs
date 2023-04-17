@@ -6,7 +6,7 @@
 // #define HZ_IMPLEMENTATION
 // #include "../../utils/hamza/hz.h"
 
-#include "../../utils/hamza/stb_truetype.h"
+#include "../../io/ttf/stb_truetype.h"
 
 #include <stddef.h>
 #include <stdint.h>

@@ -1,6 +1,6 @@
 #include "json.h"
 
-#include "console.h"
+#include "../../utils/console.h"
 
 JSON parse_next(const std::string&, size_t&);
 

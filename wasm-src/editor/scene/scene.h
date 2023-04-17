@@ -2,7 +2,7 @@
 
 #include "../../values/map_value.h"
 #include "../../utils/uuid.h"
-#include "../../utils/json.h"
+#include "../../io/json/json.h"
 #include "entity.h"
 #include "selection_state.h"
 #include "viewport.h"
