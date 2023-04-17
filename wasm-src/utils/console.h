@@ -4,6 +4,7 @@
 #include <sstream>
 #include <ostream>
 #include <chrono>
+#include <bitset>
 
 struct console {
   template <typename T>
@@ -18,6 +19,22 @@ struct console {
   static inline void log(const std::string& name, T value) {
     std::stringstream stream;
     stream << name << ": " << value;
+
+    printf("%s\n", stream.str().c_str());
+  }
+
+  template <typename T>
+  static inline void bitset(T value) {
+    std::stringstream stream;
+    stream << std::bitset<8 * sizeof(value)>(value);
+
+    printf("%s\n", stream.str().c_str());
+  }
+
+  template <typename T>
+  static inline void bitset(const std::string& name, T value) {
+    std::stringstream stream;
+    stream << name << ": " << std::bitset<8 * sizeof(value)>(value);
 
     printf("%s\n", stream.str().c_str());
   }

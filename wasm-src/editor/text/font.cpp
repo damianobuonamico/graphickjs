@@ -4,21 +4,37 @@
 #include "../../utils/woff2/include/woff2/decode.h"
 #include "../../utils/console.h"
 
+#define WOFF2_SIGNATURE 0x774F4632
+
 Font::Font(const uint8_t* buffer, size_t buffer_size) {
-  m_buffer_size = woff2::ComputeWOFF2FinalSize(buffer, buffer_size);
-  if (m_buffer_size == 0) {
-    console::error("Failed to compute WOFF2 final size!");
+  if (buffer_size < 4) {
+    console::error("Invalid font buffer size!");
   }
 
-  m_buffer = new uint8_t[m_buffer_size];
-  woff2::WOFF2MemoryOut out(m_buffer, m_buffer_size);
-
-  bool success = woff2::ConvertWOFF2ToTTF(buffer, buffer_size, &out);
-  if (!success) {
-    console::error("Failed to convert WOFF2 to TTF!");
+  for (int i = 0; i < 4; i++) {
+    console::log(buffer[i]);
   }
 
-  m_buffer_size = out.Size();
+  if ((buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3]) == WOFF2_SIGNATURE) {
+    m_buffer_size = woff2::ComputeWOFF2FinalSize(buffer, buffer_size);
+    if (m_buffer_size == 0) {
+      console::error("Failed to compute WOFF2 final size!");
+    }
+
+    m_buffer = new uint8_t[m_buffer_size];
+    woff2::WOFF2MemoryOut out(m_buffer, m_buffer_size);
+
+    bool success = woff2::ConvertWOFF2ToTTF(buffer, buffer_size, &out);
+    if (!success) {
+      console::error("Failed to convert WOFF2 to TTF!");
+    }
+
+    m_buffer_size = out.Size();
+  } else {
+    m_buffer_size = buffer_size;
+    m_buffer = new uint8_t[m_buffer_size];
+    memcpy(m_buffer, buffer, m_buffer_size);
+  }
 
   if (!stbtt_InitFont(&m_font_info, m_buffer, 0)) {
     console::error("Failed to initialize font info!");

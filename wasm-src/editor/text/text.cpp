@@ -1,11 +1,12 @@
 #include "text.h"
 
 #include "font_manager.h"
-#include "../../utils/glutess/glutess.h"
+#include "../../utils/console.h"
 #include "../../math/vector.h"
 #include "../../math/math.h"
 #include "earcut.h"
 #include <array>
+
 // #include "../../utils/libtess/tesselator.h"
 
 Text::Text(const std::string& text, const std::string& font): m_text(text), m_font(font) {
@@ -53,15 +54,45 @@ bool Text::shape() const {
 //   free(ptr);
 // }
 
-static Geometry* geoo;
+struct Encoding {
+  uint8_t mask;
+  uint8_t value;
+  int extra;
+};
 
-void vertexCallback(GLvoid* vertex) {
-  const GLdouble* pointer;
+Encoding const utf8Info[4] = {
+  {0x80, 0x00, 0},
+  {0xE0, 0xC0, 1},
+  {0xF0, 0xE0, 2},
+  {0xF8, 0xF0, 3}
+};
 
-  pointer = (GLdouble*)vertex;
+int decodeUtf(std::istream& stream, int result, int count) {
+  for (; count; --count) {
+    uint8_t next = stream.get();
+    if ((next & 0xC0) != 0x80) {
+      // Not a valid continuation character
+      stream.setstate(std::ios::badbit);
+      return -1;
+    }
+    result = (result << 6) | (next & 0x3F);
+  }
+  return result;
+}
 
-  geoo->push_vertex({ vec2{(float)pointer[0], (float)pointer[1]} });
-
+int getCodePoint(std::istream& stream) {
+  uint8_t next = stream.get();
+  if (next == EOF) {
+    return -1;
+  }
+  for (auto const& type : utf8Info) {
+    if ((uint8_t)(next & type.mask) == type.value) {
+      return decodeUtf(stream, next & ~type.mask, type.extra);
+    }
+  }
+  // Not a valid first character
+  stream.setstate(std::ios::badbit);
+  return -1;
 }
 
 Geometry Text::geometry() const {
@@ -86,31 +117,62 @@ Geometry Text::geometry() const {
   ascent = std::roundf(ascent * scale);
   descent = std::roundf(descent * scale);
 
-  geoo = &geo;
+  std::vector<int> codepoints;
 
-  for (int i = 0; i < m_text.size(); i++) {
+  std::istringstream stream(m_text);
+
+  while (stream.good()) {
+    int codepoint = getCodePoint(stream);
+    if (codepoint < 0) break;
+
+    codepoints.push_back(codepoint);
+  }
+
+  // for (int i = 0; i < m_text.size(); i++) {
+  //   uint8_t ch = m_text[i];
+  //   console::bitset(ch);
+  //   for (const Encoding& type : utf8Info) {
+  //     for (int count = type.extra; count > 0; --count) {
+  //       if (i + count >= m_text.size()) {
+  //         // Not enough characters left
+  //       }
+
+  //       uint8_t next = m_text[i + count];
+  //       if (next & 0xC0 != 0x80) {
+  //         // Not a valid continuation character
+  //       }
+  //       result = (result << 6) | (next & 0x3F);
+  //     }
+  //     return result;
+  //   }
+  // }
+
+  for (int i = 0; i < codepoints.size(); i++) {
     /* how wide is this character */
     int ax;
     int lsb;
-    stbtt_GetCodepointHMetrics(font_info, m_text[i], &ax, &lsb);
+    int index = stbtt_FindGlyphIndex(font_info, codepoints[i]);
+    stbtt_GetGlyphHMetrics(font_info, index, &ax, &lsb);
+    // stbtt_GetCodepointHMetrics(font_info, m_text[i], &ax, &lsb);
     /* (Note that each Codepoint call has an alternative Glyph version which caches the work required to lookup the character m_text[i].) */
 
     /* get bounding box for character (may be offset to account for chars that dip above or below the line) */
-    int c_x1, c_y1, c_x2, c_y2;
-    stbtt_GetCodepointBitmapBox(font_info, m_text[i], scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
+    // int c_x1, c_y1, c_x2, c_y2;
+    // stbtt_GetCodepointBitmapBox(font_info, m_text[i], scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
 
     /* compute y (different characters have different heights) */
-    int y = ascent + c_y1;
+    // int y = ascent + c_y1;
 
     /* render character (stride and offset is important here) */
     // int byteOffset = x + roundf(lsb * scale) + (y * b_w);
     // stbtt_MakeCodepointBitmap(font_info, bitmap + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, m_text[i]);
 
-    Box box = { {(float)(x + c_x1), (float)(c_y1)}, {(float)(x + c_x2), (float)(c_y2)} };
+    // Box box = { {(float)(x + c_x1), (float)(c_y1)}, {(float)(x + c_x2), (float)(c_y2)} };
     //geo.push_quad(box, vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
 
     stbtt_vertex* vertices;
-    int vertices_len = stbtt_GetCodepointShape(font_info, m_text[i], &vertices);
+    int vertices_len = stbtt_GetGlyphShape(font_info, index, &vertices);
+    // int vertices_len = stbtt_GetCodepointShape(font_info, m_text[i], &vertices);
 
     using Point = std::array<float, 2>;
     std::vector<std::vector<Point>> polygon;
@@ -217,7 +279,7 @@ Geometry Text::geometry() const {
 
     if (polygon.size() > 1) {
       for (auto& p : polygon[1]) {
-        geo.push_quad(vec2{ p[0], p[1]}, 1.0f, vec4{0.8f, 0.8f, 0.2f, 0.5f});
+        geo.push_quad(vec2{ p[0], p[1] }, 1.0f, vec4{ 0.8f, 0.8f, 0.2f, 0.5f });
       }
     }
 
@@ -262,9 +324,10 @@ Geometry Text::geometry() const {
     x += roundf(ax * scale);
 
     /* add kerning */
-    int kern;
-    kern = stbtt_GetCodepointKernAdvance(font_info, m_text[i], m_text[i + 1]);
-    x += roundf(kern * scale);
+    if (i < codepoints.size() - 1) {
+      //int kern = stbtt_GetGlyphKernAdvance(font_info, index, codepoints[i + 1]);
+      //x += roundf(kern * scale);
+    }
 
     stbtt_FreeShape(font_info, vertices);
 
