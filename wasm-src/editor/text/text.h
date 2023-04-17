@@ -20,5 +20,5 @@ private:
   std::string m_font;
   std::string m_text;
 
-  // hb_buffer_t* m_buffer;
+  hb_buffer_t* m_buffer;
 };

@@ -12,18 +12,18 @@
 Text::Text(const std::string& text, const std::string& font): m_text(text), m_font(font) {
   // hz_buffer_init(&m_buffer);
 
-  // m_buffer = hb_buffer_create();
-  // hb_buffer_add_utf8(m_buffer, text.c_str(), (int)text.size(), 0, (int)text.size());
+  m_buffer = hb_buffer_create();
+  hb_buffer_add_utf8(m_buffer, text.c_str(), (int)text.size(), 0, (int)text.size());
 
-  // hb_buffer_set_direction(m_buffer, HB_DIRECTION_LTR);
-  // hb_buffer_set_script(m_buffer, HB_SCRIPT_LATIN);
-  // hb_buffer_set_language(m_buffer, hb_language_from_string("en", -1));
+  hb_buffer_set_direction(m_buffer, HB_DIRECTION_LTR);
+  hb_buffer_set_script(m_buffer, HB_SCRIPT_LATIN);
+  hb_buffer_set_language(m_buffer, hb_language_from_string("en", -1));
 
   shape();
 }
 
 Text::~Text() {
-  // hb_buffer_destroy(m_buffer);
+  hb_buffer_destroy(m_buffer);
   // hz_buffer_release(&m_buffer);
 }
 
@@ -31,10 +31,8 @@ bool Text::shape() const {
   std::weak_ptr<Font> font = FontManager::get_font(m_font);
   if (font.expired()) return false;
 
-  // Font::FontData shaper = font.lock()->get();
-
   // hz_shape_sz1(shaper.shaper, shaper.font_data, HZ_ENCODING_UTF8, m_text.c_str(), &m_buffer);
-  // hb_shape(font.lock()->get().font, m_buffer, nullptr, 0);
+  hb_shape(font.lock()->get().font, m_buffer, nullptr, 0);
   m_shaped = true;
 
   return true;
@@ -121,12 +119,12 @@ Geometry Text::geometry() const {
 
   std::istringstream stream(m_text);
 
-  while (stream.good()) {
-    int codepoint = getCodePoint(stream);
-    if (codepoint < 0) break;
+  // while (stream.good()) {
+  //   int codepoint = getCodePoint(stream);
+  //   if (codepoint < 0) break;
 
-    codepoints.push_back(codepoint);
-  }
+  //   codepoints.push_back(codepoint);
+  // }
 
   // for (int i = 0; i < m_text.size(); i++) {
   //   uint8_t ch = m_text[i];
@@ -147,11 +145,18 @@ Geometry Text::geometry() const {
   //   }
   // }
 
-  for (int i = 0; i < codepoints.size(); i++) {
+  unsigned int glyph_count;
+  hb_glyph_info_t* glyph_info = hb_buffer_get_glyph_infos(m_buffer, &glyph_count);
+  hb_glyph_position_t* glyph_pos = hb_buffer_get_glyph_positions(m_buffer, &glyph_count);
+
+  for (unsigned int i = 0; i < glyph_count; i++) {
+    // for (int i = 0; i < codepoints.size(); i++) {
+    hb_codepoint_t glyphid = glyph_info[i].codepoint;
     /* how wide is this character */
     int ax;
     int lsb;
-    int index = stbtt_FindGlyphIndex(font_info, codepoints[i]);
+    //int index = stbtt_FindGlyphIndex(font_info, glyphid);
+    int index = (int)glyphid;
     stbtt_GetGlyphHMetrics(font_info, index, &ax, &lsb);
     // stbtt_GetCodepointHMetrics(font_info, m_text[i], &ax, &lsb);
     /* (Note that each Codepoint call has an alternative Glyph version which caches the work required to lookup the character m_text[i].) */
@@ -207,6 +212,11 @@ Geometry Text::geometry() const {
     size_t contour_index = 0;
     uint32_t offset = geo.offset();
 
+    float x_offset = (float)glyph_pos[i].x_offset * scale;
+    float y_offset = (float)glyph_pos[i].y_offset * scale;
+    float x_advance = (float)glyph_pos[i].x_advance * scale;
+    float y_advance = (float)glyph_pos[i].y_advance * scale;
+
     for (int j = 0; j < vertices_len; j++) {
       auto& vertex = vertices[j];
       if (vertex.type == STBTT_vmove) {
@@ -217,8 +227,8 @@ Geometry Text::geometry() const {
         // gluTessBeginContour(tess);
       }
 
-      polygon[contour_index].push_back({ { x + (float)vertex.x * scale, -(float)vertex.y * scale } });
-      geo.push_vertex({ vec2{ x + (float)vertex.x * scale, -(float)vertex.y * scale } });
+      polygon[contour_index].push_back({ { x + x_offset + (float)vertex.x * scale, -(float)vertex.y * scale } });
+      geo.push_vertex({ vec2{ x + x_offset + (float)vertex.x * scale, -(float)vertex.y * scale } });
 
       // contours[contour_index].push_back(x + (float)vertex.x * scale);
       // contours[contour_index].push_back(-(float)vertex.y * scale);
@@ -321,15 +331,17 @@ Geometry Text::geometry() const {
     // gluDeleteTess(tess);
 
     /* advance x */
-    x += roundf(ax * scale);
+    // x += roundf(ax * scale);
+    x += x_advance;
 
     /* add kerning */
-    if (i < codepoints.size() - 1) {
+    // if (i < codepoints.size() - 1) {
       //int kern = stbtt_GetGlyphKernAdvance(font_info, index, codepoints[i + 1]);
       //x += roundf(kern * scale);
-    }
+    // }
 
     stbtt_FreeShape(font_info, vertices);
+
 
     // for (auto& contour : contours) {
     //   for (int h = 0; h < contour.size(); h += 2) {
@@ -403,10 +415,6 @@ Geometry Text::geometry() const {
   // }
 
   // FT_Face face = font.lock()->get().face;
-
-  // unsigned int glyph_count;
-  // hb_glyph_info_t* glyph_info = hb_buffer_get_glyph_infos(m_buffer, &glyph_count);
-  // hb_glyph_position_t* glyph_pos = hb_buffer_get_glyph_positions(m_buffer, &glyph_count);
 
   // int mult = 64;
 

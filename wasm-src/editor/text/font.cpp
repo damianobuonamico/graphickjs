@@ -89,9 +89,9 @@ Font::Font(const uint8_t* buffer, size_t buffer_size) {
 Font::~Font() {
   // hz_font_data_release(&m_font_data);
   // hz_font_destroy(m_font);
-  // if (m_font) hb_font_destroy(m_font);
-  // if (m_face) hb_face_destroy(m_face);
-  // if (m_blob) hb_blob_destroy(m_blob);
+  hb_font_destroy(m_font);
+  hb_face_destroy(m_face);
+  hb_blob_destroy(m_blob);
 
   delete[] m_buffer;
 }

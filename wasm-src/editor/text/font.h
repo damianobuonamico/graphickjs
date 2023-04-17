@@ -16,13 +16,14 @@ public:
   struct FontData {
     // hz_shaper_t* shaper;
     // hz_font_data_t* font_data;
+    hb_font_t* font;
     stbtt_fontinfo* font_info;
   };
 public:
   Font(const uint8_t* buffer, size_t buffer_size);
   ~Font();
 
-  inline FontData get() { return { &m_font_info }; }
+  inline FontData get() { return { m_font, &m_font_info }; }
 private:
   // FT_Library m_library;
   // FT_Face m_ft_face = nullptr;
