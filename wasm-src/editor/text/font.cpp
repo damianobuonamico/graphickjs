@@ -70,9 +70,9 @@ Font::Font(const uint8_t* buffer, size_t buffer_size) {
   // hz_shaper_set_language(&m_shaper, HZ_LANGUAGE_ENGLISH);
   // hz_shaper_set_features(&m_shaper, features, sizeof(features) / sizeof(features[0]));
 
-  // m_blob = hb_blob_create((const char*)m_buffer, m_buffer_size, HB_MEMORY_MODE_WRITABLE, m_buffer, nullptr);
-  // m_face = hb_face_create(m_blob, 0);
-  // m_font = hb_font_create(m_face);
+  m_blob = hb_blob_create((const char*)m_buffer, m_buffer_size, HB_MEMORY_MODE_WRITABLE, m_buffer, nullptr);
+  m_face = hb_face_create(m_blob, 0);
+  m_font = hb_font_create(m_face);
 
   // FT_Error error = FT_New_Memory_Face(m_library, m_buffer, m_buffer_size, 0, &m_ft_face);
   // if (error) {

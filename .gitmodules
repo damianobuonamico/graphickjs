@@ -4,3 +4,6 @@
 [submodule "wasm-src/debug/graphick-debug/lib/imgui"]
 	path = wasm-src/debug/graphick-debug/lib/imgui
 	url = https://github.com/TheCherno/imgui
+[submodule "wasm-src/debug/graphick-debug/lib/harfbuzz"]
+	path = wasm-src/debug/graphick-debug/lib/harfbuzz
+	url = https://github.com/harfbuzz/harfbuzz.git

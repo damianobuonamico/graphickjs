@@ -15,7 +15,7 @@ workspace "debug"
   IncludeDir["glad"] = "graphick-debug/lib/glad/include"
   IncludeDir["imgui"] = "graphick-debug/lib/imgui"
   IncludeDir["freetype2"] = "graphick-debug/lib/freetype2/include"
-  IncludeDir["harfbuzz"] = "graphick-debug/lib/harfbuzz/include"
+  IncludeDir["harfbuzz"] = "graphick-debug/lib/harfbuzz/src"
   
   include "graphick-debug/lib/glfw"
   include "graphick-debug/lib/glad"

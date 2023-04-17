@@ -1,6 +1,6 @@
 #pragma once
 
-// #include <hb.h>
+#include <hb.h>
 // #include <ft2build.h>
 // #include FT_FREETYPE_H
 // #define HZ_IMPLEMENTATION
@@ -37,7 +37,7 @@ private:
   // hz_shaper_t m_shaper;
   // hz_font_t* m_font = nullptr;
 
-  // hb_blob_t* m_blob = nullptr;
-  // hb_face_t* m_face = nullptr;
-  // hb_font_t* m_font = nullptr;
+  hb_blob_t* m_blob = nullptr;
+  hb_face_t* m_face = nullptr;
+  hb_font_t* m_font = nullptr;
 };
