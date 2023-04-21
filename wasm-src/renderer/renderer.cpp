@@ -15,6 +15,9 @@
 #include <glad/glad.h>
 #endif
 
+#include "../math/vec3.h"
+#include "../math/mat4.h"
+
 #include <stdexcept>
 
 Renderer* Renderer::s_instance = nullptr;
@@ -29,13 +32,15 @@ void Renderer::init() {
 
 #ifdef EMSCRIPTEN
   EmscriptenWebGLContextAttributes attr;
+  emscripten_webgl_init_context_attributes(&attr);
 
   attr.alpha = true;
   attr.premultipliedAlpha = true;
   attr.majorVersion = 2;
-  attr.antialias = settings.antialiasing == Antialiasing::Hardware;
+  attr.antialias = true;
+  // attr.antialias = settings.antialiasing == Antialiasing::Hardware;
+  attr.stencil = true;
 
-  emscripten_webgl_init_context_attributes(&attr);
 
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
   emscripten_webgl_make_context_current(ctx);
@@ -46,9 +51,22 @@ void Renderer::init() {
 #endif
 
   glLineWidth(1.0f);
+  // TODO: Enable depth
+  glDisable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_STENCIL_TEST);
+  // glStencilFunc(GL_EQUAL, 1, 0xFF);
+  // glStencilMask(0xFF);
+  // glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
+  // glStencilMask(0xFF);
+  // glStencilFunc(GL_EQUAL, 1, 0xFF);
+  // glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  // TODO: Enable culling, CWW, depth testing, etc.
+
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
 
   get()->m_shaders.create_shaders();
   if (settings.antialiasing == Antialiasing::FXAA || settings.antialiasing == Antialiasing::MSAA) {
@@ -73,29 +91,158 @@ void Renderer::resize(const vec2& size, float dpr) {
   glViewport(0, 0, (GLsizei)(size.x * dpr), (GLsizei)(size.y * dpr));
 }
 
+struct Vertex3D {
+  vec3 position;
+  float uniform_index = 2.0f;
+};
+
+struct Geometry3D {
+  Geometry3D() = default;
+
+  void push_quad(const vec3 position, float radius) {
+    m_vertices.insert(m_vertices.end(), {
+      { position + vec3{ -radius, -radius, 0 } },
+      { position + vec3{ -radius,  radius, 0 } },
+      { position + vec3{  radius,  radius, 0 } },
+      { position + vec3{  radius, -radius, 0 } }
+      });
+    uint32_t offset = m_vertices.size();
+    m_indices.insert(m_indices.end(), { offset - 4, offset - 3, offset - 2, offset - 4, offset - 2, offset - 1 });
+  }
+
+  std::vector<Vertex3D> m_vertices;
+  std::vector<uint32_t> m_indices;
+};
+
 void Renderer::begin_frame(const vec2& position, float zoom) {
+  get()->set_viewport(position, zoom);
+
+  glClearColor(0.09f, 0.11f, 0.13f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  glEnable(GL_STENCIL_TEST);
+
+  // Disable rendering to the color buffer
+  glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+  // Start using the stencil
+  glEnable(GL_STENCIL_TEST);
+
+  // Place a 1 where rendered
+  glStencilFunc(GL_ALWAYS, 1, 1);
+
+  // Replace where rendered
+  glStencilOp(GL_REPLACE, GL_REPLACE, GL_INVERT);
+
+  // glClearStencil(0);
+  // glClear(GL_STENCIL_BUFFER_BIT);
+  // glStencilFunc(GL_ALWAYS, 1, 0xFF);
+  // glStencilMask(0xFF);
+  // glStencilOp(GL_REPLACE, GL_REPLACE, GL_INVERT);
+
+  // glClearColor(0.09f, 0.11f, 0.13f, 1.0f);
+  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  // glStencilMask(0xFF);
+  // glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+  Geometry3D geo;
+  geo.push_quad({ 150.0f, 150.0f, 1.0f }, 20.0f);
+  geo.push_quad({ 160.0f, 160.0f, 1.0f }, 20.0f);
+  geo.push_quad({ 300.0f, 300.0f, 1.0f }, 20.0f);
+  // geo.push_quad({ 100.0f, 100.0f, 3.5f }, 50.0f);
+  // geo.push_quad({ 50.0f, 50.0f, 3.0f }, 50.0f);
+
+  GLuint vao, vbo, ibo;
+
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  glGenBuffers(1, &vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, geo.m_vertices.size() * sizeof(Vertex3D), geo.m_vertices.data(), GL_STATIC_DRAW);
+
+  glGenBuffers(1, &ibo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, geo.m_indices.size() * sizeof(uint32_t), geo.m_indices.data(), GL_STATIC_DRAW);
+
+  get()->m_shaders.use("depth");
+  get()->m_shaders.set_attribute("aPosition", 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (const void*)offsetof(Vertex3D, position));
+  get()->m_shaders.set_attribute("aIndex", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (const void*)offsetof(Vertex3D, uniform_index));
+
+  std::vector<float> colors;
+
+  colors.insert(colors.end(), { 0.8f, 0.2f, 0.2f, 1.0f });
+  colors.insert(colors.end(), { 0.2f, 0.8f, 0.2f, 1.0f });
+  colors.insert(colors.end(), { 0.2f, 0.2f, 0.8f, 1.0f });
+  colors.insert(colors.end(), { 1.0f, 1.0f, 1.0f, 1.0f });
+
+  get()->m_shaders.set_uniform("uZFar", 4.0f);
+  get()->m_shaders.set_uniform("uColors", colors.data(), (int)(colors.size() / 4));
+
+  glDrawElements(GL_TRIANGLES, geo.m_indices.size(), GL_UNSIGNED_INT, 0);
+
+  // Reenable color
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+  // Where a 1 was not rendered
+  glStencilFunc(GL_NOTEQUAL, 1, 1);
+
+  // Keep the pixel
+  glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+  // glStencilFunc(GL_EQUAL, 1, 0xFF);
+  // glClearColor(0.09f, 0.11f, 0.13f, 1.0f);
+  // glClear(GL_COLOR_BUFFER_BIT);
+
+  Geometry3D geo2;
+  geo2.push_quad({ 150.0f, 150.0f, 0.5f }, 150.0f);
+
+  glBufferData(GL_ARRAY_BUFFER, geo2.m_vertices.size() * sizeof(Vertex3D), geo2.m_vertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, geo.m_indices.size() * sizeof(uint32_t), geo2.m_indices.data(), GL_STATIC_DRAW);
+
+  glDrawElements(GL_TRIANGLES, geo2.m_indices.size(), GL_UNSIGNED_INT, 0);
+
+  glDeleteBuffers(1, &ibo);
+  glDeleteBuffers(1, &vbo);
+  glDeleteVertexArrays(1, &vao);
+
+  //Finished using stencil
+  glDisable(GL_STENCIL_TEST);
+
+  return;
+
   rendered = 0;
   get()->set_viewport(position, zoom);
   get()->m_frame_buffer.bind();
 
   glClearColor(0.09f, 0.11f, 0.13f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+  glStencilFunc(GL_ALWAYS, 1, 0xFF);
+  glStencilMask(0xFF);
 
   get()->begin_batch();
 }
 
 void Renderer::end_frame() {
+  return;
+
   // console::log("Entities Rendered", rendered);
   if (get()->m_last_call == RenderCall::Batch) {
     get()->end_batch();
     get()->flush();
   }
 
+  glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+  glStencilMask(0x00);
+  glDisable(GL_DEPTH_TEST);
+
   get()->m_last_call = RenderCall::None;
   get()->m_frame_buffer.render();
 }
 
 void Renderer::push_overlay_layer(const vec2& position) {
+  return;
+
   if (get()->m_last_call == RenderCall::Batch) {
     get()->end_batch();
     get()->flush();
@@ -108,6 +255,8 @@ void Renderer::push_overlay_layer(const vec2& position) {
 }
 
 void Renderer::draw(const Geometry& geometry) {
+  return;
+
   rendered++;
   if (get()->m_last_call != RenderCall::Batch) {
     get()->bind_batch_renderer();
@@ -118,6 +267,8 @@ void Renderer::draw(const Geometry& geometry) {
 };
 
 void Renderer::draw(const InstancedGeometry& geometry) {
+  return;
+
   if (geometry.instances() == 0) {
     return;
   }
@@ -129,6 +280,8 @@ void Renderer::draw(const InstancedGeometry& geometry) {
 }
 
 void Renderer::draw(const Texture& texture) {
+  return;
+
   GLuint position_buffer;
   GLuint texture_buffer;
   GLuint index_buffer;
@@ -175,6 +328,40 @@ void Renderer::draw(const Texture& texture) {
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
   get()->m_last_call = RenderCall::Image;
+}
+
+void Renderer::push_frame_buffer(vec2 size) {
+  return;
+
+  if (get()->m_last_call == RenderCall::Batch) {
+    get()->end_batch();
+    get()->flush();
+  }
+
+  if (get()->m_current_frame_buffer != nullptr) {
+    get()->m_current_frame_buffer->resize(get()->m_size * get()->m_dpr);
+  } else {
+    get()->m_current_frame_buffer = new FrameBuffer(get()->m_shaders, get()->m_size * get()->m_dpr);
+    get()->m_current_frame_buffer->init(get()->m_settings.antialiasing == Antialiasing::MSAA, get()->m_settings.msaa_samples);
+  }
+
+  get()->m_last_call = RenderCall::None;
+  get()->m_current_frame_buffer->bind();
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
+
+void Renderer::pop_frame_buffer() {
+  return;
+
+  if (get()->m_last_call == RenderCall::Batch) {
+    get()->end_batch();
+    get()->flush();
+  }
+
+  get()->m_current_frame_buffer->render();
+  get()->m_last_call = RenderCall::None;
+  // delete get()->m_current_frame_buffer;
 }
 
 Renderer::Renderer(): m_frame_buffer(m_shaders, vec2{ 0.0f }) {}
@@ -248,12 +435,34 @@ void Renderer::bind_instance_renderer() {
 }
 
 void Renderer::set_viewport(const vec2& position, float zoom) {
-  mat3 scaling = { 2.0f * zoom / m_size.x, 0.0f, 0.0f, 0.0f, -2.0f * zoom / m_size.y, 0.0f, 0.0f, 0.0f, 1.0f };
-  mat3 translation = { 1.0f, 0.0f, (-m_size.x / zoom + 2 * position[0]) / 2.0f, 0.0f, 1.0f, (-m_size.y / zoom + 2 * position[1]) / 2.0f, 0.0f, 0.0f, 1.0f };
+  // mat3 scaling = { 2.0f * zoom / m_size.x, 0.0f, 0.0f, 0.0f, -2.0f * zoom / m_size.y, 0.0f, 0.0f, 0.0f, 1.0f };
+  // mat3 translation = { 1.0f, 0.0f, (-m_size.x / zoom + 2 * position[0]) / 2.0f, 0.0f, 1.0f, (-m_size.y / zoom + 2 * position[1]) / 2.0f, 0.0f, 0.0f, 1.0f };
 
-  mat3 view_projection_matrix = scaling * translation;
+  // mat3 view_projection_matrix = scaling * translation;
 
-  m_shaders.set_view_projection_matrix(view_projection_matrix);
+  float half_width = -m_size.x / 2.0f / zoom;
+  float half_height = m_size.y / 2.0f / zoom;
+
+  float right = -half_width;
+  float left = half_width;
+  float top = -half_height;
+  float bottom = half_height;
+
+  mat4 proj = {
+    2.0f / (right - left), 0.0f, 0.0f, 0.0f,
+    0.0f, 2.0f / (top - bottom), 0.0f, 0.0f,
+    0.0f, 0.0f, -1.0f, 0.0f,
+    -(right + left) / (right - left), -(top + bottom) / (top - bottom), 0.0f, 1.0f
+  };
+
+  mat4 translation = {
+    1.0f, 0.0f, 0.0f, (-m_size.x / zoom + 2 * position[0]) / 2.0f,
+    0.0f, 1.0f, 0.0f, (-m_size.y / zoom + 2 * position[1]) / 2.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f
+  };
+
+  m_shaders.set_view_projection_matrix(proj * translation);
   m_shaders.set_zoom(zoom);
 }
 

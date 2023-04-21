@@ -41,7 +41,7 @@ void FrameBuffer::init(bool use_msaa, uint16_t msaa_samples) {
 
   glGenTextures(1, &m_texture_object);
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_texture_object);
-  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa_samples, GL_RGB, (GLsizei)m_size.x, (GLsizei)m_size.y, GL_TRUE);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa_samples, GL_RGBA, (GLsizei)m_size.x, (GLsizei)m_size.y, GL_TRUE);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -64,7 +64,7 @@ void FrameBuffer::init(bool use_msaa, uint16_t msaa_samples) {
 
   glGenTextures(1, &m_post_processing_texture_object);
   glBindTexture(GL_TEXTURE_2D, m_post_processing_texture_object);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -119,13 +119,13 @@ void FrameBuffer::resize(const vec2& size) {
   glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_msaa_samples, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y);
 #else
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_texture_object);
-  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_msaa_samples, GL_RGB, (GLsizei)m_size.x, (GLsizei)m_size.y, GL_TRUE);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_msaa_samples, GL_RGBA, (GLsizei)m_size.x, (GLsizei)m_size.y, GL_TRUE);
 
   glBindRenderbuffer(GL_RENDERBUFFER, m_render_buffer_object);
   glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_msaa_samples, GL_DEPTH24_STENCIL8, (GLsizei)m_size.x, (GLsizei)m_size.y);
 
   glBindTexture(GL_TEXTURE_2D, m_post_processing_texture_object);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_size.x, (GLsizei)m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 #endif
 }
 

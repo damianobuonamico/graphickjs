@@ -42,6 +42,9 @@ public:
   static void draw(const Geometry& geometry);
   static void draw(const InstancedGeometry& geometry);
   static void draw(const Texture& texture);
+
+  static void push_frame_buffer(vec2 size);
+  static void pop_frame_buffer();
 private:
   Renderer();
   ~Renderer() = default;
@@ -109,6 +112,7 @@ private:
 
   ShaderManager m_shaders;
   FrameBuffer m_frame_buffer;
+  FrameBuffer* m_current_frame_buffer = nullptr;
   RenderCall m_last_call = RenderCall::None;
 
   vec2 m_size;

@@ -1,21 +1,17 @@
 #pragma once
 
-#include <hb.h>
-// #include <ft2build.h>
-// #include FT_FREETYPE_H
-// #define HZ_IMPLEMENTATION
-// #include "../../utils/hamza/hz.h"
-
 #include "../../io/ttf/stb_truetype.h"
+#include "../../renderer/geometry/geometry.h"
+
+#include <hb.h>
 
 #include <stddef.h>
 #include <stdint.h>
+#include <unordered_map>
 
 class Font {
 public:
   struct FontData {
-    // hz_shaper_t* shaper;
-    // hz_font_data_t* font_data;
     hb_font_t* font;
     stbtt_fontinfo* font_info;
   };
@@ -24,21 +20,17 @@ public:
   ~Font();
 
   inline FontData get() { return { m_font, &m_font_info }; }
-private:
-  // FT_Library m_library;
-  // FT_Face m_ft_face = nullptr;
 
+  const Geometry& request_glyph(hb_codepoint_t glyph_id, float scale);
+private:
   uint8_t* m_buffer = nullptr;
   size_t m_buffer_size;
 
   stbtt_fontinfo m_font_info;
 
-  // stbtt_fontinfo m_font_info;
-  // hz_font_data_t m_font_data;
-  // hz_shaper_t m_shaper;
-  // hz_font_t* m_font = nullptr;
-
   hb_blob_t* m_blob = nullptr;
   hb_face_t* m_face = nullptr;
   hb_font_t* m_font = nullptr;
+
+  std::unordered_map<hb_codepoint_t, Geometry> m_glyphs;
 };

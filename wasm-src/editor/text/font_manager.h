@@ -2,9 +2,6 @@
 
 #include "font.h"
 
-// #include <ft2build.h>
-// #include FT_FREETYPE_H
-
 #include <unordered_map>
 #include <string>
 #include <memory>
@@ -24,10 +21,7 @@ public:
 private:
   FontManager() = default;
   ~FontManager() = default;
-
-  void load_face(const unsigned char* buffer, long buffer_size);
 private:
-  // FT_Library m_library;
   std::unordered_map<std::string, std::shared_ptr<Font>> m_fonts;
 private:
   static FontManager* s_instance;

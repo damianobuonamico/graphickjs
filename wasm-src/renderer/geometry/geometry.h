@@ -32,8 +32,8 @@ struct Geometry {
   inline uint32_t offset() const { return m_offset; }
 
   inline void reserve_vertices(size_t count) { m_vertices.reserve(count); }
-  inline void reserve_indices(size_t count) { m_indices.reserve(count); }
   void reserve(size_t vertices, size_t indices);
+  inline void reserve_indices(size_t count) { m_indices.reserve(count); }
 
   void push_vertex(const Vertex& vertex);
   void push_vertices(std::initializer_list<Vertex> vertices);

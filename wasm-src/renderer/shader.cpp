@@ -22,16 +22,23 @@ void Shader::set_uniform(const std::string& name, const float value) {
   glUniform1f(location, value);
 }
 
+void Shader::set_uniform(const std::string& name, const float* value, int count) {
+  GLuint location = get_uniform_location(name);
+
+  glUniform4fv(location, count, value);
+}
+
+
 void Shader::set_uniform(const std::string& name, const vec4& value) {
   GLuint location = get_uniform_location(name);
 
   glUniform4fv(location, 1, &value);
 }
 
-void Shader::set_uniform(const std::string& name, const mat3& value) {
+void Shader::set_uniform(const std::string& name, const mat4& value) {
   GLuint location = get_uniform_location(name);
 
-  glUniformMatrix3fv(location, 1, true, &value);
+  glUniformMatrix4fv(location, 1, true, &value);
 }
 
 void Shader::set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset) {

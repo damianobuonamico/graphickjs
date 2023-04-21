@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../common.h"
-#include "../math/mat3.h"
+#include "../math/mat4.h"
 #include "../math/vec4.h"
 
 #include <unordered_map>
@@ -26,8 +26,9 @@ public:
 
   void set_uniform(const std::string& name, const int value);
   void set_uniform(const std::string& name, const float value);
+  void set_uniform(const std::string& name, const float* value, int count);
   void set_uniform(const std::string& name, const vec4& value);
-  void set_uniform(const std::string& name, const mat3& value);
+  void set_uniform(const std::string& name, const mat4& value);
   void set_attribute(const std::string& name, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* offset);
 private:
   struct ShaderSource {
