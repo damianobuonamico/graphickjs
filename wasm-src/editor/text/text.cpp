@@ -69,7 +69,8 @@ Geometry Text::geometry() const {
     float y_advance = (float)glyph_pos[i].y_advance * scale;
 
     for (const Vertex& vert : verts) {
-      geo.push_vertex({ vec2{ vert.position.x + x + x_offset, vert.position.y + y + y_offset }, vert.color });
+      // geo.push_vertex({ vec2{ vert.position.x + x + x_offset, vert.position.y + y + y_offset }, vert.color });
+      geo.push_vertex({ vec2{ vert.position.x + x + x_offset, vert.position.y + y + y_offset } });
     }
 
     for (uint32_t index : glyph_geo.indices()) {

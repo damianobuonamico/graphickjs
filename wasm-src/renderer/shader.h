@@ -16,7 +16,7 @@ public:
   const UUID id;
   const std::string name;
 public:
-  Shader(const std::string& name, const std::string& source);
+  Shader(const std::string& name, const std::string& source, std::initializer_list<int> constants = {});
   Shader(const Shader&) = default;
   Shader(Shader&&) = delete;
 
@@ -34,9 +34,14 @@ private:
   struct ShaderSource {
     std::string vertex;
     std::string fragment;
+
+    std::string& operator[](uint8_t i) {
+      if (i == 1) return fragment;
+      return vertex;
+    }
   };
 
-  static ShaderSource parse_source(const std::string& source);
+  static ShaderSource parse_source(const std::string& source, std::initializer_list<int> constants);
   static GLuint create_shader(const GLenum type, const char* source);
   static GLuint create_program(const GLuint vertex_shader, const GLuint fragment_shader);
 

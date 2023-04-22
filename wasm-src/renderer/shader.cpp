@@ -1,8 +1,8 @@
 #include "shader.h"
 
-Shader::Shader(const std::string& name, const std::string& source)
+Shader::Shader(const std::string& name, const std::string& source, std::initializer_list<int> constants)
   : name(name) {
-  ShaderSource shader_source = parse_source(source);
+  ShaderSource shader_source = parse_source(source, constants);
 
   GLuint vertex_shader = create_shader(GL_VERTEX_SHADER, shader_source.vertex.c_str());
   GLuint fragment_shader = create_shader(GL_FRAGMENT_SHADER, shader_source.fragment.c_str());
@@ -48,10 +48,9 @@ void Shader::set_attribute(const std::string& name, GLint size, GLenum type, GLb
   glEnableVertexAttribArray(location);
 }
 
-Shader::ShaderSource Shader::parse_source(const std::string& source) {
+Shader::ShaderSource Shader::parse_source(const std::string& source, std::initializer_list<int> constants) {
   size_t vertex_offset = source.find("#vertex\n");
   size_t fragment_offset = source.find("#fragment\n");
-
 
 #ifdef EMSCRIPTEN
   ShaderSource shader_source{ "#version 300 es\n", "#version 300 es\n" };
@@ -65,6 +64,30 @@ Shader::ShaderSource Shader::parse_source(const std::string& source) {
   } else {
     shader_source.vertex.append(source.substr(8, fragment_offset - 8));
     shader_source.fragment.append(source.substr(fragment_offset + 10));
+  }
+
+  int constants_offset = 0;
+
+  for (uint8_t s = 0; s < 2; s++) {
+    int index = 0;
+    static const std::string substr = "$_$";
+
+    std::vector<int> indices;
+
+    while ((index = shader_source[s].find(substr, index)) != std::string::npos) {
+      indices.push_back(index);
+      index += substr.length();
+    }
+
+    if (!indices.empty()) {
+      for (int i = 0; i < indices.size(); i++) {
+        int constant = constants.size() > constants_offset + i ? constants.begin()[constants_offset + i] : 1;
+
+        shader_source[s].replace(indices[i], substr.length(), std::to_string(constant));
+      }
+
+      constants_offset += indices.size();
+    }
   }
 
   return shader_source;

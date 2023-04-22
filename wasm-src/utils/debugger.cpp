@@ -117,8 +117,8 @@ void Debugger::render_bezier_outline(const BezierEntity* entity) {
 
   vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
   Geometry geo{ GL_LINES };
-  InstancedGeometry points_geo{};
-  points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
+  // InstancedGeometry points_geo{};
+  // points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
 
   Box box = entity->bounding_box();
 
@@ -138,19 +138,19 @@ void Debugger::render_bezier_outline(const BezierEntity* entity) {
   for (int i = 0; i <= resolution; i++) {
     float t = (float)i / (float)resolution;
     vertices[i].position = bezier(A, B, C, D, t);
-    vertices[i].color = color;
+    // vertices[i].color = color;
   }
 
-  points_geo.reserve_instances(m_t_values.size());
+  // points_geo.reserve_instances(m_t_values.size());
   for (float t : m_t_values) {
     vec2 point = bezier(A, B, C, D, t);
-    points_geo.push_instance(point);
+    // points_geo.push_instance(point);
   }
 
-  geo.push_line_strip(vertices);
+  // geo.push_line_strip(vertices);
 
   Renderer::draw(geo);
-  Renderer::draw(points_geo);
+  // Renderer::draw(points_geo);
 }
 
 void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
@@ -161,8 +161,8 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
   vec4 red{ 1.0f, 0.0f, 0.5f, 0.5f };
 
   Geometry geo{ GL_LINES };
-  InstancedGeometry points_geo{};
-  points_geo.push_circle(vec2{ 0.0f }, 2.5f, white, 10);
+  // InstancedGeometry points_geo{};
+  // points_geo.push_circle(vec2{ 0.0f }, 2.5f, white, 10);
 
   std::vector<vec2> points(resolution + 1);
   Box box = { vec2{ 0.0f }, vec2{ 0.0f } };
@@ -188,11 +188,11 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
   std::vector<Vertex> vertices(resolution + 1);
   for (int i = 0; i < points.size(); i++) {
     vertices[i].position = center + (points[i] - box.min) / ratio;
-    vertices[i].color = white;
+    // vertices[i].color = white;
   }
 
   vec2 origin = center - box.min / ratio;
-  points_geo.push_instance(origin);
+  // points_geo.push_instance(origin);
   draw_polar_plane(origin, boundaries, geo);
 
   std::vector<vec2> turning_angles = entity->turning_angles();
@@ -234,16 +234,16 @@ void Debugger::render_bezier_hodograph(const BezierEntity* entity) {
     }
   }
 
-  geo.push_line_strip(vertices);
+  // geo.push_line_strip(vertices);
 
-  points_geo.reserve_instances(t_values.size());
+  // points_geo.reserve_instances(t_values.size());
   for (float t : t_values) {
     vec2 point = bezier_derivative(A, B, C, D, t);
-    points_geo.push_instance(center + (point - box.min) / ratio);
+    // points_geo.push_instance(center + (point - box.min) / ratio);
   }
 
   Renderer::draw(geo);
-  Renderer::draw(points_geo);
+  // Renderer::draw(points_geo);
 }
 
 void Debugger::render_bezier_curvature(const BezierEntity* entity) {
@@ -251,8 +251,8 @@ void Debugger::render_bezier_curvature(const BezierEntity* entity) {
 
   vec4 color{ 1.0f, 1.0f, 1.0f, 0.7f };
   Geometry geo{ GL_LINES };
-  InstancedGeometry points_geo{};
-  points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
+  // InstancedGeometry points_geo{};
+  // points_geo.push_circle(vec2{ 0.0f }, 2.5f, color, 10);
 
   std::vector<vec2> points(resolution + 1);
   Box box = { vec2{ 0.0f }, vec2{ 0.0f } };
@@ -279,17 +279,17 @@ void Debugger::render_bezier_curvature(const BezierEntity* entity) {
   std::vector<Vertex> vertices(resolution + 1);
   for (int i = 0; i < points.size(); i++) {
     vertices[i].position = center + (points[i] - box.min) / ratio;
-    vertices[i].color = color;
+    // vertices[i].color = color;
   }
 
   vec2 origin = center + (vec2{ 0.0f } - box.min) / ratio;
-  points_geo.push_instance(origin);
+  // points_geo.push_instance(origin);
   draw_polar_plane(origin, boundaries, geo);
 
-  geo.push_line_strip(vertices);
+  // geo.push_line_strip(vertices);
 
   Renderer::draw(geo);
-  Renderer::draw(points_geo);
+  // Renderer::draw(points_geo);
 }
 
 void Debugger::render_bezier_geometry(const BezierEntity* entity) {
@@ -322,7 +322,7 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
+    // geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
     offset += 2;
   }
 
@@ -332,7 +332,7 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
+    // geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
     geo.push_indices({ offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1 });
     offset += 2;
   }
@@ -346,7 +346,7 @@ void Debugger::render_bezier_geometry(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
+    // geo.push_vertices({ {point + normal, color, stroke_width},{point - normal, color, -stroke_width} });
     geo.push_indices({ offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1 });
     offset += 2;
   }
@@ -384,7 +384,7 @@ void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({ {point + normal, color}, {point - normal, color} });
+    // geo.push_vertices({ {point + normal, color}, {point - normal, color} });
     offset += 2;
   }
 
@@ -394,7 +394,7 @@ void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({ {point + normal, color}, {point - normal, color} });
+    // geo.push_vertices({ {point + normal, color}, {point - normal, color} });
     geo.push_indices({ offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1 });
     offset += 2;
   }
@@ -408,7 +408,7 @@ void Debugger::render_bezier_triangulation(const BezierEntity* entity) {
     normalize(tangent, tangent);
     vec2 normal = stroke_width * orthogonal(tangent);
 
-    geo.push_vertices({ {point + normal, color},{point - normal, color} });
+    // geo.push_vertices({ {point + normal, color},{point - normal, color} });
     geo.push_indices({ offset - 2, offset - 1, offset + 0, offset + 0, offset + 1, offset - 1 });
     offset += 2;
   }

@@ -6,6 +6,7 @@
 #include "../../math/box.h"
 #include "components/transform_component.h"
 #include "components/selection_component.h"
+#include "components/layer_component.h"
 
 class Entity {
 public:
@@ -32,6 +33,9 @@ public:
 
   virtual SelectionComponent* selection() { return nullptr; }
   virtual const SelectionComponent* selection() const { return nullptr; }
+
+  virtual LayerComponent* layer() { return nullptr; }
+  virtual const LayerComponent* layer() const { return nullptr; }
 
   virtual void tessellate_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {}
   virtual void render(const RenderingOptions& options) const {};

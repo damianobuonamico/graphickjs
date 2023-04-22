@@ -57,7 +57,8 @@ void FreehandEntity::tessellate_outline(const vec4& color, const RenderingOption
 
   {
     point = offset_position + XY(m_points[0].data);
-    geo.push_vertex({ point, color });
+    // geo.push_vertex({ point, color });
+    geo.push_vertex({ point });
     offset++;
   }
 
@@ -107,7 +108,8 @@ void FreehandEntity::tessellate_outline(const vec4& color, const RenderingOption
       if (delta_theta >= facet_angle || (since_last_stroked_point >= min_points_interval * 10 && squared_distance(position, last_position) > sq_stroke_width)) {
         point = offset_position + XY(position);
 
-        geo.push_vertex({ point, color });
+        // geo.push_vertex({ point, color });
+        geo.push_vertex({ point });
         geo.push_indices({ offset - 1, offset });
         offset++;
 
@@ -146,7 +148,8 @@ void FreehandEntity::tessellate_outline(const vec4& color, const RenderingOption
       if (delta_theta >= facet_angle || (since_last_stroked_point >= min_points_interval * 10 && squared_distance(position, last_position) > sq_stroke_width)) {
         point = offset_position + XY(position);
 
-        geo.push_vertex({ point, color });
+        // geo.push_vertex({ point, color });
+        geo.push_vertex({ point });
         geo.push_indices({ offset - 1, offset });
         offset++;
 
@@ -166,7 +169,8 @@ void FreehandEntity::tessellate_outline(const vec4& color, const RenderingOption
   {
     point = offset_position + XY(m_points.back().data);
 
-    geo.push_vertex({ point, color });
+    // geo.push_vertex({ point, color });
+    geo.push_vertex({ point });
     geo.push_indices({ offset - 1, offset });
     offset++;
   }
@@ -291,9 +295,13 @@ Geometry FreehandEntity::tessellate(const RenderingOptions& options) const {
 
     uint32_t offset = geo.offset();
 
+    // geo.push_vertices({
+    //   { p0 - normal_start, color, -width_start }, { p0 + normal_start, color, width_start },
+    //   { p1 - normal_end, color, -width_end }, { p1 + normal_end, color, width_end }
+    //   });
     geo.push_vertices({
-      { p0 - normal_start, color, -width_start }, { p0 + normal_start, color, width_start },
-      { p1 - normal_end, color, -width_end }, { p1 + normal_end, color, width_end }
+      { p0 - normal_start }, { p0 + normal_start },
+      { p1 - normal_end }, { p1 + normal_end }
       });
     geo.push_indices({ offset, offset + 1, offset + 2, offset + 2, offset + 3, offset + 1 });
 
@@ -313,7 +321,8 @@ Geometry FreehandEntity::tessellate(const RenderingOptions& options) const {
 
     tessellate_cap(params, point, normal, false, width, geo);
 
-    geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+    // geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+    geo.push_vertices({ { point - normal }, { point + normal } });
     offset = geo.offset();
   }
 
@@ -378,7 +387,8 @@ Geometry FreehandEntity::tessellate(const RenderingOptions& options) const {
           int increments = (int)std::ceilf(angle / params.rendering_options.facet_angle);
 
           if (increments < 2) {
-            geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+            // geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+            geo.push_vertices({ { point - normal }, { point + normal } });
             geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
             offset += 2;
           } else {
@@ -403,18 +413,21 @@ Geometry FreehandEntity::tessellate(const RenderingOptions& options) const {
                 bended_normal.x * sin + bended_normal.y * cos
               };
 
-              geo.push_vertices({ { point - n, color, -w }, { point + n, color, w } });
-              geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+              // geo.push_vertices({ { point - n, color, -w }, { point + n, color, w } });
+              geo.push_vertices({ { point - n }, { point + n } });
+              geo.push_indices({ offset - 2, offset - 1, offset, offset - 1, offset + 1, offset });
               offset += 2;
             }
 
-            geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
-            geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+            // geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+            geo.push_vertices({ { point - normal }, { point + normal } });
+            geo.push_indices({ offset - 2, offset - 1, offset, offset - 1, offset + 1, offset });
             offset += 2;
           }
         } else {
-          geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
-          geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+          // geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+          geo.push_vertices({ { point - normal }, { point + normal } });
+          geo.push_indices({ offset - 2, offset - 1, offset, offset - 1 , offset + 1, offset });
           offset += 2;
         }
 
@@ -462,8 +475,9 @@ Geometry FreehandEntity::tessellate(const RenderingOptions& options) const {
         normal = orthogonal(XY(velocity));
         normalize_length(normal, width, normal);
 
-        geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
-        geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+        // geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+        geo.push_vertices({ { point - normal }, { point + normal } });
+        geo.push_indices({ offset - 2, offset - 1, offset, offset - 1, offset + 1, offset });
         offset += 2;
 
         theta = new_theta;
@@ -491,8 +505,9 @@ Geometry FreehandEntity::tessellate(const RenderingOptions& options) const {
     normal = orthogonal(direction);
     normalize_length(normal, width, normal);
 
-    geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
-    geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+    // geo.push_vertices({ { point - normal, color, -width }, { point + normal, color, width } });
+    geo.push_vertices({ { point - normal }, { point + normal } });
+    geo.push_indices({ offset - 2, offset - 1, offset, offset - 1, offset + 1, offset });
     offset += 2;
 
     tessellate_cap(params, point, normal, true, width, geo);

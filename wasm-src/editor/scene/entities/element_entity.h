@@ -12,7 +12,7 @@
 
 class ElementEntity: public Entity {
 public:
-  ElementEntity(const vec2& position): Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this, position }), m_selection(this) {
+  ElementEntity(const vec2& position): Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this, position }), m_selection(this), m_layer(this) {
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 0.0f, 100.0f }, 1.5f));
@@ -42,8 +42,12 @@ public:
 
   inline virtual ElementTransformComponent* transform() override { return &m_transform; }
   inline virtual const ElementTransformComponent* transform() const override { return &m_transform; }
+
   inline virtual SelectionComponent* selection() override { return &m_selection; }
   inline virtual const SelectionComponent* selection() const override { return &m_selection; }
+
+  inline virtual LayerComponent* layer() override { return &m_layer; }
+  inline virtual const LayerComponent* layer() const override { return &m_layer; }
 
   inline size_t vertex_count() const { return m_vertices.size(); }
   inline size_t curves_count() const { return m_curves.size(); }
@@ -71,6 +75,7 @@ private:
 
   ElementTransformComponent m_transform;
   SelectionComponent m_selection;
+  LayerComponent m_layer;
 
   BoolValue m_closed{ false };
 };

@@ -142,7 +142,8 @@ const Geometry& Font::request_glyph(hb_codepoint_t glyph_id, float scale) {
     geo.reserve(contours[i].size(), indices.size());
 
     for (int j = 0; j < contours[i].size(); j++) {
-      geo.push_vertex({ vec2{ contours[i][j][0], contours[i][j][1] }, colors[i % 6] });
+      // geo.push_vertex({ vec2{ contours[i][j][0], contours[i][j][1] }, colors[i % 6] });
+      geo.push_vertex({ vec2{ contours[i][j][0], contours[i][j][1] } });
     }
 
     for (int j = 0; j < indices.size(); j++) {
@@ -150,6 +151,7 @@ const Geometry& Font::request_glyph(hb_codepoint_t glyph_id, float scale) {
     }
 
     for (int j = 0; j < contours[i].size(); j++) {
+      // geo.push_quad(vec2{ contours[i][j][0], contours[i][j][1] }, 0.5f, vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
       geo.push_quad(vec2{ contours[i][j][0], contours[i][j][1] }, 0.5f, vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
     }
   }

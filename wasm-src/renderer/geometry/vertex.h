@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../../math/vec2.h"
+
+#if 0
 #include "../../math/vec4.h"
 
 struct Vertex {
@@ -18,4 +20,26 @@ struct Vertex {
   vec4 color;
   float normal;
   float max_normal;
+};
+#endif
+
+
+struct Vertex {
+  vec2 position;
+};
+
+struct GLVertex {
+  vec2 position;
+  float uniform_index;
+};
+
+struct TextureVertex {
+  vec2 position;
+  vec2 tex_coords;
+};
+
+struct GLTextureVertex {
+  vec2 position;
+  vec2 tex_coords;
+  float uniform_index;
 };

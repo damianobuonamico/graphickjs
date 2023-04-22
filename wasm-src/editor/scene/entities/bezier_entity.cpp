@@ -883,11 +883,15 @@ void BezierEntity::linear_tessellate(TessellationParams& params, Geometry& geo) 
     params.end_join_params.index = offset - 1;
   }
 
+  // geo.push_vertices({
+  //   { A - normal_start, params.color, -width_start }, { A + normal_start, params.color, width_start },
+  //   { B - normal_end, params.color, -width_end }, { B + normal_end, params.color, width_end }
+  //   });
   geo.push_vertices({
-    { A - normal_start, params.color, -width_start }, { A + normal_start, params.color, width_start },
-    { B - normal_end, params.color, -width_end }, { B + normal_end, params.color, width_end }
+  { A - normal_start }, { A + normal_start },
+  { B - normal_end }, { B + normal_end }
     });
-  geo.push_indices({ offset, offset + 1, offset + 2, offset + 2, offset + 3, offset + 1 });
+  geo.push_indices({ offset, offset + 1, offset + 2, offset + 1, offset + 3, offset + 2 });
 
   params.start_join_params.direction = direction;
   params.start_join_params.normal = normal_end;
@@ -931,7 +935,8 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
     params.end_join_params.index = offset - 1;
   }
 
-  geo.push_vertices({ { point - normal, params.color, -width_start }, { point + normal, params.color, width_start } });
+  // geo.push_vertices({ { point - normal, params.color, -width_start }, { point + normal, params.color, width_start } });
+  geo.push_vertices({ { point - normal }, { point + normal } });
   offset += 2;
 
   for (size_t i = 1; i < triangulation_params.size() - 1; i++) {
@@ -949,8 +954,10 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
     normal = orthogonal(direction);
     normalize_length(normal, width, normal);
 
-    geo.push_vertices({ { point - normal, params.color, -width }, { point + normal, params.color, width } });
-    geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+    // geo.push_vertices({ { point - normal, params.color, -width }, { point + normal, params.color, width } });
+    geo.push_vertices({ { point - normal }, { point + normal } });
+    geo.push_indices({ offset - 2, offset - 1, offset, offset - 1, offset + 1, offset });
+    
     offset += 2;
   }
 
@@ -964,8 +971,9 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
   normal = orthogonal(direction);
   normalize_length(normal, width_end, normal);
 
-  geo.push_vertices({ { point - normal, params.color, -width_end }, { point + normal, params.color, width_end } });
-  geo.push_indices({ offset - 2, offset - 1, offset, offset, offset + 1, offset - 1 });
+  // geo.push_vertices({ { point - normal, params.color, -width_end }, { point + normal, params.color, width_end } });
+  geo.push_vertices({ { point - normal }, { point + normal } });
+  geo.push_indices({ offset - 2, offset - 1, offset, offset - 1, offset + 1, offset });
 
   params.start_join_params.direction = direction;
   params.start_join_params.normal = normal;
@@ -981,7 +989,8 @@ void BezierEntity::cubic_tessellate(TessellationParams& params, Geometry& geo) c
 void BezierEntity::linear_tessellate_outline(TessellationParams& params, Geometry& geo) const {
   uint32_t offset = geo.offset();
 
-  geo.push_vertices({ { params.offset + p0(), params.color }, { params.offset + p3(), params.color } });
+  // geo.push_vertices({ { params.offset + p0(), params.color }, { params.offset + p3(), params.color } });
+  geo.push_vertices({ { params.offset + p0() }, { params.offset + p3(), } });
   geo.push_indices({ offset, offset + 1 });
 }
 
@@ -992,11 +1001,13 @@ void BezierEntity::cubic_tessellate_outline(TessellationParams& params, Geometry
 
   geo.reserve(triangulation_params.size(), (triangulation_params.size() - 1) * 2);
   for (int i = 0; i < triangulation_params.size() - 1; i++) {
-    geo.push_vertices({ { params.offset + cubic_get(triangulation_params[i]), params.color } });
+    // geo.push_vertices({ { params.offset + cubic_get(triangulation_params[i]), params.color } });
+    geo.push_vertices({ { params.offset + cubic_get(triangulation_params[i]) } });
     geo.push_indices({ offset + i, offset + i + 1 });
   }
 
-  geo.push_vertices({ { params.offset + p3(), params.color } });
+  // geo.push_vertices({ { params.offset + p3(), params.color } });
+  geo.push_vertices({ { params.offset + p3() } });
 }
 
 void BezierEntity::linear_render(const RenderingOptions& options) const {}

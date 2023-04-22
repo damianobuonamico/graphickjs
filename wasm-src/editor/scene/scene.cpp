@@ -101,70 +101,70 @@ void Scene::render_selection(const RenderingOptions& options) const {
     return;
   }
 
-  InstancedGeometry selected_vertex_geometry{};
-  InstancedGeometry vertex_geometry{};
-  InstancedGeometry handle_geometry{};
+  // InstancedGeometry selected_vertex_geometry{};
+  // InstancedGeometry vertex_geometry{};
+  // InstancedGeometry handle_geometry{};
 
-  if (is_direct_tool) {
-    selected_vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / options.zoom, outline_color);
-    vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / options.zoom, outline_color);
-    vertex_geometry.push_quad(vec2{ 0.0f }, 2.0f / options.zoom, white);
-    handle_geometry.push_circle(vec2{ 0.0f }, 2.5f / options.zoom, outline_color, 10);
-  }
+  // if (is_direct_tool) {
+  //   selected_vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / options.zoom, outline_color);
+  //   vertex_geometry.push_quad(vec2{ 0.0f }, 3.5f / options.zoom, outline_color);
+  //   vertex_geometry.push_quad(vec2{ 0.0f }, 2.0f / options.zoom, white);
+  //   handle_geometry.push_circle(vec2{ 0.0f }, 2.5f / options.zoom, outline_color, 10);
+  // }
 
-  for (const auto& [id, entity] : selection) {
-    entity->tessellate_outline(outline_color, options, outline_geometry);
+  // for (const auto& [id, entity] : selection) {
+  //   entity->tessellate_outline(outline_color, options, outline_geometry);
 
-    const ElementEntity* element = dynamic_cast<const ElementEntity*>(entity);
-    if (element != nullptr) {
-      if (!is_direct_tool) continue;
+  //   const ElementEntity* element = dynamic_cast<const ElementEntity*>(entity);
+  //   if (element != nullptr) {
+  //     if (!is_direct_tool) continue;
 
-      vec2 position = element->transform()->position().get();
-      vertex_geometry.reserve_instances(element->vertex_count());
-      handle_geometry.reserve_instances(element->vertex_count());
+  //     vec2 position = element->transform()->position().get();
+  //     vertex_geometry.reserve_instances(element->vertex_count());
+  //     handle_geometry.reserve_instances(element->vertex_count());
 
-      for (const auto& [id, vertex] : *element) {
-        vec2 vertex_position = position + vertex->transform()->position().get();
-        if (element->selection()->has(id)) {
-          selected_vertex_geometry.push_instance(vertex_position);
-        } else {
-          vertex_geometry.push_instance(vertex_position);
-        }
+  //     for (const auto& [id, vertex] : *element) {
+  //       vec2 vertex_position = position + vertex->transform()->position().get();
+  //       if (element->selection()->has(id)) {
+  //         selected_vertex_geometry.push_instance(vertex_position);
+  //       } else {
+  //         vertex_geometry.push_instance(vertex_position);
+  //       }
 
-        HandleEntity* left = vertex->left();
-        HandleEntity* right = vertex->right();
+  //       HandleEntity* left = vertex->left();
+  //       HandleEntity* right = vertex->right();
 
-        uint32_t vertex_index = outline_geometry.offset();
+  //       uint32_t vertex_index = outline_geometry.offset();
 
-        if (left || right) {
-          outline_geometry.push_vertex({ vertex_position, outline_color });
-        }
+  //       if (left || right) {
+  //         outline_geometry.push_vertex({ vertex_position, outline_color });
+  //       }
 
-        if (left) {
-          vec2 handle_position = vertex_position + left->transform()->position().get();
-          handle_geometry.push_instance(handle_position);
+  //       if (left) {
+  //         vec2 handle_position = vertex_position + left->transform()->position().get();
+  //         handle_geometry.push_instance(handle_position);
 
-          outline_geometry.push_indices({ vertex_index, outline_geometry.offset() });
-          outline_geometry.push_vertex({ handle_position, outline_color });
-        }
-        if (right) {
-          vec2 handle_position = vertex_position + right->transform()->position().get();
-          handle_geometry.push_instance(handle_position);
+  //         outline_geometry.push_indices({ vertex_index, outline_geometry.offset() });
+  //         outline_geometry.push_vertex({ handle_position, outline_color });
+  //       }
+  //       if (right) {
+  //         vec2 handle_position = vertex_position + right->transform()->position().get();
+  //         handle_geometry.push_instance(handle_position);
 
-          outline_geometry.push_indices({ vertex_index, outline_geometry.offset() });
-          outline_geometry.push_vertex({ handle_position, outline_color });
-        }
-      }
-    }
-  }
+  //         outline_geometry.push_indices({ vertex_index, outline_geometry.offset() });
+  //         outline_geometry.push_vertex({ handle_position, outline_color });
+  //       }
+  //     }
+  //   }
+  // }
 
-  Renderer::draw(outline_geometry);
+  // Renderer::draw(outline_geometry);
 
-  if (is_direct_tool) {
-    Renderer::draw(vertex_geometry);
-    Renderer::draw(selected_vertex_geometry);
-    Renderer::draw(handle_geometry);
-  }
+  // if (is_direct_tool) {
+  //   Renderer::draw(vertex_geometry);
+  //   Renderer::draw(selected_vertex_geometry);
+  //   Renderer::draw(handle_geometry);
+  // }
 }
 
 Entity* Scene::entity_at(const vec2& position, bool lower_level, float threshold) {

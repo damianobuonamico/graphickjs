@@ -14,7 +14,7 @@ public:
 
   inline Shader& current() { return *m_current; }
 
-  void create_shaders();
+  void create_shaders(int max_uniforms);
   void use(const std::string& name);
 
   void set_uniform(const std::string& name, const int value);

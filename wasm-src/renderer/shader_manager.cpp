@@ -1,6 +1,6 @@
 #include "shader_manager.h"
 
-void ShaderManager::create_shaders() {
+void ShaderManager::create_shaders(int max_uniforms) {
   static const char instanced_shader_source[] =
     "#vertex\n"
     "uniform mat3 uViewProjectionMatrix;\n"
@@ -75,7 +75,39 @@ void ShaderManager::create_shaders() {
     "  fragColor = vec4(vColor.rgb, mix(vColor.a, 0.0, smoothstep(vMaxNormal - fade, vMaxNormal, abs(vNormal))));\n"
     "}\n";
 
-  m_shaders.insert(std::make_pair<std::string, Shader>("batched", { "batched", batched_shader_source }));
+  static const char batch_shader_source[] =
+    "#vertex\n"
+    ""
+    "uniform mat4 uViewProjectionMatrix;\n"
+    "uniform float uZFar;\n"
+    "uniform vec4 uUniforms[$_$]; // rgb: color, a: z-index\n"
+    ""
+    "in vec2 aPosition;\n"
+    "in float aIndex;\n"
+    ""
+    "out vec4 vColor;\n"
+    ""
+    "void main() {\n"
+    "  vec4 pos = uViewProjectionMatrix * vec4(aPosition.xy, 0.0, 1.0);\n"
+    "  vec4 data = uUniforms[int(aIndex)];\n"
+    ""
+    "  gl_Position = vec4(pos.xy, 1.0 - data.a / uZFar, 1.0);\n"
+    "  vColor = vec4(data.rgb, 1.0);\n"
+    "}\n"
+    ""
+    "#fragment\n"
+    ""
+    "precision mediump float;\n"
+    ""
+    "in mediump vec4 vColor;\n"
+    ""
+    "out vec4 fragColor;\n"
+    ""
+    "void main() {\n"
+    "  fragColor = vColor;\n"
+    "}\n";
+
+  m_shaders.insert(std::make_pair<std::string, Shader>("batched", { "batched", batch_shader_source, { max_uniforms } }));
 
   static const char depth_shader_source[] =
     "#vertex\n"

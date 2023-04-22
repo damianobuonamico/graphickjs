@@ -5,10 +5,10 @@
 
 class FrameBuffer {
 public:
-  FrameBuffer(ShaderManager& shaders, const vec2& size);
+  FrameBuffer(ShaderManager& shaders, const vec2 size);
 
   void init(bool use_msaa, uint16_t msaa_samples);
-  void resize(const vec2& size);
+  void resize(const vec2 size);
   void bind() const;
   void unbind() const;
   void render() const;

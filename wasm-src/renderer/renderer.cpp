@@ -18,11 +18,17 @@
 #include "../math/vec3.h"
 #include "../math/mat4.h"
 
-#include <stdexcept>
-
 Renderer* Renderer::s_instance = nullptr;
 
-static int rendered = 0;
+void Renderer::RendererStats::reset() {
+  batched_draw_calls = 0;
+  instanced_draw_calls = 0;
+  image_draw_calls = 0;
+  entities = 0;
+  vertex_count = 0;
+  index_count = 0;
+  instance_count = 0;
+}
 
 void Renderer::init() {
   assert(!s_instance);
@@ -34,12 +40,13 @@ void Renderer::init() {
   EmscriptenWebGLContextAttributes attr;
   emscripten_webgl_init_context_attributes(&attr);
 
+  // TODO: test with and without alpha performance
   attr.alpha = true;
   attr.premultipliedAlpha = true;
   attr.majorVersion = 2;
-  attr.antialias = true;
-  // attr.antialias = settings.antialiasing == Antialiasing::Hardware;
+  attr.antialias = settings.antialiasing == Antialiasing::Hardware;
   attr.stencil = true;
+  attr.depth = true;
 
 
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
@@ -51,16 +58,7 @@ void Renderer::init() {
 #endif
 
   glLineWidth(1.0f);
-  // TODO: Enable depth
-  glDisable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  glEnable(GL_STENCIL_TEST);
-  // glStencilFunc(GL_EQUAL, 1, 0xFF);
-  // glStencilMask(0xFF);
-  // glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
-  // glStencilMask(0xFF);
-  // glStencilFunc(GL_EQUAL, 1, 0xFF);
-  // glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
+
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -68,18 +66,25 @@ void Renderer::init() {
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
 
-  get()->m_shaders.create_shaders();
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+
+  glDisable(GL_STENCIL_TEST);
+
+  glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &get()->m_settings.max_uniforms);
+
+  get()->m_shaders.create_shaders(get()->m_settings.max_uniforms - 10);
   if (settings.antialiasing == Antialiasing::FXAA || settings.antialiasing == Antialiasing::MSAA) {
     get()->m_frame_buffer.init(settings.antialiasing == Antialiasing::MSAA, settings.msaa_samples);
   }
 
   get()->init_batch_renderer();
-  get()->init_instance_renderer();
+  // get()->init_instance_renderer();
 }
 
 void Renderer::shutdown() {
-  delete[] get()->m_data.vertex_buffer;
-  delete[] get()->m_data.index_buffer;
+  delete[] get()->m_batch_data.vertex_buffer;
+  delete[] get()->m_batch_data.index_buffer;
 
   delete s_instance;
 }
@@ -88,6 +93,7 @@ void Renderer::resize(const vec2& size, float dpr) {
   get()->m_size = size;
   get()->m_dpr = dpr;
   get()->m_frame_buffer.resize(size * dpr);
+
   glViewport(0, 0, (GLsizei)(size.x * dpr), (GLsizei)(size.y * dpr));
 }
 
@@ -114,8 +120,28 @@ struct Geometry3D {
   std::vector<uint32_t> m_indices;
 };
 
-void Renderer::begin_frame(const vec2& position, float zoom) {
+void Renderer::begin_frame(const vec2& position, float zoom, float z_far) {
+  get()->m_stats.reset();
+
+  get()->m_settings.z_far = z_far;
   get()->set_viewport(position, zoom);
+  get()->m_frame_buffer.bind();
+
+  glClearColor(0.09f, 0.11f, 0.13f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+  get()->begin_batch();
+  // get()->refresh_stencil_renderer();
+
+  get()->bind_batch_renderer();
+
+  Geometry geoo;
+  geoo.push_z_index(1.0f);
+  geoo.push_quad({ 100.0f, 100.0f }, 50.0f, vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
+
+  draw(geoo);
+
+  return;
 
   glClearColor(0.09f, 0.11f, 0.13f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -210,7 +236,6 @@ void Renderer::begin_frame(const vec2& position, float zoom) {
 
   return;
 
-  rendered = 0;
   get()->set_viewport(position, zoom);
   get()->m_frame_buffer.bind();
 
@@ -224,7 +249,6 @@ void Renderer::begin_frame(const vec2& position, float zoom) {
 }
 
 void Renderer::end_frame() {
-  return;
 
   // console::log("Entities Rendered", rendered);
   if (get()->m_last_call == RenderCall::Batch) {
@@ -232,9 +256,9 @@ void Renderer::end_frame() {
     get()->flush();
   }
 
-  glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-  glStencilMask(0x00);
-  glDisable(GL_DEPTH_TEST);
+  // glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+  //glStencilMask(0x00);
+  //glDisable(GL_DEPTH_TEST);
 
   get()->m_last_call = RenderCall::None;
   get()->m_frame_buffer.render();
@@ -255,9 +279,6 @@ void Renderer::push_overlay_layer(const vec2& position) {
 }
 
 void Renderer::draw(const Geometry& geometry) {
-  return;
-
-  rendered++;
   if (get()->m_last_call != RenderCall::Batch) {
     get()->bind_batch_renderer();
     get()->m_last_call = RenderCall::Batch;
@@ -266,18 +287,18 @@ void Renderer::draw(const Geometry& geometry) {
   get()->add_to_batch(geometry);
 };
 
-void Renderer::draw(const InstancedGeometry& geometry) {
-  return;
+// void Renderer::draw(const InstancedGeometry& geometry) {
+//   return;
 
-  if (geometry.instances() == 0) {
-    return;
-  }
+//   if (geometry.instances() == 0) {
+//     return;
+//   }
 
-  get()->bind_instance_renderer();
-  get()->m_last_call = RenderCall::Instance;
+//   get()->bind_instance_renderer();
+//   get()->m_last_call = RenderCall::Instance;
 
-  get()->draw_instanced(geometry);
-}
+//   get()->draw_instanced(geometry);
+// }
 
 void Renderer::draw(const Texture& texture) {
   return;
@@ -367,19 +388,33 @@ void Renderer::pop_frame_buffer() {
 Renderer::Renderer(): m_frame_buffer(m_shaders, vec2{ 0.0f }) {}
 
 void Renderer::init_batch_renderer() {
-  m_data.vertex_buffer = new Vertex[m_data.max_vertex_count];
-  m_data.index_buffer = new uint32_t[m_data.max_index_count];
+  m_batch_data.vertex_buffer = new GLVertex[m_settings.max_vertex_count];
+  m_batch_data.index_buffer = new uint32_t[m_settings.max_index_count];
 
-  glGenVertexArrays(1, &m_data.vertex_array_object);
-  glBindVertexArray(m_data.vertex_array_object);
+  glGenVertexArrays(1, &m_batch_data.vertex_array_object);
+  glBindVertexArray(m_batch_data.vertex_array_object);
 
-  glGenBuffers(1, &m_data.vertex_buffer_object);
-  glBindBuffer(GL_ARRAY_BUFFER, m_data.vertex_buffer_object);
-  glBufferData(GL_ARRAY_BUFFER, m_data.max_vertex_count * sizeof(Vertex), nullptr, GL_STREAM_DRAW);
+  glGenBuffers(1, &m_batch_data.vertex_buffer_object);
+  glBindBuffer(GL_ARRAY_BUFFER, m_batch_data.vertex_buffer_object);
+  glBufferData(GL_ARRAY_BUFFER, m_settings.max_vertex_count * sizeof(GLVertex), nullptr, m_settings.buffer_type);
 
-  glGenBuffers(1, &m_data.index_buffer_object);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_data.index_buffer_object);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_data.max_index_count * sizeof(uint32_t), nullptr, GL_STREAM_DRAW);
+  glGenBuffers(1, &m_batch_data.index_buffer_object);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_batch_data.index_buffer_object);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_settings.max_index_count * sizeof(uint32_t), nullptr, m_settings.buffer_type);
+
+  // m_data.vertex_buffer = new Vertex[m_data.max_vertex_count];
+  // m_data.index_buffer = new uint32_t[m_data.max_index_count];
+
+  // glGenVertexArrays(1, &m_data.vertex_array_object);
+  // glBindVertexArray(m_data.vertex_array_object);
+
+  // glGenBuffers(1, &m_data.vertex_buffer_object);
+  // glBindBuffer(GL_ARRAY_BUFFER, m_data.vertex_buffer_object);
+  // glBufferData(GL_ARRAY_BUFFER, m_data.max_vertex_count * sizeof(Vertex), nullptr, GL_STREAM_DRAW);
+
+  // glGenBuffers(1, &m_data.index_buffer_object);
+  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_data.index_buffer_object);
+  // glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_data.max_index_count * sizeof(uint32_t), nullptr, GL_STREAM_DRAW);
 }
 
 void Renderer::init_instance_renderer(bool create_vertex_array) {
@@ -399,16 +434,29 @@ void Renderer::init_instance_renderer(bool create_vertex_array) {
   glBufferData(GL_ARRAY_BUFFER, m_instanced_data.max_instance_count * sizeof(vec2), nullptr, GL_STREAM_DRAW);
 }
 
+void Renderer::refresh_batch_renderer() {
+
+}
+
+void Renderer::refresh_stencil_renderer() {
+
+}
+
 void Renderer::bind_batch_renderer() {
-  glBindVertexArray(m_data.vertex_array_object);
-  glBindBuffer(GL_ARRAY_BUFFER, m_data.vertex_buffer_object);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_data.index_buffer_object);
+  glBindVertexArray(m_batch_data.vertex_array_object);
+  glBindBuffer(GL_ARRAY_BUFFER, m_batch_data.vertex_buffer_object);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_batch_data.index_buffer_object);
 
   m_shaders.use("batched");
-  m_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, position));
-  m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
-  m_shaders.set_attribute("aNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, normal));
-  m_shaders.set_attribute("aMaxNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, max_normal));
+  m_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(GLVertex), (const void*)offsetof(GLVertex, position));
+  m_shaders.set_attribute("aIndex", 1, GL_FLOAT, GL_FALSE, sizeof(GLVertex), (const void*)offsetof(GLVertex, uniform_index));
+
+  m_shaders.set_uniform("uZFar", m_settings.z_far);
+
+  m_last_call = RenderCall::Batch;
+  // m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
+  // m_shaders.set_attribute("aNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, normal));
+  // m_shaders.set_attribute("aMaxNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, max_normal));
 }
 
 void Renderer::bind_instance_renderer() {
@@ -423,9 +471,9 @@ void Renderer::bind_instance_renderer() {
 
   m_shaders.use("instanced");
   m_shaders.set_attribute("aPosition", 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, position));
-  m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
-  m_shaders.set_attribute("aNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, normal));
-  m_shaders.set_attribute("aMaxNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, max_normal));
+  // m_shaders.set_attribute("aColor", 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, color));
+  // m_shaders.set_attribute("aNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, normal));
+  // m_shaders.set_attribute("aMaxNormal", 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, max_normal));
 
   glBindBuffer(GL_ARRAY_BUFFER, m_instanced_data.instance_buffer_object);
   m_shaders.set_attribute("aTranslation", 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (const void*)0);
@@ -435,20 +483,17 @@ void Renderer::bind_instance_renderer() {
 }
 
 void Renderer::set_viewport(const vec2& position, float zoom) {
-  // mat3 scaling = { 2.0f * zoom / m_size.x, 0.0f, 0.0f, 0.0f, -2.0f * zoom / m_size.y, 0.0f, 0.0f, 0.0f, 1.0f };
-  // mat3 translation = { 1.0f, 0.0f, (-m_size.x / zoom + 2 * position[0]) / 2.0f, 0.0f, 1.0f, (-m_size.y / zoom + 2 * position[1]) / 2.0f, 0.0f, 0.0f, 1.0f };
+  float factor = 0.5f / zoom;
 
-  // mat3 view_projection_matrix = scaling * translation;
-
-  float half_width = -m_size.x / 2.0f / zoom;
-  float half_height = m_size.y / 2.0f / zoom;
+  float half_width = -m_size.x * factor;
+  float half_height = m_size.y * factor;
 
   float right = -half_width;
   float left = half_width;
   float top = -half_height;
   float bottom = half_height;
 
-  mat4 proj = {
+  mat4 projection = {
     2.0f / (right - left), 0.0f, 0.0f, 0.0f,
     0.0f, 2.0f / (top - bottom), 0.0f, 0.0f,
     0.0f, 0.0f, -1.0f, 0.0f,
@@ -456,138 +501,205 @@ void Renderer::set_viewport(const vec2& position, float zoom) {
   };
 
   mat4 translation = {
-    1.0f, 0.0f, 0.0f, (-m_size.x / zoom + 2 * position[0]) / 2.0f,
-    0.0f, 1.0f, 0.0f, (-m_size.y / zoom + 2 * position[1]) / 2.0f,
+    1.0f, 0.0f, 0.0f, 0.5f * (-m_size.x / zoom + 2 * position[0]),
+    0.0f, 1.0f, 0.0f, 0.5f * (-m_size.y / zoom + 2 * position[1]),
     0.0f, 0.0f, 1.0f, 0.0f,
     0.0f, 0.0f, 0.0f, 1.0f
   };
 
-  m_shaders.set_view_projection_matrix(proj * translation);
-  m_shaders.set_zoom(zoom);
+  m_shaders.set_view_projection_matrix(projection * translation);
 }
 
 void Renderer::begin_batch() {
-  m_data.vertex_buffer_ptr = m_data.vertex_buffer;
-  m_data.index_buffer_ptr = m_data.index_buffer;
+  m_batch_data.uniforms.clear();
+  m_batch_data.vertex_count = 0;
+  m_batch_data.index_count = 0;
+
+  m_batch_data.vertex_count = 0;
+  m_batch_data.index_count = 0;
+
+  m_batch_data.vertex_buffer_ptr = m_batch_data.vertex_buffer;
+  m_batch_data.index_buffer_ptr = m_batch_data.index_buffer;
+}
+
+bool Renderer::can_batch(const Geometry& geometry) {
+  return !(
+    m_batch_data.index_count + geometry.index_count() >= m_settings.max_index_count ||
+    m_batch_data.vertex_count + geometry.vertex_count() >= m_settings.max_vertex_count ||
+    m_batch_data.uniforms.size() + geometry.uniform_count() >= m_settings.max_uniforms - 10 ||
+    m_batch_data.primitive != geometry.primitive()
+    );
 }
 
 // TODO: handle large geometry
 void Renderer::add_to_batch(const Geometry& geometry) {
-  if (m_data.index_count + geometry.indices().size() >= m_data.max_index_count ||
-    m_data.vertex_count + geometry.vertices().size() >= m_data.max_vertex_count ||
-    m_data.primitive != geometry.primitive()) {
+  uint32_t index_count = geometry.index_count();
+  uint32_t vertex_count = geometry.vertex_count();
+
+  if (!can_batch(geometry)) {
     end_batch();
     flush();
     begin_batch();
 
-    if (geometry.indices().size() >= m_data.max_index_count || geometry.vertices().size() >= m_data.max_vertex_count) {
-      console::log("Geometry is too large to fit in a single batch.");
-      throw std::invalid_argument("Geometry is too large to fit in a single batch.");
+    if (
+      index_count >= m_settings.max_index_count ||
+      vertex_count >= m_settings.max_vertex_count ||
+      geometry.uniform_count() >= m_settings.max_uniforms - 10
+      ) {
+      console::error("Geometry is too large to fit in a single batch!");
       return;
     }
   }
 
-  for (size_t i = 0; i < geometry.vertices().size(); i++) {
-    const Vertex& vertex = geometry.vertices()[i];
-    m_data.vertex_buffer_ptr->position = vertex.position;
-    m_data.vertex_buffer_ptr->color = vertex.color;
-    m_data.vertex_buffer_ptr->normal = vertex.normal;
-    m_data.vertex_buffer_ptr->max_normal = vertex.max_normal;
-    m_data.vertex_buffer_ptr++;
+  const std::vector<Vertex>& vertices = geometry.vertices();
+  const std::vector<uint32_t>& indices = geometry.indices();
+  const std::vector<Geometry::Uniform<vec4>>& colors = geometry.colors();
+  const std::vector<Geometry::Uniform<float>>& z_indices = geometry.z_indices();
+
+
+  float uniform_index = (float)m_batch_data.uniforms.size() - 1;
+
+  uint32_t next_color_expiration = 0;
+  uint32_t next_z_index_expiration = 0;
+  uint32_t next_uniform_expiration = 0;
+  uint32_t current_color = 0;
+  uint32_t current_z_index = 0;
+
+  if (colors.empty() || z_indices.empty()) {
+    next_uniform_expiration = std::numeric_limits<uint32_t>::max();
+    uniform_index++;
+    m_batch_data.uniforms.push_back({ 1.0f, 1.0f, 1.0f, 1.0f });
+  } else {
+    m_batch_data.uniforms.push_back({ colors[current_color].value.x, colors[current_color].value.y, colors[current_color].value.z, z_indices[current_z_index].value });
+    next_color_expiration = colors[current_color].end_index;
+    next_z_index_expiration = z_indices[current_z_index].end_index;
+    next_uniform_expiration = std::min(next_color_expiration, next_z_index_expiration);
+    uniform_index = (float)m_batch_data.uniforms.size() - 1;
   }
 
-  for (size_t i = 0; i < geometry.indices().size(); i++) {
-    *(m_data.index_buffer_ptr) = m_data.vertex_count + geometry.indices()[i];
-    m_data.index_buffer_ptr++;
+  for (uint32_t i = 0; i < vertex_count; i++) {
+    const Vertex& vertex = vertices[i];
+
+    if (i == next_uniform_expiration) {
+      uniform_index++;
+      vec4 uniform;
+
+      if (next_color_expiration < next_z_index_expiration) {
+        current_color++;
+        uniform = { colors[current_color].value.x, colors[current_color].value.y, colors[current_color].value.z, z_indices[current_z_index].value };
+        next_color_expiration = colors[current_color].end_index;
+      } else {
+        current_z_index++;
+        uniform = { colors[current_color].value.x, colors[current_color].value.y, colors[current_color].value.z, z_indices[current_z_index].value };
+        next_color_expiration = colors[current_z_index].end_index;
+      }
+
+      next_uniform_expiration = std::min(next_color_expiration, next_z_index_expiration);
+
+      m_batch_data.uniforms.push_back(uniform);
+      uniform_index = (float)m_batch_data.uniforms.size() - 1;
+    }
+
+    m_batch_data.vertex_buffer_ptr->position = vertex.position;
+    m_batch_data.vertex_buffer_ptr->uniform_index = uniform_index;
+
+
+    // m_batch_data.vertex_buffer_ptr->color = vertex.color;
+    // m_batch_data.vertex_buffer_ptr->normal = vertex.normal;
+    // m_batch_data.vertex_buffer_ptr->max_normal = vertex.max_normal;
+    m_batch_data.vertex_buffer_ptr++;
   }
 
-  m_data.vertex_count += (uint32_t)geometry.vertices().size();
-  m_data.index_count += (uint32_t)geometry.indices().size();
-  m_data.primitive = geometry.primitive();
+  for (size_t i = 0; i < index_count; i++) {
+    *(m_batch_data.index_buffer_ptr) = m_batch_data.vertex_count + indices[i];
+    m_batch_data.index_buffer_ptr++;
+  }
+
+  m_batch_data.vertex_count += vertex_count;
+  m_batch_data.index_count += index_count;
+  m_batch_data.primitive = geometry.primitive();
 }
 
 void Renderer::end_batch() {
-  GLsizeiptr vertex_buffer_size = (uint8_t*)m_data.vertex_buffer_ptr - (uint8_t*)m_data.vertex_buffer;
-  GLsizeiptr index_buffer_size = (uint8_t*)m_data.index_buffer_ptr - (uint8_t*)m_data.index_buffer;
+  GLsizeiptr vertex_buffer_size = (uint8_t*)m_batch_data.vertex_buffer_ptr - (uint8_t*)m_batch_data.vertex_buffer;
+  GLsizeiptr index_buffer_size = (uint8_t*)m_batch_data.index_buffer_ptr - (uint8_t*)m_batch_data.index_buffer;
 
   if (vertex_buffer_size == 0 || index_buffer_size == 0) {
     return;
   }
 
-  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_buffer_size, m_data.index_buffer);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_buffer_size, m_data.vertex_buffer);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_buffer_size, m_batch_data.index_buffer);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_buffer_size, m_batch_data.vertex_buffer);
+
+  m_shaders.set_uniform("uUniforms", (float*)m_batch_data.uniforms.data(), (int)(m_batch_data.uniforms.size()));
 }
 
 void Renderer::flush() {
-  if (m_data.vertex_count == 0 || m_data.index_count == 0) {
+  if (m_batch_data.vertex_count == 0 || m_batch_data.index_count == 0) {
     return;
   }
 
-  glDrawElements(m_data.primitive, m_data.index_count, GL_UNSIGNED_INT, nullptr);
+  glDrawElements(m_batch_data.primitive, m_batch_data.index_count, GL_UNSIGNED_INT, nullptr);
 
-  m_data.vertex_count = 0;
-  m_data.index_count = 0;
-
-  m_data.vertex_buffer_ptr = m_data.vertex_buffer;
-  m_data.index_buffer_ptr = m_data.index_buffer;
+  begin_batch();
 }
 
-void Renderer::draw_instanced(const InstancedGeometry& geometry) {
-  m_instanced_data.instances = geometry.instances();
+// void Renderer::draw_instanced(const InstancedGeometry& geometry) {
+//   m_instanced_data.instances = geometry.instances();
 
-  if (
-    geometry.vertices().size() > m_instanced_data.max_vertex_count / 2 ||
-    geometry.indices().size() > m_instanced_data.max_index_count / 2 ||
-    geometry.instances() > m_instanced_data.max_instance_count / 2
-    ) {
-    if (
-      geometry.vertices().size() > m_instanced_data.max_vertex_count ||
-      geometry.indices().size() > m_instanced_data.max_index_count ||
-      geometry.instances() > m_instanced_data.max_instance_count
-      ) {
-      glDeleteBuffers(1, &m_instanced_data.vertex_buffer_object);
-      glDeleteBuffers(1, &m_instanced_data.index_buffer_object);
-      glDeleteBuffers(1, &m_instanced_data.instance_buffer_object);
+//   if (
+//     geometry.vertices().size() > m_instanced_data.max_vertex_count / 2 ||
+//     geometry.indices().size() > m_instanced_data.max_index_count / 2 ||
+//     geometry.instances() > m_instanced_data.max_instance_count / 2
+//     ) {
+//     if (
+//       geometry.vertices().size() > m_instanced_data.max_vertex_count ||
+//       geometry.indices().size() > m_instanced_data.max_index_count ||
+//       geometry.instances() > m_instanced_data.max_instance_count
+//       ) {
+//       glDeleteBuffers(1, &m_instanced_data.vertex_buffer_object);
+//       glDeleteBuffers(1, &m_instanced_data.index_buffer_object);
+//       glDeleteBuffers(1, &m_instanced_data.instance_buffer_object);
 
-      m_instanced_data.max_vertex_count = std::max((uint32_t)geometry.vertices().size(), m_instanced_data.max_vertex_count);
-      m_instanced_data.max_index_count = std::max((uint32_t)geometry.indices().size(), m_instanced_data.max_index_count);
-      m_instanced_data.max_instance_count = std::max(geometry.instances(), m_instanced_data.max_instance_count);
+//       m_instanced_data.max_vertex_count = std::max((uint32_t)geometry.vertices().size(), m_instanced_data.max_vertex_count);
+//       m_instanced_data.max_index_count = std::max((uint32_t)geometry.indices().size(), m_instanced_data.max_index_count);
+//       m_instanced_data.max_instance_count = std::max(geometry.instances(), m_instanced_data.max_instance_count);
 
-      init_instance_renderer(false);
-      bind_instance_renderer();
-    }
+//       init_instance_renderer(false);
+//       bind_instance_renderer();
+//     }
 
-    m_instanced_data.last_allocation_usage = 0;
-  } {
-    m_instanced_data.last_allocation_usage++;
+//     m_instanced_data.last_allocation_usage = 0;
+//   } {
+//     m_instanced_data.last_allocation_usage++;
 
-    if (
-      m_instanced_data.last_allocation_usage > 1000 && (
-        m_instanced_data.max_vertex_count > 100 ||
-        m_instanced_data.max_index_count > 200 ||
-        m_instanced_data.max_instance_count > 100
-        )) {
-      glDeleteVertexArrays(1, &m_instanced_data.vertex_array_object);
-      glDeleteBuffers(1, &m_instanced_data.vertex_buffer_object);
-      glDeleteBuffers(1, &m_instanced_data.index_buffer_object);
-      glDeleteBuffers(1, &m_instanced_data.instance_buffer_object);
+//     if (
+//       m_instanced_data.last_allocation_usage > 1000 && (
+//         m_instanced_data.max_vertex_count > 100 ||
+//         m_instanced_data.max_index_count > 200 ||
+//         m_instanced_data.max_instance_count > 100
+//         )) {
+//       glDeleteVertexArrays(1, &m_instanced_data.vertex_array_object);
+//       glDeleteBuffers(1, &m_instanced_data.vertex_buffer_object);
+//       glDeleteBuffers(1, &m_instanced_data.index_buffer_object);
+//       glDeleteBuffers(1, &m_instanced_data.instance_buffer_object);
 
-      m_instanced_data.max_vertex_count = 100;
-      m_instanced_data.max_index_count = m_instanced_data.max_vertex_count * 2;
-      m_instanced_data.max_instance_count = 100;
+//       m_instanced_data.max_vertex_count = 100;
+//       m_instanced_data.max_index_count = m_instanced_data.max_vertex_count * 2;
+//       m_instanced_data.max_instance_count = 100;
 
-      init_instance_renderer(false);
-      bind_instance_renderer();
+//       init_instance_renderer(false);
+//       bind_instance_renderer();
 
-      m_instanced_data.last_allocation_usage = 0;
-    }
-  }
+//       m_instanced_data.last_allocation_usage = 0;
+//     }
+//   }
 
-  glBufferSubData(GL_ARRAY_BUFFER, 0, geometry.vertices().size() * sizeof(Vertex), geometry.vertices().data());
-  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, geometry.indices().size() * sizeof(uint32_t), geometry.indices().data());
+//   glBufferSubData(GL_ARRAY_BUFFER, 0, geometry.vertices().size() * sizeof(Vertex), geometry.vertices().data());
+//   glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, geometry.indices().size() * sizeof(uint32_t), geometry.indices().data());
 
-  glBindBuffer(GL_ARRAY_BUFFER, m_instanced_data.instance_buffer_object);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, geometry.translations().size() * sizeof(vec2), geometry.translations().data());
+//   glBindBuffer(GL_ARRAY_BUFFER, m_instanced_data.instance_buffer_object);
+//   glBufferSubData(GL_ARRAY_BUFFER, 0, geometry.translations().size() * sizeof(vec2), geometry.translations().data());
 
-  glDrawElementsInstanced(geometry.primitive(), (GLsizei)geometry.indices().size(), GL_UNSIGNED_INT, nullptr, m_instanced_data.instances);
-}
+//   glDrawElementsInstanced(geometry.primitive(), (GLsizei)geometry.indices().size(), GL_UNSIGNED_INT, nullptr, m_instanced_data.instances);
+// }

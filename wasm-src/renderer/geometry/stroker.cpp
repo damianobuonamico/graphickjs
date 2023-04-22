@@ -28,15 +28,16 @@ void tessellate_join(
       float increment = angle / (float)increments;
       vec2 bended_normal = params.start_join_params.normal;
 
-      geo.push_vertex({ point, params.color, 0.0f, width });
+      // geo.push_vertex({ point, params.color, 0.0f, width });
+      geo.push_vertex({ point });
 
       if (bend_direction < 0.0f) {
-        geo.push_indices({ offset, params.start_join_params.index + 1, offset + 1 });
+        geo.push_indices({ offset, offset + 1, params.start_join_params.index + 1 });
 
         increment = -increment;
         end_index++;
       } else {
-        geo.push_indices({ offset, params.start_join_params.index, offset + 1 });
+        geo.push_indices({ offset, offset + 1, params.start_join_params.index });
 
         negate(bended_normal, bended_normal);
         width = -width;
@@ -51,7 +52,8 @@ void tessellate_join(
           bended_normal.x * sin + bended_normal.y * cos
         };
 
-        geo.push_vertex({ point + p, params.color, width });
+        // geo.push_vertex({ point + p, params.color, width });
+        geo.push_vertex({ point + p });
         geo.push_indices({ offset, offset + i, offset + i - 1 });
       }
 
@@ -71,11 +73,13 @@ void tessellate_join(
       vec2 miter = h * miter_length;
 
       if (bend_direction < 0.0f) {
-        geo.push_vertex({ point + miter, params.color, 0.5f * (miter_length + width) });
+        // geo.push_vertex({ point + miter, params.color, 0.5f * (miter_length + width) });
+        geo.push_vertex({ point + miter });
         geo.push_indices({ params.start_join_params.index, params.start_join_params.index + 1, offset });
         geo.push_indices({ offset, end_index + 1, end_index + 2 });
       } else {
-        geo.push_vertex({ point - miter, params.color, -0.5f * (miter_length + width) });
+        // geo.push_vertex({ point - miter, params.color, -0.5f * (miter_length + width) });
+        geo.push_vertex({ point - miter });
         geo.push_indices({ params.start_join_params.index, params.start_join_params.index + 1, offset });
         geo.push_indices({ offset, end_index + 1, end_index + 2 });
       }
@@ -87,10 +91,12 @@ void tessellate_join(
   vec2 inset = h * k;
 
   if (bend_direction < 0.0f) {
-    geo.push_vertex({ point - inset, params.color, -width });
+    // geo.push_vertex({ point - inset, params.color, -width });
+    geo.push_vertex({ point - inset });
     geo.push_indices({ params.start_join_params.index + 1, offset, end_index + 2 });
   } else {
-    geo.push_vertex({ point + inset, params.color, width });
+    // geo.push_vertex({ point + inset, params.color, width });
+    geo.push_vertex({ point + inset });
     geo.push_indices({ params.start_join_params.index, offset, end_index + 1 });
   }
 }
@@ -118,8 +124,9 @@ void tessellate_cap(
       }
 
       geo.reserve(increments + 1, (increments + 1) * 3);
-      geo.push_vertex({ point, params.color, 0.0f, width });
-      geo.push_indices({ offset, end_index + 1, offset + 1 });
+      // geo.push_vertex({ point, params.color, 0.0f, width });
+      geo.push_vertex({ point });
+      geo.push_indices({ offset, offset + 1, end_index + 1 });
 
       for (int i = 1; i <= increments; ++i) {
         float angle_offset = (float)i * increment;
@@ -130,7 +137,8 @@ void tessellate_cap(
           normal.x * sin + normal.y * cos
         };
 
-        geo.push_vertex({ point + p, params.color, width });
+        // geo.push_vertex({ point + p, params.color, width });
+        geo.push_vertex({ point + p });
         geo.push_indices({ offset, offset + i, offset + i - 1 });
       }
 
@@ -154,10 +162,14 @@ void tessellate_cap(
     vec2 B = point - offset_normal;
 
     geo.reserve(4, 6);
-    geo.push_vertex({ A, params.color, 0.0f, cap_length });
-    geo.push_vertex({ B, params.color, 0.0f, cap_length });
-    geo.push_vertex({ B + normal_ortho, params.color, cap_length });
-    geo.push_vertex({ A + normal_ortho, params.color, cap_length });
+    // geo.push_vertex({ A, params.color, 0.0f, cap_length });
+    // geo.push_vertex({ B, params.color, 0.0f, cap_length });
+    // geo.push_vertex({ B + normal_ortho, params.color, cap_length });
+    // geo.push_vertex({ A + normal_ortho, params.color, cap_length });
+    geo.push_vertex({ A });
+    geo.push_vertex({ B });
+    geo.push_vertex({ B + normal_ortho });
+    geo.push_vertex({ A + normal_ortho });
     geo.push_indices({ offset, offset + 1, offset + 2 });
     geo.push_indices({ offset, offset + 2, offset + 3 });
 
@@ -173,10 +185,14 @@ void tessellate_cap(
   }
 
   geo.reserve(4, 9);
-  geo.push_vertex({ point, params.color, 0.0f, width });
-  geo.push_vertex({ point + normal + normal_ortho, params.color, width });
-  geo.push_vertex({ point - normal + normal_ortho, params.color, width });
-  geo.push_vertex({ point - normal, params.color, width });
+  // geo.push_vertex({ point, params.color, 0.0f, width });
+  // geo.push_vertex({ point + normal + normal_ortho, params.color, width });
+  // geo.push_vertex({ point - normal + normal_ortho, params.color, width });
+  // geo.push_vertex({ point - normal, params.color, width });
+  geo.push_vertex({ point });
+  geo.push_vertex({ point + normal + normal_ortho });
+  geo.push_vertex({ point - normal + normal_ortho });
+  geo.push_vertex({ point - normal });
   geo.push_indices({ offset, offset + 1, offset + 2 });
   geo.push_indices({ offset, end_index + 1, offset + 1 });
   geo.push_indices({ offset, offset + 2, offset + 3 });
