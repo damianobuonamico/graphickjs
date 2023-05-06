@@ -7,6 +7,7 @@
 #include "wasm-src/editor/text/font_manager.h"
 #include "wasm-src/editor/settings.h"
 #include "wasm-src/editor/input/input_manager.h"
+#include "wasm-src/io/svg/svg.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -160,7 +161,15 @@ int main() {
 
 
     FontManager::load_font(buffer, size);
+
+    delete[] buffer;
   }
+
+  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  std::string content((std::istreambuf_iterator<char>(ifs)),
+    (std::istreambuf_iterator<char>()));
+
+  Graphick::SVG::parse_svg(content);
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();

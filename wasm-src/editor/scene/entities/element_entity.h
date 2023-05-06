@@ -12,6 +12,20 @@
 
 class ElementEntity: public Entity {
 public:
+  ElementEntity(const vec2 position, const std::vector<std::pair<UUID, std::shared_ptr<VertexEntity>>>& vertices):
+    Entity(CategorySelectable | CategorySelectableChildren),
+    m_transform({ this, position }), m_selection(this), m_layer(this),
+    m_vertices(vertices)
+  {
+    regenerate();
+  }
+  ElementEntity(const vec2 position, std::initializer_list<std::pair<UUID, std::shared_ptr<VertexEntity>>> vertices):
+    Entity(CategorySelectable | CategorySelectableChildren),
+    m_transform({ this, position }), m_selection(this), m_layer(this),
+    m_vertices(vertices)
+  {
+    regenerate();
+  }
   ElementEntity(const vec2& position): Entity(CategorySelectable | CategorySelectableChildren), m_transform({ this, position }), m_selection(this), m_layer(this) {
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 0.0f }, vec2{ -20.0f, -20.0f }, true));
     add_vertex(std::make_shared<VertexEntity>(vec2{ 100.0f, 100.0f }, vec2{ 20.0f, 20.0f }, true));

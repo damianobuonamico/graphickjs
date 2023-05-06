@@ -112,6 +112,10 @@ protected:
   unsigned int m_primitive;
 };
 
+namespace Temp {
+  using Geo = Geometry;
+}
+
 // struct StencilGeometry: public Geometry<Vertex> {
 //   StencilGeometry(unsigned int primitive = GL_TRIANGLES);
 // };

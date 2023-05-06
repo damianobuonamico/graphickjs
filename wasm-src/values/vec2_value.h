@@ -8,8 +8,9 @@
 
 class Vec2Value {
 public:
-  Vec2Value(): m_value(0.0f) {};
-  Vec2Value(const vec2& value): m_value(value) {};
+  Vec2Value() : m_value(0.0f) {};
+  Vec2Value(const vec2& value) : m_value(value) {};
+  ~Vec2Value() = default;
 
   inline vec2 get() const { return m_value + m_delta; };
   inline vec2 delta() const { return m_delta; };

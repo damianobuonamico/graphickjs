@@ -31,7 +31,7 @@ void ElementEntity::render(const RenderingOptions& options) const {
   bool is_closed = m_closed.get();
   TessellationParams params = {
     m_transform.position().get(), options,
-    5.0f, vec4(0.5f, 0.5f, 0.5f, 1.0f),
+    1.0f, vec4(0.5f, 0.5f, 0.5f, 1.0f),
     JoinType::Round, CapType::Round, 10.0f,
     false, false, !is_closed, false, true,
     { vec2{}, vec2{}, 0 }

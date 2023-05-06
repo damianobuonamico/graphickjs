@@ -16,6 +16,10 @@ public:
   using iterator = typename vector::iterator;
   using const_iterator = typename vector::const_iterator;
 public:
+  MapValue(std::initializer_list<value> list): m_vector(list) {}
+  MapValue(const vector& vector): m_vector(vector) {}
+  MapValue() {}
+
   inline iterator begin() { return m_vector.begin(); }
   inline iterator end() { return m_vector.end(); }
   inline const_iterator begin() const { return m_vector.begin(); }

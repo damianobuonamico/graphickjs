@@ -52,3 +52,11 @@ inline bool is_in_range(const float t, const float min, const float max, bool in
 
   return t > min && t < max;
 }
+
+inline float degrees_to_radians(float a) {
+  return a * MATH_PI / 180.0f;
+}
+
+inline float radians_to_degrees(float a) {
+  return a * 180.0f / MATH_PI;
+}
