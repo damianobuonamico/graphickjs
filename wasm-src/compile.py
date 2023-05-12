@@ -20,4 +20,4 @@ for path in Path('./').rglob('*.cc'):
   if str(path)[:5] != 'debug':
     files.append(str(path))
 
-os.system(' '.join([EMCC_PATH, '-Os' if OPTIMIZE else '-O0 -DGK_CONF_DEBUG=1', *files, '-o ' + output, '-s ' + ' -s '.join(options), '-l embind']))
+os.system(' '.join([EMCC_PATH, '-Os -DGK_CONF_DIST=1' if OPTIMIZE else '-O0 -DGK_CONF_DEBUG=1', *files, '-o ' + output, '-s ' + ' -s '.join(options), '-l embind', '-DEMSCRIPTEN=1']))

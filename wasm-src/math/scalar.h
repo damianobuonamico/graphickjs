@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <float.h>
 #include <cmath>
 
@@ -20,5 +20,7 @@ bool is_in_range(const float t, const float min, const float max, bool include_e
 
 float degrees_to_radians(float a);
 float radians_to_degrees(float a);
+
+size_t next_power_of_two(size_t n);
 
 #include "scalar.inl"

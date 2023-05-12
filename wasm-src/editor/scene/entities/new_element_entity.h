@@ -11,6 +11,7 @@ namespace Graphick::Entities {
     using Path = Render::Geometry::Path;
   public:
     NewElementEntity(Path& path);
+    NewElementEntity(Path& path, const vec4& color);
     ~NewElementEntity() = default;
 
     inline virtual TransformComponent* transform() override { return &m_transform; }
@@ -19,6 +20,7 @@ namespace Graphick::Entities {
     virtual void render(const RenderingOptions& options) const override;
   private:
     Path m_path;
+    vec4 m_color;
 
     // Components
     TransformComponent m_transform;

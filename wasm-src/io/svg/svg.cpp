@@ -549,6 +549,7 @@ namespace Graphick::SVG {
     std::string name;
     std::string value;
     int ignoring = 0;
+    std::vector<vec4> colors = { { 1.0f, 0.0f, 0.0f, 1.0f } };
 
     auto remove_comments = [](std::string& value) {
       size_t start = value.find("/*");
@@ -584,6 +585,11 @@ namespace Graphick::SVG {
 
         ptr++;
         if (!read_identifier(ptr, end, name)) return false;
+
+        if (name == "g") {
+          console::log("end new col");
+          colors.pop_back();
+        }
 
         skip_ws(ptr, end);
         if (ptr >= end || *ptr != '>') return false;
@@ -658,7 +664,11 @@ namespace Graphick::SVG {
       if (!read_identifier(ptr, end, name)) return false;
       // TODO: Implement
 
-      if (name != "path") continue;
+      if (name == "g") {
+        colors.push_back({ 0.0f, 0.0f, 0.0f, 0.0f });
+        console::log("new col");
+      }
+      std::string temp_name = name;
 
       skip_ws(ptr, end);
       while (ptr < end && read_identifier(ptr, end, name)) {
@@ -684,15 +694,55 @@ namespace Graphick::SVG {
 
         if (!skip_until(ptr, end, quote)) return false;
 
-        if (name == "d") {
+        if (name == "fill") {
+          decode_text(start, rtrim(start, ptr), value);
+          // TOOD: refactor
+          int r = 0, g = 0, b = 0;
+
+          if (value.size() == 4) {
+            std::stringstream ss;
+            ss << std::hex << value.substr(1, 1) << value.substr(1, 1);
+            ss >> r;
+            ss.clear();
+
+            ss << std::hex << value.substr(2, 1) << value.substr(2, 1);
+            ss >> g;
+            ss.clear();
+
+            ss << std::hex << value.substr(3, 1) << value.substr(3, 1);
+            ss >> b;
+            ss.clear();
+          } else if (value.size() == 7) {
+            std::stringstream ss;
+            ss << std::hex << value.substr(1, 2);
+            ss >> r;
+            ss.clear();
+
+            ss << std::hex << value.substr(3, 2);
+            ss >> g;
+            ss.clear();
+
+            ss << std::hex << value.substr(5, 2);
+            ss >> b;
+            ss.clear();
+          }
+
+          colors.back() = { r / 255.0f, g / 255.0f, b / 255.0f, 1.0f };
+
+          console::log(value);
+          console::log(colors.back());
+        } if (name == "d") {
+          // if (colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 1.0f }) {
           decode_text(start, rtrim(start, ptr), value);
           // TODO: optimize copy
           Render::Geometry::Path path = parse_path(value);
+
           if (!path.empty()) {
-            std::shared_ptr<Entities::NewElementEntity> entity = std::make_shared<Entities::NewElementEntity>(path);
+            console::log("color", colors.back());
+            std::shared_ptr<Entities::NewElementEntity> entity = std::make_shared<Entities::NewElementEntity>(path, colors.back());
             Editor::scene().add_entity(entity);
           }
-          // Editor::scene().add_entity(parse_path(value).value());
+          // }
         }
 
         ptr++;

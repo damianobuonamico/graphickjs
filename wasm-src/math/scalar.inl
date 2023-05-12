@@ -60,3 +60,18 @@ inline float degrees_to_radians(float a) {
 inline float radians_to_degrees(float a) {
   return a * 180.0f / MATH_PI;
 }
+
+inline size_t next_power_of_two(size_t n) {
+  n--;
+
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+#ifndef EMSCRIPTEN
+  n |= n >> 32;
+#endif
+
+  return n++;
+}

@@ -4,6 +4,7 @@
 #include <direct.h>
 
 #include "wasm-src/editor/editor.h"
+#include "wasm-src/editor/scene/entities/new_element_entity.h"
 #include "wasm-src/editor/text/font_manager.h"
 #include "wasm-src/editor/settings.h"
 #include "wasm-src/editor/input/input_manager.h"
@@ -86,7 +87,7 @@ int main() {
 
   int width = 1300;
   int height = 810;
-  int samples = 8;
+  int samples = 1;
 
   glfwWindowHint(GLFW_SAMPLES, samples);
 
@@ -165,11 +166,33 @@ int main() {
     delete[] buffer;
   }
 
+  // std::ifstream ifs("res\\Asset 2.svg");
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)),
     (std::istreambuf_iterator<char>()));
 
   Graphick::SVG::parse_svg(content);
+
+  Graphick::Render::Geometry::Path path{};
+
+  // path.move_to({ 20.0f, 20.0f });
+  // path.line_to({ 100.0f, 100.0f });
+  // path.line_to({ 133.0f, 0.0f });
+
+  // path.move_to({ 300.0f, 200.0f });
+  // path.line_to({ 100.0f, 0.0f });
+
+  path.move_to({ 704.95f, 151.29f });
+  path.line_to({ 119.46f, 347.53f });
+  path.line_to({ 1035.3f, 212.0f });
+  path.line_to({ 150.0f, -410.0f });
+
+  // path.move_to({ 100.0f, 0.0f });
+  // path.line_to({ -100.0f, 70.0f });
+  // path.line_to({ 200.0f, 280.0f });
+  path.close();
+
+  // Editor::scene().add_entity(std::make_shared<Graphick::Entities::NewElementEntity>(path));
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();

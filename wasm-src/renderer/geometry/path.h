@@ -10,6 +10,7 @@ namespace Graphick::Render::Geometry {
   class Path {
   public:
     inline bool empty() const { return m_segments.empty(); }
+    inline const std::vector<Segment>& segments() const { return m_segments; }
 
     void move_to(vec2 p);
     void line_to(vec2 p);
@@ -23,6 +24,8 @@ namespace Graphick::Render::Geometry {
     void round_rect(vec2 p, vec2 size, float radius, bool centered = false);
 
     void close();
+
+    Box bounding_box() const;
 
     // TEMP
     Temp::Geo outline_geo() const;

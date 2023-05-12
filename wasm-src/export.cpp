@@ -4,6 +4,7 @@
 #include "editor/settings.h"
 #include "renderer/renderer.h"
 #include "editor/input/input_manager.h"
+#include "io/svg/svg.h"
 
 #include <emscripten/bind.h>
 
@@ -55,6 +56,10 @@ extern "C" {
 
   void EMSCRIPTEN_KEEPALIVE load_font(const unsigned char* buffer, long buffer_size) {
     FontManager::load_font(buffer, buffer_size);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE load_svg(const char* svg) {
+    Graphick::SVG::parse_svg(svg);
   }
 }
 

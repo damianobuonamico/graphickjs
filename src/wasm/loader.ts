@@ -15,6 +15,7 @@ const API: Api = {
   _save: fallback,
   _load: fallback,
   _load_font: fallback,
+  _load_svg: fallback,
   _to_heap: fallback,
   _free: fallback,
 };
@@ -43,6 +44,13 @@ wasm().then((module: any) => {
     const heap = new Uint8Array(module.HEAPU8.buffer, ptr, data.byteLength);
     heap.set(new Uint8Array(data));
     module._load_font(ptr, data.byteLength);
+    module._free(ptr);
+  };
+  API._load_svg = (data: ArrayBuffer) => {
+    const ptr = module._malloc(data.byteLength);
+    const heap = new Uint8Array(module.HEAPU8.buffer, ptr, data.byteLength);
+    heap.set(new Uint8Array(data));
+    module._load_svg(ptr, data.byteLength);
     module._free(ptr);
   };
 

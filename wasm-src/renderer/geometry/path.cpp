@@ -17,12 +17,14 @@ namespace Graphick::Render::Geometry {
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
+    return line_to(p2);
     Segment::Point point = std::make_shared<Vec2Value>(p2);
     m_segments.emplace_back(m_last_point, p1, point, true);
     m_last_point = point;
   }
 
   void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
+    return line_to(p3);
     Segment::Point point = std::make_shared<Vec2Value>(p3);
     m_segments.emplace_back(m_last_point, p1, p2, point);
     m_last_point = point;
@@ -181,7 +183,7 @@ namespace Graphick::Render::Geometry {
   }
 
   void Path::close() {
-    if (m_segments.empty()) return;
+    if (m_segments.size() < 2) return;
 
     Segment& first_segment = m_segments.front();
     Segment& last_segment = m_segments.back();
@@ -190,17 +192,34 @@ namespace Graphick::Render::Geometry {
       first_segment.m_p0 = last_segment.m_p0;
     } else {
       m_segments.emplace_back(m_last_point, first_segment.m_p0);
-      m_last_point = first_segment.m_p0;
+      m_last_point = m_segments.front().m_p0;
     }
 
     m_closed = true;
+  }
+
+  Box Path::bounding_box() const {
+    Box box = { std::numeric_limits<vec2>::max(), std::numeric_limits<vec2>::min() };
+
+    for (const auto& segment : m_segments) {
+      Box segment_box = segment.bounding_box();
+
+      min(box.min, segment_box.min, box.min);
+      max(box.max, segment_box.max, box.max);
+    }
+
+    return box;
   }
 
   Temp::Geo Path::outline_geo() const {
     Temp::Geo geo(GL_LINES);
 
     for (const Segment& segment : m_segments) {
-      geo.push_line_strip({ segment.get(0.0f), segment.get(0.2f), segment.get(0.4f), segment.get(0.6f), segment.get(0.8f), segment.get(1.0f) });
+      if (segment.kind() == Segment::Kind::Linear) {
+        geo.push_line(segment.p0(), segment.p3());
+      } else {
+        geo.push_line_strip({ segment.get(0.0f), segment.get(0.2f), segment.get(0.4f), segment.get(0.6f), segment.get(0.8f), segment.get(1.0f) });
+      }
     }
 
     return geo;

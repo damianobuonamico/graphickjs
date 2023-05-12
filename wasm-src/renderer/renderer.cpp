@@ -15,6 +15,8 @@
 #include <glad/glad.h>
 #endif
 
+#include "new_renderer.h"
+
 #include "../math/vec3.h"
 #include "../math/mat4.h"
 
@@ -31,6 +33,9 @@ void Renderer::RendererStats::reset() {
 }
 
 void Renderer::init() {
+  Graphick::Render::Renderer::init();
+  return;
+
   assert(!s_instance);
   s_instance = new Renderer();
 
@@ -83,6 +88,9 @@ void Renderer::init() {
 }
 
 void Renderer::shutdown() {
+  Graphick::Render::Renderer::shutdown();
+  return;
+
   delete[] get()->m_batch_data.vertex_buffer;
   delete[] get()->m_batch_data.index_buffer;
 
@@ -90,6 +98,9 @@ void Renderer::shutdown() {
 }
 
 void Renderer::resize(const vec2& size, float dpr) {
+  Graphick::Render::Renderer::resize({ (int)size.x, (int)size.y }, dpr);
+  return;
+
   get()->m_size = size;
   get()->m_dpr = dpr;
   get()->m_frame_buffer.resize(size * dpr);
@@ -121,6 +132,9 @@ struct Geometry3D {
 };
 
 void Renderer::begin_frame(const vec2& position, float zoom, float z_far) {
+  Graphick::Render::Renderer::begin_frame(position, zoom);
+  return;
+
   get()->m_stats.reset();
 
   get()->m_settings.z_far = z_far;
@@ -249,6 +263,8 @@ void Renderer::begin_frame(const vec2& position, float zoom, float z_far) {
 }
 
 void Renderer::end_frame() {
+  Graphick::Render::Renderer::end_frame();
+  return;
 
   // console::log("Entities Rendered", rendered);
   if (get()->m_last_call == RenderCall::Batch) {
@@ -279,6 +295,8 @@ void Renderer::push_overlay_layer(const vec2& position) {
 }
 
 void Renderer::draw(const Geometry& geometry) {
+  return;
+
   if (get()->m_last_call != RenderCall::Batch) {
     get()->bind_batch_renderer();
     get()->m_last_call = RenderCall::Batch;
@@ -385,9 +403,11 @@ void Renderer::pop_frame_buffer() {
   // delete get()->m_current_frame_buffer;
 }
 
-Renderer::Renderer(): m_frame_buffer(m_shaders, vec2{ 0.0f }) {}
+Renderer::Renderer() : m_frame_buffer(m_shaders, vec2{ 0.0f }) {}
 
 void Renderer::init_batch_renderer() {
+  return;
+
   m_batch_data.vertex_buffer = new GLVertex[m_settings.max_vertex_count];
   m_batch_data.index_buffer = new uint32_t[m_settings.max_index_count];
 
@@ -418,6 +438,8 @@ void Renderer::init_batch_renderer() {
 }
 
 void Renderer::init_instance_renderer(bool create_vertex_array) {
+  return;
+
   if (create_vertex_array) glGenVertexArrays(1, &m_instanced_data.vertex_array_object);
   glBindVertexArray(m_instanced_data.vertex_array_object);
 
@@ -443,6 +465,8 @@ void Renderer::refresh_stencil_renderer() {
 }
 
 void Renderer::bind_batch_renderer() {
+  return;
+
   glBindVertexArray(m_batch_data.vertex_array_object);
   glBindBuffer(GL_ARRAY_BUFFER, m_batch_data.vertex_buffer_object);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_batch_data.index_buffer_object);
@@ -460,6 +484,8 @@ void Renderer::bind_batch_renderer() {
 }
 
 void Renderer::bind_instance_renderer() {
+  return;
+
   if (m_last_call == RenderCall::Batch) {
     end_batch();
     flush();
@@ -483,6 +509,8 @@ void Renderer::bind_instance_renderer() {
 }
 
 void Renderer::set_viewport(const vec2& position, float zoom) {
+  return;
+
   float factor = 0.5f / zoom;
 
   float half_width = -m_size.x * factor;
@@ -511,6 +539,8 @@ void Renderer::set_viewport(const vec2& position, float zoom) {
 }
 
 void Renderer::begin_batch() {
+  return;
+
   m_batch_data.uniforms.clear();
   m_batch_data.vertex_count = 0;
   m_batch_data.index_count = 0;
@@ -533,6 +563,8 @@ bool Renderer::can_batch(const Geometry& geometry) {
 
 // TODO: handle large geometry
 void Renderer::add_to_batch(const Geometry& geometry) {
+  return;
+
   uint32_t index_count = geometry.index_count();
   uint32_t vertex_count = geometry.vertex_count();
 
@@ -621,6 +653,8 @@ void Renderer::add_to_batch(const Geometry& geometry) {
 }
 
 void Renderer::end_batch() {
+  return;
+
   GLsizeiptr vertex_buffer_size = (uint8_t*)m_batch_data.vertex_buffer_ptr - (uint8_t*)m_batch_data.vertex_buffer;
   GLsizeiptr index_buffer_size = (uint8_t*)m_batch_data.index_buffer_ptr - (uint8_t*)m_batch_data.index_buffer;
 
@@ -635,6 +669,8 @@ void Renderer::end_batch() {
 }
 
 void Renderer::flush() {
+  return;
+
   if (m_batch_data.vertex_count == 0 || m_batch_data.index_count == 0) {
     return;
   }
