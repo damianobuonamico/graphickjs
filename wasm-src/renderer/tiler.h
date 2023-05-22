@@ -18,9 +18,31 @@ namespace Graphick::Render {
     ~Tiler() = default;
 
     inline const std::vector<Fill>& opaque_tiles() const { return m_opaque_tiles; }
+    inline const std::vector<Mask>& masks() const { return m_masks; }
+    inline const std::vector<Tile>& tiles() const { return m_tiles; }
 
     void reset(const ivec2 size, const vec2 position, float zoom);
     void process_path(const Geometry::Path& path, const vec4& color);
+  private:
+    struct TileData {
+      vec4 color = { 0.0f, 0.0f, 0.0f, 0.0f };
+      int backdrop = 0;
+    };
+
+    struct PathTiler {
+      PathTiler(ivec2 path_bounds_size, ivec2 path_bounds_offset);
+
+      inline const std::vector<TileData>& tiles() const { return m_tiles; }
+
+      void add_fill(const Box& segment, const ivec2 coords);
+      void adjust_backdrop(const ivec2 coords, int8_t delta);
+    private:
+      ivec2 m_path_bounds_size;
+      ivec2 m_path_bounds_offset;
+      std::vector<TileData> m_tiles;
+    };
+  private:
+    void process_linear_segment(const Geometry::Segment& segment, vec2 position, ivec2 bounds_size, int segment_index, PathTiler& path_tiler);
   private:
     ivec2 m_position = { 0, 0 };
     float m_zoom = 1.0f;
@@ -28,6 +50,9 @@ namespace Graphick::Render {
     ivec2 m_tiles_count = { 0, 0 };
     std::vector<bool> m_processed_tiles;
     std::vector<Fill> m_opaque_tiles;
+    std::vector<Mask> m_masks;
+    std::vector<Tile> m_tiles;
+    uint32_t m_mask_id = 0;
   };
 
 }

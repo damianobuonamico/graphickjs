@@ -13,6 +13,25 @@ namespace Graphick::Render::GPU {
     FillProgram();
   };
 
+  struct MaskProgram {
+    Program program;
+    Uniform view_projection_uniform;
+    Uniform framebuffer_size_uniform;
+    Uniform tile_size_uniform;
+
+    MaskProgram();
+  };
+
+  struct TileProgram {
+    Program program;
+    Uniform view_projection_uniform;
+    Uniform framebuffer_size_uniform;
+    Uniform tile_size_uniform;
+    Uniform mask_texture_uniform;
+
+    TileProgram();
+  };
+
   struct LineProgram {
     Program program;
     Uniform view_projection_uniform;
@@ -23,6 +42,8 @@ namespace Graphick::Render::GPU {
 
   struct Programs {
     FillProgram fill_program;
+    MaskProgram mask_program;
+    TileProgram tile_program;
     LineProgram line_program;
 
     Programs();
@@ -33,6 +54,28 @@ namespace Graphick::Render::GPU {
 
     FillVertexArray(
       const FillProgram& fill_program,
+      const Buffer& vertex_buffer,
+      const Buffer& quad_vertex_positions_buffer,
+      const Buffer& quad_vertex_indices_buffer
+    );
+  };
+
+  struct MaskVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;
+
+    MaskVertexArray(
+      const MaskProgram& mask_program,
+      const Buffer& vertex_buffer,
+      const Buffer& quad_vertex_positions_buffer,
+      const Buffer& quad_vertex_indices_buffer
+    );
+  };
+
+  struct TileVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;
+
+    TileVertexArray(
+      const TileProgram& tile_program,
       const Buffer& vertex_buffer,
       const Buffer& quad_vertex_positions_buffer,
       const Buffer& quad_vertex_indices_buffer

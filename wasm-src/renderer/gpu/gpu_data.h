@@ -31,6 +31,7 @@ namespace Graphick::Render::GPU {
   enum class TextureFormat {
     R8,
     RGBA8,
+    R32F,
     RGBA32F
   };
 
@@ -194,7 +195,8 @@ namespace Graphick::Render::GPU {
   constexpr uint8_t bytes_per_pixel(TextureFormat format) {
     switch (format) {
     case TextureFormat::R8: return 1;
-    case TextureFormat::RGBA8: return 4;
+    case TextureFormat::RGBA8:
+    case TextureFormat::R32F: return 4;
     default:
     case TextureFormat::RGBA32F: return 16;
     }
@@ -203,6 +205,7 @@ namespace Graphick::Render::GPU {
   constexpr uint8_t channels_per_pixel(TextureFormat format) {
     switch (format) {
     case TextureFormat::R8:
+    case TextureFormat::R32F: return 1;
     default:
     case TextureFormat::RGBA8:
     case TextureFormat::RGBA32F: return 4;

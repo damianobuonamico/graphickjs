@@ -2,10 +2,10 @@
 
 #include "console.h"
 
-#define SHADERS_LENGTH 2
+#define SHADERS_LENGTH 4
 
 static constexpr const char* shader_names[SHADERS_LENGTH] = {
-  "fill", "line"
+  "fill", "mask", "tile", "line"
 };
 
 ResourceManager* ResourceManager::s_instance = nullptr;
@@ -33,44 +33,17 @@ void ResourceManager::prefetch_shaders() {
     ,
     #include "../renderer/gpu/shaders/fill.fs.glsl"
     ,
+    #include "../renderer/gpu/shaders/mask.vs.glsl"
+    ,
+    #include "../renderer/gpu/shaders/mask.fs.glsl"
+    ,
+    #include "../renderer/gpu/shaders/tile.vs.glsl"
+    ,
+    #include "../renderer/gpu/shaders/tile.fs.glsl"
+    ,
     #include "../renderer/gpu/shaders/line.vs.glsl"
     ,
     #include "../renderer/gpu/shaders/line.fs.glsl"
-    // #include "../renderer/gpu/shaders/blit.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/blit.fs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/clear.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/clear.fs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/stencil.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/stencil.fs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/reproject.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/reproject.fs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/fill.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/fill.fs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/tile.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/tile.fs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/tile_clip_combine.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/tile_clip_combine.fs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/tile_clip_copy.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/tile_clip_copy.fs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/tile_copy.vs.glsl"
-    //   ,
-    // #include "../renderer/gpu/shaders/tile_copy.fs.glsl"
   };
 
   for (unsigned int i = 0; i < SHADERS_LENGTH; ++i) {

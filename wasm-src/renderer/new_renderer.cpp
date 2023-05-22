@@ -61,18 +61,33 @@ namespace Graphick::Render {
   void Renderer::resize(const ivec2 size, float dpr) {
     GPU::Device::set_viewport(size, dpr);
     get()->m_viewport = { size, dpr };
+
+    int tiles = std::max(size.x, size.y) / TILE_SIZE;
+
+    GPU::Memory::Allocator::free_framebuffer(get()->m_framebuffer_id);
+    get()->m_framebuffer_id = GPU::Memory::Allocator::allocate_framebuffer(
+      { tiles * (int)TILE_SIZE, tiles * (int)TILE_SIZE },
+      GPU::TextureFormat::R32F,
+      "MaskFramebuffer"
+    );
   }
 
   void Renderer::begin_frame(const vec2 position, float zoom) {
+    // vec2 pos = { 0.0f, 0.0f };
+    vec2 pos = position;
+    float tile_size = TILE_SIZE / zoom;
+    // vec2 pos = vec2{ std::round(position.x / tile_size), std::round(position.y / tile_size) } *tile_size;
     GPU::Device::begin_commands();
-    get()->m_tiler.reset(get()->m_viewport.size, position, zoom);
+    get()->m_tiler.reset(get()->m_viewport.size, pos, zoom);
     get()->m_lines = Temp::Geo(GL_LINES);
-    get()->m_viewport.position = position;
+    get()->m_viewport.position = pos;
     get()->m_viewport.zoom = zoom;
   }
 
   void Renderer::end_frame() {
     get()->draw_fills();
+    get()->draw_masks();
+    get()->draw_tiles();
     get()->draw_lines();
     GPU::Device::end_commands();
   }
@@ -93,7 +108,13 @@ namespace Graphick::Render {
     }
   }
 
-  Renderer::Renderer() {}
+  Renderer::Renderer() {
+    m_framebuffer_id = GPU::Memory::Allocator::allocate_framebuffer(
+      { 0, 0 },
+      GPU::TextureFormat::R32F,
+      "MaskFramebuffer"
+    );
+  }
 
   void Renderer::draw_fills() {
     vec2 position = (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE;
@@ -203,6 +224,223 @@ namespace Graphick::Render {
     GPU::Memory::Allocator::free_general_buffer(quad_vertex_positions_buffer_id);
     GPU::Memory::Allocator::free_index_buffer(quad_vertex_indices_buffer_id);
     GPU::Memory::Allocator::free_general_buffer(fill_vertex_buffer_id);
+  }
+
+  void Renderer::draw_masks() {
+    float size = (float)std::floor((int)std::max(m_viewport.size.x, m_viewport.size.y) / TILE_SIZE) * TILE_SIZE;
+
+    float half_width = -size * 0.5f;
+    float half_height = size * 0.5f;
+
+    float right = -half_width;
+    float left = half_width;
+    float top = -half_height;
+    float bottom = half_height;
+
+    mat4 projection = {
+      2.0f / (right - left), 0.0f, 0.0f, 0.0f,
+      0.0f, 2.0f / (top - bottom), 0.0f, 0.0f,
+      0.0f, 0.0f, -1.0f, 0.0f,
+      -(right + left) / (right - left), -(top + bottom) / (top - bottom), 0.0f, 1.0f
+    };
+
+    mat4 translation = {
+      1.0f, 0.0f, 0.0f, 0.5f * (-size),
+      0.0f, 1.0f, 0.0f, 0.5f * (-size),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    mat4 mvp = projection * translation;
+
+    const std::vector<Mask>& masks = m_tiler.masks();
+    console::log("masks", masks.size());
+
+    UUID quad_vertex_positions_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<uint16_t>(
+      QUAD_VERTEX_POSITIONS.size(),
+      "QuadVertexPositions"
+    );
+    UUID quad_vertex_indices_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(
+      QUAD_VERTEX_INDICES.size(),
+      "QuadVertexIndices"
+    );
+    UUID mask_vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<Mask>(
+      masks.size(),
+      "Mask"
+    );
+
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(quad_vertex_indices_buffer_id);
+    const GPU::Buffer& mask_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(mask_vertex_buffer_id);
+
+    GPU::Device::upload_to_buffer(quad_vertex_positions_buffer, 0, QUAD_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(quad_vertex_indices_buffer, 0, QUAD_VERTEX_INDICES, GPU::BufferTarget::Index);
+    GPU::Device::upload_to_buffer(mask_vertex_buffer, 0, masks, GPU::BufferTarget::Vertex);
+
+    GPU::MaskVertexArray mask_vertex_array(
+      m_programs.mask_program,
+      mask_vertex_buffer,
+      quad_vertex_positions_buffer,
+      quad_vertex_indices_buffer
+    );
+
+    const GPU::Framebuffer& framebuffer = GPU::Memory::Allocator::get_framebuffer(m_framebuffer_id);
+
+    GPU::RenderState state = {
+      &framebuffer,
+      m_programs.mask_program.program,
+      *mask_vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {},
+      {},
+      {
+        { m_programs.mask_program.view_projection_uniform, mvp },
+        { m_programs.mask_program.tile_size_uniform, (int)TILE_SIZE },
+        { m_programs.mask_program.framebuffer_size_uniform, ivec2{ (int)size, (int)size } }
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)size * m_viewport.dpr, (float)size * m_viewport.dpr }
+      },
+      {
+        // std::nullopt,
+        GPU::BlendState{
+          GPU::BlendFactor::One,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::One,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          vec4{ 0.0f, 0.0f, 0.0f, 1.0f},
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements_instanced(6, (uint32_t)masks.size(), state);
+
+    GPU::Memory::Allocator::free_general_buffer(quad_vertex_positions_buffer_id);
+    GPU::Memory::Allocator::free_index_buffer(quad_vertex_indices_buffer_id);
+    GPU::Memory::Allocator::free_general_buffer(mask_vertex_buffer_id);
+  }
+
+  void Renderer::draw_tiles() {
+    vec2 position = (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE;
+
+    float half_width = -m_viewport.size.x * 0.5f;
+    float half_height = m_viewport.size.y * 0.5f;
+
+    float right = -half_width;
+    float left = half_width;
+    float top = -half_height;
+    float bottom = half_height;
+
+    mat4 projection = {
+      2.0f / (right - left), 0.0f, 0.0f, 0.0f,
+      0.0f, 2.0f / (top - bottom), 0.0f, 0.0f,
+      0.0f, 0.0f, -1.0f, 0.0f,
+      -(right + left) / (right - left), -(top + bottom) / (top - bottom), 0.0f, 1.0f
+    };
+
+    mat4 translation = {
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x + 2 * position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y + 2 * position.y),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    mat4 mvp = projection * translation;
+
+    const std::vector<Tile>& opaque_tiles = m_tiler.tiles();
+
+    // std::vector<Fill> fills;
+    // int tiles = (int)std::ceil((float)m_viewport.size.x / 16) * std::ceil((float)m_viewport.size.y / 16);
+    // fills.reserve(tiles);
+
+    // console::log("Tiles", opaque_tiles.size());
+
+    // for (int i = 0; i < tiles; i++) {
+    //   fills.push_back({ vec4{ 0.0f, 0.0f, 0.0f, (float)i / tiles }, i });
+    // }
+
+    UUID quad_vertex_positions_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<uint16_t>(
+      QUAD_VERTEX_POSITIONS.size(),
+      "QuadVertexPositions"
+    );
+    UUID quad_vertex_indices_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(
+      QUAD_VERTEX_INDICES.size(),
+      "QuadVertexIndices"
+    );
+    UUID tile_vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<Tile>(
+      opaque_tiles.size(),
+      "Tile"
+    );
+
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(quad_vertex_indices_buffer_id);
+    const GPU::Buffer& tile_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(tile_vertex_buffer_id);
+
+    GPU::Device::upload_to_buffer(quad_vertex_positions_buffer, 0, QUAD_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(quad_vertex_indices_buffer, 0, QUAD_VERTEX_INDICES, GPU::BufferTarget::Index);
+    GPU::Device::upload_to_buffer(tile_vertex_buffer, 0, opaque_tiles, GPU::BufferTarget::Vertex);
+
+    GPU::TileVertexArray tile_vertex_array(
+      m_programs.tile_program,
+      tile_vertex_buffer,
+      quad_vertex_positions_buffer,
+      quad_vertex_indices_buffer
+    );
+
+    const GPU::Texture& mask_texture = *GPU::Memory::Allocator::get_framebuffer(m_framebuffer_id).texture;
+
+    GPU::RenderState state = {
+      nullptr,
+      m_programs.tile_program.program,
+      *tile_vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {
+        { { m_programs.tile_program.mask_texture_uniform, mask_texture.gl_texture }, mask_texture }
+      },
+      {},
+      {
+        { m_programs.tile_program.view_projection_uniform, mvp },
+        { m_programs.tile_program.tile_size_uniform, (int)TILE_SIZE },
+        { m_programs.tile_program.framebuffer_size_uniform, m_viewport.size },
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+      },
+      {
+        // std::nullopt,
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements_instanced(6, (uint32_t)opaque_tiles.size(), state);
+
+    GPU::Memory::Allocator::free_general_buffer(quad_vertex_positions_buffer_id);
+    GPU::Memory::Allocator::free_index_buffer(quad_vertex_indices_buffer_id);
+    GPU::Memory::Allocator::free_general_buffer(tile_vertex_buffer_id);
   }
 
   void Renderer::draw_lines() {

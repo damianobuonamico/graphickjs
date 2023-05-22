@@ -547,6 +547,58 @@ inline bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps = FL
   return !(abs(v1.x - v2.x) > eps || abs(v1.y - v2.y) > eps || abs(v1.z - v2.z) > eps || abs(v1.w - v2.w) > eps);
 }
 
+/* -- floor -- */
+
+inline vec2 floor(const vec2& v) {
+  return vec2{
+    std::floor(v.x),
+    std::floor(v.y),
+  };
+}
+
+inline vec3 floor(const vec3& v) {
+  return vec3{
+    std::floor(v.x),
+    std::floor(v.y),
+    std::floor(v.z),
+  };
+}
+
+inline vec4 floor(const vec4& v) {
+  return vec4{
+    std::floor(v.x),
+    std::floor(v.y),
+    std::floor(v.z),
+    std::floor(v.w),
+  };
+}
+
+/* -- ceil -- */
+
+inline vec2 ceil(const vec2& v) {
+  return vec2{
+    std::ceil(v.x),
+    std::ceil(v.y),
+  };
+}
+
+inline vec3 ceil(const vec3& v) {
+  return vec3{
+    std::ceil(v.x),
+    std::ceil(v.y),
+    std::ceil(v.z),
+  };
+}
+
+inline vec4 ceil(const vec4& v) {
+  return vec4{
+    std::ceil(v.x),
+    std::ceil(v.y),
+    std::ceil(v.z),
+    std::ceil(v.w),
+  };
+}
+
 /* -- dot -- */
 
 inline float dot(const vec2& v1, const vec2& v2) {

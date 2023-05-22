@@ -8,6 +8,19 @@ namespace Graphick::Render::GPU {
     framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
     tile_size_uniform(Device::get_uniform(program, "uTileSize").value()) {}
 
+  MaskProgram::MaskProgram() :
+    program(Device::create_program("mask")),
+    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
+    tile_size_uniform(Device::get_uniform(program, "uTileSize").value()) {}
+
+  TileProgram::TileProgram() :
+    program(Device::create_program("tile")),
+    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
+    tile_size_uniform(Device::get_uniform(program, "uTileSize").value()),
+    mask_texture_uniform(Device::get_uniform(program, "uMaskTexture").value()) {}
+
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
     view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
@@ -15,6 +28,8 @@ namespace Graphick::Render::GPU {
 
   Programs::Programs() :
     fill_program(),
+    mask_program(),
+    tile_program(),
     line_program() {}
 
   FillVertexArray::FillVertexArray(
@@ -26,8 +41,8 @@ namespace Graphick::Render::GPU {
     : vertex_array(Device::create_vertex_array())
   {
     VertexAttr position_attr = Device::get_vertex_attr(fill_program.program, "aPosition").value();
-    VertexAttr index_attr = Device::get_vertex_attr(fill_program.program, "aIndex").value();
     VertexAttr color_attr = Device::get_vertex_attr(fill_program.program, "aColor").value();
+    VertexAttr index_attr = Device::get_vertex_attr(fill_program.program, "aIndex").value();
 
     VertexAttrDescriptor position_desc = {
       2,
@@ -37,16 +52,6 @@ namespace Graphick::Render::GPU {
       0,
       0,
       0
-    };
-
-    VertexAttrDescriptor index_desc = {
-      1,
-      VertexAttrClass::Int,
-      VertexAttrType::I32,
-      20,
-      16,
-      1,
-      1
     };
 
     VertexAttrDescriptor color_desc = {
@@ -59,12 +64,138 @@ namespace Graphick::Render::GPU {
       1
     };
 
+    VertexAttrDescriptor index_desc = {
+      1,
+      VertexAttrClass::Int,
+      VertexAttrType::I32,
+      20,
+      16,
+      1,
+      1
+    };
+
     Device::bind_buffer(*vertex_array, quad_vertex_positions_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
 
     Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, color_attr, color_desc);
     Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
+
+    Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
+  }
+
+  MaskVertexArray::MaskVertexArray(
+    const MaskProgram& mask_program,
+    const Buffer& vertex_buffer,
+    const Buffer& quad_vertex_positions_buffer,
+    const Buffer& quad_vertex_indices_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(mask_program.program, "aPosition").value();
+    VertexAttr line_segment_attr = Device::get_vertex_attr(mask_program.program, "aLineSegment").value();
+    VertexAttr index_attr = Device::get_vertex_attr(mask_program.program, "aIndex").value();
+
+    VertexAttrDescriptor position_desc = {
+      2,
+      VertexAttrClass::Int,
+      VertexAttrType::U16,
+      4,
+      0,
+      0,
+      0
+    };
+
+    VertexAttrDescriptor line_segment_desc = {
+      4,
+      VertexAttrClass::Int,
+      VertexAttrType::U8,
+      8,
+      0,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor index_desc = {
+      1,
+      VertexAttrClass::Int,
+      VertexAttrType::I32,
+      8,
+      4,
+      1,
+      1
+    };
+
+    Device::bind_buffer(*vertex_array, quad_vertex_positions_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, line_segment_attr, line_segment_desc);
+    Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
+
+    Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
+  }
+
+  TileVertexArray::TileVertexArray(
+    const TileProgram& tile_program,
+    const Buffer& vertex_buffer,
+    const Buffer& quad_vertex_positions_buffer,
+    const Buffer& quad_vertex_indices_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(tile_program.program, "aPosition").value();
+    VertexAttr color_attr = Device::get_vertex_attr(tile_program.program, "aColor").value();
+    VertexAttr index_attr = Device::get_vertex_attr(tile_program.program, "aIndex").value();
+    VertexAttr mask_index_attr = Device::get_vertex_attr(tile_program.program, "aMaskIndex").value();
+
+    VertexAttrDescriptor position_desc = {
+      2,
+      VertexAttrClass::Int,
+      VertexAttrType::U16,
+      4,
+      0,
+      0,
+      0
+    };
+
+    VertexAttrDescriptor color_desc = {
+      4,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      24,
+      0,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor index_desc = {
+      1,
+      VertexAttrClass::Int,
+      VertexAttrType::I32,
+      24,
+      16,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor mask_index_desc = {
+      1,
+      VertexAttrClass::Int,
+      VertexAttrType::I32,
+      24,
+      20,
+      1,
+      1
+    };
+
+    Device::bind_buffer(*vertex_array, quad_vertex_positions_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, color_attr, color_desc);
+    Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
+    Device::configure_vertex_attr(*vertex_array, mask_index_attr, mask_index_desc);
 
     Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
   }

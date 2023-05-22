@@ -97,6 +97,14 @@ bool is_almost_equal(const vec2& v1, const vec2& v2, const float eps);
 bool is_almost_equal(const vec3& v1, const vec3& v2, const float eps);
 bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps);
 
+vec2 floor(const vec2& v);
+vec3 floor(const vec3& v);
+vec4 floor(const vec4& v);
+
+vec2 ceil(const vec2& v);
+vec3 ceil(const vec3& v);
+vec4 ceil(const vec4& v);
+
 float dot(const vec2& v1, const vec2& v2);
 float dot(const vec3& v1, const vec3& v2);
 float dot(const vec4& v1, const vec4& v2);

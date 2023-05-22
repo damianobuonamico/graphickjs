@@ -89,7 +89,7 @@ int main() {
   int height = 810;
   int samples = 1;
 
-  glfwWindowHint(GLFW_SAMPLES, samples);
+  // glfwWindowHint(GLFW_SAMPLES, samples);
 
   window = glfwCreateWindow(width, height, "Hello World", nullptr, nullptr);
 
@@ -140,7 +140,7 @@ int main() {
   Editor::init();
   InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  Editor::load("{\"version\":\"0.1.0\",\"files\":[{\"head\":{\"id\":\"12302782324244206606\",\"viewport\":{\"position\":[0,0],\"zoom\":2,\"rotation\":0,\"min_position\":[-3.40282e+38,-3.40282e+38],\"max_position\":[3.40282e+38,3.40282e+38],\"min_zoom\":0.01}},\"body\":{}}]}");
+  Editor::load("{\"version\":\"0.1.0\",\"files\":[{\"head\":{\"id\":\"12302782324244206606\",\"viewport\":{\"position\":[0,0],\"zoom\":1,\"rotation\":0,\"min_position\":[-3.40282e+38,-3.40282e+38],\"max_position\":[3.40282e+38,3.40282e+38],\"min_zoom\":0.01}},\"body\":{}}]}");
 
   const char* pathname = "res\\GreatVibes-Regular.otf";
   FILE* file = fopen(pathname, "rb");
@@ -166,10 +166,9 @@ int main() {
     delete[] buffer;
   }
 
-  // std::ifstream ifs("res\\Asset 2.svg");
+  // std::ifstream ifs("res\\Asset 3.svg");
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
-  std::string content((std::istreambuf_iterator<char>(ifs)),
-    (std::istreambuf_iterator<char>()));
+  std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
   Graphick::SVG::parse_svg(content);
 
@@ -182,14 +181,15 @@ int main() {
   // path.move_to({ 300.0f, 200.0f });
   // path.line_to({ 100.0f, 0.0f });
 
-  path.move_to({ 704.95f, 151.29f });
-  path.line_to({ 119.46f, 347.53f });
+  path.move_to({ 700.0f, 150.0f });
+  path.line_to({ 119.46f, 230.53f });
   path.line_to({ 1035.3f, 212.0f });
-  path.line_to({ 150.0f, -410.0f });
+  path.line_to({ 0.0f, -550.0f });
 
-  // path.move_to({ 100.0f, 0.0f });
-  // path.line_to({ -100.0f, 70.0f });
-  // path.line_to({ 200.0f, 280.0f });
+  // path.move_to({ 160.0f, 160.0f });
+  // path.line_to({ 320.0f, 320.0f });
+  // path.line_to({ 160.0f, 384.0f });
+
   path.close();
 
   // Editor::scene().add_entity(std::make_shared<Graphick::Entities::NewElementEntity>(path));

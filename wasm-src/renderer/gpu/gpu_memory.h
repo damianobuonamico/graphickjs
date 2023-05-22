@@ -26,7 +26,15 @@ namespace Graphick::Render::GPU::Memory {
     }
   };
 
+  enum class AllocationKind {
+    Buffer,
+    Texture,
+    Framebuffer
+  };
+
   struct BufferAllocation {
+    const AllocationKind kind = AllocationKind::Buffer;
+
     std::unique_ptr<Buffer> buffer;
     size_t size;
     std::string tag;
@@ -44,6 +52,8 @@ namespace Graphick::Render::GPU::Memory {
   };
 
   struct TextureAllocation {
+    const AllocationKind kind = AllocationKind::Texture;
+
     std::unique_ptr<Texture> texture;
     TextureDescriptor descriptor;
     std::string tag;
@@ -61,6 +71,8 @@ namespace Graphick::Render::GPU::Memory {
   };
 
   struct FramebufferAllocation {
+    const AllocationKind kind = AllocationKind::Framebuffer;
+
     std::unique_ptr<Framebuffer> framebuffer;
     TextureDescriptor descriptor;
     std::string tag;

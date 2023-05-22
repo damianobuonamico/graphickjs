@@ -47,7 +47,7 @@ namespace Graphick::Render::GPU::Memory {
 
       if (
         !free_texture ||
-        free_texture->allocation.descriptor != free_texture->allocation.descriptor
+        free_texture->allocation.descriptor != descriptor
         ) continue;
 
       UUID id = free_texture->id;
@@ -80,7 +80,7 @@ namespace Graphick::Render::GPU::Memory {
 
       if (
         !free_framebuffer ||
-        free_framebuffer->allocation.descriptor != free_framebuffer->allocation.descriptor
+        free_framebuffer->allocation.descriptor != descriptor
         ) continue;
 
       UUID id = free_framebuffer->id;
@@ -182,6 +182,7 @@ namespace Graphick::Render::GPU::Memory {
 
       if (
         !free_general_buffer ||
+        free_general_buffer->allocation.kind != AllocationKind::Buffer ||
         free_general_buffer->allocation.size != byte_size ||
         std::chrono::duration_cast<std::chrono::milliseconds>(now - free_object.timestamp).count() < REUSE_TIME
         ) continue;
@@ -212,6 +213,7 @@ namespace Graphick::Render::GPU::Memory {
 
       if (
         !free_index_buffer ||
+        free_index_buffer->allocation.kind != AllocationKind::Buffer ||
         free_index_buffer->allocation.size != byte_size ||
         std::chrono::duration_cast<std::chrono::milliseconds>(now - free_object.timestamp).count() < REUSE_TIME
         ) continue;

@@ -10,6 +10,7 @@ namespace Graphick::Render::GPU::GL {
   static constexpr GLint gl_internal_format(TextureFormat format) {
     switch (format) {
     case TextureFormat::R8: return GL_R8;
+    case TextureFormat::R32F: return GL_R32F;
       // case TextureFormat::R16F: return GL_R16F;
     case TextureFormat::RGBA8: return GL_RGBA8;
       // case TextureFormat::RGBA16F: return GL_RGBA16F;
@@ -20,7 +21,8 @@ namespace Graphick::Render::GPU::GL {
 
   static constexpr GLuint gl_format(TextureFormat format) {
     switch (format) {
-    case TextureFormat::R8: return GL_RED;
+    case TextureFormat::R8:
+    case TextureFormat::R32F: return GL_RED;
       // case TextureFormat::R16F: return GL_RED;
     case TextureFormat::RGBA8:
       // case TextureFormat::RGBA16F:
@@ -36,6 +38,7 @@ namespace Graphick::Render::GPU::GL {
       // case TextureFormat::R16F:
       // case TextureFormat::RGBA16F: return GL_HALF_FLOAT;
     default:
+    case TextureFormat::R32F: return GL_FLOAT;
     case TextureFormat::RGBA32F: return GL_FLOAT;
     }
   }

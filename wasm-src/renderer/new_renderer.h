@@ -5,6 +5,8 @@
 
 #include "gpu/shaders.h"
 
+#include "../utils/uuid.h"
+
 // TEMP
 #include "geometry/geometry.h"
 
@@ -32,12 +34,15 @@ namespace Graphick::Render {
     ~Renderer() = default;
 
     void draw_fills();
+    void draw_masks();
+    void draw_tiles();
     void draw_lines();
   private:
     Viewport m_viewport;
     Tiler m_tiler;
     // TEMP
     Temp::Geo m_lines;
+    UUID m_framebuffer_id;
 
     GPU::Programs m_programs;
   private:
