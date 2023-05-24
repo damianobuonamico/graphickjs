@@ -73,6 +73,8 @@ namespace Graphick::Render {
   }
 
   void Renderer::begin_frame(const vec2 position, float zoom) {
+    OPTICK_EVENT();
+
     // vec2 pos = { 0.0f, 0.0f };
     vec2 pos = position;
     float tile_size = TILE_SIZE / zoom;
@@ -85,14 +87,18 @@ namespace Graphick::Render {
   }
 
   void Renderer::end_frame() {
+    OPTICK_EVENT();
+
     get()->draw_fills();
     get()->draw_masks();
     get()->draw_tiles();
-    get()->draw_lines();
+    // get()->draw_lines();
     GPU::Device::end_commands();
   }
 
   void Renderer::draw(const Geometry::Path& path, const vec4& color) {
+    OPTICK_EVENT();
+
     get()->m_tiler.process_path(path, color);
   }
 
@@ -117,6 +123,8 @@ namespace Graphick::Render {
   }
 
   void Renderer::draw_fills() {
+    OPTICK_EVENT();
+
     vec2 position = (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE;
 
     float half_width = -m_viewport.size.x * 0.5f;
@@ -227,6 +235,8 @@ namespace Graphick::Render {
   }
 
   void Renderer::draw_masks() {
+    OPTICK_EVENT();
+
     float size = (float)std::floor((int)std::max(m_viewport.size.x, m_viewport.size.y) / TILE_SIZE) * TILE_SIZE;
 
     float half_width = -size * 0.5f;
@@ -330,6 +340,8 @@ namespace Graphick::Render {
   }
 
   void Renderer::draw_tiles() {
+    OPTICK_EVENT();
+
     vec2 position = (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE;
 
     float half_width = -m_viewport.size.x * 0.5f;
@@ -444,6 +456,8 @@ namespace Graphick::Render {
   }
 
   void Renderer::draw_lines() {
+    OPTICK_EVENT();
+
     float factor = 0.5f / m_viewport.zoom;
 
     float half_width = -m_viewport.size.x * factor;

@@ -6,6 +6,13 @@
 #include <chrono>
 #include <bitset>
 
+#if defined(GK_USE_OPTICK) && !defined(GK_CONF_DIST)
+#include <optick.h>
+#else
+#define OPTICK_EVENT(...)
+#define OPTICK_FRAME(...)
+#endif
+
 struct console {
   template <typename T>
   static inline void log(T value) {

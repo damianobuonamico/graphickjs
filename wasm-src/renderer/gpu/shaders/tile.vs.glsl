@@ -23,12 +23,12 @@ R"(
     vec4 transformed_position = uViewProjection * vec4(floor(position.x + float(int(aPosition.x) * uTileSize)), floor(position.y + float(int(aPosition.y) * uTileSize)), 0.0, 1.0);
     gl_Position = vec4(transformed_position.xy, 0.0, 1.0);
     
-    // vColor = aColor - vec4(float(aPosition.x) * 0.2, float(aPosition.y) * 0.2, 0.0, 0.0);
 
     // ivec2 textiles = ivec2(ceil(float(uFramebufferSize.x) / float(uTileSize)), ceil(float(uFramebufferSize.y) / float(uTileSize)));
     // vec2 texcoords = vec2(float((aMaskIndex % textiles.x) * uTileSize), float((aMaskIndex / textiles.x) * uTileSize));
     // vec2 texcoords = vec2(0.0 + float(aMaskIndex) * 0.00000000000000000001, 0.0);
     vColor = aColor;
+    // vColor = aColor - vec4(float(aPosition.x) * 0.2, float(aPosition.y) * 0.2, 0.0, 0.0);
 
     int tex_tiles = max(uFramebufferSize.x, uFramebufferSize.y) / uTileSize;
     // ivec2 tex_tiles = ivec2(floor(float(uFramebufferSize.x) / float(uTileSize)), floor(float(uFramebufferSize.y) / float(uTileSize)));

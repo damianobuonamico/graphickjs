@@ -66,6 +66,8 @@ void Scene::load_body(const JSON& body) {
 }
 
 void Scene::render() const {
+  OPTICK_EVENT();
+
   float zoom = viewport.zoom();
   RenderingOptions options = { zoom, std::acosf(2.0f * std::pow(1.0f - Settings::tessellation_error / std::fmaxf(zoom, 0.26f), 2.0f) - 1.0f), viewport.visible() };
 

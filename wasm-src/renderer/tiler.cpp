@@ -43,6 +43,13 @@ namespace Graphick::Render {
 
 #if 1
 
+  struct Range {
+    uint8_t min;
+    uint8_t max;
+  };
+
+  using RangeLayer = std::vector<Range>;
+
   void Tiler::process_path(const Geometry::Path& path, const vec4& color) {
     Box box = path.bounding_box();
     // TODO: maybe can optimize this check
@@ -66,38 +73,40 @@ namespace Graphick::Render {
       process_linear_segment(path.segments()[i], box.min, bounds_size, i, path_tiler);
     }
 
-    const auto& tiles = path_tiler.tiles();
+    auto& tiles = path_tiler.tiles();
 
-    for (int i = 0; i < tiles.size(); i++) {
-      ivec2 coords = ivec2{ i % bounds_size.x + 1, i / bounds_size.x + 1 } + min_coords;
-      if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
+    // for (int i = 0; i < tiles.size(); i++) {
+    //   ivec2 coords = ivec2{ i % bounds_size.x + 1, i / bounds_size.x + 1 } + min_coords;
+    //   if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
 
-      int index = tile_index(coords, m_tiles_count);
+    //   int index = tile_index(coords, m_tiles_count);
 
-      // if (tiles[i].color != vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {
-      if (tiles[i].backdrop > 0) {
-        m_opaque_tiles.push_back({ vec4{ 0.3f * tiles[i].backdrop, 0.2f, 0.2f, 1.0f }, index });
-        // }
-        // else if (tiles[i].backdrop == 1) {
-        //   m_opaque_tiles.push_back({ vec4{ 0.2f, 0.7f, 0.2f, 1.0f }, index });
-        // } else {
-        //   // m_opaque_tiles.push_back({ tiles[i].color, index });
-        // }
-      } else if (tiles[i].color == vec4{ 0.2f, 0.2f, 0.7f, 1.0f}) {
-        m_opaque_tiles.push_back({ tiles[i].color, index });
-      }
-      // else if (tiles[i].backdrop == 0) {
-      //   m_opaque_tiles.push_back({ tiles[i].color, index });
-      // }
-    }
+    //   // if (tiles[i].color != vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {
+    //   if (tiles[i].backdrop > 0) {
+    //     // m_opaque_tiles.push_back({ vec4{ 0.3f * tiles[i].backdrop, 0.2f, 0.2f, 1.0f }, index });
+    //     // }
+    //     // else if (tiles[i].backdrop == 1) {
+    //     //   m_opaque_tiles.push_back({ vec4{ 0.2f, 0.7f, 0.2f, 1.0f }, index });
+    //     // } else {
+    //     //   // m_opaque_tiles.push_back({ tiles[i].color, index });
+    //     // }
+    //   } else if (tiles[i].color == vec4{ 0.2f, 0.2f, 0.7f, 1.0f}) {
+    //     // m_opaque_tiles.push_back({ tiles[i].color, index });
+    //   }
+    //   // else if (tiles[i].backdrop == 0) {
+    //   //   m_opaque_tiles.push_back({ tiles[i].color, index });
+    //   // }
+    // }
 
+    // TODO: Move into path tiler
     for (int y = 0; y < bounds_size.y; y++) {
       int backdrop = 0;
+      int intersections = 0;
 
       for (int x = bounds_size.x - 1; x >= 0; x--) {
         int i = y * bounds_size.x + x;
 
-        if (backdrop % 2 != 0 && tiles[i].color == vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {
+        if (backdrop % 2 != 0 && !tiles[i].has_mask) {
           ivec2 coords = ivec2{ i % bounds_size.x + 1, i / bounds_size.x + 1 } + min_coords;
           if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
           int index = tile_index(coords, m_tiles_count);
@@ -105,8 +114,62 @@ namespace Graphick::Render {
           m_opaque_tiles.push_back({ color, index });
         }
 
+        intersections += tiles[i].bottom_intersections;
         backdrop += tiles[i].backdrop;
+
+        if (intersections % 2 != 0) {
+          tiles[i].intersections.push_back((uint8_t)255);
+        }
+
+        if (tiles[i].has_mask && !tiles[i].intersections.empty()) {
+          std::vector<bool> coverage(256, false);
+
+          for (auto y : tiles[i].intersections) {
+            for (int j = 0; j <= y; j++) {
+              coverage[j] = coverage[j] != true;
+            }
+          }
+
+          bool last = false;
+          for (int j = 0; j < coverage.size(); j++) {
+            if (!coverage[j]) continue;
+
+            int min_y = j;
+            while (j < coverage.size() && coverage[j] == true) j++;
+            path_tiler.add_vertical_fill(min_y, j - 1, { x, y });
+          }
+          // RangeLayer result = { { { 0, tiles[i].intersections[0] } } };
+
+          // for (int j = 1; j < tiles[i].intersections.size(); i++) {
+          //   // uint8_t y = tiles[i].intersections[j];
+          //   Range temp = { 0, tiles[i].intersections[j] };
+
+          //   for (auto range : result) {
+          //     if (temp.max > range.min) {
+          //       if (temp.min < range.min) {
+          //         range.min = min()
+          //       }
+          //     } else {
+          //       // add directly
+          //     }
+          //   }
+          // }
+        }
       }
+    }
+
+    int next_mask_index = m_masks.size();
+    int next_index = m_tiles.size();
+
+    for (auto& mask : path_tiler.masks()) {
+      m_masks.push_back({ mask.line_segment, mask.index + next_index });
+    }
+
+    for (auto& fill : path_tiler.fills()) {
+      ivec2 coords = ivec2{ fill.index % bounds_size.x + 1, fill.index / bounds_size.x + 1 } + min_coords;
+      if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
+      int index = tile_index(coords, m_tiles_count);
+      m_tiles.push_back({ color, index, fill.mask_index + next_index });
     }
 
     // for (int x = 0; x < bounds_size.x; x++) {
@@ -146,9 +209,9 @@ namespace Graphick::Render {
 
     // bool is_horizontal = from_coords.y == to_coords.y;
 
-    // if (is_almost_equal(p3.y, (float)(to_coords.y * TILE_SIZE))) {
-    //   to_coords.y--;
-    // }
+    if (is_almost_equal(p3.y, (float)(to_coords.y * TILE_SIZE))) {
+      to_coords.y--;
+    }
 
     vec2 vector = p3 - p0;
     vec2 step = { vector.x < 0 ? -1.0f : 1.0f, vector.y < 0 ? -1.0f : 1.0f };
@@ -164,9 +227,9 @@ namespace Graphick::Render {
     StepDirection last_step_direction = StepDirection::None;
 
     // TODO: Check if it starts at the top boundary
-    // if (is_almost_equal(p0.y, (float)(from_coords.y * TILE_SIZE))) {
-    //   last_step_direction = StepDirection::Y;
-    // }
+    if (is_almost_equal(p0.y, (float)(from_coords.y * TILE_SIZE)) && p0.y >= (float)(from_coords.y * TILE_SIZE)) {
+      last_step_direction = StepDirection::Y;
+    }
 
     while (true) {
       StepDirection next_step_direction;
@@ -177,7 +240,7 @@ namespace Graphick::Render {
         next_step_direction = StepDirection::Y;
       } else {
         // Line's destinetion is exactly on the tile's corner
-        next_step_direction = step.x > 0 ? StepDirection::X : StepDirection::Y;
+        next_step_direction = step.y > 0 ? StepDirection::Y : StepDirection::X;
       }
 
       float next_t = std::min(1.0f, next_step_direction == StepDirection::X ? t_max.x : t_max.y);
@@ -191,18 +254,43 @@ namespace Graphick::Render {
       Box clipped_line_segment = { current_position, next_position };
       path_tiler.add_fill(clipped_line_segment, coords);
 
-      // if (!is_horizontal) {
-        // Add extra fills if necessary
-      if (step.y < 0 && next_step_direction == StepDirection::Y) {
-        // Leaves through top boundary.
-        Box auxiliary_segment = { clipped_line_segment.max, vec2{ (float)(coords.x * TILE_SIZE), (float)(coords.y * TILE_SIZE) } };
-        path_tiler.add_fill(auxiliary_segment, coords);
-      } else if (step.y > 0 && last_step_direction == StepDirection::Y) {
-        // Enters through top boundary.
-        Box auxiliary_segment = { vec2{ (float)(coords.x * TILE_SIZE), (float)(coords.y * TILE_SIZE) }, clipped_line_segment.min };
-        path_tiler.add_fill(auxiliary_segment, coords);
+      if (step.x < 0 && next_step_direction == StepDirection::X) {
+        // if (step.x < 0 && next_step_direction == StepDirection::X) {
+          // Leaves through left boundary.
+          // Box auxiliary_segment = { clipped_line_segment.max, vec2{ (float)(coords.x * TILE_SIZE), (float)(coords.y * TILE_SIZE) } };
+
+        // Box auxiliary_segment = { clipped_line_segment.max, vec2{ clipped_line_segment.max.x, (float)((coords.y + 1) * TILE_SIZE) } };
+        // path_tiler.add_fill(auxiliary_segment, coords);
+
+        // Box auxiliary_segment = { vec2{ clipped_line_segment.max.x, (float)(coords.y * TILE_SIZE) }, clipped_line_segment.max };
+        path_tiler.intersection(std::ceil(clipped_line_segment.max.y), coords);
+        // path_tiler.add_fill(auxiliary_segment, coords);
+      } else if (step.x > 0 && last_step_direction == StepDirection::X) {
+        // Enters through left boundary.
+        // console::log("enters through left boundary");
+        // Box auxiliary_segment = { vec2{ (float)(coords.x * TILE_SIZE), (float)(coords.y * TILE_SIZE) }, clipped_line_segment.min };
+        // Box auxiliary_segment = { vec2{ (float)(coords.x * TILE_SIZE), (float)(coords.y * TILE_SIZE + TILE_SIZE) }, vec2{ (float)(coords.x * TILE_SIZE + TILE_SIZE), (float)(coords.y * TILE_SIZE) } };
+        // Box auxiliary_segment = { vec2{ clipped_line_segment.min.x, (float)(coords.y * TILE_SIZE) }, clipped_line_segment.min };
+
+        // Box auxiliary_segment = { vec2{ clipped_line_segment.min.x, std::max(clipped_line_segment.min.y, clipped_line_segment.max.y) }, { clipped_line_segment.min.x, (float)(coords.y * TILE_SIZE) } };
+        // path_tiler.add_fill(auxiliary_segment, coords);
+
+        // Box auxiliary_segment = { vec2{ clipped_line_segment.min.x, (float)(coords.y * TILE_SIZE) }, clipped_line_segment.min };
+        // path_tiler.add_fill(auxiliary_segment, coords);
+        path_tiler.intersection(std::ceil(clipped_line_segment.min.y), coords);
       }
-      // }
+      if (step.y > 0 && next_step_direction == StepDirection::Y) {
+        // Leaves through bottom boundary.
+        // Box auxiliary_segment = { clipped_line_segment.max, vec2{ (float)(coords.x * TILE_SIZE), (float)(coords.y * TILE_SIZE) } };
+        // path_tiler.add_fill(auxiliary_segment, coords);
+        path_tiler.bottom_intersection(coords);
+      } else if (step.y < 0 && last_step_direction == StepDirection::Y) {
+        // Enters through bottom boundary.
+        path_tiler.bottom_intersection(coords);
+        // Box auxiliary_segment = { vec2{ (float)(coords.x * TILE_SIZE), (float)(coords.y * TILE_SIZE) }, clipped_line_segment.min };
+        // path_tiler.add_fill(auxiliary_segment, coords);
+      }
+
 
       // // Adjust backdrop if necessary.
       // if (step.x < 0 && last_step_direction == StepDirection::X) {
@@ -271,14 +359,97 @@ namespace Graphick::Render {
   Tiler::PathTiler::PathTiler(ivec2 path_bounds_size, ivec2 path_bounds_offset) :
     m_path_bounds_size(path_bounds_size),
     m_path_bounds_offset(path_bounds_offset),
-    m_tiles(path_bounds_size.x* path_bounds_size.y) {}
+    m_tiles(path_bounds_size.x* path_bounds_size.y),
+    m_mask_tiles(path_bounds_size.x* path_bounds_size.y, -1) {}
 
   void Tiler::PathTiler::add_fill(const Box& segment, const ivec2 coords) {
     if (coords.x < 0 || coords.x >= m_path_bounds_size.x || coords.y < 0 || coords.y >= m_path_bounds_size.y) return;
 
+    vec2 tile_upper_left = vec2{ (float)coords.x, (float)coords.y } *(float)TILE_SIZE;
+
+    Box line = { (segment.min - tile_upper_left) / TILE_SIZE, (segment.max - tile_upper_left) / TILE_SIZE };
+    float min = 0.0f, max = 255.0f;
+    // Box line = { (segment.min - tile_upper_left) * 256.0f, (segment.max - tile_upper_left) * 256.0f };
+    // vec2 min = { 0.0f, 0.0f }, max = { TILE_SIZE * 256.0f - 1.0f, TILE_SIZE * 256.0f - 1.0f };
+    Line clipped_line = {
+      (uint8_t)std::round(std::clamp(line.min.x * 255.0f, min, max)),
+      (uint8_t)std::round(std::clamp(line.min.y * 255.0f, min, max)),
+      (uint8_t)std::round(std::clamp(line.max.x * 255.0f, min, max)),
+      (uint8_t)std::round(std::clamp(line.max.y * 255.0f, min, max)),
+    };
+
+    // Line clipped_line = {
+    //   (uint8_t)255,
+    //   (uint8_t)255,
+    //   (uint8_t)0,
+    //   (uint8_t)0,
+    // };
+
+    if (clipped_line.y1 == clipped_line.y2) return;
+
+    int index = get_mask_tile_index(coords);
+    if (index < 0) return;
+
+    m_masks.push_back({ clipped_line, index });
+    // int index = tile_index(coords, m_path_bounds_size);
+
+
+    // m_tiles[index].color = { 0.2f, 0.2f, 0.7f, 1.0f };
+  }
+
+  void Tiler::PathTiler::add_vertical_fill(uint8_t min, uint8_t max, ivec2 coords) {
+    if (coords.x < 0 || coords.x >= m_path_bounds_size.x || coords.y < 0 || coords.y >= m_path_bounds_size.y) return;
+
+    vec2 tile_upper_left = vec2{ (float)coords.x, (float)coords.y } *(float)TILE_SIZE;
+
+    // Box line = { (segment.min - tile_upper_left) * 256.0f, (segment.max - tile_upper_left) * 256.0f };
+    // vec2 min = { 0.0f, 0.0f }, max = { TILE_SIZE * 256.0f - 1.0f, TILE_SIZE * 256.0f - 1.0f };
+    Line clipped_line = {
+      0,
+      min,
+      0,
+      max,
+    };
+
+    if (clipped_line.y1 == clipped_line.y2) return;
+
+    int index = get_mask_tile_index(coords);
+    if (index < 0) return;
+
+    m_masks.push_back({ clipped_line, index });
+  }
+
+  int Tiler::PathTiler::get_mask_tile_index(ivec2 coords) {
+    int index = tile_index(coords, m_path_bounds_size);
+    if (index < 0 || index >= m_mask_tiles.size()) return -1;
+
+    int mask_index = m_mask_tiles[index];
+
+    if (mask_index < 0) {
+      mask_index = m_fills.size();
+      m_fills.push_back({ index, mask_index });
+      m_tiles[index].has_mask = true;
+      m_mask_tiles[index] = mask_index;
+    }
+
+    return mask_index;
+  }
+
+  void Tiler::PathTiler::intersection(float y, ivec2 coords) {
+    if (coords.x < 0 || coords.x >= m_path_bounds_size.x || coords.y < 0 || coords.y >= m_path_bounds_size.y) return;
+
+    uint8_t y_intersection = (uint8_t)std::clamp(std::round((y / TILE_SIZE - coords.y) * 255.0f), 0.0f, 255.0f);
+    if (y_intersection == 0) return;
+
     int index = tile_index(coords, m_path_bounds_size);
 
-    m_tiles[index].color = { 0.2f, 0.2f, 0.7f, 1.0f };
+    m_tiles[index].intersections.push_back(y_intersection);
+  }
+
+  void Tiler::PathTiler::bottom_intersection(ivec2 coords) {
+    if (coords.x < 0 || coords.x >= m_path_bounds_size.x || coords.y < 0 || coords.y >= m_path_bounds_size.y) return;
+    int index = tile_index(coords, m_path_bounds_size);
+    m_tiles[index].bottom_intersections++;
   }
 
   void Tiler::PathTiler::adjust_backdrop(const ivec2 coords, int8_t delta) {

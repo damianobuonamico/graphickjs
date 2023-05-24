@@ -207,8 +207,11 @@ namespace Graphick::Render::GPU::GL {
   }
 
   std::unique_ptr<GLBuffer> GLDevice::create_buffer(const BufferUploadMode mode) const {
+    OPTICK_EVENT();
+
     std::unique_ptr<GLBuffer> buffer = std::make_unique<GLBuffer>(0, mode);
     glCall(glGenBuffers(1, &buffer->gl_buffer));
+
     return buffer;
   }
 
@@ -371,12 +374,16 @@ namespace Graphick::Render::GPU::GL {
   }
 
   void GLDevice::draw_elements_instanced(const uint32_t index_count, const uint32_t instance_count, const GLRenderState& render_state) const {
+    OPTICK_EVENT();
+
     set_render_state(render_state);
     glCall(glDrawElementsInstanced(gl_primitive(render_state.primitive), (GLsizei)index_count, GL_UNSIGNED_INT, nullptr, (GLsizei)instance_count));
     reset_render_state(render_state);
   }
 
   void GLDevice::set_render_state(const GLRenderState& render_state) const {
+    OPTICK_EVENT();
+
     bind_render_target(render_state.target);
 
     vec2 origin = render_state.viewport.min;
@@ -404,6 +411,8 @@ namespace Graphick::Render::GPU::GL {
   }
 
   void GLDevice::reset_render_state(const GLRenderState& render_state) const {
+    OPTICK_EVENT();
+
     reset_render_options(render_state.options);
 
     for (auto& [storage_buffer, _] : render_state.storage_buffers) {
@@ -628,6 +637,8 @@ namespace Graphick::Render::GPU::GL {
   }
 
   void GLDevice::allocate_buffer_internal(const GLBuffer& buffer, const void* data, const size_t size, const BufferTarget target) const {
+    OPTICK_EVENT();
+
     GLenum buffer_target = gl_target(target);
     GLenum buffer_usage = gl_usage(buffer.mode);
 
@@ -636,6 +647,8 @@ namespace Graphick::Render::GPU::GL {
   }
 
   void GLDevice::upload_to_buffer_internal(const GLBuffer& buffer, size_t position, const void* data, const size_t size, const BufferTarget target) const {
+    OPTICK_EVENT();
+
     GLenum buffer_target = gl_target(target);
 
     glCall(glBindBuffer(buffer_target, buffer.gl_buffer));

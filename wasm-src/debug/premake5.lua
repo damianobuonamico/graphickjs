@@ -16,12 +16,14 @@ workspace "debug"
   IncludeDir["imgui"] = "graphick-debug/lib/imgui"
   IncludeDir["freetype2"] = "graphick-debug/lib/freetype2/include"
   IncludeDir["harfbuzz"] = "graphick-debug/lib/harfbuzz/src"
+  IncludeDir["optick"] = "graphick-debug/lib/optick/src"
   
   include "graphick-debug/lib/glfw"
   include "graphick-debug/lib/glad"
   include "graphick-debug/lib/imgui"
   include "graphick-debug/lib/freetype2"
   include "graphick-debug/lib/harfbuzz"
+  include "graphick-debug/lib/optick"
   
   project "graphick-debug"
   kind "ConsoleApp"
@@ -67,6 +69,7 @@ workspace "debug"
     "%{IncludeDir.imgui}",
     "%{IncludeDir.freetype2}",
     "%{IncludeDir.harfbuzz}",
+    "%{IncludeDir.optick}",
     "../../",
   }
 
@@ -76,6 +79,7 @@ workspace "debug"
     "imgui",
     "freetype2",
     "harfbuzz",
+    "optick",
     "opengl32.lib"
   }
 
@@ -96,12 +100,12 @@ workspace "debug"
     }
 
   filter "configurations:Debug"
-    defines { "GK_CONF_DEBUG" }
+    defines { "GK_CONF_DEBUG", "GK_USE_OPTICK" }
     runtime "Debug"
     symbols "On"
 
   filter "configurations:Release"
-    defines { "GK_CONF_RELEASE" }
+    defines { "GK_CONF_RELEASE", "GK_USE_OPTICK" }
     runtime "Release"
     optimize "On"
     symbols "On"

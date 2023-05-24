@@ -126,6 +126,8 @@ namespace Graphick::Render::GPU::Memory {
   }
 
   void Allocator::free_general_buffer(UUID id) {
+    OPTICK_EVENT();
+
     auto it = get()->m_general_buffers_in_use.find(id);
     if (it == get()->m_general_buffers_in_use.end()) return;
 
@@ -137,6 +139,8 @@ namespace Graphick::Render::GPU::Memory {
   }
 
   void Allocator::free_index_buffer(UUID id) {
+    OPTICK_EVENT();
+
     auto it = get()->m_index_buffers_in_use.find(id);
     if (it == get()->m_index_buffers_in_use.end()) return;
 
@@ -148,6 +152,8 @@ namespace Graphick::Render::GPU::Memory {
   }
 
   void Allocator::free_texture(UUID id) {
+    OPTICK_EVENT();
+
     auto it = get()->m_textures_in_use.find(id);
     if (it == get()->m_textures_in_use.end()) return;
 
@@ -159,6 +165,8 @@ namespace Graphick::Render::GPU::Memory {
   }
 
   void Allocator::free_framebuffer(UUID id) {
+    OPTICK_EVENT();
+
     auto it = get()->m_framebuffers_in_use.find(id);
     if (it == get()->m_framebuffers_in_use.end()) return;
 
@@ -170,6 +178,8 @@ namespace Graphick::Render::GPU::Memory {
   }
 
   std::optional<UUID> Allocator::allocate_general_buffer_byte_size(size_t byte_size, const std::string& tag) {
+    OPTICK_EVENT();
+
     if (byte_size < MAX_BUFFER_SIZE_CLASS) {
       byte_size = next_power_of_two(byte_size);
     }

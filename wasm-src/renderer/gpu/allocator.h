@@ -129,6 +129,8 @@ namespace Graphick::Render::GPU::Memory {
 
     template <typename T>
     UUID allocate_general_buffer_internal(const size_t size, const std::string& tag) {
+      OPTICK_EVENT();
+
       size_t byte_size = size * sizeof(T);
       std::optional<UUID> allocated_id = allocate_general_buffer_byte_size(byte_size, tag);
       if (allocated_id.has_value()) return allocated_id.value();
@@ -146,6 +148,8 @@ namespace Graphick::Render::GPU::Memory {
 
     template <typename T>
     UUID allocate_index_buffer_internal(const size_t size, const std::string& tag) {
+      OPTICK_EVENT();
+
       size_t byte_size = size * sizeof(T);
       std::optional<UUID> allocated_id = allocate_index_buffer_byte_size(byte_size, tag);
       if (allocated_id.has_value()) return allocated_id.value();

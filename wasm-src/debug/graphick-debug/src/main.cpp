@@ -9,6 +9,7 @@
 #include "wasm-src/editor/settings.h"
 #include "wasm-src/editor/input/input_manager.h"
 #include "wasm-src/io/svg/svg.h"
+#include "wasm-src/utils/console.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -85,13 +86,14 @@ int main() {
     return -1;
   }
 
-  int width = 1300;
-  int height = 810;
+  int width = 800;
+  int height = 1000;
   int samples = 1;
 
   // glfwWindowHint(GLFW_SAMPLES, samples);
 
   window = glfwCreateWindow(width, height, "Hello World", nullptr, nullptr);
+  glfwSetWindowPos(window, 0, 30);
 
   if (!window) {
     printf("Failed to create window\n");
@@ -166,11 +168,11 @@ int main() {
     delete[] buffer;
   }
 
-  // std::ifstream ifs("res\\Asset 3.svg");
-  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  std::ifstream ifs("res\\Asset 3.svg");
+  // std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
-  Graphick::SVG::parse_svg(content);
+  // Graphick::SVG::parse_svg(content);
 
   Graphick::Render::Geometry::Path path{};
 
@@ -181,20 +183,26 @@ int main() {
   // path.move_to({ 300.0f, 200.0f });
   // path.line_to({ 100.0f, 0.0f });
 
-  path.move_to({ 700.0f, 150.0f });
-  path.line_to({ 119.46f, 230.53f });
+  path.move_to({ 0.0f, -550.0f });
   path.line_to({ 1035.3f, 212.0f });
-  path.line_to({ 0.0f, -550.0f });
+  path.line_to({ 119.46f, 230.53f });
+  path.line_to({ 700.0f, 150.0f });
 
   // path.move_to({ 160.0f, 160.0f });
   // path.line_to({ 320.0f, 320.0f });
   // path.line_to({ 160.0f, 384.0f });
 
+  // path.move_to({ 160.0f, 160.0f });
+  // path.line_to({ 320.0f, 176.0f });
+  // path.line_to({ 310.0f, 190.0f });
+
   path.close();
 
-  // Editor::scene().add_entity(std::make_shared<Graphick::Entities::NewElementEntity>(path));
+  Editor::scene().add_entity(std::make_shared<Graphick::Entities::NewElementEntity>(path));
 
   while (!glfwWindowShouldClose(window)) {
+    OPTICK_FRAME("MainThread");
+
     glfwPollEvents();
 
     // Start the Dear ImGui frame
