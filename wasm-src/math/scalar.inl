@@ -21,10 +21,6 @@ inline float clamp(float t, float min, float max) {
   return t;
 }
 
-inline float sign(float t) {
-  return (float)((t > 0) - (t < 0));
-}
-
 inline float lerp(float a, float b, float t) {
   return a + (b - a) * t;
 }

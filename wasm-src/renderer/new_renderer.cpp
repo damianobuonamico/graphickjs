@@ -64,12 +64,12 @@ namespace Graphick::Render {
 
     int tiles = std::max(size.x, size.y) / TILE_SIZE;
 
-    GPU::Memory::Allocator::free_framebuffer(get()->m_framebuffer_id);
-    get()->m_framebuffer_id = GPU::Memory::Allocator::allocate_framebuffer(
-      { tiles * (int)TILE_SIZE, tiles * (int)TILE_SIZE },
-      GPU::TextureFormat::R32F,
-      "MaskFramebuffer"
-    );
+    // GPU::Memory::Allocator::free_framebuffer(get()->m_framebuffer_id);
+    // get()->m_framebuffer_id = GPU::Memory::Allocator::allocate_framebuffer(
+    //   { tiles * (int)TILE_SIZE, tiles * (int)TILE_SIZE },
+    //   GPU::TextureFormat::R32F,
+    //   "MaskFramebuffer"
+    // );
   }
 
   void Renderer::begin_frame(const vec2 position, float zoom) {
@@ -89,8 +89,8 @@ namespace Graphick::Render {
   void Renderer::end_frame() {
     OPTICK_EVENT();
 
-    get()->draw_fills();
-    get()->draw_masks();
+    // get()->draw_fills();
+    // get()->draw_masks();
     get()->draw_tiles();
     // get()->draw_lines();
     GPU::Device::end_commands();
@@ -115,12 +115,14 @@ namespace Graphick::Render {
   }
 
   Renderer::Renderer() {
-    m_framebuffer_id = GPU::Memory::Allocator::allocate_framebuffer(
-      { 0, 0 },
-      GPU::TextureFormat::R32F,
-      "MaskFramebuffer"
-    );
+    // m_framebuffer_id = GPU::Memory::Allocator::allocate_framebuffer(
+    //   { 0, 0 },
+    //   GPU::TextureFormat::R32F,
+    //   "MaskFramebuffer"
+    // );
   }
+
+#undef OLD_TILER
 
   void Renderer::draw_fills() {
     OPTICK_EVENT();
@@ -150,6 +152,8 @@ namespace Graphick::Render {
     };
 
     mat4 mvp = projection * translation;
+
+#ifdef OLD_TILER
 
     const std::vector<Fill>& opaque_tiles = m_tiler.opaque_tiles();
 
@@ -232,6 +236,8 @@ namespace Graphick::Render {
     GPU::Memory::Allocator::free_general_buffer(quad_vertex_positions_buffer_id);
     GPU::Memory::Allocator::free_index_buffer(quad_vertex_indices_buffer_id);
     GPU::Memory::Allocator::free_general_buffer(fill_vertex_buffer_id);
+
+#endif
   }
 
   void Renderer::draw_masks() {
@@ -262,6 +268,8 @@ namespace Graphick::Render {
     };
 
     mat4 mvp = projection * translation;
+
+#ifdef OLD_TILER
 
     const std::vector<Mask>& masks = m_tiler.masks();
     console::log("masks", masks.size());
@@ -337,6 +345,8 @@ namespace Graphick::Render {
     GPU::Memory::Allocator::free_general_buffer(quad_vertex_positions_buffer_id);
     GPU::Memory::Allocator::free_index_buffer(quad_vertex_indices_buffer_id);
     GPU::Memory::Allocator::free_general_buffer(mask_vertex_buffer_id);
+
+#endif
   }
 
   void Renderer::draw_tiles() {
@@ -366,7 +376,7 @@ namespace Graphick::Render {
       0.0f, 0.0f, 0.0f, 1.0f
     };
 
-    mat4 mvp = projection * translation;
+    // mat4 mvp = projection * translation;
 
     const std::vector<Tile>& opaque_tiles = m_tiler.tiles();
 
@@ -408,7 +418,16 @@ namespace Graphick::Render {
       quad_vertex_indices_buffer
     );
 
-    const GPU::Texture& mask_texture = *GPU::Memory::Allocator::get_framebuffer(m_framebuffer_id).texture;
+    // const GPU::Texture& mask_texture = *GPU::Memory::Allocator::get_framebuffer(m_framebuffer_id).texture;
+    UUID segments_texture_id = GPU::Memory::Allocator::allocate_texture(
+      { SEGMENTS_TEXTURE_SIZE, SEGMENTS_TEXTURE_SIZE },
+      GPU::TextureFormat::R8,
+      "Segments"
+    );
+    const GPU::Texture& segments_texture = GPU::Memory::Allocator::get_texture(segments_texture_id);
+    // GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, m_tiler.segments().data());
+    GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, m_tiler.masks_texture_data());
+
 
     GPU::RenderState state = {
       nullptr,
@@ -416,11 +435,14 @@ namespace Graphick::Render {
       *tile_vertex_array.vertex_array,
       GPU::Primitive::Triangles,
       {
-        { { m_programs.tile_program.mask_texture_uniform, mask_texture.gl_texture }, mask_texture }
+        { { m_programs.tile_program.segments_texture_uniform, segments_texture.gl_texture }, segments_texture }
+        // { { m_programs.tile_program.mask_texture_uniform, mask_texture.gl_texture }, mask_texture }
       },
       {},
       {
-        { m_programs.tile_program.view_projection_uniform, mvp },
+        // { m_programs.tile_program.view_projection_uniform, mvp },
+        { m_programs.tile_program.view_uniform, translation },
+        { m_programs.tile_program.projection_uniform, projection },
         { m_programs.tile_program.tile_size_uniform, (int)TILE_SIZE },
         { m_programs.tile_program.framebuffer_size_uniform, m_viewport.size },
       },
@@ -440,7 +462,7 @@ namespace Graphick::Render {
         std::nullopt,
         std::nullopt,
         {
-          std::nullopt,
+          vec4{ 1.0f, 1.0f, 1.0f, 1.0f},
           std::nullopt,
           std::nullopt
         },
@@ -453,6 +475,7 @@ namespace Graphick::Render {
     GPU::Memory::Allocator::free_general_buffer(quad_vertex_positions_buffer_id);
     GPU::Memory::Allocator::free_index_buffer(quad_vertex_indices_buffer_id);
     GPU::Memory::Allocator::free_general_buffer(tile_vertex_buffer_id);
+    GPU::Memory::Allocator::free_texture(segments_texture_id);
   }
 
   void Renderer::draw_lines() {

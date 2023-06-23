@@ -24,10 +24,13 @@ namespace Graphick::Render::GPU {
 
   struct TileProgram {
     Program program;
-    Uniform view_projection_uniform;
+    // Uniform view_projection_uniform;
+    Uniform view_uniform;
+    Uniform projection_uniform;
     Uniform framebuffer_size_uniform;
     Uniform tile_size_uniform;
-    Uniform mask_texture_uniform;
+    Uniform segments_texture_uniform;
+    // Uniform mask_texture_uniform;
 
     TileProgram();
   };

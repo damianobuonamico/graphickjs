@@ -10,7 +10,6 @@
 float round(float t, float decimals) noexcept;
 float map(float t, float old_min, float old_max, float new_min, float new_max);
 float clamp(float t, float min, float max);
-float sign(float t);
 float lerp(float a, float b, float t);
 
 bool is_almost_zero(const double t, const float eps);
@@ -22,5 +21,10 @@ float degrees_to_radians(float a);
 float radians_to_degrees(float a);
 
 size_t next_power_of_two(size_t n);
+
+template <typename T>
+inline T sign(T val) {
+  return (T(0) < val) - (val < T(0));
+}
 
 #include "scalar.inl"

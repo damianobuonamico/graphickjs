@@ -47,6 +47,7 @@ namespace Graphick::Render::GPU::Memory {
 
       if (
         !free_texture ||
+        free_texture->allocation.kind != AllocationKind::Texture ||
         free_texture->allocation.descriptor != descriptor
         ) continue;
 

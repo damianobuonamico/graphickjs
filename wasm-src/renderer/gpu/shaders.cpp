@@ -16,10 +16,13 @@ namespace Graphick::Render::GPU {
 
   TileProgram::TileProgram() :
     program(Device::create_program("tile")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    // view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    view_uniform(Device::get_uniform(program, "uViewMatrix").value()),
+    projection_uniform(Device::get_uniform(program, "uProjectionMatrix").value()),
     framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
     tile_size_uniform(Device::get_uniform(program, "uTileSize").value()),
-    mask_texture_uniform(Device::get_uniform(program, "uMaskTexture").value()) {}
+    // mask_texture_uniform(Device::get_uniform(program, "uMaskTexture").value()) {}
+    segments_texture_uniform(Device::get_uniform(program, "uSegmentsTexture").value()) {}
 
   LineProgram::LineProgram() :
     program(Device::create_program("line")),

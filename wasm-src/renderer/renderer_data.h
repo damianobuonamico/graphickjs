@@ -2,6 +2,8 @@
 
 #include "gpu/gpu_data.h"
 
+#define SEGMENTS_TEXTURE_SIZE 2048
+
 namespace Graphick::Render {
 
   struct Viewport {

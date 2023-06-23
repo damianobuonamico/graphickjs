@@ -5,9 +5,74 @@
 
 #include <vector>
 
-#define TILE_SIZE 32u
+#define TILE_SIZE 16
+#define TILE_OVERLAP 2u
+#define TILE_SIZE_OVERLAP (TILE_SIZE + TILE_OVERLAP)
 
 namespace Graphick::Render {
+
+  class PathTiler {
+  public:
+    struct TileData {
+      std::vector<Line> segments;
+      uint16_t bottom_intersections = 0;
+    };
+    struct Increment {
+      int16_t x;
+      int16_t y;
+      float area;
+      float height;
+    };
+    struct TileIncrement {
+      int16_t tile_x;
+      int16_t tile_y;
+      int8_t sign;
+    };
+    struct TileMask {
+      int16_t tile_x;
+      int16_t tile_y;
+      uint8_t data[TILE_SIZE * TILE_SIZE];
+
+      TileMask::TileMask(int16_t tile_x, int16_t tile_y, uint8_t* data) : tile_x(tile_x), tile_y(tile_y) {
+        memcpy(this->data, data, TILE_SIZE * TILE_SIZE);
+      }
+    };
+    struct Span {
+      int16_t tile_x;
+      int16_t tile_y;
+      int16_t width;
+    };
+  public:
+    PathTiler(const PathTiler&) = default;
+    PathTiler(PathTiler&&) = default;
+
+    PathTiler(const Geometry::Path& path, const vec4& color, const Box& visible, float zoom, ivec2 position);
+    ~PathTiler() = default;
+
+    inline const std::vector<TileMask>& masks() { return m_masks; }
+    inline const std::vector<Span>& spans() { return m_spans; }
+    inline const std::vector<TileData>& tiles() { return m_tiles; }
+    inline ivec2 offset() const { return m_offset; }
+    inline ivec2 size() const { return m_bounds_size; }
+  private:
+    void process_linear_segment(const Geometry::Segment& segment, vec2 offset);
+
+    void add_line(const Box& line, const ivec2 coords);
+    void finish();
+  private:
+    std::vector<TileData> m_tiles;
+    std::vector<Increment> m_increments;
+    std::vector<TileIncrement> m_tile_increments;
+    std::vector<TileMask> m_masks;
+    std::vector<Span> m_spans;
+
+    int16_t m_tile_y_prev = 0;
+
+    float m_zoom;
+    ivec2 m_position;
+    ivec2 m_offset;
+    ivec2 m_bounds_size;
+  };
 
   class Tiler {
   public:
@@ -15,61 +80,28 @@ namespace Graphick::Render {
     Tiler(Tiler&&) = delete;
 
     Tiler();
-    ~Tiler() = default;
+    ~Tiler();
 
-    inline const std::vector<Fill>& opaque_tiles() const { return m_opaque_tiles; }
-    inline const std::vector<Mask>& masks() const { return m_masks; }
     inline const std::vector<Tile>& tiles() const { return m_tiles; }
+    inline const std::vector<uint8_t>& segments() const { return m_segments; }
+    inline const uint8_t* masks_texture_data() const { return m_masks; }
 
     void reset(const ivec2 size, const vec2 position, float zoom);
     void process_path(const Geometry::Path& path, const vec4& color);
   private:
-    struct TileData {
-      vec4 color = { 0.0f, 0.0f, 0.0f, 0.0f };
-      int backdrop = 0;
-      bool has_mask = false;
-      std::vector<uint8_t> intersections;
-      int bottom_intersections = 0;
-    };
-
-    struct FillData {
-      int32_t index = 0;
-      int32_t mask_index = 0;
-    };
-
-    struct PathTiler {
-      PathTiler(ivec2 path_bounds_size, ivec2 path_bounds_offset);
-
-      inline std::vector<TileData>& tiles() { return m_tiles; }
-      inline const std::vector<Mask>& masks() const { return m_masks; }
-      inline const std::vector<FillData>& fills() const { return m_fills; }
-
-      void add_fill(const Box& segment, const ivec2 coords);
-      int get_mask_tile_index(ivec2 coords);
-      void intersection(float y, ivec2 coords);
-      void bottom_intersection(ivec2 coords);
-      void add_vertical_fill(uint8_t min, uint8_t max, ivec2 coords);
-      void adjust_backdrop(const ivec2 coords, int8_t delta);
-    private:
-      ivec2 m_path_bounds_size;
-      ivec2 m_path_bounds_offset;
-      std::vector<TileData> m_tiles;
-      std::vector<Mask> m_masks;
-      std::vector<FillData> m_fills;
-      std::vector<int> m_mask_tiles;
-    };
-  private:
-    void process_linear_segment(const Geometry::Segment& segment, vec2 position, ivec2 bounds_size, int segment_index, PathTiler& path_tiler);
-  private:
-    ivec2 m_position = { 0, 0 };
-    float m_zoom = 1.0f;
-    Box m_visible;
-    ivec2 m_tiles_count = { 0, 0 };
-    std::vector<bool> m_processed_tiles;
-    std::vector<Fill> m_opaque_tiles;
-    std::vector<Mask> m_masks;
     std::vector<Tile> m_tiles;
-    uint32_t m_mask_id = 0;
+    std::vector<uint8_t> m_segments;
+
+    int m_segments_offset = 0;
+
+    float m_zoom;
+    ivec2 m_position;
+    ivec2 m_tiles_count;
+
+    Box m_visible;
+
+    int m_masks_offset = 0;
+    uint8_t* m_masks = nullptr;
   };
 
 }
