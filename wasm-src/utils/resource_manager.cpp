@@ -2,10 +2,10 @@
 
 #include "console.h"
 
-#define SHADERS_LENGTH 4
+#define SHADERS_LENGTH 5
 
 static constexpr const char* shader_names[SHADERS_LENGTH] = {
-  "fill", "mask", "tile", "line"
+  "fill", "mask", "tile", "line", "span"
 };
 
 ResourceManager* ResourceManager::s_instance = nullptr;
@@ -44,6 +44,10 @@ void ResourceManager::prefetch_shaders() {
     #include "../renderer/gpu/shaders/line.vs.glsl"
     ,
     #include "../renderer/gpu/shaders/line.fs.glsl"
+    ,
+    #include "../renderer/gpu/shaders/span.vs.glsl"
+    ,
+    #include "../renderer/gpu/shaders/span.fs.glsl"
   };
 
   for (unsigned int i = 0; i < SHADERS_LENGTH; ++i) {

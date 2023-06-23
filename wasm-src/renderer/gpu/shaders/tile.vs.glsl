@@ -29,8 +29,8 @@ R"(
     vec4 transformed_position = uProjectionMatrix * round(uViewMatrix * vec4(floor(position.x + float(int(aPosition.x) * uTileSize)), floor(position.y + float(int(aPosition.y) * uTileSize)), 0.0, 1.0));
     gl_Position = vec4(transformed_position.xy, 0.0, 1.0);
     
-    // vColor = aColor;
-    vColor = abs(vec4(aColor.rgb, 1.0) - vec4(float(aPosition.x) * 0.2, float(aPosition.y) * 0.2, 0.0, 0.0));
+    vColor = aColor;
+    // vColor = abs(vec4(aColor.rgb, 1.0) - vec4(float(aPosition.x) * 0.2, float(aPosition.y) * 0.2, 0.0, 0.0));
 
     vPosition = vec2(aPosition) * float(uTileSize) + float(TILE_OVERLAP);
     vSegmentIndex = aMaskIndex;

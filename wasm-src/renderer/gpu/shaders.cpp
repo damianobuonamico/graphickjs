@@ -24,6 +24,15 @@ namespace Graphick::Render::GPU {
     // mask_texture_uniform(Device::get_uniform(program, "uMaskTexture").value()) {}
     segments_texture_uniform(Device::get_uniform(program, "uSegmentsTexture").value()) {}
 
+  SpanProgram::SpanProgram() :
+    program(Device::create_program("span")),
+    // view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    view_uniform(Device::get_uniform(program, "uViewMatrix").value()),
+    projection_uniform(Device::get_uniform(program, "uProjectionMatrix").value()),
+    framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
+    tile_size_uniform(Device::get_uniform(program, "uTileSize").value()) {}
+  // mask_texture_uniform(Device::get_uniform(program, "uMaskTexture").value()) {}
+
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
     view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
@@ -33,6 +42,7 @@ namespace Graphick::Render::GPU {
     fill_program(),
     mask_program(),
     tile_program(),
+    span_program(),
     line_program() {}
 
   FillVertexArray::FillVertexArray(
@@ -203,6 +213,70 @@ namespace Graphick::Render::GPU {
     Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
   }
 
+  SpanVertexArray::SpanVertexArray(
+    const SpanProgram& span_program,
+    const Buffer& vertex_buffer,
+    const Buffer& quad_vertex_positions_buffer,
+    const Buffer& quad_vertex_indices_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(span_program.program, "aPosition").value();
+    VertexAttr color_attr = Device::get_vertex_attr(span_program.program, "aColor").value();
+    VertexAttr index_attr = Device::get_vertex_attr(span_program.program, "aIndex").value();
+    VertexAttr width_attr = Device::get_vertex_attr(span_program.program, "aWidth").value();
+
+    VertexAttrDescriptor position_desc = {
+      2,
+      VertexAttrClass::Int,
+      VertexAttrType::U16,
+      4,
+      0,
+      0,
+      0
+    };
+
+    VertexAttrDescriptor color_desc = {
+      4,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      24,
+      0,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor index_desc = {
+      1,
+      VertexAttrClass::Int,
+      VertexAttrType::I32,
+      24,
+      16,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor width_desc = {
+      1,
+      VertexAttrClass::Int,
+      VertexAttrType::I32,
+      24,
+      20,
+      1,
+      1
+    };
+
+    Device::bind_buffer(*vertex_array, quad_vertex_positions_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, color_attr, color_desc);
+    Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
+    Device::configure_vertex_attr(*vertex_array, width_attr, width_desc);
+
+    Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
+  }
+
   LineVertexArray::LineVertexArray(
     const LineProgram& line_program,
     const Buffer& vertex_positions_buffer,
@@ -221,7 +295,6 @@ namespace Graphick::Render::GPU {
       0,
       0
     };
-
 
     Device::bind_buffer(*vertex_array, vertex_positions_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);

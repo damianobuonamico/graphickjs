@@ -33,9 +33,12 @@ namespace Graphick::Render {
     Renderer();
     ~Renderer() = default;
 
+    void draw_spans();
+    void draw_tiles();
+
+    // @deprecated
     void draw_fills();
     void draw_masks();
-    void draw_tiles();
     void draw_lines();
   private:
     Viewport m_viewport;

@@ -3,31 +3,25 @@
 #include "renderer_data.h"
 #include "geometry/path.h"
 
-#include <vector>
-
 #define TILE_SIZE 16
-#define TILE_OVERLAP 2u
-#define TILE_SIZE_OVERLAP (TILE_SIZE + TILE_OVERLAP)
 
 namespace Graphick::Render {
 
   class PathTiler {
   public:
-    struct TileData {
-      std::vector<Line> segments;
-      uint16_t bottom_intersections = 0;
-    };
     struct Increment {
       int16_t x;
       int16_t y;
       float area;
       float height;
     };
+
     struct TileIncrement {
       int16_t tile_x;
       int16_t tile_y;
       int8_t sign;
     };
+
     struct TileMask {
       int16_t tile_x;
       int16_t tile_y;
@@ -37,10 +31,19 @@ namespace Graphick::Render {
         memcpy(this->data, data, TILE_SIZE * TILE_SIZE);
       }
     };
-    struct Span {
+
+    struct TileSpan {
       int16_t tile_x;
       int16_t tile_y;
       int16_t width;
+      vec4 color;
+    };
+
+    struct Bin {
+      int16_t tile_x;
+      int16_t tile_y;
+      size_t start;
+      size_t end;
     };
   public:
     PathTiler(const PathTiler&) = default;
@@ -49,22 +52,19 @@ namespace Graphick::Render {
     PathTiler(const Geometry::Path& path, const vec4& color, const Box& visible, float zoom, ivec2 position);
     ~PathTiler() = default;
 
-    inline const std::vector<TileMask>& masks() { return m_masks; }
-    inline const std::vector<Span>& spans() { return m_spans; }
-    inline const std::vector<TileData>& tiles() { return m_tiles; }
+    inline const std::vector<TileMask>& masks() const { return m_masks; }
+    inline const std::vector<TileSpan>& spans() const { return m_spans; }
+
     inline ivec2 offset() const { return m_offset; }
     inline ivec2 size() const { return m_bounds_size; }
   private:
     void process_linear_segment(const Geometry::Segment& segment, vec2 offset);
-
-    void add_line(const Box& line, const ivec2 coords);
     void finish();
   private:
-    std::vector<TileData> m_tiles;
     std::vector<Increment> m_increments;
     std::vector<TileIncrement> m_tile_increments;
     std::vector<TileMask> m_masks;
-    std::vector<Span> m_spans;
+    std::vector<TileSpan> m_spans;
 
     int16_t m_tile_y_prev = 0;
 
@@ -83,16 +83,14 @@ namespace Graphick::Render {
     ~Tiler();
 
     inline const std::vector<Tile>& tiles() const { return m_tiles; }
-    inline const std::vector<uint8_t>& segments() const { return m_segments; }
+    inline const std::vector<Span>& spans() const { return m_spans; }
     inline const uint8_t* masks_texture_data() const { return m_masks; }
 
     void reset(const ivec2 size, const vec2 position, float zoom);
     void process_path(const Geometry::Path& path, const vec4& color);
   private:
     std::vector<Tile> m_tiles;
-    std::vector<uint8_t> m_segments;
-
-    int m_segments_offset = 0;
+    std::vector<Span> m_spans;
 
     float m_zoom;
     ivec2 m_position;

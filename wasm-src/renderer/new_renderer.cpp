@@ -91,6 +91,7 @@ namespace Graphick::Render {
 
     // get()->draw_fills();
     // get()->draw_masks();
+    get()->draw_spans();
     get()->draw_tiles();
     // get()->draw_lines();
     GPU::Device::end_commands();
@@ -349,6 +350,119 @@ namespace Graphick::Render {
 #endif
   }
 
+  void Renderer::draw_spans() {
+    OPTICK_EVENT();
+
+    vec2 position = (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE;
+
+    float half_width = -m_viewport.size.x * 0.5f;
+    float half_height = m_viewport.size.y * 0.5f;
+
+    float right = -half_width;
+    float left = half_width;
+    float top = -half_height;
+    float bottom = half_height;
+
+    mat4 projection = {
+      2.0f / (right - left), 0.0f, 0.0f, 0.0f,
+      0.0f, 2.0f / (top - bottom), 0.0f, 0.0f,
+      0.0f, 0.0f, -1.0f, 0.0f,
+      -(right + left) / (right - left), -(top + bottom) / (top - bottom), 0.0f, 1.0f
+    };
+
+    mat4 translation = {
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x + 2 * position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y + 2 * position.y),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    // mat4 mvp = projection * translation;
+
+    const std::vector<Span>& spans = m_tiler.spans();
+
+    // std::vector<Fill> fills;
+    // int tiles = (int)std::ceil((float)m_viewport.size.x / 16) * std::ceil((float)m_viewport.size.y / 16);
+    // fills.reserve(tiles);
+
+    // console::log("Tiles", spans.size());
+
+    // for (int i = 0; i < tiles; i++) {
+    //   fills.push_back({ vec4{ 0.0f, 0.0f, 0.0f, (float)i / tiles }, i });
+    // }
+
+    UUID quad_vertex_positions_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<uint16_t>(
+      QUAD_VERTEX_POSITIONS.size(),
+      "QuadVertexPositions"
+    );
+    UUID quad_vertex_indices_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(
+      QUAD_VERTEX_INDICES.size(),
+      "QuadVertexIndices"
+    );
+    UUID span_vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<Span>(
+      spans.size(),
+      "Span"
+    );
+
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(quad_vertex_indices_buffer_id);
+    const GPU::Buffer& span_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(span_vertex_buffer_id);
+
+    GPU::Device::upload_to_buffer(quad_vertex_positions_buffer, 0, QUAD_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(quad_vertex_indices_buffer, 0, QUAD_VERTEX_INDICES, GPU::BufferTarget::Index);
+    GPU::Device::upload_to_buffer(span_vertex_buffer, 0, spans, GPU::BufferTarget::Vertex);
+
+    GPU::SpanVertexArray span_vertex_array(
+      m_programs.span_program,
+      span_vertex_buffer,
+      quad_vertex_positions_buffer,
+      quad_vertex_indices_buffer
+    );
+
+    GPU::RenderState state = {
+      nullptr,
+      m_programs.span_program.program,
+      *span_vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {},
+      {},
+      {
+        { m_programs.span_program.view_uniform, translation },
+        { m_programs.span_program.projection_uniform, projection },
+        { m_programs.span_program.tile_size_uniform, (int)TILE_SIZE },
+        { m_programs.span_program.framebuffer_size_uniform, m_viewport.size },
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+      },
+      {
+        // std::nullopt,
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          vec4{ 1.0f, 1.0f, 1.0f, 1.0f},
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements_instanced(6, (uint32_t)spans.size(), state);
+
+    GPU::Memory::Allocator::free_general_buffer(quad_vertex_positions_buffer_id);
+    GPU::Memory::Allocator::free_index_buffer(quad_vertex_indices_buffer_id);
+    GPU::Memory::Allocator::free_general_buffer(span_vertex_buffer_id);
+  }
+
   void Renderer::draw_tiles() {
     OPTICK_EVENT();
 
@@ -462,12 +576,13 @@ namespace Graphick::Render {
         std::nullopt,
         std::nullopt,
         {
-          vec4{ 1.0f, 1.0f, 1.0f, 1.0f},
-          std::nullopt,
-          std::nullopt
-        },
-        true
-      }
+        // vec4{ 1.0f, 1.0f, 1.0f, 1.0f},
+        std::nullopt,
+        std::nullopt,
+        std::nullopt
+      },
+      true
+    }
     };
 
     GPU::Device::draw_elements_instanced(6, (uint32_t)opaque_tiles.size(), state);

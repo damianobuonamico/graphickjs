@@ -35,6 +35,18 @@ namespace Graphick::Render::GPU {
     TileProgram();
   };
 
+  struct SpanProgram {
+    Program program;
+    // Uniform view_projection_uniform;
+    Uniform view_uniform;
+    Uniform projection_uniform;
+    Uniform framebuffer_size_uniform;
+    Uniform tile_size_uniform;
+    // Uniform mask_texture_uniform;
+
+    SpanProgram();
+  };
+
   struct LineProgram {
     Program program;
     Uniform view_projection_uniform;
@@ -46,6 +58,7 @@ namespace Graphick::Render::GPU {
   struct Programs {
     FillProgram fill_program;
     MaskProgram mask_program;
+    SpanProgram span_program;
     TileProgram tile_program;
     LineProgram line_program;
 
@@ -79,6 +92,17 @@ namespace Graphick::Render::GPU {
 
     TileVertexArray(
       const TileProgram& tile_program,
+      const Buffer& vertex_buffer,
+      const Buffer& quad_vertex_positions_buffer,
+      const Buffer& quad_vertex_indices_buffer
+    );
+  };
+
+  struct SpanVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;
+
+    SpanVertexArray(
+      const SpanProgram& span_program,
       const Buffer& vertex_buffer,
       const Buffer& quad_vertex_positions_buffer,
       const Buffer& quad_vertex_indices_buffer

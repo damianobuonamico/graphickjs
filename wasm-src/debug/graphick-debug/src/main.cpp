@@ -168,7 +168,8 @@ int main() {
     delete[] buffer;
   }
 
-  // std::ifstream ifs("res\\Vector 53.svg");
+  // std::ifstream ifs("res\\Test2.svg");
+  // std::ifstream ifs("res\\Ghostscript_Tiger copy.svg");
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
@@ -183,10 +184,10 @@ int main() {
   // path.move_to({ 300.0f, 200.0f });
   // path.line_to({ 100.0f, 0.0f });
 
-  path.move_to({ 0.0f, -550.0f });
-  path.line_to({ 1035.3f, 212.0f });
-  path.line_to({ 119.46f, -100.53f });
-  path.line_to({ 700.0f, 300.0f });
+  // path.move_to({ 0.0f, -550.0f });
+  // path.line_to({ 1035.3f, 212.0f });
+  // path.line_to({ 119.46f, -100.53f });
+  // path.line_to({ 700.0f, 300.0f });
 
   // path.move_to({ 160.0f, 160.0f });
   // path.line_to({ 320.0f, 320.0f });
@@ -196,13 +197,18 @@ int main() {
   // path.line_to({ 320.0f, 320.0f });
   // path.line_to({ 160.0f, 384.0f });
 
-  // path.move_to({ 160.0f, 160.0f });
-  // path.line_to({ 320.0f, 176.0f });
-  // path.line_to({ 310.0f, 190.0f });
+  path.move_to({ 0.0f, 0.0f });
+  path.line_to({ 20.0f, -20.0f });
+  path.line_to({ 50.0f, -40.0f });
+  path.line_to({ 200.0f, -50.0f });
+  path.line_to({ 300.0f, -20.0f });
+  path.line_to({ 350.0f, -20.0f });
+  path.line_to({ 380.0f, -40.0f });
+  path.line_to({ 360.0f, 20.0f });
 
   path.close();
 
-  // Editor::scene().add_entity(std::make_shared<Graphick::Entities::NewElementEntity>(path));
+  Editor::scene().add_entity(std::make_shared<Graphick::Entities::NewElementEntity>(path));
 
   while (!glfwWindowShouldClose(window)) {
     OPTICK_FRAME("MainThread");

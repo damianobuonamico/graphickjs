@@ -189,7 +189,7 @@ namespace Graphick::Render::Geometry {
     Segment& last_segment = m_segments.back();
 
     if (is_almost_equal(last_segment.p3(), first_segment.p0())) {
-      first_segment.m_p0 = last_segment.m_p0;
+      first_segment.m_p0 = last_segment.m_p3;
     } else {
       m_segments.emplace_back(m_last_point, first_segment.m_p0);
       m_last_point = m_segments.front().m_p0;

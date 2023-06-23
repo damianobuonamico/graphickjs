@@ -10,6 +10,7 @@ namespace Graphick::Render::Geometry {
   class Path {
   public:
     inline bool empty() const { return m_segments.empty(); }
+    inline bool closed() const { return m_closed; }
     inline const std::vector<Segment>& segments() const { return m_segments; }
 
     void move_to(vec2 p);
