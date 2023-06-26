@@ -71,8 +71,8 @@ void Scene::render() const {
   float zoom = viewport.zoom();
   RenderingOptions options = { zoom, std::acosf(2.0f * std::pow(1.0f - Settings::tessellation_error / std::fmaxf(zoom, 0.26f), 2.0f) - 1.0f), viewport.visible() };
 
-  for (auto it = m_children.begin(); it != m_children.end(); it++) {
-    // for (auto it = m_children.rbegin(); it != m_children.rend(); it++) {
+  // for (auto it = m_children.begin(); it != m_children.end(); it++) {
+  for (auto it = m_children.rbegin(); it != m_children.rend(); it++) {
     it->second->render(options);
   }
 
@@ -197,7 +197,7 @@ Entity* Scene::duplicate(const Entity* entity) {
   Entity* duplicate = entity->duplicate();
   if (!duplicate) return nullptr;
 
-  std::shared_ptr<Entity> shared_duplicate{duplicate};
+  std::shared_ptr<Entity> shared_duplicate{ duplicate };
   m_children.insert({ shared_duplicate->id, shared_duplicate });
 
   return shared_duplicate.get();

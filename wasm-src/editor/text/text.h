@@ -1,23 +1,23 @@
-#pragma once
+// #pragma once
 
-#include "font.h"
-#include "../../renderer/geometry/geometry.h"
+// #include "font.h"
+// #include "../../renderer/geometry/geometry.h"
 
-#include <string>
+// #include <string>
 
-class Text {
-public:
-  Text(const std::string& text, const std::string& font);
-  ~Text();
+// class Text {
+// public:
+//   Text(const std::string& text, const std::string& font);
+//   ~Text();
 
-  Geometry geometry() const;
-private:
-  bool shape() const;
-private:
-  mutable bool m_shaped = false;
+//   Geometry geometry() const;
+// private:
+//   bool shape() const;
+// private:
+//   mutable bool m_shaped = false;
 
-  std::string m_font;
-  std::string m_text;
+//   std::string m_font;
+//   std::string m_text;
 
-  hb_buffer_t* m_buffer;
-};
+//   hb_buffer_t* m_buffer;
+// };

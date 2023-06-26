@@ -16,18 +16,12 @@ namespace Graphick::Render {
       float height;
     };
 
-    struct TileIncrement {
-      int16_t tile_x;
-      int16_t tile_y;
-      int8_t sign;
-    };
-
     struct TileMask {
       int16_t tile_x;
       int16_t tile_y;
       uint8_t data[TILE_SIZE * TILE_SIZE];
 
-      TileMask::TileMask(int16_t tile_x, int16_t tile_y, uint8_t* data) : tile_x(tile_x), tile_y(tile_y) {
+      TileMask(int16_t tile_x, int16_t tile_y, uint8_t* data) : tile_x(tile_x), tile_y(tile_y) {
         memcpy(this->data, data, TILE_SIZE * TILE_SIZE);
       }
     };
@@ -62,7 +56,6 @@ namespace Graphick::Render {
     void finish();
   private:
     std::vector<Increment> m_increments;
-    std::vector<TileIncrement> m_tile_increments;
     std::vector<TileMask> m_masks;
     std::vector<TileSpan> m_spans;
 
@@ -91,6 +84,7 @@ namespace Graphick::Render {
   private:
     std::vector<Tile> m_tiles;
     std::vector<Span> m_spans;
+    std::vector<bool> m_opaque_tiles;
 
     float m_zoom;
     ivec2 m_position;

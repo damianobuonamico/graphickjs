@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../entity.h"
-#include "../../text/text.h"
+// #include "../../text/text.h"
 
 class TextEntity: public Entity {
 public:
@@ -17,5 +17,5 @@ public:
   virtual void render(const RenderingOptions& options) const override;
 private:
   TransformComponent m_transform;
-  Text m_text;
+  // Text m_text;
 };

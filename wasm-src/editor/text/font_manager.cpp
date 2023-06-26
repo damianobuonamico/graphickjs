@@ -19,16 +19,17 @@ void FontManager::shutdown() {
 }
 
 void FontManager::load_font(const unsigned char* buffer, long buffer_size) {
-  std::shared_ptr<Font> font = std::make_shared<Font>(buffer, (size_t)buffer_size);
-  get()->m_fonts.insert({ "Roboto", font });
+  // std::shared_ptr<Font> font = std::make_shared<Font>(buffer, (size_t)buffer_size);
+  // get()->m_fonts.insert({ "Roboto", font });
 }
 
 std::weak_ptr<Font> FontManager::get_font(const std::string& name) {
-  auto it = get()->m_fonts.find(name);
+  // auto it = get()->m_fonts.find(name);
 
-  if (it == get()->m_fonts.end()) {
-    return {};
-  }
+  // if (it == get()->m_fonts.end()) {
+  //   return {};
+  // }
 
-  return { it->second };
+  // return { it->second };
+  return {};
 }

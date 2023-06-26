@@ -19,14 +19,12 @@ namespace Graphick::Render {
     return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
   }
 
-  static inline bool compare_tile_increments(const PathTiler::TileIncrement& a, const PathTiler::TileIncrement& b) {
-    return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
-  }
-
   PathTiler::PathTiler(const Geometry::Path& path, const vec4& color, const Box& visible, float zoom, ivec2 position) :
     m_zoom(zoom),
     m_position(position)
   {
+    OPTICK_EVENT();
+
     Box box = path.bounding_box();
 
     // TODO: Maybe optimize this check
@@ -59,6 +57,8 @@ namespace Graphick::Render {
   }
 
   void PathTiler::process_linear_segment(const Geometry::Segment& line, vec2 offset) {
+    OPTICK_EVENT();
+
     vec2 p0 = line.p0() * m_zoom - offset;
     vec2 p3 = line.p3() * m_zoom - offset;
 
@@ -121,17 +121,13 @@ namespace Graphick::Render {
         y = (int16_t)std::floor(p3.y);
       }
 
-      int16_t tile_y = y / TILE_SIZE;
-      if (tile_y != m_tile_y_prev) {
-        m_tile_increments.push_back(TileIncrement{ (int16_t)(x / TILE_SIZE), std::min(tile_y, m_tile_y_prev), (int8_t)(tile_y - m_tile_y_prev) });
-        m_tile_y_prev = tile_y;
-      }
-
       if (row_t0 == 1.0f || col_t0 == 1.0f) break;
     }
   }
 
   void PathTiler::finish() {
+    OPTICK_EVENT();
+
     std::vector<Bin> bins;
     Bin bin = { 0, 0, 0, 0 };
 
@@ -157,25 +153,19 @@ namespace Graphick::Render {
 
     bins.push_back(bin);
 
-    std::sort(bins.begin(), bins.end(), compare_bins);
-    std::sort(m_tile_increments.begin(), m_tile_increments.end(), compare_tile_increments);
+    {
+      OPTICK_EVENT("Sort Bins");
+      std::sort(bins.begin(), bins.end(), compare_bins);
+    }
 
     float areas[TILE_SIZE * TILE_SIZE] = { 0.0f };
     float heights[TILE_SIZE * TILE_SIZE] = { 0.0f };
     float prev[TILE_SIZE] = { 0.0f };
     float next[TILE_SIZE] = { 0.0f };
 
-    int tile_increments_i = 0;
-    int winding = 0;
-    
     size_t bins_len = bins.size();
-    size_t tile_increments_len = m_tile_increments.size();
 
     m_masks.clear();
-
-    //for (auto& tile_increment : m_tile_increments) {
-    //  m_spans.push_back(TileSpan{ tile_increment.tile_x, tile_increment.tile_y, 1, tile_increment.sign > 0 ? vec4{0.3f, 0.7f, 0.3f, 1.0f} : vec4{0.7f, 0.3f, 0.3f, 1.0f} });
-    //}
 
     for (size_t i = 0; i < bins_len; i++) {
       const Bin& bin = bins[i];
@@ -194,95 +184,62 @@ namespace Graphick::Render {
       if (i + 1 == bins_len || bins[i + 1].tile_x != bin.tile_x || bins[i + 1].tile_y != bin.tile_y) {
         uint8_t tile[TILE_SIZE * TILE_SIZE] = { 0 };
 
-        for (int y = 0; y < TILE_SIZE; y++) {
-          float accum = prev[y];
-          for (int x = 0; x < TILE_SIZE; x++) {
-            int index = x + y * TILE_SIZE;
-            tile[index] = (uint8_t)std::round(std::min(std::abs(accum + areas[index]) * 256.0f, 255.0f));
-            accum += heights[index];
+        {
+          OPTICK_EVENT("Generate Mask");
+
+          for (int y = 0; y < TILE_SIZE; y++) {
+            float accum = prev[y];
+            for (int x = 0; x < TILE_SIZE; x++) {
+              int index = x + y * TILE_SIZE;
+              tile[index] = (uint8_t)std::round(std::min(std::abs(accum + areas[index]) * 256.0f, 255.0f));
+              accum += heights[index];
+            }
+            next[y] = accum;
           }
-          next[y] = accum;
         }
 
         m_masks.push_back({ bin.tile_x, bin.tile_y, tile });
 
-        memset(areas, 0, sizeof(areas));
-        memset(heights, 0, sizeof(heights));
+        {
+          OPTICK_EVENT("Memset");
 
-        if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y) {
-          memcpy(prev, next, sizeof(prev));
-        } else {
-          memset(prev, 0, sizeof(prev));
+          memset(areas, 0, sizeof(areas));
+          memset(heights, 0, sizeof(heights));
+
+          if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y) {
+            memcpy(prev, next, sizeof(prev));
+          } else {
+            memset(prev, 0, sizeof(prev));
+          }
+
+          memset(next, 0, sizeof(next));
         }
 
-        memset(next, 0, sizeof(next));
+        {
+          OPTICK_EVENT("Generate Spans");
 
-        // m_spans.push_back(TileSpan{ bin.tile_x, bin.tile_y, 1 });
-
-        if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y && bins[i + 1].tile_x > bin.tile_x + 1) {
-          int16_t width = bins[i + 1].tile_x - bin.tile_x - 1;
-          TileMask& last_mask = m_masks.back();
-
-          if (last_mask.tile_y == bin.tile_y) {
-            int16_t winding = 0;
-            
-            for (int j = 1; j <= TILE_SIZE; j += 2) {
-              uint8_t current = last_mask.data[TILE_SIZE * j - 1];
-              if (current == 0) {
-                winding--;
-              } else if (current == 255 || current >= last_mask.data[TILE_SIZE * j - 2]) {
-                winding++;
-              } else {
-                winding--;
-              }
-              //winding += current;
-              //if (current != 255 && current <= last_mask.data[TILE_SIZE * j - 2]) {
-               // winding = 0;
-              //  break;
-              //}
-              //winding *= last_mask.data[TILE_SIZE * j - 1];
-            }
-
-            //winding /= TILE_SIZE / 2;
-
-            //uint8_t winding = last_mask.data[TILE_SIZE * TILE_SIZE / 2 - 1];
-            //if (winding == 255 || winding > last_mask.data[TILE_SIZE / 2 - 5]) {
-            if (winding >= 0) {
-              m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, winding > 0 ? vec4{0.5f, 0.7f, 0.7f, 1.0f} : vec4{0.7f, 0.5f, 0.5f, 1.0f} });
-            }
-            //m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.3f, 0.3f, (float)m_tile_increments[tile_increments_i].tile_y / 10.0f, 1.0f} });
-          }
-
-          continue;
-          while (tile_increments_i < tile_increments_len) {
-            TileIncrement& tile_increment = m_tile_increments[tile_increments_i];
-            // if (tile_increment.tile_x > bin.tile_x) break;
-            if (tile_increment.tile_y > bin.tile_y || (tile_increment.tile_y == bin.tile_y && tile_increment.tile_x > bin.tile_x)) break;
-           
-            winding += (int)sign(tile_increment.sign);
-            tile_increments_i++;
-          }
-
-          m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, winding > 0 ? vec4{0.5f, 0.7f, 0.7f, 1.0f} : vec4{0.7f, 0.5f, 0.5f, 1.0f} });
-          //m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.3f, 0.3f, (float)m_tile_increments[tile_increments_i].tile_y / 10.0f, 1.0f} });
-        }
-
-        continue;
-
-
-        if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y && bins[i + 1].tile_x > bin.tile_x + 1) {
-          while (tile_increments_i < tile_increments_len) {
-            TileIncrement& tile_increment = m_tile_increments[tile_increments_i];
-            if (tile_increment.tile_y > bin.tile_y || (tile_increment.tile_y == bin.tile_y && tile_increment.tile_x > bin.tile_x)) break;
-
-            winding += (int)sign(tile_increment.sign);
-            tile_increments_i++;
-          }
-
-          if (winding != 0) {
+          if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y && bins[i + 1].tile_x > bin.tile_x + 1) {
             int16_t width = bins[i + 1].tile_x - bin.tile_x - 1;
-            //   m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, winding > 0 ? vec4{0.5f, 0.7f, 0.7f, 1.0f} : vec4{0.7f, 0.5f, 0.5f, 1.0f} });
-            m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.3f, 0.3f, 0.7f, 1.0f} });
+            TileMask& last_mask = m_masks.back();
+
+            if (last_mask.tile_y == bin.tile_y) {
+              int16_t winding = 0;
+
+              for (int j = 1; j <= TILE_SIZE; j += 2) {
+                uint8_t current = last_mask.data[TILE_SIZE * j - 1];
+                if (current == 0) {
+                  winding--;
+                } else if (current == 255 || current >= last_mask.data[TILE_SIZE * j - 2]) {
+                  winding++;
+                } else {
+                  winding--;
+                }
+              }
+
+              if (winding >= 0) {
+                m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.7f, 0.5f, 0.5f, 1.0f} });
+              }
+            }
           }
         }
       }
@@ -311,9 +268,13 @@ namespace Graphick::Render {
 
     m_masks = new uint8_t[SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE];
     m_masks_offset = 0;
+
+    m_opaque_tiles = std::vector<bool>(m_tiles_count.x * m_tiles_count.y, false);
   }
 
   void Tiler::process_path(const Geometry::Path& path, const vec4& color) {
+    OPTICK_EVENT();
+
     PathTiler tiler(path, color, m_visible, m_zoom, m_position);
 
     const std::vector<PathTiler::TileMask>& masks = tiler.masks();
@@ -324,7 +285,10 @@ namespace Graphick::Render {
       ivec2 coords = { mask.tile_x + offset.x + 1, mask.tile_y + offset.y + 1 };
       if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
 
-      m_tiles.push_back({ color, tile_index(coords, m_tiles_count), m_masks_offset });
+      int index = tile_index(coords, m_tiles_count);
+      if (m_opaque_tiles[index]) continue;
+
+      m_tiles.push_back({ color, index, m_masks_offset });
       ivec2 mask_offset = { m_masks_offset % (SEGMENTS_TEXTURE_SIZE / TILE_SIZE) * TILE_SIZE, m_masks_offset / (SEGMENTS_TEXTURE_SIZE / TILE_SIZE) * TILE_SIZE };
 
       for (int y = 0; y < TILE_SIZE; ++y) {
@@ -343,7 +307,15 @@ namespace Graphick::Render {
       int16_t width = coords.x < 0 ? span.width + coords.x : span.width;
       coords.x = std::max(coords.x, 0);
 
-      m_spans.push_back({ color, tile_index(coords, m_tiles_count), width });
+      for (int i = 0; i < width; i++) {
+        if (coords.x + i >= m_tiles_count.x) break;
+
+        int index = tile_index({ coords.x + i, coords.y }, m_tiles_count);
+        if (!m_opaque_tiles[index] && color.a == 1.0f) {
+          m_spans.push_back({ color, index, 1 });
+          m_opaque_tiles[index] = true;
+        }
+      }
     }
   }
 

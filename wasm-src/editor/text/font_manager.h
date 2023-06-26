@@ -6,6 +6,8 @@
 #include <string>
 #include <memory>
 
+struct Font {};
+
 class FontManager {
 public:
   FontManager(const FontManager&) = delete;

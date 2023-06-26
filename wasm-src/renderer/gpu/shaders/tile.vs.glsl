@@ -35,8 +35,8 @@ R"(
     vPosition = vec2(aPosition) * float(uTileSize) + float(TILE_OVERLAP);
     vSegmentIndex = aMaskIndex;
     vMaskCoords = vec2(
-      float(aMaskIndex % (SEGMENTS_TEXTURE_SIZE / uTileSize) * uTileSize + int(aPosition.x) * uTileSize) / float(SEGMENTS_TEXTURE_SIZE),
-      float(aMaskIndex / (SEGMENTS_TEXTURE_SIZE / uTileSize) * uTileSize + int(aPosition.y) * uTileSize) / float(SEGMENTS_TEXTURE_SIZE)
+      (float(aMaskIndex % (SEGMENTS_TEXTURE_SIZE / uTileSize) * uTileSize + int(aPosition.x) * uTileSize) + (aPosition.x == 0u ? 0.5 : -0.5)) * 0.00048828125,
+      (float(aMaskIndex / (SEGMENTS_TEXTURE_SIZE / uTileSize) * uTileSize + int(aPosition.y) * uTileSize) + (aPosition.y == 0u ? 0.5 : -0.5)) * 0.00048828125
     );
   }
 

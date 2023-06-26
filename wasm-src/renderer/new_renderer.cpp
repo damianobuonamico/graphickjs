@@ -448,7 +448,7 @@ namespace Graphick::Render {
         std::nullopt,
         std::nullopt,
         {
-          vec4{ 1.0f, 1.0f, 1.0f, 1.0f},
+          vec4{ 1.0f, 0.7f, 1.0f, 1.0f},
           std::nullopt,
           std::nullopt
         },
@@ -492,7 +492,8 @@ namespace Graphick::Render {
 
     // mat4 mvp = projection * translation;
 
-    const std::vector<Tile>& opaque_tiles = m_tiler.tiles();
+    const std::vector<Tile>& reverse_tiles = m_tiler.tiles();
+    const std::vector<Tile> opaque_tiles = std::vector<Tile>(reverse_tiles.rbegin(), reverse_tiles.rend());
 
     // std::vector<Fill> fills;
     // int tiles = (int)std::ceil((float)m_viewport.size.x / 16) * std::ceil((float)m_viewport.size.y / 16);
@@ -541,7 +542,6 @@ namespace Graphick::Render {
     const GPU::Texture& segments_texture = GPU::Memory::Allocator::get_texture(segments_texture_id);
     // GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, m_tiler.segments().data());
     GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, m_tiler.masks_texture_data());
-
 
     GPU::RenderState state = {
       nullptr,

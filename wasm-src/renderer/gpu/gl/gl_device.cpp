@@ -349,6 +349,10 @@ namespace Graphick::Render::GPU::GL {
   void GLDevice::set_texture_sampling_mode(const GLTexture& texture, const TextureSamplingFlag flags) const {
     bind_texture(texture, 0);
 
+
+    // TEMP
+    // glCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+    // glCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
     glCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)flags & (int)TextureSamplingFlag::NearestMin ? GL_NEAREST : GL_LINEAR));
     glCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)flags & (int)TextureSamplingFlag::NearestMag ? GL_NEAREST : GL_LINEAR));
     glCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (int)flags & (int)TextureSamplingFlag::RepeatU ? GL_REPEAT : GL_CLAMP_TO_EDGE));

@@ -173,7 +173,7 @@ int main() {
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
-  Graphick::SVG::parse_svg(content);
+  // Graphick::SVG::parse_svg(content);
 
   Graphick::Render::Geometry::Path path{};
 

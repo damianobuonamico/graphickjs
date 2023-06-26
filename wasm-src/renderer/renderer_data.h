@@ -24,7 +24,7 @@ namespace Graphick::Render {
     // TODO: Replace with a pointer to the color texture
     vec4 color;
     int32_t index;
-    int16_t width;
+    int32_t width;
   };
 
 }
