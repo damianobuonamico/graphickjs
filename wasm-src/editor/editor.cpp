@@ -104,7 +104,7 @@ void Editor::load(const char* data) {
 
 void Editor::render_frame(double time) {
   OPTICK_EVENT();
-  
+
   Renderer::begin_frame(scene().viewport.position(), scene().viewport.zoom(), (float)scene().m_children.size() + 1.0f);
 
   scene().render();

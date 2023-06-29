@@ -1,0 +1,102 @@
+// #include "common.h"
+#include "editor/editor.h"
+#include "editor/scene/entity.h"
+#include "editor/input/input_manager.h"
+// #include "editor/text/font_manager.h"
+// #include "editor/settings.h"
+// #include "renderer/renderer.h"
+// #include "io/svg/svg.h"
+
+#include <stdio.h>
+
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
+#ifdef __INTELLISENSE__
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
+#include <emscripten/bind.h>
+
+using namespace emscripten;
+
+extern "C" {
+  bool EMSCRIPTEN_KEEPALIVE on_pointer_event(
+    int target, int event, int type, int button,
+    float x, float y, float pressure, double time_stamp,
+    bool alt, bool ctrl, bool shift
+  ) {
+    return Graphick::Editor::Input::InputManager::on_pointer_event(
+      (Graphick::Editor::Input::InputManager::PointerTarget)target, (Graphick::Editor::Input::InputManager::PointerEvent)event, (Graphick::Editor::Input::InputManager::PointerType)type, (Graphick::Editor::Input::InputManager::PointerButton)button,
+      x, y, pressure, time_stamp, alt, ctrl, shift
+    );
+    return true;
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_keyboard_event(
+    int event, int key,
+    bool repeat, bool alt, bool ctrl, bool shift
+  ) {
+    return Graphick::Editor::Input::InputManager::on_keyboard_event(
+      (Graphick::Editor::Input::InputManager::KeyboardEvent)event, (Graphick::Editor::Input::KeyboardKey)key,
+      repeat, alt, ctrl, shift
+    );
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_resize_event(int width, int height, float dpr, int offset_x, int offset_y) {
+    return Graphick::Editor::Input::InputManager::on_resize_event(width, height, dpr, offset_x, offset_y);
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_wheel_event(int target, float delta_x, float delta_y) {
+    return Graphick::Editor::Input::InputManager::on_wheel_event((Graphick::Editor::Input::InputManager::PointerTarget)target, delta_x, delta_y);
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_clipboard_event(int event) {
+    return Graphick::Editor::Input::InputManager::on_clipboard_event((Graphick::Editor::Input::InputManager::ClipboardEvent)event);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE set_tool(int tool) {
+    if (tool < 0 || tool >= static_cast<int>(Graphick::Editor::Input::Tool::ToolType::None)) return;
+
+    Graphick::Editor::Input::InputManager::set_tool((Graphick::Editor::Input::Tool::ToolType)tool);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE load(const char* data) {
+    // Graphick::Editor::Editor::load(data);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE load_font(const unsigned char* buffer, long buffer_size) {
+    // FontManager::load_font(buffer, buffer_size);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE load_svg(const char* svg) {
+    // Graphick::SVG::parse_svg(svg);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE init() {
+    Graphick::Editor::Editor::init();
+
+    Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
+    Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;
+
+    path.move_to({ 0.0f, 0.0f });
+    path.line_to({ 20.0f, -20.0f });
+    path.line_to({ 50.0f, -40.0f });
+    path.line_to({ 200.0f, -50.0f });
+    path.line_to({ 300.0f, -20.0f });
+    path.line_to({ 350.0f, -20.0f });
+    path.line_to({ 380.0f, -40.0f });
+    path.line_to({ 360.0f, 20.0f });
+
+    path.close();
+  }
+
+  void EMSCRIPTEN_KEEPALIVE shutdown() {
+    Graphick::Editor::Editor::shutdown();
+  }
+
+  void EMSCRIPTEN_KEEPALIVE save() {
+    // Graphick::Editor::Editor::save();
+  }
+}

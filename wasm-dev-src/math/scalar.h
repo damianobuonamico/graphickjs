@@ -1,0 +1,34 @@
+#pragma once
+
+#include <cstdint>
+#include <cfloat>
+#include <cmath>
+
+#define MATH_PI 3.14159265358979323846f
+#define MATH_TWO_PI MATH_PI * 2.0f
+
+namespace Graphick::Math {
+
+  float round(float t, float decimals) noexcept;
+  float map(float t, float old_min, float old_max, float new_min, float new_max);
+  float clamp(float t, float min, float max);
+  float lerp(float a, float b, float t);
+
+  bool is_almost_zero(const double t, const float eps);
+  bool is_almost_equal(const float t1, const float t2, const float eps);
+  bool is_normalized(const float t, bool include_ends);
+  bool is_in_range(const float t, const float min, const float max, bool include_ends);
+
+  float degrees_to_radians(float a);
+  float radians_to_degrees(float a);
+
+  size_t next_power_of_two(size_t n);
+
+  template <typename T>
+  inline int sign(T val) {
+    return (T(0) < val) - (val < T(0));
+  }
+
+}
+
+#include "scalar.inl"
