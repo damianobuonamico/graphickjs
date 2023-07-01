@@ -18,13 +18,10 @@ namespace Graphick::Renderer {
     return coords.x + coords.y * tiles_count.x;
   }
 
-  static inline bool compare_bins(const PathTiler::Bin& a, const PathTiler::Bin& b) {
-    return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
-  }
-
   PathTiler::PathTiler(const Geometry::Path& path, const vec4& color, const rect& visible, float zoom, ivec2 position) :
     m_zoom(zoom),
-    m_position(position)
+    m_position(position),
+    m_tile_y_prev(0)
   {
     OPTICK_EVENT();
 
@@ -65,13 +62,12 @@ namespace Graphick::Renderer {
     vec2 p0 = line.p0() * m_zoom - offset;
     vec2 p3 = line.p3() * m_zoom - offset;
 
-    ivec2 from_coords = tile_coords(p0);
-    ivec2 to_coords = tile_coords(p3);
+    m_tile_y_prev = (int16_t)std::floor(p0.y) / TILE_SIZE;
 
-    if (is_almost_equal(p0, p3)) return;
+    if (Math::is_almost_equal(p0, p3)) return;
 
-    int16_t x_dir = (int16_t)Math::sign(p3.x - p0.x);
-    int16_t y_dir = (int16_t)Math::sign(p3.y - p0.y);
+    int16_t x_dir = (int16_t)std::copysign(1, p3.x - p0.x);
+    int16_t y_dir = (int16_t)std::copysign(1, p3.y - p0.y);
 
     float dtdx = 1.0f / (p3.x - p0.x);
     float dtdy = 1.0f / (p3.y - p0.y);
@@ -119,9 +115,15 @@ namespace Graphick::Renderer {
         x += x_dir;
       }
 
-      if (row_t0 == 1.0f && col_t0 == 1.0f) {
+      if (row_t0 == 1.0f || col_t0 == 1.0f) {
         x = (int16_t)std::floor(p3.x);
         y = (int16_t)std::floor(p3.y);
+      }
+
+      int16_t tile_y = y / TILE_SIZE;
+      if (tile_y != m_tile_y_prev) {
+        m_tile_increments.push_back(TileIncrement{ (int16_t)(x / TILE_SIZE), std::min(tile_y, m_tile_y_prev), (int8_t)(tile_y - m_tile_y_prev) });
+        m_tile_y_prev = tile_y;
       }
 
       if (row_t0 == 1.0f || col_t0 == 1.0f) break;
@@ -158,13 +160,25 @@ namespace Graphick::Renderer {
 
     {
       OPTICK_EVENT("Sort Bins");
-      std::sort(bins.begin(), bins.end(), compare_bins);
+      std::sort(bins.begin(), bins.end(), [](const Bin& a, const Bin& b) {
+        return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
+        });
+    }
+
+    {
+      OPTICK_EVENT("Sort Increments");
+      std::sort(m_tile_increments.begin(), m_tile_increments.end(), [](const TileIncrement& a, const TileIncrement& b) {
+        return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
+        });
     }
 
     float areas[TILE_SIZE * TILE_SIZE] = { 0.0f };
     float heights[TILE_SIZE * TILE_SIZE] = { 0.0f };
     float prev[TILE_SIZE] = { 0.0f };
     float next[TILE_SIZE] = { 0.0f };
+
+    int tile_increments_i = 0;
+    int winding = 0;
 
     size_t bins_len = bins.size();
 
@@ -221,27 +235,18 @@ namespace Graphick::Renderer {
         {
           OPTICK_EVENT("Generate Spans");
 
-          if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y && bins[i + 1].tile_x > bin.tile_x + 1) {
-            int16_t width = bins[i + 1].tile_x - bin.tile_x - 1;
-            TileMask& last_mask = m_masks.back();
+          if (i + 1 < bins.size() && bins[i + 1].tile_y == bin.tile_y && bins[i + 1].tile_x > bin.tile_x + 1) {
+            while (tile_increments_i < m_tile_increments.size()) {
+              TileIncrement& tile_increment = m_tile_increments[tile_increments_i];
+              if (std::tie(tile_increment.tile_y, tile_increment.tile_x) > std::tie(bin.tile_y, bin.tile_x)) break;
 
-            if (last_mask.tile_y == bin.tile_y) {
-              int16_t winding = 0;
+              winding += tile_increment.sign;
+              tile_increments_i++;
+            }
 
-              for (int j = 1; j <= TILE_SIZE; j += 2) {
-                uint8_t current = last_mask.data[TILE_SIZE * j - 1];
-                if (current == 0) {
-                  winding--;
-                } else if (current == 255 || current >= last_mask.data[TILE_SIZE * j - 2]) {
-                  winding++;
-                } else {
-                  winding--;
-                }
-              }
-
-              if (winding >= 0) {
-                m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.7f, 0.5f, 0.5f, 1.0f} });
-              }
+            if (winding != 0) {
+              int16_t width = bins[i + 1].tile_x - bin.tile_x - 1;
+              m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.7f, 0.5f, 0.5f, 1.0f} });
             }
           }
         }

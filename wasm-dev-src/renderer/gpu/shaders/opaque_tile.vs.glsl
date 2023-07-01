@@ -23,7 +23,8 @@ R"(
 
     gl_Position = vec4(transformed_position.xy, 0.0, 1.0);
     
-    vColor = aColor;
+    // vColor = aColor;
+    vColor = abs(vec4(aColor.rgb, 1.0) + vec4(float(aPosition.x) * 0.1, float(aPosition.y) * 0.1, 0.0, 0.0));
   }
 
 )"

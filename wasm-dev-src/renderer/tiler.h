@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#define TILE_SIZE 16
+#define TILE_SIZE 32
 
 namespace Graphick::Renderer {
 
@@ -25,6 +25,11 @@ namespace Graphick::Renderer {
       float area;
       float height;
     };
+    struct TileIncrement {
+      int16_t tile_x;
+      int16_t tile_y;
+      int8_t sign;
+    };
 
     struct TileMask {
       int16_t tile_x;
@@ -35,14 +40,12 @@ namespace Graphick::Renderer {
         memcpy(this->data, data, TILE_SIZE * TILE_SIZE);
       }
     };
-
     struct TileSpan {
       int16_t tile_x;
       int16_t tile_y;
       int16_t width;
       vec4 color;
     };
-
     struct Bin {
       int16_t tile_x;
       int16_t tile_y;
@@ -66,6 +69,8 @@ namespace Graphick::Renderer {
     void finish();
   private:
     std::vector<Increment> m_increments;
+    std::vector<TileIncrement> m_tile_increments;
+
     std::vector<TileMask> m_masks;
     std::vector<TileSpan> m_spans;
 

@@ -30,7 +30,8 @@ R"(
 
     gl_Position = vec4(transformed_position.xy, 0.0, 1.0);
     
-    vColor = aColor;
+    // vColor = aColor;
+    vColor = abs(vec4(aColor.rgb, 1.0) - vec4(float(aPosition.x) * 0.1, float(aPosition.y) * 0.1, 0.0, 0.0));
     vMaskCoords = vec2(
       (float(aMaskIndex % (MASKS_TEXTURE_SIZE / uTileSize) * uTileSize + int(aPosition.x) * uTileSize) + 0.3) / float(MASKS_TEXTURE_SIZE),
       (float(aMaskIndex / (MASKS_TEXTURE_SIZE / uTileSize) * uTileSize + int(aPosition.y) * uTileSize)) / float(MASKS_TEXTURE_SIZE)

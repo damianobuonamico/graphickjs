@@ -128,6 +128,8 @@ namespace Graphick::Renderer {
     get()->draw_opaque_tiles();
     get()->draw_masked_tiles();
 
+    GPU::Memory::Allocator::purge_if_needed();
+
     GPU::Device::end_commands();
   }
 
