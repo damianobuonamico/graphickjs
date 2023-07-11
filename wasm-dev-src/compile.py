@@ -7,7 +7,9 @@ EMCC_PATH = '%EMSDK%/upstream/emscripten/emcc'
 OUTPUT = '..\public\editor.js'
 OPTIONS = [
   'PTHREAD_POOL_SIZE=navigator.hardwareConcurrency',
-  'INITIAL_MEMORY=67108864',
+  # 'INITIAL_MEMORY=67108864',
+  'INITIAL_MEMORY=33554432',
+  'MAXIMUM_MEMORY=536870912',
   'ALLOW_MEMORY_GROWTH', 
   # 'EXPORT_ES6', 
   'MODULARIZE=1', 
@@ -35,7 +37,7 @@ for path in Path('./').rglob('*.cc'):
 
 COMMON = [
   EMCC_PATH,
-  '-msimd128',
+  # '-msimd128',
   *files,
   '-o ' + OUTPUT,
   '-lembind',
