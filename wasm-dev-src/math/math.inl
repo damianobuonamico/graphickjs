@@ -25,6 +25,19 @@ namespace Graphick::Math {
     return a.min.x >= b.min.x && a.max.x <= b.max.x && a.min.y >= b.min.y && a.max.y <= b.max.y;
   }
 
+  inline float rect_rect_intersection_area(const rect& a, const rect& b) {
+    float x_left = std::max(a.min.x, b.min.x);
+    float y_top = std::max(a.min.y, b.min.y);
+    float x_right = std::min(a.max.x, b.max.x);
+    float y_bottom = std::min(a.max.y, b.max.y);
+
+    if (x_right < x_left || y_bottom < y_top) {
+      return 0.0f;
+    }
+
+    return (x_right - x_left) * (y_bottom - y_top);
+  }
+
   inline std::vector<float> line_line_intersections(const rect& a, const rect& b) {
     float den = b.max.x - b.min.x;
 
