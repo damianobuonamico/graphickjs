@@ -1,6 +1,7 @@
-
-#include <unistd.h>
 #include "Threads.h"
+#ifndef GK_PLATFORM_WINDOWS
+#include <unistd.h>
+#endif
 
 
 Threads::Threads()
@@ -15,11 +16,15 @@ Threads::~Threads()
 
 int Threads::GetHardwareThreadCount()
 {
+#ifdef GK_PLATFORM_WINDOWS
+    return std::thread::hardware_concurrency();
+#else
     return Max(static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN)), 1);
+#endif
 }
 
 
-void Threads::Run(const int count, Function *loopBody)
+void Threads::Run(const int count, Function* loopBody)
 {
     ASSERT(loopBody != nullptr);
 
@@ -41,6 +46,19 @@ void Threads::Run(const int count, Function *loopBody)
     mTaskData->RequiredWorkerCount = threadCount;
     mTaskData->FinalizedWorkers = 0;
 
+#ifdef GK_PLATFORM_WINDOWS
+    mTaskData->FinalizationMutex.lock();
+
+    // Wake all threads waiting on this condition variable.
+    mTaskData->CV.notify_all();
+
+    std::unique_lock<std::mutex> lock(mTaskData->FinalizationMutex);
+    while (mTaskData->FinalizedWorkers < threadCount) {
+        mTaskData->FinalizationCV.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(1));
+    }
+
+    mTaskData->FinalizationMutex.unlock();
+#else
     pthread_mutex_lock(&mTaskData->FinalizationMutex);
 
     // Wake all threads waiting on this condition variable.
@@ -52,6 +70,7 @@ void Threads::Run(const int count, Function *loopBody)
     }
 
     pthread_mutex_unlock(&mTaskData->FinalizationMutex);
+#endif
 
     // Cleanup.
     mTaskData->Cursor = 0;
@@ -93,27 +112,44 @@ void Threads::RunThreads()
     }
 
     for (int i = 0; i < cpuCount; i++) {
-        ThreadData *d = mThreadData[i];
+        ThreadData* d = mThreadData[i];
 
+#ifdef GK_PLATFORM_WINDOWS
+        d->Thread = std::thread(Worker, d);
+#else
         pthread_create(&d->Thread, nullptr, Worker, d);
+#endif
     }
 }
 
 
-void *Threads::Worker(void *p)
+void* Threads::Worker(void* p)
 {
     ASSERT(p != nullptr);
 
 #ifndef __EMSCRIPTEN__
+#ifndef GK_PLATFORM_WINDOWS
     pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+#endif
 #endif // __EMSCRIPTEN__
 
-    ThreadData *d = reinterpret_cast<ThreadData *>(p);
+    ThreadData* d = reinterpret_cast<ThreadData*>(p);
 
     // Loop forever waiting for next dispatch of tasks.
     for (;;) {
-        TaskList *items = d->Tasks;
+        TaskList* items = d->Tasks;
 
+#ifdef GK_PLATFORM_WINDOWS
+        items->Mutex.lock();
+
+        std::unique_lock<std::mutex> lock(items->Mutex);
+        while (items->RequiredWorkerCount < 1) {
+            // Wait until required worker count becomes greater than zero.
+            items->CV.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(1));
+        }
+
+        items->Mutex.unlock();
+#else
         pthread_mutex_lock(&items->Mutex);
 
         while (items->RequiredWorkerCount < 1) {
@@ -124,6 +160,7 @@ void *Threads::Worker(void *p)
         items->RequiredWorkerCount--;
 
         pthread_mutex_unlock(&items->Mutex);
+#endif
 
         const int count = items->Count;
 
@@ -137,6 +174,15 @@ void *Threads::Worker(void *p)
             items->Fn->Execute(index, d->Memory);
         }
 
+#ifdef GK_PLATFORM_WINDOWS
+        items->FinalizationMutex.lock();
+
+        items->FinalizedWorkers++;
+
+        items->FinalizationMutex.unlock();
+
+        items->FinalizationCV.notify_one();
+#else
         pthread_mutex_lock(&items->FinalizationMutex);
 
         items->FinalizedWorkers++;
@@ -144,5 +190,6 @@ void *Threads::Worker(void *p)
         pthread_mutex_unlock(&items->FinalizationMutex);
 
         pthread_cond_signal(&items->FinalizationCV);
+#endif
     }
 }

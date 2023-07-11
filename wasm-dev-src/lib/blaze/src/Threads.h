@@ -2,11 +2,18 @@
 #pragma once
 
 
-#include <pthread.h>
 #include <stdatomic.h>
 #include "ThreadMemory.h"
 #include "Utils.h"
 
+#ifdef GK_PLATFORM_WINDOWS
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <condition_variable>
+#else
+#include <pthread.h>
+#endif
 
 /**
  * Manages a pool of threads used for parallelization of rasterization tasks.
@@ -14,20 +21,20 @@
 class Threads final {
 public:
     Threads();
-   ~Threads();
+    ~Threads();
 public:
     static int GetHardwareThreadCount();
 public:
     template <typename F>
     void ParallelFor(const int count, const F loopBody);
 
-    void *MallocMain(const int size);
+    void* MallocMain(const int size);
 
     template <typename T>
-    T *MallocMain();
+    T* MallocMain();
 
     template <typename T, typename ...Args>
-    T *NewMain(Args&&... args);
+    T* NewMain(Args&&... args);
 
     void ResetFrameMemory();
 private:
@@ -38,17 +45,17 @@ private:
         virtual ~Function() {
         }
 
-        virtual void Execute(const int index, ThreadMemory &memory) = 0;
+        virtual void Execute(const int index, ThreadMemory& memory) = 0;
     };
 
     template <typename T>
     struct Fun : public Function {
         constexpr Fun(const T lambda)
-        :   Lambda(lambda)
+            : Lambda(lambda)
         {
         }
 
-        void Execute(const int index, ThreadMemory &memory) {
+        void Execute(const int index, ThreadMemory& memory) {
             Lambda(index, memory);
         }
 
@@ -56,9 +63,22 @@ private:
     };
 
     struct TaskList final {
+#ifdef GK_PLATFORM_WINDOWS
+        std::atomic<int> Cursor = 0;
+        int Count = 0;
+        Function* Fn = nullptr;
+
+        std::condition_variable CV;
+        std::mutex Mutex;
+        int RequiredWorkerCount = 0;
+
+        std::condition_variable FinalizationCV;
+        std::mutex FinalizationMutex;
+        int FinalizedWorkers = 0;
+#else
         atomic_int Cursor = 0;
         int Count = 0;
-        Function *Fn = nullptr;
+        Function* Fn = nullptr;
 
         pthread_cond_t CV = PTHREAD_COND_INITIALIZER;
         pthread_mutex_t Mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -67,31 +87,36 @@ private:
         pthread_cond_t FinalizationCV = PTHREAD_COND_INITIALIZER;
         pthread_mutex_t FinalizationMutex = PTHREAD_MUTEX_INITIALIZER;
         int FinalizedWorkers = 0;
+#endif
     };
 
     struct ThreadData final {
-        ThreadData(TaskList *tasks)
-        :   Tasks(tasks)
+        ThreadData(TaskList* tasks)
+            : Tasks(tasks)
         {
         }
 
         ThreadMemory Memory;
-        TaskList *Tasks = nullptr;
+        TaskList* Tasks = nullptr;
+#ifdef GK_PLATFORM_WINDOWS
+        std::thread Thread;
+#else
         pthread_t Thread = 0;
+#endif
     };
 
-    TaskList *mTaskData = nullptr;
-    ThreadData **mThreadData = nullptr;
+    TaskList* mTaskData = nullptr;
+    ThreadData** mThreadData = nullptr;
     int mThreadCount = 0;
     ThreadMemory mMainMemory;
 
 private:
-    void Run(const int count, Function *loopBody);
+    void Run(const int count, Function* loopBody);
 private:
-    static void *Worker(void *p);
+    static void* Worker(void* p);
 private:
     DISABLE_COPY_AND_ASSIGN(Threads);
-};
+    };
 
 
 template <typename F>
@@ -101,17 +126,17 @@ FORCE_INLINE void Threads::ParallelFor(const int count, const F loopBody) {
     const int run = Max(Min(64, count / (mThreadCount * 32)), 1);
 
     if (run == 1) {
-        Fun p([&loopBody](const int index, ThreadMemory &memory) {
+        Fun p([&loopBody](const int index, ThreadMemory& memory) {
             loopBody(index, memory);
 
             memory.ResetTaskMemory();
-        });
+            });
 
         Run(count, &p);
     } else {
         const int iterationCount = (count / run) + Min(count % run, 1);
 
-        Fun p([run, count, &loopBody](const int index, ThreadMemory &memory) {
+        Fun p([run, count, &loopBody](const int index, ThreadMemory& memory) {
             const int idx = run * index;
             const int maxidx = Min(count, idx + run);
 
@@ -120,25 +145,25 @@ FORCE_INLINE void Threads::ParallelFor(const int count, const F loopBody) {
 
                 memory.ResetTaskMemory();
             }
-        });
+            });
 
         Run(iterationCount, &p);
     }
 }
 
 
-FORCE_INLINE void *Threads::MallocMain(const int size) {
+FORCE_INLINE void* Threads::MallocMain(const int size) {
     return mMainMemory.FrameMalloc(size);
 }
 
 
 template <typename T>
-FORCE_INLINE T *Threads::MallocMain() {
+FORCE_INLINE T* Threads::MallocMain() {
     return mMainMemory.FrameMalloc<T>();
 }
 
 
 template <typename T, typename ...Args>
-FORCE_INLINE T *Threads::NewMain(Args&&... args) {
+FORCE_INLINE T* Threads::NewMain(Args&&... args) {
     return new (MallocMain<T>()) T(std::forward<Args>(args)...);
 }
