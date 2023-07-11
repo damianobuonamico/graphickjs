@@ -13,7 +13,7 @@ import HoverState from "./hover";
 import { ToolState } from "./tools";
 import AnimationManager from "./animation/animation";
 import CommandHistory from "./history/history";
-import API from "@/wasm/loader";
+import API, { load } from "@/wasm/loader";
 
 abstract class InputManager {
   public static target: EventTarget | undefined;
@@ -150,6 +150,7 @@ abstract class InputManager {
       passive: false,
     });
     this.addListener("load", () => {
+      load();
       setTimeout(() => {
         Renderer.resize();
       }, 100);
