@@ -43,6 +43,13 @@ interface Api {
 
   _to_heap(array: Float32Array): Pointer;
   _free(pointer: Pointer): void;
+
+  // TEMP
+  _render_frame(): void;
+  _translate_canvas(x: number, y: number): void;
+  _scale_canvas(delta: number, x: number, y: number): void;
+  _install_vector_image(ptr: number, size: number): void;
+  _download_and_install_vector_image(path: string): void;
 }
 
 type Pointer = number;

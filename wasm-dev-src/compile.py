@@ -4,17 +4,19 @@ from pathlib import Path
 DEBUG = False
 
 EMCC_PATH = '%EMSDK%/upstream/emscripten/emcc'
-OUTPUT = '..\src\wasm\editor.js'
+OUTPUT = '..\public\editor.js'
 OPTIONS = [
+  'PTHREAD_POOL_SIZE=navigator.hardwareConcurrency',
+  'INITIAL_MEMORY=67108864',
   'ALLOW_MEMORY_GROWTH', 
-  'EXPORT_ES6', 
-  'MODULARIZE', 
+  # 'EXPORT_ES6', 
+  'MODULARIZE=1', 
   'MIN_WEBGL_VERSION=2',
   'MAX_WEBGL_VERSION=2', 
   'USE_WEBGL2', 
-  'FULL_ES3', 
-  'NO_DISABLE_EXCEPTION_CATCHING', 
-  'EXPORTED_RUNTIME_METHODS="["cwrap", "allocateUTF8"]"'
+  # 'FULL_ES3',
+  'EXPORTED_RUNTIME_METHODS="["cwrap", "ccall", "allocateUTF8"]"',
+  'EXPORT_NAME="createModule"'
 ]
 
 files = []
@@ -33,14 +35,32 @@ for path in Path('./').rglob('*.cc'):
 
 COMMON = [
   EMCC_PATH,
+  '-msimd128',
   *files,
   '-o ' + OUTPUT,
-  '-l embind',
+  '-lembind',
   '-DEMSCRIPTEN=1',
-  '-s ' + ' -s '.join(OPTIONS)
+  '-pthread',
+  '-DSIMD_GENERIC',
+  '-DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0',
+  '-s' + ' -s'.join(OPTIONS),
+  '-fno-rtti',
+  '-fno-exceptions',
+  '-std=c++20'
 ]
 
-if (DEBUG):
+if (DEBUG) :
   os.system(' '.join([*COMMON, '-DGK_CONF_DEBUG=1', '-g', '-fdebug-compilation-dir="../wasm-dev-src"']))
-else:
+else :
   os.system(' '.join([*COMMON, '-DGK_CONF_DIST=1', '-Os']))
+
+# with open('../wasm-dev-src/editor.js', 'r') as file :
+#   data = file.read()
+
+# if (DEBUG) :
+#   data = data.replace('Worker(new URL("editor.worker.js",import.meta.url))', 'Worker(new URL("editor.worker.js",import.meta.url))')
+# else :
+#   data = data.replace('Worker(new URL("editor.worker.js",import.meta.url))', 'Worker(new URL("editor.worker.js",import.meta.url),{type:"module"})')
+
+# with open('file.txt', 'w') as file:
+#   file.write(data)

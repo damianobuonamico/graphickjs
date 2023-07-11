@@ -6,7 +6,28 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import { fileURLToPath, URL } from "url";
 
 export default defineConfig({
-  plugins: [vitePluginString(), solidPlugin(), wasm(), topLevelAwait()],
+  plugins: [
+    vitePluginString(),
+    solidPlugin(),
+    wasm(),
+    topLevelAwait(),
+    {
+      name: "configure-response-headers",
+      configureServer: (server) => {
+        server.middlewares.use((_req, res, next) => {
+          res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+          res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+          next();
+        });
+      },
+    },
+  ],
+  worker: {
+    plugins: [wasm()],
+  },
+  optimizeDeps: {
+    exclude: ["editor"],
+  },
   server: {
     port: 3000,
   },
