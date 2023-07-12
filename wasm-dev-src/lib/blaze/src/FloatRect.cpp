@@ -2,13 +2,16 @@
 #include "FloatRect.h"
 #include "Utils.h"
 
+namespace Blaze {
 
-IntRect FloatRect::ToExpandedIntRect() const
-{
-    const int minx = int(Floor(MinX));
-    const int miny = int(Floor(MinY));
-    const int maxx = int(Ceil(MaxX));
-    const int maxy = int(Ceil(MaxY));
+    IntRect FloatRect::ToExpandedIntRect() const
+    {
+        const int minx = int(Floor(MinX));
+        const int miny = int(Floor(MinY));
+        const int maxx = int(Ceil(MaxX));
+        const int maxy = int(Ceil(MaxY));
 
-    return IntRect(minx, miny, maxx - minx, maxy - miny);
+        return IntRect(minx, miny, maxx - minx, maxy - miny);
+    }
+
 }

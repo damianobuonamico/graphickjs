@@ -5,75 +5,78 @@
 #include "ThreadMemory.h"
 #include "Utils.h"
 
+namespace Blaze {
 
-template <typename T>
-struct RowItemList final {
-    RowItemList() {
-    }
-
-
-    struct Block final {
-        Block() {
+    template <typename T>
+    struct RowItemList final {
+        RowItemList() {
         }
 
-        static constexpr int ItemsPerBlock = 32;
 
-        T Items[ItemsPerBlock];
-        Block *Previous = nullptr;
-        Block *Next = nullptr;
+        struct Block final {
+            Block() {
+            }
 
-        // Always start with one. Blocks never sit allocated, but without
-        // items.
-        int Count = 1;
+            static constexpr int ItemsPerBlock = 32;
+
+            T Items[ItemsPerBlock];
+            Block* Previous = nullptr;
+            Block* Next = nullptr;
+
+            // Always start with one. Blocks never sit allocated, but without
+            // items.
+            int Count = 1;
+        private:
+            DISABLE_COPY_AND_ASSIGN(Block);
+        };
+
+        Block* First = nullptr;
+
+        // While inserting, new items are added to last block.
+        Block* Last = nullptr;
+
+        template <typename ...Args>
+        void Append(ThreadMemory& memory, Args&&... args);
+
     private:
-        DISABLE_COPY_AND_ASSIGN(Block);
+        DISABLE_COPY_AND_ASSIGN(RowItemList);
     };
 
-    Block *First = nullptr;
 
-    // While inserting, new items are added to last block.
-    Block *Last = nullptr;
-
+    template <typename T>
     template <typename ...Args>
-    void Append(ThreadMemory &memory, Args&&... args);
+    FORCE_INLINE void RowItemList<T>::Append(ThreadMemory& memory, Args&&... args) {
+        if (Last == nullptr) {
+            // Adding first item.
+            Block* b = memory.FrameNew<Block>();
 
-private:
-    DISABLE_COPY_AND_ASSIGN(RowItemList);
-};
-
-
-template <typename T>
-template <typename ...Args>
-FORCE_INLINE void RowItemList<T>::Append(ThreadMemory &memory, Args&&... args) {
-    if (Last == nullptr) {
-        // Adding first item.
-        Block *b = memory.FrameNew<Block>();
-
-        ASSERT(First == nullptr);
-
-        new (b->Items) T(std::forward<Args>(args)...);
-
-        First = b;
-        Last = b;
-    } else {
-        // Inserting n-th item.
-        Block *current = Last;
-        const int count = current->Count;
-
-        if (count < Block::ItemsPerBlock) {
-            new (current->Items + count) T(std::forward<Args>(args)...);
-
-            current->Count = count + 1;
-        } else {
-            Block *b = memory.FrameNew<Block>();
+            ASSERT(First == nullptr);
 
             new (b->Items) T(std::forward<Args>(args)...);
 
-            // Insert to doubly-linked list.
-            current->Next = b;
-            b->Previous = current;
-
+            First = b;
             Last = b;
+        } else {
+            // Inserting n-th item.
+            Block* current = Last;
+            const int count = current->Count;
+
+            if (count < Block::ItemsPerBlock) {
+                new (current->Items + count) T(std::forward<Args>(args)...);
+
+                current->Count = count + 1;
+            } else {
+                Block* b = memory.FrameNew<Block>();
+
+                new (b->Items) T(std::forward<Args>(args)...);
+
+                // Insert to doubly-linked list.
+                current->Next = b;
+                b->Previous = current;
+
+                Last = b;
+            }
         }
     }
+
 }

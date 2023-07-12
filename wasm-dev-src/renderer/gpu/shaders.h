@@ -33,10 +33,18 @@ namespace Graphick::Renderer::GPU {
     LineProgram();
   };
 
+  struct QuadProgram {
+    Program program;
+    Uniform frame_texture_uniform;
+
+    QuadProgram();
+  };
+
   struct Programs {
     OpaqueTileProgram opaque_tile_program;
     MaskedTileProgram masked_tile_program;
     LineProgram line_program;
+    QuadProgram quad_program;
 
     Programs();
   };
@@ -69,6 +77,16 @@ namespace Graphick::Renderer::GPU {
 
     LineVertexArray(
       const LineProgram& line_program,
+      const Buffer& vertex_positions_buffer,
+      const Buffer& vertex_indices_buffer
+    );
+  };
+
+  struct QuadVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;
+
+    QuadVertexArray(
+      const QuadProgram& line_program,
       const Buffer& vertex_positions_buffer,
       const Buffer& vertex_indices_buffer
     );

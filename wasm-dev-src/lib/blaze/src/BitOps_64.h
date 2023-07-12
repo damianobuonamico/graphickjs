@@ -1,4 +1,8 @@
 
 // This file should only be included from BitOps.h
 
-using BitVector = uint64;
+namespace Blaze {
+
+  using BitVector = uint64;
+
+}

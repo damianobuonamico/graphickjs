@@ -7,9 +7,9 @@ EMCC_PATH = '%EMSDK%/upstream/emscripten/emcc'
 OUTPUT = '..\public\editor.js'
 OPTIONS = [
   'PTHREAD_POOL_SIZE=navigator.hardwareConcurrency',
-  # 'INITIAL_MEMORY=67108864',
-  'INITIAL_MEMORY=33554432',
-  'MAXIMUM_MEMORY=536870912',
+  'INITIAL_MEMORY=67108864',
+  # 'INITIAL_MEMORY=33554432',
+  # 'MAXIMUM_MEMORY=536870912',
   'ALLOW_MEMORY_GROWTH', 
   # 'EXPORT_ES6', 
   'MODULARIZE=1', 
@@ -37,7 +37,7 @@ for path in Path('./').rglob('*.cc'):
 
 COMMON = [
   EMCC_PATH,
-  # '-msimd128',
+  '-msimd128',
   *files,
   '-o ' + OUTPUT,
   '-lembind',
@@ -55,14 +55,3 @@ if (DEBUG) :
   os.system(' '.join([*COMMON, '-DGK_CONF_DEBUG=1', '-g', '-fdebug-compilation-dir="../wasm-dev-src"']))
 else :
   os.system(' '.join([*COMMON, '-DGK_CONF_DIST=1', '-Os']))
-
-# with open('../wasm-dev-src/editor.js', 'r') as file :
-#   data = file.read()
-
-# if (DEBUG) :
-#   data = data.replace('Worker(new URL("editor.worker.js",import.meta.url))', 'Worker(new URL("editor.worker.js",import.meta.url))')
-# else :
-#   data = data.replace('Worker(new URL("editor.worker.js",import.meta.url))', 'Worker(new URL("editor.worker.js",import.meta.url),{type:"module"})')
-
-# with open('file.txt', 'w') as file:
-#   file.write(data)

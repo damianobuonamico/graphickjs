@@ -1,5 +1,188 @@
 #include "renderer.h"
 
+#if 1
+
+#include "gpu/allocator.h"
+
+#include "../utils/resource_manager.h"
+#include "../utils/console.h"
+
+#ifdef EMSCRIPTEN
+#include <emscripten/html5.h>
+#endif
+
+static const std::vector<float> QUAD_VERTEX_POSITIONS = {
+  // Top left.
+  -1.0,  1.0,  0.0,  0.0,  0.0,
+  // Bottom left.
+  -1.0, -1.0,  0.0,  0.0,  1.0,
+  // Bottom right.
+  1.0, -1.0,  0.0,  1.0,  1.0,
+  // Top right.
+  1.0,  1.0,  0.0,  1.0,  0.0
+};
+static const std::vector<uint32_t> QUAD_VERTEX_INDICES = { 0, 1, 2, 0, 2, 3 };
+
+namespace Graphick::Renderer {
+
+  Renderer* Renderer::s_instance = nullptr;
+
+  void Renderer::init() {
+    if (s_instance != nullptr) {
+      console::error("Renderer already initialized, call shutdown() before reinitializing!");
+      return;
+    }
+
+#ifdef EMSCRIPTEN
+    EmscriptenWebGLContextAttributes attr;
+    emscripten_webgl_init_context_attributes(&attr);
+
+    // TODO: test with and without alpha performance
+    attr.alpha = false;
+    attr.premultipliedAlpha = false;
+    attr.majorVersion = 2;
+    attr.antialias = false;
+    attr.stencil = false;
+    attr.depth = false;
+
+    EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
+    emscripten_webgl_make_context_current(ctx);
+#endif
+
+    GPU::Device::init(GPU::DeviceVersion::GLES3, 0);
+    GPU::Memory::Allocator::init();
+
+    s_instance = new Renderer();
+
+#ifdef EMSCRIPTEN
+    s_instance->m_ctx = ctx;
+#endif
+
+    s_instance->m_quad_vertex_positions_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(QUAD_VERTEX_POSITIONS.size(), "QuadVertexPositions");
+    s_instance->m_quad_vertex_indices_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(QUAD_VERTEX_INDICES.size(), "QuadVertexIndices");
+    s_instance->m_frame_texture_id = GPU::Memory::Allocator::allocate_texture({ 1, 1 }, GPU::TextureFormat::RGBA8, "Frame");
+
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(s_instance->m_quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(s_instance->m_quad_vertex_indices_buffer_id);
+
+    GPU::Device::upload_to_buffer(quad_vertex_positions_buffer, 0, QUAD_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(quad_vertex_indices_buffer, 0, QUAD_VERTEX_INDICES, GPU::BufferTarget::Index);
+  }
+
+  void Renderer::shutdown() {
+    if (s_instance == nullptr) {
+      console::error("Renderer already shutdown, call init() before shutting down!");
+      return;
+    }
+
+#ifdef EMSCRIPTEN
+    emscripten_webgl_destroy_context(get()->m_ctx);
+#endif
+
+    delete s_instance;
+
+    GPU::Memory::Allocator::shutdown();
+    GPU::Device::shutdown();
+  }
+
+  void Renderer::render_frame(const Viewport& viewport) {
+    get()->update_image_data(viewport);
+
+    get()->m_image.DrawImage(get()->m_vector_image, get()->get_matrix(viewport));
+
+    get()->render_frame_backend(viewport);
+  }
+
+  void Renderer::update_image_data(const Viewport& viewport) {
+    //     int h = 0;
+    //     int v = 0;
+
+    // #ifdef EMSCRIPTEN
+    //     emscripten_webgl_get_drawing_buffer_size(m_ctx, &h, &v);
+    // #else
+    //     h = 800;
+    //     v = 600;
+    // #endif
+
+    const Blaze::IntSize imageSize = m_image.UpdateSize(Blaze::IntSize{ viewport.size.x, viewport.size.y });
+
+    m_image.ClearImage();
+  }
+
+  Blaze::Matrix Renderer::get_matrix(const Viewport& viewport) {
+    Blaze::Matrix m = Blaze::Matrix::CreateScale(viewport.dpr * viewport.zoom, viewport.dpr * viewport.zoom);
+
+    m.PostTranslate(viewport.position.x, viewport.position.y);
+
+    return m;
+  }
+
+  void Renderer::render_frame_backend(const Viewport& viewport) {
+    GPU::Memory::Allocator::free_texture(m_frame_texture_id);
+
+    m_frame_texture_id = GPU::Memory::Allocator::allocate_texture({ m_image.GetImageWidth(), m_image.GetImageHeight() }, GPU::TextureFormat::RGBA8, "Frame");
+
+    const GPU::Texture& frame_texture = GPU::Memory::Allocator::get_texture(m_frame_texture_id);
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
+
+    GPU::Device::upload_to_texture(frame_texture, { { 0.0f, 0.0f }, { (float)m_image.GetImageWidth(), (float)m_image.GetImageHeight() } }, m_image.GetImageData());
+
+    GPU::QuadVertexArray vertex_array(
+      m_programs.quad_program,
+      quad_vertex_positions_buffer,
+      quad_vertex_indices_buffer
+    );
+
+    GPU::RenderState state = {
+      nullptr,
+      m_programs.quad_program.program,
+      *vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {
+        { { m_programs.quad_program.frame_texture_uniform, frame_texture.gl_texture }, frame_texture }
+      },
+      {},
+      {},
+      {
+        { 0.0f, 0.0f },
+        { (float)m_image.GetImageWidth(), (float)m_image.GetImageHeight() }
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          viewport.background,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements(6, state);
+
+    GPU::Memory::Allocator::purge_if_needed();
+  }
+
+  void Renderer::upload_vector_image(const uint8_t* ptr, const int size) {
+    get()->m_vector_image.Parse(ptr, size);
+
+    get()->m_translation = vec2{ 0.0f, 0.0f };
+    get()->m_scale = 1.0f;
+  }
+
+}
+
+#else
+
 #include "geometry/path.h"
 #include "gpu/allocator.h"
 
@@ -337,3 +520,4 @@ namespace Graphick::Renderer {
   }
 
 }
+#endif

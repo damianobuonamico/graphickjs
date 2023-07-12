@@ -22,10 +22,15 @@ namespace Graphick::Renderer::GPU {
     view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
     color_uniform(Device::get_uniform(program, "uColor").value()) {}
 
+  QuadProgram::QuadProgram() :
+    program(Device::create_program("quad")),
+    frame_texture_uniform(Device::get_uniform(program, "uTexture").value()) {}
+
   Programs::Programs() :
     opaque_tile_program(),
     masked_tile_program(),
-    line_program() {}
+    line_program(),
+    quad_program() {}
 
   OpaqueTileVertexArray::OpaqueTileVertexArray(
     const OpaqueTileProgram& opaque_tile_program,
@@ -164,6 +169,43 @@ namespace Graphick::Renderer::GPU {
 
     Device::bind_buffer(*vertex_array, vertex_positions_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
+  }
+
+  QuadVertexArray::QuadVertexArray(
+    const QuadProgram& quad_program,
+    const Buffer& vertex_positions_buffer,
+    const Buffer& vertex_indices_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(quad_program.program, "position").value();
+    VertexAttr tex_coord_attr = Device::get_vertex_attr(quad_program.program, "texcoord").value();
+
+    VertexAttrDescriptor position_desc = {
+      3,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      20,
+      0,
+      0,
+      0
+    };
+
+    VertexAttrDescriptor tex_coord_desc = {
+      2,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      20,
+      12,
+      0,
+      0
+    };
+
+    Device::bind_buffer(*vertex_array, vertex_positions_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+    Device::configure_vertex_attr(*vertex_array, tex_coord_attr, tex_coord_desc);
 
     Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
   }

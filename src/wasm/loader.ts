@@ -157,10 +157,11 @@ function loadBinarySequence(pathArray: string[]) {
           };
           API._free = module._free;
 
+          API._init();
           // module._init();
           Renderer.resize();
 
-          API._download_and_install_vector_image("Tiger.vectorimage");
+          API._download_and_install_vector_image("boston.vectorimage");
           // this.init();
         })
         .catch(() => {

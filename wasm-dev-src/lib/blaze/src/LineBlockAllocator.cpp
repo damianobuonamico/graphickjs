@@ -1,62 +1,65 @@
 
 #include "LineBlockAllocator.h"
 
+namespace Blaze {
 
-LineBlockAllocator::~LineBlockAllocator()
-{
-    Arena *p = mAllArenas;
+    LineBlockAllocator::~LineBlockAllocator()
+    {
+        Arena* p = mAllArenas;
 
-    while (p != nullptr) {
-        Arena *next = p->Links.NextAll;
+        while (p != nullptr) {
+            Arena* next = p->Links.NextAll;
 
-        free(p);
+            free(p);
 
-        p = next;
-    }
-}
-
-
-void LineBlockAllocator::Clear()
-{
-    Arena *l = nullptr;
-
-    Arena *p = mAllArenas;
-
-    while (p != nullptr) {
-        Arena *next = p->Links.NextAll;
-
-        p->Links.NextFree = l;
-
-        l = p;
-
-        p = next;
+            p = next;
+        }
     }
 
-    mCurrent = nullptr;
-    mEnd = nullptr;
-    mFreeArenas = l;
-}
 
+    void LineBlockAllocator::Clear()
+    {
+        Arena* l = nullptr;
 
-void LineBlockAllocator::NewArena()
-{
-    Arena *p = mFreeArenas;
+        Arena* p = mAllArenas;
 
-    if (p != nullptr) {
-        mFreeArenas = p->Links.NextFree;
-    } else {
-        p = static_cast<Arena *>(malloc(SIZE_OF(Arena)));
+        while (p != nullptr) {
+            Arena* next = p->Links.NextAll;
 
-        p->Links.NextAll = mAllArenas;
+            p->Links.NextFree = l;
 
-        mAllArenas = p;
+            l = p;
+
+            p = next;
+        }
+
+        mCurrent = nullptr;
+        mEnd = nullptr;
+        mFreeArenas = l;
     }
 
-    p->Links.NextFree = nullptr;
 
-    mCurrent = p->Memory + SIZE_OF(Arena::Links);
-    mEnd = p->Memory + Arena::Size -
-        Max3(SIZE_OF(LineArrayX32Y16Block),
-             SIZE_OF(LineArrayX16Y16Block),
-             SIZE_OF(LineArrayTiledBlock));
+    void LineBlockAllocator::NewArena()
+    {
+        Arena* p = mFreeArenas;
+
+        if (p != nullptr) {
+            mFreeArenas = p->Links.NextFree;
+        } else {
+            p = static_cast<Arena*>(malloc(SIZE_OF(Arena)));
+
+            p->Links.NextAll = mAllArenas;
+
+            mAllArenas = p;
+        }
+
+        p->Links.NextFree = nullptr;
+
+        mCurrent = p->Memory + SIZE_OF(Arena::Links);
+        mEnd = p->Memory + Arena::Size -
+            Max3(SIZE_OF(LineArrayX32Y16Block),
+                SIZE_OF(LineArrayX16Y16Block),
+                SIZE_OF(LineArrayTiledBlock));
+    }
+
 }

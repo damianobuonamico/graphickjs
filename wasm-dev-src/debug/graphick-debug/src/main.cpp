@@ -1,8 +1,11 @@
 #include <stdio.h>
+#include <fstream>
 
 #include "wasm-dev-src/editor/editor.h"
 #include "wasm-dev-src/editor/scene/entity.h"
 #include "wasm-dev-src/editor/input/input_manager.h"
+
+#include "wasm-dev-src/renderer/renderer.h"
 
 #include "wasm-dev-src/utils/console.h"
 
@@ -105,19 +108,27 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
-  Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;
+  std::ifstream ifs("res\\Tiger.vectorimage", std::ios::binary);
+  std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(ifs), {});
 
-  path.move_to({ 0.0f, 0.0f });
-  path.line_to({ 20.0f, -20.0f });
-  path.line_to({ 50.0f, -40.0f });
-  path.line_to({ 200.0f, -50.0f });
-  path.line_to({ 300.0f, -20.0f });
-  path.line_to({ 350.0f, -20.0f });
-  path.line_to({ 380.0f, -40.0f });
-  path.line_to({ 360.0f, 20.0f });
+  Graphick::Renderer::Renderer::upload_vector_image(buffer.data(), buffer.size());
 
-  path.close();
+  // std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+
+
+  // Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
+  // Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;
+
+  // path.move_to({ 0.0f, 0.0f });
+  // path.line_to({ 20.0f, -20.0f });
+  // path.line_to({ 50.0f, -40.0f });
+  // path.line_to({ 200.0f, -50.0f });
+  // path.line_to({ 300.0f, -20.0f });
+  // path.line_to({ 350.0f, -20.0f });
+  // path.line_to({ 380.0f, -40.0f });
+  // path.line_to({ 360.0f, 20.0f });
+
+  // path.close();
 
   while (!glfwWindowShouldClose(window)) {
     OPTICK_FRAME("MainThread");

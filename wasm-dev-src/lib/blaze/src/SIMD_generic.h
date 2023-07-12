@@ -2,19 +2,20 @@
 #include "Linearizer.h"
 #include "SIMD.h"
 
+namespace Blaze {
 
-static FORCE_INLINE F24Dot8 RoundTo24Dot8(const double v) {
-    return static_cast<F24Dot8>(Round(v));
-}
+    static FORCE_INLINE F24Dot8 RoundTo24Dot8(const double v) {
+        return static_cast<F24Dot8>(Round(v));
+    }
 
 
-static FORCE_INLINE void FloatPointsToF24Dot8Points(const Matrix &matrix,
-    F24Dot8Point *dst, const FloatPoint *src, const int count,
-    const F24Dot8Point origin, const F24Dot8Point size)
-{
-    const MatrixComplexity complexity = matrix.DetermineComplexity();
+    static FORCE_INLINE void FloatPointsToF24Dot8Points(const Matrix& matrix,
+        F24Dot8Point* dst, const FloatPoint* src, const int count,
+        const F24Dot8Point origin, const F24Dot8Point size)
+    {
+        const MatrixComplexity complexity = matrix.DetermineComplexity();
 
-    switch (complexity) {
+        switch (complexity) {
         case MatrixComplexity::Identity: {
             // Identity matrix, convert only.
             for (int i = 0; i < count; i++) {
@@ -107,5 +108,7 @@ static FORCE_INLINE void FloatPointsToF24Dot8Points(const Matrix &matrix,
 
             break;
         }
+        }
     }
+
 }

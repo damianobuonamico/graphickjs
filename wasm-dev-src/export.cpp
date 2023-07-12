@@ -104,15 +104,16 @@ extern "C" {
 #else
 
 #include <emscripten.h>
-#include <emscripten/html5.h>
-#include <GLES2/gl2.h>
-#include "lib/blaze/src/DestinationImage.h"
-#include "lib/blaze/src/Rasterizer.h"
 
 #ifdef __INTELLISENSE__
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
+#if 0
+#include <emscripten/html5.h>
+#include <GLES2/gl2.h>
+#include "lib/blaze/src/DestinationImage.h"
+#include "lib/blaze/src/Rasterizer.h"
 
 static const char* CanvasElementID = "#canvas";
 
@@ -151,7 +152,7 @@ WebGLContext::~WebGLContext()
 
 struct WebGLTexture final {
   void Resize(const int width, const int height);
-  void UploadImage(const uint8* data);
+  void UploadImage(const Blaze::uint8* data);
 
   GLuint ID = 0;
   int Width = 0;
@@ -177,7 +178,7 @@ void WebGLTexture::Resize(const int width, const int height)
 }
 
 
-void WebGLTexture::UploadImage(const uint8* data)
+void WebGLTexture::UploadImage(const Blaze::uint8* data)
 {
   glBindTexture(GL_TEXTURE_2D, ID);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA,
@@ -297,21 +298,21 @@ public:
   void TranslateCanvas(const double x, const double y);
   void SetupUserCoordinateSystem();
   void ScaleCanvas(const double delta, const double x, const double y);
-  void InstallVectorImage(const uint8* ptr, const int size);
+  void InstallVectorImage(const Blaze::uint8* ptr, const int size);
 private:
   void UpdateImageData();
   void RenderFrameGL();
-  Matrix GetMatrix() const;
+  Blaze::Matrix GetMatrix() const;
 private:
   WebGLContext mContext;
   WebGLTexture mTexture;
   WebGLProgram mProgram;
   WebGLTexturedQuad mTexturedQuad;
 
-  DestinationImage<TileDescriptor_16x8> mImage;
-  VectorImage mVectorImage;
-  Matrix mCoordinateSystemMatrix;
-  FloatPoint mTranslation;
+  Blaze::DestinationImage<Blaze::TileDescriptor_16x8> mImage;
+  Blaze::VectorImage mVectorImage;
+  Blaze::Matrix mCoordinateSystemMatrix;
+  Blaze::FloatPoint mTranslation;
   double mScale = 1;
 };
 
@@ -340,11 +341,11 @@ void MainRenderer::TranslateCanvas(const double x, const double y)
 void MainRenderer::ScaleCanvas(const double delta, const double x,
   const double y)
 {
-  const double zoom = Clamp(mScale * delta, 0.001, 100000.0);
+  const double zoom = Blaze::Clamp(mScale * delta, 0.001, 100000.0);
 
   if (mScale != zoom) {
     const double dd = (zoom - mScale) / mScale;
-    const FloatPoint pn = mCoordinateSystemMatrix.Inverse().Map(x, y);
+    const Blaze::FloatPoint pn = mCoordinateSystemMatrix.Inverse().Map(x, y);
 
     mTranslation.X += (mTranslation.X - pn.X) * dd;
     mTranslation.Y += (mTranslation.Y - pn.Y) * dd;
@@ -353,9 +354,9 @@ void MainRenderer::ScaleCanvas(const double delta, const double x,
 }
 
 
-Matrix MainRenderer::GetMatrix() const
+Blaze::Matrix MainRenderer::GetMatrix() const
 {
-  Matrix m = Matrix::CreateScale(mScale, mScale);
+  Blaze::Matrix m = Blaze::Matrix::CreateScale(mScale, mScale);
 
   m.PreTranslate(mTranslation.X, mTranslation.Y);
 
@@ -365,7 +366,7 @@ Matrix MainRenderer::GetMatrix() const
 }
 
 
-void MainRenderer::InstallVectorImage(const uint8* ptr, const int size)
+void MainRenderer::InstallVectorImage(const Blaze::uint8* ptr, const int size)
 {
   mVectorImage.Parse(ptr, size);
 
@@ -377,12 +378,12 @@ void MainRenderer::InstallVectorImage(const uint8* ptr, const int size)
 
 void MainRenderer::SetupUserCoordinateSystem()
 {
-  const IntRect bounds = mVectorImage.GetBounds();
+  const Blaze::IntRect bounds = mVectorImage.GetBounds();
 
   const double mx = double(bounds.MaxX - bounds.MinX) / 2.0;
   const double my = double(bounds.MaxY - bounds.MinY) / 2.0;
 
-  mCoordinateSystemMatrix = Matrix::CreateTranslation(
+  mCoordinateSystemMatrix = Blaze::Matrix::CreateTranslation(
     (double(mImage.GetImageWidth()) / 2.0) - mx,
     (double(mImage.GetImageHeight()) / 2.0) - my);
 }
@@ -435,7 +436,7 @@ void MainRenderer::UpdateImageData()
 
   emscripten_webgl_get_drawing_buffer_size(mContext.Context, &h, &v);
 
-  const IntSize imageSize = mImage.UpdateSize(IntSize{
+  const Blaze::IntSize imageSize = mImage.UpdateSize(Blaze::IntSize{
       h, v
     });
 
@@ -455,55 +456,125 @@ static void AnimationFrame()
     NeedsRendering = false;
   }
 }
+#endif
 
+#include "renderer/renderer.h"
+#include "editor/editor.h"
+#include "editor/input/input_manager.h"
 
 extern "C" {
 
+  bool EMSCRIPTEN_KEEPALIVE on_pointer_event(
+    int target, int event, int type, int button,
+    float x, float y, float pressure, double time_stamp,
+    bool alt, bool ctrl, bool shift
+  ) {
+    return Graphick::Editor::Input::InputManager::on_pointer_event(
+      (Graphick::Editor::Input::InputManager::PointerTarget)target, (Graphick::Editor::Input::InputManager::PointerEvent)event, (Graphick::Editor::Input::InputManager::PointerType)type, (Graphick::Editor::Input::InputManager::PointerButton)button,
+      x, y, pressure, time_stamp, alt, ctrl, shift
+    );
+    return true;
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_keyboard_event(
+    int event, int key,
+    bool repeat, bool alt, bool ctrl, bool shift
+  ) {
+    return Graphick::Editor::Input::InputManager::on_keyboard_event(
+      (Graphick::Editor::Input::InputManager::KeyboardEvent)event, (Graphick::Editor::Input::KeyboardKey)key,
+      repeat, alt, ctrl, shift
+    );
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_resize_event(int width, int height, float dpr, int offset_x, int offset_y) {
+    return Graphick::Editor::Input::InputManager::on_resize_event(width, height, dpr, offset_x, offset_y);
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_wheel_event(int target, float delta_x, float delta_y) {
+    return Graphick::Editor::Input::InputManager::on_wheel_event((Graphick::Editor::Input::InputManager::PointerTarget)target, delta_x, delta_y);
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_clipboard_event(int event) {
+    return Graphick::Editor::Input::InputManager::on_clipboard_event((Graphick::Editor::Input::InputManager::ClipboardEvent)event);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE set_tool(int tool) {
+    if (tool < 0 || tool >= static_cast<int>(Graphick::Editor::Input::Tool::ToolType::None)) return;
+
+    Graphick::Editor::Input::InputManager::set_tool((Graphick::Editor::Input::Tool::ToolType)tool);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE load(const char* data) {
+    // Graphick::Editor::Editor::load(data);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE load_font(const unsigned char* buffer, long buffer_size) {
+    // FontManager::load_font(buffer, buffer_size);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE load_svg(const char* svg) {
+    // Graphick::SVG::parse_svg(svg);
+  }
+
+  void EMSCRIPTEN_KEEPALIVE save() {
+    // Graphick::Editor::Editor::save();
+  }
+
   void EMSCRIPTEN_KEEPALIVE RenderFrame()
   {
-    MR->RenderFrame();
+    Graphick::Editor::Editor::render();
+    // MR->RenderFrame();
   }
 
 
   void EMSCRIPTEN_KEEPALIVE TranslateCanvas(const double x, const double y)
   {
-    MR->TranslateCanvas(x, y);
+    // MR->TranslateCanvas(x, y);
 
-    NeedsRendering = true;
+    // NeedsRendering = true;
   }
 
 
   void EMSCRIPTEN_KEEPALIVE ScaleCanvas(const double delta, const double x,
     const double y)
   {
-    MR->ScaleCanvas(delta, x, y);
+    // MR->ScaleCanvas(delta, x, y);
 
-    NeedsRendering = true;
+    // NeedsRendering = true;
   }
 
 
   void EMSCRIPTEN_KEEPALIVE InstallVectorImage(const uintptr_t ptr, const size_t size)
   {
-    MR->InstallVectorImage(reinterpret_cast<const uint8*>(ptr),
-      static_cast<int>(size));
+    Graphick::Renderer::Renderer::upload_vector_image(reinterpret_cast<const uint8_t*>(ptr), static_cast<int>(size));
+    // MR->InstallVectorImage(reinterpret_cast<const Blaze::uint8*>(ptr),
+      // static_cast<int>(size));
   }
 
 
   static EM_BOOL EMSCRIPTEN_KEEPALIVE DoFrame(double time, void* userData) {
-    AnimationFrame();
+    // AnimationFrame();
 
     return EM_TRUE;
   }
 
 
-  int EMSCRIPTEN_KEEPALIVE main()
-  {
-    MR = new MainRenderer();
-
-    emscripten_request_animation_frame_loop(DoFrame, 0);
-
-    return 1;
+  void EMSCRIPTEN_KEEPALIVE init() {
+    Graphick::Editor::Editor::init();
   }
+
+  void EMSCRIPTEN_KEEPALIVE shutdown() {
+    Graphick::Editor::Editor::shutdown();
+  }
+
+  // int EMSCRIPTEN_KEEPALIVE main()
+  // {
+  //   MR = new MainRenderer();
+
+  //   emscripten_request_animation_frame_loop(DoFrame, 0);
+
+  //   return 1;
+  // }
 
 }
 

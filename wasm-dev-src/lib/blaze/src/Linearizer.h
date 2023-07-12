@@ -10,48 +10,51 @@
 #include "TileDescriptor_16x8.h"
 #include "TileDescriptor_64x16.h"
 
+namespace Blaze {
 
-/**
- * Calculates column count for a given image width in pixels.
- *
- * @param width Image width in pixels. Must be at least 1.
- */
-template <typename T>
-static constexpr TileIndex CalculateColumnCount(const int width) {
-    ASSERT(width > 0);
+    /**
+     * Calculates column count for a given image width in pixels.
+     *
+     * @param width Image width in pixels. Must be at least 1.
+     */
+    template <typename T>
+    static constexpr TileIndex CalculateColumnCount(const int width) {
+        ASSERT(width > 0);
 
-    return T::PointsToTileColumnIndex(width + T::TileW - 1);
-}
-
-
-/**
- * Calculates row count for a given image height in pixels.
- *
- * @param height Image height in pixels. Must be at least 1.
- */
-template <typename T>
-static constexpr TileIndex CalculateRowCount(const int height) {
-    ASSERT(height > 0);
-
-    return T::PointsToTileRowIndex(height + T::TileH - 1);
-}
+        return T::PointsToTileColumnIndex(width + T::TileW - 1);
+    }
 
 
-template <typename T>
-static FORCE_INLINE TileBounds CalculateTileBounds(const int minx, const int miny, const int maxx, const int maxy) {
-    ASSERT(minx >= 0);
-    ASSERT(miny >= 0);
-    ASSERT(minx < maxx);
-    ASSERT(miny < maxy);
+    /**
+     * Calculates row count for a given image height in pixels.
+     *
+     * @param height Image height in pixels. Must be at least 1.
+     */
+    template <typename T>
+    static constexpr TileIndex CalculateRowCount(const int height) {
+        ASSERT(height > 0);
 
-    const TileIndex x = T::PointsToTileColumnIndex(minx);
-    const TileIndex y = T::PointsToTileRowIndex(miny);
+        return T::PointsToTileRowIndex(height + T::TileH - 1);
+    }
 
-    const TileIndex horizontalCount = T::PointsToTileColumnIndex(
-        maxx + T::TileW - 1) - x;
 
-    const TileIndex verticalCount = T::PointsToTileRowIndex(
-        maxy + T::TileH - 1) - y;
+    template <typename T>
+    static FORCE_INLINE TileBounds CalculateTileBounds(const int minx, const int miny, const int maxx, const int maxy) {
+        ASSERT(minx >= 0);
+        ASSERT(miny >= 0);
+        ASSERT(minx < maxx);
+        ASSERT(miny < maxy);
 
-    return TileBounds(x, y, horizontalCount, verticalCount);
+        const TileIndex x = T::PointsToTileColumnIndex(minx);
+        const TileIndex y = T::PointsToTileRowIndex(miny);
+
+        const TileIndex horizontalCount = T::PointsToTileColumnIndex(
+            maxx + T::TileW - 1) - x;
+
+        const TileIndex verticalCount = T::PointsToTileRowIndex(
+            maxy + T::TileH - 1) - y;
+
+        return TileBounds(x, y, horizontalCount, verticalCount);
+    }
+
 }

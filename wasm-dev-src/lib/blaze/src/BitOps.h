@@ -25,55 +25,58 @@
 #endif
 
 
-/**
- * Returns the number of bits set to 1 in a given value.
- *
- * @param v Value to count bits for. Must not be 0.
- */
-template <typename T>
-static constexpr int CountBits(const T v) {
-    STATIC_ASSERT_UNSIGNED_TYPE(T);
+namespace Blaze {
 
-    ASSERT(v != 0);
+    /**
+     * Returns the number of bits set to 1 in a given value.
+     *
+     * @param v Value to count bits for. Must not be 0.
+     */
+    template <typename T>
+    static constexpr int CountBits(const T v) {
+        STATIC_ASSERT_UNSIGNED_TYPE(T);
 
-    int num = 0;
+        ASSERT(v != 0);
 
-    for (int i = 0; i < BIT_SIZE_OF(T); i++) {
-        const T bit = v >> i;
+        int num = 0;
 
-        num += static_cast<int>(bit & 1);
-    }
+        for (int i = 0; i < BIT_SIZE_OF(T); i++) {
+            const T bit = v >> i;
 
-    return num;
-}
-
-
-/**
- * Returns the number of trailing zero bits in a given value, starting at the
- * least significant bit position.
- *
- * @param v Value to count trailing zeroes for. Must not be 0.
- */
-template <typename T>
-static constexpr int CountTrailingZeroes(const T v) {
-    STATIC_ASSERT_UNSIGNED_TYPE(T);
-
-    ASSERT(v != 0);
-
-    int i = 0;
-
-    for ( ; i < BIT_SIZE_OF(T); i++) {
-        const T bit = v >> i;
-        const int m = static_cast<int>(bit & 1);
-
-        if (m != 0) {
-            return i;
+            num += static_cast<int>(bit & 1);
         }
+
+        return num;
     }
 
-    return i;
-}
 
+    /**
+     * Returns the number of trailing zero bits in a given value, starting at the
+     * least significant bit position.
+     *
+     * @param v Value to count trailing zeroes for. Must not be 0.
+     */
+    template <typename T>
+    static constexpr int CountTrailingZeroes(const T v) {
+        STATIC_ASSERT_UNSIGNED_TYPE(T);
+
+        ASSERT(v != 0);
+
+        int i = 0;
+
+        for (; i < BIT_SIZE_OF(T); i++) {
+            const T bit = v >> i;
+            const int m = static_cast<int>(bit & 1);
+
+            if (m != 0) {
+                return i;
+            }
+        }
+
+        return i;
+    }
+
+}
 
 // Include compiler-specific bit ops.
 
@@ -82,21 +85,22 @@ static constexpr int CountTrailingZeroes(const T v) {
 #include "BitOps_gcc.h"
 #endif
 
+namespace Blaze{
 
-/**
- * Returns the amount of BitVector values needed to contain at least a given
- * amount of bits.
- *
- * @param maxBitCount Maximum number of bits for which storage is needed. Must
- * be at least 1.
- */
-static constexpr int BitVectorsForMaxBitCount(const int maxBitCount) {
-    ASSERT(maxBitCount);
+    /**
+     * Returns the amount of BitVector values needed to contain at least a given
+     * amount of bits.
+     *
+     * @param maxBitCount Maximum number of bits for which storage is needed. Must
+     * be at least 1.
+     */
+    static constexpr int BitVectorsForMaxBitCount(const int maxBitCount) {
+        ASSERT(maxBitCount);
 
-    const int x = BIT_SIZE_OF(BitVector);
+        const int x = BIT_SIZE_OF(BitVector);
 
-    return (maxBitCount + x - 1) / x;
-}
+        return (maxBitCount + x - 1) / x;
+    }
 
 
 /**
@@ -107,7 +111,7 @@ static constexpr int BitVectorsForMaxBitCount(const int maxBitCount) {
  * @param count A number of values in vec. Note that this is not maximum
  * amount of bits to scan, but the amount of BitVector numbers vec contains.
  */
-static constexpr int CountBitsInVector(const BitVector *vec, const int count) {
+static constexpr int CountBitsInVector(const BitVector * vec, const int count) {
     int num = 0;
 
     for (int i = 0; i < count; i++) {
@@ -132,7 +136,7 @@ static constexpr int CountBitsInVector(const BitVector *vec, const int count) {
  * @param index Bit index to test and set. Must be at least 0.
  */
 template <typename T>
-static constexpr bool ConditionalSetBit(T *vec, const int index) {
+static constexpr bool ConditionalSetBit(T * vec, const int index) {
     STATIC_ASSERT_UNSIGNED_TYPE(T);
 
     ASSERT(vec != nullptr);
@@ -140,7 +144,7 @@ static constexpr bool ConditionalSetBit(T *vec, const int index) {
 
     const int vecIndex = index / BIT_SIZE_OF(T);
 
-    T *v = vec + vecIndex;
+    T* v = vec + vecIndex;
 
     const int localIndex = index % BIT_SIZE_OF(T);
     const T current = *v;
@@ -165,17 +169,19 @@ static constexpr bool ConditionalSetBit(T *vec, const int index) {
  * @param maxBitVectorCount A number of items in bit vector array. This
  * function always returns value less than this.
  */
-static constexpr int FindFirstNonZeroBitVector(const BitVector *vec, const int maxBitVectorCount) {
+static constexpr int FindFirstNonZeroBitVector(const BitVector * vec, const int maxBitVectorCount) {
     ASSERT(vec != nullptr);
     ASSERT(maxBitVectorCount > 0);
 
     int i = 0;
 
-    for ( ; i < maxBitVectorCount; i++) {
+    for (; i < maxBitVectorCount; i++) {
         if (vec[i] != 0) {
             return i;
         }
     }
 
     return i;
+}
+
 }

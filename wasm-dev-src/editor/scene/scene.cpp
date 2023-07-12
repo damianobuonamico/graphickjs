@@ -56,6 +56,14 @@ namespace Graphick::Editor {
     // for (auto it = m_children.rbegin(); it != m_children.rend(); it++) {
 
     Renderer::Renderer::end_frame();
+
+    Renderer::Renderer::render_frame({
+      viewport.size(),
+      viewport.dpr(),
+      viewport.position(),
+      viewport.zoom(),
+      vec4{1.0f, 1.0f, 1.0f, 1.0f}
+      });
   }
 
 }
