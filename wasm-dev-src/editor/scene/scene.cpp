@@ -42,11 +42,13 @@ namespace Graphick::Editor {
   void Scene::render() const {
     OPTICK_EVENT();
 
-    auto vp = viewport;
-
-    // vp.move_to({ 0.0f, 0.0f });
-
-    Renderer::Renderer::begin_frame(vp);
+    Renderer::Renderer::begin_frame({
+      viewport.size(),
+      viewport.dpr(),
+      viewport.position(),
+      viewport.zoom(),
+      vec4{1.0f, 1.0f, 1.0f, 1.0f}
+      });
 
     auto view = m_registry.view<PathComponent>();
     for (auto entity : view) {
@@ -57,13 +59,13 @@ namespace Graphick::Editor {
 
     Renderer::Renderer::end_frame();
 
-    Renderer::Renderer::render_frame({
-      viewport.size(),
-      viewport.dpr(),
-      viewport.position(),
-      viewport.zoom(),
-      vec4{1.0f, 1.0f, 1.0f, 1.0f}
-      });
+    // Renderer::Renderer::render_frame({
+    //   viewport.size(),
+    //   viewport.dpr(),
+    //   viewport.position(),
+    //   viewport.zoom(),
+    //   vec4{1.0f, 1.0f, 1.0f, 1.0f}
+    //   });
   }
 
 }

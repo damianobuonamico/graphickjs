@@ -9,6 +9,8 @@
 
 #include "Rasterizer_p.h"
 
+#include "../../../utils/console.h"
+
 namespace Blaze {
 
     /**
@@ -31,6 +33,8 @@ namespace Blaze {
         const int geometryCount, const Matrix& matrix, Threads& threads,
         const ImageData& image)
     {
+        OPTICK_EVENT();
+
         Rasterizer<T>::Rasterize(geometries, geometryCount, matrix, threads,
             image);
     }

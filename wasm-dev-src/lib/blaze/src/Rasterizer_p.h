@@ -9,6 +9,8 @@
 #include "RowItemList.h"
 #include "SIMD.h"
 
+#include "../../../utils/console.h"
+
 namespace Blaze {
 
     using PixelIndex = uint32;
@@ -285,23 +287,28 @@ namespace Blaze {
         Geometry* geometries = static_cast<Geometry*>(
             threads.MallocMain(SIZE_OF(Geometry) * inputGeometryCount));
 
-        for (int i = 0; i < inputGeometryCount; i++) {
-            const Geometry* s = inputGeometries + i;
+        {
+            OPTICK_EVENT("Transform Processing");
 
-            Matrix tm(s->TM);
+            for (int i = 0; i < inputGeometryCount; i++) {
+                const Geometry* s = inputGeometries + i;
 
-            tm.PreMultiply(matrix);
+                Matrix tm(s->TM);
 
-            new (geometries + i) Geometry(
-                tm.MapBoundingRect(s->PathBounds),
-                s->Tags,
-                s->Points,
-                tm,
-                s->TagCount,
-                s->PointCount,
-                s->Color,
-                s->Rule);
+                tm.PreMultiply(matrix);
+
+                new (geometries + i) Geometry(
+                    tm.MapBoundingRect(s->PathBounds),
+                    s->Tags,
+                    s->Points,
+                    tm,
+                    s->TagCount,
+                    s->PointCount,
+                    s->Color,
+                    s->Rule);
+            }
         }
+
 
         // Step 1.
         //
@@ -570,6 +577,8 @@ namespace Blaze {
         ASSERT(imageSize.Width > 0);
         ASSERT(imageSize.Height > 0);
 
+        OPTICK_EVENT();
+
         if (geometry->TagCount < 1) {
             return nullptr;
         }
@@ -635,6 +644,8 @@ namespace Blaze {
         RasterizableGeometry* linearized = new (placement) RasterizableGeometry(
             geometry, iterationFunction, bounds);
 
+        OPTICK_EVENT();
+
         // Determine if path is completely within destination image bounds. If
         // geometry bounds fit within destination image, a shortcut can be made
         // when generating lines.
@@ -698,6 +709,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex columnIndex, const F24Dot8 y0,
         const F24Dot8 y1, const F24Dot8 x)
     {
+        OPTICK_EVENT();
+
         ASSERT(y0 < y1);
 
         const PixelIndex rowIndex0 = F24Dot8ToPixelIndex(y0);
@@ -725,6 +738,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex columnIndex, const F24Dot8 y0,
         const F24Dot8 y1, const F24Dot8 x)
     {
+        OPTICK_EVENT();
+
         ASSERT(y0 > y1);
 
         const PixelIndex rowIndex0 = F24Dot8ToPixelIndex(y0 - 1);
@@ -752,6 +767,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex px, const PixelIndex py,
         const F24Dot8 x, const F24Dot8 y0, const F24Dot8 y1)
     {
+        OPTICK_EVENT();
+
         ASSERT(px >= 0);
         ASSERT(py >= 0);
         ASSERT(py < T::TileH);
@@ -781,6 +798,8 @@ namespace Blaze {
         const PixelIndex px, const PixelIndex py, const F24Dot8 x0,
         const F24Dot8 y0, const F24Dot8 x1, const F24Dot8 y1)
     {
+        OPTICK_EVENT();
+
         ASSERT(px >= 0);
         ASSERT(py >= 0);
         ASSERT(py < T::TileH);
@@ -810,6 +829,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex rowIndex, const F24Dot8 p0x,
         const F24Dot8 p0y, const F24Dot8 p1x, const F24Dot8 p1y)
     {
+        OPTICK_EVENT();
+
         ASSERT(p0x < p1x);
         ASSERT(p0y >= 0);
         ASSERT(p0y <= T::TileHF24Dot8);
@@ -883,6 +904,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex rowIndex, const F24Dot8 p0x,
         const F24Dot8 p0y, const F24Dot8 p1x, const F24Dot8 p1y)
     {
+        OPTICK_EVENT();
+
         ASSERT(p0x <= p1x);
         ASSERT(p0y >= 0);
         ASSERT(p0y <= T::TileHF24Dot8);
@@ -906,6 +929,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex rowIndex, const F24Dot8 p0x,
         const F24Dot8 p0y, const F24Dot8 p1x, const F24Dot8 p1y)
     {
+        OPTICK_EVENT();
+
         ASSERT(p0x < p1x);
         ASSERT(p0y >= 0);
         ASSERT(p0y <= T::TileHF24Dot8);
@@ -979,6 +1004,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex rowIndex, const F24Dot8 p0x,
         const F24Dot8 p0y, const F24Dot8 p1x, const F24Dot8 p1y)
     {
+        OPTICK_EVENT();
+
         ASSERT(p0x <= p1x);
         ASSERT(p0y >= 0);
         ASSERT(p0y <= T::TileHF24Dot8);
@@ -1002,6 +1029,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex rowIndex, const F24Dot8 p0x,
         const F24Dot8 p0y, const F24Dot8 p1x, const F24Dot8 p1y)
     {
+        OPTICK_EVENT();
+
         ASSERT(p0x > p1x);
         ASSERT(p0y >= 0);
         ASSERT(p0y <= T::TileHF24Dot8);
@@ -1074,6 +1103,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex rowIndex, const F24Dot8 p0x,
         const F24Dot8 p0y, const F24Dot8 p1x, const F24Dot8 p1y)
     {
+        OPTICK_EVENT();
+
         ASSERT(p0x >= p1x);
         ASSERT(p0y >= 0);
         ASSERT(p0y <= T::TileHF24Dot8);
@@ -1097,6 +1128,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex rowIndex, const F24Dot8 p0x,
         const F24Dot8 p0y, const F24Dot8 p1x, const F24Dot8 p1y)
     {
+        OPTICK_EVENT();
+
         ASSERT(p0x > p1x);
         ASSERT(p0y >= 0);
         ASSERT(p0y <= T::TileHF24Dot8);
@@ -1169,6 +1202,8 @@ namespace Blaze {
         int32** coverAreaTable, const PixelIndex rowIndex, const F24Dot8 p0x,
         const F24Dot8 p0y, const F24Dot8 p1x, const F24Dot8 p1y)
     {
+        OPTICK_EVENT();
+
         ASSERT(p0x >= p1x);
         ASSERT(p0y >= 0);
         ASSERT(p0y <= T::TileHF24Dot8);
@@ -1193,6 +1228,8 @@ namespace Blaze {
         const PixelIndex rowIndex1, const F24Dot8 x0, const F24Dot8 y0,
         const F24Dot8 x1, const F24Dot8 y1)
     {
+        OPTICK_EVENT();
+
         ASSERT(y0 < y1);
         ASSERT(x0 < x1);
         ASSERT(rowIndex0 < rowIndex1);
@@ -1252,6 +1289,8 @@ namespace Blaze {
         const PixelIndex rowIndex1, const F24Dot8 x0, const F24Dot8 y0,
         const F24Dot8 x1, const F24Dot8 y1)
     {
+        OPTICK_EVENT();
+
         ASSERT(y0 > y1);
         ASSERT(x0 < x1);
         ASSERT(rowIndex0 > rowIndex1);
@@ -1309,6 +1348,8 @@ namespace Blaze {
         const PixelIndex rowIndex1, const F24Dot8 x0, const F24Dot8 y0,
         const F24Dot8 x1, const F24Dot8 y1)
     {
+        OPTICK_EVENT();
+
         ASSERT(y0 < y1);
         ASSERT(x0 > x1);
         ASSERT(rowIndex0 < rowIndex1);
@@ -1368,6 +1409,8 @@ namespace Blaze {
         const PixelIndex rowIndex1, const F24Dot8 x0, const F24Dot8 y0,
         const F24Dot8 x1, const F24Dot8 y1)
     {
+        OPTICK_EVENT();
+
         ASSERT(y0 > y1);
         ASSERT(x0 > x1);
         ASSERT(rowIndex0 > rowIndex1);
@@ -1421,6 +1464,8 @@ namespace Blaze {
         const F24Dot8 Y0, const F24Dot8 X1, const F24Dot8 Y1,
         BitVector** bitVectorTable, int32** coverAreaTable)
     {
+        OPTICK_EVENT();
+
         ASSERT(Y0 != Y1);
         ASSERT(bitVectorTable != nullptr);
         ASSERT(coverAreaTable != nullptr);
@@ -1509,6 +1554,8 @@ namespace Blaze {
         const int32* coverAreaTable, const int x, const int rowLength,
         const int32 startCover, const uint32 color)
     {
+        OPTICK_EVENT();
+
         ASSERT(image != nullptr);
         ASSERT(bitVectorTable != nullptr);
         ASSERT(bitVectorCount > 0);
@@ -1644,6 +1691,8 @@ namespace Blaze {
         BitVector** bitVectorTable, int32** coverAreaTable, const int columnCount,
         const ImageData& image)
     {
+        OPTICK_EVENT();
+
         // A maximum number of horizontal tiles.
         const int horizontalCount = item->Rasterizable->Bounds.ColumnCount;
 
@@ -1733,6 +1782,8 @@ namespace Blaze {
         const RowItemList<RasterizableItem>* rowList, ThreadMemory& memory,
         const ImageData& image)
     {
+        OPTICK_EVENT();
+
         // How many columns can fit into image.
         const TileIndex columnCount = CalculateColumnCount<T>(image.Width);
 

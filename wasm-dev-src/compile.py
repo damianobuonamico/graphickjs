@@ -54,4 +54,4 @@ COMMON = [
 if (DEBUG) :
   os.system(' '.join([*COMMON, '-DGK_CONF_DEBUG=1', '-g', '-fdebug-compilation-dir="../wasm-dev-src"']))
 else :
-  os.system(' '.join([*COMMON, '-DGK_CONF_DIST=1', '-Os']))
+  os.system(' '.join([*COMMON, '-DGK_CONF_DIST=1', '-O3']))

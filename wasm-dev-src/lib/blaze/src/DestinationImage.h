@@ -27,6 +27,8 @@ namespace Blaze {
 
     public:
 
+        inline Threads& GetThreads() { return mThreads; }
+
         IntSize UpdateSize(const IntSize& size);
 
         void ClearImage();
