@@ -62,7 +62,6 @@ namespace Graphick::Renderer {
     attr.antialias = false;
     attr.depth = false;
     attr.stencil = false;
-    attr.desynchronized = true;
 
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
     emscripten_webgl_make_context_current(ctx);
@@ -139,7 +138,7 @@ namespace Graphick::Renderer {
     GPU::Device::end_commands();
   }
 
-  void Renderer::draw(const Geometry::Path& path, const Blaze::Matrix& transform) {
+  void Renderer::draw(const Geometry::Path& path, const Blaze::Matrix& transform, const uint32_t color) {
     if (path.segments().size() < 1) {
       return;
     }
@@ -195,7 +194,7 @@ namespace Graphick::Renderer {
       transform,
       (int)tags.size(),
       (int)points.size(),
-      (uint32_t)0xFF3333CC,
+      color,
       Blaze::FillRule::NonZero
       });
   }

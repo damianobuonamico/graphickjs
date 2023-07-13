@@ -48,4 +48,12 @@ namespace Graphick::Editor {
     }
   };
 
+  struct FillComponent {
+    vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+    uint32_t get_uint32() const {
+      return ((uint32_t)(color.a * 255.0f) << 24) | ((uint32_t)(color.b * 255.0f) << 16) | ((uint32_t)(color.g * 255.0f) << 8) | (uint32_t)(color.r * 255.0f);
+    }
+  };
+
 }

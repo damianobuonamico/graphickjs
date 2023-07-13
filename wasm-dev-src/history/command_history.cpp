@@ -36,7 +36,7 @@ namespace Graphick::History {
       std::unique_ptr<Command>& last_command = instance->m_commands.back();
 
       if (last_command->can_merge() && command->can_merge()) {
-        if (CommandBatch* command_batch = dynamic_cast<CommandBatch*>(last_command.get())) {
+        if (CommandBatch* command_batch = static_cast<CommandBatch*>(last_command.get())) {
           command_batch->add(command);
           merged = true;
         } else {
@@ -86,7 +86,7 @@ namespace Graphick::History {
 
     auto& command = instance->m_commands[instance->m_index];
 
-    if (CommandBatch* command_batch = dynamic_cast<CommandBatch*>(command.get())) {
+    if (CommandBatch* command_batch = static_cast<CommandBatch*>(command.get())) {
       size_t batch_size = command_batch->size();
 
       if (batch_size == 0) {

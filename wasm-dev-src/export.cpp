@@ -461,6 +461,7 @@ static void AnimationFrame()
 #include "renderer/renderer.h"
 #include "editor/editor.h"
 #include "editor/input/input_manager.h"
+#include "io/svg/svg.h"
 
 extern "C" {
 
@@ -513,7 +514,7 @@ extern "C" {
   }
 
   void EMSCRIPTEN_KEEPALIVE load_svg(const char* svg) {
-    // Graphick::SVG::parse_svg(svg);
+    Graphick::io::svg::parse_svg(svg);
   }
 
   void EMSCRIPTEN_KEEPALIVE save() {

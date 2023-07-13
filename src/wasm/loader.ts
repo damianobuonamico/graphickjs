@@ -138,11 +138,15 @@ function loadBinarySequence(pathArray: string[]) {
             // module._free(ptr);
           };
           API._load_svg = (data: ArrayBuffer) => {
-            // const ptr = module._malloc(data.byteLength);
-            // const heap = new Uint8Array(module.HEAPU8.buffer, ptr, data.byteLength);
-            // heap.set(new Uint8Array(data));
-            // module._load_svg(ptr, data.byteLength);
-            // module._free(ptr);
+            const ptr = module._malloc(data.byteLength);
+            const heap = new Uint8Array(
+              module.HEAPU8.buffer,
+              ptr,
+              data.byteLength
+            );
+            heap.set(new Uint8Array(data));
+            module._load_svg(ptr, data.byteLength);
+            module._free(ptr);
           };
 
           API._to_heap = (array: Float32Array) => {
@@ -161,7 +165,13 @@ function loadBinarySequence(pathArray: string[]) {
           // module._init();
           Renderer.resize();
 
-          API._download_and_install_vector_image("boston.vectorimage");
+          // fetch ghostscript tiger
+          fetch(
+            "https://upload.wikimedia.org/wikipedia/commons/f/fd/Ghostscript_Tiger.svg"
+          )
+            .then((res) => res.arrayBuffer())
+            .then((text) => API._load_svg(text));
+          // API._download_and_install_vector_image("boston.vectorimage");
           // this.init();
         })
         .catch(() => {

@@ -71,7 +71,7 @@ namespace Graphick::History {
     }
 
     virtual bool merge_with(CommandPointer& command) override {
-      CommandBatch* casted_command = dynamic_cast<CommandBatch*>(command.get());
+      CommandBatch* casted_command = static_cast<CommandBatch*>(command.get());
       if (casted_command == nullptr) return false;
 
       std::move(this->m_commands.begin(), this->m_commands.end(), std::back_inserter(casted_command->m_commands));

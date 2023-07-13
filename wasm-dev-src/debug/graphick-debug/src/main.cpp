@@ -7,6 +7,8 @@
 
 #include "wasm-dev-src/renderer/renderer.h"
 
+#include "wasm-dev-src/io/svg/svg.h"
+
 #include "wasm-dev-src/utils/console.h"
 
 #include <glad/glad.h>
@@ -108,10 +110,13 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  std::ifstream ifs("res\\Tiger.vectorimage", std::ios::binary);
-  std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(ifs), {});
+  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+  Graphick::io::svg::parse_svg(content);
 
-  Graphick::Renderer::Renderer::upload_vector_image(buffer.data(), buffer.size());
+  // std::ifstream ifs("res\\Tiger.vectorimage", std::ios::binary);
+  // std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(ifs), {});
+  // Graphick::Renderer::Renderer::upload_vector_image(buffer.data(), buffer.size());
 
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
   Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;

@@ -20,7 +20,7 @@ namespace Graphick::History {
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      ChangeVec2Command* casted_command = dynamic_cast<ChangeVec2Command*>(command.get());
+      ChangeVec2Command* casted_command = static_cast<ChangeVec2Command*>(command.get());
       if (casted_command == nullptr || &casted_command->m_value != &this->m_value) return false;
 
       casted_command->m_new_value = this->m_new_value;
