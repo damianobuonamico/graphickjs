@@ -32,9 +32,9 @@ namespace Graphick::Renderer {
     static void begin_frame(const Viewport& viewport);
     static void end_frame();
 
-    static void draw(const Geometry::Path& path);
+    static void draw(const Geometry::Path& path, const Blaze::Matrix& transform);
     // TODO: Batch outline draw calls
-    static void draw_outline(const Geometry::Path& path) {};
+    static void draw_outline(const Geometry::Path& path, const Blaze::Matrix& transform);
   private:
     Renderer() = default;
     ~Renderer() = default;

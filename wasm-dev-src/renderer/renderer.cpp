@@ -26,6 +26,25 @@ namespace Graphick::Renderer {
 
   Renderer* Renderer::s_instance = nullptr;
 
+  static mat4 generate_projection_matrix(const ivec2 size, float zoom) {
+    float factor = 0.5f / zoom;
+
+    float half_width = -size.x * factor;
+    float half_height = size.y * factor;
+
+    float right = -half_width;
+    float left = half_width;
+    float top = -half_height;
+    float bottom = half_height;
+
+    return mat4{
+      2.0f / (right - left), 0.0f, 0.0f, 0.0f,
+      0.0f, 2.0f / (top - bottom), 0.0f, 0.0f,
+      0.0f, 0.0f, -1.0f, 0.0f,
+      -(right + left) / (right - left), -(top + bottom) / (top - bottom), 0.0f, 1.0f
+    };
+  }
+
   void Renderer::init() {
     if (s_instance != nullptr) {
       console::error("Renderer already initialized, call shutdown() before reinitializing!");
@@ -43,6 +62,7 @@ namespace Graphick::Renderer {
     attr.antialias = false;
     attr.depth = false;
     attr.stencil = false;
+    attr.desynchronized = true;
 
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
     emscripten_webgl_make_context_current(ctx);
@@ -119,7 +139,7 @@ namespace Graphick::Renderer {
     GPU::Device::end_commands();
   }
 
-  void Renderer::draw(const Geometry::Path& path) {
+  void Renderer::draw(const Geometry::Path& path, const Blaze::Matrix& transform) {
     if (path.segments().size() < 1) {
       return;
     }
@@ -156,7 +176,7 @@ namespace Graphick::Renderer {
       }
       }
     }
- 
+
     if (path.closed()) {
       tags.push_back(Blaze::PathTag::Close);
     }
@@ -172,12 +192,88 @@ namespace Graphick::Renderer {
       },
       get()->m_tags.back().data(),
       get()->m_points.back().data(),
-      Blaze::Matrix::Identity,
+      transform,
       (int)tags.size(),
       (int)points.size(),
       (uint32_t)0xFF3333CC,
       Blaze::FillRule::NonZero
       });
+  }
+
+  void Renderer::draw_outline(const Geometry::Path& path, const Blaze::Matrix& transform) {
+    if (path.empty()) return;
+
+    OPTICK_EVENT();
+
+    std::vector<vec2> vertex_positions;
+    std::vector<uint32_t> vertex_indices;
+
+    for (const auto& segment : path.segments()) {
+      auto p = transform.Map(segment.p0().x, segment.p0().y);
+      vertex_positions.push_back({ (float)p.X, (float)p.Y });
+    }
+
+    auto p = transform.Map(path.segments().back().p3().x, path.segments().back().p3().y);
+    vertex_positions.push_back({ (float)p.X, (float)p.Y });
+
+    for (uint32_t i = 0; i < vertex_positions.size() - 1; i++) {
+      vertex_indices.insert(vertex_indices.end(), { i, i + 1 });
+    }
+
+    uuid vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(vertex_positions.size(), "VertexPositions");
+    uuid index_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(vertex_indices.size(), "VertexIndices");
+
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(vertex_buffer_id);
+    const GPU::Buffer& index_buffer = GPU::Memory::Allocator::get_index_buffer(index_buffer_id);
+
+    GPU::Device::upload_to_buffer(vertex_buffer, 0, vertex_positions, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(index_buffer, 0, vertex_indices, GPU::BufferTarget::Index);
+
+    GPU::LineVertexArray vertex_array(
+      get()->m_programs.line_program,
+      vertex_buffer,
+      index_buffer
+    );
+
+    mat4 translation = mat4{
+      1.0f, 0.0f, 0.0f, 0.5f * (-get()->m_viewport.size.x / (float)get()->m_viewport.zoom + 2 * get()->m_viewport.position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-get()->m_viewport.size.y / (float)get()->m_viewport.zoom + 2 * get()->m_viewport.position.y),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    GPU::RenderState state = {
+      nullptr,
+      get()->m_programs.line_program.program,
+      *vertex_array.vertex_array,
+      GPU::Primitive::Lines,
+      {},
+      {},
+      {
+        {get()->m_programs.line_program.view_projection_uniform, generate_projection_matrix(get()->m_viewport.size, get()->m_viewport.zoom) * translation },
+        {get()->m_programs.line_program.color_uniform, vec4{0.3f, 0.3f, 0.9f, 1.0f} },
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)get()->m_viewport.size.x * (float)get()->m_viewport.dpr, (float)get()->m_viewport.size.y * (float)get()->m_viewport.dpr }
+      },
+      {
+        std::nullopt,
+        std::nullopt,
+        std::nullopt,
+        {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements(vertex_indices.size(), state);
+
+    GPU::Memory::Allocator::free_general_buffer(vertex_buffer_id);
+    GPU::Memory::Allocator::free_index_buffer(index_buffer_id);
   }
 
   void Renderer::render_frame(const Viewport& viewport) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "viewport.h"
+#include "selection.h"
 
 #include "../input/tool_state.h"
 
@@ -17,6 +18,8 @@ namespace Graphick::Editor {
     const uuid id;
 
     Viewport viewport;
+    Selection selection;
+
     Input::ToolState tool_state;
   public:
     Scene();
@@ -34,6 +37,11 @@ namespace Graphick::Editor {
 
     template <typename... C>
     inline auto get_all_entities_with() { return m_registry.view<C...>(); }
+
+    bool has_entity(const uuid id) const;
+    Entity get_entity(const uuid id);
+
+    uuid entity_at(const vec2 position, bool lower_level = false, float threshold = 0.0f);
   private:
     void render() const;
   private:

@@ -1,9 +1,19 @@
 #pragma once
 
-#include "../../math/vec2.h"
-
 #include "keys.h"
 #include "tool.h"
+
+#include "../../math/vec2.h"
+
+#include "../../utils/uuid.h"
+
+#include <optional>
+
+namespace Graphick::Editor {
+
+  class Entity;
+
+}
 
 namespace Graphick::Editor::Input {
 
@@ -82,7 +92,6 @@ namespace Graphick::Editor::Input {
 
     static KeysState keys;
     static Pointer pointer;
-    // static HoverState hover;
   public:
     InputManager(const InputManager&) = delete;
     InputManager(InputManager&&) = delete;
@@ -107,6 +116,8 @@ namespace Graphick::Editor::Input {
 
     static const Tool& tool();
     static void set_tool(Tool::ToolType type);
+
+    static std::optional<Entity> hovered();
   private:
     InputManager() = default;
     ~InputManager() = default;
@@ -131,6 +142,8 @@ namespace Graphick::Editor::Input {
   private:
     bool m_moving = false;
     bool m_abort = false;
+
+    uuid m_hovered = { 0 };
   private:
     static InputManager* s_instance;
   };

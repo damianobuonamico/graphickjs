@@ -5,6 +5,8 @@
 
 #include "../../utils/console.h"
 
+#include "../../lib/entt/entt.hpp"
+
 namespace Graphick::Editor {
 
   class Entity {

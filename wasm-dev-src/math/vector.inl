@@ -483,7 +483,7 @@ namespace Graphick::Math {
 
   /* -- zero -- */
 
-  inline void zero(vec2 v) {
+  inline void zero(vec2& v) {
     v.x = v.y = 0.0f;
   }
 

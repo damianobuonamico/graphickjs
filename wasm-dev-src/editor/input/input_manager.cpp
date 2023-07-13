@@ -1,10 +1,12 @@
 #include "input_manager.h"
 
-// #include "../../math/vector.h"
 #include "../editor.h"
+#include "../scene/entity.h"
 
 #include "../../math/ivec2.h"
 #include "../../math/math.h"
+
+#include "../../history/command_history.h"
 
 #include "../../utils/console.h"
 
@@ -13,7 +15,6 @@ namespace Graphick::Editor::Input {
   InputManager* InputManager::s_instance = nullptr;
   InputManager::Pointer InputManager::pointer{};
   InputManager::KeysState InputManager::keys{};
-  // HoverState InputManager::hover{};
 
   void InputManager::init() {
     // TODO: InputManager reinitialization
@@ -105,6 +106,11 @@ namespace Graphick::Editor::Input {
     Editor::scene().tool_state.set_current(tool);
   }
 
+  std::optional<Entity> InputManager::hovered() {
+    if (get()->m_hovered == uuid{ 0 } || !Editor::scene().has_entity(get()->m_hovered)) return std::nullopt;
+    return Editor::scene().get_entity(get()->m_hovered);
+  }
+
   void InputManager::set_keys_state(bool alt, bool ctrl, bool shift) {
     keys.alt_state_changed = keys.alt != alt;
     keys.alt = alt;
@@ -142,7 +148,7 @@ namespace Graphick::Editor::Input {
       Editor::scene().tool_state.set_active(keys.ctrl_state_changed ? Tool::ToolType::Zoom : Tool::ToolType::Pan);
     }
 
-    // CommandHistory::end_batch();
+    History::CommandHistory::end_batch();
 
     Editor::scene().tool_state.on_pointer_down();
 
@@ -164,15 +170,14 @@ namespace Graphick::Editor::Input {
     pointer.scene.position = Editor::scene().viewport.client_to_scene(current_position);
     pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
-    // if (!Editor::scene().tool_state.active().is_in_category(Tool::CategoryImmediate)) {
-    //   hover.set(
-    //     Editor::scene().entity_at(
-    //       pointer.scene.position,
-    //       Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect),
-    //       5.0f / Editor::scene().viewport.zoom()
-    //     )
-    //   );
-    // }
+    if (!Editor::scene().tool_state.active().is_in_category(Tool::CategoryImmediate)) {
+      m_hovered = Editor::scene().entity_at(
+        pointer.scene.position,
+        Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect),
+        5.0f / Editor::scene().viewport.zoom()
+      );
+      console::log("Hovered: ", m_hovered);
+    }
 
     if (!m_moving && pointer.down) {
       if (
@@ -206,7 +211,7 @@ namespace Graphick::Editor::Input {
 
     Editor::scene().tool_state.on_pointer_up();
 
-    // CommandHistory::end_batch();
+    History::CommandHistory::end_batch();
 
     if (pointer.button == PointerButton::Middle) {
       Editor::scene().tool_state.set_active(Editor::scene().tool_state.current().type());
@@ -231,11 +236,11 @@ namespace Graphick::Editor::Input {
 
   bool InputManager::on_key_down(KeyboardKey key) {
     if ((key == KeyboardKey::Z || (int)key == 90 /* TEMP: GLFW */) && keys.ctrl) {
-      // if (keys.shift) {
-      //   CommandHistory::redo();
-      // } else {
-      //   CommandHistory::undo();
-      // }
+      if (keys.shift) {
+        History::CommandHistory::redo();
+      } else {
+        History::CommandHistory::undo();
+      }
 
       Editor::render();
     }

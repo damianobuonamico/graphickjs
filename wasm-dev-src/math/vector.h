@@ -79,7 +79,7 @@ namespace Graphick::Math {
   vec3& abs(const vec3& v, vec3& out);
   vec4& abs(const vec4& v, vec4& out);
 
-  void zero(const vec2 v);
+  void zero(const vec2& v);
   void zero(const vec3& v);
   void zero(const vec4& v);
 
