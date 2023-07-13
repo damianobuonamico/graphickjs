@@ -14,4 +14,9 @@ namespace Graphick::Utils {
 
   uuid::uuid(const uuid& other) : m_uuid(other.m_uuid) {}
 
+  uuid& uuid::operator=(const uint64_t other) {
+    m_uuid = other;
+    return *this;
+  }
+
 }

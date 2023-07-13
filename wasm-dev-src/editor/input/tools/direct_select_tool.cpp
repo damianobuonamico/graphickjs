@@ -3,6 +3,7 @@
 #include "../input_manager.h"
 
 #include "../../editor.h"
+#include "../../scene/entity.h"
 
 #include "../../../utils/console.h"
 
@@ -14,7 +15,43 @@ namespace Graphick::Editor::Input {
     m_should_evaluate_selection = false;
     m_is_entity_added_to_selection = false;
     m_dragging_occurred = false;
-    m_mode = ModeNone;
+    m_mode = Mode::ModeNone;
+    m_entity = 0;
+    m_vertex.reset();
+    m_handle.reset();
+
+    HoverState::HoverType hover_type = InputManager::hover.type();
+    std::optional<Entity> entity = InputManager::hover.entity();
+    console::log("HoverType", (int)hover_type);
+
+    if (hover_type == HoverState::HoverType::None || !entity.has_value()) return;
+
+    m_entity = entity.value().id();
+    m_vertex = InputManager::hover.vertex();
+    m_handle = InputManager::hover.handle();
+
+    if (InputManager::keys.alt && m_entity && hover_type != HoverState::HoverType::Handle) {
+      on_duplicate_pointer_down();
+
+      console::log("DirectSelectTool::duplicate");
+    } else if (hover_type == HoverState::HoverType::Element) {
+      on_element_pointer_down();
+      console::log("DirectSelectTool::element");
+    } else if (hover_type == HoverState::HoverType::Vertex) {
+      on_vertex_pointer_down();
+      console::log("DirectSelectTool::vertex");
+    } else if (hover_type == HoverState::HoverType::Handle) {
+      on_handle_pointer_down();
+      console::log("DirectSelectTool::handle");
+    } else if (hover_type == HoverState::HoverType::Segment) {
+      on_bezier_pointer_down();
+      console::log("DirectSelectTool::bezier");
+    } else if (hover_type == HoverState::HoverType::Entity /*&& m_entity->is_in_category(Entity::CategorySelectable)*/) {
+      on_entity_pointer_down();
+      console::log("DirectSelectTool::entity");
+    } else {
+      on_none_pointer_down();
+    }
 
     // Entity* hovered = InputManager::hover.entity();
     // m_entity = hovered ? InputManager::hover.element() : nullptr;
@@ -61,26 +98,26 @@ namespace Graphick::Editor::Input {
     m_dragging_occurred = true;
 
     switch (m_mode) {
-    case ModeDuplicate:
+    case Mode::ModeDuplicate:
       on_duplicate_pointer_move();
       break;
-    case ModeElement:
+    case Mode::ModeElement:
       on_element_pointer_move();
       break;
-    case ModeVertex:
+    case Mode::ModeVertex:
       on_vertex_pointer_move();
       break;
-    case ModeHandle:
+    case Mode::ModeHandle:
       on_handle_pointer_move();
       break;
-    case ModeBezier:
+    case Mode::ModeBezier:
       on_bezier_pointer_move();
       break;
-    case ModeEntity:
+    case Mode::ModeEntity:
       on_entity_pointer_move();
       break;
     default:
-    case ModeNone:
+    case Mode::ModeNone:
       on_none_pointer_move();
       break;
     }
@@ -88,26 +125,26 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_pointer_up() {
     switch (m_mode) {
-    case ModeDuplicate:
+    case Mode::ModeDuplicate:
       on_duplicate_pointer_up();
       break;
-    case ModeElement:
+    case Mode::ModeElement:
       on_element_pointer_up();
       break;
-    case ModeVertex:
+    case Mode::ModeVertex:
       on_vertex_pointer_up();
       break;
-    case ModeHandle:
+    case Mode::ModeHandle:
       on_handle_pointer_up();
       break;
-    case ModeBezier:
+    case Mode::ModeBezier:
       on_bezier_pointer_up();
       break;
-    case ModeEntity:
+    case Mode::ModeEntity:
       on_entity_pointer_up();
       break;
     default:
-    case ModeNone:
+    case Mode::ModeNone:
       on_none_pointer_up();
       break;
     }
@@ -123,19 +160,27 @@ namespace Graphick::Editor::Input {
 
   // TODO: Implement rotation
   void DirectSelectTool::translate_selected() {
-    // for (const auto& [id, entity] : Editor::scene().selection) {
-    //   if (entity->is_in_category(Entity::CategorySelectableChildren)) {
-    //     ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
+    // TEMP
+    if (m_vertex.has_value()) {
+      auto vertex = m_vertex.value().lock();
+      if (vertex) {
+        vertex->set_delta(InputManager::pointer.scene.delta);
+      }
+    }
 
-    //     if (element && !element->selection()->full()) {
-    //       for (Entity* vertex : element->selection()->entities()) {
-    //         vertex->transform()->translate(InputManager::pointer.scene.movement);
-    //       }
-    //       continue;
-    //     }
-    //   }
+    // for (auto id : Editor::scene().selection.selected()) {
+      // if (entity->is_in_category(Entity::CategorySelectableChildren)) {
+      //   ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
 
-    //   entity->transform()->translate(InputManager::pointer.scene.movement);
+      //   if (element && !element->selection()->full()) {
+      //     for (Entity* vertex : element->selection()->entities()) {
+      //       vertex->transform()->translate(InputManager::pointer.scene.movement);
+      //     }
+      //     continue;
+      //   }
+      // }
+
+      // entity->transform()->translate(InputManager::pointer.scene.movement);
     // }
   }
 
@@ -159,7 +204,7 @@ namespace Graphick::Editor::Input {
 
     // m_selection_rect.set(InputManager::pointer.scene.position);
 
-    m_mode = ModeNone;
+    m_mode = Mode::ModeNone;
   }
 
   void DirectSelectTool::on_duplicate_pointer_down() {
@@ -178,7 +223,7 @@ namespace Graphick::Editor::Input {
     //   if (duplicate) Editor::scene().selection.select(duplicate);
     // }
 
-    m_mode = ModeDuplicate;
+    m_mode = Mode::ModeDuplicate;
   }
 
   void DirectSelectTool::on_entity_pointer_down() {
@@ -189,7 +234,7 @@ namespace Graphick::Editor::Input {
     //   m_is_entity_added_to_selection = true;
     // }
 
-    m_mode = ModeEntity;
+    m_mode = Mode::ModeEntity;
   }
 
   void DirectSelectTool::on_element_pointer_down() {
@@ -200,7 +245,7 @@ namespace Graphick::Editor::Input {
     //   m_is_entity_added_to_selection = true;
     // }
 
-    m_mode = ModeElement;
+    m_mode = Mode::ModeElement;
   }
 
   void DirectSelectTool::on_bezier_pointer_down() {
@@ -239,7 +284,7 @@ namespace Graphick::Editor::Input {
     //   }
     // }
 
-    m_mode = ModeBezier;
+    m_mode = Mode::ModeBezier;
   }
 
   void DirectSelectTool::on_vertex_pointer_down() {
@@ -254,14 +299,14 @@ namespace Graphick::Editor::Input {
     // if (m_vertex->transform()->left()) console::log("left", m_vertex->transform()->left()->get());
     // if (m_vertex->transform()->right()) console::log("right", m_vertex->transform()->right()->get());
 
-    m_mode = ModeVertex;
+    m_mode = Mode::ModeVertex;
   }
 
   void DirectSelectTool::on_handle_pointer_down() {
     // m_vertex = dynamic_cast<VertexEntity*>(m_handle->parent);
     // m_element = dynamic_cast<ElementEntity*>(m_vertex->parent);
 
-    m_mode = ModeHandle;
+    m_mode = Mode::ModeHandle;
   }
 
   /* -- on_pointer_move -- */
@@ -379,7 +424,7 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_move() {
-    // translate_selected();
+    translate_selected();
   }
 
   void DirectSelectTool::on_handle_pointer_move() {
@@ -462,6 +507,12 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_up() {
+    if (m_vertex.has_value()) {
+      auto vertex = m_vertex.value().lock();
+      if (vertex) {
+        vertex->apply();
+      }
+    }
     // if (m_dragging_occurred && !m_element->selection()->empty()) {
     //   for (const auto& [id, entity] : Editor::scene().selection) {
     //     entity->transform()->apply();

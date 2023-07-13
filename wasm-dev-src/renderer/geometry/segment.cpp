@@ -12,45 +12,45 @@ namespace Graphick::Renderer::Geometry {
 
   Segment::Segment(vec2 p0, vec2 p3) :
     m_kind(Kind::Linear),
-    m_p0(std::make_shared<vec2>(p0)),
-    m_p3(std::make_shared<vec2>(p3)) {}
+    m_p0(std::make_shared<History::Vec2Value>(p0)),
+    m_p3(std::make_shared<History::Vec2Value>(p3)) {}
 
   Segment::Segment(vec2 p0, vec2 p1, vec2 p3, bool is_quadratic) :
     m_kind(is_quadratic ? Kind::Quadratic : Kind::Cubic),
-    m_p0(std::make_shared<vec2>(p0)),
-    m_p1(std::make_unique<vec2>(p0)),
-    m_p3(std::make_shared<vec2>(p3)) {}
+    m_p0(std::make_shared<History::Vec2Value>(p0)),
+    m_p1(std::make_shared<History::Vec2Value>(p0)),
+    m_p3(std::make_shared<History::Vec2Value>(p3)) {}
 
   Segment::Segment(vec2 p0, vec2 p1, vec2 p2, vec2 p3) :
     m_kind(Kind::Cubic),
-    m_p0(std::make_shared<vec2>(p0)),
-    m_p1(std::make_unique<vec2>(p0)),
-    m_p2(std::make_unique<vec2>(p0)),
-    m_p3(std::make_shared<vec2>(p3)) {}
+    m_p0(std::make_shared<History::Vec2Value>(p0)),
+    m_p1(std::make_shared<History::Vec2Value>(p0)),
+    m_p2(std::make_shared<History::Vec2Value>(p0)),
+    m_p3(std::make_shared<History::Vec2Value>(p3)) {}
 
-  Segment::Segment(Point p0, Point p3) :
+  Segment::Segment(ControlPoint p0, ControlPoint p3) :
     m_kind(Kind::Linear),
     m_p0(p0),
     m_p3(p3) {}
 
-  Segment::Segment(Point p0, vec2 p1, Point p3, bool is_quadratic) :
+  Segment::Segment(ControlPoint p0, vec2 p1, ControlPoint p3, bool is_quadratic) :
     m_kind(is_quadratic ? Kind::Quadratic : Kind::Cubic),
     m_p0(p0),
-    m_p1(std::make_unique<vec2>(p1)),
+    m_p1(std::make_shared<History::Vec2Value>(p1)),
     m_p3(p3) {}
 
-  Segment::Segment(Point p0, vec2 p1, vec2 p2, Point p3) :
+  Segment::Segment(ControlPoint p0, vec2 p1, vec2 p2, ControlPoint p3) :
     m_kind(Kind::Cubic),
     m_p0(p0),
-    m_p1(std::make_unique<vec2>(p1)),
-    m_p2(std::make_unique<vec2>(p2)),
+    m_p1(std::make_shared<History::Vec2Value>(p1)),
+    m_p2(std::make_shared<History::Vec2Value>(p2)),
     m_p3(p3) {}
 
   Segment::Segment(const Segment& other) :
     m_kind(other.m_kind),
     m_p0(other.m_p0),
-    m_p1(other.m_p1 ? std::make_unique<vec2>(*other.m_p1) : nullptr),
-    m_p2(other.m_p2 ? std::make_unique<vec2>(*other.m_p2) : nullptr),
+    m_p1(other.m_p1 ? std::make_shared<History::Vec2Value>(*other.m_p1) : nullptr),
+    m_p2(other.m_p2 ? std::make_shared<History::Vec2Value>(*other.m_p2) : nullptr),
     m_p3(other.m_p3) {}
 
   Segment::Segment(Segment&& other) noexcept :
@@ -63,8 +63,8 @@ namespace Graphick::Renderer::Geometry {
   Segment& Segment::operator=(const Segment& other) {
     m_kind = other.m_kind;
     m_p0 = other.m_p0;
-    m_p1 = other.m_p1 ? std::make_unique<vec2>(*other.m_p1) : nullptr;
-    m_p2 = other.m_p2 ? std::make_unique<vec2>(*other.m_p2) : nullptr;
+    m_p1 = other.m_p1 ? std::make_shared<History::Vec2Value>(*other.m_p1) : nullptr;
+    m_p2 = other.m_p2 ? std::make_shared<History::Vec2Value>(*other.m_p2) : nullptr;
     m_p3 = other.m_p3;
 
     return *this;
@@ -93,14 +93,14 @@ namespace Graphick::Renderer::Geometry {
     int handles = 0;
 
     if (m_p1) {
-      if (Math::collinear(p0(), *m_p1, p3(), error)) {
+      if (Math::collinear(p0(), m_p1->get(), p3(), error)) {
         linear++;
       }
       handles++;
     }
 
     if (m_p2) {
-      if (Math::collinear(p0(), *m_p2, p3(), error)) {
+      if (Math::collinear(p0(), m_p2->get(), p3(), error)) {
         linear++;
       }
       handles++;
@@ -115,8 +115,8 @@ namespace Graphick::Renderer::Geometry {
 
     if (!m_p1 || !m_p2) return false;
 
-    vec2 d1 = 1.5f * (*m_p1 - p0());
-    vec2 d2 = 1.5f * (*m_p2 - p3());
+    vec2 d1 = 1.5f * (m_p1->get() - p0());
+    vec2 d2 = 1.5f * (m_p2->get() - p3());
 
     vec2 p1 = p0() + d1;
     vec2 p2 = p3() + d2;
@@ -153,10 +153,10 @@ namespace Graphick::Renderer::Geometry {
     std::vector<vec2> points = { p0(), p3() };
 
     if (m_p1) {
-      points.push_back(*m_p1);
+      points.push_back(m_p1->get());
     }
     if (m_p2) {
-      points.push_back(*m_p2);
+      points.push_back(m_p2->get());
     }
 
     for (vec2& point : points) {
@@ -177,8 +177,6 @@ namespace Graphick::Renderer::Geometry {
     }
 
     auto a = SEGMENT_CALL(closest_to, position, 8).sq_distance;
-
-    console::log("in rect", a);
 
     return a <= threshold * threshold;
   }

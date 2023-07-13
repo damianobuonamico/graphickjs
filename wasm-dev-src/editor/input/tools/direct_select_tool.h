@@ -4,6 +4,13 @@
 // #include "../../scene/entities/element_entity.h"
 // #include "../../scene/entities/selection_rect_entity.h"
 
+#include "../../../history/values/vec2_value.h"
+
+#include "../../../utils/uuid.h"
+
+#include <memory>
+#include <optional>
+
 namespace Graphick::Editor::Input {
 
   class DirectSelectTool : public Tool {
@@ -44,7 +51,7 @@ namespace Graphick::Editor::Input {
     void on_vertex_pointer_up();
     void on_handle_pointer_up();
   private:
-    enum Mode {
+    enum class Mode {
       ModeNone = 0,
       ModeDuplicate,
       ModeElement,
@@ -62,8 +69,11 @@ namespace Graphick::Editor::Input {
     // vec2 m_last_bezier_p2{};
     // BezierEntity::BezierPointDistance m_closest{};
 
-    Mode m_mode = ModeNone;
+    Mode m_mode = Mode::ModeNone;
 
+    uuid m_entity = 0;
+    std::optional<std::weak_ptr<History::Vec2Value>> m_vertex;
+    std::optional<std::weak_ptr<History::Vec2Value>> m_handle;
     // Entity* m_entity = nullptr;
     // ElementEntity* m_element = nullptr;
     // BezierEntity* m_bezier = nullptr;

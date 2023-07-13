@@ -15,6 +15,7 @@ namespace Graphick::Editor::Input {
   InputManager* InputManager::s_instance = nullptr;
   InputManager::Pointer InputManager::pointer{};
   InputManager::KeysState InputManager::keys{};
+  HoverState InputManager::hover{};
 
   void InputManager::init() {
     // TODO: InputManager reinitialization
@@ -106,11 +107,6 @@ namespace Graphick::Editor::Input {
     Editor::scene().tool_state.set_current(tool);
   }
 
-  std::optional<Entity> InputManager::hovered() {
-    if (get()->m_hovered == uuid{ 0 } || !Editor::scene().has_entity(get()->m_hovered)) return std::nullopt;
-    return Editor::scene().get_entity(get()->m_hovered);
-  }
-
   void InputManager::set_keys_state(bool alt, bool ctrl, bool shift) {
     keys.alt_state_changed = keys.alt != alt;
     keys.alt = alt;
@@ -171,12 +167,13 @@ namespace Graphick::Editor::Input {
     pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
     if (!Editor::scene().tool_state.active().is_in_category(Tool::CategoryImmediate)) {
-      m_hovered = Editor::scene().entity_at(
+      float threshold = 5.0f / Editor::scene().viewport.zoom();
+
+      hover.set_hovered(Editor::scene().entity_at(
         pointer.scene.position,
         Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect),
-        5.0f / Editor::scene().viewport.zoom()
-      );
-      console::log("Hovered: ", m_hovered);
+        threshold
+      ), pointer.scene.position, threshold);
     }
 
     if (!m_moving && pointer.down) {

@@ -121,6 +121,7 @@ int main() {
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
   Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;
   test_entity.add_component<Graphick::Editor::TransformComponent>();
+  test_entity.add_component<Graphick::Editor::FillComponent>();
 
   path.move_to({ 0.0f, 0.0f });
   path.line_to({ 20.0f, -20.0f });
