@@ -98,19 +98,24 @@ namespace Graphick::Editor {
 
     // for (auto it = m_children.rbegin(); it != m_children.rend(); it++) {
 
+    for (auto id : selection.selected()) {
+      if (has_entity(id)) {
+        entt::entity entity = m_entities.at(id);
+
+        if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) continue;
+
+        const auto& path = m_registry.get<PathComponent>(entity).path;
+        const auto& transform = m_registry.get<TransformComponent>(entity);
+
+        Renderer::Renderer::draw_outline(path, transform.get_matrix());
+      }
+    }
+
     Renderer::Renderer::end_frame();
 
     // for (auto entity : view) {
     //   Renderer::Renderer::draw_outline(view.get<PathComponent>(entity).path);
     // }
-
-    for (auto id : selection.selected()) {
-      if (has_entity(id)) {
-        const auto& path = m_registry.get<PathComponent>(m_entities.at(id)).path;
-        const auto& transform = m_registry.get<TransformComponent>(m_entities.at(id));
-        Renderer::Renderer::draw_outline(path, transform.get_matrix());
-      }
-    }
     // Renderer::Renderer::render_frame({
     //   viewport.size(),
     //   viewport.dpr(),

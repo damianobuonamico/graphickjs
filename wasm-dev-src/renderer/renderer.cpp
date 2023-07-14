@@ -11,14 +11,10 @@
 #endif
 
 static const std::vector<float> QUAD_VERTEX_POSITIONS = {
-  // Top left.
-  -1.0,  1.0,  0.0,  0.0,  0.0,
-  // Bottom left.
-  -1.0, -1.0,  0.0,  0.0,  1.0,
-  // Bottom right.
-  1.0, -1.0,  0.0,  1.0,  1.0,
-  // Top right.
-  1.0,  1.0,  0.0,  1.0,  0.0
+  0.0, 1.0, 0.0, 0.0, 0.0,
+  0.0, 0.0,  0.0, 0.0, 1.0,
+  1.0, 0.0,  0.0, 1.0, 1.0,
+  1.0, 1.0, 0.0, 1.0, 0.0
 };
 static const std::vector<uint32_t> QUAD_VERTEX_INDICES = { 0, 1, 2, 0, 2, 3 };
 
@@ -85,6 +81,8 @@ namespace Graphick::Renderer {
 
     GPU::Device::upload_to_buffer(quad_vertex_positions_buffer, 0, QUAD_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
     GPU::Device::upload_to_buffer(quad_vertex_indices_buffer, 0, QUAD_VERTEX_INDICES, GPU::BufferTarget::Index);
+
+    get()->init_batched_lines_renderer();
   }
 
   void Renderer::shutdown() {
@@ -113,6 +111,8 @@ namespace Graphick::Renderer {
     get()->m_geometries.clear();
 
     get()->m_viewport = viewport;
+
+    get()->begin_lines_batch();
   }
 
   void Renderer::end_frame() {
@@ -134,7 +134,9 @@ namespace Graphick::Renderer {
     image.GetThreads().ResetFrameMemory();
 
     get()->render_frame_backend();
+    get()->flush_lines_batch();
 
+    GPU::Memory::Allocator::purge_if_needed();
     GPU::Device::end_commands();
   }
 
@@ -204,129 +206,19 @@ namespace Graphick::Renderer {
 
     OPTICK_EVENT();
 
-    std::vector<vec2> vertex_positions;
-    std::vector<uint32_t> vertex_indices;
-
-    for (const auto& segment : path.segments()) {
-      auto p = transform.Map(segment.p0().x, segment.p0().y);
-      vertex_positions.push_back({ (float)p.X, (float)p.Y });
-    }
-
-    auto p = transform.Map(path.segments().back().p3().x, path.segments().back().p3().y);
-    vertex_positions.push_back({ (float)p.X, (float)p.Y });
-
-    for (uint32_t i = 0; i < vertex_positions.size() - 1; i++) {
-      vertex_indices.insert(vertex_indices.end(), { i, i + 1 });
-    }
-
-    uuid vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(vertex_positions.size(), "VertexPositions");
-    uuid index_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(vertex_indices.size(), "VertexIndices");
-
-    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(vertex_buffer_id);
-    const GPU::Buffer& index_buffer = GPU::Memory::Allocator::get_index_buffer(index_buffer_id);
-
-    GPU::Device::upload_to_buffer(vertex_buffer, 0, vertex_positions, GPU::BufferTarget::Vertex);
-    GPU::Device::upload_to_buffer(index_buffer, 0, vertex_indices, GPU::BufferTarget::Index);
-
-    GPU::LineVertexArray vertex_array(
-      get()->m_programs.line_program,
-      vertex_buffer,
-      index_buffer
-    );
-
-    mat4 translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-get()->m_viewport.size.x / (float)get()->m_viewport.zoom + 2 * get()->m_viewport.position.x),
-      0.0f, 1.0f, 0.0f, 0.5f * (-get()->m_viewport.size.y / (float)get()->m_viewport.zoom + 2 * get()->m_viewport.position.y),
-      0.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 1.0f
-    };
-
-    GPU::RenderState state = {
-      nullptr,
-      get()->m_programs.line_program.program,
-      *vertex_array.vertex_array,
-      GPU::Primitive::Lines,
-      {},
-      {},
-      {
-        {get()->m_programs.line_program.view_projection_uniform, generate_projection_matrix(get()->m_viewport.size, get()->m_viewport.zoom) * translation },
-        {get()->m_programs.line_program.color_uniform, vec4{0.3f, 0.3f, 0.9f, 1.0f} },
-      },
-      {
-        { 0.0f, 0.0f },
-        { (float)get()->m_viewport.size.x * (float)get()->m_viewport.dpr, (float)get()->m_viewport.size.y * (float)get()->m_viewport.dpr }
-      },
-      {
-        std::nullopt,
-        std::nullopt,
-        std::nullopt,
-        {
-          std::nullopt,
-          std::nullopt,
-          std::nullopt
-        },
-        true
-      }
-    };
-
-    GPU::Device::draw_elements(vertex_indices.size(), state);
-
-    GPU::Memory::Allocator::free_general_buffer(vertex_buffer_id);
-    GPU::Memory::Allocator::free_index_buffer(index_buffer_id);
+    get()->add_to_lines_batch(path, transform);
   }
 
   void Renderer::render_frame(const Viewport& viewport) {
-    OPTICK_EVENT();
+    // OPTICK_EVENT();
 
-    get()->m_viewport = viewport;
+    // get()->m_viewport = viewport;
 
-    get()->update_image_data();
+    // get()->update_image_data();
 
-    // Blaze::DestinationImage<Blaze::TileDescriptor_16x8>& image = get()->m_image;
+    // get()->m_image.DrawImage(get()->m_vector_image, get()->get_matrix());
 
-    // std::vector<Blaze::Geometry> geometries;
-    // std::vector<Blaze::FloatPoint> points{
-    //   { 0.0f, 0.0f },
-    //   { 100.0f, 20.0f },
-    //   { 70.0f, 22.0f },
-    //   { 70.0f, 50.0f },
-    //   { 80.0f, 80.0f },
-    //   { 20.0f, 60.0f },
-    // };
-    // std::vector<Blaze::PathTag> tags{
-    //   Blaze::PathTag::Move,
-    //   Blaze::PathTag::Line,
-    //   Blaze::PathTag::Quadratic,
-    //   Blaze::PathTag::Line,
-    //   Blaze::PathTag::Line,
-    //   Blaze::PathTag::Close
-    // };
-
-    // geometries.push_back(Blaze::Geometry{
-    //   Blaze::IntRect{ 0, 0, 100, 100 },
-    //   tags.data(),
-    //   points.data(),
-    //   Blaze::Matrix::Identity,
-    //   (int)tags.size(),
-    //   (int)points.size(),
-    //   (uint32_t)0xFF3333CC,
-    //   Blaze::FillRule::NonZero
-    //   });
-
-    // if (geometries.size() < 1) {
-    //   return;
-    // }
-
-    // const Blaze::ImageData image_data(image.GetImageData(), image.GetImageWidth(), image.GetImageHeight(), image.GetBytesPerRow());
-
-    // Blaze::Rasterize<Blaze::TileDescriptor_16x8>(geometries.data(), geometries.size(), get()->get_matrix(viewport), image.GetThreads(), image_data);
-
-    // // Free all the memory allocated by threads.
-    // image.GetThreads().ResetFrameMemory();
-
-    get()->m_image.DrawImage(get()->m_vector_image, get()->get_matrix());
-
-    get()->render_frame_backend();
+    // get()->render_frame_backend();
   }
 
   void Renderer::update_image_data() {
@@ -395,8 +287,100 @@ namespace Graphick::Renderer {
     };
 
     GPU::Device::draw_elements(6, state);
+  }
 
-    GPU::Memory::Allocator::purge_if_needed();
+
+  void Renderer::init_batched_lines_renderer() {
+    delete[] m_lines_data.instance_buffer;
+
+    m_lines_data.instance_buffer = new vec4[m_lines_data.max_instance_count];
+    m_lines_data.instance_buffer_ptr = m_lines_data.instance_buffer;
+
+    if (m_lines_data.instance_buffer_id != 0) {
+      GPU::Memory::Allocator::free_general_buffer(m_lines_data.instance_buffer_id);
+    }
+
+    m_lines_data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec4>(m_lines_data.max_instance_buffer_size, "Lines");
+  }
+
+  void Renderer::begin_lines_batch() {
+    m_lines_data.instance_buffer_ptr = m_lines_data.instance_buffer;
+  }
+
+  void Renderer::add_to_lines_batch(const Geometry::Path& path, const Blaze::Matrix& transform) {
+    for (const auto& segment : path.segments()) {
+      auto p1 = transform.Map(segment.p0().x, segment.p0().y);
+      auto p3 = transform.Map(segment.p3().x, segment.p3().y);
+
+      *m_lines_data.instance_buffer_ptr = { (float)p1.X, (float)p1.Y, (float)p3.X, (float)p3.Y };
+      m_lines_data.instance_buffer_ptr++;
+    }
+
+    m_lines_data.instances += (uint32_t)path.segments().size();
+  }
+
+  void Renderer::flush_lines_batch() {
+    GLsizeiptr instance_buffer_size = (uint8_t*)m_lines_data.instance_buffer_ptr - (uint8_t*)m_lines_data.instance_buffer;
+    if (instance_buffer_size == 0 || m_lines_data.instances == 0) return;
+
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
+    const GPU::Buffer& index_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
+    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(m_lines_data.instance_buffer_id);
+
+    GPU::Device::upload_to_buffer(instance_buffer, 0, m_lines_data.instance_buffer, instance_buffer_size, GPU::BufferTarget::Vertex);
+
+    GPU::LineVertexArray vertex_array(
+      m_programs.line_program,
+      instance_buffer,
+      vertex_buffer,
+      index_buffer
+    );
+
+    mat4 translation = mat4{
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x / (float)m_viewport.zoom + 2 * m_viewport.position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y / (float)m_viewport.zoom + 2 * m_viewport.position.y),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    GPU::RenderState state = {
+      nullptr,
+      m_programs.line_program.program,
+      *vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {},
+      {},
+      {
+        // TOOD: merge dpr and zoom
+        {m_programs.line_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
+        {m_programs.line_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
+        {m_programs.line_program.line_width_uniform, 2.0f / (float)m_viewport.zoom },
+        {m_programs.line_program.zoom_uniform, (float)m_viewport.zoom },
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)m_viewport.size.x * (float)m_viewport.dpr, (float)m_viewport.size.y * (float)m_viewport.dpr }
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), m_lines_data.instances, state);
   }
 
   void Renderer::upload_vector_image(const uint8_t* ptr, const int size) {

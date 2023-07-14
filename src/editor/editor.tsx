@@ -10,7 +10,7 @@ import { getWorkspacePrimaryColor } from "@/utils/color";
 const Editor: Component = () => {
   const [state, setState] = createStore<State>({
     name: "Untitled",
-    workspace: "whiteboard",
+    workspace: "designer",
     tool: "select",
     loading: true,
     timeline: false,

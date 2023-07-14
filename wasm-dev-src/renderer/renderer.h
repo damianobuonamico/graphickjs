@@ -33,7 +33,6 @@ namespace Graphick::Renderer {
     static void end_frame();
 
     static void draw(const Geometry::Path& path, const Blaze::Matrix& transform, const uint32_t color = 0xFF000000);
-    // TODO: Batch outline draw calls
     static void draw_outline(const Geometry::Path& path, const Blaze::Matrix& transform);
   private:
     Renderer() = default;
@@ -44,6 +43,11 @@ namespace Graphick::Renderer {
     void update_image_data();
     void render_frame_backend();
 
+    void init_batched_lines_renderer();
+    void begin_lines_batch();
+    void add_to_lines_batch(const Geometry::Path& path, const Blaze::Matrix& transform);
+    void flush_lines_batch();
+
     // TODO: Move to viewport
     Blaze::Matrix get_matrix();
   private:
@@ -52,10 +56,11 @@ namespace Graphick::Renderer {
 #ifdef EMSCRIPTEN
     int m_ctx;
 #endif
-
     uuid m_quad_vertex_positions_buffer_id = 0;
     uuid m_quad_vertex_indices_buffer_id = 0;
     uuid m_frame_texture_id = 0;
+
+    BatchedLinesData m_lines_data;
 
     std::vector<std::vector<Blaze::PathTag>> m_tags;
     std::vector<std::vector<Blaze::FloatPoint>> m_points;

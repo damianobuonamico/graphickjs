@@ -20,7 +20,9 @@ namespace Graphick::Renderer::GPU {
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
     view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
-    color_uniform(Device::get_uniform(program, "uColor").value()) {}
+    color_uniform(Device::get_uniform(program, "uColor").value()),
+    line_width_uniform(Device::get_uniform(program, "uLineWidth").value()),
+    zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
 
   QuadProgram::QuadProgram() :
     program(Device::create_program("quad")),
@@ -150,25 +152,64 @@ namespace Graphick::Renderer::GPU {
 
   LineVertexArray::LineVertexArray(
     const LineProgram& line_program,
+    const Buffer& instance_buffer,
     const Buffer& vertex_positions_buffer,
     const Buffer& vertex_indices_buffer
   )
     : vertex_array(Device::create_vertex_array())
   {
     VertexAttr position_attr = Device::get_vertex_attr(line_program.program, "aPosition").value();
+    VertexAttr tex_coord_attr = Device::get_vertex_attr(line_program.program, "aTexCoord").value();
+    VertexAttr instance_from_attr = Device::get_vertex_attr(line_program.program, "aInstanceFrom").value();
+    VertexAttr instance_to_attr = Device::get_vertex_attr(line_program.program, "aInstanceTo").value();
 
     VertexAttrDescriptor position_desc = {
-      2,
+      3,
       VertexAttrClass::Float,
       VertexAttrType::F32,
-      8,
+      20,
       0,
       0,
       0
     };
 
+    VertexAttrDescriptor tex_coord_desc = {
+      2,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      20,
+      12,
+      0,
+      0
+    };
+
+    VertexAttrDescriptor instance_from_desc = {
+      2,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      16,
+      0,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor instance_to_desc = {
+      2,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      16,
+      8,
+      1,
+      1
+    };
+
     Device::bind_buffer(*vertex_array, vertex_positions_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+    Device::configure_vertex_attr(*vertex_array, tex_coord_attr, tex_coord_desc);
+
+    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, instance_from_attr, instance_from_desc);
+    Device::configure_vertex_attr(*vertex_array, instance_to_attr, instance_to_desc);
 
     Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
   }
