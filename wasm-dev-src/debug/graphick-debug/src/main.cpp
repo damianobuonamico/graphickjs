@@ -110,9 +110,9 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
-  std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-  Graphick::io::svg::parse_svg(content);
+  // std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  // std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+  // Graphick::io::svg::parse_svg(content);
 
   // std::ifstream ifs("res\\Tiger.vectorimage", std::ios::binary);
   // std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(ifs), {});
@@ -131,6 +131,10 @@ int main() {
   path.line_to({ 350.0f, -20.0f });
   path.line_to({ 380.0f, -40.0f });
   path.line_to({ 360.0f, 20.0f });
+
+  // path.move_to({ 0.0f, 0.0f });
+  // path.line_to({ 3.0f, 6.0f });
+  // path.line_to({ 6.0f, 0.0f });
 
   path.close();
 

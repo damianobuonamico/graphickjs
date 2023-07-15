@@ -1,5 +1,6 @@
 #include "renderer.h"
 
+#include "mask.h"
 #include "gpu/allocator.h"
 #include "geometry/path.h"
 
@@ -122,28 +123,85 @@ namespace Graphick::Renderer {
 
     Blaze::DestinationImage<Blaze::TileDescriptor_16x8>& image = get()->m_image;
 
-    if (get()->m_geometries.size() < 1) {
-      return;
+    if (get()->m_geometries.size() > 0) {
+      const Blaze::ImageData image_data(image.GetImageData(), image.GetImageWidth(), image.GetImageHeight(), image.GetBytesPerRow());
+
+      Blaze::Rasterize<Blaze::TileDescriptor_16x8>(get()->m_geometries.data(), get()->m_geometries.size(), get()->get_matrix(), image.GetThreads(), image_data);
+
+      // Free all the memory allocated by threads.
+      image.GetThreads().ResetFrameMemory();
+
+      get()->render_frame_backend();
     }
 
-    const Blaze::ImageData image_data(image.GetImageData(), image.GetImageWidth(), image.GetImageHeight(), image.GetBytesPerRow());
-
-    Blaze::Rasterize<Blaze::TileDescriptor_16x8>(get()->m_geometries.data(), get()->m_geometries.size(), get()->get_matrix(), image.GetThreads(), image_data);
-
-    // Free all the memory allocated by threads.
-    image.GetThreads().ResetFrameMemory();
-
-    get()->render_frame_backend();
     get()->flush_lines_batch();
 
     GPU::Memory::Allocator::purge_if_needed();
     GPU::Device::end_commands();
   }
 
+#define CARDS 1
+
   void Renderer::draw(const Geometry::Path& path, const Blaze::Matrix& transform, const uint32_t color) {
     if (path.segments().size() < 1) {
       return;
     }
+
+#ifdef CARDS
+    Mask mask(path);
+
+    uuid texture_id = GPU::Memory::Allocator::allocate_texture(mask.size(), GPU::TextureFormat::R8, "Frame");
+
+    const GPU::Texture& texture = GPU::Memory::Allocator::get_texture(texture_id);
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(get()->m_quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(get()->m_quad_vertex_indices_buffer_id);
+
+    GPU::Device::upload_to_texture(texture, { { 0.0f, 0.0f }, { (float)mask.size().x, (float)mask.size().y } }, mask.data());
+
+    GPU::QuadVertexArray vertex_array(
+      get()->m_programs.quad_program,
+      quad_vertex_positions_buffer,
+      quad_vertex_indices_buffer
+    );
+
+    GPU::RenderState state = {
+      nullptr,
+      get()->m_programs.quad_program.program,
+      *vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {
+        { { get()->m_programs.quad_program.frame_texture_uniform, texture.gl_texture }, texture }
+      },
+      {},
+      {},
+      {
+        { 0.0f, 0.0f },
+        { (float)get()->m_viewport.size.x, (float)get()->m_viewport.size.y }
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          get()->m_viewport.background,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements(6, state);
+    GPU::Memory::Allocator::free_texture(texture_id);
+
+    return;
+#endif
 
     rect bounding_rect = path.bounding_rect();
 
@@ -236,6 +294,7 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::render_frame_backend() {
+    return;
     GPU::Memory::Allocator::free_texture(m_frame_texture_id);
 
     // TODO: texture resizing
