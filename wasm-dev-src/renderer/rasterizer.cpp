@@ -2,6 +2,10 @@
 
 #include "geometry/path.h"
 
+#include "../lib/stb/stb_truetype.h"
+
+#include <numeric>
+
 #define PIXEL_BITS 8
 #define ONE_PIXEL (1 << PIXEL_BITS)
 
@@ -14,10 +18,91 @@ namespace Graphick::Renderer {
 
 #ifndef OLD_RASTERIZER
 
+  void Rasterizer::rasterize(vec2 shift, ivec2 size, const Geometry::Path& path, uint8_t* buffer) {
+    const std::vector<Geometry::Segment> segments = path.segments();
+    const rect box = path.bounding_rect();
+    const int num_verts = segments.size() + (path.closed() ? 1 : 2);
+
+    stbtt_vertex* vertices = new stbtt_vertex[num_verts];
+    stbtt__bitmap bitmap = { size.x, size.y, size.x, buffer };
+
+    vertices[0] = { stbtt_vertex_type((segments.front().p0().x - box.min.x) * 1.00f), stbtt_vertex_type((segments.front().p0().y - box.min.y) * 1.00f), 0, 0, 0, 0, STBTT_vmove, 0 };
+
+    for (size_t i = 1; i <= segments.size(); i++) {
+      const Geometry::Segment& segment = segments[i - 1];
+
+      switch (segment.kind()) {
+      case Geometry::Segment::Kind::Quadratic:
+        vertices[i] = {
+          stbtt_vertex_type((segment.p3().x - box.min.x) * 1.00f),
+          stbtt_vertex_type((segment.p3().y - box.min.y) * 1.00f),
+          stbtt_vertex_type((segment.p1().x - box.min.x) * 1.00f),
+          stbtt_vertex_type((segment.p1().y - box.min.y) * 1.00f),
+          0, 0, STBTT_vcurve, 0
+        };
+        break;
+      case Geometry::Segment::Kind::Cubic:
+        vertices[i] = {
+          stbtt_vertex_type((segment.p3().x - box.min.x) * 1.00f),
+          stbtt_vertex_type((segment.p3().y - box.min.y) * 1.00f),
+          stbtt_vertex_type((segment.p1().x - box.min.x) * 1.00f),
+          stbtt_vertex_type((segment.p1().y - box.min.y) * 1.00f),
+          stbtt_vertex_type((segment.p2().y - box.min.y) * 1.00f),
+          stbtt_vertex_type((segment.p2().y - box.min.y) * 1.00f),
+          STBTT_vcubic, 0
+        };
+        break;
+      default:
+      case Geometry::Segment::Kind::Linear:
+        vertices[i] = {
+          stbtt_vertex_type((segment.p3().x - box.min.x) * 1.00f),
+          stbtt_vertex_type((segment.p3().y - box.min.y) * 1.00f),
+          0, 0, 0, 0, STBTT_vline, 0
+        };
+        break;
+      }
+    }
+
+    if (!path.closed()) {
+      vertices[num_verts - 1] = { vertices[0].x, vertices[0].y, 0, 0, 0, 0, STBTT_vline, 0 };
+    }
+
+    stbtt_Rasterize(&bitmap, 0.35f, vertices, num_verts, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0, nullptr);
+
+    delete[] vertices;
+  }
+
+#elif false
+
   struct Edge {
     vec2 p0;
     vec2 p3;
+
+    float min_y;
+    float max_y;
   };
+
+  static bool is_in_span(int y, float min, float max) {
+    return y >= min && y <= max;
+  }
+
+  static void recalculate_edges(int y, const std::vector<Edge>& edges, std::vector<int>& possible_edges, std::vector<int>& active_edges) {
+    active_edges.clear();
+    std::vector<int> new_possible_edges{};
+
+    for (auto i : possible_edges) {
+      const Edge& edge = edges[i];
+
+      if (y <= edge.max_y) {
+        if (y >= edge.min_y) {
+          active_edges.push_back(i);
+        }
+        new_possible_edges.push_back(i);
+      }
+    }
+
+    possible_edges = new_possible_edges;
+  }
 
   void Rasterizer::rasterize(vec2 shift, ivec2 size, const Geometry::Path& path, uint8_t* buffer) {
     const std::vector<Geometry::Segment> segments = path.segments();
@@ -34,7 +119,11 @@ namespace Graphick::Renderer {
       vertices.push_back(p0.y);
 
       if (!Math::is_almost_equal(p0.y, p3.y)) {
-        edges.push_back({ p0, p3 });
+        if (p0.x >= p3.y) {
+          edges.push_back({ p3, p0, std::min(p0.y, p3.y), std::max(p0.y, p3.y) });
+        } else {
+          edges.push_back({ p0, p3, std::min(p0.y, p3.y), std::max(p0.y, p3.y) });
+        }
       }
     }
 
@@ -46,45 +135,67 @@ namespace Graphick::Renderer {
       vertices.push_back(p0.y);
 
       if (!Math::is_almost_equal(p0.y, p3.y)) {
-        edges.push_back({ p0, p3 });
+        edges.push_back({ p0, p3, std::min(p0.y, p3.y), std::max(p0.y, p3.y) });
       }
     }
 
     std::sort(vertices.begin(), vertices.end());
 
-    uint8_t color = 0;
+    uint8_t color = 255;
     int vertex_index = 0;
     bool needs_recalculation = true;
 
     std::vector<int> active_edges{};
+    std::vector<int> possible_edges(edges.size());
+
+    std::iota(possible_edges.begin(), possible_edges.end(), 0);
 
     for (int y = 0; y < size.y; y++) {
-      while (y > vertices[vertex_index]) {
+      while (y >= vertices[vertex_index]) {
         needs_recalculation = true;
         vertex_index++;
       }
 
+      float y_float = (float)y + 0.5f;
+
       if (needs_recalculation) {
         needs_recalculation = false;
-        // recalculate_edges(edges, active_edges);
-
-        color = (uint8_t)(20 * active_edges.size());
+        recalculate_edges(y_float, edges, possible_edges, active_edges);
       }
+
+      // precompute intersections
+      // std::vector<float> intersections(active_edges.size());
+      // for (int i = 0; i < intersections.size(); i++) {
+      //   const Edge& edge = edges[active_edges[i]];
+
+      //   if (is_in_span(y_float, edge.min_y, edge.max_y)) {
+      //     float t = (y_float - edge.p0.y) / (edge.p3.y - edge.p0.y);
+      //     float x0 = edge.p0.x + t * (edge.p3.x - edge.p0.x);
+      //     intersections[i] = x0;
+      //   } else {
+      //     intersections[i] = std::numeric_limits<float>::max();
+      //   }
+      // }
 
       for (int x = 0; x < size.x; x++) {
         int index = y * size.x + x;
-        buffer[index] = color;
+        float alpha = 0.0f;
+
+        for (int i : active_edges) {
+          const Edge& edge = edges[i];
+
+          float px0 = (float)x;
+          float px1 = (float)x + 1.0f;
+          float py0 = (float)y;
+          float py1 = (float)y + 1.0f;
+
+
+        }
+
+        buffer[index] = uint8_t(alpha * 255.0f);
       }
     }
-
-    // while (index != -1) {
-    //   VertexNode vertex = vertices[index];
-
-
-    //   index = vertex.next;
-    // }
   }
-
 
 #else
 

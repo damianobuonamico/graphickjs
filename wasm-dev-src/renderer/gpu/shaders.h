@@ -37,6 +37,7 @@ namespace Graphick::Renderer::GPU {
 
   struct QuadProgram {
     Program program;
+    Uniform view_projection_uniform;
     Uniform frame_texture_uniform;
 
     QuadProgram();

@@ -152,10 +152,22 @@ namespace Graphick::Renderer {
 
     uuid texture_id = GPU::Memory::Allocator::allocate_texture(mask.size(), GPU::TextureFormat::R8, "Frame");
 
+    const rect box = path.bounding_rect();
+
+    std::vector<float> vertices = {
+      box.min.x, box.min.y, 0.0f, 0.0f,
+      box.max.x, box.min.y, 1.0f, 0.0f,
+      box.max.x, box.max.y, 1.0f, 1.0f,
+      box.min.x, box.max.y, 0.0f, 1.0f
+    };
+
+    const uuid vertices_id = GPU::Memory::Allocator::allocate_general_buffer<float>(vertices.size(), "Vertices");
+
     const GPU::Texture& texture = GPU::Memory::Allocator::get_texture(texture_id);
-    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(get()->m_quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(vertices_id);
     const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(get()->m_quad_vertex_indices_buffer_id);
 
+    GPU::Device::upload_to_buffer(quad_vertex_positions_buffer, 0, vertices, GPU::BufferTarget::Vertex);
     GPU::Device::upload_to_texture(texture, { { 0.0f, 0.0f }, { (float)mask.size().x, (float)mask.size().y } }, mask.data());
 
     GPU::QuadVertexArray vertex_array(
@@ -163,6 +175,13 @@ namespace Graphick::Renderer {
       quad_vertex_positions_buffer,
       quad_vertex_indices_buffer
     );
+
+    mat4 translation = mat4{
+      1.0f, 0.0f, 0.0f, 0.5f * (-get()->m_viewport.size.x / (float)get()->m_viewport.zoom + 2 * get()->m_viewport.position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-get()->m_viewport.size.y / (float)get()->m_viewport.zoom + 2 * get()->m_viewport.position.y),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
 
     GPU::RenderState state = {
       nullptr,
@@ -173,7 +192,9 @@ namespace Graphick::Renderer {
         { { get()->m_programs.quad_program.frame_texture_uniform, texture.gl_texture }, texture }
       },
       {},
-      {},
+      {
+        { get()->m_programs.quad_program.view_projection_uniform, generate_projection_matrix(get()->m_viewport.size, get()->m_viewport.zoom) * translation }
+      },
       {
         { 0.0f, 0.0f },
         { (float)get()->m_viewport.size.x, (float)get()->m_viewport.size.y }
@@ -199,6 +220,7 @@ namespace Graphick::Renderer {
 
     GPU::Device::draw_elements(6, state);
     GPU::Memory::Allocator::free_texture(texture_id);
+    GPU::Memory::Allocator::free_general_buffer(vertices_id);
 
     return;
 #endif

@@ -123,18 +123,18 @@ int main() {
   test_entity.add_component<Graphick::Editor::TransformComponent>();
   test_entity.add_component<Graphick::Editor::FillComponent>();
 
-  path.move_to({ 0.0f, 0.0f });
-  path.line_to({ 20.0f, -20.0f });
-  path.line_to({ 50.0f, -40.0f });
-  path.line_to({ 200.0f, -50.0f });
-  path.line_to({ 300.0f, -20.0f });
-  path.line_to({ 350.0f, -20.0f });
-  path.line_to({ 380.0f, -40.0f });
-  path.line_to({ 360.0f, 20.0f });
-
   // path.move_to({ 0.0f, 0.0f });
-  // path.line_to({ 3.0f, 6.0f });
-  // path.line_to({ 6.0f, 0.0f });
+  // path.line_to({ 20.0f, -20.0f });
+  // path.line_to({ 50.0f, -40.0f });
+  // path.line_to({ 200.0f, -50.0f });
+  // path.line_to({ 300.0f, -20.0f });
+  // path.line_to({ 350.0f, -20.0f });
+  // path.line_to({ 380.0f, -40.0f });
+  // path.line_to({ 360.0f, 20.0f });
+
+  path.move_to({ 0.0f, 0.0f });
+  path.line_to({ 30.0f, 60.0f });
+  path.line_to({ 60.0f, 0.0f });
 
   path.close();
 

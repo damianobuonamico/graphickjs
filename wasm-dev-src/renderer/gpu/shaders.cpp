@@ -26,6 +26,7 @@ namespace Graphick::Renderer::GPU {
 
   QuadProgram::QuadProgram() :
     program(Device::create_program("quad")),
+    view_projection_uniform(Device::get_uniform(program, "u_mvp").value()),
     frame_texture_uniform(Device::get_uniform(program, "uTexture").value()) {}
 
   Programs::Programs() :
@@ -225,10 +226,10 @@ namespace Graphick::Renderer::GPU {
     VertexAttr tex_coord_attr = Device::get_vertex_attr(quad_program.program, "texcoord").value();
 
     VertexAttrDescriptor position_desc = {
-      3,
+      2,
       VertexAttrClass::Float,
       VertexAttrType::F32,
-      20,
+      16,
       0,
       0,
       0
@@ -238,8 +239,8 @@ namespace Graphick::Renderer::GPU {
       2,
       VertexAttrClass::Float,
       VertexAttrType::F32,
-      20,
-      12,
+      16,
+      8,
       0,
       0
     };
