@@ -24,6 +24,9 @@ namespace Graphick::Renderer::Geometry {
     void close();
 
     Math::rect bounding_rect() const;
+    Math::rect large_bounding_rect() const;
+
+    bool is_inside(const vec2 position, bool lower_level = false, float threshold = 0.0f) const;
 
     // TEMP
     // Temp::Geo outline_geo() const;

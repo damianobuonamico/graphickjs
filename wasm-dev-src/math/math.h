@@ -12,6 +12,7 @@ namespace Graphick::Math {
 
   bool does_rect_intersect_rect(const rect& a, const rect& b);
   bool is_rect_in_rect(const rect& a, const rect& b);
+  float rect_rect_intersection_area(const rect& a, const rect& b);
   std::vector<float> line_line_intersections(const rect& a, const rect& b);
   std::vector<vec2> line_line_intersection_points(const rect& a, const rect& b);
   std::vector<vec2> line_circle_intersection_points(const rect& line, const vec2 center, const float radius);

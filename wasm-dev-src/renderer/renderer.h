@@ -7,16 +7,12 @@
 #include "../math/vec2.h"
 #include "../math/mat4.h"
 
-#include "../editor/scene/viewport.h"
-
 #include "../utils/uuid.h"
 
 namespace Graphick::Renderer {
 
   namespace Geometry {
-
     class Path;
-
   }
 
   class Renderer {
@@ -27,7 +23,7 @@ namespace Graphick::Renderer {
     static void init();
     static void shutdown();
 
-    static void begin_frame(const Editor::Viewport& viewport);
+    static void begin_frame(const Viewport& viewport);
     static void end_frame();
 
     static void draw(const Geometry::Path& path);

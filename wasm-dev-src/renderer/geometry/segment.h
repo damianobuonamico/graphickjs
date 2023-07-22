@@ -20,6 +20,12 @@ namespace Graphick::Renderer::Geometry {
       // A cubic bezier segment.
       Cubic
     };
+
+    struct SegmentPointDistance {
+      float t;
+      vec2 point;
+      float sq_distance;
+    };
   public:
     Segment(vec2 p0, vec2 p3);
     Segment(vec2 p0, vec2 p1, vec2 p3, bool is_quadratic = true);
@@ -50,6 +56,8 @@ namespace Graphick::Renderer::Geometry {
     rect bounding_rect() const;
     rect large_bounding_rect() const;
     vec2 size() const;
+
+    bool is_inside(const vec2 position, float threshold = 0.0f) const;
   private:
     bool is_masquerading_linear() const;
     bool is_masquerading_quadratic(vec2& new_p1) const;
@@ -63,6 +71,10 @@ namespace Graphick::Renderer::Geometry {
     std::vector<float> linear_extrema() const;
     std::vector<float> quadratic_extrema() const;
     std::vector<float> cubic_extrema() const;
+
+    SegmentPointDistance linear_closest_to(const vec2 position, int iterations = 4) const;
+    SegmentPointDistance quadratic_closest_to(const vec2 position, int iterations = 4) const;
+    SegmentPointDistance cubic_closest_to(const vec2 position, int iterations = 4) const;
   private:
     // The type of segment: linear, quadratic, or cubic bezier.
     Kind m_kind;

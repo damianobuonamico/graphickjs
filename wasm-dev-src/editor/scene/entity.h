@@ -4,6 +4,7 @@
 #include "components.h"
 
 #include "../../utils/console.h"
+#include "../../lib/entt/entt.hpp"
 
 namespace Graphick::Editor {
 

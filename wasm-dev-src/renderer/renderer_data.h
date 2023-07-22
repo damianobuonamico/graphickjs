@@ -11,8 +11,11 @@ namespace Graphick::Renderer {
   struct Viewport {
     ivec2 size;
     float dpr;
+
     vec2 position;
     float zoom;
+    
+    vec4 background;
   };
 
   struct OpaqueTile {

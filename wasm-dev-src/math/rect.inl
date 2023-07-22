@@ -32,8 +32,15 @@ namespace Graphick::Math {
 
   constexpr rect::rect(vec2 v1, vec2 v2) : min(v1), max(v2) {}
 
+  /* -- Dimensions -- */
+
   constexpr vec2 rect::size() const {
     return max - min;
   };
+
+  constexpr float rect::area() const {
+    vec2 size = this->size();
+    return size.x * size.y;
+  }
 
 }

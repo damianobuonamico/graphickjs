@@ -20,7 +20,10 @@ namespace Graphick::Math {
     constexpr rect(vec2 v);
     constexpr rect(vec2 v1, vec2 v2);
 
+    /* -- Dimensions -- */
+
     constexpr vec2 size() const;
+    constexpr float area() const;
   };
 
 }

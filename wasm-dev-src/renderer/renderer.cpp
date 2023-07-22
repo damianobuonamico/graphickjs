@@ -87,30 +87,24 @@ namespace Graphick::Renderer {
     GPU::Device::shutdown();
   }
 
-  void Renderer::begin_frame(const Editor::Viewport& viewport) {
+  void Renderer::begin_frame(const Viewport& viewport) {
     OPTICK_EVENT();
 
-    get()->m_viewport = Viewport{
-      viewport.size(),
-      viewport.dpr(),
-      viewport.position(),
-      viewport.zoom()
-    };
-
-    get()->m_projection = generate_projection_matrix(viewport.size(), viewport.zoom());
+    get()->m_viewport = viewport;
+    get()->m_projection = generate_projection_matrix(viewport.size, viewport.zoom);
     get()->m_translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-viewport.size().x / viewport.zoom() + 2 * viewport.position().x),
-      0.0f, 1.0f, 0.0f, 0.5f * (-viewport.size().y / viewport.zoom() + 2 * viewport.position().y),
+      1.0f, 0.0f, 0.0f, 0.5f * (-viewport.size.x / viewport.zoom + 2 * viewport.position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-viewport.size.y / viewport.zoom + 2 * viewport.position.y),
       0.0f, 0.0f, 1.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f
     };
 
-    vec2 tiles_position = (viewport.position() * viewport.zoom()) % TILE_SIZE - TILE_SIZE;
+    vec2 tiles_position = (viewport.position * viewport.zoom) % TILE_SIZE - TILE_SIZE;
 
-    get()->m_tiles_projection = generate_projection_matrix(viewport.size(), 1.0f);
+    get()->m_tiles_projection = generate_projection_matrix(viewport.size, 1.0f);
     get()->m_tiles_translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-viewport.size().x + 2 * tiles_position.x),
-      0.0f, 1.0f, 0.0f, 0.5f * (-viewport.size().y + 2 * tiles_position.y),
+      1.0f, 0.0f, 0.0f, 0.5f * (-viewport.size.x + 2 * tiles_position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-viewport.size.y + 2 * tiles_position.y),
       0.0f, 0.0f, 1.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f
     };
@@ -118,7 +112,7 @@ namespace Graphick::Renderer {
     get()->m_tiler.reset(get()->m_viewport);
 
     GPU::Device::begin_commands();
-    GPU::Device::set_viewport(viewport.size(), viewport.dpr());
+    GPU::Device::set_viewport(viewport.size, viewport.dpr);
     GPU::Device::clear({ vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, std::nullopt, std::nullopt });
   }
 

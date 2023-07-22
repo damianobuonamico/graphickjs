@@ -1,10 +1,12 @@
 #include "segment.h"
 
+#include "../../math/math.h"
 #include "../../math/vector.h"
 
 #include "../../utils/defines.h"
+#include "../../utils/console.h"
 
-#define SEGMENT_CALL(func, ...) is_linear() ? linear_##func(__VA_ARGS__) : (is_cubic() ? cubic_##func(__VA_ARGS__) : quadratic_##func(__VA_ARGS__))
+#define SEGMENT_CALL(func, ...) (is_linear() ? linear_##func(__VA_ARGS__) : (is_cubic() ? cubic_##func(__VA_ARGS__) : quadratic_##func(__VA_ARGS__)))
 
 namespace Graphick::Renderer::Geometry {
 
@@ -169,6 +171,18 @@ namespace Graphick::Renderer::Geometry {
     return bounding_rect().size();
   }
 
+  bool Segment::is_inside(const vec2 position, float threshold) const {
+    if (!Math::is_point_in_rect(position, bounding_rect(), threshold)) {
+      return false;
+    }
+
+    auto a = SEGMENT_CALL(closest_to, position, 8).sq_distance;
+
+    console::log("in rect", a);
+
+    return a <= threshold * threshold;
+  }
+
   vec2 Segment::linear_get(const float t) const {
     return Math::lerp(p0(), p3(), t);
   }
@@ -279,6 +293,152 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return roots;
+  }
+
+  Segment::SegmentPointDistance Segment::linear_closest_to(const vec2 position, int iterations) const {
+    vec2 A = p0();
+    vec2 B = p3();
+
+    vec2 v = B - A;
+    vec2 w = position - A;
+
+    float len_sq = Math::squared_length(v);
+
+    float t = len_sq == 0 ? -1.0f : Math::dot(v, w) / len_sq;
+
+    if (t < 0.0f) {
+      return { 0.0f, A, Math::squared_length(w) };
+    } else if (t > 1.0f) {
+      return { 1.0f, B, Math::squared_distance(B, position) };
+    }
+
+    vec2 point = A + t * v;
+
+    return { t, point, Math::squared_distance(point, position) };
+  }
+
+  Segment::SegmentPointDistance Segment::quadratic_closest_to(const vec2 position, int iterations) const {
+    // TODO: implement
+    return { 0.0f, p0(), Math::squared_distance(p0(), position) };
+  }
+
+  Segment::SegmentPointDistance Segment::cubic_closest_to(const vec2 position, int iterations) const {
+    vec2 A = p0();
+    vec2 B = p1();
+    vec2 C = p2();
+    vec2 D = p3();
+
+    vec2 A_sq = A * A;
+    vec2 B_sq = B * B;
+    vec2 C_sq = C * C;
+    vec2 D_sq = D * D;
+
+    vec2 AB = A * B;
+    vec2 AC = A * C;
+    vec2 AD = A * D;
+    vec2 BC = B * C;
+    vec2 BD = B * D;
+    vec2 CD = C * D;
+
+    vec2 Apos = A * position;
+    vec2 Bpos = B * position;
+    vec2 Cpos = C * position;
+    vec2 Dpos = D * position;
+
+    float a = 0.0f;
+    float b = 0.0f;
+    float c = 0.0f;
+    float d = 0.0f;
+    float e = 0.0f;
+    float f = 0.0f;
+
+    for (int i = 0; i < 2; ++i) {
+      a +=
+        6.0f * A_sq[i] -
+        36.0f * AB[i] +
+        36.0f * AC[i] -
+        12.0f * AD[i] +
+        54.0f * B_sq[i] -
+        108.0f * BC[i] +
+        36.0f * BD[i] +
+        54.0f * C_sq[i] -
+        36.0f * CD[i] +
+        6.0f * D_sq[i];
+
+      b +=
+        -30.0f * A_sq[i] +
+        150.0f * AB[i] -
+        120.0f * AC[i] +
+        30.0f * AD[i] -
+        180.0f * B_sq[i] +
+        270.0f * BC[i] -
+        60.0f * BD[i] -
+        90.0f * C_sq[i] +
+        30.0f * CD[i];
+
+      c +=
+        60.0f * A_sq[i] -
+        240.0f * AB[i] +
+        144.0f * AC[i] -
+        24.0f * AD[i] +
+        216.0f * B_sq[i] -
+        216.0f * BC[i] +
+        24.0f * BD[i] +
+        36.0f * C_sq[i];
+
+      d +=
+        -60.0f * A_sq[i] +
+        180.0f * AB[i] -
+        72.0f * AC[i] +
+        6.0f * AD[i] +
+        6.0f * Apos[i] -
+        108.0f * B_sq[i] +
+        54.0f * BC[i] -
+        18.0f * Bpos[i] +
+        18.0f * Cpos[i] -
+        6.0f * Dpos[i];
+
+      e +=
+        30.0f * A_sq[i] -
+        60.0f * AB[i] +
+        12.0f * AC[i] -
+        12.0f * Apos[i] +
+        18.0f * B_sq[i] +
+        24.0f * Bpos[i] -
+        12.0f * Cpos[i];
+
+      f +=
+        -6.0f * A_sq[i] + 6.0f * AB[i] + 6.0f * Apos[i] - 6.0f * Bpos[i];
+    }
+
+    SegmentPointDistance params = { 0.0f, A, Math::squared_distance(A, position) };
+
+    for (int i = 0; i <= iterations; ++i) {
+      float t = (float)i / (float)iterations;
+
+      for (int j = 0; j < 5; ++j) {
+        float t_sq = t * t;
+        float t_cu = t_sq * t;
+        float t_qu = t_cu * t;
+        float t_qui = t_qu * t;
+
+        t -= (a * t_qui + b * t_qu + c * t_cu + d * t_sq + e * t + f) /
+          (5.0f * a * t_qu + 4.0f * b * t_cu + 3.0f * c * t_sq + 2.0f * d * t + e);
+      }
+
+      if (t < 0 || t > 1) continue;
+
+      vec2 point = cubic_get(t);
+      float sq_dist = Math::squared_distance(point, position);
+
+      if (sq_dist < params.sq_distance) {
+        params.t = t;
+        params.point = point;
+        params.sq_distance = sq_dist;
+      }
+    }
+
+    return params;
   }
 
 }

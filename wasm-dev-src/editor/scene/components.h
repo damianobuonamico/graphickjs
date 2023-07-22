@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../history/values.h"
+
 #include "../../utils/uuid.h"
 
 #include "../../renderer/geometry/path.h"
@@ -28,6 +30,12 @@ namespace Graphick::Editor {
     PathComponent() = default;
     PathComponent(const PathComponent& other) = default;
     PathComponent(const Renderer::Geometry::Path& path) : path(path) {}
+  };
+
+  struct TransformComponent {
+    History::Vec2Value position = { 0.0f, 0.0f };
+    vec2 scale = { 1.0f, 1.0f };
+    float rotation = 0.0f;
   };
 
 }
