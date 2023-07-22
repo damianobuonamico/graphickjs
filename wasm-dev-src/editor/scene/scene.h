@@ -55,7 +55,8 @@ namespace Graphick::Editor {
   private:
     entt::registry m_registry;
 
-    std::unordered_map<uuid, entt::entity> m_entities;
+    std::map<uuid, entt::entity> m_entities;
+    std::vector<entt::entity> m_order;
   private:
     friend class Editor;
     friend class Entity;

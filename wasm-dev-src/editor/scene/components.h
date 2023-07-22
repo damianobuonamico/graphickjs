@@ -40,6 +40,10 @@ namespace Graphick::Editor {
 
   struct FillComponent {
     vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+    FillComponent() = default;
+    FillComponent(const FillComponent& other) = default;
+    FillComponent(const vec4& color) : color(color) {}
   };
 
 }

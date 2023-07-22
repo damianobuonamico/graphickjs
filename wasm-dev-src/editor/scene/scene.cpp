@@ -32,10 +32,13 @@ namespace Graphick::Editor {
     entity.add_component<TagComponent>(tag.empty() ? "Entity" : tag);
 
     m_entities[id] = entity;
+    m_order.push_back(entity);
+
     return entity;
   }
 
   void Scene::destroy_entity(Entity entity) {
+    // TODO: implement z-ordering
     m_entities.erase(entity.id());
     m_registry.destroy(entity);
   }
@@ -49,13 +52,15 @@ namespace Graphick::Editor {
   }
 
   uuid Scene::entity_at(const vec2 position, bool lower_level, float threshold) {
-    for (auto it = m_entities.begin(); it != m_entities.end(); it++) {
-      if (m_registry.all_of<PathComponent, TransformComponent>(it->second)) {
-        const auto& path = m_registry.get<PathComponent>(it->second).path;
+    for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+      if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
+        const auto& path = m_registry.get<PathComponent>(*it).path;
         // const auto& transform = m_registry.get<TransformComponent>(entity).get_matrix().Inverse();
         // auto pos = transform.Map(position.x, position.y);
         // if (path.is_inside({ (float)pos.X, (float)pos.Y }, lower_level, threshold)) return id;
-        if (path.is_inside(position, lower_level, threshold)) return it->first;
+        if (path.is_inside(position, lower_level, threshold)) {
+          return m_registry.get<IDComponent>(*it).id;
+        }
       }
     }
 
@@ -87,13 +92,16 @@ namespace Graphick::Editor {
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 
-    auto view = m_registry.view<PathComponent, TransformComponent>();
-    for (auto entity : view) {
-      if (m_registry.all_of<FillComponent>(entity)) {
-        Renderer::Renderer::draw(view.get<PathComponent>(entity).path, m_registry.get<FillComponent>(entity).color);
+    // auto view = m_registry.view<PathComponent, TransformComponent>();
+    for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+      if (!m_registry.all_of<PathComponent, TransformComponent>(*it)) continue;
+      // for (auto entity : view) {
+      if (m_registry.all_of<FillComponent>(*it)) {
+        Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, m_registry.get<FillComponent>(*it).color);
       } else {
-        Renderer::Renderer::draw(view.get<PathComponent>(entity).path);
+        Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path);
       }
+      // }
     }
 
     // for (auto it = m_children.rbegin(); it != m_children.rend(); it++) {
