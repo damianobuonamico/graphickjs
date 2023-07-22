@@ -127,12 +127,12 @@ namespace Graphick::Renderer {
     GPU::Device::end_commands();
   }
 
-  void Renderer::draw(const Geometry::Path& path) {
+  void Renderer::draw(const Geometry::Path& path, const vec4& color) {
     if (path.empty()) return;
 
     OPTICK_EVENT();
 
-    get()->m_tiler.process_path(path, vec4{ 0.5f, 0.5f, 0.5f, 1.0f });
+    get()->m_tiler.process_path(path, color);
   }
 
   void Renderer::draw_outline(const Geometry::Path& path) {

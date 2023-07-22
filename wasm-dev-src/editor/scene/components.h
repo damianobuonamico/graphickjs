@@ -38,4 +38,8 @@ namespace Graphick::Editor {
     float rotation = 0.0f;
   };
 
+  struct FillComponent {
+    vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };
+  };
+
 }

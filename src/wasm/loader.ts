@@ -69,12 +69,18 @@ wasm().then((module: any) => {
   Renderer.resize();
 
   fetch(
-    "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"
-  ).then((res) => {
-    res.arrayBuffer().then((buffer) => {
-      API._load_font(buffer);
-    });
-  });
+    "https://upload.wikimedia.org/wikipedia/commons/f/fd/Ghostscript_Tiger.svg"
+  )
+    .then((res) => res.arrayBuffer())
+    .then((text) => API._load_svg(text));
+
+  // fetch(
+  //   "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"
+  // ).then((res) => {
+  //   res.arrayBuffer().then((buffer) => {
+  //     API._load_font(buffer);
+  //   });
+  // });
 });
 
 export default API;

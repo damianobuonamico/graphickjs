@@ -20,14 +20,12 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
-    return line_to(p2);
     Segment::Point point = std::make_shared<vec2>(p2);
     m_segments.emplace_back(m_last_point, p1, point, true);
     m_last_point = point;
   }
 
   void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
-    return line_to(p3);
     Segment::Point point = std::make_shared<vec2>(p3);
     m_segments.emplace_back(m_last_point, p1, p2, point);
     m_last_point = point;
@@ -231,8 +229,6 @@ namespace Graphick::Renderer::Geometry {
     if (!Math::is_point_in_rect(position, lower_level ? large_bounding_rect() : bounding_rect(), threshold)) {
       return false;
     }
-
-    console::log("threshold", threshold);
 
     for (const Segment& segment : m_segments) {
       if (segment.is_inside(position, threshold)) {

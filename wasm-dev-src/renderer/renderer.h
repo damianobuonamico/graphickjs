@@ -26,7 +26,7 @@ namespace Graphick::Renderer {
     static void begin_frame(const Viewport& viewport);
     static void end_frame();
 
-    static void draw(const Geometry::Path& path);
+    static void draw(const Geometry::Path& path, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
     // TODO: Batch outline draw calls
     static void draw_outline(const Geometry::Path& path);
   private:

@@ -1,13 +1,16 @@
-#include <stdio.h>
-
 #include "wasm-dev-src/editor/editor.h"
 #include "wasm-dev-src/editor/scene/entity.h"
 #include "wasm-dev-src/editor/input/input_manager.h"
+
+#include "wasm-dev-src/io/svg/svg.h"
 
 #include "wasm-dev-src/utils/console.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
+#include <fstream>
+#include <stdio.h>
 
 struct PointerState {
   Graphick::vec2 position;
@@ -105,9 +108,14 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
+  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+  Graphick::io::svg::parse_svg(content);
+
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
   Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;
   test_entity.add_component<Graphick::Editor::TransformComponent>();
+  test_entity.add_component<Graphick::Editor::FillComponent>();
 
   path.move_to({ 0.0f, 0.0f });
   path.line_to({ 20.0f, -20.0f });

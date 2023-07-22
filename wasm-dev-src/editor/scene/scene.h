@@ -9,6 +9,11 @@
 
 #include "../../lib/entt/entt.hpp"
 
+
+namespace Graphick::Renderer::Geometry {
+  class Path;
+}
+
 namespace Graphick::Editor {
 
   class Entity;
@@ -42,6 +47,9 @@ namespace Graphick::Editor {
     Entity get_entity(const uuid id);
 
     uuid entity_at(const vec2 position, bool lower_level = false, float threshold = 0.0f);
+
+    Entity create_element(const std::string& tag = "");
+    Entity create_element(Renderer::Geometry::Path& path, const std::string& tag = "");
   private:
     void render() const;
   private:

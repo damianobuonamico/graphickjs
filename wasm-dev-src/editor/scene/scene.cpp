@@ -62,6 +62,20 @@ namespace Graphick::Editor {
     return { 0 };
   }
 
+  Entity Scene::create_element(const std::string& tag) {
+    Renderer::Geometry::Path path;
+    return create_element(path, tag);
+  }
+
+  Entity Scene::create_element(Renderer::Geometry::Path& path, const std::string& tag) {
+    Entity entity = create_entity(tag);
+
+    entity.add_component<PathComponent>(path);
+    entity.add_component<TransformComponent>();
+
+    return entity;
+  }
+
   void Scene::render() const {
     OPTICK_EVENT();
 
@@ -75,9 +89,11 @@ namespace Graphick::Editor {
 
     auto view = m_registry.view<PathComponent, TransformComponent>();
     for (auto entity : view) {
-        // Renderer::Renderer::draw(view.get<PathComponent>(entity).path, view.get<TransformComponent>(entity).get_matrix());
+      if (m_registry.all_of<FillComponent>(entity)) {
+        Renderer::Renderer::draw(view.get<PathComponent>(entity).path, m_registry.get<FillComponent>(entity).color);
+      } else {
         Renderer::Renderer::draw(view.get<PathComponent>(entity).path);
-      // Renderer::Renderer::draw_outline(view.get<PathComponent>(entity).path);
+      }
     }
 
     // for (auto it = m_children.rbegin(); it != m_children.rend(); it++) {
