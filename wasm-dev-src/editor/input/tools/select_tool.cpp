@@ -14,7 +14,7 @@ namespace Graphick::Editor::Input {
   void SelectTool::on_pointer_down() {
     m_is_element_added_to_selection = false;
     m_dragging_occurred = false;
-    m_entity = InputManager::hovered().has_value() ? InputManager::hovered().value().id() : uuid{ 0 };
+    m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity().value().id() : uuid{ 0 };
 
     if (!InputManager::keys.shift && (m_entity != uuid{ 0 } || !Editor::scene().selection.has(m_entity))) {
       Editor::scene().selection.clear();
@@ -78,7 +78,6 @@ namespace Graphick::Editor::Input {
         if (!entity.has_component<TransformComponent>()) continue;
 
         entity.get_component<TransformComponent>().position.apply();
-        console::log("apply");
       }
       // for (auto& [id, entity] : Editor::scene().selection) {
       //   entity->transform()->position().apply();

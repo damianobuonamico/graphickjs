@@ -8,6 +8,7 @@
 
 #include <memory>
 
+// TODO: move in cpp file
 namespace Graphick::History {
 
   class BoolValue {

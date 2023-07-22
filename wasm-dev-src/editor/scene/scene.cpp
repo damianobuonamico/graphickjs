@@ -49,13 +49,13 @@ namespace Graphick::Editor {
   }
 
   uuid Scene::entity_at(const vec2 position, bool lower_level, float threshold) {
-    for (const auto& [id, entity] : m_entities) {
-      if (m_registry.all_of<PathComponent, TransformComponent>(entity)) {
-        const auto& path = m_registry.get<PathComponent>(entity).path;
+    for (auto it = m_entities.begin(); it != m_entities.end(); it++) {
+      if (m_registry.all_of<PathComponent, TransformComponent>(it->second)) {
+        const auto& path = m_registry.get<PathComponent>(it->second).path;
         // const auto& transform = m_registry.get<TransformComponent>(entity).get_matrix().Inverse();
         // auto pos = transform.Map(position.x, position.y);
         // if (path.is_inside({ (float)pos.X, (float)pos.Y }, lower_level, threshold)) return id;
-        if (path.is_inside(position, lower_level, threshold)) return id;
+        if (path.is_inside(position, lower_level, threshold)) return it->first;
       }
     }
 

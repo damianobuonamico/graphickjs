@@ -11,6 +11,8 @@ namespace Graphick::Utils {
     uuid(uint64_t uuid);
     uuid(const uuid& other);
 
+    uuid& operator=(const uint64_t other);
+
     operator uint64_t () { return m_uuid; }
     operator const uint64_t() const { return m_uuid; }
   private:
@@ -20,9 +22,7 @@ namespace Graphick::Utils {
 }
 
 namespace Graphick {
-
   using uuid = Utils::uuid;
-
 }
 
 namespace std {

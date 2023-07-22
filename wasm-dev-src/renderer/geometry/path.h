@@ -32,7 +32,7 @@ namespace Graphick::Renderer::Geometry {
     // Temp::Geo outline_geo() const;
   private:
     bool m_closed = false;
-    Segment::Point m_last_point;
+    Segment::ControlPoint m_last_point;
     std::vector<Segment> m_segments;
   };
 

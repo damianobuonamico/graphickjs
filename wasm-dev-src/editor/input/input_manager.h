@@ -4,12 +4,11 @@
 
 #include "keys.h"
 #include "tool.h"
+#include "hover_state.h"
 
 #include "../../math/vec2.h"
 
 #include "../../utils/uuid.h"
-
-#include <optional>
 
 namespace Graphick::Editor {
   class Entity;
@@ -89,9 +88,10 @@ namespace Graphick::Editor::Input {
       PointerType type = PointerType::Mouse;
       PointerButton button = PointerButton::Left;
     };
-
+  public:
     static KeysState keys;
     static Pointer pointer;
+    static HoverState hover;
   public:
     InputManager(const InputManager&) = delete;
     InputManager(InputManager&&) = delete;
@@ -116,8 +116,6 @@ namespace Graphick::Editor::Input {
 
     static const Tool& tool();
     static void set_tool(Tool::ToolType type);
-
-    static std::optional<Entity> hovered();
   private:
     InputManager() = default;
     ~InputManager() = default;

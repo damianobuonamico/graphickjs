@@ -42,6 +42,11 @@ namespace Graphick::Editor {
       return m_scene->m_registry.all_of<T>(m_handle);
     }
 
+    template<typename... T>
+    bool has_components() const {
+      return (has_component<T>() && ...);
+    }
+
     template<typename T>
     void remove_component() {
       GK_ASSERT(has_component<T>(), "Entity does not have component!");
