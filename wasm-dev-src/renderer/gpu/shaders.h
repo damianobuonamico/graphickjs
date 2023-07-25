@@ -29,6 +29,8 @@ namespace Graphick::Renderer::GPU {
     Program program;
     Uniform view_projection_uniform;
     Uniform color_uniform;
+    Uniform line_width_uniform;
+    Uniform zoom_uniform;
 
     LineProgram();
   };
@@ -69,6 +71,7 @@ namespace Graphick::Renderer::GPU {
 
     LineVertexArray(
       const LineProgram& line_program,
+      const Buffer& instance_buffer,
       const Buffer& vertex_positions_buffer,
       const Buffer& vertex_indices_buffer
     );

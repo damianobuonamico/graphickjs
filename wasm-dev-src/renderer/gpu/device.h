@@ -142,6 +142,7 @@ namespace Graphick::Renderer::GPU {
      */
     template <typename T>
     inline static void upload_to_buffer(const Buffer& buffer, size_t position, const std::vector<T>& data, const BufferTarget target) { s_device->upload_to_buffer(buffer, position, data, target); }
+    inline static void upload_to_buffer(const Buffer& buffer, size_t position, const void* data, size_t size, const BufferTarget target) { s_device->upload_to_buffer(buffer, position, data, size, target); }
 
     /**
      * @vertex_array: the vertex array.

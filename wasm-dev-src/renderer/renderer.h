@@ -27,7 +27,6 @@ namespace Graphick::Renderer {
     static void end_frame();
 
     static void draw(const Geometry::Path& path, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
-    // TODO: Batch outline draw calls
     static void draw_outline(const Geometry::Path& path);
   private:
     Renderer() = default;
@@ -37,6 +36,11 @@ namespace Graphick::Renderer {
 
     void draw_opaque_tiles();
     void draw_masked_tiles();
+
+    void init_batched_lines_renderer();
+    void begin_lines_batch();
+    void add_to_lines_batch(const Geometry::Path& path);
+    void flush_lines_batch();
   private:
     GPU::Programs m_programs;
 
@@ -44,6 +48,8 @@ namespace Graphick::Renderer {
     mat4 m_translation;
     mat4 m_tiles_projection;
     mat4 m_tiles_translation;
+
+    BatchedLinesData m_lines_data;
 
     uuid m_quad_vertex_positions_buffer_id = 0;
     uuid m_quad_vertex_indices_buffer_id = 0;

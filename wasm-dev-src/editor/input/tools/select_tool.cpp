@@ -20,6 +20,8 @@ namespace Graphick::Editor::Input {
       Editor::scene().selection.clear();
     }
 
+    console::log("down");
+
     if (m_entity != uuid{ 0 }) {
       if (!Editor::scene().selection.has(m_entity)) {
         Editor::scene().selection.select(m_entity);

@@ -92,41 +92,30 @@ namespace Graphick::Editor {
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 
-    // auto view = m_registry.view<PathComponent, TransformComponent>();
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (!m_registry.all_of<PathComponent, TransformComponent>(*it)) continue;
-      // for (auto entity : view) {
+
       if (m_registry.all_of<FillComponent>(*it)) {
         Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, m_registry.get<FillComponent>(*it).color);
       } else {
         Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path);
       }
-      // }
     }
-
-    // for (auto it = m_children.rbegin(); it != m_children.rend(); it++) {
-
-    Renderer::Renderer::end_frame();
-
-    // for (auto entity : view) {
-    //   Renderer::Renderer::draw_outline(view.get<PathComponent>(entity).path);
-    // }
 
     for (auto id : selection.selected()) {
-      if (has_entity(id)) {
-        const auto& path = m_registry.get<PathComponent>(m_entities.at(id)).path;
-        const auto& transform = m_registry.get<TransformComponent>(m_entities.at(id));
-        // Renderer::Renderer::draw_outline(path, transform.get_matrix());
-        Renderer::Renderer::draw_outline(path);
-      }
+      if (!has_entity(id)) continue;
+
+      entt::entity entity = m_entities.at(id);
+
+      if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) continue;
+
+      const auto& path = m_registry.get<PathComponent>(entity).path;
+      const auto& transform = m_registry.get<TransformComponent>(entity);
+
+      Renderer::Renderer::draw_outline(path);
     }
-    // Renderer::Renderer::render_frame({
-    //   viewport.size(),
-    //   viewport.dpr(),
-    //   viewport.position(),
-    //   viewport.zoom(),
-    //   vec4{1.0f, 1.0f, 1.0f, 1.0f}
-    //   });
+
+    Renderer::Renderer::end_frame();
   }
 
 }
