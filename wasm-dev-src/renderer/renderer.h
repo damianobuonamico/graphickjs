@@ -36,6 +36,8 @@ namespace Graphick::Renderer {
 
     void draw_opaque_tiles();
     void draw_masked_tiles();
+    void draw_masked_tiles_batch(const std::vector<MaskedTile> tiles, const size_t i, const std::vector<uint8_t*> textures);
+
 
     void init_batched_lines_renderer();
     void begin_lines_batch();

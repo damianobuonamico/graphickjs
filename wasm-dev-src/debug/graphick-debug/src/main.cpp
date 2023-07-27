@@ -104,6 +104,7 @@ int main() {
   glfwSetKeyCallback(window, key_callback);
 
   glDisable(GL_MULTISAMPLE);
+  glDisable(GL_DEPTH);
 
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);

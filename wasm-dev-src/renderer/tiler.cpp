@@ -43,25 +43,36 @@ namespace Graphick::Renderer {
 
     const std::vector<Geometry::Segment>& segments = path.segments();
 
+    m_prev = segments.front().p0() * m_zoom - rect.min;
+
     for (const auto& segment : segments) {
-      // TODO: Check segment's kind and handle other kind of segments
-      process_linear_segment(segment, rect.min);
+      vec2 p0 = segment.p0() * m_zoom - rect.min;
+      vec2 p3 = segment.p3() * m_zoom - rect.min;
+
+      if (segment.kind() == Geometry::Segment::Kind::Cubic) {
+        vec2 p1 = segment.p1() * m_zoom - rect.min;
+        vec2 p2 = segment.p2() * m_zoom - rect.min;
+
+        process_cubic_segment(p0, p1, p2, p3);
+      } else {
+        process_linear_segment(p0, p3);
+      }
     }
 
     if (!path.closed()) {
-      Geometry::Segment closing_segment = { segments.back().p3(), segments.front().p0() };
-      process_linear_segment(closing_segment, rect.min);
+      vec2 p0 = segments.back().p3() * m_zoom - rect.min;
+      vec2 p3 = segments.front().p0() * m_zoom - rect.min;
+
+      process_linear_segment(p0, p3);
     }
 
     finish();
   }
 
-  void PathTiler::process_linear_segment(const Geometry::Segment& line, vec2 offset) {
+  void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
     OPTICK_EVENT();
 
-    vec2 p0 = line.p0() * m_zoom - offset;
-    vec2 p3 = line.p3() * m_zoom - offset;
-
+    m_prev = p3;
     m_tile_y_prev = (int16_t)std::floor(p0.y) / TILE_SIZE;
 
     if (Math::is_almost_equal(p0, p3)) return;
@@ -127,6 +138,31 @@ namespace Graphick::Renderer {
       }
 
       if (row_t0 == 1.0f || col_t0 == 1.0f) break;
+    }
+  }
+
+  static constexpr float tolerance = 0.25f;
+
+  void PathTiler::process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+    OPTICK_EVENT();
+
+    vec2 a = -1.0f * p0 + 3.0f * p1 - 3.0f * p2 + p3;
+    vec2 b = 3.0f * (p0 - 2.0f * p1 + p2);
+
+    float conc = std::max(Math::length(b), Math::length(a + b));
+    float dt = std::sqrtf((std::sqrtf(8.0f) * tolerance) / conc);
+    float t = 0.0f;
+
+    while (t < 1.0f) {
+      t = std::min(t + dt, 1.0f);
+
+      vec2 p01 = Math::lerp(p0, p1, t);
+      vec2 p12 = Math::lerp(p1, p2, t);
+      vec2 p23 = Math::lerp(p2, p3, t);
+      vec2 p012 = Math::lerp(p01, p12, t);
+      vec2 p123 = Math::lerp(p12, p23, t);
+
+      process_linear_segment(m_prev, Math::lerp(p012, p123, t));
     }
   }
 
@@ -257,7 +293,17 @@ namespace Graphick::Renderer {
   Tiler::Tiler() {}
 
   Tiler::~Tiler() {
-    delete[] m_masks;
+    delete[] m_masks_textures;
+  }
+
+  const std::vector<uint8_t*> Tiler::masks_textures_data() const {
+    std::vector<uint8_t*> data;
+
+    for (size_t i = 0; i <= m_masks_texture_index; ++i) {
+      data.push_back(m_masks_textures + i * MASKS_TEXTURE_SIZE * MASKS_TEXTURE_SIZE);
+    }
+
+    return data;
   }
 
   void Tiler::reset(const Viewport& viewport) {
@@ -272,10 +318,16 @@ namespace Graphick::Renderer {
     m_opaque_tiles.clear();
     m_masked_tiles.clear();
 
-    delete[] m_masks;
+    //delete[] m_mask;
 
-    m_masks = new uint8_t[MASKS_TEXTURE_SIZE * MASKS_TEXTURE_SIZE];
+    //m_masks = new uint8_t[MASKS_TEXTURE_SIZE * MASKS_TEXTURE_SIZE];
+    if (m_masks_textures == nullptr) {
+      m_masks_textures = new uint8_t[MASKS_TEXTURE_SIZE * MASKS_TEXTURE_SIZE];
+      m_masks_textures_count = 1;
+    }
+
     m_masks_offset = 0;
+    m_masks_texture_index = 0;
 
     m_culled_tiles = std::vector<bool>(m_tiles_count.x * m_tiles_count.y, false);
   }
@@ -294,18 +346,10 @@ namespace Graphick::Renderer {
       if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
 
       int index = tile_index(coords, m_tiles_count);
+      // TODO: optimize culling by not rendering masks in the previous step
       if (m_culled_tiles[index]) continue;
 
-      m_masked_tiles.push_back({ color, index, m_masks_offset });
-      ivec2 mask_offset = { m_masks_offset % (MASKS_TEXTURE_SIZE / TILE_SIZE) * TILE_SIZE, m_masks_offset / (MASKS_TEXTURE_SIZE / TILE_SIZE) * TILE_SIZE };
-
-      for (int y = 0; y < TILE_SIZE; ++y) {
-        for (int x = 0; x < TILE_SIZE; ++x) {
-          m_masks[(mask_offset.y + y) * MASKS_TEXTURE_SIZE + mask_offset.x + x] = mask.data[y * TILE_SIZE + x];
-        }
-      }
-
-      m_masks_offset++;
+      push_mask(mask, index, color);
     }
 
     for (auto& span : spans) {
@@ -324,6 +368,45 @@ namespace Graphick::Renderer {
           m_culled_tiles[index] = true;
         }
       }
+    }
+  }
+
+  void Tiler::push_mask(const PathTiler::TileMask& mask, int index, const vec4& color) {
+    if (m_masks_offset >= MASKS_PER_BATCH) {
+      if (m_masks_texture_index == m_masks_textures_count - 1) {
+        resize_masks_textures(m_masks_textures_count + 1);
+      }
+
+      m_masks_texture_index++;
+      m_masks_offset = 0;
+    }
+
+    size_t start_index = m_masks_texture_index * MASKS_TEXTURE_SIZE * MASKS_TEXTURE_SIZE;
+
+    m_masked_tiles.push_back({ color, index, m_masks_offset });
+    ivec2 mask_offset = { m_masks_offset % (MASKS_TEXTURE_SIZE / TILE_SIZE) * TILE_SIZE, m_masks_offset / (MASKS_TEXTURE_SIZE / TILE_SIZE) * TILE_SIZE };
+
+    for (int y = 0; y < TILE_SIZE; ++y) {
+      for (int x = 0; x < TILE_SIZE; ++x) {
+        m_masks_textures[start_index + (mask_offset.y + y) * MASKS_TEXTURE_SIZE + mask_offset.x + x] = mask.data[y * TILE_SIZE + x];
+      }
+    }
+
+    m_masks_offset++;
+  }
+
+  void Tiler::resize_masks_textures(const int textures) {
+    OPTICK_EVENT();
+
+    if (m_masks_textures_count < textures) {
+      uint8_t* temp = new uint8_t[MASKS_TEXTURE_SIZE * MASKS_TEXTURE_SIZE * textures];
+
+      memcpy(temp, m_masks_textures, MASKS_TEXTURE_SIZE * MASKS_TEXTURE_SIZE * m_masks_textures_count);
+
+      delete[] m_masks_textures;
+
+      m_masks_textures = temp;
+      m_masks_textures_count = textures;
     }
   }
 

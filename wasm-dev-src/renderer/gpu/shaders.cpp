@@ -15,7 +15,8 @@ namespace Graphick::Renderer::GPU {
     projection_uniform(Device::get_uniform(program, "uProjectionMatrix").value()),
     framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
     tile_size_uniform(Device::get_uniform(program, "uTileSize").value()),
-    masks_texture_uniform(Device::get_uniform(program, "uMasksTexture").value()) {}
+    masks_texture_uniform(Device::get_uniform(program, "uMasksTexture").value()),
+    masks_texture_size_uniform(Device::get_uniform(program, "uMasksTextureSize").value()) {}
 
   LineProgram::LineProgram() :
     program(Device::create_program("line")),

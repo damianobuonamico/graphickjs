@@ -21,6 +21,7 @@ namespace Graphick::Renderer::GPU {
     Uniform framebuffer_size_uniform;
     Uniform tile_size_uniform;
     Uniform masks_texture_uniform;
+    Uniform masks_texture_size_uniform;
 
     MaskedTileProgram();
   };
