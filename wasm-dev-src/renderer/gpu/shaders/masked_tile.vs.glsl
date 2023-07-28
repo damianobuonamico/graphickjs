@@ -20,10 +20,14 @@ R"(
   out vec2 vMaskCoords;
 
   void main() {
-    ivec2 tiles = ivec2(ceil(float(uFramebufferSize.x) / float(uTileSize)) + 2.0, ceil(float(uFramebufferSize.y) / float(uTileSize)) + 2.0);
+    float x = float(aPosition.x);
+    float y = float(aPosition.y);
+    float tile = float(uTileSize);
+
+    ivec2 tiles = ivec2(ceil(float(uFramebufferSize.x) / tile) + 2.0, ceil(float(uFramebufferSize.y) / tile) + 2.0);
     vec2 position = vec2(float((aIndex % tiles.x) * uTileSize), float((aIndex / tiles.x) * uTileSize));
 
-    vec4 world_position = vec4(position.x + float(int(aPosition.x) * uTileSize), position.y + float(int(aPosition.y) * uTileSize), 0.0, 1.0);
+    vec4 world_position = vec4(position.x + x * tile, position.y + y * tile, 0.0, 1.0);
     vec4 view_position = round(uViewMatrix * world_position);
     vec4 transformed_position = uProjectionMatrix * view_position;
 
@@ -31,10 +35,11 @@ R"(
     
     vColor = aColor;
     // vColor = abs(vec4(aColor.rgb, 1.0) - vec4(float(aPosition.x) * 0.1, float(aPosition.y) * 0.1, 0.0, 0.0));
+
     vMaskCoords = vec2(
-      (float(aMaskIndex % (uMasksTextureSize / uTileSize) * uTileSize + int(aPosition.x) * uTileSize)) / float(uMasksTextureSize),
-      (float(aMaskIndex / (uMasksTextureSize / uTileSize) * uTileSize + int(aPosition.y) * uTileSize)) / float(uMasksTextureSize)
-    );
+      float(aMaskIndex % (uMasksTextureSize / uTileSize) * uTileSize) + x * (tile - 0.5) + (1.0 - x) * 0.5,
+      float(aMaskIndex / (uMasksTextureSize / uTileSize) * uTileSize) + y * (tile - 0.5) + (1.0 - y) * 0.5
+    ) / float(uMasksTextureSize);
   }
 
 )"
