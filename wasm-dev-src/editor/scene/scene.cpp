@@ -92,27 +92,35 @@ namespace Graphick::Editor {
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 
-    for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
-      if (!m_registry.all_of<PathComponent, TransformComponent>(*it)) continue;
+    {
+      OPTICK_EVENT("Render Entities");
 
-      if (m_registry.all_of<FillComponent>(*it)) {
-        Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, m_registry.get<FillComponent>(*it).color);
-      } else {
-        Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path);
+      for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+        if (!m_registry.all_of<PathComponent, TransformComponent>(*it)) continue;
+
+        if (m_registry.all_of<FillComponent>(*it)) {
+          Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, m_registry.get<FillComponent>(*it).color);
+        } else {
+          Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path);
+        }
       }
     }
 
-    for (auto id : selection.selected()) {
-      if (!has_entity(id)) continue;
+    {
+      OPTICK_EVENT("Render Outlines");
 
-      entt::entity entity = m_entities.at(id);
+      for (auto id : selection.selected()) {
+        if (!has_entity(id)) continue;
 
-      if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) continue;
+        entt::entity entity = m_entities.at(id);
 
-      const auto& path = m_registry.get<PathComponent>(entity).path;
-      const auto& transform = m_registry.get<TransformComponent>(entity);
+        if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) continue;
 
-      Renderer::Renderer::draw_outline(path);
+        const auto& path = m_registry.get<PathComponent>(entity).path;
+        const auto& transform = m_registry.get<TransformComponent>(entity);
+
+        Renderer::Renderer::draw_outline(path);
+      }
     }
 
     Renderer::Renderer::end_frame();

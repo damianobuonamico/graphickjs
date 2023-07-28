@@ -42,6 +42,8 @@ namespace Graphick::Renderer {
     void init_batched_lines_renderer();
     void begin_lines_batch();
     void add_to_lines_batch(const Geometry::Path& path);
+    void add_linear_segment_to_lines_batch(const vec2 p0, const vec2 p3);
+    void add_cubic_segment_to_lines_batch(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
     void flush_lines_batch();
   private:
     GPU::Programs m_programs;

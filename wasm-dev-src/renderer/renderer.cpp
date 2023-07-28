@@ -330,17 +330,55 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::add_to_lines_batch(const Geometry::Path& path) {
+    OPTICK_EVENT();
+
     for (const auto& segment : path.segments()) {
       vec2 p0 = segment.p0();
       vec2 p3 = segment.p3();
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
       // auto p3 = transform.Map(segment.p3().x, segment.p3().y);
 
-      *m_lines_data.instance_buffer_ptr = { (float)p0.x, (float)p0.y, (float)p3.x, (float)p3.y };
-      m_lines_data.instance_buffer_ptr++;
+      if (segment.kind() == Geometry::Segment::Kind::Cubic) {
+        add_cubic_segment_to_lines_batch(p0, segment.p1(), segment.p2(), p3);
+      } else {
+        add_linear_segment_to_lines_batch(p0, p3);
+      }
     }
+  }
 
-    m_lines_data.instances += (uint32_t)path.segments().size();
+  void Renderer::add_linear_segment_to_lines_batch(const vec2 p0, const vec2 p3) {
+    *m_lines_data.instance_buffer_ptr = { p0.x, p0.y, p3.x, p3.y };
+    m_lines_data.instance_buffer_ptr++;
+    m_lines_data.instances++;
+  }
+
+  static float tolerance = 0.25f;
+
+  void Renderer::add_cubic_segment_to_lines_batch(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+    vec2 prev = p0;
+
+    vec2 a = -1.0f * p0 + 3.0f * p1 - 3.0f * p2 + p3;
+    vec2 b = 3.0f * (p0 - 2.0f * p1 + p2);
+
+    float conc = std::max(Math::length(b), Math::length(a + b));
+    float dt = std::sqrtf((std::sqrtf(8.0f) * (tolerance / m_viewport.zoom)) / conc);
+    float t = 0.0f;
+
+    while (t < 1.0f) {
+      t = std::min(t + dt, 1.0f);
+
+      vec2 p01 = Math::lerp(p0, p1, t);
+      vec2 p12 = Math::lerp(p1, p2, t);
+      vec2 p23 = Math::lerp(p2, p3, t);
+      vec2 p012 = Math::lerp(p01, p12, t);
+      vec2 p123 = Math::lerp(p12, p23, t);
+
+      vec2 p = Math::lerp(p012, p123, t);
+
+      add_linear_segment_to_lines_batch(prev, p);
+
+      prev = p;
+    }
   }
 
   void Renderer::flush_lines_batch() {
