@@ -8,6 +8,7 @@ R"(
   uniform mat4 uProjectionMatrix;
   uniform ivec2 uFramebufferSize;
   uniform int uTileSize;
+  uniform int uMasksTextureSize;
 
   in uvec2 aPosition;
   in vec4 aColor;
@@ -18,24 +19,27 @@ R"(
   out vec2 vPosition;
   out vec2 vMaskCoords;
 
-  #define MASKS_TEXTURE_SIZE (16 * 100)
-
   void main() {
-    ivec2 tiles = ivec2(ceil(float(uFramebufferSize.x) / float(uTileSize)) + 2.0, ceil(float(uFramebufferSize.y) / float(uTileSize)) + 2.0);
+    float x = float(aPosition.x);
+    float y = float(aPosition.y);
+    float tile = float(uTileSize);
+
+    ivec2 tiles = ivec2(ceil(float(uFramebufferSize.x) / tile) + 2.0, ceil(float(uFramebufferSize.y) / tile) + 2.0);
     vec2 position = vec2(float((aIndex % tiles.x) * uTileSize), float((aIndex / tiles.x) * uTileSize));
 
-    vec4 world_position = vec4(position.x + float(int(aPosition.x) * uTileSize), position.y + float(int(aPosition.y) * uTileSize), 0.0, 1.0);
+    vec4 world_position = vec4(position.x + x * tile, position.y + y * tile, 0.0, 1.0);
     vec4 view_position = round(uViewMatrix * world_position);
     vec4 transformed_position = uProjectionMatrix * view_position;
 
     gl_Position = vec4(transformed_position.xy, 0.0, 1.0);
     
-    // vColor = aColor;
-    vColor = abs(vec4(aColor.rgb, 1.0) - vec4(float(aPosition.x) * 0.1, float(aPosition.y) * 0.1, 0.0, 0.0));
+    vColor = aColor;
+    // vColor = abs(vec4(aColor.rgb, 1.0) - vec4(float(aPosition.x) * 0.1, float(aPosition.y) * 0.1, 0.0, 0.0));
+
     vMaskCoords = vec2(
-      (float(aMaskIndex % (MASKS_TEXTURE_SIZE / uTileSize) * uTileSize + int(aPosition.x) * uTileSize) + 0.3) / float(MASKS_TEXTURE_SIZE),
-      (float(aMaskIndex / (MASKS_TEXTURE_SIZE / uTileSize) * uTileSize + int(aPosition.y) * uTileSize)) / float(MASKS_TEXTURE_SIZE)
-    );
+      float(aMaskIndex % (uMasksTextureSize / uTileSize) * uTileSize) + x * (tile - 0.5) + (1.0 - x) * 0.5,
+      float(aMaskIndex / (uMasksTextureSize / uTileSize) * uTileSize) + y * (tile - 0.5) + (1.0 - y) * 0.5
+    ) / float(uMasksTextureSize);
   }
 
 )"

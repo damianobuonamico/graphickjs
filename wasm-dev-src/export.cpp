@@ -1,11 +1,7 @@
-// #include "common.h"
 #include "editor/editor.h"
 #include "editor/scene/entity.h"
 #include "editor/input/input_manager.h"
-// #include "editor/text/font_manager.h"
-// #include "editor/settings.h"
-// #include "renderer/renderer.h"
-// #include "io/svg/svg.h"
+#include "io/svg/svg.h"
 
 #include <stdio.h>
 
@@ -71,7 +67,7 @@ extern "C" {
   }
 
   void EMSCRIPTEN_KEEPALIVE load_svg(const char* svg) {
-    // Graphick::SVG::parse_svg(svg);
+    Graphick::io::svg::parse_svg(svg);
   }
 
   void EMSCRIPTEN_KEEPALIVE init() {

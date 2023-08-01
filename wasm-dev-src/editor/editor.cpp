@@ -5,6 +5,8 @@
 
 #include "../renderer/renderer.h"
 
+#include "../history/command_history.h"
+
 #include "../utils/resource_manager.h"
 #include "../utils/console.h"
 
@@ -33,7 +35,7 @@ namespace Graphick::Editor {
     Input::InputManager::init();
     Utils::ResourceManager::init();
     Renderer::Renderer::init();
-    // CommandHistory::init();
+    History::CommandHistory::init();
     // FontManager::init();
 
     s_instance->m_scenes.emplace_back();
@@ -48,7 +50,7 @@ namespace Graphick::Editor {
     }
 
     // FontManager::shutdown();
-    // CommandHistory::shutdown();
+    History::CommandHistory::shutdown();
     Renderer::Renderer::shutdown();
     Utils::ResourceManager::shutdown();
     Input::InputManager::shutdown();

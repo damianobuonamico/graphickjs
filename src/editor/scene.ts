@@ -239,13 +239,6 @@ abstract class SceneManager {
     setTimeout(() => {
       if (data) {
         API._load(data);
-
-        // fetch ghostscript tiger
-        fetch(
-          "https://upload.wikimedia.org/wikipedia/commons/f/fd/Ghostscript_Tiger.svg"
-        )
-          .then((res) => res.arrayBuffer())
-          .then((text) => API._load_svg(text));
       } else {
         API._load("");
       }

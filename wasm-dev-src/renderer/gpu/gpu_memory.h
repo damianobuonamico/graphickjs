@@ -28,6 +28,7 @@ namespace Graphick::Renderer::GPU::Memory {
 
   enum class AllocationKind {
     Buffer,
+    IndexBuffer,
     Texture,
     Framebuffer
   };
@@ -91,45 +92,46 @@ namespace Graphick::Renderer::GPU::Memory {
 
   struct FreeAllocation {
     uuid id;
+    AllocationKind kind;
 
-    FreeAllocation() : id() {}
-    FreeAllocation(uuid id) : id(id) {}
+    FreeAllocation(AllocationKind kind) : id(), kind(kind) {}
+    FreeAllocation(AllocationKind kind, uuid id) : id(id), kind(kind) {}
   };
 
   struct FreeGeneralBuffer : public FreeAllocation {
     BufferAllocation allocation;
 
     FreeGeneralBuffer(BufferAllocation allocation)
-      : FreeAllocation(), allocation(allocation) {}
+      : FreeAllocation(AllocationKind::Buffer), allocation(allocation) {}
     FreeGeneralBuffer(uuid id, BufferAllocation allocation)
-      : FreeAllocation(id), allocation(allocation) {}
+      : FreeAllocation(AllocationKind::Buffer, id), allocation(allocation) {}
   };
 
   struct FreeIndexBuffer : public FreeAllocation {
     BufferAllocation allocation;
 
     FreeIndexBuffer(BufferAllocation allocation)
-      : FreeAllocation(), allocation(allocation) {}
+      : FreeAllocation(AllocationKind::IndexBuffer), allocation(allocation) {}
     FreeIndexBuffer(uuid id, BufferAllocation allocation)
-      : FreeAllocation(id), allocation(allocation) {}
+      : FreeAllocation(AllocationKind::IndexBuffer, id), allocation(allocation) {}
   };
 
   struct FreeTexture : public FreeAllocation {
     TextureAllocation allocation;
 
     FreeTexture(TextureAllocation allocation)
-      : FreeAllocation(), allocation(allocation) {}
+      : FreeAllocation(AllocationKind::Texture), allocation(allocation) {}
     FreeTexture(uuid id, TextureAllocation allocation)
-      : FreeAllocation(id), allocation(allocation) {}
+      : FreeAllocation(AllocationKind::Texture, id), allocation(allocation) {}
   };
 
   struct FreeFramebuffer : public FreeAllocation {
     FramebufferAllocation allocation;
 
     FreeFramebuffer(FramebufferAllocation allocation)
-      : FreeAllocation(), allocation(allocation) {}
+      : FreeAllocation(AllocationKind::Framebuffer), allocation(allocation) {}
     FreeFramebuffer(uuid id, FramebufferAllocation allocation)
-      : FreeAllocation(id), allocation(allocation) {}
+      : FreeAllocation(AllocationKind::Framebuffer, id), allocation(allocation) {}
   };
 
   struct FreeObject {

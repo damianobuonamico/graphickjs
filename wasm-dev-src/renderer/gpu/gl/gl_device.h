@@ -42,6 +42,7 @@ namespace Graphick::Renderer::GPU::GL {
 
     template <typename T>
     void upload_to_buffer(const GLBuffer& buffer, size_t position, const std::vector<T>& data, const BufferTarget target) const { upload_to_buffer_internal(buffer, position, (const void*)data.data(), data.size() * sizeof(T), target); }
+    void upload_to_buffer(const GLBuffer& buffer, size_t position, const void* data, size_t size, const BufferTarget target) const { upload_to_buffer_internal(buffer, position, data, size, target); }
 
     void configure_vertex_attr(const GLVertexArray& vertex_array, const GLVertexAttr attr, const VertexAttrDescriptor& desc) const;
 

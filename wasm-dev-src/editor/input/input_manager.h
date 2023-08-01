@@ -4,6 +4,15 @@
 
 #include "keys.h"
 #include "tool.h"
+#include "hover_state.h"
+
+#include "../../math/vec2.h"
+
+#include "../../utils/uuid.h"
+
+namespace Graphick::Editor {
+  class Entity;
+};
 
 namespace Graphick::Editor::Input {
 
@@ -79,10 +88,10 @@ namespace Graphick::Editor::Input {
       PointerType type = PointerType::Mouse;
       PointerButton button = PointerButton::Left;
     };
-
+  public:
     static KeysState keys;
     static Pointer pointer;
-    // static HoverState hover;
+    static HoverState hover;
   public:
     InputManager(const InputManager&) = delete;
     InputManager(InputManager&&) = delete;
@@ -131,6 +140,8 @@ namespace Graphick::Editor::Input {
   private:
     bool m_moving = false;
     bool m_abort = false;
+
+    uuid m_hovered = { 0 };
   private:
     static InputManager* s_instance;
   };

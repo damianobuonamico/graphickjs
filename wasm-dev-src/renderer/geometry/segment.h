@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../../math/vec2.h"
 #include "../../math/rect.h"
+
+#include "../../history/values.h"
 
 #include <vector>
 
@@ -9,8 +10,7 @@ namespace Graphick::Renderer::Geometry {
 
   class Segment {
   public:
-    using Point = std::shared_ptr<vec2>;
-    using ControlPoint = std::unique_ptr<vec2>;
+    using ControlPoint = std::shared_ptr<History::Vec2Value>;
   public:
     enum class Kind {
       // A line segment.
@@ -20,14 +20,20 @@ namespace Graphick::Renderer::Geometry {
       // A cubic bezier segment.
       Cubic
     };
+
+    struct SegmentPointDistance {
+      float t;
+      vec2 point;
+      float sq_distance;
+    };
   public:
     Segment(vec2 p0, vec2 p3);
     Segment(vec2 p0, vec2 p1, vec2 p3, bool is_quadratic = true);
     Segment(vec2 p0, vec2 p1, vec2 p2, vec2 p3);
 
-    Segment(Point p0, Point p3);
-    Segment(Point p0, vec2 p1, Point p3, bool is_quadratic = true);
-    Segment(Point p0, vec2 p1, vec2 p2, Point p3);
+    Segment(ControlPoint p0, ControlPoint p3);
+    Segment(ControlPoint p0, vec2 p1, ControlPoint p3, bool is_quadratic = true);
+    Segment(ControlPoint p0, vec2 p1, vec2 p2, ControlPoint p3);
 
     Segment(const Segment& other);
     Segment(Segment&& other) noexcept;
@@ -40,16 +46,23 @@ namespace Graphick::Renderer::Geometry {
     inline bool is_quadratic() const { return m_kind == Kind::Quadratic; }
     inline bool is_cubic() const { return m_kind == Kind::Cubic; }
 
-    inline vec2 p0() const { return *m_p0; }
-    inline vec2 p1() const { return m_p1 ? *m_p1 : p0(); }
-    inline vec2 p2() const { return m_p2 ? *m_p2 : p3(); }
-    inline vec2 p3() const { return *m_p3; }
+    inline vec2 p0() const { return m_p0->get(); }
+    inline vec2 p1() const { return m_p1 ? m_p1->get() : p0(); }
+    inline vec2 p2() const { return m_p2 ? m_p2->get() : p3(); }
+    inline vec2 p3() const { return m_p3->get(); }
+
+    inline std::weak_ptr<History::Vec2Value> p0_ptr() const { return m_p0; }
+    inline std::weak_ptr<History::Vec2Value> p1_ptr() const { return m_p1; }
+    inline std::weak_ptr<History::Vec2Value> p2_ptr() const { return m_p2; }
+    inline std::weak_ptr<History::Vec2Value> p3_ptr() const { return m_p3; }
 
     vec2 get(const float t) const;
 
     rect bounding_rect() const;
     rect large_bounding_rect() const;
     vec2 size() const;
+
+    bool is_inside(const vec2 position, float threshold = 0.0f) const;
   private:
     bool is_masquerading_linear() const;
     bool is_masquerading_quadratic(vec2& new_p1) const;
@@ -63,16 +76,20 @@ namespace Graphick::Renderer::Geometry {
     std::vector<float> linear_extrema() const;
     std::vector<float> quadratic_extrema() const;
     std::vector<float> cubic_extrema() const;
+
+    SegmentPointDistance linear_closest_to(const vec2 position, int iterations = 4) const;
+    SegmentPointDistance quadratic_closest_to(const vec2 position, int iterations = 4) const;
+    SegmentPointDistance cubic_closest_to(const vec2 position, int iterations = 4) const;
   private:
     // The type of segment: linear, quadratic, or cubic bezier.
     Kind m_kind;
     // The start, end, and control points of the segment.
     //
     // For a line segment, p1 and p2 are ignored. For a quadratic bezier, only p1 is used. 
-    Point m_p0;
+    ControlPoint m_p0;
     ControlPoint m_p1;
     ControlPoint m_p2;
-    Point m_p3;
+    ControlPoint m_p3;
   private:
     // TEMP: remove
     friend class Path;

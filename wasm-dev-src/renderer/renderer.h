@@ -7,16 +7,12 @@
 #include "../math/vec2.h"
 #include "../math/mat4.h"
 
-#include "../editor/scene/viewport.h"
-
 #include "../utils/uuid.h"
 
 namespace Graphick::Renderer {
 
   namespace Geometry {
-
     class Path;
-
   }
 
   class Renderer {
@@ -27,11 +23,10 @@ namespace Graphick::Renderer {
     static void init();
     static void shutdown();
 
-    static void begin_frame(const Editor::Viewport& viewport);
+    static void begin_frame(const Viewport& viewport);
     static void end_frame();
 
-    static void draw(const Geometry::Path& path);
-    // TODO: Batch outline draw calls
+    static void draw(const Geometry::Path& path, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
     static void draw_outline(const Geometry::Path& path);
   private:
     Renderer() = default;
@@ -41,6 +36,15 @@ namespace Graphick::Renderer {
 
     void draw_opaque_tiles();
     void draw_masked_tiles();
+    void draw_masked_tiles_batch(const std::vector<MaskedTile> tiles, const size_t i, const std::vector<uint8_t*> textures);
+
+
+    void init_batched_lines_renderer();
+    void begin_lines_batch();
+    void add_to_lines_batch(const Geometry::Path& path);
+    void add_linear_segment_to_lines_batch(const vec2 p0, const vec2 p3);
+    void add_cubic_segment_to_lines_batch(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
+    void flush_lines_batch();
   private:
     GPU::Programs m_programs;
 
@@ -48,6 +52,8 @@ namespace Graphick::Renderer {
     mat4 m_translation;
     mat4 m_tiles_projection;
     mat4 m_tiles_translation;
+
+    BatchedLinesData m_lines_data;
 
     uuid m_quad_vertex_positions_buffer_id = 0;
     uuid m_quad_vertex_indices_buffer_id = 0;

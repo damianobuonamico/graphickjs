@@ -4,6 +4,7 @@
 #include "components.h"
 
 #include "../../utils/console.h"
+#include "../../lib/entt/entt.hpp"
 
 namespace Graphick::Editor {
 
@@ -39,6 +40,11 @@ namespace Graphick::Editor {
     template<typename T>
     bool has_component() const {
       return m_scene->m_registry.all_of<T>(m_handle);
+    }
+
+    template<typename... T>
+    bool has_components() const {
+      return (has_component<T>() && ...);
     }
 
     template<typename T>

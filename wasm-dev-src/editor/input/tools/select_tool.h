@@ -1,7 +1,10 @@
 #pragma once
 
 #include "../tool.h"
-// #include "../../scene/entities/selection_rect_entity.h"
+
+#include "../../../utils/uuid.h"
+
+#include <optional>
 
 namespace Graphick::Editor::Input {
 
@@ -18,7 +21,7 @@ namespace Graphick::Editor::Input {
   private:
     bool m_dragging_occurred = false;
     bool m_is_element_added_to_selection = false;
-    // Entity* m_element = nullptr;
+    uuid m_entity = { 0 };
 
     // SelectionRectEntity m_selection_rect;
   private:

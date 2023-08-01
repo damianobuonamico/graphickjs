@@ -13,6 +13,7 @@ R"(
   void main() {
     float alpha = texture(uMasksTexture, vMaskCoords).r;
     // oFragColor = mix(vec4(0.9, 0.3, 0.8, 0.5), vColor, alpha);
+    // oFragColor = vec4(vColor.rgb, vColor.a * alpha * 0.5);
     oFragColor = vec4(vColor.rgb, vColor.a * alpha);
   }
 

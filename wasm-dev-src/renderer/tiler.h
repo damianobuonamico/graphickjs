@@ -6,8 +6,6 @@
 
 #include <vector>
 
-#define TILE_SIZE 32
-
 namespace Graphick::Renderer {
 
   namespace Geometry {
@@ -65,7 +63,9 @@ namespace Graphick::Renderer {
     inline ivec2 offset() const { return m_offset; }
     inline ivec2 size() const { return m_bounds_size; }
   private:
-    void process_linear_segment(const Geometry::Segment& segment, vec2 offset);
+    void process_linear_segment(const vec2 p0, const vec2 p3);
+    void process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
+
     void finish();
   private:
     std::vector<Increment> m_increments;
@@ -75,6 +75,7 @@ namespace Graphick::Renderer {
     std::vector<TileSpan> m_spans;
 
     int16_t m_tile_y_prev = 0;
+    vec2 m_prev = { 0.0f, 0.0f };
 
     float m_zoom;
     ivec2 m_position;
@@ -92,10 +93,14 @@ namespace Graphick::Renderer {
 
     inline const std::vector<OpaqueTile>& opaque_tiles() const { return m_opaque_tiles; }
     inline const std::vector<MaskedTile>& masked_tiles() const { return m_masked_tiles; }
-    inline const uint8_t* masks_texture_data() const { return m_masks; }
+
+    const std::vector<uint8_t*> masks_textures_data() const;
 
     void reset(const Viewport& viewport);
     void process_path(const Geometry::Path& path, const vec4& color);
+  private:
+    void push_mask(const PathTiler::TileMask& tile, int index, const vec4& color);
+    void resize_masks_textures(const int textures);
   private:
     std::vector<MaskedTile> m_masked_tiles;
     std::vector<OpaqueTile> m_opaque_tiles;
@@ -108,7 +113,10 @@ namespace Graphick::Renderer {
     rect m_visible;
 
     int m_masks_offset = 0;
-    uint8_t* m_masks = nullptr;
+    int m_masks_texture_index = 0;
+    int m_masks_textures_count = 0;
+
+    uint8_t* m_masks_textures = nullptr;
   };
 
 }

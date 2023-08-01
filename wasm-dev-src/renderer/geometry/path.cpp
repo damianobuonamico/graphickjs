@@ -1,32 +1,32 @@
 #include "path.h"
 
+#include "../../math/math.h"
 #include "../../math/mat2.h"
 #include "../../math/vector.h"
 
 #include "../../utils/defines.h"
+#include "../../utils/console.h"
 
 namespace Graphick::Renderer::Geometry {
 
   void Path::move_to(vec2 p) {
-    m_last_point = std::make_shared<vec2>(p);
+    m_last_point = std::make_shared<History::Vec2Value>(p);
   }
 
   void Path::line_to(vec2 p) {
-    Segment::Point point = std::make_shared<vec2>(p);
+    Segment::ControlPoint point = std::make_shared<History::Vec2Value>(p);
     m_segments.emplace_back(m_last_point, point);
     m_last_point = point;
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
-    return line_to(p2);
-    Segment::Point point = std::make_shared<vec2>(p2);
+    Segment::ControlPoint point = std::make_shared<History::Vec2Value>(p2);
     m_segments.emplace_back(m_last_point, p1, point, true);
     m_last_point = point;
   }
 
   void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
-    return line_to(p3);
-    Segment::Point point = std::make_shared<vec2>(p3);
+    Segment::ControlPoint point = std::make_shared<History::Vec2Value>(p3);
     m_segments.emplace_back(m_last_point, p1, p2, point);
     m_last_point = point;
   }
@@ -210,6 +210,33 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return rect;
+  }
+
+  Math::rect Path::large_bounding_rect() const {
+    Math::rect rect{};
+
+    for (const auto& segment : m_segments) {
+      Math::rect segment_rect = segment.large_bounding_rect();
+
+      min(rect.min, segment_rect.min, rect.min);
+      max(rect.max, segment_rect.max, rect.max);
+    }
+
+    return rect;
+  }
+
+  bool Path::is_inside(const vec2 position, bool lower_level, float threshold) const {
+    if (!Math::is_point_in_rect(position, lower_level ? large_bounding_rect() : bounding_rect(), threshold)) {
+      return false;
+    }
+
+    for (const Segment& segment : m_segments) {
+      if (segment.is_inside(position, threshold)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   // Temp::Geo Path::outline_geo() const {

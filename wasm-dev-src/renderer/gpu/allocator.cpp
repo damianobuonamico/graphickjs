@@ -112,14 +112,14 @@ namespace Graphick::Renderer::GPU::Memory {
 
       if (std::chrono::duration_cast<std::chrono::milliseconds>(now - free_object.timestamp).count() < DECAY_TIME) break;
 
-      if (FreeGeneralBuffer* free_general_buffer = reinterpret_cast<FreeGeneralBuffer*>(&free_object.kind)) {
-        get()->m_bytes_allocated -= free_general_buffer->allocation.size;
-      } else if (FreeIndexBuffer* free_index_buffer = reinterpret_cast<FreeIndexBuffer*>(&free_object.kind)) {
-        get()->m_bytes_allocated -= free_index_buffer->allocation.size;
-      } else if (FreeTexture* free_texture = reinterpret_cast<FreeTexture*>(&free_object.kind)) {
-        get()->m_bytes_allocated -= free_texture->allocation.descriptor.byte_size();
-      } else if (FreeFramebuffer* free_framebuffer = reinterpret_cast<FreeFramebuffer*>(&free_object.kind)) {
-        get()->m_bytes_allocated -= free_framebuffer->allocation.descriptor.byte_size();
+      if (free_object.kind.kind == AllocationKind::Buffer) {
+        get()->m_bytes_allocated -= reinterpret_cast<FreeGeneralBuffer*>(&free_object.kind)->allocation.size;
+      } else if (free_object.kind.kind == AllocationKind::IndexBuffer) {
+        get()->m_bytes_allocated -= reinterpret_cast<FreeIndexBuffer*>(&free_object.kind)->allocation.size;
+      } else if (free_object.kind.kind == AllocationKind::Texture) {
+        get()->m_bytes_allocated -= reinterpret_cast<FreeTexture*>(&free_object.kind)->allocation.descriptor.byte_size();
+      } else if (free_object.kind.kind == AllocationKind::Framebuffer) {
+        get()->m_bytes_allocated -= reinterpret_cast<FreeFramebuffer*>(&free_object.kind)->allocation.descriptor.byte_size();
       }
 
       get()->m_free_objects.pop_front();
