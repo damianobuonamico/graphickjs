@@ -12,14 +12,13 @@
 
 static const std::vector<uint16_t> QUAD_VERTEX_POSITIONS = { 0, 0, 1, 0, 1, 1, 0, 1 };
 static const std::vector<uint32_t> QUAD_VERTEX_INDICES = { 0, 1, 3, 1, 2, 3 };
+static const std::vector<float> SQUARE_VERTEX_POSITIONS = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f };
 static const std::vector<float> LINE_VERTEX_POSITIONS = {
-  0.0, 1.0, 0.0, 0.0,
-  0.0, 0.0, 0.0, 1.0,
-  1.0, 0.0, 1.0, 1.0,
-  1.0, 1.0, 1.0, 0.0
+  0.0f, 1.0f, 0.0f, 0.0f,
+  0.0f, 0.0f, 0.0f, 1.0f,
+  1.0f, 0.0f, 1.0f, 1.0f,
+  1.0f, 1.0f, 1.0f, 0.0f
 };
-
-//0, 1, 2, 0, 2, 3
 
 namespace Graphick::Renderer {
 
@@ -81,7 +80,7 @@ namespace Graphick::Renderer {
     GPU::Device::upload_to_buffer(quad_vertex_positions_buffer, 0, QUAD_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
     GPU::Device::upload_to_buffer(quad_vertex_indices_buffer, 0, QUAD_VERTEX_INDICES, GPU::BufferTarget::Index);
 
-    get()->init_batched_lines_renderer();
+    get()->init_instanced_renderers();
   }
 
   void Renderer::shutdown() {
@@ -119,7 +118,7 @@ namespace Graphick::Renderer {
     };
 
     get()->m_tiler.reset(get()->m_viewport);
-    get()->begin_lines_batch();
+    get()->begin_instanced_renderers();
 
     GPU::Device::begin_commands();
     GPU::Device::set_viewport(viewport.size, viewport.dpr);
@@ -131,7 +130,9 @@ namespace Graphick::Renderer {
 
     get()->draw_opaque_tiles();
     get()->draw_masked_tiles();
-    get()->flush_lines_batch();
+    get()->flush_line_instances();
+    get()->flush_square_instances();
+    get()->flush_circle_instances();
 
     GPU::Memory::Allocator::purge_if_needed();
     GPU::Device::end_commands();
@@ -148,7 +149,8 @@ namespace Graphick::Renderer {
   void Renderer::draw_outline(const Geometry::Path& path) {
     if (path.empty()) return;
 
-    get()->add_to_lines_batch(path);
+    get()->add_line_instances(path);
+    get()->add_vertex_instances(path);
   }
 
   void Renderer::draw_opaque_tiles() {
@@ -219,14 +221,8 @@ namespace Graphick::Renderer {
 
     if (reverse_tiles.empty() || reverse_textures.empty()) return;
 
-    // auto tiles = reverse_tiles;
-
     const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reverse_tiles.rbegin(), reverse_tiles.rend());
     const std::vector<uint8_t*> textures = std::vector<uint8_t*>(reverse_textures.rbegin(), reverse_textures.rend());
-
-    // size_t tiles_count = tiles.size();
-    // size_t tiles_batches = tiles_count / MASKS_PER_BATCH + 1;
-
 
     for (size_t i = 0; i < textures.size(); i++) {
       draw_masked_tiles_batch(tiles, i, textures);
@@ -303,7 +299,7 @@ namespace Graphick::Renderer {
     GPU::Memory::Allocator::free_general_buffer(tiles_buffer_id);
   }
 
-  void Renderer::init_batched_lines_renderer() {
+  void Renderer::init_instanced_renderers() {
     delete[] m_lines_data.instance_buffer;
 
     m_lines_data.instance_buffer = new vec4[m_lines_data.max_instance_count];
@@ -312,24 +308,49 @@ namespace Graphick::Renderer {
     if (m_lines_data.instance_buffer_id != 0) {
       GPU::Memory::Allocator::free_general_buffer(m_lines_data.instance_buffer_id);
     }
+    if (m_square_data.instance_buffer_id != 0) {
+      GPU::Memory::Allocator::free_general_buffer(m_square_data.instance_buffer_id);
+    }
+    if (m_circle_data.instance_buffer_id != 0) {
+      GPU::Memory::Allocator::free_general_buffer(m_circle_data.instance_buffer_id);
+    }
+
     if (m_lines_data.vertex_buffer_id != 0) {
       GPU::Memory::Allocator::free_general_buffer(m_lines_data.vertex_buffer_id);
     }
+    if (m_square_data.vertex_buffer_id != 0) {
+      GPU::Memory::Allocator::free_general_buffer(m_square_data.vertex_buffer_id);
+    }
+    if (m_circle_data.vertex_buffer_id != 0) {
+      GPU::Memory::Allocator::free_general_buffer(m_circle_data.vertex_buffer_id);
+    }
 
     m_lines_data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec4>(m_lines_data.max_instance_buffer_size, "Lines");
-    m_lines_data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(LINE_VERTEX_POSITIONS.size(), "LinesVertices");
+    m_square_data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(m_square_data.buffer_size, "Squares");
+    m_circle_data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(m_circle_data.buffer_size, "Circles");
 
-    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_lines_data.vertex_buffer_id);
+    m_lines_data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(LINE_VERTEX_POSITIONS.size(), "LineVertices");
+    m_square_data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(SQUARE_VERTEX_POSITIONS.size(), "SquareVertices");
+    m_circle_data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(SQUARE_VERTEX_POSITIONS.size(), "CircleVertices");
 
-    GPU::Device::upload_to_buffer(vertex_buffer, 0, LINE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    const GPU::Buffer& line_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_lines_data.vertex_buffer_id);
+    const GPU::Buffer& circle_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_square_data.vertex_buffer_id);
+    const GPU::Buffer& square_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_circle_data.vertex_buffer_id);
+
+    GPU::Device::upload_to_buffer(line_vertex_buffer, 0, LINE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(circle_vertex_buffer, 0, SQUARE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(square_vertex_buffer, 0, SQUARE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
   }
 
-  void Renderer::begin_lines_batch() {
+  void Renderer::begin_instanced_renderers() {
     m_lines_data.instance_buffer_ptr = m_lines_data.instance_buffer;
+
     m_lines_data.instances = 0;
+    m_square_data.instances.clear();
+    m_circle_data.instances.clear();
   }
 
-  void Renderer::add_to_lines_batch(const Geometry::Path& path) {
+  void Renderer::add_line_instances(const Geometry::Path& path) {
     OPTICK_EVENT();
 
     for (const auto& segment : path.segments()) {
@@ -339,14 +360,14 @@ namespace Graphick::Renderer {
       // auto p3 = transform.Map(segment.p3().x, segment.p3().y);
 
       if (segment.kind() == Geometry::Segment::Kind::Cubic) {
-        add_cubic_segment_to_lines_batch(p0, segment.p1(), segment.p2(), p3);
+        add_cubic_segment_instance(p0, segment.p1(), segment.p2(), p3);
       } else {
-        add_linear_segment_to_lines_batch(p0, p3);
+        add_linear_segment_instance(p0, p3);
       }
     }
   }
 
-  void Renderer::add_linear_segment_to_lines_batch(const vec2 p0, const vec2 p3) {
+  void Renderer::add_linear_segment_instance(const vec2 p0, const vec2 p3) {
     *m_lines_data.instance_buffer_ptr = { p0.x, p0.y, p3.x, p3.y };
     m_lines_data.instance_buffer_ptr++;
     m_lines_data.instances++;
@@ -354,7 +375,7 @@ namespace Graphick::Renderer {
 
   static float tolerance = 0.25f;
 
-  void Renderer::add_cubic_segment_to_lines_batch(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+  void Renderer::add_cubic_segment_instance(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
     vec2 prev = p0;
 
     vec2 a = -1.0f * p0 + 3.0f * p1 - 3.0f * p2 + p3;
@@ -375,13 +396,31 @@ namespace Graphick::Renderer {
 
       vec2 p = Math::lerp(p012, p123, t);
 
-      add_linear_segment_to_lines_batch(prev, p);
+      add_linear_segment_instance(prev, p);
 
       prev = p;
     }
   }
 
-  void Renderer::flush_lines_batch() {
+  void Renderer::add_vertex_instances(const Geometry::Path& path) {
+    for (const auto& segment : path.segments()) {
+      vec2 p0 = segment.p0();
+
+      // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
+
+      add_square_instance(p0);
+    }
+  }
+
+  void Renderer::add_square_instance(const vec2 position) {
+    m_square_data.instances.push_back(position);
+  }
+
+  void Renderer::add_circle_instance(const vec2 position) {
+    m_circle_data.instances.push_back(position);
+  }
+
+  void Renderer::flush_line_instances() {
     GLsizeiptr instance_buffer_size = (uint8_t*)m_lines_data.instance_buffer_ptr - (uint8_t*)m_lines_data.instance_buffer;
     if (instance_buffer_size == 0 || m_lines_data.instances == 0) return;
 
@@ -444,7 +483,86 @@ namespace Graphick::Renderer {
 
     GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), m_lines_data.instances, state);
 
-    console::log("instances", m_lines_data.instances);
+    console::log("line instances", m_lines_data.instances);
+  }
+
+  void Renderer::flush_square_instances() {
+    if (m_square_data.instances.empty()) return;
+
+    ensure_instance_buffer_size(m_square_data);
+
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_square_data.vertex_buffer_id);
+    const GPU::Buffer& index_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
+    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(m_square_data.instance_buffer_id);
+
+    GPU::Device::upload_to_buffer(instance_buffer, 0, m_square_data.instances, GPU::BufferTarget::Vertex);
+
+    GPU::SquareVertexArray vertex_array(
+      m_programs.square_program,
+      instance_buffer,
+      vertex_buffer,
+      index_buffer
+    );
+
+    mat4 translation = mat4{
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x / (float)m_viewport.zoom + 2 * m_viewport.position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y / (float)m_viewport.zoom + 2 * m_viewport.position.y),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    GPU::RenderState state = {
+      nullptr,
+      m_programs.square_program.program,
+      *vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {},
+      {},
+      {
+        // TOOD: merge dpr and zoom
+        {m_programs.square_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
+        {m_programs.square_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
+        {m_programs.square_program.size_uniform, 5.0f / (float)m_viewport.zoom },
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)m_viewport.size.x * (float)m_viewport.dpr, (float)m_viewport.size.y * (float)m_viewport.dpr }
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), m_square_data.instances.size(), state);
+
+    console::log("square instances", m_square_data.instances.size());
+  }
+
+  void Renderer::flush_circle_instances() {
+
+  }
+
+  void Renderer::ensure_instance_buffer_size(InstancedMeshData& data) {
+    if (data.instances.size() <= data.buffer_size) return;
+
+    GPU::Memory::Allocator::free_general_buffer(data.instance_buffer_id);
+
+    data.buffer_size = (uint32_t)data.instances.size() * 2;
+    data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(data.buffer_size, data.name);
   }
 
 }

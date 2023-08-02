@@ -38,13 +38,21 @@ namespace Graphick::Renderer {
     void draw_masked_tiles();
     void draw_masked_tiles_batch(const std::vector<MaskedTile> tiles, const size_t i, const std::vector<uint8_t*> textures);
 
+    void init_instanced_renderers();
+    void begin_instanced_renderers();
 
-    void init_batched_lines_renderer();
-    void begin_lines_batch();
-    void add_to_lines_batch(const Geometry::Path& path);
-    void add_linear_segment_to_lines_batch(const vec2 p0, const vec2 p3);
-    void add_cubic_segment_to_lines_batch(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
-    void flush_lines_batch();
+    void add_line_instances(const Geometry::Path& path);
+    void add_linear_segment_instance(const vec2 p0, const vec2 p3);
+    void add_cubic_segment_instance(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
+    void add_vertex_instances(const Geometry::Path& path);
+    void add_square_instance(const vec2 position);
+    void add_circle_instance(const vec2 position);
+
+    void flush_line_instances();
+    void flush_square_instances();
+    void flush_circle_instances();
+
+    void ensure_instance_buffer_size(InstancedMeshData& data);
   private:
     GPU::Programs m_programs;
 
@@ -53,7 +61,10 @@ namespace Graphick::Renderer {
     mat4 m_tiles_projection;
     mat4 m_tiles_translation;
 
-    BatchedLinesData m_lines_data;
+    // TODO: Instance attributes
+    InstancedLinesData m_lines_data;
+    InstancedMeshData m_square_data = { "square" };
+    InstancedMeshData m_circle_data = { "circle" };
 
     uuid m_quad_vertex_positions_buffer_id = 0;
     uuid m_quad_vertex_indices_buffer_id = 0;

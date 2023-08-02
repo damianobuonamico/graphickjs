@@ -6,6 +6,9 @@
 
 #include "../utils/uuid.h"
 
+#include <vector>
+#include <string>
+
 #define TILE_SIZE 32
 #define MASKS_TEXTURE_SIZE (TILE_SIZE * 32)
 #define MASKS_PER_BATCH ((MASKS_TEXTURE_SIZE / TILE_SIZE) * (MASKS_TEXTURE_SIZE / TILE_SIZE))
@@ -22,7 +25,7 @@ namespace Graphick::Renderer {
     vec4 background;
   };
 
-  struct BatchedLinesData {
+  struct InstancedLinesData {
     uuid instance_buffer_id = 0;
     uuid vertex_buffer_id = 0;
 
@@ -34,16 +37,30 @@ namespace Graphick::Renderer {
     uint32_t max_instance_buffer_size = (uint32_t)std::pow(2, 20);
     uint32_t max_instance_count = max_instance_buffer_size / sizeof(vec4);
 
-    BatchedLinesData() {
+    InstancedLinesData() {
       instance_buffer = new vec4[max_instance_count];
       instance_buffer_ptr = instance_buffer;
     }
-    BatchedLinesData(BatchedLinesData const&) = delete;
-    BatchedLinesData& operator=(BatchedLinesData const&) = delete;
+    InstancedLinesData(InstancedLinesData const&) = delete;
+    InstancedLinesData& operator=(InstancedLinesData const&) = delete;
 
-    ~BatchedLinesData() {
+    ~InstancedLinesData() {
       delete[] instance_buffer;
     }
+  };
+
+  struct InstancedMeshData {
+    std::string name;
+
+    uuid instance_buffer_id = 0;
+    uuid vertex_buffer_id = 0;
+    uuid index_buffer_id = 0;
+
+    std::vector<vec2> instances;
+
+    uint32_t buffer_size = 0;
+
+    InstancedMeshData(std::string name) : name(name) {}
   };
 
   struct OpaqueTile {
