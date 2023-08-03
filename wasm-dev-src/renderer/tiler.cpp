@@ -49,7 +49,7 @@ namespace Graphick::Renderer {
       vec2 p0 = segment.p0() * m_zoom - rect.min;
       vec2 p3 = segment.p3() * m_zoom - rect.min;
 
-      if (segment.kind() == Geometry::Segment::Kind::Cubic) {
+      if (segment.is_cubic()) {
         vec2 p1 = segment.p1() * m_zoom - rect.min;
         vec2 p2 = segment.p2() * m_zoom - rect.min;
 

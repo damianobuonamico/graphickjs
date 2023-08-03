@@ -36,7 +36,7 @@ namespace Graphick::Editor::Input {
     std::optional<std::weak_ptr<History::Vec2Value>> vertex() const;
     std::optional<std::weak_ptr<History::Vec2Value>> handle() const;
   private:
-    void set_hovered(const uuid entity, const vec2 position, float threshold);
+    void set_hovered(const uuid entity, const vec2 position, bool lower_level, float threshold);
     void reset();
   private:
     HoverType m_type = HoverType::None;

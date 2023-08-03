@@ -428,6 +428,14 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_handle_pointer_move() {
+    console::log("handle move");
+
+    if (m_handle.has_value()) {
+      auto handle = m_handle.value().lock();
+      if (handle) {
+        handle->set_delta(InputManager::pointer.scene.delta);
+      }
+    }
     // if (InputManager::keys.space) {
     //   m_vertex->transform()->translate(InputManager::pointer.scene.movement);
     //   return;
@@ -531,6 +539,12 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_handle_pointer_up() {
+    if (!m_dragging_occurred || !m_handle.has_value()) return;
+
+    auto handle = m_handle.value().lock();
+    if (handle) {
+      handle->apply();
+    }
     // if (m_dragging_occurred) {
     //   m_element->transform()->apply();
     // }

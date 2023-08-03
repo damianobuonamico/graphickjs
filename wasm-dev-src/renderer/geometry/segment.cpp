@@ -149,19 +149,17 @@ namespace Graphick::Renderer::Geometry {
   }
 
   rect Segment::large_bounding_rect() const {
-    rect rect{};
-    std::vector<vec2> points = { p0(), p3() };
+    rect rect = bounding_rect();
 
     if (m_p1) {
-      points.push_back(m_p1->get());
+      vec2 p1 = m_p1->get();
+      Math::min(rect.min, p1, rect.min);
+      Math::max(rect.max, p1, rect.max);
     }
     if (m_p2) {
-      points.push_back(m_p2->get());
-    }
-
-    for (vec2& point : points) {
-      Math::min(rect.min, point, rect.min);
-      Math::max(rect.max, point, rect.max);
+      vec2 p2 = m_p2->get();
+      Math::min(rect.min, p2, rect.min);
+      Math::max(rect.max, p2, rect.max);
     }
 
     return rect;
@@ -171,9 +169,18 @@ namespace Graphick::Renderer::Geometry {
     return bounding_rect().size();
   }
 
-  bool Segment::is_inside(const vec2 position, float threshold) const {
-    if (!Math::is_point_in_rect(position, bounding_rect(), threshold)) {
+  bool Segment::is_inside(const vec2 position, bool lower_level, float threshold) const {
+    if (!Math::is_point_in_rect(position, lower_level ? large_bounding_rect() : bounding_rect(), threshold)) {
       return false;
+    }
+
+    if (lower_level) {
+      if (m_p1 != nullptr && Math::is_point_in_circle(position, p1(), threshold)) {
+        return true;
+      }
+      if (m_p2 != nullptr && Math::is_point_in_circle(position, p2(), threshold)) {
+        return true;
+      }
     }
 
     auto a = SEGMENT_CALL(closest_to, position, 8).sq_distance;

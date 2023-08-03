@@ -359,7 +359,7 @@ namespace Graphick::Renderer {
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
       // auto p3 = transform.Map(segment.p3().x, segment.p3().y);
 
-      if (segment.kind() == Geometry::Segment::Kind::Cubic) {
+      if (segment.is_cubic()) {
         add_cubic_segment_instance(p0, segment.p1(), segment.p2(), p3);
       } else {
         add_linear_segment_instance(p0, p3);
@@ -409,6 +409,25 @@ namespace Graphick::Renderer {
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
 
       add_square_instance(p0);
+
+      if (segment.is_cubic()) {
+        vec2 p1 = segment.p1();
+        vec2 p2 = segment.p2();
+        vec2 p3 = segment.p3();
+
+        if (p1 != p0) {
+          add_circle_instance(p1);
+          add_linear_segment_instance(p0, p1);
+        }
+        if (p2 != p3) {
+          add_circle_instance(p2);
+          add_linear_segment_instance(p2, p3);
+        }
+      }
+    }
+
+    if (path.closed()) {
+      add_square_instance(path.segments().back().p3());
     }
   }
 
@@ -482,8 +501,6 @@ namespace Graphick::Renderer {
     };
 
     GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), m_lines_data.instances, state);
-
-    console::log("line instances", m_lines_data.instances);
   }
 
   void Renderer::flush_square_instances() {
@@ -522,7 +539,7 @@ namespace Graphick::Renderer {
         // TOOD: merge dpr and zoom
         {m_programs.square_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
         {m_programs.square_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
-        {m_programs.square_program.size_uniform, 5.0f / (float)m_viewport.zoom },
+        {m_programs.square_program.size_uniform, 6.0f / (float)m_viewport.zoom },
       },
       {
         { 0.0f, 0.0f },
@@ -548,12 +565,71 @@ namespace Graphick::Renderer {
     };
 
     GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), m_square_data.instances.size(), state);
-
-    console::log("square instances", m_square_data.instances.size());
   }
 
   void Renderer::flush_circle_instances() {
+    if (m_circle_data.instances.empty()) return;
 
+    ensure_instance_buffer_size(m_circle_data);
+
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_circle_data.vertex_buffer_id);
+    const GPU::Buffer& index_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
+    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(m_circle_data.instance_buffer_id);
+
+    GPU::Device::upload_to_buffer(instance_buffer, 0, m_circle_data.instances, GPU::BufferTarget::Vertex);
+
+    GPU::CircleVertexArray vertex_array(
+      m_programs.circle_program,
+      instance_buffer,
+      vertex_buffer,
+      index_buffer
+    );
+
+    mat4 translation = mat4{
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x / (float)m_viewport.zoom + 2 * m_viewport.position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y / (float)m_viewport.zoom + 2 * m_viewport.position.y),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    GPU::RenderState state = {
+      nullptr,
+      m_programs.circle_program.program,
+      *vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {},
+      {},
+      {
+        // TOOD: merge dpr and zoom
+        { m_programs.circle_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
+        { m_programs.circle_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
+        { m_programs.circle_program.radius_uniform, 3.0f / (float)m_viewport.zoom },
+        { m_programs.circle_program.zoom_uniform, (float)m_viewport.zoom }
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)m_viewport.size.x * (float)m_viewport.dpr, (float)m_viewport.size.y * (float)m_viewport.dpr }
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), m_circle_data.instances.size(), state);
   }
 
   void Renderer::ensure_instance_buffer_size(InstancedMeshData& data) {

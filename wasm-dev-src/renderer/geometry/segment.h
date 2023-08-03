@@ -62,7 +62,7 @@ namespace Graphick::Renderer::Geometry {
     rect large_bounding_rect() const;
     vec2 size() const;
 
-    bool is_inside(const vec2 position, float threshold = 0.0f) const;
+    bool is_inside(const vec2 position, bool lower_level = false, float threshold = 0.0f) const;
   private:
     bool is_masquerading_linear() const;
     bool is_masquerading_quadratic(vec2& new_p1) const;

@@ -22,7 +22,7 @@ namespace Graphick::Editor::Input {
     return m_handle;
   }
 
-  void HoverState::set_hovered(const uuid id, const vec2 position, float threshold) {
+  void HoverState::set_hovered(const uuid id, const vec2 position, bool lower_level, float threshold) {
     reset();
 
     m_entity = id;
@@ -40,7 +40,7 @@ namespace Graphick::Editor::Input {
       return;
     }
 
-    Renderer::Geometry::Path path = entity.get_component<PathComponent>().path;
+    Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
     //Blaze::Matrix transform = entity.get_component<TransformComponent>().get_matrix().Inverse();
    // auto pos = transform.Map(position.x, position.y);
     //vec2 transformed_pos = { (float)pos.X, (float)pos.Y };
@@ -52,22 +52,28 @@ namespace Graphick::Editor::Input {
     }
 
     for (const auto& segment : path.segments()) {
-      if (Math::is_point_in_circle(transformed_pos, segment.p0(), threshold)) {
+      vec2 p0 = segment.p0();
+
+      if (Math::is_point_in_circle(transformed_pos, p0, threshold)) {
         m_type = HoverType::Vertex;
         m_vertex = segment.p0_ptr();
         return;
       }
 
-      if (segment.kind() == Renderer::Geometry::Segment::Kind::Quadratic || segment.kind() == Renderer::Geometry::Segment::Kind::Cubic) {
-        if (Math::is_point_in_circle(transformed_pos, segment.p1(), threshold)) {
+      if (lower_level && (segment.is_quadratic() || segment.is_cubic())) {
+        vec2 p1 = segment.p1();
+        vec2 p2 = segment.p2();
+        vec2 p3 = segment.p3();
+
+        if (p1 != p0 && Math::is_point_in_circle(transformed_pos, p1, threshold)) {
           m_type = HoverType::Handle;
           m_vertex = segment.p0_ptr();
           m_handle = segment.p1_ptr();
           return;
         }
 
-        if (segment.kind() == Renderer::Geometry::Segment::Kind::Cubic) {
-          if (Math::is_point_in_circle(transformed_pos, segment.p2(), threshold)) {
+        if (segment.is_cubic()) {
+          if (p2 != p3 && Math::is_point_in_circle(transformed_pos, p2, threshold)) {
             m_type = HoverType::Handle;
             m_vertex = segment.p3_ptr();
             m_handle = segment.p2_ptr();

@@ -29,11 +29,19 @@ namespace Graphick::Renderer::GPU {
     color_uniform(Device::get_uniform(program, "uColor").value()),
     size_uniform(Device::get_uniform(program, "uSize").value()) {}
 
+  CircleProgram::CircleProgram() :
+    program(Device::create_program("circle")),
+    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    color_uniform(Device::get_uniform(program, "uColor").value()),
+    radius_uniform(Device::get_uniform(program, "uRadius").value()),
+    zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
+
   Programs::Programs() :
     opaque_tile_program(),
     masked_tile_program(),
     line_program(),
-    square_program() {}
+    square_program(),
+    circle_program() {}
 
   OpaqueTileVertexArray::OpaqueTileVertexArray(
     const OpaqueTileProgram& opaque_tile_program,
@@ -225,6 +233,46 @@ namespace Graphick::Renderer::GPU {
   {
     VertexAttr position_attr = Device::get_vertex_attr(square_program.program, "aPosition").value();
     VertexAttr instance_position_attr = Device::get_vertex_attr(square_program.program, "aInstancePosition").value();
+
+    VertexAttrDescriptor position_desc = {
+      2,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      8,
+      0,
+      0,
+      0
+    };
+
+    VertexAttrDescriptor instance_position_desc = {
+      2,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      8,
+      0,
+      1,
+      1
+    };
+
+    Device::bind_buffer(*vertex_array, vertex_positions_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
+
+    Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
+  }
+
+  CircleVertexArray::CircleVertexArray(
+    const CircleProgram& circle_program,
+    const Buffer& instance_buffer,
+    const Buffer& vertex_positions_buffer,
+    const Buffer& vertex_indices_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(circle_program.program, "aPosition").value();
+    VertexAttr instance_position_attr = Device::get_vertex_attr(circle_program.program, "aInstancePosition").value();
 
     VertexAttrDescriptor position_desc = {
       2,

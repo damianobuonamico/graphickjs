@@ -231,7 +231,7 @@ namespace Graphick::Renderer::Geometry {
     }
 
     for (const Segment& segment : m_segments) {
-      if (segment.is_inside(position, threshold)) {
+      if (segment.is_inside(position, lower_level, threshold)) {
         return true;
       }
     }

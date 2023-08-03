@@ -174,7 +174,7 @@ namespace Graphick::Editor::Input {
         pointer.scene.position,
         Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect),
         threshold
-      ), pointer.scene.position, threshold);
+      ), pointer.scene.position, Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect), threshold);
     }
 
     if (!m_moving && pointer.down) {

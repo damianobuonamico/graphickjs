@@ -43,11 +43,22 @@ namespace Graphick::Renderer::GPU {
     SquareProgram();
   };
 
+  struct CircleProgram {
+    Program program;
+    Uniform view_projection_uniform;
+    Uniform color_uniform;
+    Uniform radius_uniform;
+    Uniform zoom_uniform;
+
+    CircleProgram();
+  };
+
   struct Programs {
     OpaqueTileProgram opaque_tile_program;
     MaskedTileProgram masked_tile_program;
     LineProgram line_program;
     SquareProgram square_program;
+    CircleProgram circle_program;
 
     Programs();
   };
@@ -91,6 +102,17 @@ namespace Graphick::Renderer::GPU {
 
     SquareVertexArray(
       const SquareProgram& square_program,
+      const Buffer& instance_buffer,
+      const Buffer& vertex_positions_buffer,
+      const Buffer& vertex_indices_buffer
+    );
+  };
+
+  struct CircleVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;
+
+    CircleVertexArray(
+      const CircleProgram& circle_program,
       const Buffer& instance_buffer,
       const Buffer& vertex_positions_buffer,
       const Buffer& vertex_indices_buffer
