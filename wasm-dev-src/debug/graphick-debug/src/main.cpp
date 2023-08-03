@@ -80,8 +80,8 @@ int main() {
     return -1;
   }
 
-  int width = 800;
-  int height = 1000;
+  int width = 801;
+  int height = 600;
 
   window = glfwCreateWindow(width, height, "Graphick", nullptr, nullptr);
   glfwSetWindowPos(window, 0, 30);

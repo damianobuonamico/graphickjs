@@ -9,10 +9,8 @@
 namespace Graphick::Renderer {
 
   namespace Geometry {
-
     class Path;
     class Segment;
-
   }
 
   class PathTiler {

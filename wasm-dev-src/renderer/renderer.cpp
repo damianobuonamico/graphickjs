@@ -109,6 +109,8 @@ namespace Graphick::Renderer {
 
     vec2 tiles_position = (viewport.position * viewport.zoom) % TILE_SIZE - TILE_SIZE;
 
+    tiles_position = { 0.0f, 0.0f };
+
     get()->m_tiles_projection = generate_projection_matrix(viewport.size, 1.0f);
     get()->m_tiles_translation = mat4{
       1.0f, 0.0f, 0.0f, 0.5f * (-viewport.size.x + 2 * tiles_position.x),

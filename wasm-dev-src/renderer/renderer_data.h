@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 
-#define TILE_SIZE 32
+#define TILE_SIZE 64
 #define MASKS_TEXTURE_SIZE (TILE_SIZE * 32)
 #define MASKS_PER_BATCH ((MASKS_TEXTURE_SIZE / TILE_SIZE) * (MASKS_TEXTURE_SIZE / TILE_SIZE))
 
