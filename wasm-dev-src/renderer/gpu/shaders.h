@@ -6,8 +6,7 @@ namespace Graphick::Renderer::GPU {
 
   struct OpaqueTileProgram {
     Program program;
-    Uniform view_uniform;
-    Uniform projection_uniform;
+    Uniform offset_uniform;
     Uniform framebuffer_size_uniform;
     Uniform tile_size_uniform;
 
@@ -16,8 +15,7 @@ namespace Graphick::Renderer::GPU {
 
   struct MaskedTileProgram {
     Program program;
-    Uniform view_uniform;
-    Uniform projection_uniform;
+    Uniform offset_uniform;
     Uniform framebuffer_size_uniform;
     Uniform tile_size_uniform;
     Uniform masks_texture_uniform;

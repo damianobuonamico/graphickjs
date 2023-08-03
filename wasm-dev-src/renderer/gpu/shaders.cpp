@@ -4,15 +4,13 @@ namespace Graphick::Renderer::GPU {
 
   OpaqueTileProgram::OpaqueTileProgram() :
     program(Device::create_program("opaque_tile")),
-    view_uniform(Device::get_uniform(program, "uViewMatrix").value()),
-    projection_uniform(Device::get_uniform(program, "uProjectionMatrix").value()),
+    offset_uniform(Device::get_uniform(program, "uOffset").value()),
     framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
     tile_size_uniform(Device::get_uniform(program, "uTileSize").value()) {}
 
   MaskedTileProgram::MaskedTileProgram() :
     program(Device::create_program("masked_tile")),
-    view_uniform(Device::get_uniform(program, "uViewMatrix").value()),
-    projection_uniform(Device::get_uniform(program, "uProjectionMatrix").value()),
+    offset_uniform(Device::get_uniform(program, "uOffset").value()),
     framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
     tile_size_uniform(Device::get_uniform(program, "uTileSize").value()),
     masks_texture_uniform(Device::get_uniform(program, "uMasksTexture").value()),
