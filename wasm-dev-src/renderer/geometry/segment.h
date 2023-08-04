@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../math/rect.h"
+#include "control_point.h"
 
-#include "../../history/values.h"
+#include "../../math/rect.h"
 
 #include <vector>
 
@@ -10,7 +10,8 @@ namespace Graphick::Renderer::Geometry {
 
   class Segment {
   public:
-    using ControlPoint = std::shared_ptr<History::Vec2Value>;
+    using ControlPointVertex = std::shared_ptr<ControlPoint>;
+    using ControlPointHandle = std::shared_ptr<History::Vec2Value>;
   public:
     enum class Kind {
       // A line segment.
@@ -31,9 +32,9 @@ namespace Graphick::Renderer::Geometry {
     Segment(vec2 p0, vec2 p1, vec2 p3, bool is_quadratic = true);
     Segment(vec2 p0, vec2 p1, vec2 p2, vec2 p3);
 
-    Segment(ControlPoint p0, ControlPoint p3);
-    Segment(ControlPoint p0, vec2 p1, ControlPoint p3, bool is_quadratic = true);
-    Segment(ControlPoint p0, vec2 p1, vec2 p2, ControlPoint p3);
+    Segment(ControlPointVertex p0, ControlPointVertex p3);
+    Segment(ControlPointVertex p0, vec2 p1, ControlPointVertex p3, bool is_quadratic = true);
+    Segment(ControlPointVertex p0, vec2 p1, vec2 p2, ControlPointVertex p3);
 
     Segment(const Segment& other);
     Segment(Segment&& other) noexcept;
@@ -51,10 +52,13 @@ namespace Graphick::Renderer::Geometry {
     inline vec2 p2() const { return m_p2 ? m_p2->get() : p3(); }
     inline vec2 p3() const { return m_p3->get(); }
 
-    inline std::weak_ptr<History::Vec2Value> p0_ptr() const { return m_p0; }
+    inline bool has_p1() const { return m_p1 != nullptr; }
+    inline bool has_p2() const { return m_p2 != nullptr; }
+
+    inline std::weak_ptr<ControlPoint> p0_ptr() const { return m_p0; }
     inline std::weak_ptr<History::Vec2Value> p1_ptr() const { return m_p1; }
     inline std::weak_ptr<History::Vec2Value> p2_ptr() const { return m_p2; }
-    inline std::weak_ptr<History::Vec2Value> p3_ptr() const { return m_p3; }
+    inline std::weak_ptr<ControlPoint> p3_ptr() const { return m_p3; }
 
     vec2 get(const float t) const;
 
@@ -86,10 +90,10 @@ namespace Graphick::Renderer::Geometry {
     // The start, end, and control points of the segment.
     //
     // For a line segment, p1 and p2 are ignored. For a quadratic bezier, only p1 is used. 
-    ControlPoint m_p0;
-    ControlPoint m_p1;
-    ControlPoint m_p2;
-    ControlPoint m_p3;
+    ControlPointVertex m_p0;
+    ControlPointHandle m_p1;
+    ControlPointHandle m_p2;
+    ControlPointVertex m_p3;
   private:
     // TEMP: remove
     friend class Path;

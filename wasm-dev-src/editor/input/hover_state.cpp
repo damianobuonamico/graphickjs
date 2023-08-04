@@ -12,7 +12,7 @@ namespace Graphick::Editor::Input {
     return Editor::scene().get_entity(m_entity);
   }
 
-  std::optional<std::weak_ptr<History::Vec2Value>> HoverState::vertex() const {
+  std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> HoverState::vertex() const {
     if (m_entity == 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;
     return m_vertex;
   }
@@ -65,7 +65,7 @@ namespace Graphick::Editor::Input {
         vec2 p2 = segment.p2();
         vec2 p3 = segment.p3();
 
-        if (p1 != p0 && Math::is_point_in_circle(transformed_pos, p1, threshold)) {
+        if (segment.has_p1() && Math::is_point_in_circle(transformed_pos, p1, threshold)) {
           m_type = HoverType::Handle;
           m_vertex = segment.p0_ptr();
           m_handle = segment.p1_ptr();
@@ -73,7 +73,7 @@ namespace Graphick::Editor::Input {
         }
 
         if (segment.is_cubic()) {
-          if (p2 != p3 && Math::is_point_in_circle(transformed_pos, p2, threshold)) {
+          if (segment.has_p2() && Math::is_point_in_circle(transformed_pos, p2, threshold)) {
             m_type = HoverType::Handle;
             m_vertex = segment.p3_ptr();
             m_handle = segment.p2_ptr();

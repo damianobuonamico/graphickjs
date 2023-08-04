@@ -4,7 +4,7 @@
 // #include "../../scene/entities/element_entity.h"
 // #include "../../scene/entities/selection_rect_entity.h"
 
-#include "../../../history/values.h"
+#include "../../../renderer/geometry/control_point.h"
 
 #include "../../../utils/uuid.h"
 
@@ -72,7 +72,7 @@ namespace Graphick::Editor::Input {
     Mode m_mode = Mode::None;
 
     uuid m_entity = 0;
-    std::optional<std::weak_ptr<History::Vec2Value>> m_vertex;
+    std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex;
     std::optional<std::weak_ptr<History::Vec2Value>> m_handle;
 
     // Entity* m_entity = nullptr;

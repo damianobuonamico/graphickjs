@@ -12,53 +12,75 @@ namespace Graphick::Renderer::Geometry {
 
   Segment::Segment(vec2 p0, vec2 p3) :
     m_kind(Kind::Linear),
-    m_p0(std::make_shared<History::Vec2Value>(p0)),
-    m_p3(std::make_shared<History::Vec2Value>(p3)) {}
+    m_p0(std::make_shared<ControlPoint>(p0)),
+    m_p3(std::make_shared<ControlPoint>(p3)) {}
 
   Segment::Segment(vec2 p0, vec2 p1, vec2 p3, bool is_quadratic) :
     m_kind(is_quadratic ? Kind::Quadratic : Kind::Cubic),
-    m_p0(std::make_shared<History::Vec2Value>(p0)),
-    m_p1(std::make_shared<History::Vec2Value>(p0)),
-    m_p3(std::make_shared<History::Vec2Value>(p3)) {}
+    m_p0(std::make_shared<ControlPoint>(p0)),
+    m_p1(std::make_shared<History::Vec2Value>(p1)),
+    m_p3(std::make_shared<ControlPoint>(p3))
+  {
+    m_p0->set_relative_handle(m_p1);
+  }
 
   Segment::Segment(vec2 p0, vec2 p1, vec2 p2, vec2 p3) :
     m_kind(Kind::Cubic),
-    m_p0(std::make_shared<History::Vec2Value>(p0)),
-    m_p1(std::make_shared<History::Vec2Value>(p0)),
-    m_p2(std::make_shared<History::Vec2Value>(p0)),
-    m_p3(std::make_shared<History::Vec2Value>(p3)) {}
+    m_p0(std::make_shared<ControlPoint>(p0)),
+    m_p1(std::make_shared<History::Vec2Value>(p1)),
+    m_p2(std::make_shared<History::Vec2Value>(p2)),
+    m_p3(std::make_shared<ControlPoint>(p3))
+  {
+    m_p0->set_relative_handle(m_p1);
+    m_p3->set_relative_handle(m_p2);
+  }
 
-  Segment::Segment(ControlPoint p0, ControlPoint p3) :
+  Segment::Segment(ControlPointVertex p0, ControlPointVertex p3) :
     m_kind(Kind::Linear),
     m_p0(p0),
     m_p3(p3) {}
 
-  Segment::Segment(ControlPoint p0, vec2 p1, ControlPoint p3, bool is_quadratic) :
+  Segment::Segment(ControlPointVertex p0, vec2 p1, ControlPointVertex p3, bool is_quadratic) :
     m_kind(is_quadratic ? Kind::Quadratic : Kind::Cubic),
     m_p0(p0),
     m_p1(std::make_shared<History::Vec2Value>(p1)),
-    m_p3(p3) {}
+    m_p3(p3)
+  {
+    m_p0->set_relative_handle(m_p1);
+  }
 
-  Segment::Segment(ControlPoint p0, vec2 p1, vec2 p2, ControlPoint p3) :
+  Segment::Segment(ControlPointVertex p0, vec2 p1, vec2 p2, ControlPointVertex p3) :
     m_kind(Kind::Cubic),
     m_p0(p0),
     m_p1(std::make_shared<History::Vec2Value>(p1)),
     m_p2(std::make_shared<History::Vec2Value>(p2)),
-    m_p3(p3) {}
+    m_p3(p3)
+  {
+    m_p0->set_relative_handle(m_p1);
+    m_p3->set_relative_handle(m_p2);
+  }
 
   Segment::Segment(const Segment& other) :
     m_kind(other.m_kind),
     m_p0(other.m_p0),
     m_p1(other.m_p1 ? std::make_shared<History::Vec2Value>(*other.m_p1) : nullptr),
     m_p2(other.m_p2 ? std::make_shared<History::Vec2Value>(*other.m_p2) : nullptr),
-    m_p3(other.m_p3) {}
+    m_p3(other.m_p3)
+  {
+    m_p0->set_relative_handle(m_p1);
+    m_p3->set_relative_handle(m_p2);
+  }
 
   Segment::Segment(Segment&& other) noexcept :
     m_kind(other.m_kind),
     m_p0(other.m_p0),
     m_p1(std::move(other.m_p1)),
     m_p2(std::move(other.m_p2)),
-    m_p3(other.m_p3) {}
+    m_p3(other.m_p3)
+  {
+    m_p0->set_relative_handle(m_p1);
+    m_p3->set_relative_handle(m_p2);
+  }
 
   Segment& Segment::operator=(const Segment& other) {
     m_kind = other.m_kind;
@@ -66,6 +88,9 @@ namespace Graphick::Renderer::Geometry {
     m_p1 = other.m_p1 ? std::make_shared<History::Vec2Value>(*other.m_p1) : nullptr;
     m_p2 = other.m_p2 ? std::make_shared<History::Vec2Value>(*other.m_p2) : nullptr;
     m_p3 = other.m_p3;
+
+    m_p0->set_relative_handle(m_p1);
+    m_p3->set_relative_handle(m_p2);
 
     return *this;
   }
@@ -76,6 +101,9 @@ namespace Graphick::Renderer::Geometry {
     m_p1 = std::move(other.m_p1);
     m_p2 = std::move(other.m_p2);
     m_p3 = other.m_p3;
+
+    m_p0->set_relative_handle(m_p1);
+    m_p3->set_relative_handle(m_p2);
 
     return *this;
   }

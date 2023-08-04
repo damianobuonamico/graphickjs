@@ -10,23 +10,23 @@
 namespace Graphick::Renderer::Geometry {
 
   void Path::move_to(vec2 p) {
-    m_last_point = std::make_shared<History::Vec2Value>(p);
+    m_last_point = std::make_shared<ControlPoint>(p);
   }
 
   void Path::line_to(vec2 p) {
-    Segment::ControlPoint point = std::make_shared<History::Vec2Value>(p);
+    Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p);
     m_segments.emplace_back(m_last_point, point);
     m_last_point = point;
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
-    Segment::ControlPoint point = std::make_shared<History::Vec2Value>(p2);
+    Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p2);
     m_segments.emplace_back(m_last_point, p1, point, true);
     m_last_point = point;
   }
 
   void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
-    Segment::ControlPoint point = std::make_shared<History::Vec2Value>(p3);
+    Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
     m_segments.emplace_back(m_last_point, p1, p2, point);
     m_last_point = point;
   }
