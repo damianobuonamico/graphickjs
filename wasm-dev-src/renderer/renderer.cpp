@@ -266,7 +266,7 @@ namespace Graphick::Renderer {
       },
       {},
       {
-        { m_programs.opaque_tile_program.offset_uniform, (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE },
+        { m_programs.masked_tile_program.offset_uniform, (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE },
         { m_programs.masked_tile_program.tile_size_uniform, (int)TILE_SIZE },
         { m_programs.masked_tile_program.framebuffer_size_uniform, m_viewport.size },
         { m_programs.masked_tile_program.masks_texture_size_uniform, (int)MASKS_TEXTURE_SIZE }

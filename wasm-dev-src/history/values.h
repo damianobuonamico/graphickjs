@@ -85,22 +85,10 @@ namespace Graphick::History {
 
     inline size_t size() const { return m_vector.size(); }
 
-    inline void insert(const value& pair) {
-      CommandHistory::add(std::make_unique<InsertInVectorCommand<value>>(&m_vector, pair));
-    }
-
-    inline void insert(const value& pair, int index) {
-      CommandHistory::add(std::make_unique<InsertInVectorCommand<value>>(&m_vector, pair, index));
-    }
-
-    // TODO: Implement
-    inline void erase(const value& pair) {
-      CommandHistory::add(std::make_unique<EraseFromVectorCommand<value>>(&m_vector, pair));
-    }
-
-    inline void erase(const value& pair, int index) {
-      CommandHistory::add(std::make_unique<EraseFromVectorCommand<value>>(&m_vector, pair, index));
-    }
+    void insert(const value& pair);
+    void insert(const value& pair, int index);
+    void erase(const value& pair);
+    void erase(const value& pair, int index);
   private:
     vector m_vector;
   };

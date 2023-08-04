@@ -10,7 +10,7 @@ namespace Graphick::Renderer::Geometry {
   public:
     ControlPoint() : m_value() {}
     ControlPoint(const vec2 value) : m_value(value) {}
-    ControlPoint(float x, float y) : m_value({ x, y }) {}
+    ControlPoint(float x, float y) : m_value(x, y) {}
     ~ControlPoint() = default;
 
     inline vec2 get() const { return m_value.get(); }

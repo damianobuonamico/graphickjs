@@ -18,7 +18,7 @@ namespace Graphick::Renderer {
     return coords.x + coords.y * tiles_count.x;
   }
 
-  PathTiler::PathTiler(const Geometry::Path& path, const vec4& color, const rect& visible, float zoom, ivec2 position) :
+  PathTiler::PathTiler(const Geometry::Path& path, const vec4& color, const rect& visible, float zoom, ivec2 position, const std::vector<bool>& culled, const ivec2 tiles_count) :
     m_zoom(zoom),
     m_position(position),
     m_tile_y_prev(0)
@@ -66,7 +66,7 @@ namespace Graphick::Renderer {
       process_linear_segment(p0, p3);
     }
 
-    finish();
+    finish(culled, tiles_count);
   }
 
   void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
@@ -166,7 +166,7 @@ namespace Graphick::Renderer {
     }
   }
 
-  void PathTiler::finish() {
+  void PathTiler::finish(const std::vector<bool>& culled, const ivec2 tiles_count) {
     OPTICK_EVENT();
 
     std::vector<Bin> bins;
@@ -234,38 +234,60 @@ namespace Graphick::Renderer {
         heights[index] += increment.height;
       }
 
+
       if (i + 1 == bins_len || bins[i + 1].tile_x != bin.tile_x || bins[i + 1].tile_y != bin.tile_y) {
         uint8_t tile[TILE_SIZE * TILE_SIZE] = { 0 };
 
-        {
-          OPTICK_EVENT("Generate Mask");
+        ivec2 coords = { bin.tile_x + m_offset.x + 1, bin.tile_y + m_offset.y + 1 };
+        int index = tile_index(coords, tiles_count);
 
+        if (coords.x < 0 || coords.y < 0 || coords.x >= tiles_count.x || coords.y >= tiles_count.y || culled[index]) {
           for (int y = 0; y < TILE_SIZE; y++) {
             float accum = prev[y];
             for (int x = 0; x < TILE_SIZE; x++) {
               int index = x + y * TILE_SIZE;
-              tile[index] = (uint8_t)std::round(std::min(std::abs(accum + areas[index]) * 256.0f, 255.0f));
               accum += heights[index];
             }
-            next[y] = accum;
+            prev[y] = accum;
           }
-        }
-
-        m_masks.push_back({ bin.tile_x, bin.tile_y, tile });
-
-        {
-          OPTICK_EVENT("Memset");
 
           memset(areas, 0, sizeof(areas));
           memset(heights, 0, sizeof(heights));
 
-          if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y) {
-            memcpy(prev, next, sizeof(prev));
-          } else {
+          if (i + 1 > bins_len || bins[i + 1].tile_y != bin.tile_y) {
             memset(prev, 0, sizeof(prev));
           }
+        } else {
+          {
+            OPTICK_EVENT("Generate Mask");
 
-          memset(next, 0, sizeof(next));
+            for (int y = 0; y < TILE_SIZE; y++) {
+              float accum = prev[y];
+              for (int x = 0; x < TILE_SIZE; x++) {
+                int index = x + y * TILE_SIZE;
+                tile[index] = (uint8_t)std::round(std::min(std::abs(accum + areas[index]) * 256.0f, 255.0f));
+                accum += heights[index];
+              }
+              next[y] = accum;
+            }
+          }
+
+          m_masks.push_back({ bin.tile_x, bin.tile_y, tile });
+
+          {
+            OPTICK_EVENT("Memset");
+
+            memset(areas, 0, sizeof(areas));
+            memset(heights, 0, sizeof(heights));
+
+            if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y) {
+              memcpy(prev, next, sizeof(prev));
+            } else {
+              memset(prev, 0, sizeof(prev));
+            }
+
+            memset(next, 0, sizeof(next));
+          }
         }
 
         {
@@ -335,7 +357,7 @@ namespace Graphick::Renderer {
   void Tiler::process_path(const Geometry::Path& path, const vec4& color) {
     OPTICK_EVENT();
 
-    PathTiler tiler(path, color, m_visible, m_zoom, m_position);
+    PathTiler tiler(path, color, m_visible, m_zoom, m_position, m_culled_tiles, m_tiles_count);
 
     const std::vector<PathTiler::TileMask>& masks = tiler.masks();
     const std::vector<PathTiler::TileSpan>& spans = tiler.spans();

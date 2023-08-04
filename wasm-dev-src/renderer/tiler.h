@@ -52,7 +52,7 @@ namespace Graphick::Renderer {
     PathTiler(const PathTiler&) = default;
     PathTiler(PathTiler&&) = default;
 
-    PathTiler(const Geometry::Path& path, const vec4& color, const rect& visible, float zoom, ivec2 position);
+    PathTiler(const Geometry::Path& path, const vec4& color, const rect& visible, float zoom, ivec2 position, const std::vector<bool>& culled, const ivec2 tiles_count);
     ~PathTiler() = default;
 
     inline const std::vector<TileMask>& masks() const { return m_masks; }
@@ -64,7 +64,7 @@ namespace Graphick::Renderer {
     void process_linear_segment(const vec2 p0, const vec2 p3);
     void process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
 
-    void finish();
+    void finish(const std::vector<bool>& culled, const ivec2 tiles_count);
   private:
     std::vector<Increment> m_increments;
     std::vector<TileIncrement> m_tile_increments;

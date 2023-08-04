@@ -50,6 +50,29 @@ namespace Graphick::History {
     m_delta = 0;
   };
 
+  /* -- MapValue -- */
+
+  template <typename K, typename V>
+  void MapValue<K, V>::insert(const MapValue<K, V>::value& pair) {
+    CommandHistory::add(std::make_unique<InsertInVectorCommand<MapValue<K, V>::value>>(&m_vector, pair));
+  }
+
+  template <typename K, typename V>
+  void MapValue<K, V>::insert(const MapValue<K, V>::value& pair, int index) {
+    CommandHistory::add(std::make_unique<InsertInVectorCommand<MapValue<K, V>::value>>(&m_vector, pair, index));
+  }
+
+  // TODO: Implement
+  template <typename K, typename V>
+  void MapValue<K, V>::erase(const MapValue<K, V>::value& pair) {
+    CommandHistory::add(std::make_unique<EraseFromVectorCommand<MapValue<K, V>::value>>(&m_vector, pair));
+  }
+
+  template <typename K, typename V>
+  void MapValue<K, V>::erase(const MapValue<K, V>::value& pair, int index) {
+    CommandHistory::add(std::make_unique<EraseFromVectorCommand<MapValue<K, V>::value>>(&m_vector, pair, index));
+  }
+
   /* -- Vec2Value -- */
 
   void Vec2Value::set(const vec2& value) {
