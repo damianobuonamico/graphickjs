@@ -63,6 +63,8 @@ namespace Graphick::Renderer {
   private:
     void process_linear_segment(const vec2 p0, const vec2 p3);
     void process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
+    void process_linear_segment_clipped(const vec2 p0, const vec2 p3, rect visible);
+    void process_cubic_segment_clipped(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, rect visible);
 
     void finish(const std::vector<bool>& culled, const ivec2 tiles_count);
   private:

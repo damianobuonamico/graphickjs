@@ -13,7 +13,7 @@ OPTIONS = [
   'MAX_WEBGL_VERSION=2', 
   'USE_WEBGL2', 
   'FULL_ES3', 
-  'NO_DISABLE_EXCEPTION_CATCHING', 
+  # 'NO_DISABLE_EXCEPTION_CATCHING', 
   'EXPORTED_FUNCTIONS="["_malloc", "_free"]"',
   'EXPORTED_RUNTIME_METHODS="["cwrap", "allocateUTF8"]"'
 ]
@@ -38,10 +38,11 @@ COMMON = [
   '-o ' + OUTPUT,
   '-l embind',
   '-DEMSCRIPTEN=1',
+  '-std=c++17',
   '-s ' + ' -s '.join(OPTIONS)
 ]
 
 if (DEBUG):
   os.system(' '.join([*COMMON, '-DGK_CONF_DEBUG=1', '-g', '-fdebug-compilation-dir="../wasm-dev-src"']))
 else:
-  os.system(' '.join([*COMMON, '-DGK_CONF_DIST=1', '-Os']))
+  os.system(' '.join([*COMMON, '-DGK_CONF_DIST=1', '-O3', '-fno-rtti', '-fno-exceptions', '-funsafe-math-optimizations', '-DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0']))

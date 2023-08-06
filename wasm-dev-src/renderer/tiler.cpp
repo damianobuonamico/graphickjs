@@ -10,12 +10,145 @@
 
 namespace Graphick::Renderer {
 
+  static constexpr float tolerance = 0.25f;
+
   static inline ivec2 tile_coords(const vec2 p) {
     return { (int)std::floor(p.x / TILE_SIZE), (int)std::floor(p.y / TILE_SIZE) };
   }
 
   static inline int tile_index(const ivec2 coords, const ivec2 tiles_count) {
     return coords.x + coords.y * tiles_count.x;
+  }
+
+  static inline float x_intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
+    float num = (x1 * y2 - y1 * x2) * (x3 - x4) -
+      (x1 - x2) * (x3 * y4 - y3 * x4);
+    float den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    return num / den;
+  }
+
+  static inline float y_intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
+    float num = (x1 * y2 - y1 * x2) * (y3 - y4) -
+      (y1 - y2) * (x3 * y4 - y3 * x4);
+    float den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    return num / den;
+  }
+
+  static void clip_to_left(std::vector<vec2>& points, float x) {
+    if (points.empty()) return;
+    std::vector<vec2> new_points;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      vec2 point = points[i];
+
+      if (point.x < x) {
+        if (points[i + 1].x > x) {
+          new_points.push_back({ x, y_intersect(x, -1000.0f, x, 1000.0f, point.x, point.y, points[i + 1].x, points[i + 1].y) });
+        }
+      } else {
+        new_points.push_back(point);
+
+        if (points[i + 1].x < x) {
+          new_points.push_back({ x, y_intersect(x, -1000.0f, x, 1000.0f, point.x, point.y, points[i + 1].x, points[i + 1].y) });
+        }
+      }
+    }
+
+    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
+      new_points.push_back(new_points.front());
+    }
+
+    points = new_points;
+  }
+
+  static void clip_to_right(std::vector<vec2>& points, float x) {
+    if (points.empty()) return;
+    std::vector<vec2> new_points;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      vec2 point = points[i];
+
+      if (point.x > x) {
+        if (points[i + 1].x < x) {
+          new_points.push_back({ x, y_intersect(x, -1000.0f, x, 1000.0f, point.x, point.y, points[i + 1].x, points[i + 1].y) });
+        }
+      } else {
+        new_points.push_back(point);
+
+        if (points[i + 1].x > x) {
+          new_points.push_back({ x, y_intersect(x, -1000.0f, x, 1000.0f, point.x, point.y, points[i + 1].x, points[i + 1].y) });
+        }
+      }
+    }
+
+    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
+      new_points.push_back(new_points.front());
+    }
+
+    points = new_points;
+  }
+
+  static void clip_to_top(std::vector<vec2>& points, float y) {
+    if (points.empty()) return;
+    std::vector<vec2> new_points;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      vec2 point = points[i];
+
+      if (point.y < y) {
+        if (points[i + 1].y > y) {
+          new_points.push_back({ x_intersect(-1000.0f, y, 1000.0f, y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+        }
+      } else {
+        new_points.push_back(point);
+
+        if (points[i + 1].y < y) {
+          new_points.push_back({ x_intersect(-1000.0f, y, 1000.0f, y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+        }
+      }
+    }
+
+    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
+      new_points.push_back(new_points.front());
+    }
+
+    points = new_points;
+  }
+
+  static void clip_to_bottom(std::vector<vec2>& points, float y) {
+    if (points.empty()) return;
+    std::vector<vec2> new_points;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      vec2 point = points[i];
+
+      if (point.y > y) {
+        if (points[i + 1].y < y) {
+          new_points.push_back({ x_intersect(-1000.0f, y, 1000.0f, y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+        }
+      } else {
+        new_points.push_back(point);
+
+        if (points[i + 1].y > y) {
+          new_points.push_back({ x_intersect(-1000.0f, y, 1000.0f, y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+        }
+      }
+    }
+
+    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
+      new_points.push_back(new_points.front());
+    }
+
+    points = new_points;
+  }
+
+  static void clip(std::vector<vec2>& points, rect visible) {
+    OPTICK_EVENT();
+
+    clip_to_left(points, visible.min.x);
+    clip_to_right(points, visible.max.x);
+    clip_to_top(points, visible.min.y);
+    clip_to_bottom(points, visible.max.y);
   }
 
   PathTiler::PathTiler(const Geometry::Path& path, const vec4& color, const rect& visible, float zoom, ivec2 position, const std::vector<bool>& culled, const ivec2 tiles_count) :
@@ -26,10 +159,7 @@ namespace Graphick::Renderer {
     OPTICK_EVENT();
 
     rect rect = path.bounding_rect();
-
-    // TODO: Maybe optimize this check
-    if (!does_rect_intersect_rect(rect, visible)) return;
-
+    float intersection_overlap = Math::rect_rect_intersection_area(rect, visible) / rect.area();
     float zoom_factor = m_zoom / TILE_SIZE;
 
     rect.min = floor(rect.min * zoom_factor) * TILE_SIZE;
@@ -45,25 +175,98 @@ namespace Graphick::Renderer {
 
     m_prev = segments.front().p0() * m_zoom - rect.min;
 
-    for (const auto& segment : segments) {
-      vec2 p0 = segment.p0() * m_zoom - rect.min;
-      vec2 p3 = segment.p3() * m_zoom - rect.min;
+    if (intersection_overlap < 0.7) {
+      std::vector<vec2> points;
+      points.reserve(segments.size() + 1);
 
-      if (segment.is_cubic()) {
-        vec2 p1 = segment.p1() * m_zoom - rect.min;
-        vec2 p2 = segment.p2() * m_zoom - rect.min;
+      vec2 first_point = segments.front().p0() * m_zoom/* - rect.min*/;
+      points.push_back(first_point);
 
-        process_cubic_segment(p0, p1, p2, p3);
-      } else {
+      Math::rect vis = visible;
+
+      vis.min *= zoom;
+      vis.max *= zoom;
+
+      // vis.min += TILE_SIZE;
+      // vis.max -= TILE_SIZE;
+
+      vis.min = floor(vis.min / TILE_SIZE) * TILE_SIZE;
+      vis.max = ceil(vis.max / TILE_SIZE) * TILE_SIZE + TILE_SIZE;
+
+      for (const auto& segment : segments) {
+        vec2 p0 = segment.p0() * m_zoom/* - rect.min*/;
+        vec2 p3 = segment.p3() * m_zoom/* - rect.min*/;
+
+        if (segment.is_cubic()) {
+          vec2 p1 = segment.p1() * m_zoom/* - rect.min*/;
+          vec2 p2 = segment.p2() * m_zoom/* - rect.min*/;
+
+          Math::rect segment_rect = segment.bounding_rect();
+          if (Math::does_rect_intersect_rect(segment_rect, visible)) {
+            vec2 a = -1.0f * p0 + 3.0f * p1 - 3.0f * p2 + p3;
+            vec2 b = 3.0f * (p0 - 2.0f * p1 + p2);
+
+            float conc = std::max(Math::length(b), Math::length(a + b));
+            float dt = std::sqrtf((std::sqrtf(8.0f) * tolerance) / conc);
+            float t = 0.0f;
+
+            while (t < 1.0f) {
+              t = std::min(t + dt, 1.0f);
+
+              vec2 p01 = Math::lerp(p0, p1, t);
+              vec2 p12 = Math::lerp(p1, p2, t);
+              vec2 p23 = Math::lerp(p2, p3, t);
+              vec2 p012 = Math::lerp(p01, p12, t);
+              vec2 p123 = Math::lerp(p12, p23, t);
+
+              points.push_back(Math::lerp(p012, p123, t));
+            }
+          } else {
+            points.push_back(p3);
+          }
+        } else {
+          points.push_back(p3);
+        }
+      }
+
+      clip(points, vis);
+
+      if (points.empty()) return;
+
+      vec2 min = std::numeric_limits<vec2>::max();
+
+      for (int i = 0; i < points.size(); i++) {
+        Math::min(min, points[i], min);
+      }
+
+      min = floor(min / TILE_SIZE) * TILE_SIZE;
+
+      for (int i = 0; i < points.size() - 1; i++) {
+        process_linear_segment(points[i] - min, points[i + 1] - min);
+      }
+
+      m_offset = tile_coords(min) + m_position;
+    } else {
+      for (const auto& segment : segments) {
+        vec2 p0 = segment.p0() * m_zoom - rect.min;
+        vec2 p3 = segment.p3() * m_zoom - rect.min;
+
+        if (segment.is_cubic()) {
+          vec2 p1 = segment.p1() * m_zoom - rect.min;
+          vec2 p2 = segment.p2() * m_zoom - rect.min;
+
+          process_cubic_segment(p0, p1, p2, p3);
+        } else {
+          process_linear_segment(p0, p3);
+        }
+      }
+
+      if (!path.closed()) {
+        vec2 p0 = segments.back().p3() * m_zoom - rect.min;
+        vec2 p3 = segments.front().p0() * m_zoom - rect.min;
+
         process_linear_segment(p0, p3);
       }
-    }
-
-    if (!path.closed()) {
-      vec2 p0 = segments.back().p3() * m_zoom - rect.min;
-      vec2 p3 = segments.front().p0() * m_zoom - rect.min;
-
-      process_linear_segment(p0, p3);
     }
 
     finish(culled, tiles_count);
@@ -80,53 +283,53 @@ namespace Graphick::Renderer {
     int16_t x_dir = (int16_t)std::copysign(1, p3.x - p0.x);
     int16_t y_dir = (int16_t)std::copysign(1, p3.y - p0.y);
 
-    float dtdx = 1.0f / (p3.x - p0.x);
-    float dtdy = 1.0f / (p3.y - p0.y);
+    double dtdx = 1.0 / (p3.x - p0.x);
+    double dtdy = 1.0 / (p3.y - p0.y);
 
     int16_t x = (int16_t)std::floor(p0.x);
     int16_t y = (int16_t)std::floor(p0.y);
 
-    float row_t0 = 0.0f;
-    float col_t0 = 0.0f;
-    float row_t1 = std::numeric_limits<float>::infinity();
-    float col_t1 = std::numeric_limits<float>::infinity();
+    double row_t0 = 0.0f;
+    double col_t0 = 0.0f;
+    double row_t1 = std::numeric_limits<double>::infinity();
+    double col_t1 = std::numeric_limits<double>::infinity();
 
     if (p0.y != p3.y) {
-      float next_y = p3.y > p0.y ? (float)y + 1.0f : (float)y;
-      row_t1 = std::min(1.0f, dtdy * (next_y - p0.y));
+      double next_y = p3.y > p0.y ? (double)y + 1.0 : (double)y;
+      row_t1 = std::min(1.0, dtdy * (next_y - p0.y));
     }
     if (p0.x != p3.x) {
-      float next_x = p3.x > p0.x ? (float)x + 1.0f : (float)x;
-      col_t1 = std::min(1.0f, dtdx * (next_x - p0.x));
+      double next_x = p3.x > p0.x ? (double)x + 1.0 : (double)x;
+      col_t1 = std::min(1.0, dtdx * (next_x - p0.x));
     }
 
-    float x_step = std::abs(dtdx);
-    float y_step = std::abs(dtdy);
+    double x_step = std::abs(dtdx);
+    double y_step = std::abs(dtdy);
 
     while (true) {
-      float t0 = std::max(row_t0, col_t0);
-      float t1 = std::min(row_t1, col_t1);
+      double t0 = std::max(row_t0, col_t0);
+      double t1 = std::min(row_t1, col_t1);
 
       vec2 from = lerp(p0, p3, t0);
       vec2 to = lerp(p0, p3, t1);
 
-      float height = to.y - from.y;
-      float right = (float)x + 1.0f;
-      float area = 0.5f * height * ((right - from.x) + (right - to.x));
+      double height = to.y - from.y;
+      double right = (double)x + 1.0;
+      double area = 0.5 * height * ((right - from.x) + (right - to.x));
 
-      m_increments.push_back({ x, y, area, height });
+      m_increments.push_back({ x, y, (float)area, (float)height });
 
       if (row_t1 < col_t1) {
         row_t0 = row_t1;
-        row_t1 = std::min(1.0f, row_t1 + y_step);
+        row_t1 = std::min(1.0, row_t1 + y_step);
         y += y_dir;
       } else {
         col_t0 = col_t1;
-        col_t1 = std::min(1.0f, col_t1 + x_step);
+        col_t1 = std::min(1.0, col_t1 + x_step);
         x += x_dir;
       }
 
-      if (row_t0 == 1.0f || col_t0 == 1.0f) {
+      if (row_t0 == 1.0 || col_t0 == 1.0) {
         x = (int16_t)std::floor(p3.x);
         y = (int16_t)std::floor(p3.y);
       }
@@ -137,11 +340,9 @@ namespace Graphick::Renderer {
         m_tile_y_prev = tile_y;
       }
 
-      if (row_t0 == 1.0f || col_t0 == 1.0f) break;
+      if (row_t0 == 1.0 || col_t0 == 1.0) break;
     }
   }
-
-  static constexpr float tolerance = 0.25f;
 
   void PathTiler::process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
     OPTICK_EVENT();
@@ -164,6 +365,14 @@ namespace Graphick::Renderer {
 
       process_linear_segment(m_prev, Math::lerp(p012, p123, t));
     }
+  }
+
+  void PathTiler::process_linear_segment_clipped(const vec2 p0, const vec2 p3, rect visible) {
+    process_linear_segment(p0, p3);
+  }
+
+  void PathTiler::process_cubic_segment_clipped(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, rect visible) {
+    process_linear_segment_clipped(p0, p3, visible);
   }
 
   void PathTiler::finish(const std::vector<bool>& culled, const ivec2 tiles_count) {
@@ -254,7 +463,7 @@ namespace Graphick::Renderer {
           memset(areas, 0, sizeof(areas));
           memset(heights, 0, sizeof(heights));
 
-          if (i + 1 > bins_len || bins[i + 1].tile_y != bin.tile_y) {
+          if (i + 1 >= bins_len || bins[i + 1].tile_y != bin.tile_y) {
             memset(prev, 0, sizeof(prev));
           }
         } else {

@@ -43,7 +43,7 @@ namespace Graphick::History {
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      ChangePrimitiveCommand<T>* casted_command = dynamic_cast<ChangePrimitiveCommand<T>*>(command.get());
+      ChangePrimitiveCommand<T>* casted_command = static_cast<ChangePrimitiveCommand<T>*>(command.get());
       if (casted_command == nullptr || &casted_command->m_value != &this->m_value) return false;
 
       casted_command->m_new_value = this->m_new_value;
@@ -75,7 +75,7 @@ namespace Graphick::History {
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      ChangeVec2Command* casted_command = dynamic_cast<ChangeVec2Command*>(command.get());
+      ChangeVec2Command* casted_command = static_cast<ChangeVec2Command*>(command.get());
       if (casted_command == nullptr || &casted_command->m_value != &this->m_value) return false;
 
       casted_command->m_new_value = this->m_new_value;
@@ -134,7 +134,7 @@ namespace Graphick::History {
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      InsertInVectorCommand* casted_command = dynamic_cast<InsertInVectorCommand*>(command.get());
+      InsertInVectorCommand* casted_command = static_cast<InsertInVectorCommand*>(command.get());
 
       if (
         casted_command == nullptr ||
@@ -208,7 +208,7 @@ namespace Graphick::History {
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      EraseFromVectorCommand* casted_command = dynamic_cast<EraseFromVectorCommand*>(command.get());
+      EraseFromVectorCommand* casted_command = static_cast<EraseFromVectorCommand*>(command.get());
 
       if (
         casted_command == nullptr ||

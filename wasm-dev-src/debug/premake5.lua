@@ -85,9 +85,11 @@ workspace "graphick-debug"
     runtime "Release"
     optimize "On"
     symbols "On"
+    floatingpoint "Fast"
 
   filter "configurations:Dist"
     defines { "GK_CONF_DIST" }
     runtime "Release"
     optimize "On"
     symbols "Off"
+    floatingpoint "Fast"

@@ -75,6 +75,29 @@ namespace Graphick::Math {
     return points;
   }
 
+  inline vec2 line_line_fast_intersection_points(const rect& a, const rect& b) {
+    rect rect = { min(b.min, b.max), max(b.min, b.max) };
+    float den = b.max.x - b.min.x;
+
+    if (is_almost_zero(den)) {
+      float t = (b.min.x - a.min.x) / (a.max.x - a.min.x);
+      if (t >= 0.0f && t <= 1.0f) {
+        return lerp(a.min, a.max, t);
+      }
+
+      return { std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity() };
+    }
+
+    float m = (b.max.y - b.min.y) / den;
+
+    float t = (m * b.min.x - b.min.y + a.min.y - m * a.min.x) / (m * (a.max.x - a.min.x) + a.min.y - a.max.y);
+    if (t >= 0.0f && t <= 1.0f) {
+      return lerp(a.min, a.max, t);
+    }
+
+    return { std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity() };
+  }
+
   inline std::vector<vec2> line_circle_intersection_points(const rect& line, const vec2 center, const float radius) {
     vec2 ldir = line.max - line.min;
     vec2 tvec = line.min - center;

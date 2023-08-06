@@ -113,7 +113,7 @@ int main() {
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   Graphick::io::svg::parse_svg(content);
 
-  // Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
+  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
   // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_entity("Test Entity 1");
 
   // Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;

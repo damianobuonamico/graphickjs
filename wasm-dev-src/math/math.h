@@ -15,6 +15,7 @@ namespace Graphick::Math {
   float rect_rect_intersection_area(const rect& a, const rect& b);
   std::vector<float> line_line_intersections(const rect& a, const rect& b);
   std::vector<vec2> line_line_intersection_points(const rect& a, const rect& b);
+  vec2 line_line_fast_intersection_points(const rect& a, const rect& b);
   std::vector<vec2> line_circle_intersection_points(const rect& line, const vec2 center, const float radius);
 
   std::vector<rect> lines_from_rect(const rect& rect);
