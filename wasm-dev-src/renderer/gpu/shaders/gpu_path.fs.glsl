@@ -38,6 +38,140 @@ R"(
     int n = int(texture(uPathsTexture, tex_coords).r);
 
     float alpha = 0.0;
+    // int winding = 0;
+
+    for (int i = 0; i < n; i++) {
+      vec2 p0_x_coords = index_to_coords(index + i * 4 + 1);
+      vec2 p0_y_coords = index_to_coords(index + i * 4 + 2);
+      vec2 p3_x_coords = index_to_coords(index + i * 4 + 3);
+      vec2 p3_y_coords = index_to_coords(index + i * 4 + 4);
+
+      vec2 p0 = vec2(texture(uPathsTexture, p0_x_coords).r, texture(uPathsTexture, p0_y_coords).r);
+      vec2 p3 = vec2(texture(uPathsTexture, p3_x_coords).r, texture(uPathsTexture, p3_y_coords).r);
+
+      // float min_x = min(p0.x, p3.x);
+      // float max_x = max(p0.x, p3.x);
+      float min_y = min(p0.y, p3.y);
+      float max_y = max(p0.y, p3.y);
+
+      float y0 = floor(vCoords.y);
+      float y1 = y0 + 1.0;
+      float x0 = floor(vCoords.x);
+      float x1 = x0 + 1.0;
+
+      if (min_y >= y1 || max_y <= y0/* || min_x >= x1*/) {
+        continue;
+      }
+
+      float area = 0.0;
+      float cover = 0.0;
+
+      // Check if segment is almost vertical
+      if (abs(p0.x - p3.x) < 0.1 ) {
+        // Treating segment as vertical, horizontal segments are discarded in CPU preprocessing
+        if (p0.x > x1) {
+          // Segment is on the right side of the pixel
+          continue;
+        }
+
+        if (p0.x < x0) {
+          cover += clamp(p3.y, y0, y1) - clamp(p0.y, y0, y1);
+          // cover += clamp(p3.y - p0.y, -1.0, 1.0);
+        } else {
+          area += (clamp(p3.y, y0, y1) - clamp(p0.y, y0, y1)) * (x1 - p0.x);
+          // area += clamp(p3.y - p0.y, -1.0, 1.0) * (x1 - p0.x);
+        }
+
+        // if (p0.x < x0) {
+        //   cover += clamp(p3.y - p0.y, -1.0, 1.0);
+        // } else {
+        //   area += clamp(p3.y - p0.y, -1.0, 1.0) * (x1 - p0.x);
+        // }
+
+        alpha += area + cover;
+
+        continue;
+      }
+
+      // float y = floor(vCoords.y) + 0.5;
+
+      // float x_inter = x_intersect(p0, p3, y);
+
+      // if (x_inter < vCoords.x) {
+      //   if (p0.y > p3.y) {
+      //     winding++;
+      //   } else {
+      //     winding--;
+      //   }
+      // }
+
+      // Clip segment to pixel
+      if (p0.y < y0) {
+        p0 = vec2(x_intersect(p0, p3, y0), y0);
+      } else if (p0.y > y1) {
+        p0 = vec2(x_intersect(p0, p3, y1), y1);
+      }
+
+      if (p3.y < y0) {
+        p3 = vec2(x_intersect(p0, p3, y0), y0);
+      } else if (p3.y > y1) {
+        p3 = vec2(x_intersect(p0, p3, y1), y1);
+      }
+
+      float min_x = min(p0.x, p3.x);
+      float max_x = max(p0.x, p3.x);
+
+      if (min_x >= x1) {
+        continue;
+      }
+
+      if (p0.x > x1) {
+        p0 = vec2(x1, y_intersect(p0, p3, x1));
+      } else if (p3.x > x1) {
+        p3 = vec2(x1, y_intersect(p0, p3, x1));
+      }
+
+      // Calculate area and cover values
+      if (p0.x < x0) {
+        if (p3.x < x0) {
+          // Both points are on the left side of the pixel
+          // cover += p0.y - p3.y;
+          cover += p3.y - p0.y;
+        } else {
+          // p0 is on the left side of the pixel, p3 is on the right side, clipping
+          vec2 p0_a = vec2(x0, y_intersect(p0, p3, x0));
+          // area += 0.5 * (1.0 + x1 - p3.x) * (p0_a.y - p3.y);
+          // cover += p0.y - p0_a.y;
+          area += 0.5 * (1.0 + x1 - p3.x) * (p3.y - p0_a.y);
+          cover += p0_a.y - p0.y;
+        }
+      } else if (p3.x < x0) {
+        // p3 is on the left side of the pixel, p0 is on the right side, clipping
+        vec2 p3_a = vec2(x0, y_intersect(p0, p3, x0));
+        // area += 0.5 * (1.0 + x1 - p0.x) * (p0.y - p3_a.y);
+        // cover += p3_a.y - p3.y;
+        area += 0.5 * (1.0 + x1 - p0.x) * (p3_a.y - p0.y);
+        cover += p3.y - p3_a.y;
+      } else {
+        // Both points are on the right side of the pixel
+        // area += 0.5 * (x1 - p0.x + x1 - p3.x) * (p0.y - p3.y);
+        area += 0.5 * (x1 - p0.x + x1 - p3.x) * (p3.y - p0.y);
+      }
+
+      alpha += area + cover;
+    }
+
+    // oFragColor = vec4(vColor.rgb, winding != 0 ? 1.0 : 0.0);
+    oFragColor = vec4(vColor.rgb, min(abs(alpha), 1.0));
+  } 
+
+  void mainy() {
+    int index = int(vPathIndex);
+    vec2 tex_coords = index_to_coords(index);
+
+    int n = int(texture(uPathsTexture, tex_coords).r);
+
+    float alpha = 0.0;
     int winding = 0;
 
     for (int i = 0; i < n; i++) {
@@ -79,9 +213,19 @@ R"(
       float y_r = y_intersect(p0, p3, x1);
       float y_l = y_intersect(p0, p3, x0);
 
-      
+      float area = 0.0;
 
+      if ((y_r > y1 || y_r < y0) && (y_l > y1 || y_l < y0)) {
+        // Trapezoid case
+        area += 0.5 * (x1 - x_t + x1 - x_b);
+  
+      }
 
+      if (winding % 2 == 0) {
+        alpha -= area;
+      } else {
+        alpha += area;
+      }
 
       // bool flip = false;
 

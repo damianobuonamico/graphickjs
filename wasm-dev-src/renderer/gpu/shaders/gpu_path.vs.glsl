@@ -12,6 +12,7 @@ R"(
   out float vPathIndex;
   out vec4 vColor;
   out vec2 vCoords;
+  out vec2 vSize;
 
   void main() {
     vec2 position = vec2(float(aPosition.x), float(aPosition.y));
@@ -21,7 +22,8 @@ R"(
     
     vColor = uColor;
     vPathIndex = aPathIndex;
-    vCoords = vertex_position + 0.5 - position;
+    vCoords = vertex_position;
+    // vCoords = vertex_position + 0.5 - position;
   }
 
 )"

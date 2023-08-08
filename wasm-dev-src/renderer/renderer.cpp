@@ -380,6 +380,16 @@ namespace Graphick::Renderer {
       texture[i++] = p3.y;
     }
 
+    if (!path.closed()) {
+      vec2 p0 = segments.back().p3() * m_viewport.zoom - rect.min;
+      vec2 p3 = segments.front().p0() * m_viewport.zoom - rect.min;
+
+      texture[i++] = p0.x;
+      texture[i++] = p0.y;
+      texture[i++] = p3.x;
+      texture[i++] = p3.y;
+    }
+
     // TODO: preallocate and preserve buffers
     uuid paths_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<GPUPath>(1, "GPUPaths");
     uuid paths_texture_id = GPU::Memory::Allocator::allocate_texture({ PATHS_TEXTURE_SIZE, PATHS_TEXTURE_SIZE }, GPU::TextureFormat::R32F, "PathsTexture");

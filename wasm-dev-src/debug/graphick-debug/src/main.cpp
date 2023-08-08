@@ -129,6 +129,10 @@ int main() {
   path.line_to({ 380.0f, -40.0f });
   path.line_to({ 360.0f, 20.0f });
 
+  // path.move_to({ 300.0f, 100.0f });
+  // path.line_to({ 350.0f, 200.0f });
+  // path.line_to({ 250.0f, 200.0f });
+
   path.close();
 
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.add_component<Graphick::Editor::PathComponent>().path;
