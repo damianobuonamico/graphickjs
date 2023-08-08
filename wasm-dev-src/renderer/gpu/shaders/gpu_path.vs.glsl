@@ -23,7 +23,6 @@ R"(
     vColor = uColor;
     vPathIndex = aPathIndex;
     vCoords = vertex_position;
-    // vCoords = vertex_position + 0.5 - position;
   }
 
 )"
