@@ -38,6 +38,8 @@ namespace Graphick::Renderer {
     void draw_masked_tiles();
     void draw_masked_tiles_batch(const std::vector<MaskedTile> tiles, const size_t i, const std::vector<uint8_t*> textures);
 
+    void draw_gpu_path(const Geometry::Path& path, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
+
     void init_instanced_renderers();
     void begin_instanced_renderers();
 

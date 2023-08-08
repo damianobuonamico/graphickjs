@@ -145,7 +145,8 @@ namespace Graphick::Renderer {
 
     OPTICK_EVENT();
 
-    get()->m_tiler.process_path(path, color);
+    get()->draw_gpu_path(path, color);
+    // get()->m_tiler.process_path(path, color);
   }
 
   void Renderer::draw_outline(const Geometry::Path& path) {
@@ -340,6 +341,112 @@ namespace Graphick::Renderer {
     GPU::Device::upload_to_buffer(line_vertex_buffer, 0, LINE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
     GPU::Device::upload_to_buffer(circle_vertex_buffer, 0, SQUARE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
     GPU::Device::upload_to_buffer(square_vertex_buffer, 0, SQUARE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+  }
+
+  struct GPUPath {
+    vec2 path_position;
+    vec2 path_size;
+    float path_index;
+  };
+
+#define PATHS_TEXTURE_SIZE 32
+
+  void Renderer::draw_gpu_path(const Geometry::Path& path, const vec4& color) {
+    std::vector<GPUPath> paths;
+    std::vector<float> texture(PATHS_TEXTURE_SIZE * PATHS_TEXTURE_SIZE);
+
+    const auto& segments = path.segments();
+    rect rect = path.bounding_rect();
+
+    rect.min *= m_viewport.zoom;
+    rect.max *= m_viewport.zoom;
+
+    paths.push_back({
+      rect.min,
+      rect.size(),
+      0.0f
+      });
+
+    size_t i = 0;
+    texture[i++] = segments.size();
+
+    for (const auto& segment : segments) {
+      vec2 p0 = segment.p0() * m_viewport.zoom - rect.min;
+      vec2 p3 = segment.p3() * m_viewport.zoom - rect.min;
+
+      texture[i++] = p0.x;
+      texture[i++] = p0.y;
+      texture[i++] = p3.x;
+      texture[i++] = p3.y;
+    }
+
+    // TODO: preallocate and preserve buffers
+    uuid paths_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<GPUPath>(1, "GPUPaths");
+    uuid paths_texture_id = GPU::Memory::Allocator::allocate_texture({ PATHS_TEXTURE_SIZE, PATHS_TEXTURE_SIZE }, GPU::TextureFormat::R32F, "PathsTexture");
+
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
+    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(paths_buffer_id);
+    const GPU::Texture& paths_texture = GPU::Memory::Allocator::get_texture(paths_texture_id);
+
+    GPU::Device::upload_to_buffer(instance_buffer, 0, paths, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_texture(paths_texture, { { 0.0f, 0.0f }, { (float)PATHS_TEXTURE_SIZE, (float)PATHS_TEXTURE_SIZE } }, texture.data());
+
+    GPU::GPUPathVertexArray gpu_path_vertex_array(
+      m_programs.gpu_path_program,
+      instance_buffer,
+      quad_vertex_positions_buffer,
+      quad_vertex_indices_buffer
+    );
+
+    mat4 translation = mat4{
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x /*/ (float)m_viewport.zoom*/ + 2.0f * m_viewport.position.x * (float)m_viewport.zoom),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y /*/ (float)m_viewport.zoom*/ + 2.0f * m_viewport.position.y * (float)m_viewport.zoom),
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    GPU::RenderState state = {
+      nullptr,
+      m_programs.gpu_path_program.program,
+      *gpu_path_vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {
+        { { m_programs.gpu_path_program.paths_texture_uniform, paths_texture.gl_texture }, paths_texture }
+      },
+      {},
+      {
+        { m_programs.gpu_path_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, 1.0f) * translation },
+        { m_programs.gpu_path_program.color_uniform, color },
+        { m_programs.gpu_path_program.paths_texture_size_uniform, (int)PATHS_TEXTURE_SIZE }
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+        std::nullopt,
+        std::nullopt,
+        std::nullopt
+      },
+      true
+    }
+    };
+
+    GPU::Device::draw_elements_instanced(6, 1, state);
+
+    GPU::Memory::Allocator::free_general_buffer(paths_buffer_id);
+    GPU::Memory::Allocator::free_texture(paths_texture_id);
   }
 
   void Renderer::begin_instanced_renderers() {

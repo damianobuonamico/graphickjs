@@ -53,12 +53,23 @@ namespace Graphick::Renderer::GPU {
     CircleProgram();
   };
 
+  struct GPUPathProgram {
+    Program program;
+    Uniform view_projection_uniform;
+    Uniform color_uniform;
+    Uniform paths_texture_uniform;
+    Uniform paths_texture_size_uniform;
+
+    GPUPathProgram();
+  };
+
   struct Programs {
     OpaqueTileProgram opaque_tile_program;
     MaskedTileProgram masked_tile_program;
     LineProgram line_program;
     SquareProgram square_program;
     CircleProgram circle_program;
+    GPUPathProgram gpu_path_program;
 
     Programs();
   };
@@ -116,6 +127,17 @@ namespace Graphick::Renderer::GPU {
       const Buffer& instance_buffer,
       const Buffer& vertex_positions_buffer,
       const Buffer& vertex_indices_buffer
+    );
+  };
+
+  struct GPUPathVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;
+
+    GPUPathVertexArray(
+      const GPUPathProgram& gpu_path_program,
+      const Buffer& instance_buffer,
+      const Buffer& quad_vertex_positions_buffer,
+      const Buffer& quad_vertex_indices_buffer
     );
   };
 

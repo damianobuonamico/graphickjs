@@ -283,53 +283,53 @@ namespace Graphick::Renderer {
     int16_t x_dir = (int16_t)std::copysign(1, p3.x - p0.x);
     int16_t y_dir = (int16_t)std::copysign(1, p3.y - p0.y);
 
-    double dtdx = 1.0 / (p3.x - p0.x);
-    double dtdy = 1.0 / (p3.y - p0.y);
+    float dtdx = 1.0f / (p3.x - p0.x);
+    float dtdy = 1.0f / (p3.y - p0.y);
 
     int16_t x = (int16_t)std::floor(p0.x);
     int16_t y = (int16_t)std::floor(p0.y);
 
-    double row_t0 = 0.0f;
-    double col_t0 = 0.0f;
-    double row_t1 = std::numeric_limits<double>::infinity();
-    double col_t1 = std::numeric_limits<double>::infinity();
+    float row_t0 = 0.0f;
+    float col_t0 = 0.0f;
+    float row_t1 = std::numeric_limits<float>::infinity();
+    float col_t1 = std::numeric_limits<float>::infinity();
 
     if (p0.y != p3.y) {
-      double next_y = p3.y > p0.y ? (double)y + 1.0 : (double)y;
-      row_t1 = std::min(1.0, dtdy * (next_y - p0.y));
+      float next_y = p3.y > p0.y ? (float)y + 1.0f : (float)y;
+      row_t1 = std::min(1.0f, dtdy * (next_y - p0.y));
     }
     if (p0.x != p3.x) {
-      double next_x = p3.x > p0.x ? (double)x + 1.0 : (double)x;
-      col_t1 = std::min(1.0, dtdx * (next_x - p0.x));
+      float next_x = p3.x > p0.x ? (float)x + 1.0f : (float)x;
+      col_t1 = std::min(1.0f, dtdx * (next_x - p0.x));
     }
 
-    double x_step = std::abs(dtdx);
-    double y_step = std::abs(dtdy);
+    float x_step = std::abs(dtdx);
+    float y_step = std::abs(dtdy);
 
     while (true) {
-      double t0 = std::max(row_t0, col_t0);
-      double t1 = std::min(row_t1, col_t1);
+      float t0 = std::max(row_t0, col_t0);
+      float t1 = std::min(row_t1, col_t1);
 
       vec2 from = lerp(p0, p3, t0);
       vec2 to = lerp(p0, p3, t1);
 
-      double height = to.y - from.y;
-      double right = (double)x + 1.0;
-      double area = 0.5 * height * ((right - from.x) + (right - to.x));
+      float height = to.y - from.y;
+      float right = (float)x + 1.0f;
+      float area = 0.5f * height * ((right - from.x) + (right - to.x));
 
-      m_increments.push_back({ x, y, (float)area, (float)height });
+      m_increments.push_back({ x, y, area, height });
 
       if (row_t1 < col_t1) {
         row_t0 = row_t1;
-        row_t1 = std::min(1.0, row_t1 + y_step);
+        row_t1 = std::min(1.0f, row_t1 + y_step);
         y += y_dir;
       } else {
         col_t0 = col_t1;
-        col_t1 = std::min(1.0, col_t1 + x_step);
+        col_t1 = std::min(1.0f, col_t1 + x_step);
         x += x_dir;
       }
 
-      if (row_t0 == 1.0 || col_t0 == 1.0) {
+      if (row_t0 == 1.0f || col_t0 == 1.0f) {
         x = (int16_t)std::floor(p3.x);
         y = (int16_t)std::floor(p3.y);
       }
@@ -340,7 +340,7 @@ namespace Graphick::Renderer {
         m_tile_y_prev = tile_y;
       }
 
-      if (row_t0 == 1.0 || col_t0 == 1.0) break;
+      if (row_t0 == 1.0f || col_t0 == 1.0f) break;
     }
   }
 
@@ -442,7 +442,6 @@ namespace Graphick::Renderer {
         areas[index] += increment.area;
         heights[index] += increment.height;
       }
-
 
       if (i + 1 == bins_len || bins[i + 1].tile_x != bin.tile_x || bins[i + 1].tile_y != bin.tile_y) {
         uint8_t tile[TILE_SIZE * TILE_SIZE] = { 0 };

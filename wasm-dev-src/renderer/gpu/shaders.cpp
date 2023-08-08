@@ -36,12 +36,20 @@ namespace Graphick::Renderer::GPU {
     radius_uniform(Device::get_uniform(program, "uRadius").value()),
     zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
 
+  GPUPathProgram::GPUPathProgram() :
+    program(Device::create_program("gpu_path")),
+    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    color_uniform(Device::get_uniform(program, "uColor").value()),
+    paths_texture_uniform(Device::get_uniform(program, "uPathsTexture").value()),
+    paths_texture_size_uniform(Device::get_uniform(program, "uPathsTextureSize").value()) {}
+
   Programs::Programs() :
     opaque_tile_program(),
     masked_tile_program(),
     line_program(),
     square_program(),
-    circle_program() {}
+    circle_program(),
+    gpu_path_program() {}
 
   OpaqueTileVertexArray::OpaqueTileVertexArray(
     const OpaqueTileProgram& opaque_tile_program,
@@ -301,6 +309,58 @@ namespace Graphick::Renderer::GPU {
     Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
 
     Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
+  }
+
+  GPUPathVertexArray::GPUPathVertexArray(
+    const GPUPathProgram& gpu_path_program,
+    const Buffer& instance_buffer,
+    const Buffer& quad_vertex_positions_buffer,
+    const Buffer& quad_vertex_indices_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(gpu_path_program.program, "aPosition").value();
+    VertexAttr path_position_size_attr = Device::get_vertex_attr(gpu_path_program.program, "aPathPositionSize").value();
+    VertexAttr path_index_attr = Device::get_vertex_attr(gpu_path_program.program, "aPathIndex").value();
+
+    VertexAttrDescriptor position_desc = {
+      2,
+      VertexAttrClass::Int,
+      VertexAttrType::U16,
+      4,
+      0,
+      0,
+      0
+    };
+
+    VertexAttrDescriptor path_position_size_desc = {
+      4,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      20,
+      0,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor path_index_desc = {
+      1,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      16,
+      20,
+      1,
+      1
+    };
+
+    Device::bind_buffer(*vertex_array, quad_vertex_positions_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, path_position_size_attr, path_position_size_desc);
+    Device::configure_vertex_attr(*vertex_array, path_index_attr, path_index_desc);
+
+    Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
   }
 
 }
