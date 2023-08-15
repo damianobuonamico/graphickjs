@@ -43,4 +43,54 @@ namespace Graphick::Math {
     return size.x * size.y;
   }
 
+  /* -- Unary arithmetic operators -- */
+
+  constexpr rect& rect::operator+=(float scalar) {
+    this->min += scalar;
+    this->max += scalar;
+    return *this;
+  }
+
+  constexpr rect& rect::operator+=(const vec2 v) {
+    this->min += v;
+    this->max += v;
+    return *this;
+  }
+
+  constexpr rect& rect::operator-=(float scalar) {
+    this->min -= scalar;
+    this->max -= scalar;
+    return *this;
+  }
+
+  constexpr rect& rect::operator-=(const vec2 v) {
+    this->min -= v;
+    this->max -= v;
+    return *this;
+  }
+
+  constexpr rect& rect::operator*=(float scalar) {
+    this->min *= scalar;
+    this->max *= scalar;
+    return *this;
+  }
+
+  constexpr rect& rect::operator*=(const vec2 v) {
+    this->min *= v;
+    this->max *= v;
+    return *this;
+  }
+
+  constexpr rect& rect::operator/=(float scalar) {
+    this->min /= scalar;
+    this->max /= scalar;
+    return *this;
+  }
+
+  constexpr rect& rect::operator/=(const vec2 v) {
+    this->min /= v;
+    this->max /= v;
+    return *this;
+  }
+
 }

@@ -242,4 +242,38 @@ namespace Graphick::Renderer::GPU::Memory {
     return std::nullopt;
   }
 
+  uuid Allocator::allocate_general_buffer_internal(const size_t byte_size, const std::string& tag) {
+    OPTICK_EVENT();
+
+    std::optional<uuid> allocated_id = allocate_general_buffer_byte_size(byte_size, tag);
+    if (allocated_id.has_value()) return allocated_id.value();
+
+    BufferAllocation allocation = { Device::create_buffer(BufferUploadMode::Dynamic), byte_size, tag };
+    Device::allocate_buffer(*allocation.buffer, byte_size, BufferTarget::Vertex);
+    uuid id{};
+
+    m_general_buffers_in_use.insert({ id, allocation });
+    m_bytes_allocated += byte_size;
+    m_bytes_committed += byte_size;
+
+    return id;
+  }
+
+  uuid Allocator::allocate_index_buffer_internal(const size_t byte_size, const std::string& tag) {
+    OPTICK_EVENT();
+
+    std::optional<uuid> allocated_id = allocate_index_buffer_byte_size(byte_size, tag);
+    if (allocated_id.has_value()) return allocated_id.value();
+
+    BufferAllocation allocation = { Device::create_buffer(BufferUploadMode::Dynamic), byte_size, tag };
+    Device::allocate_buffer(*allocation.buffer, byte_size, BufferTarget::Index);
+    uuid id{};
+
+    get()->m_index_buffers_in_use.insert({ id, allocation });
+    get()->m_bytes_allocated += byte_size;
+    get()->m_bytes_committed += byte_size;
+
+    return id;
+  }
+
 }

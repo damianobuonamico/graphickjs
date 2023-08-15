@@ -3,11 +3,12 @@ R"(
   precision highp float;
 
   uniform mat4 uViewProjection;
-  uniform vec4 uColor;
 
   in uvec2 aPosition;
-  in vec4 aPathPositionSize;
-  in float aPathIndex;
+  in vec2 aPathPosition;
+  in vec2 aPathSize;
+  in float aSegmentsIndex;
+  in float aColorIndex;
 
   out float vPathIndex;
   out vec4 vColor;
@@ -16,12 +17,12 @@ R"(
 
   void main() {
     vec2 position = vec2(float(aPosition.x), float(aPosition.y));
-    vec2 vertex_position = position * aPathPositionSize.zw;
+    vec2 vertex_position = position * aPathSize;
 
-    gl_Position = vec4((uViewProjection * vec4(aPathPositionSize.xy + vertex_position, 0.0, 1.0)).xyz, 1.0);
+    gl_Position = vec4((uViewProjection * vec4(aPathPosition + vertex_position, 0.0, 1.0)).xyz, 1.0);
     
-    vColor = uColor;
-    vPathIndex = aPathIndex;
+    vColor = vec4(aColorIndex * 0.0000001, 0.0, 0.0, 1.0);
+    vPathIndex = aSegmentsIndex;
     vCoords = vertex_position;
   }
 

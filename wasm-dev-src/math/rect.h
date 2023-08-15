@@ -24,6 +24,17 @@ namespace Graphick::Math {
 
     constexpr vec2 size() const;
     constexpr float area() const;
+
+    /* -- Unary arithmetic operators -- */
+
+    constexpr rect& operator+=(float scalar);
+    constexpr rect& operator+=(const vec2 v);
+    constexpr rect& operator-=(float scalar);
+    constexpr rect& operator-=(const vec2 v);
+    constexpr rect& operator*=(float scalar);
+    constexpr rect& operator*=(const vec2 v);
+    constexpr rect& operator/=(float scalar);
+    constexpr rect& operator/=(const vec2 v);
   };
 
 }

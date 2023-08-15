@@ -332,6 +332,8 @@ namespace Graphick::Renderer::GPU::GL {
   }
 
   void GLDevice::upload_to_texture(const GLTexture& texture, const rect& rect, const void* data) const {
+    OPTICK_EVENT();
+
     bind_texture(texture, 0);
 
     GLenum format = gl_format(texture.format);
@@ -368,8 +370,9 @@ namespace Graphick::Renderer::GPU::GL {
   }
 
   void GLDevice::set_texture_sampling_mode(const GLTexture& texture, const TextureSamplingFlag flags) const {
-    bind_texture(texture, 0);
+    OPTICK_EVENT();
 
+    bind_texture(texture, 0);
 
     // TEMP
     glCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
@@ -574,6 +577,8 @@ namespace Graphick::Renderer::GPU::GL {
   }
 
   void GLDevice::bind_texture(const GLTexture& texture, const uint32_t unit) const {
+    OPTICK_EVENT();
+
     glCall(glActiveTexture(GL_TEXTURE0 + unit));
     glCall(glBindTexture(GL_TEXTURE_2D, texture.gl_texture));
   }

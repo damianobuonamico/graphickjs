@@ -1,5 +1,7 @@
 #pragma once
 
+#include "buffer.h"
+
 #include "../math/ivec2.h"
 #include "../math/vec2.h"
 #include "../math/vec4.h"
@@ -12,6 +14,8 @@
 #define TILE_SIZE 32
 #define MASKS_TEXTURE_SIZE (TILE_SIZE * 64)
 #define MASKS_PER_BATCH ((MASKS_TEXTURE_SIZE / TILE_SIZE) * (MASKS_TEXTURE_SIZE / TILE_SIZE))
+#define SEGMENTS_TEXTURE_SIZE 512
+#define COLORS_TEXTURE_SIZE 64
 
 namespace Graphick::Renderer {
 
@@ -23,6 +27,26 @@ namespace Graphick::Renderer {
     float zoom;
 
     vec4 background;
+  };
+
+  struct GPUPath {
+    vec2 position;
+    vec2 size;
+
+    float segments_index;
+    float color_index;
+  };
+
+  struct CommonData {
+    FixedGPUBuffer<uint16_t> quad_vertex_buffer{ "quad_vertices", 8, GPU::BufferTarget::Vertex };
+    FixedGPUBuffer<uint32_t> quad_index_buffer{ "quad_indices", 6, GPU::BufferTarget::Index };
+
+    GPUUintTexture colors_texture{ GPU::TextureFormat::RGBA8, { COLORS_TEXTURE_SIZE, COLORS_TEXTURE_SIZE }, "colors" };
+  };
+
+  struct GPUPathsData {
+    FixedGPUBuffer<GPUPath> instance_buffer{ "gpu_paths", (1 << 18) / sizeof(GPUPath), GPU::BufferTarget::Vertex };
+    GPUFloatTexture segments_texture{ GPU::TextureFormat::RGBA32F, { SEGMENTS_TEXTURE_SIZE, SEGMENTS_TEXTURE_SIZE }, "segments" };
   };
 
   struct InstancedLinesData {

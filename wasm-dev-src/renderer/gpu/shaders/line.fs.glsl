@@ -12,7 +12,7 @@ R"(
 
   void main() {
     float factor = uLineWidth * (1.0 - abs(2.0 * vTexCoord.y - 1.0));
-    float alpha = smoothstep(uLineWidth - 1.0 / uZoom, uLineWidth, factor);
+    float alpha = smoothstep(uLineWidth - 1.25 / uZoom, uLineWidth, factor);
     
     oFragColor = vec4(vColor.rgb, vColor.a * alpha);
   }

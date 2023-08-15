@@ -43,6 +43,7 @@ namespace Graphick::Renderer {
     void init_instanced_renderers();
     void begin_instanced_renderers();
 
+    void add_gpu_path_instance(const Geometry::Path& path);
     void add_line_instances(const Geometry::Path& path);
     void add_linear_segment_instance(const vec2 p0, const vec2 p3);
     void add_cubic_segment_instance(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
@@ -50,6 +51,7 @@ namespace Graphick::Renderer {
     void add_square_instance(const vec2 position);
     void add_circle_instance(const vec2 position);
 
+    void flush_gpu_path_instances();
     void flush_line_instances();
     void flush_square_instances();
     void flush_circle_instances();
@@ -63,7 +65,10 @@ namespace Graphick::Renderer {
     mat4 m_tiles_projection;
     mat4 m_tiles_translation;
 
+    CommonData m_common_data;
+
     // TODO: Instance attributes
+    GPUPathsData m_gpu_paths_data;
     InstancedLinesData m_lines_data;
     InstancedMeshData m_square_data = { "square" };
     InstancedMeshData m_circle_data = { "circle" };

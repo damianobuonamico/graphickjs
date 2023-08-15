@@ -35,6 +35,9 @@ R"(
 
     int n = int(texture(uPathsTexture, tex_coords).r);
 
+    // oFragColor = vec4((float(n) + vColor.r) * 0.0000001, 0.0, 0.0, 1.0);
+    // return;
+
     float y0 = floor(vCoords.y);
     float y1 = y0 + 1.0;
     float x0 = floor(vCoords.x);
@@ -42,14 +45,12 @@ R"(
 
     float alpha = 0.0;
 
-    for (int i = 0; i < n; i++) {
-      vec2 p0_x_coords = index_to_coords(index + i * 4 + 1, one_over_size);
-      vec2 p0_y_coords = index_to_coords(index + i * 4 + 2, one_over_size);
-      vec2 p3_x_coords = index_to_coords(index + i * 4 + 3, one_over_size);
-      vec2 p3_y_coords = index_to_coords(index + i * 4 + 4, one_over_size);
+    for (int i = 1; i <= n; i++) {
+      vec2 segment_cords = index_to_coords(index + i, one_over_size);
+      vec4 segment = texture(uPathsTexture, segment_cords);
 
-      vec2 p0 = vec2(texture(uPathsTexture, p0_x_coords).r, texture(uPathsTexture, p0_y_coords).r);
-      vec2 p3 = vec2(texture(uPathsTexture, p3_x_coords).r, texture(uPathsTexture, p3_y_coords).r);
+      vec2 p0 = segment.rg;
+      vec2 p3 = segment.ba;
 
       if (min(p0.y, p3.y) >= y1 || max(p0.y, p3.y) <= y0) {
         // Segment is outside the scanline

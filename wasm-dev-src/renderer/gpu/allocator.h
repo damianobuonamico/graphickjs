@@ -1,4 +1,4 @@
- #pragma once
+#pragma once
 
 #include "gpu_memory.h"
 
@@ -30,7 +30,8 @@ namespace Graphick::Renderer::GPU::Memory {
      * Allocated an empty general buffer of the given size on the GPU.
      */
     template <typename T>
-    inline static uuid allocate_general_buffer(const size_t size, const std::string& tag) { return get()->allocate_general_buffer_internal<T>(size, tag); }
+    inline static uuid allocate_general_buffer(const size_t size, const std::string& tag) { return get()->allocate_general_buffer_internal(size * sizeof(T), tag); }
+    inline static uuid allocate_byte_general_buffer(const size_t byte_size, const std::string& tag) { return get()->allocate_general_buffer_internal(byte_size, tag); }
     /**
      * @size: the number of elements in the buffer to allocate.
      * @tag: an identifier to identify the buffer.
@@ -38,7 +39,8 @@ namespace Graphick::Renderer::GPU::Memory {
      * Allocated an empty index buffer of the given size on the GPU.
      */
     template <typename T>
-    static uuid allocate_index_buffer(const size_t size, const std::string& tag) { return get()->allocate_index_buffer_internal<T>(size, tag); }
+    static uuid allocate_index_buffer(const size_t size, const std::string& tag) { return get()->allocate_index_buffer_internal(size * sizeof(T), tag); }
+    static uuid allocate_byte_index_buffer(const size_t byte_size, const std::string& tag) { return get()->allocate_index_buffer_internal(byte_size, tag); }
     /**
      * @size: the dimensions of the texture.
      * @format: the format of the texture to allocate.
@@ -127,43 +129,8 @@ namespace Graphick::Renderer::GPU::Memory {
 
     inline static Allocator* get() { return s_instance; }
 
-    template <typename T>
-    uuid allocate_general_buffer_internal(const size_t size, const std::string& tag) {
-      OPTICK_EVENT();
-
-      size_t byte_size = size * sizeof(T);
-      std::optional<uuid> allocated_id = allocate_general_buffer_byte_size(byte_size, tag);
-      if (allocated_id.has_value()) return allocated_id.value();
-
-      BufferAllocation allocation = { Device::create_buffer(BufferUploadMode::Dynamic), byte_size, tag };
-      Device::allocate_buffer(*allocation.buffer, byte_size, BufferTarget::Vertex);
-      uuid id{};
-
-      m_general_buffers_in_use.insert({ id, allocation });
-      m_bytes_allocated += byte_size;
-      m_bytes_committed += byte_size;
-
-      return id;
-    }
-
-    template <typename T>
-    uuid allocate_index_buffer_internal(const size_t size, const std::string& tag) {
-      OPTICK_EVENT();
-
-      size_t byte_size = size * sizeof(T);
-      std::optional<uuid> allocated_id = allocate_index_buffer_byte_size(byte_size, tag);
-      if (allocated_id.has_value()) return allocated_id.value();
-
-      BufferAllocation allocation = { Device::create_buffer(BufferUploadMode::Dynamic), byte_size, tag };
-      Device::allocate_buffer(*allocation.buffer, byte_size, BufferTarget::Index);
-      uuid id{};
-
-      get()->m_index_buffers_in_use.insert({ id, allocation });
-      get()->m_bytes_allocated += byte_size;
-      get()->m_bytes_committed += byte_size;
-
-      return id;
-    }
+    uuid allocate_general_buffer_internal(const size_t byte_size, const std::string& tag);
+    uuid allocate_index_buffer_internal(const size_t byte_size, const std::string& tag);
 
     std::optional<uuid> allocate_general_buffer_byte_size(size_t byte_size, const std::string& tag);
     std::optional<uuid> allocate_index_buffer_byte_size(size_t byte_size, const std::string& tag);
