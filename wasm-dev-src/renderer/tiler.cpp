@@ -400,6 +400,7 @@ namespace Graphick::Renderer {
     m_backdrops[local_tile_index] += delta;
   }
 
+#if 0
   void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
     OPTICK_EVENT();
 
@@ -485,6 +486,89 @@ namespace Graphick::Renderer {
       if (row_t0 == 1.0f || col_t0 == 1.0f) break;
     }
   }
+#else
+  void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
+    OPTICK_EVENT();
+
+    m_prev = p3;
+    m_tile_y_prev = (int16_t)std::floor(p0.y) / TILE_SIZE;
+
+    if (Math::is_almost_equal(p0, p3)) return;
+
+    int16_t x_dir = (int16_t)std::copysign(1, p3.x - p0.x);
+    int16_t y_dir = (int16_t)std::copysign(1, p3.y - p0.y);
+
+    float dtdx = (float)TILE_SIZE / (p3.x - p0.x);
+    float dtdy = (float)TILE_SIZE / (p3.y - p0.y);
+
+    int16_t x = (int16_t)std::floor(p0.x);
+    int16_t y = (int16_t)std::floor(p0.y);
+
+    float row_t0 = 0.0f;
+    float col_t0 = 0.0f;
+    float row_t1 = std::numeric_limits<float>::infinity();
+    float col_t1 = std::numeric_limits<float>::infinity();
+
+    if (p0.y != p3.y) {
+      float next_y = (float)(y / TILE_SIZE + (p3.y > p0.y ? 1 : 0)) * TILE_SIZE;
+      // float next_y = p3.y > p0.y ? (float)y + 1.0f : (float)y;
+      // row_t1 = std::min(1.0f, dtdy * (next_y - p0.y));
+      row_t1 = std::min(1.0f, (next_y - p0.y) / (p3.y - p0.y));
+    }
+    if (p0.x != p3.x) {
+      float next_x = (float)(x / TILE_SIZE + (p3.x > p0.x ? 1 : 0)) * TILE_SIZE;
+      // float next_x = p3.x > p0.x ? (float)x + 1.0f : (float)x;
+      // col_t1 = std::min(1.0f, dtdx * (next_x - p0.x));
+      col_t1 = std::min(1.0f, (next_x - p0.x) / (p3.x - p0.x));
+    }
+
+    float x_step = std::abs(dtdx);
+    float y_step = std::abs(dtdy);
+
+    while (true) {
+      float t0 = std::max(row_t0, col_t0);
+      float t1 = std::min(row_t1, col_t1);
+
+      vec2 from = lerp(p0, p3, t0);
+      vec2 to = lerp(p0, p3, t1);
+
+      int16_t tile_x = x / TILE_SIZE;
+      int16_t tile_y = y / TILE_SIZE;
+
+      if (tile_x != m_bin.tile_x || tile_y != m_bin.tile_y) {
+        m_bins.push_back(m_bin);
+        m_bin = { tile_x, tile_y };
+        m_spans.push_back(TileSpan{ tile_x, tile_y, 1, vec4{ 0.0f, 0.0f, 0.0f, 1.0f } });
+      }
+
+      if (row_t1 < col_t1) {
+        row_t0 = row_t1;
+        row_t1 = std::min(1.0f, row_t1 + y_step);
+        y += y_dir * TILE_SIZE;
+      } else {
+        col_t0 = col_t1;
+        col_t1 = std::min(1.0f, col_t1 + x_step);
+        x += x_dir * TILE_SIZE;
+      }
+
+      bool fuzzy_equal = Math::is_almost_equal(row_t0, 1.0f, 0.0001) || Math::is_almost_equal(col_t0, 1.0f, 0.0001);
+
+      if (fuzzy_equal) {
+        x = (int16_t)std::floor(p3.x);
+        y = (int16_t)std::floor(p3.y);
+      }
+
+      tile_y = y / TILE_SIZE;
+
+      if (tile_y != m_tile_y_prev) {
+        m_tile_increments.push_back(TileIncrement{ (int16_t)(x / TILE_SIZE), std::min(tile_y, m_tile_y_prev), (int8_t)(tile_y - m_tile_y_prev) });
+        m_tile_y_prev = tile_y;
+      }
+
+      if (fuzzy_equal) break;
+    }
+  }
+#endif
 
   void PathTiler::process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
     OPTICK_EVENT();
