@@ -10,6 +10,8 @@
 
 namespace Graphick::Renderer {
 
+#define OPAQUE_AND_MASKED 0
+
   static constexpr float tolerance = 0.25f;
 
   static inline ivec2 tile_coords(const vec2 p) {
@@ -175,6 +177,8 @@ namespace Graphick::Renderer {
 
     m_prev = segments.front().p0() * m_zoom - rect.min;
 
+    // m_backdrops = std::vector<int>(m_bounds_size.x * m_bounds_size.y, 0);
+
     if (intersection_overlap < 0.7) {
       std::vector<vec2> points;
       points.reserve(segments.size() + 1);
@@ -190,8 +194,8 @@ namespace Graphick::Renderer {
       // vis.min += TILE_SIZE;
       // vis.max -= TILE_SIZE;
 
-      vis.min = floor(vis.min / TILE_SIZE) * TILE_SIZE;
-      vis.max = ceil(vis.max / TILE_SIZE) * TILE_SIZE + TILE_SIZE;
+      vis.min = floor(vis.min / TILE_SIZE) * TILE_SIZE - 1;
+      vis.max = ceil(vis.max / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 1;
 
       for (const auto& segment : segments) {
         vec2 p0 = segment.p0() * m_zoom/* - rect.min*/;
@@ -272,6 +276,130 @@ namespace Graphick::Renderer {
     finish(culled, tiles_count);
   }
 
+  ivec2 tile_coords_clamp(const vec2 p, const ivec2 tiles_count) {
+    return { std::clamp((int)std::floor(p.x / TILE_SIZE), 0, tiles_count.x - 1), std::clamp((int)std::floor(p.y / TILE_SIZE), 0, tiles_count.y - 1) };
+  }
+
+  enum class StepDirection {
+    None = 0,
+    X,
+    Y
+  };
+
+  void PathTiler::process_linear_segment_old(const vec2 p0, const vec2 p3) {
+    const float tile_size = float(TILE_SIZE);
+    const float tile_size_recip = 1.0f / tile_size;
+
+    const ivec2 from_tile_coords = tile_coords_clamp(p0, m_bounds_size);
+    const ivec2 to_tile_coords = tile_coords_clamp(p3, m_bounds_size);
+
+    // Compute `vector_is_negative = vec2i(vector.x < 0 ? -1 : 0, vector.y < 0 ? -1 : 0)`.
+    const vec2 vector = p3 - p0;
+    const ivec2 vector_is_negative = { vector.x < 0 ? -1 : 0, vector.y < 0 ? -1 : 0 };
+
+    // Compute `step = vec2f(vector.x < 0 ? -1 : 1, vector.y < 0 ? -1 : 1)`.
+    const ivec2 step = { vector.x < 0 ? -1 : 1, vector.y < 0 ? -1 : 1 };
+
+    // Compute `first_tile_crossing = (from_tile_coords + vec2i(vector.x >= 0 ? 1 : 0, vector.y >= 0 ? 1 : 0)) * tile_size`.
+    const vec2 first_tile_crossing = (IVEC2_TO_VEC2(from_tile_coords) + vec2{ vector.x >= 0 ? 1.0f : 0.0f, vector.y >= 0 ? 1.0f : 0.0f }) * tile_size;
+
+    vec2 t_max = (first_tile_crossing - p0) / vector;
+    const vec2 t_delta = Math::abs(tile_size / vector);
+
+    vec2 current_position = p0;
+    ivec2 tile_coords = from_tile_coords;
+    StepDirection last_step_direction = StepDirection::None;
+
+    while (true) {
+      StepDirection next_step_direction = StepDirection::None;
+
+      if (t_max.x < t_max.y) {
+        next_step_direction = StepDirection::X;
+      } else if (t_max.x > t_max.y) {
+        next_step_direction = StepDirection::Y;
+      } else {
+        // This should only happen if the line's destination is precisely on a corner point between tiles:
+        //
+        //   +-----+--O--+
+        //   |     | /   |
+        //   |     |/    |
+        //   +-----O-----+
+        //   |     | end |
+        //   |     | tile|
+        //   +-----+-----+
+        //
+        // In that case we just need to step in the positive direction to move to the lower right tile.
+        next_step_direction = step.x > 0 ? StepDirection::X : StepDirection::Y;
+      }
+
+      const float next_t = std::min(next_step_direction == StepDirection::X ? t_max.x : t_max.y, 1.0f);
+
+      // If we've reached the end tile, don't step at all.
+      if (tile_coords == to_tile_coords) {
+        next_step_direction = StepDirection::None;
+      }
+
+      const vec2 next_position = current_position + vector * next_t;
+      const rect clipped_line_segment = { current_position, next_position };
+      // object_builder.add_fill(scene_builder, clipped_line_segment, tile_coords);
+
+      // Add extra fills if necessary.
+      if (step.y < 0 && next_step_direction == StepDirection::Y) {
+        // Leaves through top boundary.
+        const rect auxiliary_segment = { clipped_line_segment.max, IVEC2_TO_VEC2(tile_coords) * tile_size };
+        // object_builder.add_fill(scene_builder, auxiliary_segment, tile_coords);
+      } else if (step.y > 0 && last_step_direction == StepDirection::Y) {
+        // Enters through top boundary.
+        const rect auxiliary_segment = { IVEC2_TO_VEC2(tile_coords) * tile_size, clipped_line_segment.min };
+        // object_builder.add_fill(scene_builder, auxiliary_segment, tile_coords);
+      }
+
+      // Adjust backdrop if necessary.
+      if (step.x < 0 && last_step_direction == StepDirection::X) {
+        // Entered through right boundary.
+        adjust_alpha_tile_backdrop(tile_coords, 1);
+      } else if (step.x > 0 && next_step_direction == StepDirection::X) {
+        // Leaving through right boundary.
+        adjust_alpha_tile_backdrop(tile_coords, -1);
+      }
+
+      // Take a step.
+      if (next_step_direction == StepDirection::None) {
+        break;
+      } else if (next_step_direction == StepDirection::X) {
+        if (tile_coords.x == to_tile_coords.x) break;
+
+        t_max.x += t_delta.x;
+        tile_coords.x += step.x;
+      } else {
+        if (tile_coords.y == to_tile_coords.y) break;
+
+        t_max.y += t_delta.y;
+        tile_coords.y += step.y;
+      }
+
+      current_position = next_position;
+      last_step_direction = next_step_direction;
+    }
+  }
+
+  void PathTiler::adjust_alpha_tile_backdrop(const ivec2 tile_coords, int delta) {
+    // let tile_offset = tile_coords - tiles.rect.origin();
+    const ivec2 tile_offset = tile_coords;
+
+    if (tile_offset.x < 0 || tile_offset.x >= m_bounds_size.x || tile_offset.y >= m_bounds_size.y) {
+      return;
+    }
+
+    if (tile_offset.y < 0) {
+      // m_backdrops[tile_offset.x] += delta;
+      return;
+    }
+
+    int local_tile_index = tile_index(tile_coords, m_bounds_size);
+    m_backdrops[local_tile_index] += delta;
+  }
+
   void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
     OPTICK_EVENT();
 
@@ -317,7 +445,17 @@ namespace Graphick::Renderer {
       float right = (float)x + 1.0f;
       float area = 0.5f * height * ((right - from.x) + (right - to.x));
 
+#if OPAQUE_AND_MASKED
       m_increments.push_back({ x, y, area, height });
+#else
+      int16_t tile_x = x / TILE_SIZE;
+      int16_t tile_y = y / TILE_SIZE;
+
+      if (tile_x != m_bin.tile_x || tile_y != m_bin.tile_y) {
+        m_bins.push_back(m_bin);
+        m_bin = { tile_x, tile_y };
+      }
+#endif
 
       if (row_t1 < col_t1) {
         row_t0 = row_t1;
@@ -334,7 +472,11 @@ namespace Graphick::Renderer {
         y = (int16_t)std::floor(p3.y);
       }
 
+#if OPAQUE_AND_MASKED
       int16_t tile_y = y / TILE_SIZE;
+#else
+      tile_y = y / TILE_SIZE;
+#endif
       if (tile_y != m_tile_y_prev) {
         m_tile_increments.push_back(TileIncrement{ (int16_t)(x / TILE_SIZE), std::min(tile_y, m_tile_y_prev), (int8_t)(tile_y - m_tile_y_prev) });
         m_tile_y_prev = tile_y;
@@ -375,12 +517,37 @@ namespace Graphick::Renderer {
     process_linear_segment_clipped(p0, p3, visible);
   }
 
+  void PathTiler::finish_old(const std::vector<bool>& culled, const ivec2 tiles_count) {
+    for (int y = 0; y < m_bounds_size.y; y++) {
+      int winding = 0;
+
+      for (int x = 0; x < m_bounds_size.x; x++) {
+        int i = y * m_bounds_size.x + x;
+        winding += m_backdrops[i];
+
+        // Non-zero winding rule
+        // if (winding != 0) {
+        // Even-odd winding rule
+        if (winding % 2 == 0) {
+          m_spans.push_back(TileSpan{ (int16_t)x, (int16_t)y, 1, vec4{0.5f, 0.5f, 0.5f, 1.0f} });
+        }
+      }
+    }
+    // for (int i = 0; i < m_backdrops.size(); i++) {
+    //   if (m_backdrops[i] < 0) {
+    //     ivec2 coords = { i % m_bounds_size.x, i / m_bounds_size.x };
+    //     m_spans.push_back(TileSpan{ (int16_t)coords.x, (int16_t)coords.y, 1, vec4{0.7f, 0.5f, 0.5f, 1.0f} });
+    //   }
+    // }
+  }
+
   void PathTiler::finish(const std::vector<bool>& culled, const ivec2 tiles_count) {
     OPTICK_EVENT();
 
     std::vector<Bin> bins;
     Bin bin = { 0, 0, 0, 0 };
 
+#if OPAQUE_AND_MASKED
     if (!m_increments.empty()) {
       Increment& first = m_increments.front();
       bin.tile_x = first.x / TILE_SIZE;
@@ -409,6 +576,16 @@ namespace Graphick::Renderer {
         return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
         });
     }
+#else
+    m_bins.push_back(m_bin);
+
+    {
+      OPTICK_EVENT("Sort Bins");
+      std::sort(m_bins.begin(), m_bins.end(), [](const TempBin& a, const TempBin& b) {
+        return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
+        });
+    }
+#endif
 
     {
       OPTICK_EVENT("Sort Increments");
@@ -425,12 +602,22 @@ namespace Graphick::Renderer {
     int tile_increments_i = 0;
     int winding = 0;
 
+#if OPAQUE_AND_MASKED
     size_t bins_len = bins.size();
+#else
+    size_t bins_len = m_bins.size();
+#endif
 
     m_masks.clear();
 
     for (size_t i = 0; i < bins_len; i++) {
+#if OPAQUE_AND_MASKED
       const Bin& bin = bins[i];
+#else
+      const TempBin& bin = m_bins[i];
+#endif
+
+#if 0
 
       for (size_t j = bin.start; j < bin.end; ++j) {
         Increment& increment = m_increments[j];
@@ -443,11 +630,19 @@ namespace Graphick::Renderer {
         heights[index] += increment.height;
       }
 
+#endif
+
+#if OPAQUE_AND_MASKED
       if (i + 1 == bins_len || bins[i + 1].tile_x != bin.tile_x || bins[i + 1].tile_y != bin.tile_y) {
+#else
+      if (i + 1 == bins_len || m_bins[i + 1].tile_x != bin.tile_x || m_bins[i + 1].tile_y != bin.tile_y) {
+#endif
         uint8_t tile[TILE_SIZE * TILE_SIZE] = { 0 };
 
         ivec2 coords = { bin.tile_x + m_offset.x + 1, bin.tile_y + m_offset.y + 1 };
         int index = tile_index(coords, tiles_count);
+
+#if 0
 
         if (coords.x < 0 || coords.y < 0 || coords.x >= tiles_count.x || coords.y >= tiles_count.y || culled[index]) {
           for (int y = 0; y < TILE_SIZE; y++) {
@@ -498,10 +693,16 @@ namespace Graphick::Renderer {
           }
         }
 
+#endif
+
         {
           OPTICK_EVENT("Generate Spans");
 
+#if OPAQUE_AND_MASKED
           if (i + 1 < bins.size() && bins[i + 1].tile_y == bin.tile_y && bins[i + 1].tile_x > bin.tile_x + 1) {
+#else
+          if (i + 1 < m_bins.size() && m_bins[i + 1].tile_y == bin.tile_y && m_bins[i + 1].tile_x > bin.tile_x + 1) {
+#endif
             while (tile_increments_i < m_tile_increments.size()) {
               TileIncrement& tile_increment = m_tile_increments[tile_increments_i];
               if (std::tie(tile_increment.tile_y, tile_increment.tile_x) > std::tie(bin.tile_y, bin.tile_x)) break;
@@ -510,8 +711,15 @@ namespace Graphick::Renderer {
               tile_increments_i++;
             }
 
-            if (winding != 0) {
+            // Non-zero winding rule
+            // if (winding != 0) {
+            // Even-odd winding rule
+            if (winding % 2 != 0) {
+#if OPAQUE_AND_MASKED
               int16_t width = bins[i + 1].tile_x - bin.tile_x - 1;
+#else
+              int16_t width = m_bins[i + 1].tile_x - bin.tile_x - 1;
+#endif
               m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.7f, 0.5f, 0.5f, 1.0f} });
             }
           }
@@ -536,7 +744,7 @@ namespace Graphick::Renderer {
     return data;
   }
 
-  void Tiler::reset(const Viewport& viewport) {
+  void Tiler::reset(const Viewport & viewport) {
     m_tiles_count = { (int)(std::ceil((float)viewport.size.x / TILE_SIZE)) + 2, (int)(std::ceil((float)viewport.size.y / TILE_SIZE)) + 2 };
     m_position = {
       (int)(viewport.position.x > 0 ? std::floor(viewport.position.x * viewport.zoom / TILE_SIZE) : std::ceil(viewport.position.x * viewport.zoom / TILE_SIZE)),
@@ -562,7 +770,7 @@ namespace Graphick::Renderer {
     m_culled_tiles = std::vector<bool>(m_tiles_count.x * m_tiles_count.y, false);
   }
 
-  void Tiler::process_path(const Geometry::Path& path, const vec4& color) {
+  void Tiler::process_path(const Geometry::Path & path, const vec4 & color) {
     OPTICK_EVENT();
 
     PathTiler tiler(path, color, m_visible, m_zoom, m_position, m_culled_tiles, m_tiles_count);
@@ -601,7 +809,7 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Tiler::push_mask(const PathTiler::TileMask& mask, int index, const vec4& color) {
+  void Tiler::push_mask(const PathTiler::TileMask & mask, int index, const vec4 & color) {
     if (m_masks_offset >= MASKS_PER_BATCH) {
       if (m_masks_texture_index == m_masks_textures_count - 1) {
         resize_masks_textures(m_masks_textures_count + 1);

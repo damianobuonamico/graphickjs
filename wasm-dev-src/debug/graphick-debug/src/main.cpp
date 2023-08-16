@@ -109,16 +109,16 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
-  std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-  Graphick::io::svg::parse_svg(content);
+  // std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  // std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+  // Graphick::io::svg::parse_svg(content);
 
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
-  Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_entity("Test Entity 1");
+  // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_entity("Test Entity 1");
 
   Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;
   test_entity.add_component<Graphick::Editor::TransformComponent>();
-  test_entity.add_component<Graphick::Editor::FillComponent>();
+  test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
 
   path.move_to({ 0.0f, 0.0f });
   path.line_to({ 20.0f, -20.0f });
@@ -135,20 +135,20 @@ int main() {
 
   path.close();
 
-  Graphick::Renderer::Geometry::Path& path1 = test_entity1.add_component<Graphick::Editor::PathComponent>().path;
-  test_entity1.add_component<Graphick::Editor::TransformComponent>();
-  test_entity1.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });
+  // Graphick::Renderer::Geometry::Path& path1 = test_entity1.add_component<Graphick::Editor::PathComponent>().path;
+  // test_entity1.add_component<Graphick::Editor::TransformComponent>();
+  // test_entity1.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });
 
-  path1.move_to({ 100.0f, 0.0f });
-  path1.line_to({ 20.0f, -20.0f });
-  path1.line_to({ 80.0f, 0.0f });
-  path1.line_to({ 200.0f, -50.0f });
-  path1.line_to({ 100.0f, -20.0f });
-  path1.line_to({ 350.0f, -50.0f });
-  path1.line_to({ 320.0f, -40.0f });
-  path1.line_to({ 360.0f, 260.0f });
+  // path1.move_to({ 100.0f, 0.0f });
+  // path1.line_to({ 20.0f, -20.0f });
+  // path1.line_to({ 80.0f, 0.0f });
+  // path1.line_to({ 200.0f, -50.0f });
+  // path1.line_to({ 100.0f, -20.0f });
+  // path1.line_to({ 350.0f, -50.0f });
+  // path1.line_to({ 320.0f, -40.0f });
+  // path1.line_to({ 360.0f, 260.0f });
 
-  path1.close();
+  // path1.close();
 
   while (!glfwWindowShouldClose(window)) {
     OPTICK_FRAME("MainThread");

@@ -136,9 +136,9 @@ R"(
     }
 
     // Non-zero winding rule
-    oFragColor = vec4(vColor.rgb, min(abs(alpha), 1.0));
+    // oFragColor = vec4(vColor.rgb, min(abs(alpha), 1.0));
     // Even-odd winding rule
-    // oFragColor = vec4(vColor.rgb, abs(alpha - 2.0 * round(0.5 * alpha)));
+    oFragColor = vec4(vColor.rgb, abs(alpha - 2.0 * round(0.5 * alpha)));
   }
 
 )"

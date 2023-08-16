@@ -132,9 +132,9 @@ namespace Graphick::Renderer {
   void Renderer::end_frame() {
     OPTICK_EVENT();
 
+    get()->flush_gpu_path_instances();
     get()->draw_opaque_tiles();
     get()->draw_masked_tiles();
-    get()->flush_gpu_path_instances();
     get()->flush_line_instances();
     get()->flush_square_instances();
     get()->flush_circle_instances();
@@ -149,7 +149,7 @@ namespace Graphick::Renderer {
     OPTICK_EVENT();
 
     get()->add_gpu_path_instance(path);
-    // get()->m_tiler.process_path(path, color);
+    get()->m_tiler.process_path(path, color);
   }
 
   void Renderer::draw_outline(const Geometry::Path& path) {

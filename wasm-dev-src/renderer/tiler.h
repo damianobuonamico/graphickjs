@@ -48,6 +48,10 @@ namespace Graphick::Renderer {
       size_t start;
       size_t end;
     };
+    struct TempBin {
+      int16_t tile_x;
+      int16_t tile_y;
+    };
   public:
     PathTiler(const PathTiler&) = default;
     PathTiler(PathTiler&&) = default;
@@ -62,14 +66,22 @@ namespace Graphick::Renderer {
     inline ivec2 size() const { return m_bounds_size; }
   private:
     void process_linear_segment(const vec2 p0, const vec2 p3);
+    void process_linear_segment_old(const vec2 p0, const vec2 p3);
     void process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
     void process_linear_segment_clipped(const vec2 p0, const vec2 p3, rect visible);
     void process_cubic_segment_clipped(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, rect visible);
 
+    void adjust_alpha_tile_backdrop(const ivec2 tile_coords, int delta);
+
     void finish(const std::vector<bool>& culled, const ivec2 tiles_count);
+    void finish_old(const std::vector<bool>& culled, const ivec2 tiles_count);
   private:
     std::vector<Increment> m_increments;
     std::vector<TileIncrement> m_tile_increments;
+    std::vector<int> m_backdrops;
+    std::vector<TempBin> m_bins;
+    TempBin m_bin = { 0, 0 };
+
 
     std::vector<TileMask> m_masks;
     std::vector<TileSpan> m_spans;
