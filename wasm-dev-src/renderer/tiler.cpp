@@ -172,7 +172,9 @@ namespace Graphick::Renderer {
   {
     OPTICK_EVENT();
 
+    // TODO: cache bounding_rects
     rect rect = path.bounding_rect();
+
     float intersection_overlap = Math::rect_rect_intersection_area(rect, visible) / rect.area();
     float zoom_factor = m_zoom / TILE_SIZE;
 
@@ -189,8 +191,6 @@ namespace Graphick::Renderer {
 
     m_prev = segments.front().p0() * m_zoom - rect.min;
 
-    // m_backdrops = std::vector<int>(m_bounds_size.x * m_bounds_size.y, 0);
-
     if (intersection_overlap < 0.7) {
       std::vector<vec2> points;
       points.reserve(segments.size() + 1);
@@ -203,8 +203,6 @@ namespace Graphick::Renderer {
       vis.min *= zoom;
       vis.max *= zoom;
 
-      // vis.min += TILE_SIZE;
-      // vis.max -= TILE_SIZE;
 
       vis.min = floor(vis.min / TILE_SIZE) * TILE_SIZE - 1;
       vis.max = ceil(vis.max / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 1;
@@ -298,103 +296,6 @@ namespace Graphick::Renderer {
     Y
   };
 
-  void PathTiler::process_linear_segment_old(const vec2 p0, const vec2 p3) {
-    const float tile_size = float(TILE_SIZE);
-    const float tile_size_recip = 1.0f / tile_size;
-
-    const ivec2 from_tile_coords = tile_coords_clamp(p0, m_bounds_size);
-    const ivec2 to_tile_coords = tile_coords_clamp(p3, m_bounds_size);
-
-    // Compute `vector_is_negative = vec2i(vector.x < 0 ? -1 : 0, vector.y < 0 ? -1 : 0)`.
-    const vec2 vector = p3 - p0;
-    const ivec2 vector_is_negative = { vector.x < 0 ? -1 : 0, vector.y < 0 ? -1 : 0 };
-
-    // Compute `step = vec2f(vector.x < 0 ? -1 : 1, vector.y < 0 ? -1 : 1)`.
-    const ivec2 step = { vector.x < 0 ? -1 : 1, vector.y < 0 ? -1 : 1 };
-
-    // Compute `first_tile_crossing = (from_tile_coords + vec2i(vector.x >= 0 ? 1 : 0, vector.y >= 0 ? 1 : 0)) * tile_size`.
-    const vec2 first_tile_crossing = (IVEC2_TO_VEC2(from_tile_coords) + vec2{ vector.x >= 0 ? 1.0f : 0.0f, vector.y >= 0 ? 1.0f : 0.0f }) * tile_size;
-
-    vec2 t_max = (first_tile_crossing - p0) / vector;
-    const vec2 t_delta = Math::abs(tile_size / vector);
-
-    vec2 current_position = p0;
-    ivec2 tile_coords = from_tile_coords;
-    StepDirection last_step_direction = StepDirection::None;
-
-    while (true) {
-      StepDirection next_step_direction = StepDirection::None;
-
-      if (t_max.x < t_max.y) {
-        next_step_direction = StepDirection::X;
-      } else if (t_max.x > t_max.y) {
-        next_step_direction = StepDirection::Y;
-      } else {
-        // This should only happen if the line's destination is precisely on a corner point between tiles:
-        //
-        //   +-----+--O--+
-        //   |     | /   |
-        //   |     |/    |
-        //   +-----O-----+
-        //   |     | end |
-        //   |     | tile|
-        //   +-----+-----+
-        //
-        // In that case we just need to step in the positive direction to move to the lower right tile.
-        next_step_direction = step.x > 0 ? StepDirection::X : StepDirection::Y;
-      }
-
-      const float next_t = std::min(next_step_direction == StepDirection::X ? t_max.x : t_max.y, 1.0f);
-
-      // If we've reached the end tile, don't step at all.
-      if (tile_coords == to_tile_coords) {
-        next_step_direction = StepDirection::None;
-      }
-
-      const vec2 next_position = current_position + vector * next_t;
-      const rect clipped_line_segment = { current_position, next_position };
-      // object_builder.add_fill(scene_builder, clipped_line_segment, tile_coords);
-
-      // Add extra fills if necessary.
-      if (step.y < 0 && next_step_direction == StepDirection::Y) {
-        // Leaves through top boundary.
-        const rect auxiliary_segment = { clipped_line_segment.max, IVEC2_TO_VEC2(tile_coords) * tile_size };
-        // object_builder.add_fill(scene_builder, auxiliary_segment, tile_coords);
-      } else if (step.y > 0 && last_step_direction == StepDirection::Y) {
-        // Enters through top boundary.
-        const rect auxiliary_segment = { IVEC2_TO_VEC2(tile_coords) * tile_size, clipped_line_segment.min };
-        // object_builder.add_fill(scene_builder, auxiliary_segment, tile_coords);
-      }
-
-      // Adjust backdrop if necessary.
-      if (step.x < 0 && last_step_direction == StepDirection::X) {
-        // Entered through right boundary.
-        adjust_alpha_tile_backdrop(tile_coords, 1);
-      } else if (step.x > 0 && next_step_direction == StepDirection::X) {
-        // Leaving through right boundary.
-        adjust_alpha_tile_backdrop(tile_coords, -1);
-      }
-
-      // Take a step.
-      if (next_step_direction == StepDirection::None) {
-        break;
-      } else if (next_step_direction == StepDirection::X) {
-        if (tile_coords.x == to_tile_coords.x) break;
-
-        t_max.x += t_delta.x;
-        tile_coords.x += step.x;
-      } else {
-        if (tile_coords.y == to_tile_coords.y) break;
-
-        t_max.y += t_delta.y;
-        tile_coords.y += step.y;
-      }
-
-      current_position = next_position;
-      last_step_direction = next_step_direction;
-    }
-  }
-
   // TODO: cull masks here
   void PathTiler::push_segment(const uvec4 segment, int16_t tile_x, int16_t tile_y) {
     if (tile_x >= m_bounds_size.x || tile_y >= m_bounds_size.y) return;
@@ -414,110 +315,6 @@ namespace Graphick::Renderer {
     }
   }
 
-  void PathTiler::adjust_alpha_tile_backdrop(const ivec2 tile_coords, int delta) {
-    // let tile_offset = tile_coords - tiles.rect.origin();
-    const ivec2 tile_offset = tile_coords;
-
-    if (tile_offset.x < 0 || tile_offset.x >= m_bounds_size.x || tile_offset.y >= m_bounds_size.y) {
-      return;
-    }
-
-    if (tile_offset.y < 0) {
-      // m_backdrops[tile_offset.x] += delta;
-      return;
-    }
-
-    int local_tile_index = tile_index(tile_coords, m_bounds_size);
-    m_backdrops[local_tile_index] += delta;
-  }
-
-#if 0
-  void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
-    OPTICK_EVENT();
-
-    m_prev = p3;
-    m_tile_y_prev = (int16_t)std::floor(p0.y) / TILE_SIZE;
-
-    if (Math::is_almost_equal(p0, p3)) return;
-
-    int16_t x_dir = (int16_t)std::copysign(1, p3.x - p0.x);
-    int16_t y_dir = (int16_t)std::copysign(1, p3.y - p0.y);
-
-    float dtdx = 1.0f / (p3.x - p0.x);
-    float dtdy = 1.0f / (p3.y - p0.y);
-
-    int16_t x = (int16_t)std::floor(p0.x);
-    int16_t y = (int16_t)std::floor(p0.y);
-
-    float row_t0 = 0.0f;
-    float col_t0 = 0.0f;
-    float row_t1 = std::numeric_limits<float>::infinity();
-    float col_t1 = std::numeric_limits<float>::infinity();
-
-    if (p0.y != p3.y) {
-      float next_y = p3.y > p0.y ? (float)y + 1.0f : (float)y;
-      row_t1 = std::min(1.0f, dtdy * (next_y - p0.y));
-    }
-    if (p0.x != p3.x) {
-      float next_x = p3.x > p0.x ? (float)x + 1.0f : (float)x;
-      col_t1 = std::min(1.0f, dtdx * (next_x - p0.x));
-    }
-
-    float x_step = std::abs(dtdx);
-    float y_step = std::abs(dtdy);
-
-    while (true) {
-      float t0 = std::max(row_t0, col_t0);
-      float t1 = std::min(row_t1, col_t1);
-
-      vec2 from = lerp(p0, p3, t0);
-      vec2 to = lerp(p0, p3, t1);
-
-      float height = to.y - from.y;
-      float right = (float)x + 1.0f;
-      float area = 0.5f * height * ((right - from.x) + (right - to.x));
-
-#if OPAQUE_AND_MASKED
-      m_increments.push_back({ x, y, area, height });
-#else
-      int16_t tile_x = x / TILE_SIZE;
-      int16_t tile_y = y / TILE_SIZE;
-
-      if (tile_x != m_bin.tile_x || tile_y != m_bin.tile_y) {
-        m_bins.push_back(m_bin);
-        m_bin = { tile_x, tile_y };
-      }
-#endif
-
-      if (row_t1 < col_t1) {
-        row_t0 = row_t1;
-        row_t1 = std::min(1.0f, row_t1 + y_step);
-        y += y_dir;
-      } else {
-        col_t0 = col_t1;
-        col_t1 = std::min(1.0f, col_t1 + x_step);
-        x += x_dir;
-      }
-
-      if (row_t0 == 1.0f || col_t0 == 1.0f) {
-        x = (int16_t)std::floor(p3.x);
-        y = (int16_t)std::floor(p3.y);
-      }
-
-#if OPAQUE_AND_MASKED
-      int16_t tile_y = y / TILE_SIZE;
-#else
-      tile_y = y / TILE_SIZE;
-#endif
-      if (tile_y != m_tile_y_prev) {
-        m_tile_increments.push_back(TileIncrement{ (int16_t)(x / TILE_SIZE), std::min(tile_y, m_tile_y_prev), (int8_t)(tile_y - m_tile_y_prev) });
-        m_tile_y_prev = tile_y;
-      }
-
-      if (row_t0 == 1.0f || col_t0 == 1.0f) break;
-    }
-  }
-#else
   void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
     OPTICK_EVENT();
 
@@ -609,7 +406,6 @@ namespace Graphick::Renderer {
       if (fuzzy_equal) break;
     }
   }
-#endif
 
   void PathTiler::process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
     OPTICK_EVENT();
@@ -642,165 +438,18 @@ namespace Graphick::Renderer {
     process_linear_segment_clipped(p0, p3, visible);
   }
 
-  void PathTiler::finish_old(const std::vector<bool>& culled, const ivec2 tiles_count) {
-    for (int y = 0; y < m_bounds_size.y; y++) {
-      int winding = 0;
-
-      for (int x = 0; x < m_bounds_size.x; x++) {
-        int i = y * m_bounds_size.x + x;
-        winding += m_backdrops[i];
-
-        // Non-zero winding rule
-        // if (winding != 0) {
-        // Even-odd winding rule
-        if (winding % 2 == 0) {
-          m_spans.push_back(TileSpan{ (int16_t)x, (int16_t)y, 1, vec4{0.5f, 0.5f, 0.5f, 1.0f} });
-        }
-      }
-    }
-    // for (int i = 0; i < m_backdrops.size(); i++) {
-    //   if (m_backdrops[i] < 0) {
-    //     ivec2 coords = { i % m_bounds_size.x, i / m_bounds_size.x };
-    //     m_spans.push_back(TileSpan{ (int16_t)coords.x, (int16_t)coords.y, 1, vec4{0.7f, 0.5f, 0.5f, 1.0f} });
-    //   }
-    // }
-  }
-
-  static float calculate_cover(std::vector<uvec4> segments, int y) {
+  static float calculate_cover(std::vector<uvec4>& segments, int y) {
     float cover = 0.0f;
     float y0 = (float)y;
     float y1 = y0 + 1.0f;
-    float x0 = (float)TILE_SIZE;
-    float x1 = x0 + 1.0f;
-
     float tile_size_over_255 = (float)TILE_SIZE / 255.0f;
 
-    // Port of GPU rasterizer
     for (auto segment : segments) {
-      vec2 p0 = tile_size_over_255 * vec2{ (float)segment.x0, (float)segment.y0 };
-      vec2 p3 = tile_size_over_255 * vec2{ (float)segment.x1, (float)segment.y1 };
+      float p0_y = tile_size_over_255 * (float)segment.y0;
+      float p1_y = tile_size_over_255 * (float)segment.y1;
 
-#if 1
-      if (std::min(p0.y, p3.y) >= y1 || std::max(p0.y, p3.y) <= y0) {
-        // Segment is outside the scanline
-        continue;
-      }
-
-      // Check if segment is almost vertical
-      if (abs(p0.x - p3.x) < 0.1) {
-        // Treating segment as vertical, horizontal segments are discarded in the previous step
-
-        // Segment is alwais on the left side of the pixel
-        cover += std::clamp(p3.y, y0, y1) - std::clamp(p0.y, y0, y1);
-        continue;
-      }
-
-      float m = (p3.y - p0.y) / (p3.x - p0.x);
-      float one_over_m = 1.0 / m;
-      float q = p0.y - m * p0.x;
-
-      // TODO: optimize
-
-      // Clip segment's p0 to scanline
-      if (p0.y < y0) {
-        p0 = { x_intersect(one_over_m, q, y0), y0 };
-      } else if (p0.y > y1) {
-        p0 = { x_intersect(one_over_m, q, y1), y1 };
-      }
-
-      // Clip segment's p3 to scanline
-      if (p3.y < y0) {
-        p3 = { x_intersect(one_over_m, q, y0), y0 };
-      } else if (p3.y > y1) {
-        p3 = { x_intersect(one_over_m, q, y1), y1 };
-      }
-
-      // Calculate cover value
-      // Both points are always on the left side of the pixel
-      cover += p3.y - p0.y;
-#else
-      if (std::min(p0.y, p3.y) >= y1 || std::max(p0.y, p3.y) <= y0) {
-        // Segment is outside the scanline
-        continue;
-      }
-
-      // float area = 0.0;
-      // float cover = 0.0;
-
-      // Check if segment is almost vertical
-      if (abs(p0.x - p3.x) < 0.1) {
-        // Treating segment as vertical, horizontal segments are discarded in CPU preprocessing
-        if (p0.x > x1) {
-          // Segment is on the right side of the pixel
-          continue;
-        }
-
-        if (p0.x < x0) {
-          // Segment is on the left side of the pixel
-          cover += std::clamp(p3.y, y0, y1) - std::clamp(p0.y, y0, y1);
-        } else {
-          // Segment is inside the pixel
-          // area += (clamp(p3.y, y0, y1) - clamp(p0.y, y0, y1)) * (x1 - p0.x);
-        }
-
-        // alpha += area + cover;
-
-        continue;
-      }
-
-      float m = (p3.y - p0.y) / (p3.x - p0.x);
-      float one_over_m = 1.0 / m;
-      float q = p0.y - m * p0.x;
-
-      // Clip segment's p0 to scanline
-      if (p0.y < y0) {
-        p0 = vec2(x_intersect(one_over_m, q, y0), y0);
-      } else if (p0.y > y1) {
-        p0 = vec2(x_intersect(one_over_m, q, y1), y1);
-      }
-
-      // Clip segment's p3 to scanline
-      if (p3.y < y0) {
-        p3 = vec2(x_intersect(one_over_m, q, y0), y0);
-      } else if (p3.y > y1) {
-        p3 = vec2(x_intersect(one_over_m, q, y1), y1);
-      }
-
-      if (std::min(p0.x, p3.x) >= x1) {
-        // Segment is on the right side of the pixel
-        continue;
-      }
-
-      // Clip segment to the right side of pixel
-      if (p0.x > x1) {
-        p0 = vec2(x1, y_intersect(m, q, x1));
-      } else if (p3.x > x1) {
-        p3 = vec2(x1, y_intersect(m, q, x1));
-      }
-
-      // Calculate area and cover values
-      if (p0.x < x0) {
-        if (p3.x < x0) {
-          // Both points are on the left side of the pixel
-          cover += p3.y - p0.y;
-        } else {
-          // p0 is on the left side of the pixel, p3 is on the right side, clipping
-          vec2 p0_clip = vec2(x0, y_intersect(m, q, x0));
-          // area += 0.5 * (1.0 + x1 - p3.x) * (p3.y - p0_clip.y);
-          cover += p0_clip.y - p0.y;
-        }
-      } else if (p3.x < x0) {
-        // p3 is on the left side of the pixel, p0 is on the right side, clipping
-        vec2 p3_clip = vec2(x0, y_intersect(m, q, x0));
-        // area += 0.5 * (1.0 + x1 - p0.x) * (p3_clip.y - p0.y);
-        cover += p3.y - p3_clip.y;
-      } else {
-        // Both points are on the right side of the pixel
-        // area += 0.5 * (x1 - p0.x + x1 - p3.x) * (p3.y - p0.y);
-      }
-
-      // alpha += area + cover;
-#endif
+      // Segment is always on the left of the tile so we don't need to check x
+      cover += std::clamp(p1_y, y0, y1) - std::clamp(p0_y, y0, y1);
     }
 
     return cover;
@@ -812,36 +461,6 @@ namespace Graphick::Renderer {
     std::vector<Bin> bins;
     Bin bin = { 0, 0, 0, 0 };
 
-#if OPAQUE_AND_MASKED
-    if (!m_increments.empty()) {
-      Increment& first = m_increments.front();
-      bin.tile_x = first.x / TILE_SIZE;
-      bin.tile_y = first.y / TILE_SIZE;
-    }
-
-    for (size_t i = 0; i < m_increments.size(); ++i) {
-      Increment& increment = m_increments[i];
-
-      int16_t tile_x = increment.x / TILE_SIZE;
-      int16_t tile_y = increment.y / TILE_SIZE;
-
-      if (tile_x != bin.tile_x || tile_y != bin.tile_y) {
-        bins.push_back(bin);
-        bin = { tile_x, tile_y, i, i };
-      }
-
-      bin.end++;
-    }
-
-    bins.push_back(bin);
-
-    {
-      OPTICK_EVENT("Sort Bins");
-      std::sort(bins.begin(), bins.end(), [](const Bin& a, const Bin& b) {
-        return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
-        });
-    }
-#else
     m_bins.push_back(m_bin);
 
     {
@@ -850,7 +469,6 @@ namespace Graphick::Renderer {
         return a.tile_y < b.tile_y || (a.tile_y == b.tile_y && a.tile_x < b.tile_x);
         });
     }
-#endif
 
     {
       OPTICK_EVENT("Sort Increments");
@@ -870,24 +488,18 @@ namespace Graphick::Renderer {
     ivec2 prev_coords = { -1, -1 };
     float cover_table[TILE_SIZE] = { 1.0f };
 
-#if OPAQUE_AND_MASKED
-    size_t bins_len = bins.size();
-#else
     size_t bins_len = m_bins.size();
-#endif
 
     m_masks.clear();
 
     for (size_t i = 0; i < bins_len; i++) {
-#if OPAQUE_AND_MASKED
-      const Bin& bin = bins[i];
-#else
       const TempBin& bin = m_bins[i];
-#endif
 
       ivec2 coords = { bin.tile_x, bin.tile_y };
 
       if (coords != prev_coords) {
+        OPTICK_EVENT("Generate Cover Table");
+
         if (coords.y != prev_coords.y) {
           memset(cover_table, 0.0f, TILE_SIZE * sizeof(float));
         }
@@ -899,6 +511,7 @@ namespace Graphick::Renderer {
 
           for (int j = 0; j < TILE_SIZE; j++) {
             // TODO: implement different workflow for non-zero winding rule
+            // mask.cover_table[j] = (uint8_t)std::round(127.5f + cover_table[j] * 127.5f);
             mask.cover_table[j] = (uint8_t)Math::wrap((int)std::round(127.5f + cover_table[j] * 127.5f), 0, 255);
             // mask.cover_table[j] = (uint8_t)std::clamp(std::round(127.5f + cover_table[j] * 127.5f), 0.0f, 255.0f);
             cover_table[j] += calculate_cover(mask.segments, j);
@@ -908,111 +521,29 @@ namespace Graphick::Renderer {
         }
       }
 
-#if 0
-
-      for (size_t j = bin.start; j < bin.end; ++j) {
-        Increment& increment = m_increments[j];
-
-        int x = (size_t)increment.x % TILE_SIZE;
-        int y = (size_t)increment.y % TILE_SIZE;
-        int index = x + y * TILE_SIZE;
-
-        areas[index] += increment.area;
-        heights[index] += increment.height;
-      }
-
-#endif
-
-#if OPAQUE_AND_MASKED
-      if (i + 1 == bins_len || bins[i + 1].tile_x != bin.tile_x || bins[i + 1].tile_y != bin.tile_y) {
-#else
       if (i + 1 == bins_len || m_bins[i + 1].tile_x != bin.tile_x || m_bins[i + 1].tile_y != bin.tile_y) {
-#endif
         uint8_t tile[TILE_SIZE * TILE_SIZE] = { 0 };
 
         ivec2 coords = { bin.tile_x + m_offset.x + 1, bin.tile_y + m_offset.y + 1 };
         int index = tile_index(coords, tiles_count);
 
-#if 0
+        if (i + 1 < m_bins.size() && m_bins[i + 1].tile_y == bin.tile_y && m_bins[i + 1].tile_x > bin.tile_x + 1) {
+          OPTICK_EVENT("Generate Span");
 
-        if (coords.x < 0 || coords.y < 0 || coords.x >= tiles_count.x || coords.y >= tiles_count.y || culled[index]) {
-          for (int y = 0; y < TILE_SIZE; y++) {
-            float accum = prev[y];
-            for (int x = 0; x < TILE_SIZE; x++) {
-              int index = x + y * TILE_SIZE;
-              accum += heights[index];
-            }
-            prev[y] = accum;
+          while (tile_increments_i < m_tile_increments.size()) {
+            TileIncrement& tile_increment = m_tile_increments[tile_increments_i];
+            if (std::tie(tile_increment.tile_y, tile_increment.tile_x) > std::tie(bin.tile_y, bin.tile_x)) break;
+
+            winding += tile_increment.sign;
+            tile_increments_i++;
           }
 
-          memset(areas, 0, sizeof(areas));
-          memset(heights, 0, sizeof(heights));
-
-          if (i + 1 >= bins_len || bins[i + 1].tile_y != bin.tile_y) {
-            memset(prev, 0, sizeof(prev));
-          }
-        } else {
-          {
-            OPTICK_EVENT("Generate Mask");
-
-            for (int y = 0; y < TILE_SIZE; y++) {
-              float accum = prev[y];
-              for (int x = 0; x < TILE_SIZE; x++) {
-                int index = x + y * TILE_SIZE;
-                tile[index] = (uint8_t)std::round(std::min(std::abs(accum + areas[index]) * 256.0f, 255.0f));
-                accum += heights[index];
-              }
-              next[y] = accum;
-            }
-          }
-
-          m_masks.push_back({ bin.tile_x, bin.tile_y, tile });
-
-          {
-            OPTICK_EVENT("Memset");
-
-            memset(areas, 0, sizeof(areas));
-            memset(heights, 0, sizeof(heights));
-
-            if (i + 1 < bins_len && bins[i + 1].tile_y == bin.tile_y) {
-              memcpy(prev, next, sizeof(prev));
-            } else {
-              memset(prev, 0, sizeof(prev));
-            }
-
-            memset(next, 0, sizeof(next));
-          }
-        }
-
-#endif
-
-        {
-          OPTICK_EVENT("Generate Spans");
-
-#if OPAQUE_AND_MASKED
-          if (i + 1 < bins.size() && bins[i + 1].tile_y == bin.tile_y && bins[i + 1].tile_x > bin.tile_x + 1) {
-#else
-          if (i + 1 < m_bins.size() && m_bins[i + 1].tile_y == bin.tile_y && m_bins[i + 1].tile_x > bin.tile_x + 1) {
-#endif
-            while (tile_increments_i < m_tile_increments.size()) {
-              TileIncrement& tile_increment = m_tile_increments[tile_increments_i];
-              if (std::tie(tile_increment.tile_y, tile_increment.tile_x) > std::tie(bin.tile_y, bin.tile_x)) break;
-
-              winding += tile_increment.sign;
-              tile_increments_i++;
-            }
-
-            // Non-zero winding rule
-            // if (winding != 0) {
-              // Even-odd winding rule
-            if (winding % 2 != 0) {
-#if OPAQUE_AND_MASKED
-              int16_t width = bins[i + 1].tile_x - bin.tile_x - 1;
-#else
-              int16_t width = m_bins[i + 1].tile_x - bin.tile_x - 1;
-#endif
-              m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.7f, 0.5f, 0.5f, 1.0f} });
-            }
+          // Non-zero winding rule
+          // if (winding != 0) {
+            // Even-odd winding rule
+          if (winding % 2 != 0) {
+            int16_t width = m_bins[i + 1].tile_x - bin.tile_x - 1;
+            m_spans.push_back(TileSpan{ (int16_t)(bin.tile_x + 1), bin.tile_y, width, vec4{0.7f, 0.5f, 0.5f, 1.0f} });
           }
         }
       }
@@ -1035,7 +566,7 @@ namespace Graphick::Renderer {
     return data;
   }
 
-  void Tiler::reset(const Viewport & viewport) {
+  void Tiler::reset(const Viewport& viewport) {
     m_tiles_count = { (int)(std::ceil((float)viewport.size.x / TILE_SIZE)) + 2, (int)(std::ceil((float)viewport.size.y / TILE_SIZE)) + 2 };
     m_position = {
       (int)(viewport.position.x > 0 ? std::floor(viewport.position.x * viewport.zoom / TILE_SIZE) : std::ceil(viewport.position.x * viewport.zoom / TILE_SIZE)),
@@ -1063,7 +594,7 @@ namespace Graphick::Renderer {
     m_culled_tiles = std::vector<bool>(m_tiles_count.x * m_tiles_count.y, false);
   }
 
-  void Tiler::process_path(const Geometry::Path & path, const vec4 & color) {
+  void Tiler::process_path(const Geometry::Path& path, const vec4& color) {
     OPTICK_EVENT();
 
     PathTiler tiler(path, color, m_visible, m_zoom, m_position, m_culled_tiles, m_tiles_count);
@@ -1144,7 +675,7 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Tiler::push_mask(const PathTiler::TileMask & mask, int index, const vec4 & color) {
+  void Tiler::push_mask(const PathTiler::TileMask& mask, int index, const vec4& color) {
     if (m_masks_offset >= MASKS_PER_BATCH) {
       if (m_masks_texture_index == m_masks_textures_count - 1) {
         resize_masks_textures(m_masks_textures_count + 1);
@@ -1183,4 +714,4 @@ namespace Graphick::Renderer {
     }
   }
 
-}
+  }
