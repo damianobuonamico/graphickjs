@@ -14,6 +14,8 @@ namespace Graphick::Math {
   float clamp(float t, float min, float max);
   float lerp(float a, float b, float t);
 
+  int wrap(int t, int min, int max);
+
   bool is_almost_zero(const double t, const float eps);
   bool is_almost_equal(const float t1, const float t2, const float eps);
   bool is_normalized(const float t, bool include_ends);

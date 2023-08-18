@@ -95,7 +95,7 @@ namespace Graphick::Editor {
     {
       OPTICK_EVENT("Render Entities");
 
-      for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+      for (auto it = m_order.begin(); it != m_order.end(); it++) {
         if (!m_registry.all_of<PathComponent, TransformComponent>(*it)) continue;
 
         if (m_registry.all_of<FillComponent>(*it)) {

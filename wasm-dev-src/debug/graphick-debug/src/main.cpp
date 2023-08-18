@@ -109,10 +109,13 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  // std::ifstream ifs("res\\Ghostscript_Tiger.svg");
-  // std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-  // Graphick::io::svg::parse_svg(content);
+#define TIGER
 
+#ifdef TIGER
+  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+  Graphick::io::svg::parse_svg(content);
+#else
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
   // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_entity("Test Entity 1");
 
@@ -120,19 +123,27 @@ int main() {
   test_entity.add_component<Graphick::Editor::TransformComponent>();
   test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
 
-  path.move_to({ 360.0f, 20.0f });
-  path.line_to({ 0.0f, 0.0f });
-  path.line_to({ 20.0f, -20.0f });
-  path.line_to({ 50.0f, -40.0f });
-  path.line_to({ 200.0f, -50.0f });
-  path.line_to({ 300.0f, -20.0f });
-  path.line_to({ 350.0f, -20.0f });
-  path.line_to({ 380.0f, -40.0f });
+  // path.move_to({ 360.0f, 20.0f });
+  // path.line_to({ 0.0f, 0.0f });
+  // path.line_to({ 20.0f, -20.0f });
+  // path.line_to({ 50.0f, -40.0f });
+  // path.line_to({ 200.0f, -50.0f });
+  // path.line_to({ 300.0f, -20.0f });
+  // path.line_to({ 350.0f, -20.0f });
+  // path.line_to({ 380.0f, -40.0f });
+  // path.close();
 
   // path.move_to({ 300.0f, 100.0f });
   // path.line_to({ 350.0f, 200.0f });
   // path.line_to({ 250.0f, 200.0f });
+  // path.close();
 
+  path.move_to({ 0.0f, 0.0f });
+  path.cubic_to({ -2.0f, 10.0f }, { -2.0f, 90.0f }, { 0.0f, 100.0f });
+  path.cubic_to({ 0.0f, 100.0f }, { 210.0f, -300.0f }, { 200.0f, 100.0f });
+  path.line_to({ 230.0f, 70.0f });
+  path.cubic_to({ 225.0f, 73.0f }, { 173.0f, 0.0f }, { 170.0f, -60.0f });
+  path.cubic_to({ 80.0f, 0.0f }, { 500.0f, 70.0f }, { 0.0f, 0.0f });
   path.close();
 
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.add_component<Graphick::Editor::PathComponent>().path;
@@ -149,6 +160,7 @@ int main() {
   // path1.line_to({ 360.0f, 260.0f });
 
   // path1.close();
+#endif
 
   while (!glfwWindowShouldClose(window)) {
     OPTICK_FRAME("MainThread");

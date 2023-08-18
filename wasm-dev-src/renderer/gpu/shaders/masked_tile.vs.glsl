@@ -2,21 +2,19 @@
 R"(
 
   precision highp float;
-  precision highp sampler2D;
 
   uniform ivec2 uFramebufferSize;
-  uniform int uMasksTextureSize;
-  uniform int uTileSize;
+  uniform lowp int uTileSize;
   uniform vec2 uOffset;
 
   in uvec2 aPosition;
   in vec4 aColor;
   in int aIndex;
-  in int aMaskIndex;
+  in int aSegmentsIndex;
 
+  out float vSegmentsIndex;
   out vec4 vColor;
-  out vec2 vPosition;
-  out vec2 vMaskCoords;
+  out vec2 vCoords;
 
   void main() {
     float x = float(aPosition.x);
@@ -38,12 +36,15 @@ R"(
       1.0
     );
 
+    // vColor = aColor + vec4(x * 0.1, y * 0.1, 0.0, 0.0);
     vColor = aColor;
+    vSegmentsIndex = float(aSegmentsIndex);
+    vCoords = vec2(x, y) * float(uTileSize);
 
-    vMaskCoords = vec2(
-      float(aMaskIndex % (uMasksTextureSize / uTileSize) * uTileSize) + x * (tile - 0.5) + (1.0 - x) * 0.5,
-      float(aMaskIndex / (uMasksTextureSize / uTileSize) * uTileSize) + y * (tile - 0.5) + (1.0 - y) * 0.5
-    ) / float(uMasksTextureSize);
+    // vMaskCoords = vec2(
+    //   float(aMaskIndex % (uMasksTextureSize / uTileSize) * uTileSize) + x * (tile - 0.5) + (1.0 - x) * 0.5,
+    //   float(aMaskIndex / (uMasksTextureSize / uTileSize) * uTileSize) + y * (tile - 0.5) + (1.0 - y) * 0.5
+    // ) / float(uMasksTextureSize);
   }
 
 )"

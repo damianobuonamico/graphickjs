@@ -93,11 +93,15 @@ namespace Graphick::Renderer {
     int32_t index;
   };
 
+  struct uvec4 {
+    uint8_t x0, y0, x1, y1;
+  };
+
   struct MaskedTile {
     // TODO: Replace with a pointer to the color texture
     vec4 color;
     int32_t index;
-    int32_t mask_index;
+    int32_t segments_index;
   };
 
 }

@@ -22,6 +22,10 @@ namespace Graphick::Renderer {
     return coords.x + coords.y * tiles_count.x;
   }
 
+  static inline int tile_index(const int16_t tile_x, const int16_t tile_y, const int16_t tiles_count_x) {
+    return tile_x + tile_y * tiles_count_x;
+  }
+
   static inline float x_intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
     float num = (x1 * y2 - y1 * x2) * (x3 - x4) -
       (x1 - x2) * (x3 * y4 - y3 * x4);
@@ -29,11 +33,19 @@ namespace Graphick::Renderer {
     return num / den;
   }
 
+  static inline float x_intersect(float one_over_m, float q, float y) {
+    return (y - q) * one_over_m;
+  }
+
   static inline float y_intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
     float num = (x1 * y2 - y1 * x2) * (y3 - y4) -
       (y1 - y2) * (x3 * y4 - y3 * x4);
     float den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
     return num / den;
+  }
+
+  static inline float y_intersect(float m, float q, float x) {
+    return m * x + q;
   }
 
   static void clip_to_left(std::vector<vec2>& points, float x) {
@@ -383,6 +395,25 @@ namespace Graphick::Renderer {
     }
   }
 
+  // TODO: cull masks here
+  void PathTiler::push_segment(const uvec4 segment, int16_t tile_x, int16_t tile_y) {
+    if (tile_x >= m_bounds_size.x || tile_y >= m_bounds_size.y) return;
+
+    int index = tile_index(tile_x, tile_y, m_bounds_size.x);
+
+    if (m_temp_masks.find(index) == m_temp_masks.end()) {
+      if (segment.y0 == segment.y1) {
+        m_temp_masks.insert({ index, { { } } });
+      } else {
+        m_temp_masks.insert({ index, { { segment } } });
+      }
+    } else {
+      if (segment.y0 != segment.y1) {
+        m_temp_masks.at(index).segments.push_back(segment);
+      }
+    }
+  }
+
   void PathTiler::adjust_alpha_tile_backdrop(const ivec2 tile_coords, int delta) {
     // let tile_offset = tile_coords - tiles.rect.origin();
     const ivec2 tile_offset = tile_coords;
@@ -538,8 +569,18 @@ namespace Graphick::Renderer {
       if (tile_x != m_bin.tile_x || tile_y != m_bin.tile_y) {
         m_bins.push_back(m_bin);
         m_bin = { tile_x, tile_y };
-        m_spans.push_back(TileSpan{ tile_x, tile_y, 1, vec4{ 0.0f, 0.0f, 0.0f, 1.0f } });
       }
+
+      vec2 tile_pos = TILE_SIZE * vec2{ (float)tile_x, (float)tile_y };
+      vec2 from_delta = from - tile_pos;
+      vec2 to_delta = to - tile_pos;
+
+      push_segment({
+        (uint8_t)std::round(from_delta.x / TILE_SIZE * 255),
+        (uint8_t)std::round(from_delta.y / TILE_SIZE * 255),
+        (uint8_t)std::round(to_delta.x / TILE_SIZE * 255),
+        (uint8_t)std::round(to_delta.y / TILE_SIZE * 255),
+        }, tile_x, tile_y);
 
       if (row_t1 < col_t1) {
         row_t0 = row_t1;
@@ -625,6 +666,146 @@ namespace Graphick::Renderer {
     // }
   }
 
+  static float calculate_cover(std::vector<uvec4> segments, int y) {
+    float cover = 0.0f;
+    float y0 = (float)y;
+    float y1 = y0 + 1.0f;
+    float x0 = (float)TILE_SIZE;
+    float x1 = x0 + 1.0f;
+
+    float tile_size_over_255 = (float)TILE_SIZE / 255.0f;
+
+    // Port of GPU rasterizer
+    for (auto segment : segments) {
+      vec2 p0 = tile_size_over_255 * vec2{ (float)segment.x0, (float)segment.y0 };
+      vec2 p3 = tile_size_over_255 * vec2{ (float)segment.x1, (float)segment.y1 };
+
+#if 1
+      if (std::min(p0.y, p3.y) >= y1 || std::max(p0.y, p3.y) <= y0) {
+        // Segment is outside the scanline
+        continue;
+      }
+
+      // Check if segment is almost vertical
+      if (abs(p0.x - p3.x) < 0.1) {
+        // Treating segment as vertical, horizontal segments are discarded in the previous step
+
+        // Segment is alwais on the left side of the pixel
+        cover += std::clamp(p3.y, y0, y1) - std::clamp(p0.y, y0, y1);
+        continue;
+      }
+
+      float m = (p3.y - p0.y) / (p3.x - p0.x);
+      float one_over_m = 1.0 / m;
+      float q = p0.y - m * p0.x;
+
+      // TODO: optimize
+
+      // Clip segment's p0 to scanline
+      if (p0.y < y0) {
+        p0 = { x_intersect(one_over_m, q, y0), y0 };
+      } else if (p0.y > y1) {
+        p0 = { x_intersect(one_over_m, q, y1), y1 };
+      }
+
+      // Clip segment's p3 to scanline
+      if (p3.y < y0) {
+        p3 = { x_intersect(one_over_m, q, y0), y0 };
+      } else if (p3.y > y1) {
+        p3 = { x_intersect(one_over_m, q, y1), y1 };
+      }
+
+      // Calculate cover value
+      // Both points are always on the left side of the pixel
+      cover += p3.y - p0.y;
+#else
+      if (std::min(p0.y, p3.y) >= y1 || std::max(p0.y, p3.y) <= y0) {
+        // Segment is outside the scanline
+        continue;
+      }
+
+      // float area = 0.0;
+      // float cover = 0.0;
+
+      // Check if segment is almost vertical
+      if (abs(p0.x - p3.x) < 0.1) {
+        // Treating segment as vertical, horizontal segments are discarded in CPU preprocessing
+        if (p0.x > x1) {
+          // Segment is on the right side of the pixel
+          continue;
+        }
+
+        if (p0.x < x0) {
+          // Segment is on the left side of the pixel
+          cover += std::clamp(p3.y, y0, y1) - std::clamp(p0.y, y0, y1);
+        } else {
+          // Segment is inside the pixel
+          // area += (clamp(p3.y, y0, y1) - clamp(p0.y, y0, y1)) * (x1 - p0.x);
+        }
+
+        // alpha += area + cover;
+
+        continue;
+      }
+
+      float m = (p3.y - p0.y) / (p3.x - p0.x);
+      float one_over_m = 1.0 / m;
+      float q = p0.y - m * p0.x;
+
+      // Clip segment's p0 to scanline
+      if (p0.y < y0) {
+        p0 = vec2(x_intersect(one_over_m, q, y0), y0);
+      } else if (p0.y > y1) {
+        p0 = vec2(x_intersect(one_over_m, q, y1), y1);
+      }
+
+      // Clip segment's p3 to scanline
+      if (p3.y < y0) {
+        p3 = vec2(x_intersect(one_over_m, q, y0), y0);
+      } else if (p3.y > y1) {
+        p3 = vec2(x_intersect(one_over_m, q, y1), y1);
+      }
+
+      if (std::min(p0.x, p3.x) >= x1) {
+        // Segment is on the right side of the pixel
+        continue;
+      }
+
+      // Clip segment to the right side of pixel
+      if (p0.x > x1) {
+        p0 = vec2(x1, y_intersect(m, q, x1));
+      } else if (p3.x > x1) {
+        p3 = vec2(x1, y_intersect(m, q, x1));
+      }
+
+      // Calculate area and cover values
+      if (p0.x < x0) {
+        if (p3.x < x0) {
+          // Both points are on the left side of the pixel
+          cover += p3.y - p0.y;
+        } else {
+          // p0 is on the left side of the pixel, p3 is on the right side, clipping
+          vec2 p0_clip = vec2(x0, y_intersect(m, q, x0));
+          // area += 0.5 * (1.0 + x1 - p3.x) * (p3.y - p0_clip.y);
+          cover += p0_clip.y - p0.y;
+        }
+      } else if (p3.x < x0) {
+        // p3 is on the left side of the pixel, p0 is on the right side, clipping
+        vec2 p3_clip = vec2(x0, y_intersect(m, q, x0));
+        // area += 0.5 * (1.0 + x1 - p0.x) * (p3_clip.y - p0.y);
+        cover += p3.y - p3_clip.y;
+      } else {
+        // Both points are on the right side of the pixel
+        // area += 0.5 * (x1 - p0.x + x1 - p3.x) * (p3.y - p0.y);
+      }
+
+      // alpha += area + cover;
+#endif
+    }
+
+    return cover;
+  }
+
   void PathTiler::finish(const std::vector<bool>& culled, const ivec2 tiles_count) {
     OPTICK_EVENT();
 
@@ -686,6 +867,9 @@ namespace Graphick::Renderer {
     int tile_increments_i = 0;
     int winding = 0;
 
+    ivec2 prev_coords = { -1, -1 };
+    float cover_table[TILE_SIZE] = { 1.0f };
+
 #if OPAQUE_AND_MASKED
     size_t bins_len = bins.size();
 #else
@@ -700,6 +884,29 @@ namespace Graphick::Renderer {
 #else
       const TempBin& bin = m_bins[i];
 #endif
+
+      ivec2 coords = { bin.tile_x, bin.tile_y };
+
+      if (coords != prev_coords) {
+        if (coords.y != prev_coords.y) {
+          memset(cover_table, 0.0f, TILE_SIZE * sizeof(float));
+        }
+
+        int index = tile_index({ bin.tile_x, bin.tile_y }, m_bounds_size);
+
+        if (m_temp_masks.find(index) != m_temp_masks.end()) {
+          TempMask& mask = m_temp_masks.at(tile_index({ bin.tile_x, bin.tile_y }, m_bounds_size));
+
+          for (int j = 0; j < TILE_SIZE; j++) {
+            // TODO: implement different workflow for non-zero winding rule
+            mask.cover_table[j] = (uint8_t)Math::wrap((int)std::round(127.5f + cover_table[j] * 127.5f), 0, 255);
+            // mask.cover_table[j] = (uint8_t)std::clamp(std::round(127.5f + cover_table[j] * 127.5f), 0.0f, 255.0f);
+            cover_table[j] += calculate_cover(mask.segments, j);
+          }
+
+          prev_coords = coords;
+        }
+      }
 
 #if 0
 
@@ -797,7 +1004,7 @@ namespace Graphick::Renderer {
 
             // Non-zero winding rule
             // if (winding != 0) {
-            // Even-odd winding rule
+              // Even-odd winding rule
             if (winding % 2 != 0) {
 #if OPAQUE_AND_MASKED
               int16_t width = bins[i + 1].tile_x - bin.tile_x - 1;
@@ -840,6 +1047,8 @@ namespace Graphick::Renderer {
     m_opaque_tiles.clear();
     m_masked_tiles.clear();
 
+    m_segments = std::vector<uint8_t>(SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE * 4);
+    m_segments_offset = 0;
     //delete[] m_mask;
 
     //m_masks = new uint8_t[MASKS_TEXTURE_SIZE * MASKS_TEXTURE_SIZE];
@@ -859,20 +1068,62 @@ namespace Graphick::Renderer {
 
     PathTiler tiler(path, color, m_visible, m_zoom, m_position, m_culled_tiles, m_tiles_count);
 
-    const std::vector<PathTiler::TileMask>& masks = tiler.masks();
+    // const std::vector<PathTiler::TileMask>& masks = tiler.masks();
     const std::vector<PathTiler::TileSpan>& spans = tiler.spans();
     const ivec2 offset = tiler.offset();
+    const ivec2 size = tiler.size();
+    const std::unordered_map<int, PathTiler::TempMask>& temp_masks = tiler.temp_masks();
 
-    for (auto& mask : masks) {
-      ivec2 coords = { mask.tile_x + offset.x + 1, mask.tile_y + offset.y + 1 };
+    for (const auto& [index, mask] : temp_masks) {
+      ivec2 coords = {
+        index % size.x + offset.x + 1,
+        index / size.x + offset.y + 1
+      };
+
       if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
 
-      int index = tile_index(coords, m_tiles_count);
-      // TODO: optimize culling by not rendering masks in the previous step
-      if (m_culled_tiles[index]) continue;
+      int offset = m_segments_offset;
+      uint32_t segments_size = (uint32_t)mask.segments.size();
 
-      push_mask(mask, index, color);
+      m_segments[m_segments_offset++] = (uint8_t)segments_size;
+      m_segments[m_segments_offset++] = (uint8_t)(segments_size >> 8);
+      m_segments[m_segments_offset++] = (uint8_t)(segments_size >> 16);
+      m_segments[m_segments_offset++] = (uint8_t)(segments_size >> 24);
+
+      // TODO: use memcpy
+      for (int i = 0; i < TILE_SIZE; i++) {
+        m_segments[m_segments_offset++] = mask.cover_table[i];
+      }
+
+      // m_segments_offset += TILE_SIZE;
+
+      // m_segments.insert(m_segments.end(), { (uint8_t)segments.size(), 0, 0, 0 });
+
+      for (auto segment : mask.segments) {
+        // m_segments.insert(m_segments.end(), { segment.x0, segment.y0, segment.x1, segment.y1 });
+        m_segments[m_segments_offset++] = segment.x0;
+        m_segments[m_segments_offset++] = segment.y0;
+        m_segments[m_segments_offset++] = segment.x1;
+        m_segments[m_segments_offset++] = segment.y1;
+      }
+
+      int absolute_index = tile_index(coords, m_tiles_count);
+      // TODO: optimize culling by not rendering masks in the previous step
+      // if (m_culled_tiles[absolute_index]) continue;
+
+      m_masked_tiles.push_back(MaskedTile{ color, absolute_index, offset / 4 });
     }
+
+    // for (auto& mask : masks) {
+    //   ivec2 coords = { mask.tile_x + offset.x + 1, mask.tile_y + offset.y + 1 };
+    //   if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
+
+    //   int index = tile_index(coords, m_tiles_count);
+    //   // TODO: optimize culling by not rendering masks in the previous step
+    //   if (m_culled_tiles[index]) continue;
+
+    //   push_mask(mask, index, color);
+    // }
 
     for (auto& span : spans) {
       ivec2 coords = { span.tile_x + offset.x + 1, span.tile_y + offset.y + 1 };
@@ -885,7 +1136,7 @@ namespace Graphick::Renderer {
         if (coords.x + i >= m_tiles_count.x) break;
 
         int index = tile_index({ coords.x + i, coords.y }, m_tiles_count);
-        if (!m_culled_tiles[index] && color.a == 1.0f) {
+        if (/*!m_culled_tiles[index] &&*/ color.a == 1.0f) {
           m_opaque_tiles.push_back({ color, index });
           m_culled_tiles[index] = true;
         }

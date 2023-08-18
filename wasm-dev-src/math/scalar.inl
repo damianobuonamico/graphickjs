@@ -27,6 +27,16 @@ namespace Graphick::Math {
     return a + (b - a) * t;
   }
 
+  inline int wrap(int t, int min, int max) {
+    int range_size = max - min + 1;
+
+    if (t < min) {
+      t += range_size * ((min - t) / range_size + 1);
+    }
+
+    return min + (t - min) % range_size;
+  }
+
   inline bool is_almost_zero(const double t, const float eps = FLT_EPSILON) {
     return std::abs(t) <= eps;
   }

@@ -52,6 +52,10 @@ namespace Graphick::Renderer {
       int16_t tile_x;
       int16_t tile_y;
     };
+    struct TempMask {
+      std::vector<uvec4> segments;
+      uint8_t cover_table[TILE_SIZE] = { 0 };
+    };
   public:
     PathTiler(const PathTiler&) = default;
     PathTiler(PathTiler&&) = default;
@@ -59,6 +63,7 @@ namespace Graphick::Renderer {
     PathTiler(const Geometry::Path& path, const vec4& color, const rect& visible, float zoom, ivec2 position, const std::vector<bool>& culled, const ivec2 tiles_count);
     ~PathTiler() = default;
 
+    inline const std::unordered_map<int, TempMask>& temp_masks() const { return m_temp_masks; }
     inline const std::vector<TileMask>& masks() const { return m_masks; }
     inline const std::vector<TileSpan>& spans() const { return m_spans; }
 
@@ -71,6 +76,7 @@ namespace Graphick::Renderer {
     void process_linear_segment_clipped(const vec2 p0, const vec2 p3, rect visible);
     void process_cubic_segment_clipped(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, rect visible);
 
+    void push_segment(const uvec4 segment, int16_t tile_x, int16_t tile_y);
     void adjust_alpha_tile_backdrop(const ivec2 tile_coords, int delta);
 
     void finish(const std::vector<bool>& culled, const ivec2 tiles_count);
@@ -83,6 +89,7 @@ namespace Graphick::Renderer {
     TempBin m_bin = { 0, 0 };
 
 
+    std::unordered_map<int, TempMask> m_temp_masks;
     std::vector<TileMask> m_masks;
     std::vector<TileSpan> m_spans;
 
@@ -107,6 +114,7 @@ namespace Graphick::Renderer {
     inline const std::vector<MaskedTile>& masked_tiles() const { return m_masked_tiles; }
 
     const std::vector<uint8_t*> masks_textures_data() const;
+    inline const std::vector<uint8_t> segments() const { return m_segments; };
 
     void reset(const Viewport& viewport);
     void process_path(const Geometry::Path& path, const vec4& color);
@@ -128,7 +136,11 @@ namespace Graphick::Renderer {
     int m_masks_texture_index = 0;
     int m_masks_textures_count = 0;
 
+    int m_segments_offset = 0;
+
     uint8_t* m_masks_textures = nullptr;
+    // TODO: replace with array of textures
+    std::vector<uint8_t> m_segments;
   };
 
 }

@@ -74,7 +74,7 @@ namespace Graphick::Renderer {
 
     s_instance->m_quad_vertex_positions_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<uint16_t>(QUAD_VERTEX_POSITIONS.size(), "QuadVertexPositions");
     s_instance->m_quad_vertex_indices_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(QUAD_VERTEX_INDICES.size(), "QuadVertexIndices");
-    s_instance->m_masks_texture_id = GPU::Memory::Allocator::allocate_texture({ MASKS_TEXTURE_SIZE, MASKS_TEXTURE_SIZE }, GPU::TextureFormat::R8, "Masks");
+    s_instance->m_masks_texture_id = GPU::Memory::Allocator::allocate_texture({ SEGMENTS_TEXTURE_SIZE, SEGMENTS_TEXTURE_SIZE }, GPU::TextureFormat::RGBA8, "Masks");
 
     const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(s_instance->m_quad_vertex_positions_buffer_id);
     const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(s_instance->m_quad_vertex_indices_buffer_id);
@@ -132,7 +132,7 @@ namespace Graphick::Renderer {
   void Renderer::end_frame() {
     OPTICK_EVENT();
 
-    get()->flush_gpu_path_instances();
+    // get()->flush_gpu_path_instances();
     get()->draw_opaque_tiles();
     get()->draw_masked_tiles();
     get()->flush_line_instances();
@@ -148,7 +148,7 @@ namespace Graphick::Renderer {
 
     OPTICK_EVENT();
 
-    get()->add_gpu_path_instance(path);
+    // get()->add_gpu_path_instance(path);
     get()->m_tiler.process_path(path, color);
   }
 
@@ -221,17 +221,79 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::draw_masked_tiles() {
-    const std::vector<MaskedTile>& reverse_tiles = m_tiler.masked_tiles();
-    const std::vector<uint8_t*> reverse_textures = m_tiler.masks_textures_data();
+    const std::vector<MaskedTile>& tiles = m_tiler.masked_tiles();
+    const std::vector<uint8_t>& segments = m_tiler.segments();
 
-    if (reverse_tiles.empty() || reverse_textures.empty()) return;
+    uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<MaskedTile>(tiles.size(), "MaskedTiles");
 
-    const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reverse_tiles.rbegin(), reverse_tiles.rend());
-    const std::vector<uint8_t*> textures = std::vector<uint8_t*>(reverse_textures.rbegin(), reverse_textures.rend());
+    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
+    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
+    const GPU::Buffer& tiles_buffer = GPU::Memory::Allocator::get_general_buffer(tiles_buffer_id);
+    const GPU::Texture& segments_texture = GPU::Memory::Allocator::get_texture(m_masks_texture_id);
 
-    for (size_t i = 0; i < textures.size(); i++) {
-      draw_masked_tiles_batch(tiles, i, textures);
+    GPU::Device::upload_to_buffer(tiles_buffer, 0, tiles, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, segments.data());
+
+    GPU::MaskedTileVertexArray tile_vertex_array(
+      m_programs.masked_tile_program,
+      tiles_buffer,
+      quad_vertex_positions_buffer,
+      quad_vertex_indices_buffer
+    );
+
+    GPU::RenderState state = {
+      nullptr,
+      m_programs.masked_tile_program.program,
+      *tile_vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {
+        { { m_programs.masked_tile_program.masks_texture_uniform, segments_texture.gl_texture }, segments_texture }
+      },
+      {},
+      {
+        { m_programs.masked_tile_program.offset_uniform, (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE },
+        { m_programs.masked_tile_program.tile_size_uniform, (int)TILE_SIZE },
+        { m_programs.masked_tile_program.framebuffer_size_uniform, m_viewport.size },
+        { m_programs.masked_tile_program.masks_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE }
+      },
+      {
+        { 0.0f, 0.0f },
+        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+        std::nullopt,
+        std::nullopt,
+        std::nullopt
+      },
+      true
     }
+    };
+
+    GPU::Device::draw_elements_instanced(6, tiles.size(), state);
+
+    GPU::Memory::Allocator::free_general_buffer(tiles_buffer_id);
+
+    // const std::vector<MaskedTile>& reverse_tiles = m_tiler.masked_tiles();
+    // const std::vector<uint8_t*> reverse_textures = m_tiler.masks_textures_data();
+
+    // if (reverse_tiles.empty() || reverse_textures.empty()) return;
+
+    // const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reverse_tiles.rbegin(), reverse_tiles.rend());
+    // const std::vector<uint8_t*> textures = std::vector<uint8_t*>(reverse_textures.rbegin(), reverse_textures.rend());
+
+    // for (size_t i = 0; i < textures.size(); i++) {
+    //   draw_masked_tiles_batch(tiles, i, textures);
+    // }
   }
 
   void Renderer::draw_masked_tiles_batch(const std::vector<MaskedTile> tiles, const size_t i, const std::vector<uint8_t*> textures) {

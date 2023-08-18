@@ -113,7 +113,7 @@ namespace Graphick::Renderer::GPU {
     VertexAttr position_attr = Device::get_vertex_attr(masked_tile_program.program, "aPosition").value();
     VertexAttr color_attr = Device::get_vertex_attr(masked_tile_program.program, "aColor").value();
     VertexAttr index_attr = Device::get_vertex_attr(masked_tile_program.program, "aIndex").value();
-    VertexAttr mask_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aMaskIndex").value();
+    VertexAttr mask_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aSegmentsIndex").value();
 
     VertexAttrDescriptor position_desc = {
       2,

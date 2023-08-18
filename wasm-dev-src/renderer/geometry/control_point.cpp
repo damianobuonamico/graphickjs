@@ -3,13 +3,15 @@
 namespace Graphick::Renderer::Geometry {
 
   void ControlPoint::set_relative_handle(std::weak_ptr<History::Vec2Value> handle) {
-    m_relative_handles.push_back(handle);
+    History::Vec2Value* handle_ptr = handle.lock().get();
 
     m_relative_handles.erase(std::remove_if(
       m_relative_handles.begin(), m_relative_handles.end(),
-      [](auto& handle) { return handle.expired(); }),
+      [handle_ptr](auto& h) { return (h.expired() || h.lock().get() == handle_ptr); }),
       m_relative_handles.end()
     );
+
+    m_relative_handles.push_back(handle);
   }
 
   void ControlPoint::remove_relative_handle(std::weak_ptr<History::Vec2Value> handle) {
