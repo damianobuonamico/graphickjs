@@ -61,6 +61,7 @@ namespace Graphick::Renderer::GPU {
     VertexAttr position_attr = Device::get_vertex_attr(opaque_tile_program.program, "aPosition").value();
     VertexAttr color_attr = Device::get_vertex_attr(opaque_tile_program.program, "aColor").value();
     VertexAttr index_attr = Device::get_vertex_attr(opaque_tile_program.program, "aIndex").value();
+    VertexAttr z_index_attr = Device::get_vertex_attr(opaque_tile_program.program, "aZIndex").value();
 
     VertexAttrDescriptor position_desc = {
       2,
@@ -76,7 +77,7 @@ namespace Graphick::Renderer::GPU {
       4,
       VertexAttrClass::Float,
       VertexAttrType::F32,
-      20,
+      24,
       0,
       1,
       1
@@ -86,8 +87,18 @@ namespace Graphick::Renderer::GPU {
       1,
       VertexAttrClass::Int,
       VertexAttrType::I32,
-      20,
+      24,
       16,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor z_index_desc = {
+      1,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      24,
+      20,
       1,
       1
     };
@@ -98,6 +109,7 @@ namespace Graphick::Renderer::GPU {
     Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, color_attr, color_desc);
     Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
+    Device::configure_vertex_attr(*vertex_array, z_index_attr, z_index_desc);
 
     Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
   }
@@ -113,7 +125,8 @@ namespace Graphick::Renderer::GPU {
     VertexAttr position_attr = Device::get_vertex_attr(masked_tile_program.program, "aPosition").value();
     VertexAttr color_attr = Device::get_vertex_attr(masked_tile_program.program, "aColor").value();
     VertexAttr index_attr = Device::get_vertex_attr(masked_tile_program.program, "aIndex").value();
-    VertexAttr mask_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aSegmentsIndex").value();
+    VertexAttr mask_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aSegmentsCoords").value();
+    VertexAttr z_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aZIndex").value();
 
     VertexAttrDescriptor position_desc = {
       2,
@@ -129,7 +142,7 @@ namespace Graphick::Renderer::GPU {
       4,
       VertexAttrClass::Float,
       VertexAttrType::F32,
-      24,
+      32,
       0,
       1,
       1
@@ -139,18 +152,28 @@ namespace Graphick::Renderer::GPU {
       1,
       VertexAttrClass::Int,
       VertexAttrType::I32,
-      24,
+      32,
       16,
       1,
       1
     };
 
     VertexAttrDescriptor mask_index_desc = {
-      1,
+      2,
       VertexAttrClass::Int,
       VertexAttrType::I32,
-      24,
+      32,
       20,
+      1,
+      1
+    };
+
+    VertexAttrDescriptor z_index_desc = {
+      1,
+      VertexAttrClass::Float,
+      VertexAttrType::F32,
+      32,
+      28,
       1,
       1
     };
@@ -162,6 +185,7 @@ namespace Graphick::Renderer::GPU {
     Device::configure_vertex_attr(*vertex_array, color_attr, color_desc);
     Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
     Device::configure_vertex_attr(*vertex_array, mask_index_attr, mask_index_desc);
+    Device::configure_vertex_attr(*vertex_array, z_index_attr, z_index_desc);
 
     Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
   }

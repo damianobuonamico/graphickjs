@@ -37,6 +37,19 @@ namespace Graphick::Math {
     constexpr rect& operator/=(const vec2 v);
   };
 
+  /* -- Binary operators -- */
+
+  constexpr rect operator+(const rect r, float scalar);
+  constexpr rect operator+(const rect r, const vec2 v);
+  constexpr rect operator-(const rect r, float scalar);
+  constexpr rect operator-(const rect r, const vec2 v);
+  constexpr rect operator*(const rect r, float scalar);
+  constexpr rect operator*(const rect r, const vec2 v);
+  constexpr rect operator/(const rect r, float scalar);
+  constexpr rect operator/(const rect r, const vec2 v);
+  constexpr rect operator%(const rect r, float scalar);
+  constexpr rect operator%(const rect r, const vec2 v);
+
 }
 
 namespace Graphick {

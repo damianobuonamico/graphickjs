@@ -55,10 +55,10 @@ namespace Graphick::Editor {
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
         const auto& path = m_registry.get<PathComponent>(*it).path;
-        // const auto& transform = m_registry.get<TransformComponent>(entity).get_matrix().Inverse();
+        const vec2 translation = m_registry.get<TransformComponent>(*it).position.get();
         // auto pos = transform.Map(position.x, position.y);
         // if (path.is_inside({ (float)pos.X, (float)pos.Y }, lower_level, threshold)) return id;
-        if (path.is_inside(position, lower_level, threshold)) {
+        if (path.is_inside(position - translation, lower_level, threshold)) {
           return m_registry.get<IDComponent>(*it).id;
         }
       }
@@ -92,16 +92,19 @@ namespace Graphick::Editor {
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 
+    float z_index = 0.0f;
+    size_t z_far = m_order.size();
+
     {
       OPTICK_EVENT("Render Entities");
 
-      for (auto it = m_order.begin(); it != m_order.end(); it++) {
+      for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
         if (!m_registry.all_of<PathComponent, TransformComponent>(*it)) continue;
 
         if (m_registry.all_of<FillComponent>(*it)) {
-          Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, m_registry.get<FillComponent>(*it).color);
+          Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, (z_far - z_index++) / z_far, m_registry.get<TransformComponent>(*it).position.get(), m_registry.get<FillComponent>(*it).color);
         } else {
-          Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path);
+          Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, (z_far - z_index++) / z_far, m_registry.get<TransformComponent>(*it).position.get());
         }
       }
     }
@@ -119,7 +122,7 @@ namespace Graphick::Editor {
         const auto& path = m_registry.get<PathComponent>(entity).path;
         const auto& transform = m_registry.get<TransformComponent>(entity);
 
-        Renderer::Renderer::draw_outline(path);
+        Renderer::Renderer::draw_outline(path, transform.position.get());
       }
     }
 

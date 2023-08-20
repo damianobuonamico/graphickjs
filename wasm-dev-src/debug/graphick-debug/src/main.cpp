@@ -104,7 +104,7 @@ int main() {
   glfwSetKeyCallback(window, key_callback);
 
   glDisable(GL_MULTISAMPLE);
-  glDisable(GL_DEPTH);
+  glEnable(GL_DEPTH);
 
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
@@ -117,7 +117,7 @@ int main() {
   Graphick::io::svg::parse_svg(content);
 #else
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
-  // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_entity("Test Entity 1");
+  Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_entity("Test Entity 1");
 
   Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;
   test_entity.add_component<Graphick::Editor::TransformComponent>();
@@ -133,18 +133,23 @@ int main() {
   // path.line_to({ 380.0f, -40.0f });
   // path.close();
 
-  // path.move_to({ 300.0f, 100.0f });
-  // path.line_to({ 350.0f, 200.0f });
-  // path.line_to({ 250.0f, 200.0f });
+  path.move_to({ 300.0f, 100.0f });
+  path.line_to({ 350.0f, 200.0f });
+  path.line_to({ 250.0f, 200.0f });
+  path.close();
+
+  // path.move_to({ 0.0f, 0.0f });
+  // path.cubic_to({ -2.0f, 10.0f }, { -2.0f, 90.0f }, { 0.0f, 100.0f });
+  // path.cubic_to({ 0.0f, 100.0f }, { 210.0f, -300.0f }, { 200.0f, 100.0f });
+  // path.line_to({ 230.0f, 70.0f });
+  // path.cubic_to({ 225.0f, 73.0f }, { 173.0f, 0.0f }, { 170.0f, -60.0f });
+  // path.cubic_to({ 80.0f, 0.0f }, { 500.0f, 70.0f }, { 0.0f, 0.0f });
   // path.close();
 
-  path.move_to({ 0.0f, 0.0f });
-  path.cubic_to({ -2.0f, 10.0f }, { -2.0f, 90.0f }, { 0.0f, 100.0f });
-  path.cubic_to({ 0.0f, 100.0f }, { 210.0f, -300.0f }, { 200.0f, 100.0f });
-  path.line_to({ 230.0f, 70.0f });
-  path.cubic_to({ 225.0f, 73.0f }, { 173.0f, 0.0f }, { 170.0f, -60.0f });
-  path.cubic_to({ 80.0f, 0.0f }, { 500.0f, 70.0f }, { 0.0f, 0.0f });
-  path.close();
+  // path.move_to({ 0.0f, 0.0f });
+  // path.cubic_to({ 0.0f, 0.0f }, { -47.0f, -36.0f }, { -50.0f, -40.0f });
+  // path.cubic_to({ -50.0f, -40.0f }, { -70.0f, -85.0f }, { -110.0f, -85.0f });
+  // path.cubic_to({ -110.0f, -85.0f }, { -170.0f, -85.0f }, { -220.0f, -45.0f });
 
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.add_component<Graphick::Editor::PathComponent>().path;
   // test_entity1.add_component<Graphick::Editor::TransformComponent>();

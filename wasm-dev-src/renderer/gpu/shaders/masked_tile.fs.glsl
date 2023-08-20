@@ -7,7 +7,7 @@ R"(
   uniform mediump int uMasksTextureSize;
   uniform lowp int uTileSize;
 
-  in float vSegmentsIndex;
+  flat in ivec2 vSegmentsCoords;
   in vec4 vColor;
   in vec2 vCoords;
 
@@ -20,11 +20,27 @@ R"(
   //   oFragColor = vec4(vColor.rgb, vColor.a * alpha);
   // }
 
-  vec2 index_to_coords(int index, float one_over_size) {
-    return vec2(
-      float(index % uMasksTextureSize) * one_over_size,
-      float(index / uMasksTextureSize) * one_over_size
-    );
+  ivec2 step_coords(ivec2 coords, int delta) {
+    coords.x += delta;
+
+    while (coords.x >= uMasksTextureSize) {
+      coords.x -= uMasksTextureSize;
+      coords.y += 1;
+    }
+
+    return coords;
+  }
+
+  vec2 int_to_float_coords(ivec2 coords, float one_over_size) {
+    return vec2(float(coords.x) * one_over_size, float(coords.y) * one_over_size);
+    // return vec2(
+    //   float(coords % uMasksTextureSize) * one_over_size,
+    //   float(coords / uMasksTextureSize) * one_over_size
+    // );
+  }
+
+  float data_to_coverage(float data) {
+    return 2.0 * data * 255.0 / 254.0 - 1.0;
   }
 
   float x_intersect(float one_over_m, float q, float y) {
@@ -39,8 +55,8 @@ R"(
     float one_over_size = 1.0 / float(uMasksTextureSize);
     float tile_size_over_255 = float(uTileSize) / 255.0;
 
-    int index = int(vSegmentsIndex);
-    vec2 tex_coords = index_to_coords(index, one_over_size);
+    ivec2 coords = vSegmentsCoords;
+    vec2 tex_coords = int_to_float_coords(coords, one_over_size);
 
     vec4 metadata = texture(uMasksTexture, tex_coords) * 255.0;
     int n = int(uint(metadata.r) | (uint(metadata.g) << 8) | (uint(metadata.b) << 16) | (uint(metadata.a) << 24));
@@ -53,22 +69,22 @@ R"(
     float x0 = floor(vCoords.x);
     float x1 = x0 + 1.0;
 
-    vec4 coverage_block = texture(uMasksTexture, index_to_coords(index + 1 + int(y0) / 4, one_over_size));
-    index += uTileSize / 4;
+    vec4 coverage_block = texture(uMasksTexture, int_to_float_coords(step_coords(coords, 1 + int(y0) / 4), one_over_size));
+    coords = step_coords(coords, uTileSize / 4);
 
     float alpha = 0.0;
 
     int reminder = int(y0) % 4;
-    if (reminder == 0) alpha += 2.0 * coverage_block.r - 1.0;
-    else if (reminder == 1) alpha += 2.0 * coverage_block.g - 1.0;
-    else if (reminder == 2) alpha += 2.0 * coverage_block.b - 1.0;
-    else if (reminder == 3) alpha += 2.0 * coverage_block.a - 1.0;
+    if (reminder == 0) alpha += data_to_coverage(coverage_block.r);
+    else if (reminder == 1) alpha += data_to_coverage(coverage_block.g);
+    else if (reminder == 2) alpha += data_to_coverage(coverage_block.b);
+    else if (reminder == 3) alpha += data_to_coverage(coverage_block.a);
 
     // oFragColor = vec4(vColor.rgb, abs(alpha - 2.0 * round(0.5 * alpha)));
     // return;
 
     for (int i = 1; i <= n; i++) {
-      vec2 segment_cords = index_to_coords(index + i, one_over_size);
+      vec2 segment_cords = int_to_float_coords(step_coords(coords, i), one_over_size);
       vec4 segment = texture(uMasksTexture, segment_cords) * float(uTileSize);
 
       vec2 p0 = segment.rg;
@@ -158,9 +174,14 @@ R"(
     }
 
     // Non-zero winding rule
-    // oFragColor = vec4(vColor.rgb, min(abs(alpha), 1.0));
+    // float opacity = vColor.a * min(abs(alpha), 1.0);
     // Even-odd winding rule
-    oFragColor = vec4(vColor.rgb, abs(alpha - 2.0 * round(0.5 * alpha)));
+    float opacity = /*vColor.a * */abs(alpha - 2.0 * round(0.5 * alpha));
+    if (opacity < 0.01) opacity = 0.0;
+
+    oFragColor = vec4(vColor.rgb, opacity);
+
+    // oFragColor = vec4(float(n) / 10.0, 0.0, 0.0, a);
   }
 
 )"

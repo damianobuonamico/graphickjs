@@ -56,7 +56,7 @@ namespace Graphick::Renderer {
     attr.majorVersion = 2;
     attr.antialias = false;
     attr.stencil = false;
-    attr.depth = false;
+    attr.depth = true;
 
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
     emscripten_webgl_make_context_current(ctx);
@@ -126,7 +126,7 @@ namespace Graphick::Renderer {
 
     GPU::Device::begin_commands();
     GPU::Device::set_viewport(viewport.size, viewport.dpr);
-    GPU::Device::clear({ vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, std::nullopt, std::nullopt });
+    GPU::Device::clear({ vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, 1.0f, std::nullopt });
   }
 
   void Renderer::end_frame() {
@@ -143,20 +143,20 @@ namespace Graphick::Renderer {
     GPU::Device::end_commands();
   }
 
-  void Renderer::draw(const Geometry::Path& path, const vec4& color) {
+  void Renderer::draw(const Geometry::Path& path, const float z_index, const vec2 translation, const vec4& color) {
     if (path.empty()) return;
 
     OPTICK_EVENT();
 
     // get()->add_gpu_path_instance(path);
-    get()->m_tiler.process_path(path, color);
+    get()->m_tiler.process_path(path, translation, color, z_index);
   }
 
-  void Renderer::draw_outline(const Geometry::Path& path) {
+  void Renderer::draw_outline(const Geometry::Path& path, const vec2 translation) {
     if (path.empty()) return;
 
-    get()->add_line_instances(path);
-    get()->add_vertex_instances(path);
+    get()->add_line_instances(path, translation);
+    get()->add_vertex_instances(path, translation);
   }
 
   void Renderer::draw_opaque_tiles() {
@@ -204,7 +204,10 @@ namespace Graphick::Renderer {
           GPU::BlendFactor::OneMinusSrcAlpha,
           GPU::BlendOp::Add,
         },
-        std::nullopt,
+        GPU::DepthState{
+          GPU::DepthFunc::Lequal,
+          true
+        },
         std::nullopt,
         {
           std::nullopt,
@@ -221,8 +224,10 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::draw_masked_tiles() {
-    const std::vector<MaskedTile>& tiles = m_tiler.masked_tiles();
-    const std::vector<uint8_t>& segments = m_tiler.segments();
+    const std::vector<MaskedTile>& reverse_tiles = m_tiler.masked_tiles();
+    const uint8_t* segments = m_tiler.segments();
+
+    const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reverse_tiles.rbegin(), reverse_tiles.rend());
 
     uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<MaskedTile>(tiles.size(), "MaskedTiles");
 
@@ -232,7 +237,7 @@ namespace Graphick::Renderer {
     const GPU::Texture& segments_texture = GPU::Memory::Allocator::get_texture(m_masks_texture_id);
 
     GPU::Device::upload_to_buffer(tiles_buffer, 0, tiles, GPU::BufferTarget::Vertex);
-    GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, segments.data());
+    GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, segments);
 
     GPU::MaskedTileVertexArray tile_vertex_array(
       m_programs.masked_tile_program,
@@ -268,7 +273,10 @@ namespace Graphick::Renderer {
           GPU::BlendFactor::OneMinusSrcAlpha,
           GPU::BlendOp::Add,
         },
-        std::nullopt,
+        GPU::DepthState{
+          GPU::DepthFunc::Lequal,
+          false
+        },
         std::nullopt,
         {
         std::nullopt,
@@ -543,17 +551,17 @@ namespace Graphick::Renderer {
     m_gpu_paths_data.segments_texture.clear();
   }
 
-  void Renderer::add_line_instances(const Geometry::Path& path) {
+  void Renderer::add_line_instances(const Geometry::Path& path, const vec2 translation) {
     OPTICK_EVENT();
 
     for (const auto& segment : path.segments()) {
-      vec2 p0 = segment.p0();
-      vec2 p3 = segment.p3();
+      vec2 p0 = segment.p0() + translation;
+      vec2 p3 = segment.p3() + translation;
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
       // auto p3 = transform.Map(segment.p3().x, segment.p3().y);
 
       if (segment.is_cubic()) {
-        add_cubic_segment_instance(p0, segment.p1(), segment.p2(), p3);
+        add_cubic_segment_instance(p0, segment.p1() + translation, segment.p2() + translation, p3);
       } else {
         add_linear_segment_instance(p0, p3);
       }
@@ -630,18 +638,18 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Renderer::add_vertex_instances(const Geometry::Path& path) {
+  void Renderer::add_vertex_instances(const Geometry::Path& path, const vec2 translation) {
     for (const auto& segment : path.segments()) {
-      vec2 p0 = segment.p0();
+      vec2 p0 = segment.p0() + translation;
 
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
 
       add_square_instance(p0);
 
       if (segment.is_cubic()) {
-        vec2 p1 = segment.p1();
-        vec2 p2 = segment.p2();
-        vec2 p3 = segment.p3();
+        vec2 p1 = segment.p1() + translation;
+        vec2 p2 = segment.p2() + translation;
+        vec2 p3 = segment.p3() + translation;
 
         if (p1 != p0) {
           add_circle_instance(p1);
@@ -654,8 +662,8 @@ namespace Graphick::Renderer {
       }
     }
 
-    if (path.closed()) {
-      add_square_instance(path.segments().back().p3());
+    if (!path.closed()) {
+      add_square_instance(path.segments().back().p3() + translation);
     }
   }
 

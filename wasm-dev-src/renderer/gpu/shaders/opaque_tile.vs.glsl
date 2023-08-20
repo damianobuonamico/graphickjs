@@ -9,6 +9,7 @@ R"(
   in uvec2 aPosition;
   in vec4 aColor;
   in int aIndex;
+  in float aZIndex;
 
   out vec4 vColor;
 
@@ -28,7 +29,7 @@ R"(
     gl_Position = vec4(
       (position.x + x) * tile_size.x + offset.x - 1.0,
       1.0 - (position.y + y) * tile_size.y - offset.y,
-      0.0,
+      -aZIndex,
       1.0
     );
 

@@ -93,4 +93,46 @@ namespace Graphick::Math {
     return *this;
   }
 
+  /* -- Binary operators -- */
+
+  constexpr rect operator+(const rect r, float scalar) {
+    return rect(r.min + scalar, r.max + scalar);
+  }
+
+  constexpr rect operator+(const rect r, const vec2 v) {
+    return rect(r.min + v, r.max + v);
+  }
+
+  constexpr rect operator-(const rect r, float scalar) {
+    return rect(r.min - scalar, r.max - scalar);
+  }
+
+  constexpr rect operator-(const rect r, const vec2 v) {
+    return rect(r.min - v, r.max - v);
+  }
+
+  constexpr rect operator*(const rect r, float scalar) {
+    return rect(r.min * scalar, r.max * scalar);
+  }
+
+  constexpr rect operator*(const rect r, const vec2 v) {
+    return rect(r.min * v, r.max * v);
+  }
+
+  constexpr rect operator/(const rect r, float scalar) {
+    return rect(r.min / scalar, r.max / scalar);
+  }
+
+  constexpr rect operator/(const rect r, const vec2 v) {
+    return rect(r.min / v, r.max / v);
+  }
+
+  constexpr rect operator%(const rect r, float scalar) {
+    return rect(r.min % scalar, r.max % scalar);
+  }
+
+  constexpr rect operator%(const rect r, const vec2 v) {
+    return rect(r.min % v, r.max % v);
+  }
+
 }

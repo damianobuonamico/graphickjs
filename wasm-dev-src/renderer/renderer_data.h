@@ -91,6 +91,7 @@ namespace Graphick::Renderer {
     // TODO: Replace with a pointer to the color texture
     vec4 color;
     int32_t index;
+    float z_index;
   };
 
   struct uvec4 {
@@ -101,7 +102,8 @@ namespace Graphick::Renderer {
     // TODO: Replace with a pointer to the color texture
     vec4 color;
     int32_t index;
-    int32_t segments_index;
+    ivec2 segments_coords;
+    float z_index;
   };
 
 }

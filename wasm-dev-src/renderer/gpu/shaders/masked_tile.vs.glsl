@@ -9,10 +9,11 @@ R"(
 
   in uvec2 aPosition;
   in vec4 aColor;
-  in int aIndex;
-  in int aSegmentsIndex;
+  in highp int aIndex;
+  in highp ivec2 aSegmentsCoords;
+  in float aZIndex;
 
-  out float vSegmentsIndex;
+  flat out highp ivec2 vSegmentsCoords;
   out vec4 vColor;
   out vec2 vCoords;
 
@@ -32,13 +33,13 @@ R"(
     gl_Position = vec4(
       (position.x + x) * tile_size.x + offset.x - 1.0,
       1.0 - (position.y + y) * tile_size.y - offset.y,
-      0.0,
+      -aZIndex,
       1.0
     );
 
     // vColor = aColor + vec4(x * 0.1, y * 0.1, 0.0, 0.0);
     vColor = aColor;
-    vSegmentsIndex = float(aSegmentsIndex);
+    vSegmentsCoords = aSegmentsCoords;
     vCoords = vec2(x, y) * float(uTileSize);
 
     // vMaskCoords = vec2(

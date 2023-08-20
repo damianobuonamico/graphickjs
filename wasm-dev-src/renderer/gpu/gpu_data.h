@@ -95,6 +95,7 @@ namespace Graphick::Renderer::GPU {
 
   enum class DepthFunc {
     Less,
+    Lequal,
     Always
   };
 

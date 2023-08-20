@@ -40,11 +40,10 @@ namespace Graphick::Editor::Input {
       return;
     }
 
-    Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
-    //Blaze::Matrix transform = entity.get_component<TransformComponent>().get_matrix().Inverse();
-   // auto pos = transform.Map(position.x, position.y);
-    //vec2 transformed_pos = { (float)pos.X, (float)pos.Y };
-    vec2 transformed_pos = position;
+    const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
+    const vec2 translation = entity.get_component<TransformComponent>().position.get();
+
+    vec2 transformed_pos = position - translation;
 
     if (path.empty()) {
       m_type = HoverType::Entity;

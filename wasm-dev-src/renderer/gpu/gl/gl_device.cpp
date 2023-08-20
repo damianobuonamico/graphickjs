@@ -117,8 +117,9 @@ namespace Graphick::Renderer::GPU::GL {
   static constexpr GLenum gl_depth_func(DepthFunc func) {
     switch (func) {
     case DepthFunc::Always: return GL_ALWAYS;
-    default:
     case DepthFunc::Less: return GL_LESS;
+    default:
+    case DepthFunc::Lequal: return GL_LEQUAL;
     }
   }
 
