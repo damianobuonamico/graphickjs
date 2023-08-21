@@ -18,7 +18,7 @@ namespace Graphick::Renderer::GPU::GL {
     static std::string device_name();
 
     inline void set_default_framebuffer(const GLuint framebuffer) { m_default_framebuffer = framebuffer; }
-    void set_viewport(const ivec2 size, const float dpr);
+    void set_viewport(const vec2 size);
     void clear(const ClearOps& ops) const;
 
     inline std::unique_ptr<GLTexture> create_texture(const TextureFormat format, const ivec2 size) const { return create_texture(format, size, nullptr); }

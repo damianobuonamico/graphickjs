@@ -26,7 +26,7 @@ namespace Graphick::Renderer {
 
   Renderer* Renderer::s_instance = nullptr;
 
-  static mat4 generate_projection_matrix(const ivec2 size, float zoom) {
+  static mat4 generate_projection_matrix(const vec2 size, float zoom) {
     float factor = 0.5f / zoom;
 
     float half_width = -size.x * factor;
@@ -125,7 +125,7 @@ namespace Graphick::Renderer {
     get()->begin_instanced_renderers();
 
     GPU::Device::begin_commands();
-    GPU::Device::set_viewport(viewport.size, viewport.dpr);
+    GPU::Device::set_viewport(viewport.size);
     GPU::Device::clear({ vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, 1.0f, std::nullopt });
   }
 
@@ -194,7 +194,7 @@ namespace Graphick::Renderer {
       },
       {
         { 0.0f, 0.0f },
-        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+        m_viewport.size
       },
       {
         GPU::BlendState{
@@ -263,7 +263,7 @@ namespace Graphick::Renderer {
       },
       {
         { 0.0f, 0.0f },
-        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+        m_viewport.size,
       },
       {
         GPU::BlendState{
@@ -347,7 +347,7 @@ namespace Graphick::Renderer {
       },
       {
         { 0.0f, 0.0f },
-        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+        m_viewport.size
       },
       {
         GPU::BlendState{
@@ -492,8 +492,8 @@ namespace Graphick::Renderer {
     );
 
     mat4 translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x /*/ (float)m_viewport.zoom*/ + 2.0f * m_viewport.position.x * (float)m_viewport.zoom),
-      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y /*/ (float)m_viewport.zoom*/ + 2.0f * m_viewport.position.y * (float)m_viewport.zoom),
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x + 2.0f * m_viewport.position.x * m_viewport.zoom),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y + 2.0f * m_viewport.position.y * m_viewport.zoom),
       0.0f, 0.0f, 1.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f
     };
@@ -514,7 +514,7 @@ namespace Graphick::Renderer {
       },
       {
         { 0.0f, 0.0f },
-        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+        m_viewport.size,
       },
       {
         GPU::BlendState{
@@ -572,7 +572,7 @@ namespace Graphick::Renderer {
     // TODO: Check if flush is needed
 
     rect bounding_rect = path.bounding_rect();
-    rect visible = { -m_viewport.position, vec2{ (float)m_viewport.size.x / m_viewport.zoom, (float)m_viewport.size.y / m_viewport.zoom } - m_viewport.position };
+    rect visible = { -m_viewport.position, m_viewport.size / m_viewport.zoom - m_viewport.position };
 
     if (!Math::does_rect_intersect_rect(bounding_rect, visible)) return;
 
@@ -699,8 +699,8 @@ namespace Graphick::Renderer {
     const GPU::Texture& segments_texture = m_gpu_paths_data.segments_texture.texture();
 
     mat4 translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x /*/ (float)m_viewport.zoom*/ + 2.0f * m_viewport.position.x * (float)m_viewport.zoom),
-      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y /*/ (float)m_viewport.zoom*/ + 2.0f * m_viewport.position.y * (float)m_viewport.zoom),
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x + 2.0f * m_viewport.position.x * (float)m_viewport.zoom),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y + 2.0f * m_viewport.position.y * (float)m_viewport.zoom),
       0.0f, 0.0f, 1.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f
     };
@@ -720,7 +720,7 @@ namespace Graphick::Renderer {
       },
       {
         { 0.0f, 0.0f },
-        { (float)m_viewport.size.x * m_viewport.dpr, (float)m_viewport.size.y * m_viewport.dpr }
+        m_viewport.size
       },
       {
         GPU::BlendState{
@@ -765,8 +765,8 @@ namespace Graphick::Renderer {
     );
 
     mat4 translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x / (float)m_viewport.zoom + 2 * m_viewport.position.x),
-      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y / (float)m_viewport.zoom + 2 * m_viewport.position.y),
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x / m_viewport.zoom + 2 * m_viewport.position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y / m_viewport.zoom + 2 * m_viewport.position.y),
       0.0f, 0.0f, 1.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f
     };
@@ -779,7 +779,6 @@ namespace Graphick::Renderer {
       {},
       {},
       {
-        // TOOD: merge dpr and zoom
         {m_programs.line_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
         {m_programs.line_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
         {m_programs.line_program.line_width_uniform, 3.0f / (float)m_viewport.zoom },
@@ -787,7 +786,7 @@ namespace Graphick::Renderer {
       },
       {
         { 0.0f, 0.0f },
-        { (float)m_viewport.size.x * (float)m_viewport.dpr, (float)m_viewport.size.y * (float)m_viewport.dpr }
+        m_viewport.size
       },
       {
         GPU::BlendState{
@@ -844,14 +843,13 @@ namespace Graphick::Renderer {
       {},
       {},
       {
-        // TOOD: merge dpr and zoom
         {m_programs.square_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
         {m_programs.square_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
         {m_programs.square_program.size_uniform, 6.0f / (float)m_viewport.zoom },
       },
       {
         { 0.0f, 0.0f },
-        { (float)m_viewport.size.x * (float)m_viewport.dpr, (float)m_viewport.size.y * (float)m_viewport.dpr }
+        m_viewport.size
       },
       {
         GPU::BlendState{
@@ -894,8 +892,8 @@ namespace Graphick::Renderer {
     );
 
     mat4 translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x / (float)m_viewport.zoom + 2 * m_viewport.position.x),
-      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y / (float)m_viewport.zoom + 2 * m_viewport.position.y),
+      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x / m_viewport.zoom + 2 * m_viewport.position.x),
+      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y / m_viewport.zoom + 2 * m_viewport.position.y),
       0.0f, 0.0f, 1.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f
     };
@@ -908,7 +906,6 @@ namespace Graphick::Renderer {
       {},
       {},
       {
-        // TOOD: merge dpr and zoom
         { m_programs.circle_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
         { m_programs.circle_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
         { m_programs.circle_program.radius_uniform, 3.0f / (float)m_viewport.zoom },
@@ -916,7 +913,7 @@ namespace Graphick::Renderer {
       },
       {
         { 0.0f, 0.0f },
-        { (float)m_viewport.size.x * (float)m_viewport.dpr, (float)m_viewport.size.y * (float)m_viewport.dpr }
+        m_viewport.size
       },
       {
         GPU::BlendState{

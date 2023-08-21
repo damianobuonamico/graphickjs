@@ -47,7 +47,7 @@ namespace Graphick::Renderer::GPU {
      * @dpr: the device pixel ratio.
      * Sets the viewport size and device pixel ratio.
      */
-    inline static void set_viewport(const ivec2 size, const float dpr) { s_device->set_viewport(size, dpr); }
+    inline static void set_viewport(const vec2 size) { s_device->set_viewport(size); }
     /**
      * @ops: clear ops.
      * Clears the current framebuffer with the given @ops.

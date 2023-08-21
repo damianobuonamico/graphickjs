@@ -85,10 +85,9 @@ namespace Graphick::Editor {
     OPTICK_EVENT();
 
     Renderer::Renderer::begin_frame({
-      viewport.size(),
-      viewport.dpr(),
+      IVEC2_TO_VEC2(viewport.size()) * viewport.dpr(),
       viewport.position(),
-      viewport.zoom(),
+      viewport.zoom() * viewport.dpr(),
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 

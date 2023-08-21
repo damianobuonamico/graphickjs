@@ -169,8 +169,8 @@ namespace Graphick::Renderer::GPU::GL {
     return (const char*)glGetString(GL_RENDERER);
   }
 
-  void GLDevice::set_viewport(const ivec2 size, const float dpr) {
-    glCall(glViewport(0, 0, (GLsizei)(size.x * dpr), (GLsizei)(size.y * dpr)));
+  void GLDevice::set_viewport(const vec2 size) {
+    glCall(glViewport(0, 0, (GLsizei)std::round(size.x), (GLsizei)std::round(size.y)));
   }
 
   void GLDevice::clear(const ClearOps& ops) const {
