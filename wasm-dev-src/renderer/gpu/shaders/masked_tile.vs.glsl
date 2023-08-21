@@ -6,6 +6,7 @@ R"(
   uniform vec2 uFramebufferSize;
   uniform lowp int uTileSize;
   uniform vec2 uOffset;
+  uniform mediump int uMasksTextureSize;
 
   in uvec2 aPosition;
   in vec4 aColor;
@@ -13,7 +14,7 @@ R"(
   in highp ivec2 aSegmentsCoords;
   in float aZIndex;
 
-  flat out highp ivec2 vSegmentsCoords;
+  flat out vec2 vSegmentsCoords;
   out vec4 vColor;
   out vec2 vCoords;
 
@@ -38,7 +39,8 @@ R"(
 
     // vColor = aColor + vec4(x * 0.1, y * 0.1, 0.0, 0.0);
     vColor = aColor;
-    vSegmentsCoords = aSegmentsCoords;
+    // TODO: Make uMasksTextureSize a float
+    vSegmentsCoords = vec2(float(aSegmentsCoords.x) + 0.5, float(aSegmentsCoords.y) + 0.5) / float(uMasksTextureSize);
     vCoords = vec2(x, y) * float(uTileSize);
 
     // vMaskCoords = vec2(

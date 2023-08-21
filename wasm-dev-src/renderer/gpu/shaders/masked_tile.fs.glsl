@@ -7,36 +7,21 @@ R"(
   uniform mediump int uMasksTextureSize;
   uniform lowp int uTileSize;
 
-  flat in ivec2 vSegmentsCoords;
+  flat in vec2 vSegmentsCoords;
   in vec4 vColor;
   in vec2 vCoords;
 
   out vec4 oFragColor;
 
-  // void main() {
-  //   float alpha = texture(uMasksTexture, vMaskCoords).r;
-  //   // oFragColor = mix(vec4(0.9, 0.3, 0.8, 0.5), vColor, alpha);
-  //   // oFragColor = vec4(vColor.rgb, vColor.a * alpha * 0.5);
-  //   oFragColor = vec4(vColor.rgb, vColor.a * alpha);
-  // }
+  vec2 step_coords(vec2 coords, int delta, float one_over_size) {
+    coords.x += float(delta) * one_over_size;
 
-  ivec2 step_coords(ivec2 coords, int delta) {
-    coords.x += delta;
-
-    while (coords.x >= uMasksTextureSize) {
-      coords.x -= uMasksTextureSize;
-      coords.y += 1;
+    while (coords.x >= 1.0) {
+      coords.x -= 1.0;
+      coords.y += one_over_size;
     }
 
     return coords;
-  }
-
-  vec2 int_to_float_coords(ivec2 coords, float one_over_size) {
-    return vec2(float(coords.x) * one_over_size, float(coords.y) * one_over_size);
-    // return vec2(
-    //   float(coords % uMasksTextureSize) * one_over_size,
-    //   float(coords / uMasksTextureSize) * one_over_size
-    // );
   }
 
   float data_to_coverage(float data) {
@@ -55,10 +40,9 @@ R"(
     float one_over_size = 1.0 / float(uMasksTextureSize);
     float tile_size_over_255 = float(uTileSize) / 255.0;
 
-    ivec2 coords = vSegmentsCoords;
-    vec2 tex_coords = int_to_float_coords(coords, one_over_size);
+    vec2 coords = vSegmentsCoords;
 
-    vec4 metadata = texture(uMasksTexture, tex_coords) * 255.0;
+    vec4 metadata = texture(uMasksTexture, coords) * 255.0;
     int n = int(uint(metadata.r) | (uint(metadata.g) << 8) | (uint(metadata.b) << 16) | (uint(metadata.a) << 24));
 
     // oFragColor = vec4(metadata.rgb, vColor.a);
@@ -69,8 +53,8 @@ R"(
     float x0 = floor(vCoords.x);
     float x1 = x0 + 1.0;
 
-    vec4 coverage_block = texture(uMasksTexture, int_to_float_coords(step_coords(coords, 1 + int(y0) / 4), one_over_size));
-    coords = step_coords(coords, uTileSize / 4);
+    vec4 coverage_block = texture(uMasksTexture, step_coords(coords, 1 + int(y0) / 4, one_over_size));
+    coords = step_coords(coords, uTileSize / 4, one_over_size);
 
     float alpha = 0.0;
 
@@ -84,7 +68,7 @@ R"(
     // return;
 
     for (int i = 1; i <= n; i++) {
-      vec2 segment_cords = int_to_float_coords(step_coords(coords, i), one_over_size);
+      vec2 segment_cords = step_coords(coords, i, one_over_size);
       vec4 segment = texture(uMasksTexture, segment_cords) * float(uTileSize);
 
       vec2 p0 = segment.rg;

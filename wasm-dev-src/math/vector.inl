@@ -603,6 +603,32 @@ namespace Graphick::Math {
     };
   }
 
+  /* -- round -- */
+
+  inline vec2 round(const vec2 v) {
+    return vec2{
+      std::round(v.x),
+      std::round(v.y),
+    };
+  }
+
+  inline vec3 round(const vec3& v) {
+    return vec3{
+      std::round(v.x),
+      std::round(v.y),
+      std::round(v.z),
+    };
+  }
+
+  inline vec4 round(const vec4& v) {
+    return vec4{
+      std::round(v.x),
+      std::round(v.y),
+      std::round(v.z),
+      std::round(v.w),
+    };
+  }
+
   /* -- dot -- */
 
   inline float dot(const vec2 v1, const vec2 v2) {

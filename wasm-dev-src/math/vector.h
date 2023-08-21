@@ -107,6 +107,10 @@ namespace Graphick::Math {
   vec3 ceil(const vec3& v);
   vec4 ceil(const vec4& v);
 
+  vec2 round(const vec2 v);
+  vec3 round(const vec3& v);
+  vec4 round(const vec4& v);
+
   float dot(const vec2 v1, const vec2 v2);
   float dot(const vec3& v1, const vec3& v2);
   float dot(const vec4& v1, const vec4& v2);
