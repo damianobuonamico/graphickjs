@@ -2,10 +2,11 @@
 
 #define ZOOM_MIN 0.02f
 #define ZOOM_MAX 640.0f
-#define ZOOM_STEP 1.8f
+#define ZOOM_STEP 0.18f
+#define PAN_STEP 36.0f
 
 #define INPUT_MOVEMENT_THRESHOLD 4.0f
-constexpr int INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[3] = { 1, 2, 3 };
+constexpr float INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[3] = { 1.0f, 2.0f, 2.0f };
 
 #define GEOMETRY_SQR_EPSILON 0.1f
 #define GEOMETRY_CURVE_ERROR 0.2f

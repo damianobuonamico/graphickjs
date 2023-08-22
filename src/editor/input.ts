@@ -5,7 +5,7 @@ import {
 } from "@utils/constants";
 import { BUTTONS, KEYS } from "@utils/keys";
 import { fillObject, isInputLike, isShortcut } from "@utils/utils";
-import { map, vec2 } from "@math";
+import { map, vec2, round } from "@math";
 import { Renderer } from "./renderer";
 import SceneManager from "./scene";
 import actions from "./actions";
@@ -38,6 +38,8 @@ abstract class InputManager {
   public static tool: ToolState;
 
   private static m_type: "touch" | "pen" | "mouse" = "mouse";
+  private static m_touches: Map<number, TouchID> = new Map();
+  private static m_touchCenter: vec2 = vec2.create();
 
   private static m_listeners: Listeners;
   private static m_mountedListeners: MountedListener[] = [];
@@ -145,7 +147,7 @@ abstract class InputManager {
     }
 
     this.addListener("resize", this.onResize.bind(this));
-    this.addListener("contextmenu", (e: UIEvent) => e.preventDefault());
+    // this.addListener("contextmenu", (e: UIEvent) => e.preventDefault());
     this.addListener("wheel", this.onWheel.bind(this), window, {
       passive: false,
     });
@@ -186,6 +188,91 @@ abstract class InputManager {
     if (this.down) return;
   }
 
+  private static touchById(touches: TouchList, id: number) {
+    for (let i = 0; i < touches.length; i++) {
+      if (touches.item(i)?.identifier === id) {
+        return touches.item(i);
+      }
+    }
+
+    return null;
+  }
+
+  private static updateTouches(e: TouchEvent) {
+    const prevNum = this.m_touches.size;
+
+    // Add or update active touches
+    for (let i = 0; i < e.touches.length; i++) {
+      if (e.touches[i].target !== Renderer.canvas) continue;
+
+      const id = e.touches[i].identifier;
+      const center = vec2.fromValues(
+        e.touches[i].clientX,
+        e.touches[i].clientY
+      );
+
+      if (this.m_touches.has(id)) {
+        // Update existing touch
+        const touch = this.m_touches.get(id)!;
+
+        vec2.copy(touch.prev, touch.to);
+        vec2.copy(touch.to, center);
+      } else {
+        // Add new touch
+        this.m_touches.set(id, {
+          position: vec2.clone(center),
+          prev: vec2.clone(center),
+          to: vec2.clone(center),
+          id,
+        });
+      }
+    }
+
+    const num = this.m_touches.size;
+
+    // Remove dropped touches
+    if (num > 0) {
+      for (let [id, _] of this.m_touches) {
+        if (!this.touchById(e.touches, id)) {
+          this.m_touches.delete(id);
+        }
+      }
+    }
+
+    // Return true if active touch count did not change at any stage.
+    const change = prevNum != num || num != this.m_touches.size;
+
+    if (change) {
+      let accum: vec2 = vec2.create();
+
+      for (let [_, touch] of this.m_touches) {
+        vec2.add(accum, touch.position, accum);
+      }
+
+      this.m_touchCenter = vec2.divS(accum, this.m_touches.size);
+    }
+
+    return change;
+  }
+
+  private static centerDragDistance() {
+    if (this.m_touches.size < 2) return vec2.create();
+
+    let a = vec2.create();
+    let b = vec2.create();
+
+    for (let [_, touch] of this.m_touches) {
+      vec2.add(a, touch.prev, a);
+      vec2.add(b, touch.to, b);
+    }
+
+    vec2.divS(a, this.m_touches.size, a);
+    vec2.divS(b, this.m_touches.size, b);
+
+    return vec2.sub(a, b);
+  }
+
+  //* Clipboard Events
   private static onCut(e: ClipboardEvent) {
     API._on_clipboard_event(2);
     this.m_listeners.cut(e);
@@ -582,11 +669,95 @@ abstract class InputManager {
   }
 
   //* Touch Events
-  private static onTouchStart(e: TouchEvent) {}
+  private static onTouchStart(e: TouchEvent) {
+    this.updateTouches(e);
 
-  private static onTouchMove(e: TouchEvent) {}
+    if (e.touches.length == 1) {
+      API._on_pointer_event(
+        e.target === Renderer.canvas ? 1 : 0,
+        0,
+        this.getPointerTypeCode("touch"),
+        0,
+        e.touches[0].clientX,
+        e.touches[0].clientY,
+        e.touches[0].force,
+        e.timeStamp,
+        e.altKey,
+        e.ctrlKey,
+        e.shiftKey
+      );
+    }
 
-  private static onTouchEnd(e: TouchEvent) {}
+    if (e.target == Renderer.canvas) e.preventDefault();
+  }
+
+  private static onTouchMove(e: TouchEvent) {
+    const change = this.updateTouches(e);
+
+    if (e.touches.length == 1) {
+      API._on_pointer_event(
+        e.target === Renderer.canvas ? 1 : 0,
+        1,
+        this.getPointerTypeCode("touch"),
+        0,
+        e.touches[0].clientX,
+        e.touches[0].clientY,
+        e.touches[0].force,
+        e.timeStamp,
+        e.altKey,
+        e.ctrlKey,
+        e.shiftKey
+      );
+    } else if (this.m_touches.size == 2 && !change) {
+      const it: any = this.m_touches.values();
+      const touch1 = it.next().value;
+      const touch2 = it.next().value;
+
+      const prevDistance = vec2.dist(touch1.prev, touch2.prev);
+      const distance = vec2.dist(touch1.to, touch2.to);
+
+      const distanceDelta = Math.abs(prevDistance - distance);
+
+      if (distanceDelta > Number.EPSILON && prevDistance > Number.EPSILON) {
+        const scaleDelta = distance / prevDistance;
+
+        API._on_touch_pinch(
+          e.target === Renderer.canvas ? 1 : 0,
+          scaleDelta,
+          this.m_touchCenter[0],
+          this.m_touchCenter[1]
+        );
+      }
+
+      const min = vec2.neg(this.centerDragDistance());
+
+      API._on_touch_drag(e.target === Renderer.canvas ? 1 : 0, min[0], min[1]);
+
+      vec2.add(this.m_touchCenter, min, this.m_touchCenter);
+    }
+
+    if (e.target == Renderer.canvas) e.preventDefault();
+  }
+
+  private static onTouchEnd(e: TouchEvent) {
+    API._on_pointer_event(
+      e.target === Renderer.canvas ? 1 : 0,
+      2,
+      this.getPointerTypeCode("touch"),
+      0,
+      this.m_touchCenter[0],
+      this.m_touchCenter[1],
+      0,
+      e.timeStamp,
+      e.altKey,
+      e.ctrlKey,
+      e.shiftKey
+    );
+
+    this.updateTouches(e);
+
+    if (e.target == Renderer.canvas) e.preventDefault();
+  }
 
   //* Window Events
   public static onResize(e: UIEvent) {
@@ -597,10 +768,29 @@ abstract class InputManager {
   }
 
   private static onWheel(e: WheelEvent) {
+    let deltaX = e.deltaX;
+    let deltaY = e.deltaY;
+
+    if (navigator.userAgent.match(/chrome|chromium|crios/i)) {
+      deltaX *= 0.006;
+      deltaY *= 0.006;
+    } else {
+      deltaX *= 0.009;
+      deltaY *= 0.009;
+    }
+
+    if (Math.abs(round(deltaY, 3) - deltaY) > Number.EPSILON) deltaY *= 5;
+
+    if (deltaX === 0 && e.shiftKey) {
+      deltaX = deltaY;
+      deltaY = 0;
+    }
+
     API._on_wheel_event(
       e.target === Renderer.canvas ? 1 : 0,
-      e.deltaX,
-      e.deltaY
+      deltaX,
+      deltaY,
+      e.ctrlKey
     );
 
     e.preventDefault();

@@ -44,12 +44,20 @@ extern "C" {
     return Graphick::Editor::Input::InputManager::on_resize_event(width, height, dpr, offset_x, offset_y);
   }
 
-  bool EMSCRIPTEN_KEEPALIVE on_wheel_event(int target, float delta_x, float delta_y) {
-    return Graphick::Editor::Input::InputManager::on_wheel_event((Graphick::Editor::Input::InputManager::PointerTarget)target, delta_x, delta_y);
+  bool EMSCRIPTEN_KEEPALIVE on_wheel_event(int target, float delta_x, float delta_y, bool ctrl) {
+    return Graphick::Editor::Input::InputManager::on_wheel_event((Graphick::Editor::Input::InputManager::PointerTarget)target, delta_x, delta_y, ctrl);
   }
 
   bool EMSCRIPTEN_KEEPALIVE on_clipboard_event(int event) {
     return Graphick::Editor::Input::InputManager::on_clipboard_event((Graphick::Editor::Input::InputManager::ClipboardEvent)event);
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_touch_pinch(int target, float delta, float center_x, float center_y) {
+    return Graphick::Editor::Input::InputManager::on_touch_pinch((Graphick::Editor::Input::InputManager::PointerTarget)target, delta, center_x, center_y);
+  }
+
+  bool EMSCRIPTEN_KEEPALIVE on_touch_drag(int target, float delta_x, float delta_y) {
+    return Graphick::Editor::Input::InputManager::on_touch_drag((Graphick::Editor::Input::InputManager::PointerTarget)target, delta_x, delta_y);
   }
 
   void EMSCRIPTEN_KEEPALIVE set_tool(int tool) {

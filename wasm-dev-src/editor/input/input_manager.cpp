@@ -87,8 +87,8 @@ namespace Graphick::Editor::Input {
     return get()->on_resize(width, height, dpr, offset_x, offset_y);
   }
 
-  bool InputManager::on_wheel_event(PointerTarget target, float delta_x, float delta_y) {
-    return get()->on_wheel(target, delta_x, delta_y);
+  bool InputManager::on_wheel_event(PointerTarget target, float delta_x, float delta_y, bool ctrl) {
+    return get()->on_wheel(target, delta_x, delta_y, ctrl);
   }
 
   bool InputManager::on_clipboard_event(ClipboardEvent event) {
@@ -104,6 +104,14 @@ namespace Graphick::Editor::Input {
     return false;
   }
 
+  bool InputManager::on_touch_pinch(PointerTarget target, float delta, float center_x, float center_y) {
+    return get()->on_pinch(target, delta, center_x, center_y);
+  }
+
+  bool InputManager::on_touch_drag(PointerTarget target, float delta_x, float delta_y) {
+    return get()->on_drag(target, delta_x, delta_y);
+  }
+
   void InputManager::set_tool(Tool::ToolType tool) {
     Editor::scene().tool_state.set_current(tool);
   }
@@ -117,6 +125,18 @@ namespace Graphick::Editor::Input {
 
     keys.shift_state_changed = keys.shift != shift;
     keys.shift = shift;
+  }
+
+  void InputManager::recalculate_hover() {
+    if (!Editor::scene().tool_state.active().is_in_category(Tool::CategoryImmediate)) {
+      float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 5.0f / Editor::scene().viewport.zoom();
+
+      hover.set_hovered(Editor::scene().entity_at(
+        pointer.scene.position,
+        Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect),
+        threshold
+      ), pointer.scene.position, Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect), threshold);
+    }
   }
 
   bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, float x, float y) {
@@ -140,6 +160,8 @@ namespace Graphick::Editor::Input {
     pointer.button = button;
 
     m_abort = false;
+
+    recalculate_hover();
 
     if (pointer.button == PointerButton::Middle) {
       Editor::scene().tool_state.set_active(keys.ctrl_state_changed ? Tool::ToolType::Zoom : Tool::ToolType::Pan);
@@ -167,15 +189,7 @@ namespace Graphick::Editor::Input {
     pointer.scene.position = Editor::scene().viewport.client_to_scene(current_position);
     pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
-    if (!Editor::scene().tool_state.active().is_in_category(Tool::CategoryImmediate)) {
-      float threshold = 5.0f / Editor::scene().viewport.zoom();
-
-      hover.set_hovered(Editor::scene().entity_at(
-        pointer.scene.position,
-        Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect),
-        threshold
-      ), pointer.scene.position, Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect), threshold);
-    }
+    recalculate_hover();
 
     if (!m_moving && pointer.down) {
       if (
@@ -245,6 +259,7 @@ namespace Graphick::Editor::Input {
 
     return false;
   }
+
   bool InputManager::on_key_up(KeyboardKey key) {
     return false;
   }
@@ -258,23 +273,53 @@ namespace Graphick::Editor::Input {
 
     return false;
   }
-  bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y) {
-    if (!keys.ctrl) return false;
 
-    // TODO: Move in scene specific input code
-    Editor::scene().viewport.zoom_to(Math::map(-delta_y, -100.0f, 100.0f, 1.0f - ZOOM_STEP / 10.0f, 1.0f + ZOOM_STEP / 10.0f) * Editor::scene().viewport.zoom(), pointer.client.position);
+  bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y, bool ctrl) {
+    keys.ctrl_state_changed = keys.ctrl != ctrl;
+    keys.ctrl = ctrl;
+
+    if (keys.ctrl) {
+      // Zoom
+      // TODO: Move in scene specific input code
+      Editor::scene().viewport.zoom_to(Math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) * Editor::scene().viewport.zoom(), pointer.client.position);
+    } else {
+      // Scroll
+      Editor::scene().viewport.move(PAN_STEP * vec2{ -delta_x, -delta_y } / Editor::scene().viewport.zoom());
+    }
+
     Editor::render();
 
     return true;
   }
+
   bool InputManager::on_clipboard_copy() {
     return false;
   }
+
   bool InputManager::on_clipboard_paste() {
     return false;
   }
+
   bool InputManager::on_clipboard_cut() {
     return false;
+  }
+
+  bool InputManager::on_pinch(PointerTarget target, float delta, float center_x, float center_y) {
+    if (target == PointerTarget::Other) return false;
+
+    Editor::scene().viewport.zoom_to(Editor::scene().viewport.zoom() * delta, vec2{ center_x, center_y });
+    Editor::render();
+
+    return true;
+  }
+
+  bool InputManager::on_drag(PointerTarget target, float delta_x, float delta_y) {
+    if (target == PointerTarget::Other) return false;
+
+    Editor::scene().viewport.move(vec2{ delta_x, delta_y } / Editor::scene().viewport.zoom());
+    Editor::render();
+
+    return true;
   }
 
 }

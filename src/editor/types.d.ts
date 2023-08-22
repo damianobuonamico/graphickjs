@@ -1,4 +1,4 @@
-type Workspace = 'designer' | 'publisher' | 'whiteboard';
+type Workspace = "designer" | "publisher" | "whiteboard";
 
 interface State {
   name: string;
@@ -65,6 +65,13 @@ interface MountedListener {
   callback(e: Event): void;
   target: HTMLElement | Window | Document;
   options?: boolean | AddEventListenerOptions;
+}
+
+interface TouchID {
+  position: vec2;
+  prev: vec2;
+  to: vec2;
+  id: number;
 }
 
 interface ActionBinding {

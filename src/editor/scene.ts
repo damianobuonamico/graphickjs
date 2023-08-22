@@ -147,12 +147,12 @@ abstract class SceneManager {
     AnimationManager.render();
   }
 
-  static clientToScene(position: vec2) {
+  static clientToScene(position: vec2): vec2 {
     return [0, 0];
     // return this.viewport.clientToLocal(position, Renderer.canvasOffset);
   }
 
-  static sceneToClient(position: vec2) {
+  static sceneToClient(position: vec2): vec2 {
     return [0, 0];
     // return this.viewport.localToClient(position, Renderer.canvasOffset);
   }

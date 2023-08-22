@@ -11,6 +11,8 @@ const API: Api = {
   _on_resize_event: fallback,
   _on_wheel_event: fallback,
   _on_clipboard_event: fallback,
+  _on_touch_pinch: fallback,
+  _on_touch_drag: fallback,
   _set_tool: fallback,
   _save: fallback,
   _load: fallback,
@@ -29,6 +31,8 @@ wasm().then((module: any) => {
   API._on_resize_event = module._on_resize_event;
   API._on_wheel_event = module._on_wheel_event;
   API._on_clipboard_event = module._on_clipboard_event;
+  API._on_touch_pinch = module._on_touch_pinch;
+  API._on_touch_drag = module._on_touch_drag;
 
   API._set_tool = module._set_tool;
 

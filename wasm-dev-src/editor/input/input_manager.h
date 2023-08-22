@@ -111,8 +111,10 @@ namespace Graphick::Editor::Input {
       bool repeat, bool alt, bool ctrl, bool shift
     );
     static bool on_resize_event(int width, int height, float dpr, int offset_x, int offset_y);
-    static bool on_wheel_event(PointerTarget target, float delta_x, float delta_y);
+    static bool on_wheel_event(PointerTarget target, float delta_x, float delta_y, bool ctrl);
     static bool on_clipboard_event(ClipboardEvent event);
+    static bool on_touch_pinch(PointerTarget target, float delta, float center_x, float center_y);
+    static bool on_touch_drag(PointerTarget target, float delta_x, float delta_y);
 
     static const Tool& tool();
     static void set_tool(Tool::ToolType type);
@@ -121,6 +123,7 @@ namespace Graphick::Editor::Input {
     ~InputManager() = default;
 
     void set_keys_state(bool alt, bool ctrl, bool shift);
+    void recalculate_hover();
 
     bool on_pointer_down(PointerTarget target, PointerButton button, float x, float y);
     bool on_pointer_move(PointerTarget target, float x, float y);
@@ -132,11 +135,14 @@ namespace Graphick::Editor::Input {
     bool on_key_up(KeyboardKey key);
 
     bool on_resize(int x, int y, float dpr, int offset_x, int offset_y);
-    bool on_wheel(PointerTarget target, float delta_x, float delta_y);
+    bool on_wheel(PointerTarget target, float delta_x, float delta_y, bool ctrl);
 
     bool on_clipboard_copy();
     bool on_clipboard_paste();
     bool on_clipboard_cut();
+
+    bool on_pinch(PointerTarget target, float delta, float center_x, float center_y);
+    bool on_drag(PointerTarget target, float delta_x, float delta_y);
   private:
     bool m_moving = false;
     bool m_abort = false;
