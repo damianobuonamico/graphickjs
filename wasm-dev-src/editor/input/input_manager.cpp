@@ -112,6 +112,10 @@ namespace Graphick::Editor::Input {
     return get()->on_drag(target, delta_x, delta_y);
   }
 
+  const Tool& InputManager::tool() {
+    return Editor::scene().tool_state.active();
+  }
+
   void InputManager::set_tool(Tool::ToolType tool) {
     Editor::scene().tool_state.set_current(tool);
   }

@@ -4,6 +4,8 @@
 #include "vec3.h"
 #include "vec4.h"
 
+#include <vector>
+
 namespace Graphick::Math {
 
   vec2 min(const vec2 v1, const vec2 v2);
@@ -46,6 +48,7 @@ namespace Graphick::Math {
   vec2 bezier(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4, float t);
   vec2 bezier_derivative(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4, float t);
   vec2 bezier_second_derivative(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4, float t);
+  std::vector<float> bezier_extrema(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4);
 
   vec2 midpoint(const vec2 v1, const vec2 v2);
   vec3 midpoint(const vec3& v1, const vec3& v2);

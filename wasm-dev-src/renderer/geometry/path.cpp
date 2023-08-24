@@ -243,18 +243,16 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
-  // Temp::Geo Path::outline_geo() const {
-  //   Temp::Geo geo(GL_LINES);
+  bool Path::intersects(const Math::rect& rect) const {
+    Math::rect bounding_rect = this->bounding_rect();
 
-  //   for (const Segment& segment : m_segments) {
-  //     if (segment.kind() == Segment::Kind::Linear) {
-  //       geo.push_line(segment.p0(), segment.p3());
-  //     } else {
-  //       geo.push_line_strip({ segment.get(0.0f), segment.get(0.2f), segment.get(0.4f), segment.get(0.6f), segment.get(0.8f), segment.get(1.0f) });
-  //     }
-  //   }
+    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
 
-  //   return geo;
-  // }
+    for (const Segment& segment : m_segments) {
+      if (segment.intersects(rect)) return true;
+    }
+
+    return false;
+  }
 
 }

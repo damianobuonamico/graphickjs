@@ -5,6 +5,7 @@
 #include "../../math/rect.h"
 
 #include <vector>
+#include <optional>
 
 namespace Graphick::Renderer::Geometry {
 
@@ -67,6 +68,8 @@ namespace Graphick::Renderer::Geometry {
     vec2 size() const;
 
     bool is_inside(const vec2 position, bool lower_level = false, float threshold = 0.0f) const;
+    bool intersects(const Math::rect& rect) const;
+    bool intersects_line(const Math::rect& line) const;
   private:
     bool is_masquerading_linear() const;
     bool is_masquerading_quadratic(vec2& new_p1) const;
@@ -84,6 +87,13 @@ namespace Graphick::Renderer::Geometry {
     SegmentPointDistance linear_closest_to(const vec2 position, int iterations = 4) const;
     SegmentPointDistance quadratic_closest_to(const vec2 position, int iterations = 4) const;
     SegmentPointDistance cubic_closest_to(const vec2 position, int iterations = 4) const;
+
+    std::optional<std::vector<vec2>> line_intersection_points(const rect& line) const;
+    std::vector<float> line_intersections(const rect& line) const;
+
+    std::vector<float> linear_line_intersections(const rect& line) const;
+    std::vector<float> quadratic_line_intersections(const rect& line) const;
+    std::vector<float> cubic_line_intersections(const rect& line) const;
   private:
     // The type of segment: linear, quadratic, or cubic bezier.
     Kind m_kind;

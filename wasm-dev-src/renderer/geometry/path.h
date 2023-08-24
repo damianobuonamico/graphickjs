@@ -27,9 +27,7 @@ namespace Graphick::Renderer::Geometry {
     Math::rect large_bounding_rect() const;
 
     bool is_inside(const vec2 position, bool lower_level = false, float threshold = 0.0f) const;
-
-    // TEMP
-    // Temp::Geo outline_geo() const;
+    bool intersects(const Math::rect& rect) const;
   private:
     bool m_closed = false;
     Segment::ControlPointVertex m_last_point;

@@ -5,6 +5,8 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
+#include "../../../renderer/renderer.h"
+
 #include "../../../utils/console.h"
 
 namespace Graphick::Editor::Input {
@@ -16,11 +18,9 @@ namespace Graphick::Editor::Input {
     m_dragging_occurred = false;
     m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity().value().id() : uuid{ 0 };
 
-    if (!InputManager::keys.shift && (m_entity != uuid{ 0 } || !Editor::scene().selection.has(m_entity))) {
+    if (!InputManager::keys.shift && (m_entity == uuid{ 0 } || !Editor::scene().selection.has(m_entity))) {
       Editor::scene().selection.clear();
     }
-
-    console::log("down");
 
     if (m_entity != uuid{ 0 }) {
       if (!Editor::scene().selection.has(m_entity)) {
@@ -39,7 +39,7 @@ namespace Graphick::Editor::Input {
         // }
       }
     } else {
-      // m_selection_rect.set(InputManager::pointer.scene.position);
+      m_selection_rect.set(InputManager::pointer.scene.position);
     }
   }
 
@@ -58,21 +58,21 @@ namespace Graphick::Editor::Input {
         }
         //     for (auto& [id, entity] : Editor::scene().selection) {
         //       entity->transform()->translate(delta - entity->transform()->position().delta());
-        //     }
       }
-      // } else if (m_selection_rect.active()) {
-      //   m_selection_rect.size(InputManager::pointer.scene.delta);
-      //   Editor::scene().selection.temp_select(Editor::scene().entities_in(m_selection_rect.transform()->bounding_box(), false));
+    } else if (m_selection_rect.active()) {
+      console::log("delta", InputManager::pointer.scene.delta);
+      m_selection_rect.size(InputManager::pointer.scene.delta);
+      Editor::scene().selection.temp_select(Editor::scene().entities_in(m_selection_rect.bounding_rect(), false));
     }
   }
 
   void SelectTool::on_pointer_up() {
     // TODO: abort
-    // Editor::scene().selection.sync();
+    Editor::scene().selection.sync();
 
-    // if (m_selection_rect.active()) {
-    //   m_selection_rect.reset();
-    // }
+    if (m_selection_rect.active()) {
+      m_selection_rect.reset();
+    }
 
     if (m_dragging_occurred && !Editor::scene().selection.empty()) {
       for (uuid id : Editor::scene().selection.selected()) {
@@ -96,12 +96,10 @@ namespace Graphick::Editor::Input {
     }
   }
 
-  // void SelectTool::tessellate_overlays_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {
-  //   m_selection_rect.tessellate_outline(color, options, geo);
-  // }
+  void SelectTool::render_overlays() const {
+    if (!m_selection_rect.active()) return;
 
-  // void SelectTool::render_overlays(const RenderingOptions& options) const {
-  //   m_selection_rect.render(options);
-  // }
+    Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.position());
+  }
 
 }

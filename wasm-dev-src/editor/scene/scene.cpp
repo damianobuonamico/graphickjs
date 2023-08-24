@@ -2,6 +2,8 @@
 
 #include "entity.h"
 
+#include "../input/input_manager.h"
+
 #include "../../renderer/renderer.h"
 
 #include "../../utils/console.h"
@@ -67,6 +69,20 @@ namespace Graphick::Editor {
     return { 0 };
   }
 
+  std::vector<uuid> Scene::entities_in(const Math::rect& rect, bool lower_level) {
+    std::vector<uuid> entities;
+    auto view = get_all_entities_with<PathComponent, TransformComponent>();
+
+    for (entt::entity entity : view) {
+      const auto& path = m_registry.get<PathComponent>(entity).path;
+      if (path.intersects(rect - m_registry.get<TransformComponent>(entity).position.get())) {
+        entities.push_back(m_registry.get<IDComponent>(entity).id);
+      }
+    }
+
+    return entities;
+  }
+
   Entity Scene::create_element(const std::string& tag) {
     Renderer::Geometry::Path path;
     return create_element(path, tag);
@@ -111,6 +127,7 @@ namespace Graphick::Editor {
     {
       OPTICK_EVENT("Render Outlines");
 
+      // TODO: join iterators
       for (auto id : selection.selected()) {
         if (!has_entity(id)) continue;
 
@@ -123,6 +140,25 @@ namespace Graphick::Editor {
 
         Renderer::Renderer::draw_outline(path, transform.position.get());
       }
+
+      for (auto id : selection.temp_selected()) {
+        if (!has_entity(id)) continue;
+
+        entt::entity entity = m_entities.at(id);
+
+        if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) continue;
+
+        const auto& path = m_registry.get<PathComponent>(entity).path;
+        const auto& transform = m_registry.get<TransformComponent>(entity);
+
+        Renderer::Renderer::draw_outline(path, transform.position.get());
+      }
+    }
+
+    {
+      OPTICK_EVENT("Render Overlays");
+
+      tool_state.active().render_overlays();
     }
 
     Renderer::Renderer::end_frame();

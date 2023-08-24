@@ -14,6 +14,9 @@ namespace Graphick::Renderer {
   namespace Geometry {
     class Path;
   }
+  namespace Geometry::Internal {
+    class PathInternal;
+  }
 
   class Renderer {
   public:
@@ -28,6 +31,7 @@ namespace Graphick::Renderer {
 
     static void draw(const Geometry::Path& path, const float z_index, const vec2 translation = { 0.0f, 0.0f }, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
     static void draw_outline(const Geometry::Path& path, const vec2 translation);
+    static void draw_outline(const Geometry::Internal::PathInternal& path, const vec2 translation);
   private:
     Renderer() = default;
     ~Renderer() = default;
@@ -45,6 +49,7 @@ namespace Graphick::Renderer {
 
     void add_gpu_path_instance(const Geometry::Path& path);
     void add_line_instances(const Geometry::Path& path, const vec2 translation);
+    void add_line_instances(const Geometry::Internal::PathInternal& path, const vec2 translation);
     void add_linear_segment_instance(const vec2 p0, const vec2 p3);
     void add_cubic_segment_instance(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
     void add_vertex_instances(const Geometry::Path& path, const vec2 translation);

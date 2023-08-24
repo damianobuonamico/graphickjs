@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common.h"
+
 #include "../tool.h"
 
 #include "../../../utils/uuid.h"
@@ -14,8 +16,7 @@ namespace Graphick::Editor::Input {
     virtual void on_pointer_move() override;
     virtual void on_pointer_up() override;
 
-    // virtual void tessellate_overlays_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const override;
-    // virtual void render_overlays(const RenderingOptions& options) const override;
+    virtual void render_overlays() const override;
   private:
     SelectTool();
   private:
@@ -23,7 +24,7 @@ namespace Graphick::Editor::Input {
     bool m_is_element_added_to_selection = false;
     uuid m_entity = { 0 };
 
-    // SelectionRectEntity m_selection_rect;
+    SelectionRect m_selection_rect;
   private:
     friend class ToolState;
   };

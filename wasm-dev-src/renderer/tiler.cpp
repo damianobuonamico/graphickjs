@@ -375,11 +375,11 @@ namespace Graphick::Renderer {
       bool fuzzy_equal;
 
       if (row_t1 < col_t1) {
-        fuzzy_equal = Math::is_almost_equal(row_t1, 1.0f, 0.0001);
+        fuzzy_equal = Math::is_almost_equal(row_t1, 1.0f, 0.0001f);
         row_t1 = std::min(1.0f, row_t1 + y_step);
         y += y_dir * TILE_SIZE;
       } else {
-        fuzzy_equal = Math::is_almost_equal(col_t1, 1.0f, 0.0001);
+        fuzzy_equal = Math::is_almost_equal(col_t1, 1.0f, 0.0001f);
         col_t1 = std::min(1.0f, col_t1 + x_step);
         x += x_dir * TILE_SIZE;
       }

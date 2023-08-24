@@ -1,6 +1,7 @@
 #include "renderer.h"
 
 #include "geometry/path.h"
+#include "geometry/internal.h"
 #include "gpu/allocator.h"
 
 #include "../math/math.h"
@@ -157,6 +158,12 @@ namespace Graphick::Renderer {
 
     get()->add_line_instances(path, translation);
     get()->add_vertex_instances(path, translation);
+  }
+
+  void Renderer::draw_outline(const Geometry::Internal::PathInternal& path, const vec2 translation) {
+    if (path.empty()) return;
+
+    get()->add_line_instances(path, translation);
   }
 
   void Renderer::draw_opaque_tiles() {
@@ -559,6 +566,21 @@ namespace Graphick::Renderer {
       vec2 p3 = segment.p3() + translation;
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
       // auto p3 = transform.Map(segment.p3().x, segment.p3().y);
+
+      if (segment.is_cubic()) {
+        add_cubic_segment_instance(p0, segment.p1() + translation, segment.p2() + translation, p3);
+      } else {
+        add_linear_segment_instance(p0, p3);
+      }
+    }
+  }
+
+  void Renderer::add_line_instances(const Geometry::Internal::PathInternal& path, const vec2 translation) {
+    OPTICK_EVENT();
+
+    for (const auto& segment : path.segments()) {
+      vec2 p0 = segment.p0() + translation;
+      vec2 p3 = segment.p3() + translation;
 
       if (segment.is_cubic()) {
         add_cubic_segment_instance(p0, segment.p1() + translation, segment.p2() + translation, p3);

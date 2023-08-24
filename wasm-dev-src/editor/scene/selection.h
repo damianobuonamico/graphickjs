@@ -13,6 +13,7 @@ namespace Graphick::Editor {
     Selection(Scene* scene);
 
     inline const std::unordered_set<uuid>& selected() const { return m_selected; }
+    inline const std::unordered_set<uuid>& temp_selected() const { return m_temp_selected; }
 
     inline size_t size() const { return m_selected.size(); }
     inline bool empty() const { return size() < 1; }

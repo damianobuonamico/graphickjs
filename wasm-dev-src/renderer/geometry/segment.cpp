@@ -216,6 +216,23 @@ namespace Graphick::Renderer::Geometry {
     return a <= threshold * threshold;
   }
 
+  bool Segment::intersects(const Math::rect& rect) const {
+    Math::rect bounding_rect = this->bounding_rect();
+
+    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
+    if (Math::is_point_in_rect(p0(), rect) || Math::is_point_in_rect(p3(), rect)) return true;
+
+    for (Math::rect& line : Math::lines_from_rect(rect)) {
+      if (intersects_line(line)) return true;
+    }
+
+    return false;
+  }
+
+  bool Segment::intersects_line(const Math::rect& line) const {
+    return line_intersection_points(line).has_value();
+  }
+
   vec2 Segment::linear_get(const float t) const {
     return Math::lerp(p0(), p3(), t);
   }
@@ -234,18 +251,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   vec2 Segment::cubic_get(const float t) const {
-    vec2 A = p0();
-    vec2 B = p1();
-    vec2 C = p2();
-    vec2 D = p3();
-
-    vec2 a = -A + 3.0f * B - 3.0f * C + D;
-    vec2 b = 3.0f * A - 6.0f * B + 3.0f * C;
-    vec2 c = -3.0f * A + 3.0f * B;
-
-    float t_sq = t * t;
-
-    return a * t_sq * t + b * t_sq + c * t + A;
+    return Math::bezier(p0(), p1(), p2(), p3(), t);
   }
 
   std::vector<vec2> Segment::extrema() const {
@@ -281,51 +287,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   std::vector<float> Segment::cubic_extrema() const {
-    const vec2 A = p0();
-    const vec2 B = p1();
-    const vec2 C = p2();
-    const vec2 D = p3();
-
-    const vec2 a = 3.0f * (-A + 3.0f * B - 3.0f * C + D);
-    const vec2 b = 6.0f * (A - 2.0f * B + C);
-    const vec2 c = 3.0f * (B - A);
-
-    std::vector<float> roots = { 0.0f, 1.0f };
-
-    for (int i = 0; i < 2; i++) {
-      if (Math::is_almost_zero(a[i])) {
-        if (Math::is_almost_zero(b[i])) continue;
-
-        float t = -c[i] / b[i];
-        if (t > 0.0f && t < 1.0f) {
-          roots.push_back(t);
-        }
-
-        continue;
-      }
-
-      float delta = b[i] * b[i] - 4.0f * a[i] * c[i];
-
-      if (Math::is_almost_zero(delta)) {
-        roots.push_back(-b[i] / (2.0f * a[i]));
-      } else if (delta < 0.0f) {
-        continue;
-      } else {
-        float sqrt_delta = std::sqrtf(delta);
-
-        float t1 = (-b[i] + sqrt_delta) / (2.0f * a[i]);
-        float t2 = (-b[i] - sqrt_delta) / (2.0f * a[i]);
-
-        if (t1 > 0.0f && t1 < 1.0f) {
-          roots.push_back(t1);
-        }
-        if (t2 > 0.0f && t2 < 1.0f) {
-          roots.push_back(t2);
-        }
-      }
-    }
-
-    return roots;
+    return Math::bezier_extrema(p0(), p1(), p2(), p3());
   }
 
   Segment::SegmentPointDistance Segment::linear_closest_to(const vec2 position, int iterations) const {
@@ -472,6 +434,151 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return params;
+  }
+
+  std::optional<std::vector<vec2>> Segment::line_intersection_points(const Math::rect& line) const {
+    std::vector<float> intersections = line_intersections(line);
+    if (intersections.empty()) return std::nullopt;
+
+    std::vector<vec2> points{};
+    Math::rect rect = { min(line.min, line.max), max(line.min, line.max) };
+
+    for (float intersection : intersections) {
+      vec2 point = get(intersection);
+      if (Math::is_point_in_rect(point, rect, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+        points.push_back(point);
+      }
+    }
+
+    if (points.empty()) return std::nullopt;
+    return points;
+  }
+
+  std::vector<float> Segment::line_intersections(const rect& line) const {
+    return SEGMENT_CALL(line_intersections, line);
+  }
+
+  std::vector<float> Segment::linear_line_intersections(const rect& line) const {
+    const vec2 A = p0();
+    const vec2 B = p3();
+
+    float den = line.max.x - line.min.x;
+
+    if (Math::is_almost_zero(den)) {
+      float t = (line.min.x - A.x) / (B.x - A.x);
+      if (t >= 0.0f && t <= 1.0f) {
+        return { t };
+      }
+
+      return {};
+    }
+
+    float m = (line.max.y - line.min.y) / den;
+
+    float t = (m * line.min.x - line.min.y + A.y - m * A.x) / (m * (B.x - A.x) + A.y - B.y);
+    if (t >= 0.0f && t <= 1.0f) {
+      return { t };
+    }
+
+    return {};
+  }
+
+  std::vector<float> Segment::quadratic_line_intersections(const rect& line) const {
+    return {};
+  }
+
+  std::vector<float> Segment::cubic_line_intersections(const rect& line) const {
+    vec2 A = p0();
+    vec2 B = p1();
+    vec2 C = p2();
+    vec2 D = p3();
+
+    float a, b, c, d;
+    float den = line.max.x - line.min.x;
+
+    std::vector<float> roots{};
+
+    if (Math::is_almost_zero(den)) {
+      a = -A.x + 3.0f * B.x - 3.0f * C.x + D.x;
+      b = 3.0f * A.x - 6.0f * B.x + 3.0f * C.x;
+      c = -3.0f * A.x + 3.0f * B.x;
+      d = A.x - line.min.x;
+    } else {
+      float m = (line.max.y - line.min.y) / den;
+
+      a = m * (-A.x + 3.0f * B.x - 3.0f * C.x + D.x) +
+        1 * (A.y - 3.0f * B.y + 3.0f * C.y - D.y);
+      b = m * (3.0f * A.x - 6.0f * B.x + 3.0f * C.x) +
+        1 * (-3.0f * A.y + 6.0f * B.y - 3.0f * C.y);
+      c = m * (-3.0f * A.x + 3.0f * B.x) + 1 * (3.0f * A.y - 3.0f * B.y);
+      d = m * (A.x - line.min.x) - A.y + line.min.y;
+    }
+
+    // If the cubic bezier is an approximation of a quadratic curve, ignore the third degree term
+    if (std::abs(a) < GEOMETRY_MAX_INTERSECTION_ERROR) {
+      float delta = c * c - 4.0f * b * d;
+
+      if (Math::is_almost_zero(delta)) {
+        roots.push_back(-c / (2.0f * b));
+      } else if (delta > 0.0f) {
+        float sqrt_delta = std::sqrtf(delta);
+
+        float t1 = (-c + sqrt_delta) / (2.0f * b);
+        float t2 = (-c - sqrt_delta) / (2.0f * b);
+
+        if (t1 > 0.0f && t1 < 1.0f) {
+          roots.push_back(t1);
+        }
+        if (t2 > 0.0f && t2 < 1.0f && t2 != t1) {
+          roots.push_back(t2);
+        }
+      }
+
+      return roots;
+    }
+
+    float a_sq = a * a;
+    float b_sq = b * b;
+
+    float p = (3.0f * a * c - b_sq) / (3.0f * a_sq);
+    float q = (2.0f * b_sq * b - 9.0f * a * b * c + 27.0f * a_sq * d) / (27.0f * a_sq * a);
+
+    if (Math::is_almost_zero(p)) {
+      roots.push_back(-std::cbrtf(q));
+    } else if (Math::is_almost_zero(q)) {
+      if (p < 0.0f) {
+        float sqrt_p = std::sqrtf(-p);
+        roots.insert(roots.begin(), { 0.0f, sqrt_p, -sqrt_p });
+      } else {
+        roots.push_back(0.0f);
+      }
+    } else {
+      float s = q * q / 4.0f + p * p * p / 27.0f;
+
+      if (Math::is_almost_zero(s)) {
+        roots.insert(roots.begin(), { -1.5f * q / p, 3.0f * q / p });
+      } else if (s > 0.0f) {
+        float u = std::cbrtf(-0.5f * q - std::sqrtf(s));
+        roots.push_back(u - p / (3.0f * u));
+      } else {
+        float u = 2.0f * std::sqrtf(-p / 3.0f);
+        float t = std::acosf(3.0f * q / p / u) / 3.0f;
+        float k = MATH_TWO_PI / 3.0f;
+
+        roots.insert(roots.begin(), { u * std::cosf(t), u * std::cosf(t - k), u * std::cosf(t - 2.0f * k) });
+      }
+    }
+
+    std::vector<float> parsed_roots{};
+
+    for (float root : roots) {
+      float t = root - b / (3.0f * a);
+      if (t >= 0.0f && t <= 1.0f) {
+        parsed_roots.push_back(t);
+      }
+    }
+
+    return parsed_roots;
   }
 
 }
