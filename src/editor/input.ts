@@ -673,19 +673,23 @@ abstract class InputManager {
     this.updateTouches(e);
 
     if (e.touches.length == 1) {
-      API._on_pointer_event(
-        e.target === Renderer.canvas ? 1 : 0,
-        0,
-        this.getPointerTypeCode("touch"),
-        0,
-        e.touches[0].clientX,
-        e.touches[0].clientY,
-        e.touches[0].force,
-        e.timeStamp,
-        e.altKey,
-        e.ctrlKey,
-        e.shiftKey
-      );
+      setTimeout(() => {
+        if (this.m_touches.size < 2) {
+          API._on_pointer_event(
+            e.target === Renderer.canvas ? 1 : 0,
+            0,
+            this.getPointerTypeCode("touch"),
+            0,
+            e.touches[0].clientX,
+            e.touches[0].clientY,
+            e.touches[0].force,
+            e.timeStamp,
+            e.altKey,
+            e.ctrlKey,
+            e.shiftKey
+          );
+        }
+      }, 25);
     }
 
     if (e.target == Renderer.canvas) e.preventDefault();
