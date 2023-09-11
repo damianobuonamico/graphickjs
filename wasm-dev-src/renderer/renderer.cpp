@@ -9,6 +9,8 @@
 #include "../utils/resource_manager.h"
 #include "../utils/console.h"
 
+#include "../editor/editor.h"
+
 #ifdef EMSCRIPTEN
 #include <emscripten/html5.h>
 #endif
@@ -133,7 +135,6 @@ namespace Graphick::Renderer {
   void Renderer::end_frame() {
     OPTICK_EVENT();
 
-    // get()->flush_gpu_path_instances();
     get()->draw_opaque_tiles();
     get()->draw_masked_tiles();
     get()->flush_line_instances();
@@ -149,7 +150,6 @@ namespace Graphick::Renderer {
 
     OPTICK_EVENT();
 
-    // get()->add_gpu_path_instance(path);
     get()->m_tiler.process_path(path, translation, color, z_index);
   }
 
@@ -432,130 +432,12 @@ namespace Graphick::Renderer {
     m_common_data.quad_index_buffer.upload();
   }
 
-  struct GPUPathh {
-    vec2 path_position;
-    vec2 path_size;
-    float path_index;
-  };
-
-#define PATHS_TEXTURE_SIZE 32
-
-  void Renderer::draw_gpu_path(const Geometry::Path& path, const vec4& color) {
-    std::vector<GPUPathh> paths;
-    std::vector<float> texture(PATHS_TEXTURE_SIZE * PATHS_TEXTURE_SIZE);
-
-    const auto& segments = path.segments();
-    rect rect = path.bounding_rect();
-
-    rect.min *= m_viewport.zoom;
-    rect.max *= m_viewport.zoom;
-
-    paths.push_back({
-      rect.min,
-      rect.size(),
-      0.0f
-      });
-
-    size_t i = 0;
-    texture[i++] = segments.size();
-
-    for (const auto& segment : segments) {
-      vec2 p0 = segment.p0() * m_viewport.zoom - rect.min;
-      vec2 p3 = segment.p3() * m_viewport.zoom - rect.min;
-
-      texture[i++] = p0.x;
-      texture[i++] = p0.y;
-      texture[i++] = p3.x;
-      texture[i++] = p3.y;
-    }
-
-    if (!path.closed()) {
-      vec2 p0 = segments.back().p3() * m_viewport.zoom - rect.min;
-      vec2 p3 = segments.front().p0() * m_viewport.zoom - rect.min;
-
-      texture[i++] = p0.x;
-      texture[i++] = p0.y;
-      texture[i++] = p3.x;
-      texture[i++] = p3.y;
-    }
-
-    // TODO: preallocate and preserve buffers
-    uuid paths_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<GPUPathh>(1, "GPUPaths");
-    uuid paths_texture_id = GPU::Memory::Allocator::allocate_texture({ PATHS_TEXTURE_SIZE, PATHS_TEXTURE_SIZE }, GPU::TextureFormat::R32F, "PathsTexture");
-
-    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
-    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
-    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(paths_buffer_id);
-    const GPU::Texture& paths_texture = GPU::Memory::Allocator::get_texture(paths_texture_id);
-
-    GPU::Device::upload_to_buffer(instance_buffer, 0, paths, GPU::BufferTarget::Vertex);
-    GPU::Device::upload_to_texture(paths_texture, { { 0.0f, 0.0f }, { (float)PATHS_TEXTURE_SIZE, (float)PATHS_TEXTURE_SIZE } }, texture.data());
-
-    GPU::GPUPathVertexArray gpu_path_vertex_array(
-      m_programs.gpu_path_program,
-      instance_buffer,
-      quad_vertex_positions_buffer,
-      quad_vertex_indices_buffer
-    );
-
-    mat4 translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x + 2.0f * m_viewport.position.x * m_viewport.zoom),
-      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y + 2.0f * m_viewport.position.y * m_viewport.zoom),
-      0.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 1.0f
-    };
-
-    GPU::RenderState state = {
-      nullptr,
-      m_programs.gpu_path_program.program,
-      *gpu_path_vertex_array.vertex_array,
-      GPU::Primitive::Triangles,
-      {
-        { { m_programs.gpu_path_program.paths_texture_uniform, paths_texture.gl_texture }, paths_texture }
-      },
-      {},
-      {
-        { m_programs.gpu_path_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, 1.0f) * translation },
-        { m_programs.gpu_path_program.color_uniform, color },
-        { m_programs.gpu_path_program.paths_texture_size_uniform, (int)PATHS_TEXTURE_SIZE }
-      },
-      {
-        { 0.0f, 0.0f },
-        m_viewport.size,
-      },
-      {
-        GPU::BlendState{
-          GPU::BlendFactor::SrcAlpha,
-          GPU::BlendFactor::OneMinusSrcAlpha,
-          GPU::BlendFactor::SrcAlpha,
-          GPU::BlendFactor::OneMinusSrcAlpha,
-          GPU::BlendOp::Add,
-        },
-        std::nullopt,
-        std::nullopt,
-        {
-        std::nullopt,
-        std::nullopt,
-        std::nullopt
-      },
-      true
-    }
-    };
-
-    GPU::Device::draw_elements_instanced(6, 1, state);
-
-    GPU::Memory::Allocator::free_general_buffer(paths_buffer_id);
-    GPU::Memory::Allocator::free_texture(paths_texture_id);
-  }
-
   void Renderer::begin_instanced_renderers() {
     m_lines_data.instance_buffer_ptr = m_lines_data.instance_buffer;
 
     m_lines_data.instances = 0;
     m_square_data.instances.clear();
     m_circle_data.instances.clear();
-    m_gpu_paths_data.instance_buffer.clear();
-    m_gpu_paths_data.segments_texture.clear();
   }
 
   void Renderer::add_line_instances(const Geometry::Path& path, const vec2 translation) {
@@ -590,42 +472,8 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Renderer::add_gpu_path_instance(const Geometry::Path& path) {
-    // TODO: Check if flush is needed
-
-    rect bounding_rect = path.bounding_rect();
-    rect visible = { -m_viewport.position, m_viewport.size / m_viewport.zoom - m_viewport.position };
-
-    if (!Math::does_rect_intersect_rect(bounding_rect, visible)) return;
-
-    bounding_rect *= m_viewport.zoom;
-
-    m_gpu_paths_data.instance_buffer->position = bounding_rect.min;
-    m_gpu_paths_data.instance_buffer->size = bounding_rect.size();
-    m_gpu_paths_data.instance_buffer->segments_index = (float)m_gpu_paths_data.segments_texture.count();
-    m_gpu_paths_data.instance_buffer->color_index = 0.0f;
-    m_gpu_paths_data.instance_buffer++;
-
-    const auto& segments = path.segments();
-
-    m_gpu_paths_data.segments_texture.push({ (float)segments.size(), 0.0f, 0.0f, 0.0f });
-
-    for (const auto& segment : segments) {
-      vec2 p0 = segment.p0() * m_viewport.zoom - bounding_rect.min;
-      vec2 p3 = segment.p3() * m_viewport.zoom - bounding_rect.min;
-
-      m_gpu_paths_data.segments_texture.push({ p0.x, p0.y, p3.x, p3.y });
-    }
-
-    if (!path.closed()) {
-      vec2 p0 = segments.back().p3() * m_viewport.zoom - bounding_rect.min;
-      vec2 p3 = segments.front().p0() * m_viewport.zoom - bounding_rect.min;
-
-      m_gpu_paths_data.segments_texture.push({ p0.x, p0.y, p3.x, p3.y });
-    }
-  }
-
   void Renderer::add_linear_segment_instance(const vec2 p0, const vec2 p3) {
+    // TODO: bounds checking and batching
     *m_lines_data.instance_buffer_ptr = { p0.x, p0.y, p3.x, p3.y };
     m_lines_data.instance_buffer_ptr++;
     m_lines_data.instances++;
@@ -661,12 +509,17 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::add_vertex_instances(const Geometry::Path& path, const vec2 translation) {
+    const std::unordered_set<uuid> selected_vertices = Editor::Editor::scene().selection.m_selected_vertices;
+
     for (const auto& segment : path.segments()) {
       vec2 p0 = segment.p0() + translation;
 
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
-
-      add_square_instance(p0);
+      if (selected_vertices.find(segment.p0_ptr().lock()->id) != selected_vertices.end()) {
+        add_square_instance(p0);
+      } else {
+        // add_square_instance(p0);
+      }
 
       if (segment.is_cubic()) {
         vec2 p1 = segment.p1() + translation;
@@ -695,78 +548,6 @@ namespace Graphick::Renderer {
 
   void Renderer::add_circle_instance(const vec2 position) {
     m_circle_data.instances.push_back(position);
-  }
-
-  void Renderer::flush_gpu_path_instances() {
-    OPTICK_EVENT();
-
-    {
-      OPTICK_EVENT("Upload Instance Buffer");
-      m_gpu_paths_data.instance_buffer.upload();
-    }
-
-    {
-      OPTICK_EVENT("Upload Segments Texture");
-      // TODO: try double buffering to avoid stalls
-      m_gpu_paths_data.segments_texture.upload();
-    }
-
-    GPU::GPUPathVertexArray gpu_paths_vertex_array(
-      m_programs.gpu_path_program,
-      m_gpu_paths_data.instance_buffer.buffer(),
-      m_common_data.quad_vertex_buffer.buffer(),
-      m_common_data.quad_index_buffer.buffer()
-    );
-
-    const GPU::Texture& segments_texture = m_gpu_paths_data.segments_texture.texture();
-
-    mat4 translation = mat4{
-      1.0f, 0.0f, 0.0f, 0.5f * (-m_viewport.size.x + 2.0f * m_viewport.position.x * (float)m_viewport.zoom),
-      0.0f, 1.0f, 0.0f, 0.5f * (-m_viewport.size.y + 2.0f * m_viewport.position.y * (float)m_viewport.zoom),
-      0.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 1.0f
-    };
-
-    GPU::RenderState state = {
-      nullptr,
-      m_programs.gpu_path_program.program,
-      *gpu_paths_vertex_array.vertex_array,
-      GPU::Primitive::Triangles,
-      {
-        { { m_programs.gpu_path_program.paths_texture_uniform, segments_texture.gl_texture }, segments_texture }
-      },
-      {},
-      {
-        { m_programs.gpu_path_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, 1.0f) * translation },
-        { m_programs.gpu_path_program.paths_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE }
-      },
-      {
-        { 0.0f, 0.0f },
-        m_viewport.size
-      },
-      {
-        GPU::BlendState{
-          GPU::BlendFactor::SrcAlpha,
-          GPU::BlendFactor::OneMinusSrcAlpha,
-          GPU::BlendFactor::SrcAlpha,
-          GPU::BlendFactor::OneMinusSrcAlpha,
-          GPU::BlendOp::Add,
-        },
-        std::nullopt,
-        std::nullopt,
-        {
-          std::nullopt,
-          std::nullopt,
-          std::nullopt
-        },
-        true
-      }
-    };
-
-    GPU::Device::draw_elements_instanced(6, m_gpu_paths_data.instance_buffer.count(), state);
-
-    m_gpu_paths_data.instance_buffer.clear();
-    m_gpu_paths_data.segments_texture.clear();
   }
 
   void Renderer::flush_line_instances() {

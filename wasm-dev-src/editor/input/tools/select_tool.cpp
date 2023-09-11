@@ -60,7 +60,6 @@ namespace Graphick::Editor::Input {
         //       entity->transform()->translate(delta - entity->transform()->position().delta());
       }
     } else if (m_selection_rect.active()) {
-      console::log("delta", InputManager::pointer.scene.delta);
       m_selection_rect.size(InputManager::pointer.scene.delta);
       Editor::scene().selection.temp_select(Editor::scene().entities_in(m_selection_rect.bounding_rect(), false));
     }

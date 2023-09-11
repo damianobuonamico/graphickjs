@@ -5,6 +5,8 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
+#include "../../../renderer/renderer.h"
+
 #include "../../../utils/console.h"
 
 namespace Graphick::Editor::Input {
@@ -24,7 +26,10 @@ namespace Graphick::Editor::Input {
     std::optional<Entity> entity = InputManager::hover.entity();
     console::log("HoverType", (int)hover_type);
 
-    if (hover_type == HoverState::HoverType::None || !entity.has_value()) return;
+    if (hover_type == HoverState::HoverType::None || !entity.has_value()) {
+      on_none_pointer_down();
+      return;
+    }
 
     m_entity = entity.value().id();
     m_vertex = InputManager::hover.vertex();
@@ -148,15 +153,17 @@ namespace Graphick::Editor::Input {
       on_none_pointer_up();
       break;
     }
+
+    if (m_selection_rect.active()) {
+      m_selection_rect.reset();
+    }
   }
 
-  // void DirectSelectTool::tessellate_overlays_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const {
-  //   m_selection_rect.tessellate_outline(color, options, geo);
-  // }
+  void DirectSelectTool::render_overlays() const {
+    if (!m_selection_rect.active()) return;
 
-  // void DirectSelectTool::render_overlays(const RenderingOptions& options) const {
-  //   m_selection_rect.render(options);
-  // }
+    Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.position());
+  }
 
   // TODO: Implement rotation
   void DirectSelectTool::translate_selected() {
@@ -198,11 +205,12 @@ namespace Graphick::Editor::Input {
   /* -- on_pointer_down -- */
 
   void DirectSelectTool::on_none_pointer_down() {
-    // if (!InputManager::keys.shift) {
-    //   Editor::scene().selection.clear();
-    // }
+    console::log("none");
+    if (!InputManager::keys.shift) {
+      Editor::scene().selection.clear();
+    }
 
-    // m_selection_rect.set(InputManager::pointer.scene.position);
+    m_selection_rect.set(InputManager::pointer.scene.position);
 
     m_mode = Mode::None;
   }
@@ -312,26 +320,37 @@ namespace Graphick::Editor::Input {
   /* -- on_pointer_move -- */
 
   void DirectSelectTool::on_none_pointer_move() {
-    //   if (m_selection_rect.active()) {
-    //     m_selection_rect.size(InputManager::pointer.scene.delta);
-    //     Box box = m_selection_rect.transform()->bounding_box();
-    //     std::vector<Entity*> entities = Editor::scene().entities_in(box, false);
+    if (m_selection_rect.active()) {
+      m_selection_rect.size(InputManager::pointer.scene.delta);
 
-    //     for (Entity* entity : entities) {
-    //       ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
-    //       if (element) {
-    //         std::vector<Entity*> vertices{};
-    //         element->entities_in(box, vertices, true);
+      rect selection_rect = m_selection_rect.bounding_rect();
 
-    //         element->selection()->temp_select(vertices);
-    //         if (element->selection()->empty()) {
-    //           element->selection()->temp_all();
-    //         }
-    //       }
-    //     }
+      // TODO: decide how to implement and optimize
+      std::vector<uuid> vertices = Editor::scene().entities_in(selection_rect, true);
 
-    //     Editor::scene().selection.temp_select(entities);
-    //   }
+      Editor::scene().selection.m_selected_vertices.clear();
+
+      for (uuid id : vertices) {
+        Editor::scene().selection.m_selected_vertices.insert(id);
+      }
+
+      // std::vector<Entity*> entities = Editor::scene().entities_in(box, false);
+
+      // for (Entity* entity : entities) {
+      //   ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
+      //   if (element) {
+      //     std::vector<Entity*> vertices{};
+      //     element->entities_in(box, vertices, true);
+
+      //     element->selection()->temp_select(vertices);
+      //     if (element->selection()->empty()) {
+      //       element->selection()->temp_all();
+      //     }
+      //   }
+      // }
+
+      // Editor::scene().selection.temp_select(entities);
+    }
   }
 
   void DirectSelectTool::on_duplicate_pointer_move() {
@@ -452,10 +471,6 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_none_pointer_up() {
     // Editor::scene().selection.sync(true);
-
-    // if (m_selection_rect.active()) {
-    //   m_selection_rect.reset();
-    // }
   }
 
   void DirectSelectTool::on_duplicate_pointer_up() {

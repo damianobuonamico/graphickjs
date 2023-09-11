@@ -27,9 +27,13 @@ namespace Graphick::Editor {
     void deselect(const uuid id);
     void temp_select(const std::vector<uuid>& entities);
     void sync();
+  // TEMP
+  public:
+    std::unordered_set<uuid> m_selected_vertices;
   private:
     std::unordered_set<uuid> m_selected;
     std::unordered_set<uuid> m_temp_selected;
+
 
     Scene* m_scene;
   };

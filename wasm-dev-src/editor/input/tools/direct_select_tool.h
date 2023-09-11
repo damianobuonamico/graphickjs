@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common.h"
+
 #include "../tool.h"
 // #include "../../scene/entities/element_entity.h"
 // #include "../../scene/entities/selection_rect_entity.h"
@@ -19,8 +21,7 @@ namespace Graphick::Editor::Input {
     virtual void on_pointer_move() override;
     virtual void on_pointer_up() override;
 
-    // virtual void tessellate_overlays_outline(const vec4& color, const RenderingOptions& options, Geometry& geo) const override;
-    // virtual void render_overlays(const RenderingOptions& options) const override;
+    virtual void render_overlays() const override;
   private:
     DirectSelectTool();
 
@@ -82,6 +83,7 @@ namespace Graphick::Editor::Input {
     // HandleEntity* m_handle = nullptr;
 
     // SelectionRectEntity m_selection_rect{ true };
+    SelectionRect m_selection_rect;
   private:
     friend class ToolState;
   };

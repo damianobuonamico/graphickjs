@@ -6,6 +6,10 @@
 
 #include "../../renderer/renderer.h"
 
+// TEMP
+#include "../../math/math.h"
+
+#include "../../utils/misc.h"
 #include "../../utils/console.h"
 
 namespace Graphick::Editor {
@@ -73,6 +77,18 @@ namespace Graphick::Editor {
     std::vector<uuid> entities;
     auto view = get_all_entities_with<PathComponent, TransformComponent>();
 
+    if (lower_level) {
+      for (entt::entity entity : view) {
+        const auto& path = m_registry.get<PathComponent>(entity).path;
+        for (const auto& segment : path.segments()) {
+          if (Math::is_point_in_rect(segment.p0(), rect)) entities.push_back(segment.p0_ptr().lock()->id);
+          if (Math::is_point_in_rect(segment.p3(), rect)) entities.push_back(segment.p3_ptr().lock()->id);
+        }
+      }
+
+      return entities;
+    }
+
     for (entt::entity entity : view) {
       const auto& path = m_registry.get<PathComponent>(entity).path;
       if (path.intersects(rect - m_registry.get<TransformComponent>(entity).position.get())) {
@@ -98,6 +114,7 @@ namespace Graphick::Editor {
   }
 
   void Scene::render() const {
+    GK_AVERAGE("render");
     OPTICK_EVENT();
 
     Renderer::Renderer::begin_frame({
@@ -109,6 +126,9 @@ namespace Graphick::Editor {
 
     float z_index = 0.0f;
     size_t z_far = m_order.size();
+
+#if 0
+    // 18443
 
     {
       OPTICK_EVENT("Render Entities");
@@ -127,34 +147,49 @@ namespace Graphick::Editor {
     {
       OPTICK_EVENT("Render Outlines");
 
-      // TODO: join iterators
-      for (auto id : selection.selected()) {
-        if (!has_entity(id)) continue;
+      Utils::for_each(selection.selected(), selection.temp_selected(), [&](const uuid id) {
+        if (!has_entity(id)) return;
 
         entt::entity entity = m_entities.at(id);
 
-        if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) continue;
+        if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) return;
 
         const auto& path = m_registry.get<PathComponent>(entity).path;
         const auto& transform = m_registry.get<TransformComponent>(entity);
 
         Renderer::Renderer::draw_outline(path, transform.position.get());
-      }
+        });
+    }
+#else
+    {
+      OPTICK_EVENT("Render Entities");
 
-      for (auto id : selection.temp_selected()) {
-        if (!has_entity(id)) continue;
+      auto& selected = selection.selected();
+      auto& temp_selected = selection.temp_selected();
 
-        entt::entity entity = m_entities.at(id);
+      for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+        if (!m_registry.all_of<IDComponent, PathComponent, TransformComponent>(*it)) continue;
 
-        if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) continue;
+        auto components = m_registry.get<IDComponent, PathComponent, TransformComponent>(*it);
 
-        const auto& path = m_registry.get<PathComponent>(entity).path;
-        const auto& transform = m_registry.get<TransformComponent>(entity);
+        const uuid id = std::get<0>(components).id;
+        const Renderer::Geometry::Path& path = std::get<1>(components).path;
+        const vec2 position = std::get<2>(components).position.get();
 
-        Renderer::Renderer::draw_outline(path, transform.position.get());
+        if (!has_entity(id)) return;
+
+        if (m_registry.all_of<FillComponent>(*it)) {
+          Renderer::Renderer::draw(path, (z_far - z_index++) / z_far, position, m_registry.get<FillComponent>(*it).color);
+        } else {
+          Renderer::Renderer::draw(path, (z_far - z_index++) / z_far, position);
+        }
+
+        if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
+          Renderer::Renderer::draw_outline(path, position);
+        }
       }
     }
-
+#endif
     {
       OPTICK_EVENT("Render Overlays");
 

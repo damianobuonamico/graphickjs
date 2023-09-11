@@ -2,11 +2,15 @@
 
 #include "../../history/values.h"
 
+#include "../../utils/uuid.h"
+
 #include <vector>
 
 namespace Graphick::Renderer::Geometry {
 
   class ControlPoint {
+  public:
+    uuid id;
   public:
     ControlPoint() : m_value() {}
     ControlPoint(const vec2 value) : m_value(value) {}

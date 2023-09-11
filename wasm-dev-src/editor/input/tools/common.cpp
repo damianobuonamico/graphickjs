@@ -30,8 +30,6 @@ namespace Graphick::Editor::Input {
   void SelectionRect::size(const vec2 size) {
     const auto& segments = m_path.segments();
 
-    console::log(size);
-
     if (segments.size() < 4) {
       console::error("SelectionRect has less than 4 sides!");
       return;
@@ -50,9 +48,9 @@ namespace Graphick::Editor::Input {
       new_size.y = -size.y;
     }
 
-    *segments[0].p3_ptr().lock() = {new_size.x, 0.0f};
+    *segments[0].p3_ptr().lock() = { new_size.x, 0.0f };
     *segments[1].p3_ptr().lock() = new_size;
-    *segments[2].p3_ptr().lock() = {0.0f, new_size.y};
+    *segments[2].p3_ptr().lock() = { 0.0f, new_size.y };
   }
 
   void SelectionRect::reset() {
