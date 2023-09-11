@@ -104,7 +104,7 @@ namespace Graphick::Utils {
       it->second.duration = (it->second.duration * it->second.samples + std::chrono::duration_cast<std::chrono::microseconds>(duration).count()) / (it->second.samples + 1);
       it->second.samples++;
 
-      log(name, it->second.duration);
+      log(name, std::to_string((float)it->second.duration / 1000.0f) + "ms");
     }
   private:
     static inline std::chrono::steady_clock::time_point m_last_time;
@@ -126,7 +126,7 @@ namespace Graphick::Utils {
 }
 
 #ifdef GK_CONF_DIST
-#define GK_AVERAGE ((void)0)
+#define GK_AVERAGE(...) ((void)0)
 #else
 #define GK_AVERAGE(name) Graphick::Utils::ScopedTimer __scoped_timer(name) 
 #endif

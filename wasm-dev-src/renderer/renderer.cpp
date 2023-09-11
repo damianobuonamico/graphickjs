@@ -139,6 +139,7 @@ namespace Graphick::Renderer {
     get()->draw_masked_tiles();
     get()->flush_line_instances();
     get()->flush_square_instances();
+    get()->flush_white_square_instances();
     get()->flush_circle_instances();
 
     GPU::Memory::Allocator::purge_if_needed();
@@ -392,6 +393,9 @@ namespace Graphick::Renderer {
     if (m_square_data.instance_buffer_id != 0) {
       GPU::Memory::Allocator::free_general_buffer(m_square_data.instance_buffer_id);
     }
+    if (m_white_square_data.instance_buffer_id != 0) {
+      GPU::Memory::Allocator::free_general_buffer(m_white_square_data.instance_buffer_id);
+    }
     if (m_circle_data.instance_buffer_id != 0) {
       GPU::Memory::Allocator::free_general_buffer(m_circle_data.instance_buffer_id);
     }
@@ -402,25 +406,32 @@ namespace Graphick::Renderer {
     if (m_square_data.vertex_buffer_id != 0) {
       GPU::Memory::Allocator::free_general_buffer(m_square_data.vertex_buffer_id);
     }
+    if (m_white_square_data.vertex_buffer_id != 0) {
+      GPU::Memory::Allocator::free_general_buffer(m_white_square_data.vertex_buffer_id);
+    }
     if (m_circle_data.vertex_buffer_id != 0) {
       GPU::Memory::Allocator::free_general_buffer(m_circle_data.vertex_buffer_id);
     }
 
     m_lines_data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec4>(m_lines_data.max_instance_buffer_size, "Lines");
     m_square_data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(m_square_data.buffer_size, "Squares");
+    m_white_square_data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(m_white_square_data.buffer_size, "WhiteSquares");
     m_circle_data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(m_circle_data.buffer_size, "Circles");
 
     m_lines_data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(LINE_VERTEX_POSITIONS.size(), "LineVertices");
     m_square_data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(SQUARE_VERTEX_POSITIONS.size(), "SquareVertices");
+    m_white_square_data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(SQUARE_VERTEX_POSITIONS.size(), "WhiteSquareVertices");
     m_circle_data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(SQUARE_VERTEX_POSITIONS.size(), "CircleVertices");
 
     const GPU::Buffer& line_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_lines_data.vertex_buffer_id);
-    const GPU::Buffer& circle_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_square_data.vertex_buffer_id);
-    const GPU::Buffer& square_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_circle_data.vertex_buffer_id);
+    const GPU::Buffer& square_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_square_data.vertex_buffer_id);
+    const GPU::Buffer& white_square_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_white_square_data.vertex_buffer_id);
+    const GPU::Buffer& circle_vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_circle_data.vertex_buffer_id);
 
     GPU::Device::upload_to_buffer(line_vertex_buffer, 0, LINE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
-    GPU::Device::upload_to_buffer(circle_vertex_buffer, 0, SQUARE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
     GPU::Device::upload_to_buffer(square_vertex_buffer, 0, SQUARE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(white_square_vertex_buffer, 0, SQUARE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(circle_vertex_buffer, 0, SQUARE_VERTEX_POSITIONS, GPU::BufferTarget::Vertex);
 
     m_common_data.quad_index_buffer.clear();
     m_common_data.quad_vertex_buffer.clear();
@@ -437,6 +448,7 @@ namespace Graphick::Renderer {
 
     m_lines_data.instances = 0;
     m_square_data.instances.clear();
+    m_white_square_data.instances.clear();
     m_circle_data.instances.clear();
   }
 
@@ -509,16 +521,17 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::add_vertex_instances(const Geometry::Path& path, const vec2 translation) {
-    const std::unordered_set<uuid> selected_vertices = Editor::Editor::scene().selection.m_selected_vertices;
+    const std::unordered_set<uuid> selected_vertices = Editor::Editor::scene().selection.selected_vertices();
+    const std::unordered_set<uuid> temp_selected_vertices = Editor::Editor::scene().selection.temp_selected_vertices();
 
     for (const auto& segment : path.segments()) {
       vec2 p0 = segment.p0() + translation;
-
+      uuid p0_id = segment.p0_id();
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
-      if (selected_vertices.find(segment.p0_ptr().lock()->id) != selected_vertices.end()) {
-        add_square_instance(p0);
-      } else {
-        // add_square_instance(p0);
+
+      add_square_instance(p0);
+      if (selected_vertices.find(p0_id) == selected_vertices.end() && temp_selected_vertices.find(p0_id) == temp_selected_vertices.end()) {
+        add_white_square_instance(p0);
       }
 
       if (segment.is_cubic()) {
@@ -538,12 +551,22 @@ namespace Graphick::Renderer {
     }
 
     if (!path.closed()) {
-      add_square_instance(path.segments().back().p3() + translation);
+      vec2 p3 = path.segments().back().p3() + translation;
+      uuid p3_id = path.segments().back().p3_id();
+
+      add_square_instance(p3);
+      if (selected_vertices.find(p3_id) == selected_vertices.end() && temp_selected_vertices.find(p3_id) == temp_selected_vertices.end()) {
+        add_white_square_instance(p3);
+      }
     }
   }
 
   void Renderer::add_square_instance(const vec2 position) {
     m_square_data.instances.push_back(position);
+  }
+
+  void Renderer::add_white_square_instance(const vec2 position) {
+    m_white_square_data.instances.push_back(position);
   }
 
   void Renderer::add_circle_instance(const vec2 position) {
@@ -583,7 +606,7 @@ namespace Graphick::Renderer {
       {},
       {
         {m_programs.line_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
-        {m_programs.line_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
+        {m_programs.line_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } - vec4{ 0.05f, 0.05f, 0.05f, 0.0f } },
         {m_programs.line_program.line_width_uniform, 3.0f / (float)m_viewport.zoom },
         {m_programs.line_program.zoom_uniform, (float)m_viewport.zoom },
       },
@@ -613,16 +636,16 @@ namespace Graphick::Renderer {
     GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), m_lines_data.instances, state);
   }
 
-  void Renderer::flush_square_instances() {
-    if (m_square_data.instances.empty()) return;
+  void Renderer::flush_generic_square_instances(InstancedMeshData& data, const vec4& color, const float size) {
+    if (data.instances.empty()) return;
 
-    ensure_instance_buffer_size(m_square_data);
+    ensure_instance_buffer_size(data);
 
-    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(m_square_data.vertex_buffer_id);
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
     const GPU::Buffer& index_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
-    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(m_square_data.instance_buffer_id);
+    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(data.instance_buffer_id);
 
-    GPU::Device::upload_to_buffer(instance_buffer, 0, m_square_data.instances, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(instance_buffer, 0, data.instances, GPU::BufferTarget::Vertex);
 
     GPU::SquareVertexArray vertex_array(
       m_programs.square_program,
@@ -647,8 +670,8 @@ namespace Graphick::Renderer {
       {},
       {
         {m_programs.square_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
-        {m_programs.square_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
-        {m_programs.square_program.size_uniform, 6.0f / (float)m_viewport.zoom },
+        {m_programs.square_program.color_uniform, color },
+        {m_programs.square_program.size_uniform, size },
       },
       {
         { 0.0f, 0.0f },
@@ -673,7 +696,15 @@ namespace Graphick::Renderer {
       }
     };
 
-    GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), m_square_data.instances.size(), state);
+    GPU::Device::draw_elements_instanced(QUAD_VERTEX_INDICES.size(), data.instances.size(), state);
+  }
+
+  void Renderer::flush_square_instances() {
+    flush_generic_square_instances(m_square_data, vec4{ 0.22f, 0.76f, 0.95f, 1.0f }, 5.0f / (float)m_viewport.zoom);
+  }
+
+  void Renderer::flush_white_square_instances() {
+    flush_generic_square_instances(m_white_square_data, vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, 3.0f / (float)m_viewport.zoom);
   }
 
   void Renderer::flush_circle_instances() {
@@ -711,7 +742,7 @@ namespace Graphick::Renderer {
       {
         { m_programs.circle_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
         { m_programs.circle_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
-        { m_programs.circle_program.radius_uniform, 3.0f / (float)m_viewport.zoom },
+        { m_programs.circle_program.radius_uniform, 2.5f / (float)m_viewport.zoom },
         { m_programs.circle_program.zoom_uniform, (float)m_viewport.zoom }
       },
       {

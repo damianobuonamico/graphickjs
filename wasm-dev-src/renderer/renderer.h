@@ -51,10 +51,13 @@ namespace Graphick::Renderer {
     void add_cubic_segment_instance(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
     void add_vertex_instances(const Geometry::Path& path, const vec2 translation);
     void add_square_instance(const vec2 position);
+    void add_white_square_instance(const vec2 position);
     void add_circle_instance(const vec2 position);
 
     void flush_line_instances();
+    void flush_generic_square_instances(InstancedMeshData& data, const vec4& color, const float size);
     void flush_square_instances();
+    void flush_white_square_instances();
     void flush_circle_instances();
 
     void ensure_instance_buffer_size(InstancedMeshData& data);
@@ -70,6 +73,7 @@ namespace Graphick::Renderer {
 
     InstancedLinesData m_lines_data;
     InstancedMeshData m_square_data = { "square" };
+    InstancedMeshData m_white_square_data = { "white_square" };
     InstancedMeshData m_circle_data = { "circle" };
 
     uuid m_quad_vertex_positions_buffer_id = 0;

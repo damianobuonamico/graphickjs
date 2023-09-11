@@ -255,4 +255,17 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
+  bool Path::intersects(const Math::rect& rect, std::vector<uuid>& vertices) const {
+    Math::rect bounding_rect = this->bounding_rect();
+
+    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
+
+    bool found = false;
+    for (const Segment& segment : m_segments) {
+      if (segment.intersects(rect, found, vertices)) found = true;
+    }
+
+    return found;
+  }
+
 }

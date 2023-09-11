@@ -73,26 +73,40 @@ namespace Graphick::Editor {
     return { 0 };
   }
 
-  std::vector<uuid> Scene::entities_in(const Math::rect& rect, bool lower_level) {
+  std::vector<uuid> Scene::entities_in(const Math::rect& rect) {
     std::vector<uuid> entities;
-    auto view = get_all_entities_with<PathComponent, TransformComponent>();
 
-    if (lower_level) {
-      for (entt::entity entity : view) {
-        const auto& path = m_registry.get<PathComponent>(entity).path;
-        for (const auto& segment : path.segments()) {
-          if (Math::is_point_in_rect(segment.p0(), rect)) entities.push_back(segment.p0_ptr().lock()->id);
-          if (Math::is_point_in_rect(segment.p3(), rect)) entities.push_back(segment.p3_ptr().lock()->id);
-        }
-      }
-
-      return entities;
-    }
+    auto view = get_all_entities_with<IDComponent, PathComponent, TransformComponent>();
 
     for (entt::entity entity : view) {
-      const auto& path = m_registry.get<PathComponent>(entity).path;
-      if (path.intersects(rect - m_registry.get<TransformComponent>(entity).position.get())) {
-        entities.push_back(m_registry.get<IDComponent>(entity).id);
+      auto components = view.get<IDComponent, PathComponent, TransformComponent>(entity);
+
+      const uuid id = std::get<0>(components).id;
+      const Renderer::Geometry::Path& path = std::get<1>(components).path;
+      const vec2 position = std::get<2>(components).position.get();
+
+      if (path.intersects(rect - position)) {
+        entities.push_back(id);
+      }
+    }
+
+    return entities;
+  }
+
+  std::vector<uuid> Scene::entities_in(const Math::rect& rect, std::vector<uuid>& vertices) {
+    std::vector<uuid> entities;
+
+    auto view = get_all_entities_with<IDComponent, PathComponent, TransformComponent>();
+
+    for (entt::entity entity : view) {
+      auto components = view.get<IDComponent, PathComponent, TransformComponent>(entity);
+
+      const uuid id = std::get<0>(components).id;
+      const Renderer::Geometry::Path& path = std::get<1>(components).path;
+      const vec2 position = std::get<2>(components).position.get();
+
+      if (path.intersects(rect - position, vertices)) {
+        entities.push_back(id);
       }
     }
 
@@ -127,40 +141,6 @@ namespace Graphick::Editor {
     float z_index = 0.0f;
     size_t z_far = m_order.size();
 
-#if 0
-    // 18443
-
-    {
-      OPTICK_EVENT("Render Entities");
-
-      for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
-        if (!m_registry.all_of<PathComponent, TransformComponent>(*it)) continue;
-
-        if (m_registry.all_of<FillComponent>(*it)) {
-          Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, (z_far - z_index++) / z_far, m_registry.get<TransformComponent>(*it).position.get(), m_registry.get<FillComponent>(*it).color);
-        } else {
-          Renderer::Renderer::draw(m_registry.get<PathComponent>(*it).path, (z_far - z_index++) / z_far, m_registry.get<TransformComponent>(*it).position.get());
-        }
-      }
-    }
-
-    {
-      OPTICK_EVENT("Render Outlines");
-
-      Utils::for_each(selection.selected(), selection.temp_selected(), [&](const uuid id) {
-        if (!has_entity(id)) return;
-
-        entt::entity entity = m_entities.at(id);
-
-        if (!m_registry.all_of<PathComponent, TransformComponent>(entity)) return;
-
-        const auto& path = m_registry.get<PathComponent>(entity).path;
-        const auto& transform = m_registry.get<TransformComponent>(entity);
-
-        Renderer::Renderer::draw_outline(path, transform.position.get());
-        });
-    }
-#else
     {
       OPTICK_EVENT("Render Entities");
 
@@ -189,7 +169,7 @@ namespace Graphick::Editor {
         }
       }
     }
-#endif
+
     {
       OPTICK_EVENT("Render Overlays");
 

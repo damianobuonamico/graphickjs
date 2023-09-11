@@ -28,6 +28,7 @@ namespace Graphick::Renderer::Geometry {
 
     bool is_inside(const vec2 position, bool lower_level = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
+    bool intersects(const Math::rect& rect, std::vector<uuid>& vertices) const;
   private:
     bool m_closed = false;
     Segment::ControlPointVertex m_last_point;

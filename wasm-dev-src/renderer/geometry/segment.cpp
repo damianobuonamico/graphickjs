@@ -229,6 +229,32 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
+  bool Segment::intersects(const Math::rect& rect, const bool found, std::vector<uuid>& vertices) const {
+    Math::rect bounding_rect = this->bounding_rect();
+
+    if (found) {
+      if (Math::is_point_in_rect(p0(), rect)) vertices.push_back(m_p0->id);
+      if (Math::is_point_in_rect(p3(), rect)) vertices.push_back(m_p3->id);
+
+      return false;
+    }
+
+    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
+
+    bool p0_inside = Math::is_point_in_rect(p0(), rect);
+    bool p3_inside = Math::is_point_in_rect(p3(), rect);
+
+    if (p0_inside) vertices.push_back(m_p0->id);
+    if (p3_inside) vertices.push_back(m_p3->id);
+    if (p0_inside || p3_inside) return true;
+
+    for (Math::rect& line : Math::lines_from_rect(rect)) {
+      if (intersects_line(line)) return true;
+    }
+
+    return false;
+  }
+
   bool Segment::intersects_line(const Math::rect& line) const {
     return line_intersection_points(line).has_value();
   }

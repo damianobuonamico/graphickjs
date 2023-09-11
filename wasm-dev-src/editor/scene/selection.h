@@ -13,7 +13,10 @@ namespace Graphick::Editor {
     Selection(Scene* scene);
 
     inline const std::unordered_set<uuid>& selected() const { return m_selected; }
+    inline const std::unordered_set<uuid>& selected_vertices() const { return m_selected_vertices; }
+
     inline const std::unordered_set<uuid>& temp_selected() const { return m_temp_selected; }
+    inline const std::unordered_set<uuid>& temp_selected_vertices() const { return m_temp_selected_vertices; }
 
     inline size_t size() const { return m_selected.size(); }
     inline bool empty() const { return size() < 1; }
@@ -26,14 +29,14 @@ namespace Graphick::Editor {
     void select(const uuid id);
     void deselect(const uuid id);
     void temp_select(const std::vector<uuid>& entities);
+    void temp_select(const std::vector<uuid>& entities, const std::vector<uuid>& vertices);
     void sync();
-  // TEMP
-  public:
-    std::unordered_set<uuid> m_selected_vertices;
   private:
     std::unordered_set<uuid> m_selected;
-    std::unordered_set<uuid> m_temp_selected;
+    std::unordered_set<uuid> m_selected_vertices;
 
+    std::unordered_set<uuid> m_temp_selected;
+    std::unordered_set<uuid> m_temp_selected_vertices;
 
     Scene* m_scene;
   };

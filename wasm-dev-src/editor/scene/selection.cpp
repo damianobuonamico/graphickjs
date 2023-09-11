@@ -39,6 +39,15 @@ namespace Graphick::Editor {
     }
   }
 
+  void Selection::temp_select(const std::vector<uuid>& entities, const std::vector<uuid>& vertices) {
+    temp_select(entities);
+    m_temp_selected_vertices.clear();
+
+    for (uuid id : vertices) {
+      m_temp_selected_vertices.insert(id);
+    }
+  }
+
   void Selection::sync() {
     for (uuid id : m_temp_selected) {
       select(id);

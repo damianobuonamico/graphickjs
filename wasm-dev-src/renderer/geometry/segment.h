@@ -61,6 +61,9 @@ namespace Graphick::Renderer::Geometry {
     inline std::weak_ptr<History::Vec2Value> p2_ptr() const { return m_p2; }
     inline std::weak_ptr<ControlPoint> p3_ptr() const { return m_p3; }
 
+    inline uuid p0_id() const { return m_p0->id; }
+    inline uuid p3_id() const { return m_p3->id; }
+
     vec2 get(const float t) const;
 
     rect bounding_rect() const;
@@ -69,6 +72,7 @@ namespace Graphick::Renderer::Geometry {
 
     bool is_inside(const vec2 position, bool lower_level = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
+    bool intersects(const Math::rect& rect, const bool found, std::vector<uuid>& vertices) const;
     bool intersects_line(const Math::rect& line) const;
   private:
     bool is_masquerading_linear() const;

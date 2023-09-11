@@ -326,13 +326,10 @@ namespace Graphick::Editor::Input {
       rect selection_rect = m_selection_rect.bounding_rect();
 
       // TODO: decide how to implement and optimize
-      std::vector<uuid> vertices = Editor::scene().entities_in(selection_rect, true);
+      std::vector<uuid> vertices{};
+      std::vector<uuid> entities = Editor::scene().entities_in(selection_rect, vertices);
 
-      Editor::scene().selection.m_selected_vertices.clear();
-
-      for (uuid id : vertices) {
-        Editor::scene().selection.m_selected_vertices.insert(id);
-      }
+      Editor::scene().selection.temp_select(entities, vertices);
 
       // std::vector<Entity*> entities = Editor::scene().entities_in(box, false);
 

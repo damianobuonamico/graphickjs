@@ -61,7 +61,7 @@ namespace Graphick::Editor::Input {
       }
     } else if (m_selection_rect.active()) {
       m_selection_rect.size(InputManager::pointer.scene.delta);
-      Editor::scene().selection.temp_select(Editor::scene().entities_in(m_selection_rect.bounding_rect(), false));
+      Editor::scene().selection.temp_select(Editor::scene().entities_in(m_selection_rect.bounding_rect()));
     }
   }
 
