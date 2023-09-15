@@ -7,6 +7,26 @@ namespace Graphick::Editor {
 
   Selection::Selection(Scene* scene) : m_scene(scene) {}
 
+  bool Selection::has(const uuid id, bool include_temp) const {
+    return m_selected.find(id) != m_selected.end() || (include_temp && m_temp_selected.find(id) != m_temp_selected.end());
+  }
+
+  bool Selection::has_vertex(const uuid id, const uuid element_id, bool include_temp) const {
+    auto it = m_selected.find(element_id);
+    if (it == m_selected.end()) {
+      it = m_temp_selected.find(element_id);
+
+      if (it == m_temp_selected.end()) return false;
+    }
+
+    if (it->second.type != SelectionEntry::Type::Element) return false;
+
+    SelectionElementEntry& entry = (SelectionElementEntry&)it->second;
+    if (entry.full()) return true;
+
+    return entry.vertices.find(id) != entry.vertices.end();
+  }
+
   void Selection::clear() {
     m_selected.clear();
     m_temp_selected.clear();
@@ -16,41 +36,78 @@ namespace Graphick::Editor {
     if (!m_scene->has_entity(id)) return;
 
     Entity entity = m_scene->get_entity(id);
-    // TODO: entity categories
-    // if (!entity.is_in_category(Entity::CategorySelectable)) {
-    //   return;
-    // }
+    if (!entity.is_in_category(CategoryComponent::Selectable)) return;
 
-    m_selected.insert(id);
+    if (entity.is_element()) {
+      m_selected.insert({ id, SelectionElementEntry{ { 0 } } });
+    } else {
+      m_selected.insert({ id, SelectionEntry{} });
+    }
+  }
+
+  void Selection::select_vertex(const uuid id, const uuid element_id) {
+    auto it = m_selected.find(element_id);
+    if (it == m_selected.end() || it->second.type != SelectionEntry::Type::Element) {
+      m_selected.insert({ element_id, SelectionElementEntry{ { id } } });
+      return;
+    }
+
+    SelectionElementEntry& entry = (SelectionElementEntry&)it->second;
+
+    if (!entry.full()) {
+      entry.vertices.insert(id);
+    }
   }
 
   void Selection::deselect(const uuid id) {
     m_selected.erase(id);
   }
 
-  void Selection::temp_select(const std::vector<uuid>& entities) {
-    m_temp_selected.clear();
+  void Selection::deselect_vertex(const uuid id, const uuid element_id) {
+    auto it = m_selected.find(element_id);
+    if (it == m_selected.end() || it->second.type != SelectionEntry::Type::Element) return;
 
-    for (uuid id : entities) {
-      // TODO: entity categories
-      if (m_scene->has_entity(id)) {
-        m_temp_selected.insert(id);
+    SelectionElementEntry& entry = (SelectionElementEntry&)it->second;
+
+    if (entry.full()) {
+      Entity element = m_scene->get_entity(element_id);
+      entry.vertices.clear();
+
+      for (uuid vertex_id : element.get_component<PathComponent>().path.vertices_ids()) {
+        if (vertex_id == id) continue;
+        entry.vertices.insert(vertex_id);
       }
+    } else {
+      entry.vertices.erase(id);
+    }
+
+    if (entry.vertices.empty()) {
+      m_selected.erase(element_id);
     }
   }
 
-  void Selection::temp_select(const std::vector<uuid>& entities, const std::vector<uuid>& vertices) {
-    temp_select(entities);
-    m_temp_selected_vertices.clear();
-
-    for (uuid id : vertices) {
-      m_temp_selected_vertices.insert(id);
-    }
+  void Selection::temp_select(const std::unordered_map<uuid, SelectionEntry>& entities) {
+    m_temp_selected = entities;
   }
 
   void Selection::sync() {
-    for (uuid id : m_temp_selected) {
-      select(id);
+    for (auto& [id, entry] : m_temp_selected) {
+      if (entry.type == SelectionEntry::Type::Element) {
+        SelectionElementEntry& element_entry = (SelectionElementEntry&)entry;
+        auto it = m_selected.find(id);
+
+        if (it != m_selected.end() && it->second.type == SelectionEntry::Type::Element) {
+          if (((SelectionElementEntry&)it->second).full()) continue;
+
+          for (uuid vertex_id : element_entry.vertices) {
+            ((SelectionElementEntry&)it->second).vertices.insert(vertex_id);
+          }
+        } else {
+          m_selected.insert({ id, element_entry });
+        }
+      } else {
+        m_selected.insert({ id, entry });
+      }
     }
 
     m_temp_selected.clear();

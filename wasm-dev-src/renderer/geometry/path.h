@@ -2,6 +2,8 @@
 
 #include "segment.h"
 
+#include <unordered_set>
+
 namespace Graphick::Renderer::Geometry {
 
   class Path {
@@ -9,6 +11,9 @@ namespace Graphick::Renderer::Geometry {
     inline bool empty() const { return m_segments.empty(); }
     inline bool closed() const { return m_closed; }
     inline const std::vector<Segment>& segments() const { return m_segments; }
+
+    const std::vector<ControlPoint*> vertices() const;
+    const std::vector<uuid> vertices_ids() const;
 
     void move_to(vec2 p);
     void line_to(vec2 p);
@@ -26,9 +31,9 @@ namespace Graphick::Renderer::Geometry {
     Math::rect bounding_rect() const;
     Math::rect large_bounding_rect() const;
 
-    bool is_inside(const vec2 position, bool lower_level = false, float threshold = 0.0f) const;
+    bool is_inside(const vec2 position, bool deep_search = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
-    bool intersects(const Math::rect& rect, std::vector<uuid>& vertices) const;
+    bool intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const;
   private:
     bool m_closed = false;
     Segment::ControlPointVertex m_last_point;

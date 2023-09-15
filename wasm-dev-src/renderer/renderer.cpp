@@ -154,11 +154,11 @@ namespace Graphick::Renderer {
     get()->m_tiler.process_path(path, translation, color, z_index);
   }
 
-  void Renderer::draw_outline(const Geometry::Path& path, const vec2 translation) {
+  void Renderer::draw_outline(const uuid id, const Geometry::Path& path, const vec2 translation) {
     if (path.empty()) return;
 
     get()->add_line_instances(path, translation);
-    get()->add_vertex_instances(path, translation);
+    get()->add_vertex_instances(id, path, translation);
   }
 
   void Renderer::draw_outline(const Geometry::Internal::PathInternal& path, const vec2 translation) {
@@ -520,9 +520,8 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Renderer::add_vertex_instances(const Geometry::Path& path, const vec2 translation) {
-    const std::unordered_set<uuid> selected_vertices = Editor::Editor::scene().selection.selected_vertices();
-    const std::unordered_set<uuid> temp_selected_vertices = Editor::Editor::scene().selection.temp_selected_vertices();
+  void Renderer::add_vertex_instances(const uuid id, const Geometry::Path& path, const vec2 translation) {
+    Editor::Scene& scene = Editor::Editor::scene();
 
     for (const auto& segment : path.segments()) {
       vec2 p0 = segment.p0() + translation;
@@ -530,7 +529,7 @@ namespace Graphick::Renderer {
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
 
       add_square_instance(p0);
-      if (selected_vertices.find(p0_id) == selected_vertices.end() && temp_selected_vertices.find(p0_id) == temp_selected_vertices.end()) {
+      if (!scene.selection.has_vertex(p0_id, id, true)) {
         add_white_square_instance(p0);
       }
 
@@ -555,7 +554,7 @@ namespace Graphick::Renderer {
       uuid p3_id = path.segments().back().p3_id();
 
       add_square_instance(p3);
-      if (selected_vertices.find(p3_id) == selected_vertices.end() && temp_selected_vertices.find(p3_id) == temp_selected_vertices.end()) {
+      if (!scene.selection.has_vertex(p3_id, id, true)) {
         add_white_square_instance(p3);
       }
     }

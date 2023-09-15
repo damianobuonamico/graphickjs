@@ -50,7 +50,7 @@ namespace Graphick::Editor::Input {
         // TODO: Snapping
 
         m_dragging_occurred = true;
-        for (uuid id : Editor::scene().selection.selected()) {
+        for (auto& [id, _] : Editor::scene().selection.selected()) {
           Entity entity = Editor::scene().get_entity(id);
           if (!entity.has_component<TransformComponent>()) continue;
 
@@ -74,7 +74,7 @@ namespace Graphick::Editor::Input {
     }
 
     if (m_dragging_occurred && !Editor::scene().selection.empty()) {
-      for (uuid id : Editor::scene().selection.selected()) {
+      for (auto& [id, _] : Editor::scene().selection.selected()) {
         Entity entity = Editor::scene().get_entity(id);
         if (!entity.has_component<TransformComponent>()) continue;
 

@@ -5,6 +5,7 @@
 
 #include <assert.h>
 
+// TODO: fix commands casting without rtti
 namespace Graphick::History {
 
   CommandHistory* CommandHistory::s_instance = nullptr;

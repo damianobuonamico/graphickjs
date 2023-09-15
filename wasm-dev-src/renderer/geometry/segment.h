@@ -5,6 +5,7 @@
 #include "../../math/rect.h"
 
 #include <vector>
+#include <unordered_set>
 #include <optional>
 
 namespace Graphick::Renderer::Geometry {
@@ -70,9 +71,9 @@ namespace Graphick::Renderer::Geometry {
     rect large_bounding_rect() const;
     vec2 size() const;
 
-    bool is_inside(const vec2 position, bool lower_level = false, float threshold = 0.0f) const;
+    bool is_inside(const vec2 position, bool deep_search = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
-    bool intersects(const Math::rect& rect, const bool found, std::vector<uuid>& vertices) const;
+    bool intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const;
     bool intersects_line(const Math::rect& line) const;
   private:
     bool is_masquerading_linear() const;

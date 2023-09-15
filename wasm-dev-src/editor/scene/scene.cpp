@@ -57,14 +57,14 @@ namespace Graphick::Editor {
     return { m_entities.at(id), this };
   }
 
-  uuid Scene::entity_at(const vec2 position, bool lower_level, float threshold) {
+  uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold) {
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
         const auto& path = m_registry.get<PathComponent>(*it).path;
         const vec2 translation = m_registry.get<TransformComponent>(*it).position.get();
         // auto pos = transform.Map(position.x, position.y);
-        // if (path.is_inside({ (float)pos.X, (float)pos.Y }, lower_level, threshold)) return id;
-        if (path.is_inside(position - translation, lower_level, threshold)) {
+        // if (path.is_inside({ (float)pos.X, (float)pos.Y }, deep_search, threshold)) return id;
+        if (path.is_inside(position - translation, deep_search, threshold)) {
           return m_registry.get<IDComponent>(*it).id;
         }
       }
@@ -73,8 +73,9 @@ namespace Graphick::Editor {
     return { 0 };
   }
 
-  std::vector<uuid> Scene::entities_in(const Math::rect& rect) {
-    std::vector<uuid> entities;
+  std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const Math::rect& rect, bool deep_search) {
+    std::unordered_map<uuid, Selection::SelectionEntry> entities;
+    std::unordered_set<uuid> vertices;
 
     auto view = get_all_entities_with<IDComponent, PathComponent, TransformComponent>();
 
@@ -85,28 +86,16 @@ namespace Graphick::Editor {
       const Renderer::Geometry::Path& path = std::get<1>(components).path;
       const vec2 position = std::get<2>(components).position.get();
 
-      if (path.intersects(rect - position)) {
-        entities.push_back(id);
-      }
-    }
+      if (deep_search) {
+        vertices.clear();
 
-    return entities;
-  }
-
-  std::vector<uuid> Scene::entities_in(const Math::rect& rect, std::vector<uuid>& vertices) {
-    std::vector<uuid> entities;
-
-    auto view = get_all_entities_with<IDComponent, PathComponent, TransformComponent>();
-
-    for (entt::entity entity : view) {
-      auto components = view.get<IDComponent, PathComponent, TransformComponent>(entity);
-
-      const uuid id = std::get<0>(components).id;
-      const Renderer::Geometry::Path& path = std::get<1>(components).path;
-      const vec2 position = std::get<2>(components).position.get();
-
-      if (path.intersects(rect - position, vertices)) {
-        entities.push_back(id);
+        if (path.intersects(rect - position, vertices)) {
+          entities.insert({ id, Selection::SelectionElementEntry{ vertices } });
+        }
+      } else {
+        if (path.intersects(rect - position)) {
+          entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+        }
       }
     }
 
@@ -121,6 +110,7 @@ namespace Graphick::Editor {
   Entity Scene::create_element(Renderer::Geometry::Path& path, const std::string& tag) {
     Entity entity = create_entity(tag);
 
+    entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
     entity.add_component<PathComponent>(path);
     entity.add_component<TransformComponent>();
 
@@ -165,7 +155,7 @@ namespace Graphick::Editor {
         }
 
         if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
-          Renderer::Renderer::draw_outline(path, position);
+          Renderer::Renderer::draw_outline(id, path, position);
         }
       }
     }

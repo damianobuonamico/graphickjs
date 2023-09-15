@@ -67,6 +67,15 @@ namespace Graphick::Editor {
     bool operator!=(const Entity& other) const {
       return !(*this == other);
     }
+
+    bool is_in_category(CategoryComponent::Category category) const {
+      if (!has_component<CategoryComponent>()) return false;
+      return get_component<CategoryComponent>().category & category;
+    }
+
+    bool is_element() const {
+      return has_components<PathComponent, TransformComponent>();
+    }
   private:
     entt::entity m_handle;
     Scene* m_scene;

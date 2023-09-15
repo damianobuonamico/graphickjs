@@ -197,12 +197,12 @@ namespace Graphick::Renderer::Geometry {
     return bounding_rect().size();
   }
 
-  bool Segment::is_inside(const vec2 position, bool lower_level, float threshold) const {
-    if (!Math::is_point_in_rect(position, lower_level ? large_bounding_rect() : bounding_rect(), threshold)) {
+  bool Segment::is_inside(const vec2 position, bool deep_search, float threshold) const {
+    if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : bounding_rect(), threshold)) {
       return false;
     }
 
-    if (lower_level) {
+    if (deep_search) {
       if (m_p1 != nullptr && Math::is_point_in_circle(position, p1(), threshold)) {
         return true;
       }
@@ -229,12 +229,12 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
-  bool Segment::intersects(const Math::rect& rect, const bool found, std::vector<uuid>& vertices) const {
+  bool Segment::intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const {
     Math::rect bounding_rect = this->bounding_rect();
 
     if (found) {
-      if (Math::is_point_in_rect(p0(), rect)) vertices.push_back(m_p0->id);
-      if (Math::is_point_in_rect(p3(), rect)) vertices.push_back(m_p3->id);
+      if (Math::is_point_in_rect(p0(), rect)) vertices.insert(m_p0->id);
+      if (Math::is_point_in_rect(p3(), rect)) vertices.insert(m_p3->id);
 
       return false;
     }
@@ -244,8 +244,8 @@ namespace Graphick::Renderer::Geometry {
     bool p0_inside = Math::is_point_in_rect(p0(), rect);
     bool p3_inside = Math::is_point_in_rect(p3(), rect);
 
-    if (p0_inside) vertices.push_back(m_p0->id);
-    if (p3_inside) vertices.push_back(m_p3->id);
+    if (p0_inside) vertices.insert(m_p0->id);
+    if (p3_inside) vertices.insert(m_p3->id);
     if (p0_inside || p3_inside) return true;
 
     for (Math::rect& line : Math::lines_from_rect(rect)) {

@@ -21,6 +21,7 @@ namespace Graphick::Editor::Input {
     m_entity = 0;
     m_vertex.reset();
     m_handle.reset();
+    m_cache.clear();
 
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
@@ -167,28 +168,16 @@ namespace Graphick::Editor::Input {
 
   // TODO: Implement rotation
   void DirectSelectTool::translate_selected() {
-    // TEMP
-    if (m_vertex.has_value()) {
-      auto vertex = m_vertex.value().lock();
-      if (vertex) {
-        vertex->set_delta(InputManager::pointer.scene.delta);
-      }
+
+    for (Graphick::History::Vec2Value* value : m_cache) {
+      value->set_delta(InputManager::pointer.scene.delta);
     }
+  }
 
-    // for (auto id : Editor::scene().selection.selected()) {
-      // if (entity->is_in_category(Entity::CategorySelectableChildren)) {
-      //   ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
-
-      //   if (element && !element->selection()->full()) {
-      //     for (Entity* vertex : element->selection()->entities()) {
-      //       vertex->transform()->translate(InputManager::pointer.scene.movement);
-      //     }
-      //     continue;
-      //   }
-      // }
-
-      // entity->transform()->translate(InputManager::pointer.scene.movement);
-    // }
+  void DirectSelectTool::apply_selected() {
+    for (Graphick::History::Vec2Value* value : m_cache) {
+      value->apply();
+    }
   }
 
   // void DirectSelectTool::shift_select_element(Entity* entity) {
@@ -296,24 +285,44 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_down() {
-    // if (!m_element->selection()->has(m_vertex->id)) {
-    //   if (!InputManager::keys.shift) Editor::scene().selection.clear();
+    Scene& scene = Editor::scene();
+    uuid id = m_vertex.value().lock()->id;
 
-    //   m_element->selection()->select(m_vertex);
-    //   m_is_entity_added_to_selection = true;
-    // }
+    if (!scene.selection.has_vertex(id, m_entity)) {
+      if (!InputManager::keys.shift) scene.selection.clear();
 
-    // console::log("vertex", m_vertex->transform()->position().get());
-    // if (m_vertex->transform()->left()) console::log("left", m_vertex->transform()->left()->get());
-    // if (m_vertex->transform()->right()) console::log("right", m_vertex->transform()->right()->get());
+      scene.selection.select_vertex(id, m_entity);
+      m_is_entity_added_to_selection = true;
+    }
+
+    for (auto& [id, entry] : scene.selection.selected()) {
+      if (!scene.has_entity(id)) continue;
+
+      Entity entity = scene.get_entity(id);
+
+      if (entry.type == Selection::SelectionEntry::Type::Element && entity.is_element() && !((Selection::SelectionElementEntry&)(entry)).full()) {
+        Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
+
+        for (auto& vertex : path.vertices()) {
+          if (entry.vertices.find(vertex->id) == entry.vertices.end()) continue;
+          m_cache.push_back(&vertex->_value());
+
+          for (auto& handle_ptr : vertex->relative_handles()) {
+            auto handle = handle_ptr.lock();
+            if (handle) {
+              m_cache.push_back(handle.get());
+            }
+          }
+        }
+      } else if (entity.has_component<TransformComponent>()) {
+        m_cache.push_back(&entity.get_component<TransformComponent>().position);
+      }
+    }
 
     m_mode = Mode::Vertex;
   }
 
   void DirectSelectTool::on_handle_pointer_down() {
-    // m_vertex = dynamic_cast<VertexEntity*>(m_handle->parent);
-    // m_element = dynamic_cast<ElementEntity*>(m_vertex->parent);
-
     m_mode = Mode::Handle;
   }
 
@@ -325,28 +334,7 @@ namespace Graphick::Editor::Input {
 
       rect selection_rect = m_selection_rect.bounding_rect();
 
-      // TODO: decide how to implement and optimize
-      std::vector<uuid> vertices{};
-      std::vector<uuid> entities = Editor::scene().entities_in(selection_rect, vertices);
-
-      Editor::scene().selection.temp_select(entities, vertices);
-
-      // std::vector<Entity*> entities = Editor::scene().entities_in(box, false);
-
-      // for (Entity* entity : entities) {
-      //   ElementEntity* element = dynamic_cast<ElementEntity*>(entity);
-      //   if (element) {
-      //     std::vector<Entity*> vertices{};
-      //     element->entities_in(box, vertices, true);
-
-      //     element->selection()->temp_select(vertices);
-      //     if (element->selection()->empty()) {
-      //       element->selection()->temp_all();
-      //     }
-      //   }
-      // }
-
-      // Editor::scene().selection.temp_select(entities);
+      Editor::scene().selection.temp_select(Editor::scene().entities_in(selection_rect, true));
     }
   }
 
@@ -444,30 +432,42 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_handle_pointer_move() {
-    console::log("handle move");
-
-    if (m_handle.has_value()) {
-      auto handle = m_handle.value().lock();
-      if (handle) {
-        handle->set_delta(InputManager::pointer.scene.delta);
+    if (InputManager::keys.space && m_vertex.has_value()) {
+      // TODO: Fix
+      auto vertex = m_vertex.value().lock();
+      if (vertex) {
+        vertex->set_delta(InputManager::pointer.scene.delta);
       }
     }
-    // if (InputManager::keys.space) {
-    //   m_vertex->transform()->translate(InputManager::pointer.scene.movement);
-    //   return;
-    // }
 
-    // if (m_vertex->left() && m_handle->id == m_vertex->left()->id) {
-    //   m_vertex->transform()->translate_left(InputManager::pointer.scene.movement, !InputManager::keys.alt);
-    // } else if (m_vertex->right() && m_handle->id == m_vertex->right()->id) {
-    //   m_vertex->transform()->translate_right(InputManager::pointer.scene.movement, !InputManager::keys.alt);
-    // }
+    if (!m_handle.has_value()) return;
+
+    auto handle = m_handle.value().lock();
+    if (!handle) return;
+
+    handle->set_delta(InputManager::pointer.scene.delta);
+
+    if (InputManager::keys.alt) return;
+
+    auto vertex = m_vertex.value().lock();
+    auto handles = vertex->relative_handles();
+    if (!vertex || handles.size() < 2 || Math::is_almost_equal(handle->get(), vertex->get())) return;
+
+    vec2 dir = Math::normalize(vertex->get() - handle->get());
+
+    for (auto h : handles) {
+      auto h_ptr = h.lock();
+      if (h_ptr && h_ptr != handle) {
+        float length = Math::length(h_ptr->get() - h_ptr->delta() - vertex->get());
+        h_ptr->move_to(dir * length + vertex->get());
+      }
+    }
   }
 
   /* -- on_pointer_up -- */
 
   void DirectSelectTool::on_none_pointer_up() {
-    // Editor::scene().selection.sync(true);
+    Editor::scene().selection.sync();
   }
 
   void DirectSelectTool::on_duplicate_pointer_up() {
@@ -527,39 +527,43 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_up() {
-    if (m_vertex.has_value()) {
-      auto vertex = m_vertex.value().lock();
-      if (vertex) {
-        vertex->apply();
+    Scene& scene = Editor::scene();
+    uuid id = m_vertex.value().lock()->id;
+
+    if (m_dragging_occurred) {
+      apply_selected();
+    } else if (scene.selection.has_vertex(id, m_entity) && !m_is_entity_added_to_selection) {
+      if (InputManager::keys.shift) {
+        scene.selection.deselect_vertex(id, m_entity);
+      } else {
+        if (InputManager::pointer.button == InputManager::PointerButton::Left) {
+          scene.selection.clear();
+        }
+
+        scene.selection.select_vertex(id, m_entity);
       }
     }
-    // if (m_dragging_occurred && !m_element->selection()->empty()) {
-    //   for (const auto& [id, entity] : Editor::scene().selection) {
-    //     entity->transform()->apply();
-    //   }
-    // } else if (m_element->selection()->has(m_vertex->id) && !m_is_entity_added_to_selection) {
-    //   if (InputManager::keys.shift) {
-    //     m_element->selection()->deselect(m_vertex->id);
-    //   } else {
-    //     if (InputManager::pointer.button == InputManager::PointerButton::Left) {
-    //       Editor::scene().selection.clear();
-    //     }
-
-    //     m_element->selection()->select(m_vertex);
-    //   }
-    // }
   }
 
   void DirectSelectTool::on_handle_pointer_up() {
     if (!m_dragging_occurred || !m_handle.has_value()) return;
 
-    auto handle = m_handle.value().lock();
-    if (handle) {
-      handle->apply();
+    auto vertex = m_vertex.value().lock();
+    if (!vertex) {
+      auto handle = m_handle.value().lock();
+      if (handle) handle->apply();
+
+      return;
     }
-    // if (m_dragging_occurred) {
-    //   m_element->transform()->apply();
-    // }
+
+    auto handles = vertex->relative_handles();
+
+    for (auto handle_ptr : handles) {
+      auto handle = handle_ptr.lock();
+      if (handle) {
+        handle->apply();
+      }
+    }
   }
 
 }

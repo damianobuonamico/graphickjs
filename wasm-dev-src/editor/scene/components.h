@@ -24,6 +24,15 @@ namespace Graphick::Editor {
     TagComponent(const std::string& tag) : tag(tag) {}
   };
 
+  struct CategoryComponent {
+    enum Category {
+      None = 0,
+      Selectable = 1 << 0,
+    };
+
+    int category = None;
+  };
+
   struct PathComponent {
     Renderer::Geometry::Path path;
 

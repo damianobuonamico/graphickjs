@@ -9,6 +9,34 @@
 
 namespace Graphick::Renderer::Geometry {
 
+  const std::vector<ControlPoint*> Path::vertices() const {
+    std::vector<ControlPoint*> vertices;
+
+    for (const Segment& segment : m_segments) {
+      vertices.push_back(segment.m_p0.get());
+    }
+
+    if (!m_closed) {
+      vertices.push_back(m_segments.back().m_p3.get());
+    }
+
+    return vertices;
+  }
+
+  const std::vector<uuid> Path::vertices_ids() const {
+    std::vector<uuid> vertices;
+
+    for (const Segment& segment : m_segments) {
+      vertices.push_back(segment.m_p0->id);
+    }
+
+    if (!m_closed) {
+      vertices.push_back(m_segments.back().m_p3->id);
+    }
+
+    return vertices;
+  }
+
   void Path::move_to(vec2 p) {
     m_last_point = std::make_shared<ControlPoint>(p);
   }
@@ -229,13 +257,13 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  bool Path::is_inside(const vec2 position, bool lower_level, float threshold) const {
-    if (!Math::is_point_in_rect(position, lower_level ? large_bounding_rect() : bounding_rect(), threshold)) {
+  bool Path::is_inside(const vec2 position, bool deep_search, float threshold) const {
+    if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : bounding_rect(), threshold)) {
       return false;
     }
 
     for (const Segment& segment : m_segments) {
-      if (segment.is_inside(position, lower_level, threshold)) {
+      if (segment.is_inside(position, deep_search, threshold)) {
         return true;
       }
     }
@@ -255,7 +283,7 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
-  bool Path::intersects(const Math::rect& rect, std::vector<uuid>& vertices) const {
+  bool Path::intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const {
     Math::rect bounding_rect = this->bounding_rect();
 
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;

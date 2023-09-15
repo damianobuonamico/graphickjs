@@ -46,9 +46,8 @@ namespace Graphick::Editor {
     bool has_entity(const uuid id) const;
     Entity get_entity(const uuid id);
 
-    uuid entity_at(const vec2 position, bool lower_level = false, float threshold = 0.0f);
-    std::vector<uuid> entities_in(const Math::rect& rect);
-    std::vector<uuid> entities_in(const Math::rect& rect, std::vector<uuid>& vertices);
+    uuid entity_at(const vec2 position, bool deep_search = false, float threshold = 0.0f);
+    std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const Math::rect& rect, bool deep_search = false);
 
     Entity create_element(const std::string& tag = "");
     Entity create_element(Renderer::Geometry::Path& path, const std::string& tag = "");

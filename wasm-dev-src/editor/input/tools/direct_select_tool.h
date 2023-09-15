@@ -26,6 +26,7 @@ namespace Graphick::Editor::Input {
     DirectSelectTool();
 
     void translate_selected();
+    void apply_selected();
     // void shift_select_element(Entity* entity);
 
     void on_none_pointer_down();
@@ -75,6 +76,8 @@ namespace Graphick::Editor::Input {
     uuid m_entity = 0;
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex;
     std::optional<std::weak_ptr<History::Vec2Value>> m_handle;
+
+    std::vector<History::Vec2Value*> m_cache;
 
     // Entity* m_entity = nullptr;
     // ElementEntity* m_element = nullptr;

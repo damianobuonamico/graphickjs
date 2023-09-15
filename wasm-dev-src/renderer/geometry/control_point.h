@@ -20,6 +20,10 @@ namespace Graphick::Renderer::Geometry {
     inline vec2 get() const { return m_value.get(); }
     inline vec2 delta() const { return m_value.delta(); }
 
+    inline History::Vec2Value& _value() { return m_value; }
+
+    inline std::vector<std::weak_ptr<History::Vec2Value>>& relative_handles() { return m_relative_handles; }
+
     void set_relative_handle(std::weak_ptr<History::Vec2Value> handle);
     void remove_relative_handle(std::weak_ptr<History::Vec2Value> handle);
     void reset_relative_handles();

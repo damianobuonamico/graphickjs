@@ -34,8 +34,7 @@ namespace Graphick::Editor::Input {
 
     Entity entity = Editor::scene().get_entity(id);
 
-    // TODO: internal check for different entity types
-    if (!entity.has_components<PathComponent, TransformComponent>()) {
+    if (!entity.is_element()) {
       m_type = HoverType::Entity;
       return;
     }
