@@ -68,6 +68,7 @@ namespace Graphick::Renderer::Geometry {
     vec2 get(const float t) const;
 
     rect bounding_rect() const;
+    rect approx_bounding_rect() const;
     rect large_bounding_rect() const;
     vec2 size() const;
 

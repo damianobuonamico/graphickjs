@@ -33,6 +33,8 @@ namespace Graphick::Editor::Input {
     float x, float y, float pressure, double time_stamp,
     bool alt, bool ctrl, bool shift
   ) {
+    OPTICK_EVENT();
+
     get()->set_keys_state(alt, ctrl, shift);
     pointer.type = type;
     pointer.pressure = pressure;
@@ -132,6 +134,8 @@ namespace Graphick::Editor::Input {
   }
 
   void InputManager::recalculate_hover() {
+    OPTICK_EVENT();
+
     if (!Editor::scene().tool_state.active().is_in_category(Tool::CategoryImmediate)) {
       float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 5.0f / Editor::scene().viewport.zoom();
 
@@ -182,6 +186,8 @@ namespace Graphick::Editor::Input {
 
   bool InputManager::on_pointer_move(PointerTarget target, float x, float y) {
     if (pointer.target != PointerTarget::Canvas && target != PointerTarget::Canvas) return false;
+
+    OPTICK_EVENT();
 
     vec2 current_position = { x, y };
 

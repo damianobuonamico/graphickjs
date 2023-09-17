@@ -176,6 +176,31 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
+  rect Segment::approx_bounding_rect() const {
+    vec2 p0 = m_p0->get();
+    vec2 p3 = m_p3->get();
+
+    rect rect{ p0, p0 };
+
+    Math::min(rect.min, p3, rect.min);
+    Math::max(rect.max, p3, rect.max);
+
+    if (m_p1) {
+      vec2 p1 = m_p1->get();
+
+      Math::min(rect.min, p1, rect.min);
+      Math::max(rect.max, p1, rect.max);
+    }
+    if (m_p2) {
+      vec2 p2 = m_p2->get();
+
+      Math::min(rect.min, p2, rect.min);
+      Math::max(rect.max, p2, rect.max);
+    }
+
+    return rect;
+  }
+
   rect Segment::large_bounding_rect() const {
     rect rect = bounding_rect();
 

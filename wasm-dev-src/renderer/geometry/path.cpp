@@ -232,10 +232,27 @@ namespace Graphick::Renderer::Geometry {
   }
 
   Math::rect Path::bounding_rect() const {
+    GK_TOTAL("Path::bounding_rect");
+
     Math::rect rect{};
 
     for (const auto& segment : m_segments) {
       Math::rect segment_rect = segment.bounding_rect();
+
+      min(rect.min, segment_rect.min, rect.min);
+      max(rect.max, segment_rect.max, rect.max);
+    }
+
+    return rect;
+  }
+
+  Math::rect Path::approx_bounding_rect() const {
+    GK_TOTAL("Path::approx_bounding_rect");
+
+    Math::rect rect{};
+
+    for (const auto& segment : m_segments) {
+      Math::rect segment_rect = segment.approx_bounding_rect();
 
       min(rect.min, segment_rect.min, rect.min);
       max(rect.max, segment_rect.max, rect.max);
@@ -258,7 +275,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   bool Path::is_inside(const vec2 position, bool deep_search, float threshold) const {
-    if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : bounding_rect(), threshold)) {
+    if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : approx_bounding_rect(), threshold)) {
       return false;
     }
 
@@ -272,7 +289,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   bool Path::intersects(const Math::rect& rect) const {
-    Math::rect bounding_rect = this->bounding_rect();
+    Math::rect bounding_rect = this->approx_bounding_rect();
 
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
 
@@ -284,7 +301,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   bool Path::intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const {
-    Math::rect bounding_rect = this->bounding_rect();
+    Math::rect bounding_rect = this->approx_bounding_rect();
 
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
 

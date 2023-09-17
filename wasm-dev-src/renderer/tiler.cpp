@@ -169,7 +169,7 @@ namespace Graphick::Renderer {
   }
 
   static vec2 clip(std::vector<vec2>& points, rect visible) {
-    OPTICK_EVENT();
+    // OPTICK_EVENT();
 
     clip_to_left(points, visible.min.x);
     clip_to_right(points, visible.max.x);
@@ -182,7 +182,7 @@ namespace Graphick::Renderer {
     m_position(position),
     m_tile_y_prev(0)
   {
-    OPTICK_EVENT();
+    // OPTICK_EVENT();
 
     // TODO: cache bounding_rects
     rect rect = path.bounding_rect() + translation;
@@ -312,7 +312,7 @@ namespace Graphick::Renderer {
   }
 
   void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
-    OPTICK_EVENT();
+    // OPTICK_EVENT();
 
     m_prev = p3;
     m_tile_y_prev = (int16_t)std::floor(p0.y) / TILE_SIZE;
@@ -402,7 +402,7 @@ namespace Graphick::Renderer {
   }
 
   void PathTiler::process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
-    OPTICK_EVENT();
+    // OPTICK_EVENT();
 
     vec2 a = -1.0f * p0 + 3.0f * p1 - 3.0f * p2 + p3;
     vec2 b = 3.0f * (p0 - 2.0f * p1 + p2);
@@ -442,7 +442,7 @@ namespace Graphick::Renderer {
   }
 
   void PathTiler::finish(const ivec2 tiles_count) {
-    OPTICK_EVENT();
+    // OPTICK_EVENT();
 
     m_bins.push_back(m_bin);
 
@@ -550,7 +550,7 @@ namespace Graphick::Renderer {
   }
 
   void Tiler::process_path(const Geometry::Path& path, const vec2 translation, const vec4& color, const float z_index) {
-    OPTICK_EVENT();
+    // OPTICK_EVENT();
 
     PathTiler tiler(path, translation, color, m_visible, m_zoom, m_position, m_culled_tiles, m_tiles_count);
 

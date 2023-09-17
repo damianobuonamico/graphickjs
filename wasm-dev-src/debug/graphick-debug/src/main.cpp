@@ -23,6 +23,8 @@ struct PointerState {
 static PointerState pointer_state;
 
 static void cursor_position_callback(GLFWwindow* window, double x, double y) {
+  OPTICK_EVENT();
+
   pointer_state.position = { (float)x, (float)y };
 
   Graphick::Editor::Input::InputManager::on_pointer_event(
@@ -109,7 +111,7 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  // #define TIGER
+#define TIGER
 
 #ifdef TIGER
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
@@ -168,6 +170,7 @@ int main() {
 
   while (!glfwWindowShouldClose(window)) {
     OPTICK_FRAME("MainThread");
+    GK_FRAME("MainThread");
 
     glfwPollEvents();
 

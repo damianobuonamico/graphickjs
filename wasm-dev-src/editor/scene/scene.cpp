@@ -74,12 +74,16 @@ namespace Graphick::Editor {
   }
 
   std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const Math::rect& rect, bool deep_search) {
+    OPTICK_EVENT();
+
     std::unordered_map<uuid, Selection::SelectionEntry> entities;
     std::unordered_set<uuid> vertices;
 
     auto view = get_all_entities_with<IDComponent, PathComponent, TransformComponent>();
 
     for (entt::entity entity : view) {
+      OPTICK_EVENT("entity_in_rect");
+
       auto components = view.get<IDComponent, PathComponent, TransformComponent>(entity);
 
       const uuid id = std::get<0>(components).id;
@@ -118,7 +122,7 @@ namespace Graphick::Editor {
   }
 
   void Scene::render() const {
-    GK_AVERAGE("render");
+    GK_TOTAL("Scene::render");
     OPTICK_EVENT();
 
     Renderer::Renderer::begin_frame({
