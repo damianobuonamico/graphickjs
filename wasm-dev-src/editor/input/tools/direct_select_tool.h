@@ -3,8 +3,6 @@
 #include "common.h"
 
 #include "../tool.h"
-// #include "../../scene/entities/element_entity.h"
-// #include "../../scene/entities/selection_rect_entity.h"
 
 #include "../../../renderer/geometry/control_point.h"
 
@@ -20,6 +18,8 @@ namespace Graphick::Editor::Input {
     virtual void on_pointer_down() override;
     virtual void on_pointer_move() override;
     virtual void on_pointer_up() override;
+
+    virtual void on_key(const bool down, const KeyboardKey key) override;
 
     virtual void render_overlays() const override;
   private:

@@ -30,6 +30,8 @@ namespace Graphick::Editor::Input {
 
     void on_pointer_hover();
 
+    void on_key(const bool down, const KeyboardKey key);
+
     void recalculate_active();
   private:
     Tool* m_tools[static_cast<int>(Tool::ToolType::None)] = {

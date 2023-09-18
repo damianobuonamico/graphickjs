@@ -36,6 +36,7 @@ namespace Graphick::Renderer::Geometry {
     void move_to(const vec2 value);
 
     void apply();
+    void deep_apply();
   private:
     History::Vec2Value m_value;
     std::vector<std::weak_ptr<History::Vec2Value>> m_relative_handles;

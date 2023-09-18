@@ -160,6 +160,12 @@ namespace Graphick::Editor::Input {
     }
   }
 
+  void DirectSelectTool::on_key(const bool down, const KeyboardKey key) {
+    if (InputManager::keys.alt_state_changed) {
+      on_pointer_move();
+    }
+  }
+
   void DirectSelectTool::render_overlays() const {
     if (!m_selection_rect.active()) return;
 
@@ -433,11 +439,12 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_handle_pointer_move() {
     if (InputManager::keys.space && m_vertex.has_value()) {
-      // TODO: Fix
       auto vertex = m_vertex.value().lock();
       if (vertex) {
-        vertex->set_delta(InputManager::pointer.scene.delta);
+        vertex->add_delta(InputManager::pointer.scene.movement);
       }
+
+      return;
     }
 
     if (!m_handle.has_value()) return;
@@ -458,7 +465,7 @@ namespace Graphick::Editor::Input {
     for (auto h : handles) {
       auto h_ptr = h.lock();
       if (h_ptr && h_ptr != handle) {
-        float length = Math::length(h_ptr->get() - h_ptr->delta() - vertex->get());
+        float length = Math::length(h_ptr->get() - h_ptr->delta() - vertex->get() + vertex->delta());
         h_ptr->move_to(dir * length + vertex->get());
       }
     }
@@ -556,14 +563,7 @@ namespace Graphick::Editor::Input {
       return;
     }
 
-    auto handles = vertex->relative_handles();
-
-    for (auto handle_ptr : handles) {
-      auto handle = handle_ptr.lock();
-      if (handle) {
-        handle->apply();
-      }
-    }
+    vertex->deep_apply();
   }
 
 }

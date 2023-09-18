@@ -61,6 +61,10 @@ namespace Graphick::Editor::Input {
     active().on_pointer_hover();
   }
 
+  void ToolState::on_key(const bool down, const KeyboardKey key) {
+    active().on_key(down, key);
+  }
+
   void ToolState::recalculate_active() {
     if (InputManager::keys.space) {
       if (InputManager::keys.ctrl) {

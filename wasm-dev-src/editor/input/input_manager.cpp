@@ -75,6 +75,11 @@ namespace Graphick::Editor::Input {
       Editor::scene().tool_state.recalculate_active();
     }
 
+    if (instance->m_moving && !instance->m_abort) {
+      Editor::scene().tool_state.on_key(event == KeyboardEvent::Down, key);
+      Editor::render();
+    }
+
     switch (event) {
     case KeyboardEvent::Down:
       return instance->on_key_down(key);

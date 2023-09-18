@@ -1,5 +1,7 @@
 #pragma once
 
+#include "keys.h"
+
 namespace Graphick::Editor::Input {
 
   class Tool {
@@ -34,6 +36,8 @@ namespace Graphick::Editor::Input {
     virtual void on_pointer_up() {}
 
     virtual void on_pointer_hover() {}
+
+    virtual void on_key(const bool down, const KeyboardKey key) {}
 
     virtual void render_overlays() const {}
   protected:
