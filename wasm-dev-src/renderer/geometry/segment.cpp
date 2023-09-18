@@ -165,6 +165,10 @@ namespace Graphick::Renderer::Geometry {
   }
 
   rect Segment::bounding_rect() const {
+    GK_TOTAL("Segment::bounding_rect");
+
+    if (m_bounding_rect_cache.has_value()) return m_bounding_rect_cache.value();
+
     rect rect{};
     std::vector<vec2> points = extrema();
 
@@ -173,10 +177,14 @@ namespace Graphick::Renderer::Geometry {
       Math::max(rect.max, point, rect.max);
     }
 
+    m_bounding_rect_cache = rect;
+
     return rect;
   }
 
   rect Segment::approx_bounding_rect() const {
+    GK_TOTAL("Segment::approx_bounding_rect");
+
     vec2 p0 = m_p0->get();
     vec2 p3 = m_p3->get();
 
@@ -308,6 +316,9 @@ namespace Graphick::Renderer::Geometry {
     if (m_hash == hash) return false;
 
     m_hash = hash;
+
+    m_bounding_rect_cache.reset();
+
     return true;
   }
 

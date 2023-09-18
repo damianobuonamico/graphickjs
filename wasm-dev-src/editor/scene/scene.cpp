@@ -122,7 +122,7 @@ namespace Graphick::Editor {
   }
 
   void Scene::render() const {
-    // GK_TOTAL("Scene::render");
+    GK_TOTAL("Scene::render");
     OPTICK_EVENT();
 
     Renderer::Renderer::begin_frame({
@@ -135,6 +135,7 @@ namespace Graphick::Editor {
     float z_index = 0.0f;
     size_t z_far = m_order.size();
 
+    // TODO: maybe check for rehydration only if actions performed are destructive
     bool should_rehydrate = true;
 
     {

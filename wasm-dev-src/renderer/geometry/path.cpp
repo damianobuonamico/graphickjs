@@ -301,6 +301,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   bool Path::intersects(const Math::rect& rect) const {
+    GK_TOTAL("Path::intersects");
+
     Math::rect bounding_rect = this->approx_bounding_rect();
 
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
@@ -313,6 +315,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   bool Path::intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const {
+    GK_TOTAL("Path::intersects (deep)");
+
     Math::rect bounding_rect = this->approx_bounding_rect();
 
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
@@ -326,6 +330,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::rehydrate_cache() const {
+    GK_TOTAL("Path::rehidrate");
+
     bool rehydrate = false;
 
     for (const Segment& segment : m_segments) {

@@ -114,6 +114,8 @@ namespace Graphick::Renderer::Geometry {
     ControlPointVertex m_p3;
 
     mutable int m_hash = 0;
+
+    mutable std::optional<Math::rect> m_bounding_rect_cache = std::nullopt;
   private:
     // TEMP: remove
     friend class Path;
