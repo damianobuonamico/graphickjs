@@ -205,7 +205,7 @@ namespace Graphick::Renderer {
 
     m_prev = (segments.front().p0() + translation) * m_zoom - rect.min;
 
-    if (intersection_overlap < 0.7) {
+    if (intersection_overlap < 0.7f) {
       std::vector<vec2> points;
       points.reserve(segments.size() + 1);
 
@@ -248,6 +248,20 @@ namespace Graphick::Renderer {
           } else {
             points.push_back(p3);
           }
+        } else if (segment.is_quadratic()) {
+          vec2 p1 = (segment.p1() + translation) * m_zoom;
+
+          float dt = std::sqrtf((4.0f * tolerance) / Math::length(p0 - 2.0f * p1 + p3));
+          float t = 0.0f;
+
+          while (t < 1.0f) {
+            t = std::min(t + dt, 1.0f);
+
+            vec2 p01 = Math::lerp(p0, p1, t);
+            vec2 p12 = Math::lerp(p1, p3, t);
+
+            points.push_back(Math::lerp(p01, p12, t));
+          }
         } else {
           points.push_back(p3);
         }
@@ -277,6 +291,10 @@ namespace Graphick::Renderer {
           vec2 p2 = (segment.p2() + translation) * m_zoom - rect.min;
 
           process_cubic_segment(p0, p1, p2, p3);
+        } else if (segment.is_quadratic()) {
+          vec2 p1 = (segment.p1() + translation) * m_zoom - rect.min;
+
+          process_quadratic_segment(p0, p1, p3);
         } else {
           process_linear_segment(p0, p3);
         }
@@ -398,6 +416,20 @@ namespace Graphick::Renderer {
       }
 
       if (fuzzy_equal) break;
+    }
+  }
+
+  void PathTiler::process_quadratic_segment(const vec2 p0, const vec2 p1, const vec2 p3) {
+    float dt = std::sqrtf((4.0f * tolerance) / Math::length(p0 - 2.0f * p1 + p3));
+    float t = 0.0f;
+
+    while (t < 1.0f) {
+      t = std::min(t + dt, 1.0f);
+
+      vec2 p01 = Math::lerp(p0, p1, t);
+      vec2 p12 = Math::lerp(p1, p3, t);
+
+      process_linear_segment(m_prev, Math::lerp(p01, p12, t));
     }
   }
 

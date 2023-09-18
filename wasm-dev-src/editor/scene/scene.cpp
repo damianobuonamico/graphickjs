@@ -9,8 +9,9 @@
 // TEMP
 #include "../../math/math.h"
 
-#include "../../utils/misc.h"
+#include "../../utils/debugger.h"
 #include "../../utils/console.h"
+#include "../../utils/misc.h"
 
 namespace Graphick::Editor {
 
@@ -132,8 +133,10 @@ namespace Graphick::Editor {
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 
-    float z_index = 0.0f;
-    size_t z_far = m_order.size();
+    GK_DEBUGGER_RENDER();
+
+    float z_index = 1.0f;
+    size_t z_far = m_order.size() + 1;
 
     // TODO: maybe check for rehydration only if actions performed are destructive
     bool should_rehydrate = true;
@@ -160,16 +163,39 @@ namespace Graphick::Editor {
         }
 
         if (m_registry.all_of<FillComponent>(*it)) {
-          Renderer::Renderer::draw(path, (z_far - z_index++) / z_far, position, m_registry.get<FillComponent>(*it).color);
+          Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, position, m_registry.get<FillComponent>(*it).color);
         } else {
-          Renderer::Renderer::draw(path, (z_far - z_index++) / z_far, position);
+          Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, position);
         }
 
         if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
           Renderer::Renderer::draw_outline(id, path, position);
         }
+
+        // Math::rect bounding_rect = path.bounding_rect();
+        // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);
+        // Renderer::Geometry::Path rect;
+        // rect.move_to(lines[0].min);
+
+        // for (auto& line : lines) {
+        //   rect.line_to(line.max);
+        // }
+
+        // Renderer::Renderer::draw_outline(id, rect, position);
       }
     }
+
+    // {
+    //   std::vector<Math::rect> lines = Math::lines_from_rect(viewport.visible());
+    //   Renderer::Geometry::Path rect;
+    //   rect.move_to(lines[0].min);
+
+    //   for (auto& line : lines) {
+    //     rect.line_to(line.max);
+    //   }
+
+    //   Renderer::Renderer::draw_outline(0, rect, { 0.0f, 0.0f });
+    // }
 
     {
       OPTICK_EVENT("Render Overlays");

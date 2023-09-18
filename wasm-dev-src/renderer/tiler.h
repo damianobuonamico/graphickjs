@@ -62,6 +62,7 @@ namespace Graphick::Renderer {
     inline ivec2 size() const { return m_bounds_size; }
   private:
     void process_linear_segment(const vec2 p0, const vec2 p3);
+    void process_quadratic_segment(const vec2 p0, const vec2 p1, const vec2 p3);
     void process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
     void push_segment(const uvec4 segment, int16_t tile_x, int16_t tile_y);
 

@@ -8,6 +8,7 @@
 #include "../history/command_history.h"
 
 #include "../utils/resource_manager.h"
+#include "../utils/debugger.h"
 #include "../utils/console.h"
 
 #ifdef EMSCRIPTEN
@@ -38,6 +39,8 @@ namespace Graphick::Editor {
     History::CommandHistory::init();
     // FontManager::init();
 
+    GK_DEBUGGER_INIT();
+
     s_instance->m_scenes.emplace_back();
 
     // scene().load();
@@ -48,6 +51,8 @@ namespace Graphick::Editor {
       console::error("Renderer already shutdown, call init() before shutting down!");
       return;
     }
+
+    GK_DEBUGGER_SHUTDOWN();
 
     // FontManager::shutdown();
     History::CommandHistory::shutdown();

@@ -28,7 +28,7 @@ R"(
     gl_Position = vec4(
       (position.x + x) * tile_size.x + offset.x - 1.0,
       1.0 - (position.y + y) * tile_size.y - offset.y,
-      -aZIndex,
+      aZIndex,
       1.0
     );
 

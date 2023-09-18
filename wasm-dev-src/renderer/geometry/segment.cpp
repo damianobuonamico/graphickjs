@@ -299,7 +299,7 @@ namespace Graphick::Renderer::Geometry {
     std::initializer_list<float> floats = { p0.x, p0.y, p3.x, p3.y };
     int hash = 0;
 
-    if (m_p1 && m_p1) {
+    if (m_p1 && m_p2) {
       vec2 p1 = m_p1->get();
       vec2 p2 = m_p2->get();
       hash = Math::hash({ p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y });
@@ -360,7 +360,7 @@ namespace Graphick::Renderer::Geometry {
   std::vector<float> Segment::quadratic_extrema() const {
     const vec2 A = p0();
     const vec2 B = p1();
-    const vec2 C = p2();
+    const vec2 C = p3();
 
     const vec2 a = A - 2.0f * B + C;
     const vec2 b = 2.0f * (B - A);
@@ -369,7 +369,11 @@ namespace Graphick::Renderer::Geometry {
 
     for (int i = 0; i < 2; i++) {
       if (Math::is_almost_zero(a[i] - b[i])) continue;
-      roots.push_back(a[i] / (a[i] - b[i]));
+
+      float t = a[i] / (a[i] - b[i]);
+      if (t > 0.0f && t < 1.0f) {
+        roots.push_back(t);
+      }
     }
 
     return roots;
