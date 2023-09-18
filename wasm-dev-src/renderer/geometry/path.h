@@ -35,10 +35,15 @@ namespace Graphick::Renderer::Geometry {
     bool is_inside(const vec2 position, bool deep_search = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
     bool intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const;
+
+    void rehydrate_cache() const;
   private:
     bool m_closed = false;
     Segment::ControlPointVertex m_last_point;
     std::vector<Segment> m_segments;
+
+    mutable std::optional<Math::rect> m_bounding_rect_cache = std::nullopt;
+    mutable std::optional<Math::rect> m_approx_bounding_rect_cache = std::nullopt;
   };
 
 }

@@ -122,7 +122,7 @@ namespace Graphick::Editor {
   }
 
   void Scene::render() const {
-    GK_TOTAL("Scene::render");
+    // GK_TOTAL("Scene::render");
     OPTICK_EVENT();
 
     Renderer::Renderer::begin_frame({
@@ -134,6 +134,8 @@ namespace Graphick::Editor {
 
     float z_index = 0.0f;
     size_t z_far = m_order.size();
+
+    bool should_rehydrate = true;
 
     {
       OPTICK_EVENT("Render Entities");
@@ -151,6 +153,10 @@ namespace Graphick::Editor {
         const vec2 position = std::get<2>(components).position.get();
 
         if (!has_entity(id)) return;
+
+        if (should_rehydrate) {
+          path.rehydrate_cache();
+        }
 
         if (m_registry.all_of<FillComponent>(*it)) {
           Renderer::Renderer::draw(path, (z_far - z_index++) / z_far, position, m_registry.get<FillComponent>(*it).color);

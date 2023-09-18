@@ -162,4 +162,16 @@ namespace Graphick::Math {
     return sum >= 0.0f;
   }
 
+  inline int hash(const std::initializer_list<float> floats) {
+    int h = 1;
+
+    for (float f : floats) {
+      int i = *(int*)(&f);
+      h = 31 * h + i;
+    }
+
+    h ^= (h >> 20) ^ (h >> 12);
+    return h ^ (h >> 7) ^ (h >> 4);
+  }
+
 }

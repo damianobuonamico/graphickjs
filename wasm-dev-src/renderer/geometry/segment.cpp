@@ -284,6 +284,33 @@ namespace Graphick::Renderer::Geometry {
     return line_intersection_points(line).has_value();
   }
 
+  bool Segment::rehydrate_cache() const {
+    vec2 p0 = m_p0->get();
+    vec2 p3 = m_p3->get();
+
+    std::initializer_list<float> floats = { p0.x, p0.y, p3.x, p3.y };
+    int hash = 0;
+
+    if (m_p1 && m_p1) {
+      vec2 p1 = m_p1->get();
+      vec2 p2 = m_p2->get();
+      hash = Math::hash({ p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y });
+    } else if (m_p1) {
+      vec2 p1 = m_p1->get();
+      hash = Math::hash({ p0.x, p0.y, p1.x, p1.y, p3.x, p3.y });
+    } else if (m_p2) {
+      vec2 p2 = m_p2->get();
+      hash = Math::hash({ p0.x, p0.y, p2.x, p2.y, p3.x, p3.y });
+    } else {
+      hash = Math::hash({ p0.x, p0.y, p3.x, p3.y });
+    }
+
+    if (m_hash == hash) return false;
+
+    m_hash = hash;
+    return true;
+  }
+
   vec2 Segment::linear_get(const float t) const {
     return Math::lerp(p0(), p3(), t);
   }

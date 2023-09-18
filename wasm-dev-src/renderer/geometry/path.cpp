@@ -233,6 +233,10 @@ namespace Graphick::Renderer::Geometry {
 
   Math::rect Path::bounding_rect() const {
     GK_TOTAL("Path::bounding_rect");
+    // base ~ 3.0ms
+    // stress ~ 2.7s
+    // cache ~ 0.006ms
+    if (m_bounding_rect_cache.has_value()) return m_bounding_rect_cache.value();
 
     Math::rect rect{};
 
@@ -243,11 +247,17 @@ namespace Graphick::Renderer::Geometry {
       max(rect.max, segment_rect.max, rect.max);
     }
 
+    m_bounding_rect_cache = rect;
+
     return rect;
   }
 
   Math::rect Path::approx_bounding_rect() const {
     GK_TOTAL("Path::approx_bounding_rect");
+    // base ~ 0.36ms
+    // stress ~ 0.67ms
+    // cache ~ 0.006ms
+    if (m_approx_bounding_rect_cache.has_value()) return m_approx_bounding_rect_cache.value();
 
     Math::rect rect{};
 
@@ -257,6 +267,8 @@ namespace Graphick::Renderer::Geometry {
       min(rect.min, segment_rect.min, rect.min);
       max(rect.max, segment_rect.max, rect.max);
     }
+
+    m_approx_bounding_rect_cache = rect;
 
     return rect;
   }
@@ -311,6 +323,20 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return found;
+  }
+
+  void Path::rehydrate_cache() const {
+    bool rehydrate = false;
+
+    for (const Segment& segment : m_segments) {
+      if (segment.rehydrate_cache()) rehydrate = true;
+    }
+
+    if (rehydrate) {
+      console::log("rehydrate");
+      m_bounding_rect_cache.reset();
+      m_approx_bounding_rect_cache.reset();
+    }
   }
 
 }

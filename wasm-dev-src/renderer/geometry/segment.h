@@ -76,6 +76,8 @@ namespace Graphick::Renderer::Geometry {
     bool intersects(const Math::rect& rect) const;
     bool intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const;
     bool intersects_line(const Math::rect& line) const;
+
+    bool rehydrate_cache() const;
   private:
     bool is_masquerading_linear() const;
     bool is_masquerading_quadratic(vec2& new_p1) const;
@@ -110,6 +112,8 @@ namespace Graphick::Renderer::Geometry {
     ControlPointHandle m_p1;
     ControlPointHandle m_p2;
     ControlPointVertex m_p3;
+
+    mutable int m_hash = 0;
   private:
     // TEMP: remove
     friend class Path;

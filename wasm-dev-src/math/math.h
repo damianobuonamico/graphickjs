@@ -23,6 +23,7 @@ namespace Graphick::Math {
 
   bool clockwise(const std::vector<vec2>& points);
 
+  int hash(std::initializer_list<float> floats);
 }
 
 #include "math.inl"
