@@ -133,8 +133,6 @@ namespace Graphick::Editor {
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 
-    GK_DEBUGGER_RENDER();
-
     float z_index = 1.0f;
     size_t z_far = m_order.size() + 1;
 
@@ -204,6 +202,8 @@ namespace Graphick::Editor {
     }
 
     Renderer::Renderer::end_frame();
+
+    GK_DEBUGGER_RENDER(IVEC2_TO_VEC2(viewport.size()) * viewport.dpr());
   }
 
 }

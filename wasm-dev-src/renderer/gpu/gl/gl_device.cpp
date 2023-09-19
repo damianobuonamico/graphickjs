@@ -390,9 +390,9 @@ namespace Graphick::Renderer::GPU::GL {
     glCall(glFlush());
   }
 
-  void GLDevice::draw_arrays(const size_t index_count, const GLRenderState& render_state) const {
+  void GLDevice::draw_arrays(const size_t vertex_count, const GLRenderState& render_state) const {
     set_render_state(render_state);
-    glCall(glDrawArrays(gl_primitive(render_state.primitive), 0, (GLsizei)index_count));
+    glCall(glDrawArrays(gl_primitive(render_state.primitive), 0, (GLsizei)vertex_count));
     reset_render_state(render_state);
   }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "assert.h"
+#include "debugger.h"
 
 #include <stdio.h>
 #include <sstream>
@@ -110,8 +111,10 @@ namespace Graphick::Utils {
     }
 
     static inline void frame(const std::string& name) {
+      GK_DEBUGGER_CLEAR();
+
       for (auto& [name, timer] : m_total_timers) {
-        log(name, std::to_string((float)timer.average() / 1000.0f) + "ms");
+        GK_DEBUGGER_LOG(name + ": " + std::to_string((float)timer.average() / 1000.0f) + "ms");
         timer.next();
       }
     }

@@ -195,11 +195,11 @@ namespace Graphick::Renderer::GPU {
     inline static void end_commands() { s_device->end_commands(); }
 
     /**
-     * @index_count: the number of indices to draw.
+     * @index_count: the number of vertices to draw.
      * @render_state: the render state to use.
      * Performs a glDrawArrays() call with the given @render_state.
      */
-    inline static void draw_arrays(const size_t index_count, const RenderState& render_state) { s_device->draw_arrays(index_count, render_state); }
+    inline static void draw_arrays(const size_t vertex_count, const RenderState& render_state) { s_device->draw_arrays(vertex_count, render_state); }
     /**
      * @index_count: the number of indices to draw.
      * @render_state: the render state to use.

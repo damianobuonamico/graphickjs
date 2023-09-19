@@ -86,6 +86,9 @@ namespace Graphick::Renderer {
     GPU::Device::upload_to_buffer(quad_vertex_indices_buffer, 0, QUAD_VERTEX_INDICES, GPU::BufferTarget::Index);
 
     get()->init_instanced_renderers();
+#if GK_USE_DEBUGGER
+    get()->init_text_renderer();
+#endif
   }
 
   void Renderer::shutdown() {
@@ -165,6 +168,159 @@ namespace Graphick::Renderer {
     if (path.empty()) return;
 
     get()->add_line_instances(path, translation);
+  }
+
+  void Renderer::debug_rect(const Math::rect rect, const vec4& color) {
+    uuid vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(6 * 4, "DebugRect");
+
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(vertex_buffer_id);
+
+    std::vector<float> vertices = {
+      rect.min.x, rect.min.y, -1.0f, -1.0f,
+      rect.max.x, rect.min.y, -1.0f, -1.0f,
+      rect.max.x, rect.max.y, -1.0f, -1.0f,
+      rect.max.x, rect.max.y, -1.0f, -1.0f,
+      rect.min.x, rect.max.y, -1.0f, -1.0f,
+      rect.min.x, rect.min.y, -1.0f, -1.0f
+    };
+
+    GPU::Device::upload_to_buffer(vertex_buffer, 0, vertices, GPU::BufferTarget::Vertex);
+
+    GPU::DefaultVertexArray vertex_array(
+      get()->m_programs.default_program,
+      vertex_buffer
+    );
+
+    mat4 translation = mat4{
+      1.0f, 0.0f, 0.0f, -0.5f * get()->m_viewport.size.x,
+      0.0f, 1.0f, 0.0f, -0.5f * get()->m_viewport.size.y,
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    GPU::RenderState state = {
+      nullptr,
+      get()->m_programs.default_program.program,
+      *vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {},
+      {},
+      {
+        {get()->m_programs.default_program.view_projection_uniform, generate_projection_matrix(get()->m_viewport.size, 1.0f) * translation },
+        {get()->m_programs.default_program.color_uniform, color },
+      },
+      {
+        { 0.0f, 0.0f },
+        get()->m_viewport.size
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_arrays(6, state);
+  }
+
+  void Renderer::debug_text(const std::string& text, const vec2 position, const vec4& color) {
+    size_t byte_size = text.size() * 6 * 4;
+
+    uuid vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(byte_size, "DebugRect");
+
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(vertex_buffer_id);
+
+    float x = position.x;
+    float y = position.y;
+    stbtt_aligned_quad q;
+
+    // glTexCoord2f(q.s0, q.t0); glVertex2f(q.x0, q.y0);
+    // glTexCoord2f(q.s1, q.t0); glVertex2f(q.x1, q.y0);
+    // glTexCoord2f(q.s1, q.t1); glVertex2f(q.x1, q.y1);
+    // glTexCoord2f(q.s0, q.t1); glVertex2f(q.x0, q.y1);
+    std::vector<float> vertices;
+    vertices.reserve(byte_size);
+
+    for (char c : text) {
+      stbtt_GetBakedQuad(get()->m_cdata, 128, 128, c - 32, &x, &y, &q, 1);
+
+      vertices.insert(vertices.end(), {
+        q.x0, q.y0, q.s0, q.t0,
+        q.x1, q.y0, q.s1, q.t0,
+        q.x1, q.y1, q.s1, q.t1,
+        q.x1, q.y1, q.s1, q.t1,
+        q.x0, q.y1, q.s0, q.t1,
+        q.x0, q.y0, q.s0, q.t0
+        });
+    }
+
+    GPU::Device::upload_to_buffer(vertex_buffer, 0, vertices, GPU::BufferTarget::Vertex);
+
+    GPU::DefaultVertexArray vertex_array(
+      get()->m_programs.default_program,
+      vertex_buffer
+    );
+
+    mat4 translation = mat4{
+      1.0f, 0.0f, 0.0f, -0.5f * get()->m_viewport.size.x,
+      0.0f, 1.0f, 0.0f, -0.5f * get()->m_viewport.size.y,
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    const GPU::Texture& font_atlas = GPU::Memory::Allocator::get_texture(get()->m_debug_font_atlas_id);
+
+    GPU::Device::upload_to_texture(font_atlas, { { 0.0f, 0.0f }, { (float)128, (float)128 } }, get()->m_bitmap);
+
+    GPU::RenderState state = {
+      nullptr,
+      get()->m_programs.default_program.program,
+      *vertex_array.vertex_array,
+      GPU::Primitive::Triangles,
+      {
+        { { get()->m_programs.default_program.texture_uniform, font_atlas.gl_texture }, font_atlas }
+      },
+      {},
+      {
+        {get()->m_programs.default_program.view_projection_uniform, generate_projection_matrix(get()->m_viewport.size, 1.0f) * translation },
+        {get()->m_programs.default_program.color_uniform, color },
+      },
+      {
+        { 0.0f, 0.0f },
+        get()->m_viewport.size
+      },
+      {
+        GPU::BlendState{
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::SrcAlpha,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    GPU::Device::draw_arrays(byte_size, state);
   }
 
   void Renderer::draw_opaque_tiles() {
@@ -777,6 +933,30 @@ namespace Graphick::Renderer {
 
     data.buffer_size = (uint32_t)data.instances.size() * 2;
     data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(data.buffer_size, data.name);
+  }
+
+  void Renderer::init_text_renderer() {
+    /* load font file */
+    long size;
+    unsigned char* font_buffer;
+
+    FILE* font_file = fopen("res\\fonts\\consolas.ttf", "rb");
+    fseek(font_file, 0, SEEK_END);
+    size = ftell(font_file); /* how long is the file ? */
+    fseek(font_file, 0, SEEK_SET); /* reset */
+
+    font_buffer = new unsigned char[size];
+
+    fread(font_buffer, size, 1, font_file);
+    fclose(font_file);
+
+    int baked = stbtt_BakeFontBitmap(font_buffer, 0, 12.0f, m_bitmap, 128, 128, 32, 96, m_cdata); /* no guarantee this fits! */
+
+    console::log(baked);
+
+    delete[] font_buffer;
+
+    m_debug_font_atlas_id = GPU::Memory::Allocator::allocate_texture({ 128, 128 }, GPU::TextureFormat::R8, "DebugFontAtlas");
   }
 
 }

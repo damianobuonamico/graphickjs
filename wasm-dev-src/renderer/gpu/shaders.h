@@ -4,6 +4,15 @@
 
 namespace Graphick::Renderer::GPU {
 
+  struct DefaultProgram {
+    Program program;
+    Uniform view_projection_uniform;
+    Uniform color_uniform;
+    Uniform texture_uniform;
+
+    DefaultProgram();
+  };
+
   struct OpaqueTileProgram {
     Program program;
     Uniform offset_uniform;
@@ -64,6 +73,7 @@ namespace Graphick::Renderer::GPU {
   };
 
   struct Programs {
+    DefaultProgram default_program;
     OpaqueTileProgram opaque_tile_program;
     MaskedTileProgram masked_tile_program;
     LineProgram line_program;
@@ -72,6 +82,15 @@ namespace Graphick::Renderer::GPU {
     GPUPathProgram gpu_path_program;
 
     Programs();
+  };
+
+  struct DefaultVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;
+
+    DefaultVertexArray(
+      const DefaultProgram& default_program,
+      const Buffer& vertex_buffer
+    );
   };
 
   struct OpaqueTileVertexArray {

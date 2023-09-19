@@ -9,6 +9,8 @@
 
 #include "../utils/uuid.h"
 
+#include "../lib/stb/stb_truetype.h"
+
 namespace Graphick::Renderer {
 
   namespace Geometry {
@@ -32,6 +34,9 @@ namespace Graphick::Renderer {
     static void draw(const Geometry::Path& path, const float z_index, const vec2 translation = { 0.0f, 0.0f }, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
     static void draw_outline(const uuid id, const Geometry::Path& path, const vec2 translation);
     static void draw_outline(const Geometry::Internal::PathInternal& path, const vec2 translation);
+
+    static void debug_rect(const Math::rect rect, const vec4& color = { 0.0f, 0.0f, 0.0f, 0.5f });
+    static void debug_text(const std::string& text, const vec2 position, const vec4& color = { 1.0f, 1.0f, 1.0f, 1.0f });
   private:
     Renderer() = default;
     ~Renderer() = default;
@@ -61,6 +66,8 @@ namespace Graphick::Renderer {
     void flush_circle_instances();
 
     void ensure_instance_buffer_size(InstancedMeshData& data);
+
+    void init_text_renderer();
   private:
     GPU::Programs m_programs;
 
@@ -83,6 +90,10 @@ namespace Graphick::Renderer {
     // Replace with render state / render options
     Viewport m_viewport;
     Tiler m_tiler;
+
+    unsigned char m_bitmap[128 * 128];
+    stbtt_bakedchar m_cdata[96]; // ASCII 32..126 is 95 glyphs
+    uuid m_debug_font_atlas_id = 0;
   private:
     static Renderer* s_instance;
   };

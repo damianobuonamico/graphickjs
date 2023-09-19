@@ -52,7 +52,7 @@ namespace Graphick::Renderer::GPU::GL {
     void begin_commands() const;
     void end_commands() const;
 
-    void draw_arrays(const size_t index_count, const GLRenderState& render_state) const;
+    void draw_arrays(const size_t vertex_count, const GLRenderState& render_state) const;
     void draw_elements(const size_t index_count, const GLRenderState& render_state) const;
     void draw_elements_instanced(const size_t index_count, const size_t instance_count, const GLRenderState& render_state) const;
   private:

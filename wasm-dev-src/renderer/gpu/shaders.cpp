@@ -2,6 +2,12 @@
 
 namespace Graphick::Renderer::GPU {
 
+  DefaultProgram::DefaultProgram() :
+    program(Device::create_program("default")),
+    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    color_uniform(Device::get_uniform(program, "uColor").value()),
+    texture_uniform(Device::get_uniform(program, "uTexture").value()) {}
+
   OpaqueTileProgram::OpaqueTileProgram() :
     program(Device::create_program("opaque_tile")),
     offset_uniform(Device::get_uniform(program, "uOffset").value()),
@@ -49,6 +55,40 @@ namespace Graphick::Renderer::GPU {
     square_program(),
     circle_program(),
     gpu_path_program() {}
+
+  DefaultVertexArray::DefaultVertexArray(
+    const DefaultProgram& default_program,
+    const Buffer& vertex_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(default_program.program, "aPosition").value();
+    VertexAttr tex_coord_attr = Device::get_vertex_attr(default_program.program, "aTexCoord").value();
+
+    VertexAttrDescriptor position_desc = {
+     2,
+     VertexAttrClass::Float,
+     VertexAttrType::F32,
+     16,
+     0,
+     0,
+     0
+    };
+
+    VertexAttrDescriptor tex_coord_desc = {
+     2,
+     VertexAttrClass::Float,
+     VertexAttrType::F32,
+     16,
+     8,
+     0,
+     0
+    };
+
+    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+    Device::configure_vertex_attr(*vertex_array, tex_coord_attr, tex_coord_desc);
+  }
 
   OpaqueTileVertexArray::OpaqueTileVertexArray(
     const OpaqueTileProgram& opaque_tile_program,
