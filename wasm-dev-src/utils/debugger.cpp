@@ -50,10 +50,10 @@ namespace Graphick::Utils {
 
     size_t messages_count = get()->m_messages.size();
 
-    Renderer::Renderer::debug_rect({ {viewport_size.x - 300.0f, 0 }, { viewport_size.x, messages_count * 20.0f + 8.0f } }, vec4{ 0.0f, 0.0f, 0.0f, 0.7f });
+    Renderer::Renderer::debug_rect({ {viewport_size.x - 350.0f, 0 }, { viewport_size.x, messages_count * 20.0f + 8.0f } }, vec4{ 0.0f, 0.0f, 0.0f, 0.7f });
 
     for (size_t i = 0; i < messages_count; i++) {
-      Renderer::Renderer::debug_text(get()->m_messages[i], { viewport_size.x - 290.0f, 18.0f + i * 20.0f }, vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
+      Renderer::Renderer::debug_text(get()->m_messages[i], { viewport_size.x - 340.0f, 18.0f + i * 20.0f }, vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
     }
 
     // Math::rect bounding_rect = get()->m_glyphs['a' - 32].bounding_rect();

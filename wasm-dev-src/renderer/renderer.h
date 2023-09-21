@@ -94,6 +94,7 @@ namespace Graphick::Renderer {
     unsigned char m_bitmap[128 * 128];
     stbtt_bakedchar m_cdata[96]; // ASCII 32..126 is 95 glyphs
     uuid m_debug_font_atlas_id = 0;
+    uuid m_debug_vertex_buffer_id = 0;
   private:
     static Renderer* s_instance;
   };

@@ -41,7 +41,7 @@ namespace Graphick::Utils {
 
       inline void end() {
         auto duration = std::chrono::high_resolution_clock::now() - last_time;
-        records[index % RECORDS_SIZE] += std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+        records[index % RECORDS_SIZE] += std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
       }
 
       inline void next() {
@@ -107,14 +107,14 @@ namespace Graphick::Utils {
     }
 
     static inline void time_end(const std::string& name = "Time Elapsed") {
-      log(name, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - m_last_time).count());
+      log(name, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - m_last_time).count());
     }
 
     static inline void frame(const std::string& name) {
       GK_DEBUGGER_CLEAR();
 
       for (auto& [name, timer] : m_total_timers) {
-        GK_DEBUGGER_LOG(name + ": " + std::to_string((float)timer.average() / 1000.0f) + "ms");
+        GK_DEBUGGER_LOG(name + ": " + std::to_string((float)timer.average() / 1000000.0f) + "ms");
         timer.next();
       }
     }
@@ -159,10 +159,10 @@ namespace Graphick::Utils {
 
       auto duration = time - it->second.last_time;
 
-      it->second.duration = (it->second.duration * it->second.samples + std::chrono::duration_cast<std::chrono::microseconds>(duration).count()) / (it->second.samples + 1);
+      it->second.duration = (it->second.duration * it->second.samples + std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count()) / (it->second.samples + 1);
       it->second.samples++;
 
-      log(name, std::to_string((float)it->second.duration / 1000.0f) + "ms");
+      log(name, std::to_string((float)it->second.duration / 1000000.0f) + "ms");
     }
   private:
     static inline std::chrono::steady_clock::time_point m_last_time;

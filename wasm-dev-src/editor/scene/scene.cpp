@@ -94,7 +94,16 @@ namespace Graphick::Editor {
       if (deep_search) {
         vertices.clear();
 
-        if (path.intersects(rect - position, vertices)) {
+        Math::rect selection_rect = rect - position;
+
+        if (Math::is_rect_in_rect(path.bounding_rect(), selection_rect)) {
+          entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+          continue;
+        }
+
+        vertices.reserve(path.segments().size() + 1);
+
+        if (path.intersects(selection_rect, vertices)) {
           entities.insert({ id, Selection::SelectionElementEntry{ vertices } });
         }
       } else {

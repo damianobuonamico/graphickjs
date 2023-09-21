@@ -171,9 +171,7 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::debug_rect(const Math::rect rect, const vec4& color) {
-    uuid vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(6 * 4, "DebugRect");
-
-    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(vertex_buffer_id);
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(get()->m_debug_vertex_buffer_id);
 
     std::vector<float> vertices = {
       rect.min.x, rect.min.y, -1.0f, -1.0f,
@@ -238,18 +236,12 @@ namespace Graphick::Renderer {
   void Renderer::debug_text(const std::string& text, const vec2 position, const vec4& color) {
     size_t byte_size = text.size() * 6 * 4;
 
-    uuid vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(byte_size, "DebugRect");
-
-    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(vertex_buffer_id);
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(get()->m_debug_vertex_buffer_id);
 
     float x = position.x;
     float y = position.y;
     stbtt_aligned_quad q;
 
-    // glTexCoord2f(q.s0, q.t0); glVertex2f(q.x0, q.y0);
-    // glTexCoord2f(q.s1, q.t0); glVertex2f(q.x1, q.y0);
-    // glTexCoord2f(q.s1, q.t1); glVertex2f(q.x1, q.y1);
-    // glTexCoord2f(q.s0, q.t1); glVertex2f(q.x0, q.y1);
     std::vector<float> vertices;
     vertices.reserve(byte_size);
 
@@ -957,6 +949,8 @@ namespace Graphick::Renderer {
     delete[] font_buffer;
 
     m_debug_font_atlas_id = GPU::Memory::Allocator::allocate_texture({ 128, 128 }, GPU::TextureFormat::R8, "DebugFontAtlas");
+    // TODO: Proper batching, now limited to 200 letters
+    m_debug_vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<float>(6 * 4 * 200, "DebugVertices");
   }
 
 }
