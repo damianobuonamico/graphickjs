@@ -22,17 +22,18 @@ namespace Graphick::Editor::Input {
     return m_handle;
   }
 
-  void HoverState::set_hovered(const uuid id, const vec2 position, bool lower_level, float threshold) {
+  void HoverState::set_hovered(const uuid id, const vec2 position, bool deep_search, float threshold) {
     reset();
 
+    Scene& scene = Editor::scene();
     m_entity = id;
 
-    if (id == 0 || !Editor::scene().has_entity(id)) {
+    if (id == 0 || !scene.has_entity(id)) {
       m_type = HoverType::None;
       return;
     }
 
-    Entity entity = Editor::scene().get_entity(id);
+    Entity entity = scene.get_entity(id);
 
     if (!entity.is_element()) {
       m_type = HoverType::Entity;
@@ -49,6 +50,8 @@ namespace Graphick::Editor::Input {
       return;
     }
 
+    bool deep = deep_search && scene.selection.has(id);
+
     for (const auto& segment : path.segments()) {
       vec2 p0 = segment.p0();
 
@@ -58,7 +61,7 @@ namespace Graphick::Editor::Input {
         return;
       }
 
-      if (lower_level && (segment.is_quadratic() || segment.is_cubic())) {
+      if (deep && (segment.is_quadratic() || segment.is_cubic())) {
         vec2 p1 = segment.p1();
         vec2 p2 = segment.p2();
         vec2 p3 = segment.p3();

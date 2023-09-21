@@ -63,10 +63,11 @@ namespace Graphick::Editor {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
         const auto& path = m_registry.get<PathComponent>(*it).path;
         const vec2 translation = m_registry.get<TransformComponent>(*it).position.get();
+        const uuid id = m_registry.get<IDComponent>(*it).id;
         // auto pos = transform.Map(position.x, position.y);
         // if (path.is_inside({ (float)pos.X, (float)pos.Y }, deep_search, threshold)) return id;
-        if (path.is_inside(position - translation, deep_search, threshold)) {
-          return m_registry.get<IDComponent>(*it).id;
+        if (path.is_inside(position - translation, deep_search && selection.has(id), threshold)) {
+          return id;
         }
       }
     }
