@@ -25,6 +25,7 @@ namespace Graphick::Editor::Input {
   private:
     DirectSelectTool();
 
+    void populate_cache();
     void translate_selected();
     void apply_selected();
     // void shift_select_element(Entity* entity);
@@ -79,13 +80,6 @@ namespace Graphick::Editor::Input {
 
     std::vector<History::Vec2Value*> m_cache;
 
-    // Entity* m_entity = nullptr;
-    // ElementEntity* m_element = nullptr;
-    // BezierEntity* m_bezier = nullptr;
-    // VertexEntity* m_vertex = nullptr;
-    // HandleEntity* m_handle = nullptr;
-
-    // SelectionRectEntity m_selection_rect{ true };
     SelectionRect m_selection_rect;
   private:
     friend class ToolState;

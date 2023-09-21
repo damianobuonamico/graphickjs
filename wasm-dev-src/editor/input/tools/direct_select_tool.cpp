@@ -25,7 +25,6 @@ namespace Graphick::Editor::Input {
 
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
-    console::log("HoverType", (int)hover_type);
 
     if (hover_type == HoverState::HoverType::None || !entity.has_value()) {
       on_none_pointer_down();
@@ -38,66 +37,19 @@ namespace Graphick::Editor::Input {
 
     if (InputManager::keys.alt && m_entity && hover_type != HoverState::HoverType::Handle) {
       on_duplicate_pointer_down();
-
-      console::log("DirectSelectTool::duplicate");
     } else if (hover_type == HoverState::HoverType::Element) {
       on_element_pointer_down();
-      console::log("DirectSelectTool::element");
     } else if (hover_type == HoverState::HoverType::Vertex) {
       on_vertex_pointer_down();
-      console::log("DirectSelectTool::vertex");
     } else if (hover_type == HoverState::HoverType::Handle) {
       on_handle_pointer_down();
-      console::log("DirectSelectTool::handle");
     } else if (hover_type == HoverState::HoverType::Segment) {
       on_bezier_pointer_down();
-      console::log("DirectSelectTool::bezier");
-    } else if (hover_type == HoverState::HoverType::Entity /*&& m_entity->is_in_category(Entity::CategorySelectable)*/) {
+    } else if (hover_type == HoverState::HoverType::Entity && entity.value().is_in_category(CategoryComponent::Selectable)) {
       on_entity_pointer_down();
-      console::log("DirectSelectTool::entity");
     } else {
       on_none_pointer_down();
     }
-
-    // Entity* hovered = InputManager::hover.entity();
-    // m_entity = hovered ? InputManager::hover.element() : nullptr;
-    // m_element = dynamic_cast<ElementEntity*>(m_entity);
-    // m_bezier = dynamic_cast<BezierEntity*>(hovered);
-    // m_handle = dynamic_cast<HandleEntity*>(hovered);
-    // m_vertex = nullptr;
-
-
-    // if (m_handle) {
-    //   VertexEntity* vertex = dynamic_cast<VertexEntity*>(m_handle->parent);
-    //   if (vertex && vertex->position()->id == m_handle->id) {
-    //     m_vertex = vertex;
-    //   }
-    // }
-
-    // if (InputManager::keys.alt && m_entity && (!m_handle || m_vertex)) {
-    //   on_duplicate_pointer_down();
-
-    //   console::log("DirectSelectTool::duplicate");
-    // } else if (m_element) {
-    //   if (m_vertex) {
-    //     on_vertex_pointer_down();
-    //     console::log("DirectSelectTool::vertex");
-    //   } else if (m_handle) {
-    //     on_handle_pointer_down();
-    //     console::log("DirectSelectTool::handle");
-    //   } else if (m_bezier) {
-    //     on_bezier_pointer_down();
-    //     console::log("DirectSelectTool::bezier");
-    //   } else {
-    //     on_element_pointer_down();
-    //     console::log("DirectSelectTool::element");
-    //   }
-    // } else if (m_entity && m_entity->is_in_category(Entity::CategorySelectable)) {
-    //   on_entity_pointer_down();
-    //   console::log("DirectSelectTool::entity");
-    // } else {
-    //   on_none_pointer_down();
-    // }
   }
 
   void DirectSelectTool::on_pointer_move() {
@@ -172,9 +124,36 @@ namespace Graphick::Editor::Input {
     Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.position());
   }
 
+  void DirectSelectTool::populate_cache() {
+    Scene& scene = Editor::scene();
+
+    for (auto& [id, entry] : scene.selection.selected()) {
+      if (!scene.has_entity(id)) continue;
+
+      Entity entity = scene.get_entity(id);
+
+      if (entry.type == Selection::SelectionEntry::Type::Element && entity.is_element() && !((Selection::SelectionElementEntry&)(entry)).full()) {
+        Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
+
+        for (auto& vertex : path.vertices()) {
+          if (entry.vertices.find(vertex->id) == entry.vertices.end()) continue;
+          m_cache.push_back(&vertex->_value());
+
+          for (auto& handle_ptr : vertex->relative_handles()) {
+            auto handle = handle_ptr.lock();
+            if (handle) {
+              m_cache.push_back(handle.get());
+            }
+          }
+        }
+      } else if (entity.has_component<TransformComponent>()) {
+        m_cache.push_back(&entity.get_component<TransformComponent>().position);
+      }
+    }
+  }
+
   // TODO: Implement rotation
   void DirectSelectTool::translate_selected() {
-
     for (Graphick::History::Vec2Value* value : m_cache) {
       value->set_delta(InputManager::pointer.scene.delta);
     }
@@ -185,17 +164,6 @@ namespace Graphick::Editor::Input {
       value->apply();
     }
   }
-
-  // void DirectSelectTool::shift_select_element(Entity* entity) {
-  //   if (InputManager::keys.shift) {
-  //     Editor::scene().selection.deselect(entity->id);
-  //   } else {
-  //     if (InputManager::pointer.button == InputManager::PointerButton::Left) {
-  //       Editor::scene().selection.clear();
-  //     }
-  //     Editor::scene().selection.select(entity, true);
-  //   }
-  // }
 
   /* -- on_pointer_down -- */
 
@@ -230,23 +198,31 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_entity_pointer_down() {
-    // if (!Editor::scene().selection.has(m_entity->id)) {
-    //   if (!InputManager::keys.shift) Editor::scene().selection.clear();
+    Scene& scene = Editor::scene();
 
-    //   Editor::scene().selection.select(m_entity);
-    //   m_is_entity_added_to_selection = true;
-    // }
+    if (!scene.selection.has(m_entity)) {
+      if (!InputManager::keys.shift) scene.selection.clear();
+
+      scene.selection.select(m_entity);
+      m_is_entity_added_to_selection = true;
+    }
+
+    populate_cache();
 
     m_mode = Mode::Entity;
   }
 
   void DirectSelectTool::on_element_pointer_down() {
-    // if (!Editor::scene().selection.has(m_element->id) || !m_element->selection()->full()) {
-    //   if (!InputManager::keys.shift) Editor::scene().selection.clear();
+    Scene& scene = Editor::scene();
 
-    //   Editor::scene().selection.select(m_element, true);
-    //   m_is_entity_added_to_selection = true;
-    // }
+    if (!scene.selection.has(m_entity) || !((Selection::SelectionElementEntry&)(scene.selection.get(m_entity))).full()) {
+      if (!InputManager::keys.shift) scene.selection.clear();
+
+      scene.selection.select(m_entity);
+      m_is_entity_added_to_selection = true;
+    }
+
+    populate_cache();
 
     m_mode = Mode::Element;
   }
@@ -301,29 +277,7 @@ namespace Graphick::Editor::Input {
       m_is_entity_added_to_selection = true;
     }
 
-    for (auto& [id, entry] : scene.selection.selected()) {
-      if (!scene.has_entity(id)) continue;
-
-      Entity entity = scene.get_entity(id);
-
-      if (entry.type == Selection::SelectionEntry::Type::Element && entity.is_element() && !((Selection::SelectionElementEntry&)(entry)).full()) {
-        Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
-
-        for (auto& vertex : path.vertices()) {
-          if (entry.vertices.find(vertex->id) == entry.vertices.end()) continue;
-          m_cache.push_back(&vertex->_value());
-
-          for (auto& handle_ptr : vertex->relative_handles()) {
-            auto handle = handle_ptr.lock();
-            if (handle) {
-              m_cache.push_back(handle.get());
-            }
-          }
-        }
-      } else if (entity.has_component<TransformComponent>()) {
-        m_cache.push_back(&entity.get_component<TransformComponent>().position);
-      }
-    }
+    populate_cache();
 
     m_mode = Mode::Vertex;
   }
@@ -349,11 +303,11 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_entity_pointer_move() {
-    // translate_selected();
+    translate_selected();
   }
 
   void DirectSelectTool::on_element_pointer_move() {
-    // translate_selected();
+    translate_selected();
   }
 
   // TODO: test with asymmetric handles
@@ -486,23 +440,24 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_entity_pointer_up() {
-    // if (m_dragging_occurred) {
-    //   for (const auto& [id, entity] : Editor::scene().selection) {
-    //     entity->transform()->apply();
-    //   }
-    // } else if (Editor::scene().selection.has(m_entity->id) && !m_is_entity_added_to_selection) {
-    //   shift_select_element(m_entity);
-    // }
+    Scene& scene = Editor::scene();
+
+    if (m_dragging_occurred) {
+      apply_selected();
+    } else if (scene.selection.has(m_entity) && !m_is_entity_added_to_selection) {
+      if (InputManager::keys.shift) {
+        scene.selection.deselect(m_entity);
+      } else {
+        if (InputManager::pointer.button == InputManager::PointerButton::Left) {
+          scene.selection.clear();
+        }
+        scene.selection.select(m_entity);
+      }
+    }
   }
 
   void DirectSelectTool::on_element_pointer_up() {
-    // if (m_dragging_occurred) {
-    //   for (const auto& [id, entity] : Editor::scene().selection) {
-    //     entity->transform()->apply();
-    //   }
-    // } else if (Editor::scene().selection.has(m_element->id) && !m_is_entity_added_to_selection) {
-    //   shift_select_element(m_element);
-    // }
+    on_entity_pointer_up();
   }
 
   void DirectSelectTool::on_bezier_pointer_up() {

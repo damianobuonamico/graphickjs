@@ -39,16 +39,17 @@ namespace Graphick::Editor {
     if (!entity.is_in_category(CategoryComponent::Selectable)) return;
 
     if (entity.is_element()) {
-      m_selected.insert({ id, SelectionElementEntry{ { 0 } } });
+      m_selected[id] = SelectionElementEntry{ { 0 } };
     } else {
-      m_selected.insert({ id, SelectionEntry{} });
+      m_selected[id] = SelectionEntry{};
     }
   }
 
+  // Rename api to select_child, ...
   void Selection::select_vertex(const uuid id, const uuid element_id) {
     auto it = m_selected.find(element_id);
     if (it == m_selected.end() || it->second.type != SelectionEntry::Type::Element) {
-      m_selected.insert({ element_id, SelectionElementEntry{ { id } } });
+      m_selected[element_id] = SelectionElementEntry{ { id } };
       return;
     }
 
@@ -103,10 +104,10 @@ namespace Graphick::Editor {
             ((SelectionElementEntry&)it->second).vertices.insert(vertex_id);
           }
         } else {
-          m_selected.insert({ id, element_entry });
+          m_selected[id] = element_entry;
         }
       } else {
-        m_selected.insert({ id, entry });
+        m_selected[id] = entry;
       }
     }
 

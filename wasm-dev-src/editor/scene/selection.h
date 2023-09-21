@@ -11,6 +11,7 @@ namespace Graphick::Editor {
 
   class Selection {
   public:
+    // TODO: Join SelectionEntry and SelectionElementEntry
     struct SelectionEntry {
       enum class Type {
         Entity = 0,
@@ -35,20 +36,14 @@ namespace Graphick::Editor {
     Selection(Scene* scene);
 
     inline const std::unordered_map<uuid, SelectionEntry>& selected() const { return m_selected; }
-    // inline const std::unordered_map<uuid>& selected_vertices() const { return m_selected_vertices; }
-
     inline const std::unordered_map<uuid, SelectionEntry>& temp_selected() const { return m_temp_selected; }
-    // inline const std::unordered_map<uuid>& temp_selected_vertices() const { return m_temp_selected_vertices; }
 
     inline size_t size() const { return m_selected.size(); }
     inline bool empty() const { return size() < 1; }
+    inline const SelectionEntry& get(const uuid id) const { return m_selected.at(id); }
 
     bool has(const uuid id, bool include_temp = false) const;
     bool has_vertex(const uuid id, const uuid element_id, bool include_temp = false) const;
-    // inline bool has_vertex(const uuid id, bool include_temp = false) const {
-    //   return m_selected_vertices.find(id) != m_selected_vertices.end() ||
-    //     (include_temp && m_temp_selected_vertices.find(id) != m_temp_selected_vertices.end());
-    // }
 
     void clear();
 
@@ -59,7 +54,6 @@ namespace Graphick::Editor {
     void deselect_vertex(const uuid id, const uuid element_id);
 
     void temp_select(const std::unordered_map<uuid, SelectionEntry>& entities);
-    // void temp_select(const std::vector<uuid>& entities, const std::vector<uuid>& vertices);
 
     void sync();
   private:
