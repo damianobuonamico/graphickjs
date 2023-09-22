@@ -58,6 +58,7 @@ R"(
 
     float alpha = 0.0;
 
+    // TODO: cache similar operations in constexpr arrays
     int reminder = int(y0) % 4;
     if (reminder == 0) alpha += data_to_coverage(coverage_block.r);
     else if (reminder == 1) alpha += data_to_coverage(coverage_block.g);

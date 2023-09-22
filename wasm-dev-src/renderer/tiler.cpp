@@ -456,23 +456,6 @@ namespace Graphick::Renderer {
     }
   }
 
-  static float calculate_cover(std::vector<uvec4>& segments, int y) {
-    float cover = 0.0f;
-    float y0 = (float)y;
-    float y1 = y0 + 1.0f;
-    float tile_size_over_255 = (float)TILE_SIZE / 255.0f;
-
-    for (auto segment : segments) {
-      float p0_y = tile_size_over_255 * (float)segment.y0;
-      float p1_y = tile_size_over_255 * (float)segment.y1;
-
-      // Segment is always on the left of the tile so we don't need to check x
-      cover += std::clamp(p1_y, y0, y1) - std::clamp(p0_y, y0, y1);
-    }
-
-    return cover;
-  }
-
   void PathTiler::finish(const ivec2 tiles_count) {
     // OPTICK_EVENT();
 
@@ -520,7 +503,26 @@ namespace Graphick::Renderer {
             // mask.cover_table[j] = (uint8_t)std::round(127.5f + cover_table[j] * 127.5f);
 
             mask.cover_table[j] = (uint8_t)Math::wrap((int)std::round(127.0f + cover_table[j] * 127.0f), 0, 254);
-            cover_table[j] += calculate_cover(mask.segments, j);
+          }
+
+          {
+            // GK_TOTAL("Calculate Cover");
+            // TODO: Optimize further if possible, maybe use SIMD
+
+            float tile_size_over_255 = (float)TILE_SIZE / 255.0f;
+
+            for (auto& segment : mask.segments) {
+              float p0_y = tile_size_over_255 * (float)segment.y0;
+              float p1_y = tile_size_over_255 * (float)segment.y1;
+
+              // Segment is always on the left of the tile so we don't need to check x
+              for (int j = 0; j < TILE_SIZE; j++) {
+                float y0 = (float)j;
+                float y1 = y0 + 1.0f;
+
+                cover_table[j] += std::clamp(p1_y, y0, y1) - std::clamp(p0_y, y0, y1);
+              }
+            }
           }
 
           prev_coords = coords;

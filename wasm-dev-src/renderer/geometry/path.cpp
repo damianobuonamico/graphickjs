@@ -339,7 +339,6 @@ namespace Graphick::Renderer::Geometry {
     }
 
     if (rehydrate) {
-      console::log("rehydrate");
       m_bounding_rect_cache.reset();
       m_approx_bounding_rect_cache.reset();
     }
