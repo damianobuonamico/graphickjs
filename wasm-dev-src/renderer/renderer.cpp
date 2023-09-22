@@ -158,7 +158,7 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::draw_outline(const uuid id, const Geometry::Path& path, const vec2 translation) {
-    if (path.empty()) return;
+    if (path.vacant()) return;
 
     get()->add_line_instances(path, translation);
     get()->add_vertex_instances(id, path, translation);
@@ -601,6 +601,8 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::add_line_instances(const Geometry::Path& path, const vec2 translation) {
+    if (path.empty()) return;
+
     OPTICK_EVENT();
 
     for (const auto& segment : path.segments()) {
@@ -671,6 +673,45 @@ namespace Graphick::Renderer {
   void Renderer::add_vertex_instances(const uuid id, const Geometry::Path& path, const vec2 translation) {
     Editor::Scene& scene = Editor::Editor::scene();
 
+    vec2 first_pos, last_pos;
+
+    auto in_handle_ptr = path.in_handle_ptr();
+    auto out_handle_ptr = path.out_handle_ptr();
+
+    if (path.empty()) {
+      auto p = path.last().lock();
+      vec2 p_pos = p->get() + translation;
+
+      add_square_instance(p_pos);
+      if (!scene.selection.has_vertex(p->id, id, true)) {
+        add_white_square_instance(p_pos);
+      }
+
+      first_pos = p_pos;
+      last_pos = p_pos;
+    } else {
+      first_pos = path.segments().front().p0() + translation;
+      last_pos = path.segments().back().p3() + translation;
+    }
+
+    if (!path.closed()) {
+      if (in_handle_ptr.lock().get() != nullptr) {
+        vec2 p = in_handle_ptr.lock()->get() + translation;
+
+        add_circle_instance(p);
+        add_linear_segment_instance(first_pos, p);
+      }
+
+      if (out_handle_ptr.lock().get() != nullptr) {
+        vec2 p = out_handle_ptr.lock()->get() + translation;
+
+        add_circle_instance(p);
+        add_linear_segment_instance(last_pos, p);
+      }
+    }
+
+    if (path.empty()) return;
+
     for (const auto& segment : path.segments()) {
       vec2 p0 = segment.p0() + translation;
       uuid p0_id = segment.p0_id();
@@ -698,12 +739,11 @@ namespace Graphick::Renderer {
     }
 
     if (!path.closed()) {
-      vec2 p3 = path.segments().back().p3() + translation;
       uuid p3_id = path.segments().back().p3_id();
 
-      add_square_instance(p3);
+      add_square_instance(last_pos);
       if (!scene.selection.has_vertex(p3_id, id, true)) {
-        add_white_square_instance(p3);
+        add_white_square_instance(last_pos);
       }
     }
   }

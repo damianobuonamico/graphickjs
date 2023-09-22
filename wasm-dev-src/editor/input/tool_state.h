@@ -5,6 +5,7 @@
 #include "tools/zoom_tool.h"
 #include "tools/select_tool.h"
 #include "tools/direct_select_tool.h"
+#include "tools/pen_tool.h"
 #include "tools/pencil_tool.h"
 
 namespace Graphick::Editor::Input {
@@ -39,6 +40,7 @@ namespace Graphick::Editor::Input {
       new ZoomTool(),
       new SelectTool(),
       new DirectSelectTool(),
+      new PenTool(),
       new PencilTool(),
     };
 

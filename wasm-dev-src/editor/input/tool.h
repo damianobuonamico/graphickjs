@@ -11,6 +11,7 @@ namespace Graphick::Editor::Input {
       Zoom,
       Select,
       DirectSelect,
+      Pen,
       Pencil,
       None
     };

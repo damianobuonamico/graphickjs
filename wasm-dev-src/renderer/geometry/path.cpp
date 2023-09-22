@@ -10,6 +10,13 @@
 namespace Graphick::Renderer::Geometry {
 
   const std::vector<ControlPoint*> Path::vertices() const {
+    if (m_segments.empty()) {
+      if (m_last_point) {
+        return { m_last_point.get() };
+      }
+      return {};
+    }
+
     std::vector<ControlPoint*> vertices;
 
     for (const Segment& segment : m_segments) {
@@ -24,6 +31,13 @@ namespace Graphick::Renderer::Geometry {
   }
 
   const std::vector<uuid> Path::vertices_ids() const {
+    if (m_segments.empty()) {
+      if (m_last_point) {
+        return { m_last_point->id };
+      }
+      return {};
+    }
+
     std::vector<uuid> vertices;
 
     for (const Segment& segment : m_segments) {
@@ -238,6 +252,13 @@ namespace Graphick::Renderer::Geometry {
     // cache ~ 0.006ms
     if (m_bounding_rect_cache.has_value()) return m_bounding_rect_cache.value();
 
+    if (m_segments.empty()) {
+      if (m_last_point == nullptr) return { };
+
+      vec2 p = m_last_point->get();
+      return { p, p };
+    }
+
     Math::rect rect{};
 
     for (const auto& segment : m_segments) {
@@ -259,6 +280,13 @@ namespace Graphick::Renderer::Geometry {
     // cache ~ 0.006ms
     if (m_approx_bounding_rect_cache.has_value()) return m_approx_bounding_rect_cache.value();
 
+    if (m_segments.empty()) {
+      if (m_last_point == nullptr) return { };
+
+      vec2 p = m_last_point->get();
+      return { p, p };
+    }
+
     Math::rect rect{};
 
     for (const auto& segment : m_segments) {
@@ -274,25 +302,61 @@ namespace Graphick::Renderer::Geometry {
   }
 
   Math::rect Path::large_bounding_rect() const {
+    GK_TOTAL("Path::large_bounding_rect");
+    // Don't cache this one, it's not used often enough and in/out handles do not rehydrate cache.
+
     Math::rect rect{};
 
-    for (const auto& segment : m_segments) {
-      Math::rect segment_rect = segment.large_bounding_rect();
+    if (m_segments.empty()) {
+      if (m_last_point == nullptr) return { };
 
-      min(rect.min, segment_rect.min, rect.min);
-      max(rect.max, segment_rect.max, rect.max);
+      vec2 p = m_last_point->get();
+      rect = { p, p };
+    } else {
+      for (const auto& segment : m_segments) {
+        Math::rect segment_rect = segment.approx_bounding_rect();
+
+        min(rect.min, segment_rect.min, rect.min);
+        max(rect.max, segment_rect.max, rect.max);
+      }
+    }
+
+    if (m_in_handle != nullptr) {
+      min(rect.min, m_in_handle->get(), rect.min);
+      max(rect.max, m_in_handle->get(), rect.max);
+    }
+    if (m_out_handle != nullptr) {
+      min(rect.min, m_out_handle->get(), rect.min);
+      max(rect.max, m_out_handle->get(), rect.max);
     }
 
     return rect;
   }
 
   bool Path::is_inside(const vec2 position, bool deep_search, float threshold) const {
-    if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : approx_bounding_rect(), threshold)) {
-      return false;
+    GK_TOTAL("Path::is_inside");
+
+    if (m_segments.empty()) {
+      if (m_last_point && Math::is_point_in_circle(position, m_last_point->get(), threshold)) {
+        return true;
+      }
+    } else {
+      if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : approx_bounding_rect(), threshold)) {
+        return false;
+      }
+
+      for (const Segment& segment : m_segments) {
+        if (segment.is_inside(position, deep_search, threshold)) {
+          return true;
+        }
+      }
     }
 
-    for (const Segment& segment : m_segments) {
-      if (segment.is_inside(position, deep_search, threshold)) {
+    if (deep_search) {
+      if (m_in_handle && Math::is_point_in_circle(position, m_in_handle->get(), threshold)) {
+        return true;
+      }
+      if (m_out_handle && Math::is_point_in_circle(position, m_out_handle->get(), threshold)) {
         return true;
       }
     }
@@ -300,8 +364,16 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
+  // TODO: check if path is vacant or empty
   bool Path::intersects(const Math::rect& rect) const {
     GK_TOTAL("Path::intersects");
+
+    if (m_segments.empty()) {
+      if (m_last_point && Math::is_point_in_rect(m_last_point->get(), rect)) {
+        return true;
+      }
+      return false;
+    }
 
     Math::rect bounding_rect = this->approx_bounding_rect();
 
@@ -317,6 +389,15 @@ namespace Graphick::Renderer::Geometry {
   bool Path::intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const {
     GK_TOTAL("Path::intersects (deep)");
 
+    if (m_segments.empty()) {
+      if (m_last_point == nullptr) return false;
+
+      if (Math::is_point_in_rect(m_last_point->get(), rect)) {
+        vertices.insert(m_last_point->id);
+        return true;
+      }
+    }
+
     Math::rect bounding_rect = this->approx_bounding_rect();
 
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
@@ -329,10 +410,25 @@ namespace Graphick::Renderer::Geometry {
     return found;
   }
 
-  void Path::rehydrate_cache() const {
-    GK_TOTAL("Path::rehidrate");
+  // TODO: set_relative_handle
+  void Path::create_in_handle(const vec2 position) {
+    if (m_in_handle != nullptr) return;
+    m_in_handle = std::make_shared<History::Vec2Value>(position);
+  }
 
-    bool rehydrate = false;
+  // TODO: set_relative_handle
+  void Path::create_out_handle(const vec2 position) {
+    if (m_out_handle != nullptr) return;
+    m_out_handle = std::make_shared<History::Vec2Value>(position);
+  }
+
+  void Path::rehydrate_cache() const {
+    GK_TOTAL("Path::rehydrate");
+
+    int hash = (int)m_segments.size();
+    bool rehydrate = m_hash != hash;
+
+    m_hash = hash;
 
     for (const Segment& segment : m_segments) {
       if (segment.rehydrate_cache()) rehydrate = true;

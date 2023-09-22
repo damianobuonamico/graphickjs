@@ -31,21 +31,24 @@ namespace Graphick::Editor::Input {
       return;
     }
 
-    m_entity = entity.value().id();
+    m_entity = entity->id();
     m_vertex = InputManager::hover.vertex();
     m_handle = InputManager::hover.handle();
 
     if (InputManager::keys.alt && m_entity && hover_type != HoverState::HoverType::Handle) {
       on_duplicate_pointer_down();
     } else if (hover_type == HoverState::HoverType::Element) {
+      console::log("element");
       on_element_pointer_down();
     } else if (hover_type == HoverState::HoverType::Vertex) {
+      console::log("vertex");
       on_vertex_pointer_down();
     } else if (hover_type == HoverState::HoverType::Handle) {
+      console::log("handle");
       on_handle_pointer_down();
     } else if (hover_type == HoverState::HoverType::Segment) {
       on_bezier_pointer_down();
-    } else if (hover_type == HoverState::HoverType::Entity && entity.value().is_in_category(CategoryComponent::Selectable)) {
+    } else if (hover_type == HoverState::HoverType::Entity && entity->is_in_category(CategoryComponent::Selectable)) {
       on_entity_pointer_down();
     } else {
       on_none_pointer_down();
@@ -268,7 +271,7 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_vertex_pointer_down() {
     Scene& scene = Editor::scene();
-    uuid id = m_vertex.value().lock()->id;
+    uuid id = m_vertex->lock()->id;
 
     if (!scene.selection.has_vertex(id, m_entity)) {
       if (!InputManager::keys.shift) scene.selection.clear();
@@ -393,7 +396,7 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_handle_pointer_move() {
     if (InputManager::keys.space && m_vertex.has_value()) {
-      auto vertex = m_vertex.value().lock();
+      auto vertex = m_vertex->lock();
       if (vertex) {
         vertex->add_delta(InputManager::pointer.scene.movement);
       }
@@ -403,14 +406,14 @@ namespace Graphick::Editor::Input {
 
     if (!m_handle.has_value()) return;
 
-    auto handle = m_handle.value().lock();
+    auto handle = m_handle->lock();
     if (!handle) return;
 
     handle->set_delta(InputManager::pointer.scene.delta);
 
     if (InputManager::keys.alt) return;
 
-    auto vertex = m_vertex.value().lock();
+    auto vertex = m_vertex->lock();
     auto handles = vertex->relative_handles();
     if (!vertex || handles.size() < 2 || Math::is_almost_equal(handle->get(), vertex->get())) return;
 
@@ -490,7 +493,7 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_vertex_pointer_up() {
     Scene& scene = Editor::scene();
-    uuid id = m_vertex.value().lock()->id;
+    uuid id = m_vertex->lock()->id;
 
     if (m_dragging_occurred) {
       apply_selected();
@@ -510,15 +513,11 @@ namespace Graphick::Editor::Input {
   void DirectSelectTool::on_handle_pointer_up() {
     if (!m_dragging_occurred || !m_handle.has_value()) return;
 
-    auto vertex = m_vertex.value().lock();
-    if (!vertex) {
-      auto handle = m_handle.value().lock();
-      if (handle) handle->apply();
+    auto vertex = m_vertex->lock();
+    auto handle = m_handle->lock();
 
-      return;
-    }
-
-    vertex->deep_apply();
+    if (handle) handle->apply();
+    if (vertex) vertex->deep_apply();
   }
 
 }

@@ -28,7 +28,6 @@ namespace Graphick::Editor::Input {
     void populate_cache();
     void translate_selected();
     void apply_selected();
-    // void shift_select_element(Entity* entity);
 
     void on_none_pointer_down();
     void on_duplicate_pointer_down();
@@ -75,8 +74,8 @@ namespace Graphick::Editor::Input {
     Mode m_mode = Mode::None;
 
     uuid m_entity = 0;
-    std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex;
-    std::optional<std::weak_ptr<History::Vec2Value>> m_handle;
+    std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
+    std::optional<std::weak_ptr<History::Vec2Value>> m_handle = std::nullopt;
 
     std::vector<History::Vec2Value*> m_cache;
 

@@ -69,7 +69,6 @@ namespace Graphick::Renderer::Geometry {
 
     rect bounding_rect() const;
     rect approx_bounding_rect() const;
-    rect large_bounding_rect() const;
     vec2 size() const;
 
     bool is_inside(const vec2 position, bool deep_search = false, float threshold = 0.0f) const;
@@ -108,10 +107,10 @@ namespace Graphick::Renderer::Geometry {
     // The start, end, and control points of the segment.
     //
     // For a line segment, p1 and p2 are ignored. For a quadratic bezier, only p1 is used. 
-    ControlPointVertex m_p0;
-    ControlPointHandle m_p1;
-    ControlPointHandle m_p2;
-    ControlPointVertex m_p3;
+    ControlPointVertex m_p0 = nullptr;
+    ControlPointHandle m_p1 = nullptr;
+    ControlPointHandle m_p2 = nullptr;
+    ControlPointVertex m_p3 = nullptr;
 
     mutable int m_hash = 0;
 

@@ -24,6 +24,7 @@ enum ToolType {
   Zoom,
   Select,
   DirectSelect,
+  Pen,
   Pencil,
   None,
 }
@@ -110,6 +111,9 @@ class ToolState {
         break;
       case "directSelect":
         API._set_tool(ToolType.DirectSelect);
+        break;
+      case "pen":
+        API._set_tool(ToolType.Pen);
         break;
       case "pencil":
         API._set_tool(ToolType.Pencil);

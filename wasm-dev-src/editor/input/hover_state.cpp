@@ -40,55 +40,90 @@ namespace Graphick::Editor::Input {
       return;
     }
 
-    const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
-    const vec2 translation = entity.get_component<TransformComponent>().position.get();
-
-    vec2 transformed_pos = position - translation;
-
-    if (path.empty()) {
-      m_type = HoverType::Entity;
+    if (!deep_search) {
+      m_type = HoverType::Element;
       return;
     }
+
+    const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
+    const vec2 translation = entity.get_component<TransformComponent>().position.get();
+    const vec2 transformed_pos = position - translation;
 
     bool deep = deep_search && scene.selection.has(id);
 
-    for (const auto& segment : path.segments()) {
-      vec2 p0 = segment.p0();
-
-      if (Math::is_point_in_circle(transformed_pos, p0, threshold)) {
-        m_type = HoverType::Vertex;
-        m_vertex = segment.p0_ptr();
+    if (path.empty()) {
+      if (path.vacant()) {
+        m_entity = 0;
+        m_type = HoverType::None;
         return;
       }
 
-      if (deep && (segment.is_quadratic() || segment.is_cubic())) {
-        vec2 p1 = segment.p1();
-        vec2 p2 = segment.p2();
-        vec2 p3 = segment.p3();
+      auto last = path.last();
 
-        if (segment.has_p1() && Math::is_point_in_circle(transformed_pos, p1, threshold)) {
-          m_type = HoverType::Handle;
+      if (Math::is_point_in_circle(transformed_pos, last.lock()->get(), threshold)) {
+        m_type = HoverType::Vertex;
+        m_vertex = last;
+        return;
+      }
+    } else {
+      for (const auto& segment : path.segments()) {
+        vec2 p0 = segment.p0();
+
+        if (Math::is_point_in_circle(transformed_pos, p0, threshold)) {
+          m_type = HoverType::Vertex;
           m_vertex = segment.p0_ptr();
-          m_handle = segment.p1_ptr();
           return;
         }
 
-        if (segment.is_cubic()) {
-          if (segment.has_p2() && Math::is_point_in_circle(transformed_pos, p2, threshold)) {
+        if (deep && (segment.is_quadratic() || segment.is_cubic())) {
+          vec2 p1 = segment.p1();
+          vec2 p2 = segment.p2();
+          vec2 p3 = segment.p3();
+
+          if (segment.has_p1() && Math::is_point_in_circle(transformed_pos, p1, threshold)) {
             m_type = HoverType::Handle;
-            m_vertex = segment.p3_ptr();
-            m_handle = segment.p2_ptr();
+            m_vertex = segment.p0_ptr();
+            m_handle = segment.p1_ptr();
             return;
+          }
+
+          if (segment.is_cubic()) {
+            if (segment.has_p2() && Math::is_point_in_circle(transformed_pos, p2, threshold)) {
+              m_type = HoverType::Handle;
+              m_vertex = segment.p3_ptr();
+              m_handle = segment.p2_ptr();
+              return;
+            }
           }
         }
       }
+
+      if (Math::is_point_in_circle(transformed_pos, path.segments().back().p3(), threshold)) {
+        m_type = HoverType::Vertex;
+        m_vertex = path.segments().back().p3_ptr();
+        m_handle.reset();
+        return;
+      }
     }
 
-    if (Math::is_point_in_circle(transformed_pos, path.segments().back().p3(), threshold)) {
-      m_type = HoverType::Vertex;
-      m_vertex = path.segments().back().p3_ptr();
-      m_handle.reset();
-      return;
+    auto in_handle = path.in_handle_ptr().lock();
+    auto out_handle = path.out_handle_ptr().lock();
+
+    if (in_handle) {
+      if (Math::is_point_in_circle(transformed_pos, in_handle->get(), threshold)) {
+        m_type = HoverType::Handle;
+        m_vertex = path.last();
+        m_handle = path.in_handle_ptr();
+        return;
+      }
+    }
+    if (out_handle) {
+      if (Math::is_point_in_circle(transformed_pos, out_handle->get(), threshold)) {
+        m_type = HoverType::Handle;
+        m_vertex = path.last();
+        m_handle = path.out_handle_ptr();
+        return;
+      }
     }
 
     m_type = HoverType::Element;

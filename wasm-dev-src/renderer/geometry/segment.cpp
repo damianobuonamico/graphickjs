@@ -209,29 +209,12 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  rect Segment::large_bounding_rect() const {
-    rect rect = bounding_rect();
-
-    if (m_p1) {
-      vec2 p1 = m_p1->get();
-      Math::min(rect.min, p1, rect.min);
-      Math::max(rect.max, p1, rect.max);
-    }
-    if (m_p2) {
-      vec2 p2 = m_p2->get();
-      Math::min(rect.min, p2, rect.min);
-      Math::max(rect.max, p2, rect.max);
-    }
-
-    return rect;
-  }
-
   vec2 Segment::size() const {
     return bounding_rect().size();
   }
 
   bool Segment::is_inside(const vec2 position, bool deep_search, float threshold) const {
-    if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : bounding_rect(), threshold)) {
+    if (!Math::is_point_in_rect(position, deep_search ? approx_bounding_rect() : bounding_rect(), threshold)) {
       return false;
     }
 
@@ -296,7 +279,6 @@ namespace Graphick::Renderer::Geometry {
     vec2 p0 = m_p0->get();
     vec2 p3 = m_p3->get();
 
-    std::initializer_list<float> floats = { p0.x, p0.y, p3.x, p3.y };
     int hash = 0;
 
     if (m_p1 && m_p2) {

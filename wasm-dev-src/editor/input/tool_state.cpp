@@ -20,7 +20,7 @@ void update_tool_ui(int type) {}
 namespace Graphick::Editor::Input {
 
   ToolState::ToolState()
-    : m_current(Tool::ToolType::Select), m_active(m_current), m_last_tool(m_current) {}
+    : m_current(Tool::ToolType::Pen), m_active(m_current), m_last_tool(m_current) {}
 
   ToolState::~ToolState() {
     for (auto tool : m_tools) {

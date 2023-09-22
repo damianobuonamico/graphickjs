@@ -136,6 +136,8 @@ namespace Graphick::Editor {
     GK_TOTAL("Scene::render");
     OPTICK_EVENT();
 
+    const Math::rect visible_rect = viewport.visible();
+
     Renderer::Renderer::begin_frame({
       Math::round(IVEC2_TO_VEC2(viewport.size()) * viewport.dpr()),
       viewport.position(),
@@ -143,8 +145,8 @@ namespace Graphick::Editor {
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 
+    const size_t z_far = m_order.size() + 1;
     float z_index = 1.0f;
-    size_t z_far = m_order.size() + 1;
 
     // TODO: maybe check for rehydration only if actions performed are destructive
     bool should_rehydrate = true;
@@ -169,6 +171,8 @@ namespace Graphick::Editor {
         if (should_rehydrate) {
           path.rehydrate_cache();
         }
+
+        if (!Math::does_rect_intersect_rect(path.large_bounding_rect() + position, visible_rect)) continue;
 
         if (m_registry.all_of<FillComponent>(*it)) {
           Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, position, m_registry.get<FillComponent>(*it).color);

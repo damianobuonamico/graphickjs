@@ -16,7 +16,7 @@ namespace Graphick::Editor::Input {
   void SelectTool::on_pointer_down() {
     m_is_element_added_to_selection = false;
     m_dragging_occurred = false;
-    m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity().value().id() : uuid{ 0 };
+    m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity()->id() : uuid{ 0 };
 
     if (!InputManager::keys.shift && (m_entity == uuid{ 0 } || !Editor::scene().selection.has(m_entity))) {
       Editor::scene().selection.clear();
