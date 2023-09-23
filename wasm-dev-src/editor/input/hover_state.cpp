@@ -112,7 +112,7 @@ namespace Graphick::Editor::Input {
     if (in_handle) {
       if (Math::is_point_in_circle(transformed_pos, in_handle->get(), threshold)) {
         m_type = HoverType::Handle;
-        m_vertex = path.last();
+        m_vertex = path.empty() ? path.last() : path.segments().front().p0_ptr();
         m_handle = path.in_handle_ptr();
         return;
       }
@@ -120,7 +120,7 @@ namespace Graphick::Editor::Input {
     if (out_handle) {
       if (Math::is_point_in_circle(transformed_pos, out_handle->get(), threshold)) {
         m_type = HoverType::Handle;
-        m_vertex = path.last();
+        m_vertex = path.empty() ? path.last() : path.segments().back().p3_ptr();
         m_handle = path.out_handle_ptr();
         return;
       }

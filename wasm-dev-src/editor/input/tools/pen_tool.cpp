@@ -38,6 +38,11 @@ namespace Graphick::Editor::Input {
     }
   }
 
+  void PenTool::reset() {
+    m_mode = Mode::None;
+    m_element = 0;
+  }
+
   void PenTool::render_overlays() const {
 
   }
@@ -62,7 +67,13 @@ namespace Graphick::Editor::Input {
     if (path.vacant()) {
       path.move_to(InputManager::pointer.scene.position);
     } else {
-      path.line_to(InputManager::pointer.scene.position);
+      auto out_handle_ptr = path.out_handle_ptr().lock();
+      if (out_handle_ptr) {
+        path.cubic_to(out_handle_ptr->get(), InputManager::pointer.scene.position, true);
+        path.clear_out_handle();
+      } else {
+        path.line_to(InputManager::pointer.scene.position);
+      }
     }
 
     scene.selection.clear();
@@ -76,17 +87,25 @@ namespace Graphick::Editor::Input {
 
     Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
 
-    if (path.empty()) {
-      auto in_handle_ptr = path.in_handle_ptr().lock();
-      auto out_handle_ptr = path.out_handle_ptr().lock();
+    auto in_handle_ptr = path.in_handle_ptr().lock();
+    auto out_handle_ptr = path.out_handle_ptr().lock();
+    auto vertex_ptr = path.last();
 
+    if (InputManager::keys.space) {
+      if (!vertex_ptr.expired()) {
+        vertex_ptr.lock()->add_delta(InputManager::pointer.scene.movement);
+      }
+
+      return;
+    }
+
+    if (path.empty()) {
       if (out_handle_ptr == nullptr) {
         path.create_out_handle(InputManager::pointer.scene.origin);
         out_handle_ptr = path.out_handle_ptr().lock();
       }
 
-      out_handle_ptr->set_delta(InputManager::pointer.scene.position - path.last().lock()->get());
-
+      out_handle_ptr->set_delta(InputManager::pointer.scene.delta);
 
       if (!InputManager::keys.alt) {
         if (in_handle_ptr == nullptr) {
@@ -94,16 +113,39 @@ namespace Graphick::Editor::Input {
           in_handle_ptr = path.in_handle_ptr().lock();
         }
 
-        in_handle_ptr->set_delta(path.last().lock()->get() - InputManager::pointer.scene.position);
+        in_handle_ptr->move_to(2.0f * vertex_ptr.lock()->get() - InputManager::pointer.scene.position);
       }
+
+      return;
     }
 
-    // auto vertex = path.last();
-    // if (vertex.expired()) return;
+    if (path.out_handle_ptr().lock() == nullptr) {
+      path.create_out_handle(InputManager::pointer.scene.origin);
+      out_handle_ptr = path.out_handle_ptr().lock();
+    }
 
-    // if ()
-    //   vertex.lock()->position.set(InputManager::pointer.scene.position);
+    if (vertex_ptr.expired()) return;
 
+    out_handle_ptr->set_delta(InputManager::pointer.scene.delta);
+
+    if (InputManager::keys.alt) return;
+
+    Renderer::Geometry::Segment& segment = path.segments().back();
+
+    if (!segment.has_p2()) {
+      segment.create_p2(InputManager::pointer.scene.origin);
+    }
+
+    auto vertex = vertex_ptr.lock();
+    auto handles = vertex->relative_handles();
+    if (!vertex || handles.size() < 2 || Math::is_almost_equal(out_handle_ptr->get(), vertex->get())) return;
+
+    for (auto h : handles) {
+      auto h_ptr = h.lock();
+      if (h_ptr && h_ptr != out_handle_ptr) {
+        h_ptr->move_to(2.0f * vertex->get() - InputManager::pointer.scene.position);
+      }
+    }
   }
 
   void PenTool::on_none_pointer_up() {
@@ -120,6 +162,8 @@ namespace Graphick::Editor::Input {
     if (out_handle_ptr) {
       out_handle_ptr->apply();
     }
+
+    path.last().lock()->deep_apply();
   }
 
 }

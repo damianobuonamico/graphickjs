@@ -71,6 +71,10 @@ namespace Graphick::Editor::Input {
       keys.space = event == KeyboardEvent::Down;
     }
 
+    if (key != KeyboardKey::Space) {
+      keys.space_state_changed = false;
+    }
+
     if (!pointer.down && (keys.ctrl_state_changed || keys.space_state_changed)) {
       Editor::scene().tool_state.recalculate_active();
     }

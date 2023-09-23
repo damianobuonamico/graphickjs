@@ -12,8 +12,9 @@ namespace Graphick::Renderer::Geometry {
     inline bool empty() const { return m_segments.empty(); }
     inline bool closed() const { return m_closed; }
 
-    inline const std::vector<Segment>& segments() const { return m_segments; }
     inline const std::weak_ptr<ControlPoint> last() const { return m_last_point; }
+    inline const std::vector<Segment>& segments() const { return m_segments; }
+    inline std::vector<Segment>& segments() { return m_segments; }
 
     const std::vector<ControlPoint*> vertices() const;
     const std::vector<uuid> vertices_ids() const;
@@ -25,6 +26,7 @@ namespace Graphick::Renderer::Geometry {
     void line_to(vec2 p);
     void quadratic_to(vec2 p1, vec2 p2);
     void cubic_to(vec2 p1, vec2 p2, vec2 p3);
+    void cubic_to(vec2 p, vec2 p3, bool is_p1 = true);
     void arc_to(vec2 c, vec2 radius, float x_axis_rotation, bool large_arc_flag, bool sweep_flag, vec2 p);
 
     void ellipse(vec2 c, vec2 radius);
@@ -44,6 +46,8 @@ namespace Graphick::Renderer::Geometry {
 
     void create_in_handle(const vec2 position);
     void create_out_handle(const vec2 position);
+    void clear_in_handle();
+    void clear_out_handle();
 
     void rehydrate_cache() const;
   private:

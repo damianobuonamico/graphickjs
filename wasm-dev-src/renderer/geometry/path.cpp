@@ -73,6 +73,12 @@ namespace Graphick::Renderer::Geometry {
     m_last_point = point;
   }
 
+  void Path::cubic_to(vec2 p, vec2 p3, bool is_p1) {
+    Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
+    m_segments.emplace_back(m_last_point, p, point, false, is_p1);
+    m_last_point = point;
+  }
+
   void Path::arc_to(vec2 c, vec2 radius, float x_axis_rotation, bool large_arc_flag, bool sweep_flag, vec2 p) {
     float sin_th = std::sinf(Math::degrees_to_radians(x_axis_rotation));
     float cos_th = std::cosf(Math::degrees_to_radians(x_axis_rotation));
@@ -412,14 +418,38 @@ namespace Graphick::Renderer::Geometry {
 
   // TODO: set_relative_handle
   void Path::create_in_handle(const vec2 position) {
-    if (m_in_handle != nullptr) return;
+    if (vacant() || m_in_handle != nullptr || m_closed) return;
+
     m_in_handle = std::make_shared<History::Vec2Value>(position);
+
+    if (m_segments.empty()) {
+      m_last_point->set_relative_handle(m_in_handle);
+      return;
+    }
+
+    m_segments.front().m_p0->set_relative_handle(m_in_handle);
   }
 
   // TODO: set_relative_handle
   void Path::create_out_handle(const vec2 position) {
-    if (m_out_handle != nullptr) return;
+    if (vacant() || m_out_handle != nullptr || m_closed) return;
+
     m_out_handle = std::make_shared<History::Vec2Value>(position);
+
+    if (m_segments.empty()) {
+      m_last_point->set_relative_handle(m_out_handle);
+      return;
+    }
+
+    m_segments.back().m_p3->set_relative_handle(m_out_handle);
+  }
+
+  void Path::clear_in_handle() {
+    m_in_handle.reset();
+  }
+
+  void Path::clear_out_handle() {
+    m_out_handle.reset();
   }
 
   void Path::rehydrate_cache() const {

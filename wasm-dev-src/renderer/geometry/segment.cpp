@@ -40,10 +40,11 @@ namespace Graphick::Renderer::Geometry {
     m_p0(p0),
     m_p3(p3) {}
 
-  Segment::Segment(ControlPointVertex p0, vec2 p1, ControlPointVertex p3, bool is_quadratic) :
+  Segment::Segment(ControlPointVertex p0, vec2 p, ControlPointVertex p3, bool is_quadratic, bool is_p1) :
     m_kind(is_quadratic ? Kind::Quadratic : Kind::Cubic),
     m_p0(p0),
-    m_p1(std::make_shared<History::Vec2Value>(p1)),
+    m_p1((is_quadratic || is_p1) ? std::make_shared<History::Vec2Value>(p) : nullptr),
+    m_p2((!is_quadratic && !is_p1) ? std::make_shared<History::Vec2Value>(p) : nullptr),
     m_p3(p3)
   {
     m_p0->set_relative_handle(m_p1);
@@ -218,6 +219,10 @@ namespace Graphick::Renderer::Geometry {
       return false;
     }
 
+    if (Math::is_point_in_circle(position, p0(), threshold) || Math::is_point_in_circle(position, p3(), threshold)) {
+      return true;
+    }
+
     if (deep_search) {
       if (m_p1 != nullptr && Math::is_point_in_circle(position, p1(), threshold)) {
         return true;
@@ -228,6 +233,8 @@ namespace Graphick::Renderer::Geometry {
     }
 
     auto a = SEGMENT_CALL(closest_to, position, 8).sq_distance;
+
+    console::log(a <= threshold * threshold);
 
     return a <= threshold * threshold;
   }
@@ -273,6 +280,18 @@ namespace Graphick::Renderer::Geometry {
 
   bool Segment::intersects_line(const Math::rect& line) const {
     return line_intersection_points(line).has_value();
+  }
+
+  void Segment::create_p1(const vec2 position) {
+    m_p1 = std::make_shared<History::Vec2Value>(position);
+    m_p0->set_relative_handle(m_p1);
+    m_kind = Kind::Cubic;
+  }
+
+  void Segment::create_p2(const vec2 position) {
+    m_p2 = std::make_shared<History::Vec2Value>(position);
+    m_p3->set_relative_handle(m_p2);
+    m_kind = Kind::Cubic;
   }
 
   bool Segment::rehydrate_cache() const {

@@ -35,7 +35,7 @@ namespace Graphick::Renderer::Geometry {
     Segment(vec2 p0, vec2 p1, vec2 p2, vec2 p3);
 
     Segment(ControlPointVertex p0, ControlPointVertex p3);
-    Segment(ControlPointVertex p0, vec2 p1, ControlPointVertex p3, bool is_quadratic = true);
+    Segment(ControlPointVertex p0, vec2 p, ControlPointVertex p3, bool is_quadratic = true, bool is_p1 = true);
     Segment(ControlPointVertex p0, vec2 p1, vec2 p2, ControlPointVertex p3);
 
     Segment(const Segment& other);
@@ -75,6 +75,9 @@ namespace Graphick::Renderer::Geometry {
     bool intersects(const Math::rect& rect) const;
     bool intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const;
     bool intersects_line(const Math::rect& line) const;
+
+    void create_p1(const vec2 position);
+    void create_p2(const vec2 position);
 
     bool rehydrate_cache() const;
   private:

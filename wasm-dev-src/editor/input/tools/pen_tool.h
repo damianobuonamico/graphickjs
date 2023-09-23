@@ -17,6 +17,8 @@ namespace Graphick::Editor::Input {
     virtual void on_pointer_move() override;
     virtual void on_pointer_up() override;
 
+    virtual void reset() override;
+
     virtual void render_overlays() const override;
   private:
     PenTool();

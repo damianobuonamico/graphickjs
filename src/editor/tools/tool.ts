@@ -86,6 +86,9 @@ class ToolState {
         case ToolType.DirectSelect:
           this.m_setTool("directSelect");
           break;
+        case ToolType.Pen:
+          this.m_setTool("pen");
+          break;
         case ToolType.Pencil:
           this.m_setTool("pencil");
           break;

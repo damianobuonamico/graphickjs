@@ -2,6 +2,8 @@
 
 #include "input_manager.h"
 
+#include "../../utils/console.h"
+
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
 
@@ -29,7 +31,10 @@ namespace Graphick::Editor::Input {
   }
 
   void ToolState::set_current(Tool::ToolType tool) {
-    if (m_active == Tool::ToolType::None) return;
+    if (tool == Tool::ToolType::None) return;
+
+    current().reset();
+    active().reset();
 
     m_current = tool;
 
@@ -37,7 +42,7 @@ namespace Graphick::Editor::Input {
   }
 
   void ToolState::set_active(Tool::ToolType tool) {
-    if (m_active == Tool::ToolType::None) return;
+    if (tool == Tool::ToolType::None) return;
 
     m_last_tool = m_active;
     m_active = tool;
@@ -46,6 +51,12 @@ namespace Graphick::Editor::Input {
   }
 
   void ToolState::on_pointer_down() {
+    if (m_last_tool != m_active && m_active != Tool::ToolType::Pan && m_active != Tool::ToolType::Zoom) {
+      if (m_active != Tool::ToolType::DirectSelect || InputManager::hover.type() != HoverState::HoverType::Handle) {
+        m_tools[(int)m_last_tool]->reset();
+      }
+    }
+
     active().on_pointer_down();
   }
 

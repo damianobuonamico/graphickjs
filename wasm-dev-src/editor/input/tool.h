@@ -40,6 +40,8 @@ namespace Graphick::Editor::Input {
 
     virtual void on_key(const bool down, const KeyboardKey key) {}
 
+    virtual void reset() {}
+
     virtual void render_overlays() const {}
   protected:
     Tool(ToolType type, int category) : m_type(type), m_category(category) {}
