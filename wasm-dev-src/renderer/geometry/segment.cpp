@@ -234,8 +234,6 @@ namespace Graphick::Renderer::Geometry {
 
     auto a = SEGMENT_CALL(closest_to, position, 8).sq_distance;
 
-    console::log(a <= threshold * threshold);
-
     return a <= threshold * threshold;
   }
 

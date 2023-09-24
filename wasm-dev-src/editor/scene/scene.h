@@ -5,10 +5,11 @@
 
 #include "../input/tool_state.h"
 
+#include "../../history/values.h"
+
 #include "../../utils/uuid.h"
 
 #include "../../lib/entt/entt.hpp"
-
 
 namespace Graphick::Renderer::Geometry {
   class Path;
@@ -38,7 +39,7 @@ namespace Graphick::Editor {
 
     Entity create_entity(const std::string& tag = "");
     Entity create_entity(const uuid id, const std::string& tag = "");
-    void destroy_entity(Entity entity);
+    void delete_entity(Entity entity);
 
     template <typename... C>
     inline auto get_all_entities_with() { return m_registry.view<C...>(); }
@@ -56,8 +57,8 @@ namespace Graphick::Editor {
   private:
     entt::registry m_registry;
 
-    std::map<uuid, entt::entity> m_entities;
-    std::vector<entt::entity> m_order;
+    std::unordered_map<uuid, entt::entity> m_entities;
+    History::VectorValue<entt::entity> m_order;
   private:
     friend class Editor;
     friend class Entity;

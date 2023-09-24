@@ -38,13 +38,10 @@ namespace Graphick::Editor::Input {
     if (InputManager::keys.alt && m_entity && hover_type != HoverState::HoverType::Handle) {
       on_duplicate_pointer_down();
     } else if (hover_type == HoverState::HoverType::Element) {
-      console::log("element");
       on_element_pointer_down();
     } else if (hover_type == HoverState::HoverType::Vertex) {
-      console::log("vertex");
       on_vertex_pointer_down();
     } else if (hover_type == HoverState::HoverType::Handle) {
-      console::log("handle");
       on_handle_pointer_down();
     } else if (hover_type == HoverState::HoverType::Segment) {
       on_bezier_pointer_down();
@@ -171,7 +168,6 @@ namespace Graphick::Editor::Input {
   /* -- on_pointer_down -- */
 
   void DirectSelectTool::on_none_pointer_down() {
-    console::log("none");
     if (!InputManager::keys.shift) {
       Editor::scene().selection.clear();
     }

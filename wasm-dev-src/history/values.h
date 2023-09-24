@@ -61,38 +61,6 @@ namespace Graphick::History {
     int m_delta = 0;
   };
 
-  template <typename K, typename V>
-  class MapValue {
-  public:
-    using value = std::pair<K, V>;
-    using vector = std::vector<value>;
-    using iterator = typename vector::iterator;
-    using const_iterator = typename vector::const_iterator;
-  public:
-    MapValue(std::initializer_list<value> list) : m_vector(list) {}
-    MapValue(const vector& vector) : m_vector(vector) {}
-    MapValue() {}
-
-    inline iterator begin() { return m_vector.begin(); }
-    inline iterator end() { return m_vector.end(); }
-    inline const_iterator begin() const { return m_vector.begin(); }
-    inline const_iterator end() const { return m_vector.end(); }
-
-    inline std::reverse_iterator<iterator> rbegin() { return m_vector.rbegin(); }
-    inline std::reverse_iterator<iterator> rend() { return m_vector.rend(); }
-    inline std::reverse_iterator<const_iterator> rbegin() const { return m_vector.rbegin(); }
-    inline std::reverse_iterator<const_iterator> rend() const { return m_vector.rend(); }
-
-    inline size_t size() const { return m_vector.size(); }
-
-    void insert(const value& pair);
-    void insert(const value& pair, int index);
-    void erase(const value& pair);
-    void erase(const value& pair, int index);
-  private:
-    vector m_vector;
-  };
-
   class Vec2Value {
   public:
     Vec2Value() : m_value(0.0f) {};
@@ -114,6 +82,36 @@ namespace Graphick::History {
   private:
     vec2 m_value;
     vec2 m_delta = { 0.0f, 0.0f };
+  };
+
+  template <typename T>
+  class VectorValue {
+  public:
+    using iterator = typename std::vector<T>::iterator;
+    using const_iterator = typename std::vector<T>::const_iterator;
+  public:
+    VectorValue(std::initializer_list<T> list) : m_value(list) {}
+    VectorValue(const std::vector<T>& vector) : m_value(vector) {}
+    VectorValue(const VectorValue& vector) : m_value(vector.m_value) {}
+    VectorValue() = default;
+
+    ~VectorValue() = default;
+
+    inline iterator begin() { return m_value.begin(); }
+    inline iterator end() { return m_value.end(); }
+    inline const_iterator begin() const { return m_value.begin(); }
+    inline const_iterator end() const { return m_value.end(); }
+
+    inline std::reverse_iterator<iterator> rbegin() { return m_value.rbegin(); }
+    inline std::reverse_iterator<iterator> rend() { return m_value.rend(); }
+    inline std::reverse_iterator<const_iterator> rbegin() const { return m_value.rbegin(); }
+    inline std::reverse_iterator<const_iterator> rend() const { return m_value.rend(); }
+
+    inline size_t size() const { return m_value.size(); }
+
+    void push_back(const T& value);
+  private:
+    std::vector<T> m_value;
   };
 
 }

@@ -984,8 +984,6 @@ namespace Graphick::Renderer {
 
     int baked = stbtt_BakeFontBitmap(font_buffer, 0, 12.0f, m_bitmap, 128, 128, 32, 96, m_cdata); /* no guarantee this fits! */
 
-    console::log(baked);
-
     delete[] font_buffer;
 
     m_debug_font_atlas_id = GPU::Memory::Allocator::allocate_texture({ 128, 128 }, GPU::TextureFormat::R8, "DebugFontAtlas");

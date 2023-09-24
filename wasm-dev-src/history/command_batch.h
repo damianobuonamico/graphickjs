@@ -11,7 +11,9 @@ namespace Graphick::History {
   class CommandBatch : public Command {
     using CommandPointer = std::unique_ptr<Command>;
   public:
-    CommandBatch(CommandPointer& command) {
+    CommandBatch(CommandPointer& command)
+      : Command(Type::Batch)
+    {
       uintptr_t pointer = command->pointer();
       m_commands.push_back(std::move(command));
 
@@ -71,8 +73,9 @@ namespace Graphick::History {
     }
 
     virtual bool merge_with(CommandPointer& command) override {
+      if (command->type != Type::Batch) return false;
+
       CommandBatch* casted_command = static_cast<CommandBatch*>(command.get());
-      if (casted_command == nullptr) return false;
 
       std::move(this->m_commands.begin(), this->m_commands.end(), std::back_inserter(casted_command->m_commands));
       this->m_commands.clear();

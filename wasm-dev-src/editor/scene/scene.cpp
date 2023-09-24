@@ -6,6 +6,9 @@
 
 #include "../../renderer/renderer.h"
 
+#include "../../history/command_history.h"
+#include "../../history/commands.h"
+
 // TEMP
 #include "../../math/math.h"
 
@@ -13,11 +16,67 @@
 #include "../../utils/console.h"
 #include "../../utils/misc.h"
 
+namespace Graphick::History {
+
+  class InsertInRegistryCommand : public Command {
+  public:
+    InsertInRegistryCommand(entt::registry* registry, std::unordered_map<uuid, entt::entity>* entities, uuid id)
+      : Command(Type::InsertInRegistry), m_registry(registry), m_entities(entities), m_ids({ id }) {}
+
+    ~InsertInRegistryCommand() override {
+      if (m_should_destroy) {
+        for (uuid id : m_ids) {
+          auto it = m_entities->find(id);
+          if (it == m_entities->end()) continue;
+
+          entt::entity entity = it->second;
+
+          m_registry->destroy(entity);
+          m_entities->erase(it);
+        }
+
+        console::log("Destroyed entities", m_ids.size());
+      }
+
+      Command::~Command();
+    }
+
+    inline virtual void execute() override {
+      m_should_destroy = false;
+    }
+
+    inline virtual void undo() override {
+      m_should_destroy = true;
+    }
+
+    virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      if (command->type != Type::InsertInRegistry) return false;
+
+      InsertInRegistryCommand* casted_command = static_cast<InsertInRegistryCommand*>(command.get());
+
+      if (casted_command->m_registry != this->m_registry || casted_command->m_entities != this->m_entities || casted_command->m_should_destroy != this->m_should_destroy) return false;
+      casted_command->m_ids.insert(casted_command->m_ids.end(), m_ids.begin(), m_ids.end());
+
+      return true;
+    }
+
+    inline virtual uintptr_t pointer() override {
+      return reinterpret_cast<uintptr_t>(m_registry);
+    }
+  private:
+    entt::registry* m_registry;
+    std::unordered_map<uuid, entt::entity>* m_entities;
+    std::vector<uuid> m_ids;
+    bool m_should_destroy = false;
+  };
+
+}
+
 namespace Graphick::Editor {
 
   Scene::Scene() : selection(this) {}
 
-  Scene::Scene(const Scene& other) : m_entities(other.m_entities), selection(this) {
+  Scene::Scene(const Scene& other) : m_entities(other.m_entities), m_order(other.m_order), selection(this), viewport(other.viewport) {
     m_registry.assign(other.m_registry.data(), other.m_registry.data() + other.m_registry.size(), other.m_registry.released());
   }
 
@@ -41,13 +100,16 @@ namespace Graphick::Editor {
     m_entities[id] = entity;
     m_order.push_back(entity);
 
+    History::CommandHistory::add(std::make_unique<History::InsertInRegistryCommand>(&m_registry, &m_entities, id));
+
     return entity;
   }
 
-  void Scene::destroy_entity(Entity entity) {
-    // TODO: implement z-ordering
-    m_entities.erase(entity.id());
-    m_registry.destroy(entity);
+  void Scene::delete_entity(Entity entity) {
+    // TODO: implement deletion and z-ordering
+    // m_order.erase(std::remove(m_order.begin(), m_order.end(), entity), m_order.end());
+    // m_entities.erase(entity.id());
+    // m_registry.destroy(entity);
   }
 
   bool Scene::has_entity(const uuid id) const {

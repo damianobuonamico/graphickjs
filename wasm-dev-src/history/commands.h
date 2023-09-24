@@ -2,13 +2,29 @@
 
 #include "../math/vec2.h"
 
+#include "../utils/uuid.h"
+
 #include <memory>
+#include <vector>
 
 namespace Graphick::History {
 
   class Command {
   public:
-    Command() = default;
+    enum class Type {
+      Batch,
+      ChangePrimitive,
+      ChangeVec2,
+      // Implemented in scene.cpp
+      InsertInRegistry,
+      EraseFromRegistry,
+      InsertInVector,
+      EraseFromVector
+    };
+  public:
+    const Type type;
+  public:
+    Command(const Type type) : type(type) {}
     Command(const Command&) = delete;
     Command(Command&&) = delete;
 
@@ -31,27 +47,29 @@ namespace Graphick::History {
   class ChangePrimitiveCommand : public Command {
   public:
     ChangePrimitiveCommand(T& old_value, const T new_value)
-      : m_value(old_value), m_new_value(new_value), m_old_value(old_value) {}
+      : Command(Type::ChangePrimitive), m_value(old_value), m_new_value(new_value), m_old_value(old_value) {}
 
-    virtual void execute() override {
+    inline virtual void execute() override {
       m_old_value = m_value;
       m_value = m_new_value;
     }
 
-    virtual void undo() override {
+    inline virtual void undo() override {
       m_value = m_old_value;
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      ChangePrimitiveCommand<T>* casted_command = static_cast<ChangePrimitiveCommand<T>*>(command.get());
-      if (casted_command == nullptr || &casted_command->m_value != &this->m_value) return false;
+      if (command->type != Type::ChangePrimitive) return false;
 
+      ChangePrimitiveCommand<T>* casted_command = static_cast<ChangePrimitiveCommand<T>*>(command.get());
+
+      if (&casted_command->m_value != &this->m_value) return false;
       casted_command->m_new_value = this->m_new_value;
 
       return true;
     }
 
-    virtual uintptr_t pointer() override {
+    inline virtual uintptr_t pointer() override {
       return reinterpret_cast<uintptr_t>(&m_value);
     }
   private:
@@ -63,27 +81,29 @@ namespace Graphick::History {
   class ChangeVec2Command : public Command {
   public:
     ChangeVec2Command(vec2& old_value, const vec2& new_value)
-      : m_value(old_value), m_new_value(new_value), m_old_value({}) {}
+      : Command(Type::ChangeVec2), m_value(old_value), m_new_value(new_value), m_old_value({}) {}
 
-    virtual void execute() override {
+    inline virtual void execute() override {
       m_old_value = m_value;
       m_value = m_new_value;
     }
 
-    virtual void undo() override {
+    inline virtual void undo() override {
       m_value = m_old_value;
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      ChangeVec2Command* casted_command = static_cast<ChangeVec2Command*>(command.get());
-      if (casted_command == nullptr || &casted_command->m_value != &this->m_value) return false;
+      if (command->type != Type::ChangeVec2) return false;
 
+      ChangeVec2Command* casted_command = static_cast<ChangeVec2Command*>(command.get());
+
+      if (&casted_command->m_value != &this->m_value) return false;
       casted_command->m_new_value = this->m_new_value;
 
       return true;
     }
 
-    virtual uintptr_t pointer() override {
+    inline virtual uintptr_t pointer() override {
       return reinterpret_cast<uintptr_t>(&m_value);
     }
   private:
@@ -97,10 +117,10 @@ namespace Graphick::History {
     using vector = std::vector<T>;
   public:
     InsertInVectorCommand(vector* vector, const T& value)
-      : m_vector(vector), m_values({ value }), m_indices({ -1 }) {}
+      : Command(Type::InsertInVector), m_vector(vector), m_values({ value }), m_indices({ -1 }) {}
 
     InsertInVectorCommand(vector* vector, const T& value, int index)
-      : m_vector(vector), m_values({ value }), m_indices({ index }) {}
+      : Command(Type::InsertInVector), m_vector(vector), m_values({ value }), m_indices({ index }) {}
 
     virtual void execute() override {
       if (m_vector == nullptr) return;
@@ -134,22 +154,18 @@ namespace Graphick::History {
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      if (command->type != Type::InsertInVector) return false;
+
       InsertInVectorCommand* casted_command = static_cast<InsertInVectorCommand*>(command.get());
 
-      if (
-        casted_command == nullptr ||
-        casted_command->m_vector != this->m_vector
-        ) {
-        return false;
-      }
-
+      if (casted_command->m_vector != this->m_vector) return false;
       casted_command->m_values.insert(casted_command->m_values.end(), m_values.begin(), m_values.end());
       casted_command->m_indices.insert(casted_command->m_indices.end(), m_indices.begin(), m_indices.end());
 
       return true;
     }
 
-    virtual uintptr_t pointer() override {
+    inline virtual uintptr_t pointer() override {
       return reinterpret_cast<uintptr_t>(m_vector);
     }
   private:
@@ -158,13 +174,13 @@ namespace Graphick::History {
     std::vector<int> m_indices;
   };
 
-
   template <typename T>
   class EraseFromVectorCommand : public Command {
     using vector = std::vector<T>;
   public:
     EraseFromVectorCommand(vector* vector, const T& value)
-      : m_vector(vector), m_values({ value }), m_indices({ }) {
+      : Command(Type::EraseFromVector), m_vector(vector), m_values({ value }), m_indices({ })
+    {
       auto it = std::find(m_vector->begin(), m_vector->end(), value);
 
       if (it != m_vector->end()) {
@@ -175,7 +191,7 @@ namespace Graphick::History {
     }
 
     EraseFromVectorCommand(vector* vector, const T& value, int index)
-      : m_vector(vector), m_values({ value }), m_indices({ index }) {}
+      : Command(Type::EraseFromVector), m_vector(vector), m_values({ value }), m_indices({ index }) {}
 
     virtual void execute() override {
       if (m_vector == nullptr) return;
@@ -207,15 +223,12 @@ namespace Graphick::History {
       }
     }
 
-    virtual bool merge_with(std::unique_ptr<Command>& command) override {
+    inline virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      if (command->type != Type::EraseFromVector) return false;
+
       EraseFromVectorCommand* casted_command = static_cast<EraseFromVectorCommand*>(command.get());
 
-      if (
-        casted_command == nullptr ||
-        casted_command->m_vector != this->m_vector
-        ) {
-        return false;
-      }
+      if (casted_command->m_vector != this->m_vector) return false;
 
       casted_command->m_values.insert(casted_command->m_values.end(), m_values.begin(), m_values.end());
       casted_command->m_indices.insert(casted_command->m_indices.end(), m_indices.begin(), m_indices.end());

@@ -3,6 +3,10 @@
 #include "command_history.h"
 #include "commands.h"
 
+namespace entt {
+  enum class entity;
+}
+
 namespace Graphick::History {
 
   /* -- BoolValue -- */
@@ -50,29 +54,6 @@ namespace Graphick::History {
     m_delta = 0;
   };
 
-  /* -- MapValue -- */
-
-  template <typename K, typename V>
-  void MapValue<K, V>::insert(const MapValue<K, V>::value& pair) {
-    CommandHistory::add(std::make_unique<InsertInVectorCommand<MapValue<K, V>::value>>(&m_vector, pair));
-  }
-
-  template <typename K, typename V>
-  void MapValue<K, V>::insert(const MapValue<K, V>::value& pair, int index) {
-    CommandHistory::add(std::make_unique<InsertInVectorCommand<MapValue<K, V>::value>>(&m_vector, pair, index));
-  }
-
-  // TODO: Implement
-  template <typename K, typename V>
-  void MapValue<K, V>::erase(const MapValue<K, V>::value& pair) {
-    CommandHistory::add(std::make_unique<EraseFromVectorCommand<MapValue<K, V>::value>>(&m_vector, pair));
-  }
-
-  template <typename K, typename V>
-  void MapValue<K, V>::erase(const MapValue<K, V>::value& pair, int index) {
-    CommandHistory::add(std::make_unique<EraseFromVectorCommand<MapValue<K, V>::value>>(&m_vector, pair, index));
-  }
-
   /* -- Vec2Value -- */
 
   void Vec2Value::set(const vec2& value) {
@@ -91,5 +72,15 @@ namespace Graphick::History {
     CommandHistory::add(std::make_unique<ChangeVec2Command>(m_value, get()));
     Math::zero(m_delta);
   };
+
+  /* -- VectorValue -- */
+
+  template<typename T>
+  void VectorValue<T>::push_back(const T& value) {
+    CommandHistory::add(std::make_unique<InsertInVectorCommand<T>>(&m_value, value));
+  }
+
+  // Register here types that are used to instantiate the template to avoid linking errors
+  template class VectorValue<entt::entity>;
 
 }
