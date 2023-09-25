@@ -108,6 +108,13 @@ namespace Graphick::History {
     inline std::reverse_iterator<const_iterator> rend() const { return m_value.rend(); }
 
     inline size_t size() const { return m_value.size(); }
+    inline bool empty() const { return m_value.empty(); }
+
+    inline T& operator[](size_t index) { return m_value[index]; }
+    inline T& front() { return m_value.front(); }
+    inline T& back() { return m_value.back(); }
+    inline const T& front() const { return m_value.front(); }
+    inline const T& back() const { return m_value.back(); }
 
     void push_back(const T& value);
   private:

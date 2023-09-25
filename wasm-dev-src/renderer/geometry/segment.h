@@ -8,6 +8,10 @@
 #include <unordered_set>
 #include <optional>
 
+namespace Graphick::History {
+  class CreateHandleCommand;
+}
+
 namespace Graphick::Renderer::Geometry {
 
   class Segment {
@@ -81,6 +85,8 @@ namespace Graphick::Renderer::Geometry {
 
     bool rehydrate_cache() const;
   private:
+    void recalculate_kind();
+
     bool is_masquerading_linear() const;
     bool is_masquerading_quadratic(vec2& new_p1) const;
 
@@ -121,6 +127,7 @@ namespace Graphick::Renderer::Geometry {
   private:
     // TEMP: remove
     friend class Path;
+    friend class History::CreateHandleCommand;
   };
 
 }

@@ -67,9 +67,9 @@ namespace Graphick::Editor::Input {
     if (path.vacant()) {
       path.move_to(InputManager::pointer.scene.position);
     } else {
-      auto out_handle_ptr = path.out_handle_ptr().lock();
-      if (out_handle_ptr) {
-        path.cubic_to(out_handle_ptr->get(), InputManager::pointer.scene.position, true);
+      auto out_handle_ptr = path.out_handle_ptr();
+      if (out_handle_ptr.has_value()) {
+        path.cubic_to(out_handle_ptr.value()->get(), InputManager::pointer.scene.position, true);
         path.clear_out_handle();
       } else {
         path.line_to(InputManager::pointer.scene.position);
@@ -87,8 +87,8 @@ namespace Graphick::Editor::Input {
 
     Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
 
-    auto in_handle_ptr = path.in_handle_ptr().lock();
-    auto out_handle_ptr = path.out_handle_ptr().lock();
+    auto in_handle_ptr = path.in_handle_ptr();
+    auto out_handle_ptr = path.out_handle_ptr();
     auto vertex_ptr = path.last();
 
     if (InputManager::keys.space) {
@@ -100,37 +100,37 @@ namespace Graphick::Editor::Input {
     }
 
     if (path.empty()) {
-      if (out_handle_ptr == nullptr) {
+      if (!out_handle_ptr.has_value()) {
         path.create_out_handle(InputManager::pointer.scene.origin);
-        out_handle_ptr = path.out_handle_ptr().lock();
+        out_handle_ptr = path.out_handle_ptr();
       }
 
-      out_handle_ptr->set_delta(InputManager::pointer.scene.delta);
+      out_handle_ptr.value()->set_delta(InputManager::pointer.scene.delta);
 
       if (!InputManager::keys.alt) {
-        if (in_handle_ptr == nullptr) {
+        if (!in_handle_ptr.has_value()) {
           path.create_in_handle(InputManager::pointer.scene.origin);
-          in_handle_ptr = path.in_handle_ptr().lock();
+          in_handle_ptr = path.in_handle_ptr();
         }
 
-        in_handle_ptr->move_to(2.0f * vertex_ptr.lock()->get() - InputManager::pointer.scene.position);
+        in_handle_ptr.value()->move_to(2.0f * vertex_ptr.lock()->get() - InputManager::pointer.scene.position);
       }
 
       return;
     }
 
-    if (path.out_handle_ptr().lock() == nullptr) {
+    if (!out_handle_ptr.has_value()) {
       path.create_out_handle(InputManager::pointer.scene.origin);
-      out_handle_ptr = path.out_handle_ptr().lock();
+      out_handle_ptr = path.out_handle_ptr();
     }
 
     if (vertex_ptr.expired()) return;
 
-    out_handle_ptr->set_delta(InputManager::pointer.scene.delta);
+    out_handle_ptr.value()->set_delta(InputManager::pointer.scene.delta);
 
     if (InputManager::keys.alt) return;
 
-    Renderer::Geometry::Segment& segment = path.segments().back();
+    Renderer::Geometry::Segment& segment = *path.segments().back();
 
     if (!segment.has_p2()) {
       segment.create_p2(InputManager::pointer.scene.origin);
@@ -138,7 +138,7 @@ namespace Graphick::Editor::Input {
 
     auto vertex = vertex_ptr.lock();
     auto handles = vertex->relative_handles();
-    if (!vertex || handles.size() < 2 || Math::is_almost_equal(out_handle_ptr->get(), vertex->get())) return;
+    if (!vertex || handles.empty() || Math::is_almost_equal(out_handle_ptr.value()->get(), vertex->get())) return;
 
     for (auto h : handles) {
       auto h_ptr = h.lock();
@@ -153,14 +153,14 @@ namespace Graphick::Editor::Input {
 
     Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
 
-    auto in_handle_ptr = path.in_handle_ptr().lock();
-    auto out_handle_ptr = path.out_handle_ptr().lock();
+    auto in_handle_ptr = path.in_handle_ptr();
+    auto out_handle_ptr = path.out_handle_ptr();
 
-    if (in_handle_ptr) {
-      in_handle_ptr->apply();
+    if (in_handle_ptr.has_value()) {
+      in_handle_ptr.value()->apply();
     }
-    if (out_handle_ptr) {
-      out_handle_ptr->apply();
+    if (out_handle_ptr.has_value()) {
+      out_handle_ptr.value()->apply();
     }
 
     path.last().lock()->deep_apply();

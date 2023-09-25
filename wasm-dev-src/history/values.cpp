@@ -3,10 +3,6 @@
 #include "command_history.h"
 #include "commands.h"
 
-namespace entt {
-  enum class entity;
-}
-
 namespace Graphick::History {
 
   /* -- BoolValue -- */
@@ -80,7 +76,20 @@ namespace Graphick::History {
     CommandHistory::add(std::make_unique<InsertInVectorCommand<T>>(&m_value, value));
   }
 
+}
+
+namespace entt {
+  enum class entity;
+}
+
+namespace Graphick::Renderer::Geometry {
+  class Segment;
+}
+
+namespace Graphick::History {
   // Register here types that are used to instantiate the template to avoid linking errors
   template class VectorValue<entt::entity>;
-
+  template class VectorValue<std::shared_ptr<Renderer::Geometry::Segment>>;
 }
+
+

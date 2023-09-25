@@ -606,13 +606,13 @@ namespace Graphick::Renderer {
     OPTICK_EVENT();
 
     for (const auto& segment : path.segments()) {
-      vec2 p0 = segment.p0() + translation;
-      vec2 p3 = segment.p3() + translation;
+      vec2 p0 = segment->p0() + translation;
+      vec2 p3 = segment->p3() + translation;
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
       // auto p3 = transform.Map(segment.p3().x, segment.p3().y);
 
-      if (segment.is_cubic()) {
-        add_cubic_segment_instance(p0, segment.p1() + translation, segment.p2() + translation, p3);
+      if (segment->is_cubic()) {
+        add_cubic_segment_instance(p0, segment->p1() + translation, segment->p2() + translation, p3);
       } else {
         add_linear_segment_instance(p0, p3);
       }
@@ -690,20 +690,20 @@ namespace Graphick::Renderer {
       first_pos = p_pos;
       last_pos = p_pos;
     } else {
-      first_pos = path.segments().front().p0() + translation;
-      last_pos = path.segments().back().p3() + translation;
+      first_pos = path.segments().front()->p0() + translation;
+      last_pos = path.segments().back()->p3() + translation;
     }
 
     if (!path.closed()) {
-      if (in_handle_ptr.lock().get() != nullptr) {
-        vec2 p = in_handle_ptr.lock()->get() + translation;
+      if (in_handle_ptr.has_value()) {
+        vec2 p = in_handle_ptr.value()->get() + translation;
 
         add_circle_instance(p);
         add_linear_segment_instance(first_pos, p);
       }
 
-      if (out_handle_ptr.lock().get() != nullptr) {
-        vec2 p = out_handle_ptr.lock()->get() + translation;
+      if (out_handle_ptr.has_value()) {
+        vec2 p = out_handle_ptr.value()->get() + translation;
 
         add_circle_instance(p);
         add_linear_segment_instance(last_pos, p);
@@ -713,8 +713,8 @@ namespace Graphick::Renderer {
     if (path.empty()) return;
 
     for (const auto& segment : path.segments()) {
-      vec2 p0 = segment.p0() + translation;
-      uuid p0_id = segment.p0_id();
+      vec2 p0 = segment->p0() + translation;
+      uuid p0_id = segment->p0_id();
       // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
 
       add_square_instance(p0);
@@ -722,10 +722,10 @@ namespace Graphick::Renderer {
         add_white_square_instance(p0);
       }
 
-      if (segment.is_cubic()) {
-        vec2 p1 = segment.p1() + translation;
-        vec2 p2 = segment.p2() + translation;
-        vec2 p3 = segment.p3() + translation;
+      if (segment->is_cubic()) {
+        vec2 p1 = segment->p1() + translation;
+        vec2 p2 = segment->p2() + translation;
+        vec2 p3 = segment->p3() + translation;
 
         if (p1 != p0) {
           add_circle_instance(p1);
@@ -739,7 +739,7 @@ namespace Graphick::Renderer {
     }
 
     if (!path.closed()) {
-      uuid p3_id = path.segments().back().p3_id();
+      uuid p3_id = path.segments().back()->p3_id();
 
       add_square_instance(last_pos);
       if (!scene.selection.has_vertex(p3_id, id, true)) {

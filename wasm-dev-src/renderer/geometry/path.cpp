@@ -4,10 +4,17 @@
 #include "../../math/mat2.h"
 #include "../../math/vector.h"
 
+#include "../../history/command_history.h"
+#include "../../history/commands.h"
+
 #include "../../utils/defines.h"
 #include "../../utils/console.h"
 
 namespace Graphick::Renderer::Geometry {
+
+  Path::Path() :
+    m_in_handle(std::make_shared<History::Vec2Value>(std::numeric_limits<vec2>::lowest())),
+    m_out_handle(std::make_shared<History::Vec2Value>(std::numeric_limits<vec2>::lowest())) { }
 
   const std::vector<ControlPoint*> Path::vertices() const {
     if (m_segments.empty()) {
@@ -19,12 +26,12 @@ namespace Graphick::Renderer::Geometry {
 
     std::vector<ControlPoint*> vertices;
 
-    for (const Segment& segment : m_segments) {
-      vertices.push_back(segment.m_p0.get());
+    for (const auto& segment : m_segments) {
+      vertices.push_back(segment->m_p0.get());
     }
 
     if (!m_closed) {
-      vertices.push_back(m_segments.back().m_p3.get());
+      vertices.push_back(m_segments.back()->m_p3.get());
     }
 
     return vertices;
@@ -40,15 +47,25 @@ namespace Graphick::Renderer::Geometry {
 
     std::vector<uuid> vertices;
 
-    for (const Segment& segment : m_segments) {
-      vertices.push_back(segment.m_p0->id);
+    for (const auto& segment : m_segments) {
+      vertices.push_back(segment->m_p0->id);
     }
 
     if (!m_closed) {
-      vertices.push_back(m_segments.back().m_p3->id);
+      vertices.push_back(m_segments.back()->m_p3->id);
     }
 
     return vertices;
+  }
+
+  std::optional<Segment::ControlPointHandle> Path::in_handle_ptr() const {
+    if (m_in_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
+    return m_in_handle;
+  }
+
+  std::optional<Segment::ControlPointHandle> Path::out_handle_ptr() const {
+    if (m_out_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
+    return m_out_handle;
   }
 
   void Path::move_to(vec2 p) {
@@ -56,26 +73,42 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::line_to(vec2 p) {
+    if (m_segments.size()) {
+      m_last_point = m_segments.back()->m_p3;
+    }
+
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p);
-    m_segments.emplace_back(m_last_point, point);
+    m_segments.push_back(std::make_shared<Segment>(m_last_point, point));
     m_last_point = point;
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
+    if (m_segments.size()) {
+      m_last_point = m_segments.back()->m_p3;
+    }
+
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p2);
-    m_segments.emplace_back(m_last_point, p1, point, true);
+    m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, point, true));
     m_last_point = point;
   }
 
   void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
+    if (m_segments.size()) {
+      m_last_point = m_segments.back()->m_p3;
+    }
+
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
-    m_segments.emplace_back(m_last_point, p1, p2, point);
+    m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, p2, point));
     m_last_point = point;
   }
 
   void Path::cubic_to(vec2 p, vec2 p3, bool is_p1) {
+    if (m_segments.size()) {
+      m_last_point = m_segments.back()->m_p3;
+    }
+
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
-    m_segments.emplace_back(m_last_point, p, point, false, is_p1);
+    m_segments.push_back(std::make_shared<Segment>(m_last_point, p, point, false, is_p1));
     m_last_point = point;
   }
 
@@ -234,8 +267,8 @@ namespace Graphick::Renderer::Geometry {
   void Path::close() {
     if (m_segments.size() < 2) return;
 
-    Segment& first_segment = m_segments.front();
-    Segment& last_segment = m_segments.back();
+    Segment& first_segment = *m_segments.front();
+    Segment& last_segment = *m_segments.back();
 
     if (is_almost_equal(last_segment.p3(), first_segment.p0())) {
       if (first_segment.has_p1()) {
@@ -244,8 +277,8 @@ namespace Graphick::Renderer::Geometry {
 
       first_segment.m_p0 = last_segment.m_p3;
     } else {
-      m_segments.emplace_back(m_last_point, first_segment.m_p0);
-      m_last_point = m_segments.front().m_p0;
+      m_segments.push_back(std::make_shared<Segment>(m_last_point, first_segment.m_p0));
+      m_last_point = m_segments.front()->m_p0;
     }
 
     m_closed = true;
@@ -268,7 +301,7 @@ namespace Graphick::Renderer::Geometry {
     Math::rect rect{};
 
     for (const auto& segment : m_segments) {
-      Math::rect segment_rect = segment.bounding_rect();
+      Math::rect segment_rect = segment->bounding_rect();
 
       min(rect.min, segment_rect.min, rect.min);
       max(rect.max, segment_rect.max, rect.max);
@@ -296,7 +329,7 @@ namespace Graphick::Renderer::Geometry {
     Math::rect rect{};
 
     for (const auto& segment : m_segments) {
-      Math::rect segment_rect = segment.approx_bounding_rect();
+      Math::rect segment_rect = segment->approx_bounding_rect();
 
       min(rect.min, segment_rect.min, rect.min);
       max(rect.max, segment_rect.max, rect.max);
@@ -320,7 +353,7 @@ namespace Graphick::Renderer::Geometry {
       rect = { p, p };
     } else {
       for (const auto& segment : m_segments) {
-        Math::rect segment_rect = segment.approx_bounding_rect();
+        Math::rect segment_rect = segment->approx_bounding_rect();
 
         min(rect.min, segment_rect.min, rect.min);
         max(rect.max, segment_rect.max, rect.max);
@@ -351,8 +384,8 @@ namespace Graphick::Renderer::Geometry {
         return false;
       }
 
-      for (const Segment& segment : m_segments) {
-        if (segment.is_inside(position, deep_search, threshold)) {
+      for (const auto& segment : m_segments) {
+        if (segment->is_inside(position, deep_search, threshold)) {
           return true;
         }
       }
@@ -385,8 +418,8 @@ namespace Graphick::Renderer::Geometry {
 
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
 
-    for (const Segment& segment : m_segments) {
-      if (segment.intersects(rect)) return true;
+    for (const auto& segment : m_segments) {
+      if (segment->intersects(rect)) return true;
     }
 
     return false;
@@ -409,47 +442,47 @@ namespace Graphick::Renderer::Geometry {
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
 
     bool found = false;
-    for (const Segment& segment : m_segments) {
-      if (segment.intersects(rect, found, vertices)) found = true;
+    for (const auto& segment : m_segments) {
+      if (segment->intersects(rect, found, vertices)) found = true;
     }
 
     return found;
   }
 
-  // TODO: set_relative_handle
+  // TODO: fix relative handles
   void Path::create_in_handle(const vec2 position) {
-    if (vacant() || m_in_handle != nullptr || m_closed) return;
+    if (m_closed || vacant()) return;
 
-    m_in_handle = std::make_shared<History::Vec2Value>(position);
+    m_in_handle->set(position);
 
-    if (m_segments.empty()) {
-      m_last_point->set_relative_handle(m_in_handle);
-      return;
-    }
+    // if (m_segments.empty()) {
+    //   m_last_point->set_relative_handle(m_in_handle);
+    //   return;
+    // }
 
-    m_segments.front().m_p0->set_relative_handle(m_in_handle);
+    // m_segments.front()->m_p0->set_relative_handle(m_in_handle);
   }
 
-  // TODO: set_relative_handle
+  // TODO: fix relative handles
   void Path::create_out_handle(const vec2 position) {
-    if (vacant() || m_out_handle != nullptr || m_closed) return;
+    if (m_closed || vacant()) return;
 
-    m_out_handle = std::make_shared<History::Vec2Value>(position);
+    m_out_handle->set(position);
 
-    if (m_segments.empty()) {
-      m_last_point->set_relative_handle(m_out_handle);
-      return;
-    }
+    // if (m_segments.empty()) {
+    //   m_last_point->set_relative_handle(m_out_handle);
+    //   return;
+    // }
 
-    m_segments.back().m_p3->set_relative_handle(m_out_handle);
+    // m_segments.back()->m_p3->set_relative_handle(m_out_handle);
   }
 
   void Path::clear_in_handle() {
-    m_in_handle.reset();
+    m_in_handle->set(std::numeric_limits<vec2>::lowest());
   }
 
   void Path::clear_out_handle() {
-    m_out_handle.reset();
+    m_out_handle->set(std::numeric_limits<vec2>::lowest());
   }
 
   void Path::rehydrate_cache() const {
@@ -460,8 +493,8 @@ namespace Graphick::Renderer::Geometry {
 
     m_hash = hash;
 
-    for (const Segment& segment : m_segments) {
-      if (segment.rehydrate_cache()) rehydrate = true;
+    for (const auto& segment : m_segments) {
+      if (segment->rehydrate_cache()) rehydrate = true;
     }
 
     if (rehydrate) {

@@ -67,60 +67,60 @@ namespace Graphick::Editor::Input {
       }
     } else {
       for (const auto& segment : path.segments()) {
-        vec2 p0 = segment.p0();
+        vec2 p0 = segment->p0();
 
         if (Math::is_point_in_circle(transformed_pos, p0, threshold)) {
           m_type = HoverType::Vertex;
-          m_vertex = segment.p0_ptr();
+          m_vertex = segment->p0_ptr();
           return;
         }
 
-        if (deep && (segment.is_quadratic() || segment.is_cubic())) {
-          vec2 p1 = segment.p1();
-          vec2 p2 = segment.p2();
-          vec2 p3 = segment.p3();
+        if (deep && (segment->is_quadratic() || segment->is_cubic())) {
+          vec2 p1 = segment->p1();
+          vec2 p2 = segment->p2();
+          vec2 p3 = segment->p3();
 
-          if (segment.has_p1() && Math::is_point_in_circle(transformed_pos, p1, threshold)) {
+          if (segment->has_p1() && Math::is_point_in_circle(transformed_pos, p1, threshold)) {
             m_type = HoverType::Handle;
-            m_vertex = segment.p0_ptr();
-            m_handle = segment.p1_ptr();
+            m_vertex = segment->p0_ptr();
+            m_handle = segment->p1_ptr();
             return;
           }
 
-          if (segment.is_cubic()) {
-            if (segment.has_p2() && Math::is_point_in_circle(transformed_pos, p2, threshold)) {
+          if (segment->is_cubic()) {
+            if (segment->has_p2() && Math::is_point_in_circle(transformed_pos, p2, threshold)) {
               m_type = HoverType::Handle;
-              m_vertex = segment.p3_ptr();
-              m_handle = segment.p2_ptr();
+              m_vertex = segment->p3_ptr();
+              m_handle = segment->p2_ptr();
               return;
             }
           }
         }
       }
 
-      if (Math::is_point_in_circle(transformed_pos, path.segments().back().p3(), threshold)) {
+      if (Math::is_point_in_circle(transformed_pos, path.segments().back()->p3(), threshold)) {
         m_type = HoverType::Vertex;
-        m_vertex = path.segments().back().p3_ptr();
+        m_vertex = path.segments().back()->p3_ptr();
         m_handle.reset();
         return;
       }
     }
 
-    auto in_handle = path.in_handle_ptr().lock();
-    auto out_handle = path.out_handle_ptr().lock();
+    auto in_handle = path.in_handle_ptr();
+    auto out_handle = path.out_handle_ptr();
 
     if (in_handle) {
-      if (Math::is_point_in_circle(transformed_pos, in_handle->get(), threshold)) {
+      if (Math::is_point_in_circle(transformed_pos, in_handle.value()->get(), threshold)) {
         m_type = HoverType::Handle;
-        m_vertex = path.empty() ? path.last() : path.segments().front().p0_ptr();
+        m_vertex = path.empty() ? path.last() : path.segments().front()->p0_ptr();
         m_handle = path.in_handle_ptr();
         return;
       }
     }
     if (out_handle) {
-      if (Math::is_point_in_circle(transformed_pos, out_handle->get(), threshold)) {
+      if (Math::is_point_in_circle(transformed_pos, out_handle.value()->get(), threshold)) {
         m_type = HoverType::Handle;
-        m_vertex = path.empty() ? path.last() : path.segments().back().p3_ptr();
+        m_vertex = path.empty() ? path.last() : path.segments().back()->p3_ptr();
         m_handle = path.out_handle_ptr();
         return;
       }

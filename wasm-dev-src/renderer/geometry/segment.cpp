@@ -3,10 +3,59 @@
 #include "../../math/math.h"
 #include "../../math/vector.h"
 
+#include "../../history/command_history.h"
+#include "../../history/commands.h"
+
 #include "../../utils/defines.h"
 #include "../../utils/console.h"
 
 #define SEGMENT_CALL(func, ...) (is_linear() ? linear_##func(__VA_ARGS__) : (is_cubic() ? cubic_##func(__VA_ARGS__) : quadratic_##func(__VA_ARGS__)))
+
+namespace Graphick::History {
+
+  class CreateHandleCommand : public Command {
+  public:
+    CreateHandleCommand(Renderer::Geometry::Segment* segment, std::shared_ptr<History::Vec2Value> handle, bool is_p1)
+      : Command(Type::CreateHandle), m_segment(segment), m_handle(handle), m_is_p1(is_p1) {}
+
+    inline virtual void execute() override {
+      if (m_is_p1) {
+        m_segment->m_p1 = m_handle;
+        m_segment->m_p0->set_relative_handle(m_handle);
+      } else {
+        m_segment->m_p2 = m_handle;
+        m_segment->m_p3->set_relative_handle(m_handle);
+      }
+
+      m_segment->recalculate_kind();
+    }
+
+    inline virtual void undo() override {
+      if (m_is_p1) {
+        m_segment->m_p1.reset();
+        m_segment->m_p0->remove_relative_handle(m_handle);
+      } else {
+        m_segment->m_p2.reset();
+        m_segment->m_p3->remove_relative_handle(m_handle);
+      }
+
+      m_segment->recalculate_kind();
+    }
+
+    inline virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      return false;
+    }
+
+    inline virtual uintptr_t pointer() override {
+      return reinterpret_cast<uintptr_t>(m_handle.get());
+    }
+  private:
+    Renderer::Geometry::Segment* m_segment;
+    std::shared_ptr<History::Vec2Value> m_handle;
+    bool m_is_p1;
+  };
+
+}
 
 namespace Graphick::Renderer::Geometry {
 
@@ -281,15 +330,29 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Segment::create_p1(const vec2 position) {
-    m_p1 = std::make_shared<History::Vec2Value>(position);
-    m_p0->set_relative_handle(m_p1);
-    m_kind = Kind::Cubic;
+    if (m_p1) {
+      m_p1->set(position);
+      return;
+    }
+
+    History::CommandHistory::add(std::make_unique<History::CreateHandleCommand>(this, std::make_shared<History::Vec2Value>(position), true));
   }
 
   void Segment::create_p2(const vec2 position) {
-    m_p2 = std::make_shared<History::Vec2Value>(position);
-    m_p3->set_relative_handle(m_p2);
-    m_kind = Kind::Cubic;
+    if (m_p2) {
+      m_p2->set(position);
+      return;
+    }
+
+    History::CommandHistory::add(std::make_unique<History::CreateHandleCommand>(this, std::make_shared<History::Vec2Value>(position), false));
+  }
+
+  void Segment::recalculate_kind() {
+    if (!m_p1 && !m_p2) {
+      m_kind = Kind::Linear;
+    } else {
+      m_kind = Kind::Cubic;
+    }
   }
 
   bool Segment::rehydrate_cache() const {

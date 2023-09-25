@@ -100,6 +100,7 @@ namespace Graphick::Editor {
     m_entities[id] = entity;
     m_order.push_back(entity);
 
+    // TODO: reset pen tool state on undo
     History::CommandHistory::add(std::make_unique<History::InsertInRegistryCommand>(&m_registry, &m_entities, id));
 
     return entity;

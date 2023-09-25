@@ -18,6 +18,8 @@ namespace Graphick::History {
       // Implemented in scene.cpp
       InsertInRegistry,
       EraseFromRegistry,
+      // Implemented in segment.cpp
+      CreateHandle,
       InsertInVector,
       EraseFromVector
     };

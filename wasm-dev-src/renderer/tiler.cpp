@@ -201,15 +201,15 @@ namespace Graphick::Renderer {
     m_offset = min_coords;
     m_bounds_size = max_coords - min_coords;
 
-    const std::vector<Geometry::Segment>& segments = path.segments();
+    const auto& segments = path.segments();
 
-    m_prev = (segments.front().p0() + translation) * m_zoom - rect.min;
+    m_prev = (segments.front()->p0() + translation) * m_zoom - rect.min;
 
     if (intersection_overlap < 0.7f) {
       std::vector<vec2> points;
       points.reserve(segments.size() + 1);
 
-      vec2 first_point = (segments.front().p0() + translation) * m_zoom/* - rect.min*/;
+      vec2 first_point = (segments.front()->p0() + translation) * m_zoom/* - rect.min*/;
       points.push_back(first_point);
 
       Math::rect vis = visible * zoom;
@@ -218,14 +218,14 @@ namespace Graphick::Renderer {
       vis.max = ceil(vis.max / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 1;
 
       for (const auto& segment : segments) {
-        vec2 p0 = (segment.p0() + translation) * m_zoom;
-        vec2 p3 = (segment.p3() + translation) * m_zoom;
+        vec2 p0 = (segment->p0() + translation) * m_zoom;
+        vec2 p3 = (segment->p3() + translation) * m_zoom;
 
-        if (segment.is_cubic()) {
-          vec2 p1 = (segment.p1() + translation) * m_zoom;
-          vec2 p2 = (segment.p2() + translation) * m_zoom;
+        if (segment->is_cubic()) {
+          vec2 p1 = (segment->p1() + translation) * m_zoom;
+          vec2 p2 = (segment->p2() + translation) * m_zoom;
 
-          Math::rect segment_rect = segment.bounding_rect() + translation;
+          Math::rect segment_rect = segment->bounding_rect() + translation;
           if (Math::does_rect_intersect_rect(segment_rect, visible)) {
             vec2 a = -1.0f * p0 + 3.0f * p1 - 3.0f * p2 + p3;
             vec2 b = 3.0f * (p0 - 2.0f * p1 + p2);
@@ -248,8 +248,8 @@ namespace Graphick::Renderer {
           } else {
             points.push_back(p3);
           }
-        } else if (segment.is_quadratic()) {
-          vec2 p1 = (segment.p1() + translation) * m_zoom;
+        } else if (segment->is_quadratic()) {
+          vec2 p1 = (segment->p1() + translation) * m_zoom;
 
           float dt = std::sqrtf((4.0f * tolerance) / Math::length(p0 - 2.0f * p1 + p3));
           float t = 0.0f;
@@ -283,16 +283,16 @@ namespace Graphick::Renderer {
       m_offset = tile_coords(min) + m_position;
     } else {
       for (const auto& segment : segments) {
-        vec2 p0 = (segment.p0() + translation) * m_zoom - rect.min;
-        vec2 p3 = (segment.p3() + translation) * m_zoom - rect.min;
+        vec2 p0 = (segment->p0() + translation) * m_zoom - rect.min;
+        vec2 p3 = (segment->p3() + translation) * m_zoom - rect.min;
 
-        if (segment.is_cubic()) {
-          vec2 p1 = (segment.p1() + translation) * m_zoom - rect.min;
-          vec2 p2 = (segment.p2() + translation) * m_zoom - rect.min;
+        if (segment->is_cubic()) {
+          vec2 p1 = (segment->p1() + translation) * m_zoom - rect.min;
+          vec2 p2 = (segment->p2() + translation) * m_zoom - rect.min;
 
           process_cubic_segment(p0, p1, p2, p3);
-        } else if (segment.is_quadratic()) {
-          vec2 p1 = (segment.p1() + translation) * m_zoom - rect.min;
+        } else if (segment->is_quadratic()) {
+          vec2 p1 = (segment->p1() + translation) * m_zoom - rect.min;
 
           process_quadratic_segment(p0, p1, p3);
         } else {
@@ -301,8 +301,8 @@ namespace Graphick::Renderer {
       }
 
       if (!path.closed()) {
-        vec2 p0 = (segments.back().p3() + translation) * m_zoom - rect.min;
-        vec2 p3 = (segments.front().p0() + translation) * m_zoom - rect.min;
+        vec2 p0 = (segments.back()->p3() + translation) * m_zoom - rect.min;
+        vec2 p3 = (segments.front()->p0() + translation) * m_zoom - rect.min;
 
         process_linear_segment(p0, p3);
       }
