@@ -36,9 +36,9 @@ namespace Graphick::Editor {
   struct PathComponent {
     Renderer::Geometry::Path path;
 
-    PathComponent() = default;
+    PathComponent(const uuid id) : path(id) {}
+    PathComponent(const uuid id, const Renderer::Geometry::Path& path) : path(id, path) {}
     PathComponent(const PathComponent& other) = default;
-    PathComponent(const Renderer::Geometry::Path& path) : path(path) {}
   };
 
   struct TransformComponent {

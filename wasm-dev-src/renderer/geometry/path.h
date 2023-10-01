@@ -6,19 +6,61 @@
 
 #include <unordered_set>
 
+namespace Graphick::History {
+  class InsertInSegmentsVectorCommand;
+}
+
 namespace Graphick::Renderer::Geometry {
 
   class Path {
   public:
-    Path();
+    const uuid id;
+  public:
+    class SegmentsVector {
+    public:
+      using iterator = typename std::vector<std::shared_ptr<Segment>>::iterator;
+      using const_iterator = typename std::vector<std::shared_ptr<Segment>> ::const_iterator;
+    public:
+      SegmentsVector(Path* path, const std::vector<std::shared_ptr<Segment>>& vector) : m_value(vector), m_path(path) {}
+      SegmentsVector(Path* path, const SegmentsVector& vector) : m_value(vector.m_value), m_path(path ? path : vector.m_path) {}
+      SegmentsVector(Path* path) : m_path(path) {};
+
+      ~SegmentsVector() = default;
+
+      inline void set_path(Path* path) { m_path = path; }
+
+      inline iterator begin() { return m_value.begin(); }
+      inline iterator end() { return m_value.end(); }
+      inline const_iterator begin() const { return m_value.begin(); }
+      inline const_iterator end() const { return m_value.end(); }
+
+      inline size_t size() const { return m_value.size(); }
+      inline bool empty() const { return m_value.empty(); }
+
+      inline Segment& operator[](size_t index) { return *m_value[index]; }
+      inline Segment& front() { return *m_value.front(); }
+      inline Segment& back() { return *m_value.back(); }
+      inline const Segment& front() const { return *m_value.front(); }
+      inline const Segment& back() const { return *m_value.back(); }
+
+      void push_back(const std::shared_ptr<Segment>& value);
+    private:
+      std::vector<std::shared_ptr<Segment>> m_value;
+      Path* m_path;
+    };
+  public:
+    Path(const uuid id);
+    Path(const uuid id, const Path& path);
+    Path(const Path& path);
+    Path(Path&& path) noexcept;
 
     inline bool vacant() const { return m_segments.empty() && m_last_point == nullptr; }
     inline bool empty() const { return m_segments.empty(); }
     inline bool closed() const { return m_closed; }
 
     inline const std::weak_ptr<ControlPoint> last() const { return m_last_point; }
-    inline const History::VectorValue<std::shared_ptr<Segment>>& segments() const { return m_segments; }
-    inline History::VectorValue<std::shared_ptr<Segment>>& segments() { return m_segments; }
+    inline const SegmentsVector& segments() const { return m_segments; }
+    inline SegmentsVector& segments() { return m_segments; }
 
     const std::vector<ControlPoint*> vertices() const;
     const std::vector<uuid> vertices_ids() const;
@@ -55,39 +97,9 @@ namespace Graphick::Renderer::Geometry {
 
     void rehydrate_cache() const;
   private:
-    class SegmentsVector {
-      // public:
-      //   using iterator = typename std::vector<std::shared_ptr<Segment>>::iterator;
-      //   using const_iterator = typename std::vector<std::shared_ptr<Segment>>::const_iterator;
-      // public:
-      //   SegmentsVector(const std::vector<std::shared_ptr<Segment>>& vector) : m_value(vector) {}
-      //   SegmentsVector(const SegmentsVector& vector) : m_value(vector.m_value) {}
-      //   SegmentsVector() = default;
-
-      //   ~SegmentsVector() = default;
-
-      //   inline iterator begin() { return m_value.begin(); }
-      //   inline iterator end() { return m_value.end(); }
-      //   inline const_iterator begin() const { return m_value.begin(); }
-      //   inline const_iterator end() const { return m_value.end(); }
-
-      //   inline size_t size() const { return m_value.size(); }
-      //   inline bool empty() const { return m_value.empty(); }
-
-      //   inline Segment& operator[](size_t index) { return m_value[index]; }
-      //   inline Segment& front() { return m_value.front(); }
-      //   inline Segment& back() { return m_value.back(); }
-      //   inline const Segment& front() const { return m_value.front(); }
-      //   inline const Segment& back() const { return m_value.back(); }
-
-      //   void push_back(const Segmet& value);
-      // private:
-      //   std::vector<T> m_value;
-    };
-  private:
     bool m_closed = false;
     Segment::ControlPointVertex m_last_point = nullptr;
-    History::VectorValue<std::shared_ptr<Segment>> m_segments;
+    SegmentsVector m_segments;
 
     Segment::ControlPointHandle m_in_handle;
     Segment::ControlPointHandle m_out_handle;
@@ -96,6 +108,8 @@ namespace Graphick::Renderer::Geometry {
 
     mutable std::optional<Math::rect> m_bounding_rect_cache = std::nullopt;
     mutable std::optional<Math::rect> m_approx_bounding_rect_cache = std::nullopt;
+  private:
+    friend class History::InsertInSegmentsVectorCommand;
   };
 
 }

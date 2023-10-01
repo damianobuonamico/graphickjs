@@ -10,6 +10,7 @@
 
 namespace Graphick::History {
   class CreateHandleCommand;
+  class InsertInSegmentsVectorCommand;
 }
 
 namespace Graphick::Renderer::Geometry {
@@ -47,6 +48,8 @@ namespace Graphick::Renderer::Geometry {
 
     Segment& operator=(const Segment& other);
     Segment& operator=(Segment&& other) noexcept;
+
+    bool operator==(const Segment& other) const;
 
     inline Kind kind() const { return m_kind; }
     inline bool is_linear() const { return m_kind == Kind::Linear; }
@@ -128,6 +131,7 @@ namespace Graphick::Renderer::Geometry {
     // TEMP: remove
     friend class Path;
     friend class History::CreateHandleCommand;
+    friend class History::InsertInSegmentsVectorCommand;
   };
 
 }

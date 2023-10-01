@@ -113,8 +113,8 @@ namespace Graphick::Renderer::Geometry {
   Segment::Segment(const Segment& other) :
     m_kind(other.m_kind),
     m_p0(other.m_p0),
-    m_p1(other.m_p1 ? std::make_shared<History::Vec2Value>(*other.m_p1) : nullptr),
-    m_p2(other.m_p2 ? std::make_shared<History::Vec2Value>(*other.m_p2) : nullptr),
+    m_p1(other.m_p1),
+    m_p2(other.m_p2),
     m_p3(other.m_p3)
   {
     m_p0->set_relative_handle(m_p1);
@@ -124,8 +124,8 @@ namespace Graphick::Renderer::Geometry {
   Segment::Segment(Segment&& other) noexcept :
     m_kind(other.m_kind),
     m_p0(other.m_p0),
-    m_p1(std::move(other.m_p1)),
-    m_p2(std::move(other.m_p2)),
+    m_p1(other.m_p1),
+    m_p2(other.m_p2),
     m_p3(other.m_p3)
   {
     m_p0->set_relative_handle(m_p1);
@@ -156,6 +156,16 @@ namespace Graphick::Renderer::Geometry {
     m_p3->set_relative_handle(m_p2);
 
     return *this;
+  }
+
+  bool Segment::operator==(const Segment& other) const {
+    if (m_p0 != other.m_p0) return false;
+    if (m_p3 != other.m_p3) return false;
+
+    if (m_p1 != other.m_p1) return false;
+    if (m_p2 != other.m_p2) return false;
+
+    return true;
   }
 
   bool Segment::is_masquerading_linear() const {

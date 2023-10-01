@@ -335,7 +335,7 @@ namespace Graphick::io::svg {
     const char* ptr = string.data();
     const char* end = ptr + string.size();
 
-    Renderer::Geometry::Path path;
+    Renderer::Geometry::Path path{ 0 };
 
     if (ptr >= end || !(*ptr == 'M' || *ptr == 'm')) return path;
 
@@ -735,7 +735,8 @@ namespace Graphick::io::svg {
           Renderer::Geometry::Path path = parse_path(value);
 
           if (!path.empty()) {
-            Editor::Entity element = Editor::Editor::scene().create_element(path);
+            // TODO: reimplement svg creation, element creation, path optimization
+            Editor::Entity element = Editor::Editor::scene().create_element();
             element.add_component<Editor::FillComponent>(colors.back());
           }
         }

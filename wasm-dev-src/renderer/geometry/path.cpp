@@ -4,17 +4,113 @@
 #include "../../math/mat2.h"
 #include "../../math/vector.h"
 
+#include "../../editor/editor.h"
+
 #include "../../history/command_history.h"
 #include "../../history/commands.h"
 
 #include "../../utils/defines.h"
 #include "../../utils/console.h"
 
+namespace Graphick::History {
+
+  class InsertInSegmentsVectorCommand : public InsertInVectorCommand<std::shared_ptr<Renderer::Geometry::Segment>> {
+  public:
+    InsertInSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, const std::shared_ptr<Renderer::Geometry::Segment>& value)
+      : InsertInVectorCommand(vector, value), m_path(path) {}
+
+    InsertInSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, const std::shared_ptr<Renderer::Geometry::Segment>& value, int index)
+      : InsertInVectorCommand(vector, value), m_path(path) {}
+
+    virtual void execute() override {
+      clear_relative_handles();
+      InsertInVectorCommand::execute();
+      recalculate();
+    }
+
+    virtual void undo() override {
+      clear_relative_handles();
+
+      if (this->m_vector->size() == 1) {
+        m_path->m_last_point = this->m_vector->front()->m_p0;
+      }
+
+      InsertInVectorCommand::undo();
+      recalculate();
+    }
+
+    virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      if (command->type != Type::InsertInVector) return false;
+
+      InsertInSegmentsVectorCommand* casted_command = static_cast<InsertInSegmentsVectorCommand*>(command.get());
+
+      if (casted_command->m_path != this->m_path || casted_command->m_vector != this->m_vector) return false;
+      casted_command->m_values.insert(casted_command->m_values.end(), m_values.begin(), m_values.end());
+      casted_command->m_indices.insert(casted_command->m_indices.end(), m_indices.begin(), m_indices.end());
+
+      return true;
+    }
+  private:
+    void clear_relative_handles() {
+      if (this->m_vector->empty()) {
+        if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_out_handle);
+      } else {
+        if (m_path->in_handle_ptr() != std::nullopt) this->m_vector->front()->m_p0->remove_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) this->m_vector->back()->m_p3->remove_relative_handle(m_path->m_out_handle);
+      }
+    }
+
+    void recalculate() {
+      if (!this->m_vector->empty()) {
+        m_path->m_last_point = this->m_vector->back()->m_p3;
+
+        if (m_path->in_handle_ptr() != std::nullopt) this->m_vector->front()->m_p0->set_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) this->m_vector->back()->m_p3->set_relative_handle(m_path->m_out_handle);
+      } else {
+        if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_out_handle);
+      }
+
+      Editor::Editor::scene().selection.clear();
+      if (!m_vector->empty()) {
+        Editor::Editor::scene().selection.select_vertex(m_vector->back()->m_p3->id, m_path->id);
+      } else if (m_path->m_last_point) {
+        Editor::Editor::scene().selection.select_vertex(m_path->m_last_point->id, m_path->id);
+      }
+    }
+  private:
+    Renderer::Geometry::Path* m_path;
+  };
+
+}
+
 namespace Graphick::Renderer::Geometry {
 
-  Path::Path() :
+  Path::Path(const uuid id) :
+    id(id),
     m_in_handle(std::make_shared<History::Vec2Value>(std::numeric_limits<vec2>::lowest())),
-    m_out_handle(std::make_shared<History::Vec2Value>(std::numeric_limits<vec2>::lowest())) { }
+    m_out_handle(std::make_shared<History::Vec2Value>(std::numeric_limits<vec2>::lowest())),
+    m_segments(this) {}
+
+  Path::Path(const uuid id, const Path& path) :
+    id(id),
+    m_in_handle(path.m_in_handle),
+    m_out_handle(path.m_out_handle),
+    m_segments(this, path.m_segments) {}
+
+  Path::Path(const Path& path) :
+    id(path.id),
+    m_in_handle(path.m_in_handle),
+    m_out_handle(path.m_out_handle),
+    m_segments(this, path.m_segments) {}
+
+  Path::Path(Path&& path) noexcept :
+    id(path.id),
+    m_in_handle(std::move(path.m_in_handle)),
+    m_out_handle(std::move(path.m_out_handle)),
+    m_segments(this, std::move(path.m_segments)) {}
+
 
   const std::vector<ControlPoint*> Path::vertices() const {
     if (m_segments.empty()) {
@@ -31,7 +127,7 @@ namespace Graphick::Renderer::Geometry {
     }
 
     if (!m_closed) {
-      vertices.push_back(m_segments.back()->m_p3.get());
+      vertices.push_back(m_segments.back().m_p3.get());
     }
 
     return vertices;
@@ -52,19 +148,19 @@ namespace Graphick::Renderer::Geometry {
     }
 
     if (!m_closed) {
-      vertices.push_back(m_segments.back()->m_p3->id);
+      vertices.push_back(m_segments.back().m_p3->id);
     }
 
     return vertices;
   }
 
   std::optional<Segment::ControlPointHandle> Path::in_handle_ptr() const {
-    if (m_in_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
+    if (!m_in_handle || m_in_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
     return m_in_handle;
   }
 
   std::optional<Segment::ControlPointHandle> Path::out_handle_ptr() const {
-    if (m_out_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
+    if (!m_out_handle || m_out_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
     return m_out_handle;
   }
 
@@ -73,43 +169,43 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::line_to(vec2 p) {
-    if (m_segments.size()) {
-      m_last_point = m_segments.back()->m_p3;
-    }
+    // if (m_segments.size()) {
+    //   m_last_point = m_segments.back().m_p3;
+    // }
 
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p);
     m_segments.push_back(std::make_shared<Segment>(m_last_point, point));
-    m_last_point = point;
+    // m_last_point = point;
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
-    if (m_segments.size()) {
-      m_last_point = m_segments.back()->m_p3;
-    }
+    // if (m_segments.size()) {
+    //   m_last_point = m_segments.back().m_p3;
+    // }
 
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p2);
     m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, point, true));
-    m_last_point = point;
+    // m_last_point = point;
   }
 
   void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
-    if (m_segments.size()) {
-      m_last_point = m_segments.back()->m_p3;
-    }
+    // if (m_segments.size()) {
+    //   m_last_point = m_segments.back().m_p3;
+    // }
 
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
     m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, p2, point));
-    m_last_point = point;
+    // m_last_point = point;
   }
 
   void Path::cubic_to(vec2 p, vec2 p3, bool is_p1) {
-    if (m_segments.size()) {
-      m_last_point = m_segments.back()->m_p3;
-    }
+    // if (m_segments.size()) {
+    //   m_last_point = m_segments.back().m_p3;
+    // }
 
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
     m_segments.push_back(std::make_shared<Segment>(m_last_point, p, point, false, is_p1));
-    m_last_point = point;
+    // m_last_point = point;
   }
 
   void Path::arc_to(vec2 c, vec2 radius, float x_axis_rotation, bool large_arc_flag, bool sweep_flag, vec2 p) {
@@ -267,8 +363,8 @@ namespace Graphick::Renderer::Geometry {
   void Path::close() {
     if (m_segments.size() < 2) return;
 
-    Segment& first_segment = *m_segments.front();
-    Segment& last_segment = *m_segments.back();
+    Segment& first_segment = m_segments.front();
+    Segment& last_segment = m_segments.back();
 
     if (is_almost_equal(last_segment.p3(), first_segment.p0())) {
       if (first_segment.has_p1()) {
@@ -278,7 +374,7 @@ namespace Graphick::Renderer::Geometry {
       first_segment.m_p0 = last_segment.m_p3;
     } else {
       m_segments.push_back(std::make_shared<Segment>(m_last_point, first_segment.m_p0));
-      m_last_point = m_segments.front()->m_p0;
+      // m_last_point = first_segment.m_p0;
     }
 
     m_closed = true;
@@ -455,12 +551,12 @@ namespace Graphick::Renderer::Geometry {
 
     m_in_handle->set(position);
 
-    // if (m_segments.empty()) {
-    //   m_last_point->set_relative_handle(m_in_handle);
-    //   return;
-    // }
+    if (m_segments.empty()) {
+      m_last_point->set_relative_handle(m_in_handle);
+      return;
+    }
 
-    // m_segments.front()->m_p0->set_relative_handle(m_in_handle);
+    m_segments.front().m_p0->set_relative_handle(m_in_handle);
   }
 
   // TODO: fix relative handles
@@ -469,12 +565,12 @@ namespace Graphick::Renderer::Geometry {
 
     m_out_handle->set(position);
 
-    // if (m_segments.empty()) {
-    //   m_last_point->set_relative_handle(m_out_handle);
-    //   return;
-    // }
+    if (m_segments.empty()) {
+      m_last_point->set_relative_handle(m_out_handle);
+      return;
+    }
 
-    // m_segments.back()->m_p3->set_relative_handle(m_out_handle);
+    m_segments.back().m_p3->set_relative_handle(m_out_handle);
   }
 
   void Path::clear_in_handle() {
@@ -501,6 +597,10 @@ namespace Graphick::Renderer::Geometry {
       m_bounding_rect_cache.reset();
       m_approx_bounding_rect_cache.reset();
     }
+  }
+
+  void Path::SegmentsVector::push_back(const std::shared_ptr<Segment>& value) {
+    History::CommandHistory::add(std::make_unique<History::InsertInSegmentsVectorCommand>(m_path, &m_value, value));
   }
 
 }

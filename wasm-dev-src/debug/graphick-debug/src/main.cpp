@@ -118,7 +118,11 @@ int main() {
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   Graphick::io::svg::parse_svg(content);
 #else
-  Graphick::Renderer::Geometry::Path path{};
+  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Entity");
+  Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_element("Test Entity 1");
+
+  Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().path;
+  Graphick::Renderer::Geometry::Path& path1 = test_entity1.get_component<Graphick::Editor::PathComponent>().path;
 
   // path.move_to({ 360.0f, 20.0f });
   // path.line_to({ 0.0f, 0.0f });
@@ -148,8 +152,6 @@ int main() {
   // path.cubic_to({ -50.0f, -40.0f }, { -70.0f, -85.0f }, { -110.0f, -85.0f });
   // path.cubic_to({ -110.0f, -85.0f }, { -170.0f, -85.0f }, { -220.0f, -45.0f });
 
-  Graphick::Renderer::Geometry::Path path1{};
-
   path1.move_to({ 100.0f, 0.0f });
   path1.line_to({ 20.0f, -20.0f });
   path1.line_to({ 80.0f, 0.0f });
@@ -160,9 +162,6 @@ int main() {
   path1.line_to({ 360.0f, 260.0f });
 
   path1.close();
-
-  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element(path, "Test Entity");
-  Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_element(path1, "Test Entity 1");
 
   test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
   test_entity1.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });

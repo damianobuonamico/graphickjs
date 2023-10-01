@@ -170,7 +170,7 @@ namespace Graphick::History {
     inline virtual uintptr_t pointer() override {
       return reinterpret_cast<uintptr_t>(m_vector);
     }
-  private:
+  protected:
     vector* m_vector;
     std::vector<T> m_values;
     std::vector<int> m_indices;

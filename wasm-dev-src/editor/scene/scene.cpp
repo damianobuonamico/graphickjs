@@ -20,8 +20,8 @@ namespace Graphick::History {
 
   class InsertInRegistryCommand : public Command {
   public:
-    InsertInRegistryCommand(entt::registry* registry, std::unordered_map<uuid, entt::entity>* entities, uuid id)
-      : Command(Type::InsertInRegistry), m_registry(registry), m_entities(entities), m_ids({ id }) {}
+    InsertInRegistryCommand(Editor::Scene* scene, std::unordered_map<uuid, entt::entity>* entities, uuid id)
+      : Command(Type::InsertInRegistry), m_scene(scene), m_entities(entities), m_ids({ id }) {}
 
     ~InsertInRegistryCommand() override {
       if (m_should_destroy) {
@@ -31,7 +31,8 @@ namespace Graphick::History {
 
           entt::entity entity = it->second;
 
-          m_registry->destroy(entity);
+          m_scene->selection.deselect(id);
+          m_scene->m_registry.destroy(entity);
           m_entities->erase(it);
         }
 
@@ -43,10 +44,21 @@ namespace Graphick::History {
 
     inline virtual void execute() override {
       m_should_destroy = false;
+
+      m_scene->selection.clear();
+      for (uuid id : m_ids) {
+        m_scene->selection.select(id);
+      }
     }
 
     inline virtual void undo() override {
       m_should_destroy = true;
+
+      for (uuid id : m_ids) {
+        m_scene->selection.deselect(id);
+      }
+
+      m_scene->tool_state.reset_tool();
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
@@ -54,17 +66,17 @@ namespace Graphick::History {
 
       InsertInRegistryCommand* casted_command = static_cast<InsertInRegistryCommand*>(command.get());
 
-      if (casted_command->m_registry != this->m_registry || casted_command->m_entities != this->m_entities || casted_command->m_should_destroy != this->m_should_destroy) return false;
+      if (&casted_command->m_scene->m_registry != &this->m_scene->m_registry || casted_command->m_entities != this->m_entities || casted_command->m_should_destroy != this->m_should_destroy) return false;
       casted_command->m_ids.insert(casted_command->m_ids.end(), m_ids.begin(), m_ids.end());
 
       return true;
     }
 
     inline virtual uintptr_t pointer() override {
-      return reinterpret_cast<uintptr_t>(m_registry);
+      return reinterpret_cast<uintptr_t>(&m_scene->m_registry);
     }
   private:
-    entt::registry* m_registry;
+    Editor::Scene* m_scene;
     std::unordered_map<uuid, entt::entity>* m_entities;
     std::vector<uuid> m_ids;
     bool m_should_destroy = false;
@@ -101,7 +113,7 @@ namespace Graphick::Editor {
     m_order.push_back(entity);
 
     // TODO: reset pen tool state on undo
-    History::CommandHistory::add(std::make_unique<History::InsertInRegistryCommand>(&m_registry, &m_entities, id));
+    History::CommandHistory::add(std::make_unique<History::InsertInRegistryCommand>(this, &m_entities, id));
 
     return entity;
   }
@@ -181,15 +193,10 @@ namespace Graphick::Editor {
   }
 
   Entity Scene::create_element(const std::string& tag) {
-    Renderer::Geometry::Path path;
-    return create_element(path, tag);
-  }
-
-  Entity Scene::create_element(Renderer::Geometry::Path& path, const std::string& tag) {
     Entity entity = create_entity(tag);
 
     entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    entity.add_component<PathComponent>(path);
+    entity.add_component<PathComponent>(entity.id());
     entity.add_component<TransformComponent>();
 
     return entity;

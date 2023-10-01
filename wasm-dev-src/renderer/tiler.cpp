@@ -203,13 +203,13 @@ namespace Graphick::Renderer {
 
     const auto& segments = path.segments();
 
-    m_prev = (segments.front()->p0() + translation) * m_zoom - rect.min;
+    m_prev = (segments.front().p0() + translation) * m_zoom - rect.min;
 
     if (intersection_overlap < 0.7f) {
       std::vector<vec2> points;
       points.reserve(segments.size() + 1);
 
-      vec2 first_point = (segments.front()->p0() + translation) * m_zoom/* - rect.min*/;
+      vec2 first_point = (segments.front().p0() + translation) * m_zoom/* - rect.min*/;
       points.push_back(first_point);
 
       Math::rect vis = visible * zoom;
@@ -301,8 +301,8 @@ namespace Graphick::Renderer {
       }
 
       if (!path.closed()) {
-        vec2 p0 = (segments.back()->p3() + translation) * m_zoom - rect.min;
-        vec2 p3 = (segments.front()->p0() + translation) * m_zoom - rect.min;
+        vec2 p0 = (segments.back().p3() + translation) * m_zoom - rect.min;
+        vec2 p3 = (segments.front().p0() + translation) * m_zoom - rect.min;
 
         process_linear_segment(p0, p3);
       }

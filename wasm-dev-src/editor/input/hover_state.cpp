@@ -98,9 +98,9 @@ namespace Graphick::Editor::Input {
         }
       }
 
-      if (Math::is_point_in_circle(transformed_pos, path.segments().back()->p3(), threshold)) {
+      if (Math::is_point_in_circle(transformed_pos, path.segments().back().p3(), threshold)) {
         m_type = HoverType::Vertex;
-        m_vertex = path.segments().back()->p3_ptr();
+        m_vertex = path.segments().back().p3_ptr();
         m_handle.reset();
         return;
       }
@@ -112,7 +112,7 @@ namespace Graphick::Editor::Input {
     if (in_handle) {
       if (Math::is_point_in_circle(transformed_pos, in_handle.value()->get(), threshold)) {
         m_type = HoverType::Handle;
-        m_vertex = path.empty() ? path.last() : path.segments().front()->p0_ptr();
+        m_vertex = path.empty() ? path.last() : path.segments().front().p0_ptr();
         m_handle = path.in_handle_ptr();
         return;
       }
@@ -120,7 +120,7 @@ namespace Graphick::Editor::Input {
     if (out_handle) {
       if (Math::is_point_in_circle(transformed_pos, out_handle.value()->get(), threshold)) {
         m_type = HoverType::Handle;
-        m_vertex = path.empty() ? path.last() : path.segments().back()->p3_ptr();
+        m_vertex = path.empty() ? path.last() : path.segments().back().p3_ptr();
         m_handle = path.out_handle_ptr();
         return;
       }

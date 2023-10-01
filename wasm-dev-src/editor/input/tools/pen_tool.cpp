@@ -66,6 +66,9 @@ namespace Graphick::Editor::Input {
 
     if (path.vacant()) {
       path.move_to(InputManager::pointer.scene.position);
+
+      scene.selection.clear();
+      scene.selection.select(m_element);
     } else {
       auto out_handle_ptr = path.out_handle_ptr();
       if (out_handle_ptr.has_value()) {
@@ -75,9 +78,6 @@ namespace Graphick::Editor::Input {
         path.line_to(InputManager::pointer.scene.position);
       }
     }
-
-    scene.selection.clear();
-    scene.selection.select(m_element);
 
     m_mode = Mode::None;
   }
@@ -130,7 +130,7 @@ namespace Graphick::Editor::Input {
 
     if (InputManager::keys.alt) return;
 
-    Renderer::Geometry::Segment& segment = *path.segments().back();
+    Renderer::Geometry::Segment& segment = path.segments().back();
 
     if (!segment.has_p2()) {
       segment.create_p2(InputManager::pointer.scene.origin);

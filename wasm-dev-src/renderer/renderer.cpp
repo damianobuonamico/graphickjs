@@ -690,8 +690,8 @@ namespace Graphick::Renderer {
       first_pos = p_pos;
       last_pos = p_pos;
     } else {
-      first_pos = path.segments().front()->p0() + translation;
-      last_pos = path.segments().back()->p3() + translation;
+      first_pos = path.segments().front().p0() + translation;
+      last_pos = path.segments().back().p3() + translation;
     }
 
     if (!path.closed()) {
@@ -739,7 +739,7 @@ namespace Graphick::Renderer {
     }
 
     if (!path.closed()) {
-      uuid p3_id = path.segments().back()->p3_id();
+      uuid p3_id = path.segments().back().p3_id();
 
       add_square_instance(last_pos);
       if (!scene.selection.has_vertex(p3_id, id, true)) {

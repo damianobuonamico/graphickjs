@@ -30,11 +30,15 @@ namespace Graphick::Editor::Input {
     }
   }
 
+  void ToolState::reset_tool() {
+    current().reset();
+    active().reset();
+  }
+
   void ToolState::set_current(Tool::ToolType tool) {
     if (tool == Tool::ToolType::None) return;
 
-    current().reset();
-    active().reset();
+    reset_tool();
 
     m_current = tool;
 
@@ -51,10 +55,10 @@ namespace Graphick::Editor::Input {
   }
 
   void ToolState::on_pointer_down() {
-    if (m_last_tool != m_active && m_active != Tool::ToolType::Pan && m_active != Tool::ToolType::Zoom) {
-      if (m_active != Tool::ToolType::DirectSelect || InputManager::hover.type() != HoverState::HoverType::Handle) {
-        m_tools[(int)m_last_tool]->reset();
-      }
+    if (m_active == Tool::ToolType::DirectSelect && m_current == Tool::ToolType::Pen && InputManager::hover.type() != HoverState::HoverType::Handle) {
+      reset_tool();
+    } else if (m_last_tool != m_active && m_active != Tool::ToolType::Pan && m_active != Tool::ToolType::Zoom) {
+      m_tools[(int)m_last_tool]->reset();
     }
 
     active().on_pointer_down();
