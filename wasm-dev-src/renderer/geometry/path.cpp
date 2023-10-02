@@ -164,6 +164,15 @@ namespace Graphick::Renderer::Geometry {
     return m_out_handle;
   }
 
+  bool Path::is_open_end(const uuid id) const {
+    if (m_segments.empty()) {
+      if (m_last_point == nullptr) return false;
+      return m_last_point->id == id;
+    }
+
+    return m_segments.front().p0_id() == id || m_segments.back().p3_id() == id;
+  }
+
   void Path::move_to(vec2 p) {
     m_last_point = std::make_shared<ControlPoint>(p);
   }

@@ -75,10 +75,11 @@ namespace Graphick::Editor::Input {
           return;
         }
 
+        vec2 p3 = segment->p3();
+
         if (deep && (segment->is_quadratic() || segment->is_cubic())) {
           vec2 p1 = segment->p1();
           vec2 p2 = segment->p2();
-          vec2 p3 = segment->p3();
 
           if (segment->has_p1() && Math::is_point_in_circle(transformed_pos, p1, threshold)) {
             m_type = HoverType::Handle;
@@ -96,13 +97,19 @@ namespace Graphick::Editor::Input {
             }
           }
         }
-      }
 
-      if (Math::is_point_in_circle(transformed_pos, path.segments().back().p3(), threshold)) {
-        m_type = HoverType::Vertex;
-        m_vertex = path.segments().back().p3_ptr();
-        m_handle.reset();
-        return;
+        if (Math::is_point_in_circle(transformed_pos, p3, threshold)) {
+          m_type = HoverType::Vertex;
+          m_vertex = segment->p3_ptr();
+          m_handle.reset();
+          return;
+        }
+
+        if (segment->is_inside(transformed_pos, false, threshold)) {
+          console::log("HoverState::set_hovered: segment");
+          m_type = HoverType::Segment;
+          return;
+        }
       }
     }
 

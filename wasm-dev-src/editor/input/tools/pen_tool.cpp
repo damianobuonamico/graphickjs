@@ -17,29 +17,106 @@ namespace Graphick::Editor::Input {
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
 
-    on_none_pointer_down();
+    if (!entity.has_value() || !entity->is_element()) {
+      on_new_pointer_down();
+      return;
+    }
+
+    Renderer::Geometry::Path& path = entity->get_component<PathComponent>().path;
+    Scene& scene = Editor::scene();
+    m_vertex = InputManager::hover.vertex();
+
+    if (hover_type == HoverState::HoverType::Vertex) {
+      auto vertex = m_vertex->lock();
+
+      if (path.is_open_end(vertex->id)) {
+        if (entity->id() == m_element) {
+          if (path.empty() ||
+            (m_reverse ? path.segments().front().p0_id() == vertex->id : path.segments().back().p3_id() == vertex->id)
+            ) {
+            on_angle_pointer_down();
+            return;
+          } else {
+            on_close_pointer_down();
+            return;
+          }
+        } else {
+          if (m_element) {
+            on_join_pointer_down();
+            return;
+          } else {
+            on_start_pointer_down();
+            return;
+          }
+        }
+      } else if (scene.selection.has(entity->id())) {
+        on_sub_pointer_down();
+        return;
+      }
+    } else if (hover_type == HoverState::HoverType::Segment && scene.selection.has(entity->id())) {
+      on_add_pointer_down();
+      return;
+    }
+
+    on_new_pointer_down();
   }
 
   void PenTool::on_pointer_move() {
     switch (m_mode) {
+    case Mode::Join:
+      on_join_pointer_move();
+      break;
+    case Mode::Close:
+      on_close_pointer_move();
+      break;
+    case Mode::Sub:
+      on_sub_pointer_move();
+      break;
+    case Mode::Add:
+      on_add_pointer_move();
+      break;
+    case Mode::Angle:
+      on_angle_pointer_move();
+      break;
+    case Mode::Start:
+      on_start_pointer_move();
+      break;
     default:
-    case Mode::None:
-      on_none_pointer_move();
+    case Mode::New:
+      on_new_pointer_move();
       break;
     }
   }
 
   void PenTool::on_pointer_up() {
     switch (m_mode) {
+    case Mode::Join:
+      on_join_pointer_up();
+      break;
+    case Mode::Close:
+      on_close_pointer_up();
+      break;
+    case Mode::Sub:
+      on_sub_pointer_up();
+      break;
+    case Mode::Add:
+      on_add_pointer_up();
+      break;
+    case Mode::Angle:
+      on_angle_pointer_up();
+      break;
+    case Mode::Start:
+      on_start_pointer_up();
+      break;
     default:
-    case Mode::None:
-      on_none_pointer_up();
+    case Mode::New:
+      on_new_pointer_up();
       break;
     }
   }
 
   void PenTool::reset() {
-    m_mode = Mode::None;
+    m_mode = Mode::New;
     m_element = 0;
   }
 
@@ -47,7 +124,11 @@ namespace Graphick::Editor::Input {
 
   }
 
-  void PenTool::on_none_pointer_down() {
+  /* -- on_pointer_down -- */
+
+  void PenTool::on_new_pointer_down() {
+    console::log("PenTool::down");
+
     std::optional<Entity> entity = std::nullopt;
     Scene& scene = Editor::scene();
 
@@ -79,10 +160,42 @@ namespace Graphick::Editor::Input {
       }
     }
 
-    m_mode = Mode::None;
+    m_mode = Mode::New;
   }
 
-  void PenTool::on_none_pointer_move() {
+  void PenTool::on_join_pointer_down() {
+    console::log("PenTool::join");
+    m_mode = Mode::New;
+  }
+
+  void PenTool::on_close_pointer_down() {
+    console::log("PenTool::close");
+    m_mode = Mode::Close;
+  }
+
+  void PenTool::on_sub_pointer_down() {
+    console::log("PenTool::sub");
+    m_mode = Mode::Sub;
+  }
+
+  void PenTool::on_add_pointer_down() {
+    console::log("PenTool::add");
+    m_mode = Mode::Add;
+  }
+
+  void PenTool::on_angle_pointer_down() {
+    console::log("PenTool::angle");
+    m_mode = Mode::Angle;
+  }
+
+  void PenTool::on_start_pointer_down() {
+    console::log("PenTool::start");
+    m_mode = Mode::Start;
+  }
+
+  /* -- on_pointer_move -- */
+
+  void PenTool::on_new_pointer_move() {
     if (!m_element) return;
 
     Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
@@ -148,7 +261,21 @@ namespace Graphick::Editor::Input {
     }
   }
 
-  void PenTool::on_none_pointer_up() {
+  void PenTool::on_join_pointer_move() {}
+
+  void PenTool::on_close_pointer_move() {}
+
+  void PenTool::on_sub_pointer_move() {}
+
+  void PenTool::on_add_pointer_move() {}
+
+  void PenTool::on_angle_pointer_move() {}
+
+  void PenTool::on_start_pointer_move() {}
+
+  /* -- on_pointer_up -- */
+
+  void PenTool::on_new_pointer_up() {
     if (!m_element) return;
 
     Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
@@ -165,5 +292,17 @@ namespace Graphick::Editor::Input {
 
     path.last().lock()->deep_apply();
   }
+
+  void PenTool::on_join_pointer_up() {}
+
+  void PenTool::on_close_pointer_up() {}
+
+  void PenTool::on_sub_pointer_up() {}
+
+  void PenTool::on_add_pointer_up() {}
+
+  void PenTool::on_angle_pointer_up() {}
+
+  void PenTool::on_start_pointer_up() {}
 
 }

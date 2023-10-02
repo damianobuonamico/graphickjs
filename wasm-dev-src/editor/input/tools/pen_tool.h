@@ -23,20 +23,45 @@ namespace Graphick::Editor::Input {
   private:
     PenTool();
 
-    void on_none_pointer_down();
+    void on_new_pointer_down();
+    void on_join_pointer_down();
+    void on_close_pointer_down();
+    void on_sub_pointer_down();
+    void on_add_pointer_down();
+    void on_angle_pointer_down();
+    void on_start_pointer_down();
 
-    void on_none_pointer_move();
+    void on_new_pointer_move();
+    void on_join_pointer_move();
+    void on_close_pointer_move();
+    void on_sub_pointer_move();
+    void on_add_pointer_move();
+    void on_angle_pointer_move();
+    void on_start_pointer_move();
 
-    void on_none_pointer_up();
+    void on_new_pointer_up();
+    void on_join_pointer_up();
+    void on_close_pointer_up();
+    void on_sub_pointer_up();
+    void on_add_pointer_up();
+    void on_angle_pointer_up();
+    void on_start_pointer_up();
   private:
     enum class Mode {
-      None = 0,
+      New = 0,
+      Join,
+      Close,
+      Sub,
+      Add,
+      Angle,
+      Start
     };
   private:
-    Mode m_mode = Mode::None;
+    Mode m_mode = Mode::New;
+    bool m_reverse = false;
 
     uuid m_element = 0;
-    // std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
+    std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
   private:
     friend class ToolState;
   };

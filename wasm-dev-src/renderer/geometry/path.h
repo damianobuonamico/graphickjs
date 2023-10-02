@@ -68,6 +68,8 @@ namespace Graphick::Renderer::Geometry {
     std::optional<Segment::ControlPointHandle> in_handle_ptr() const;
     std::optional<Segment::ControlPointHandle> out_handle_ptr() const;
 
+    bool is_open_end(const uuid id) const;
+
     void move_to(vec2 p);
     void line_to(vec2 p);
     void quadratic_to(vec2 p1, vec2 p2);
