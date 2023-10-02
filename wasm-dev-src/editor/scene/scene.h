@@ -11,6 +11,10 @@
 
 #include "../../lib/entt/entt.hpp"
 
+namespace Graphick::Renderer::Geometry {
+  class Path;
+}
+
 namespace Graphick::History {
   class InsertInRegistryCommand;
 }
@@ -51,6 +55,7 @@ namespace Graphick::Editor {
     std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const Math::rect& rect, bool deep_search = false);
 
     Entity create_element(const std::string& tag = "");
+    Entity create_element(Renderer::Geometry::Path& path, const std::string& tag = "");
   private:
     void render() const;
   private:

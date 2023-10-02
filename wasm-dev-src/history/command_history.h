@@ -27,6 +27,9 @@ namespace Graphick::History {
     static void pop();
     static void clear();
 
+    static inline void disable() { get()->m_enabled = false; }
+    static inline void enable() { get()->m_enabled = true; }
+
     static inline void ignore_next() { get()->m_ignore_next = true; }
     static inline void clear_ignore() { get()->m_ignore_next = false; }
   private:
@@ -35,6 +38,7 @@ namespace Graphick::History {
   private:
     std::vector<std::unique_ptr<Command>> m_commands;
     int m_index = -1;
+    bool m_enabled = true;
     bool m_ignore_next = false;
   private:
     static CommandHistory* s_instance;

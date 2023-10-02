@@ -8,6 +8,8 @@
 #include "../../editor/editor.h"
 #include "../../editor/scene/entity.h"
 
+#include "../../history/command_history.h"
+
 #include "../../renderer/geometry/path.h"
 
 #include <iostream>
@@ -732,11 +734,13 @@ namespace Graphick::io::svg {
           // if (colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 1.0f }) {
           decode_text(start, rtrim(start, ptr), value);
           // TODO: optimize copy
+          History::CommandHistory::disable();
           Renderer::Geometry::Path path = parse_path(value);
+          History::CommandHistory::enable();
 
           if (!path.empty()) {
             // TODO: reimplement svg creation, element creation, path optimization
-            Editor::Entity element = Editor::Editor::scene().create_element();
+            Editor::Entity element = Editor::Editor::scene().create_element(path);
             element.add_component<Editor::FillComponent>(colors.back());
           }
         }

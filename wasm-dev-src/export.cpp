@@ -81,8 +81,8 @@ extern "C" {
   void EMSCRIPTEN_KEEPALIVE init() {
     Graphick::Editor::Editor::init();
 
-    Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_entity("Test Entity");
-    Graphick::Renderer::Geometry::Path& path = test_entity.add_component<Graphick::Editor::PathComponent>().path;
+    Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Element");
+    Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().path;
 
     path.move_to({ 0.0f, 0.0f });
     path.line_to({ 20.0f, -20.0f });

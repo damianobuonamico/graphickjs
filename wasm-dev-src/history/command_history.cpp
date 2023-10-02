@@ -22,7 +22,9 @@ namespace Graphick::History {
   void CommandHistory::add(std::unique_ptr<Command> command) {
     command->execute();
 
-    if (get()->m_ignore_next) {
+    if (!get()->m_enabled) {
+      return;
+    } else if (get()->m_ignore_next) {
       clear_ignore();
       return;
     }

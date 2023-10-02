@@ -202,6 +202,16 @@ namespace Graphick::Editor {
     return entity;
   }
 
+  Entity Scene::create_element(Renderer::Geometry::Path& path, const std::string& tag) {
+    Entity entity = create_entity(tag);
+
+    entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
+    entity.add_component<PathComponent>(entity.id(), path);
+    entity.add_component<TransformComponent>();
+
+    return entity;
+  }
+
   void Scene::render() const {
     GK_TOTAL("Scene::render");
     OPTICK_EVENT();
