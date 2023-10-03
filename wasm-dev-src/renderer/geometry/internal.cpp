@@ -128,7 +128,6 @@ namespace Graphick::Renderer::Geometry::Internal {
 
   /* -- PathInternal -- */
 
-
   void PathInternal::move_to(vec2 p) {
     m_last_point = std::make_shared<vec2>(p);
   }
@@ -142,6 +141,12 @@ namespace Graphick::Renderer::Geometry::Internal {
   void PathInternal::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
     SegmentInternal::ControlPoint point = std::make_shared<vec2>(p3);
     m_segments.emplace_back(m_last_point, p1, p2, point);
+    m_last_point = point;
+  }
+
+  void PathInternal::cubic_to(vec2 p, vec2 p3, bool is_p1) {
+    SegmentInternal::ControlPoint point = std::make_shared<vec2>(p3);
+    m_segments.emplace_back(m_last_point, p, point, is_p1);
     m_last_point = point;
   }
 

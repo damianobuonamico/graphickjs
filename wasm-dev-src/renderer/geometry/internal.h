@@ -86,6 +86,7 @@ namespace Graphick::Renderer::Geometry::Internal {
     void move_to(vec2 p);
     void line_to(vec2 p);
     void cubic_to(vec2 p1, vec2 p2, vec2 p3);
+    void cubic_to(vec2 p, vec2 p3, bool is_p1 = true);
 
     void ellipse(vec2 c, vec2 radius);
     void circle(vec2 c, float radius);

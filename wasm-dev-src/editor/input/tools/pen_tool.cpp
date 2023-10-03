@@ -5,8 +5,11 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
+#include "../../../renderer/renderer.h"
+
 #include "../../../utils/console.h"
 
+// TODO: esc to cancel pen and other tools
 namespace Graphick::Editor::Input {
 
   PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
@@ -119,7 +122,25 @@ namespace Graphick::Editor::Input {
   }
 
   void PenTool::render_overlays() const {
+    if (!m_element || InputManager::pointer.down) return;
 
+    Entity entity = Editor::scene().get_entity(m_element);
+    if (!entity.is_element()) return;
+
+    auto& path = entity.get_component<PathComponent>().path;
+    if (path.vacant() || path.closed()) return;
+
+    Renderer::Geometry::Internal::PathInternal segment{};
+    auto out_handle = path.out_handle_ptr();
+    segment.move_to(path.last().lock()->get());
+
+    if (out_handle.has_value()) {
+      segment.cubic_to(out_handle.value()->get(), InputManager::pointer.scene.position, true);
+    } else {
+      segment.line_to(InputManager::pointer.scene.position);
+    }
+
+    Renderer::Renderer::draw_outline(segment, { 0.0f, 0.0f });
   }
 
   /* -- on_pointer_down -- */
