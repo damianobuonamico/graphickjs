@@ -60,7 +60,8 @@ namespace Graphick::Editor::Input {
     Mode m_mode = Mode::New;
     bool m_reverse = false;
 
-    uuid m_element = 0;
+    // TODO: use equivalent of std::nullopt
+    History::UUIDValue m_element = uuid{ 0 };
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
   private:
     friend class ToolState;

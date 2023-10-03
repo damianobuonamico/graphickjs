@@ -50,6 +50,13 @@ namespace Graphick::History {
     m_delta = 0;
   };
 
+  /* -- UUIDValue -- */
+
+  void UUIDValue::set(const uuid value) {
+    if (m_value == value) return;
+    CommandHistory::add(std::make_unique<ChangePrimitiveCommand<uuid>>(m_value, value));
+  };
+
   /* -- Vec2Value -- */
 
   void Vec2Value::set(const vec2& value) {

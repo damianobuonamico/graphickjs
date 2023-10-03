@@ -67,9 +67,13 @@ namespace Graphick::History {
 
         if (m_path->in_handle_ptr() != std::nullopt) this->m_vector->front()->m_p0->set_relative_handle(m_path->m_in_handle);
         if (m_path->out_handle_ptr() != std::nullopt) this->m_vector->back()->m_p3->set_relative_handle(m_path->m_out_handle);
+
+        m_path->m_closed = this->m_vector->front()->p0_id() == this->m_vector->back()->p3_id();
       } else {
         if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_in_handle);
         if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_out_handle);
+
+        m_path->m_closed = false;
       }
 
       Editor::Editor::scene().selection.clear();
@@ -370,7 +374,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::close() {
-    if (m_segments.size() < 2) return;
+    if (m_segments.size() < 1 || (m_segments.size() == 1 && m_segments.front().kind() == Segment::Kind::Linear)) return;
 
     Segment& first_segment = m_segments.front();
     Segment& last_segment = m_segments.back();
@@ -382,8 +386,18 @@ namespace Graphick::Renderer::Geometry {
 
       first_segment.m_p0 = last_segment.m_p3;
     } else {
-      m_segments.push_back(std::make_shared<Segment>(m_last_point, first_segment.m_p0));
-      // m_last_point = first_segment.m_p0;
+      auto in_handle = in_handle_ptr();
+      auto out_handle = out_handle_ptr();
+
+      if (in_handle && out_handle) {
+        m_segments.push_back(std::make_shared<Segment>(m_last_point, out_handle.value()->get(), in_handle.value()->get(), first_segment.m_p0));
+      } else if (in_handle) {
+        m_segments.push_back(std::make_shared<Segment>(m_last_point, in_handle.value()->get(), first_segment.m_p0, false, false));
+      } else if (out_handle) {
+        m_segments.push_back(std::make_shared<Segment>(m_last_point, out_handle.value()->get(), first_segment.m_p0, false, true));
+      } else {
+        m_segments.push_back(std::make_shared<Segment>(m_last_point, first_segment.m_p0));
+      }
     }
 
     m_closed = true;

@@ -12,8 +12,6 @@ namespace Graphick::Editor::Input {
   PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
 
   void PenTool::on_pointer_down() {
-    //m_element = 0;
-
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
 
@@ -30,7 +28,7 @@ namespace Graphick::Editor::Input {
       auto vertex = m_vertex->lock();
 
       if (path.is_open_end(vertex->id)) {
-        if (entity->id() == m_element) {
+        if (entity->id() == m_element.get()) {
           if (path.empty() ||
             (m_reverse ? path.segments().front().p0_id() == vertex->id : path.segments().back().p3_id() == vertex->id)
             ) {
@@ -135,6 +133,7 @@ namespace Graphick::Editor::Input {
     if (!m_element) {
       // TODO: set element position to pointer position and vertex to (0, 0)
       entity = scene.create_element();
+      // TODO: always add this history to batch
       m_element = entity->id();
     } else {
       if (!scene.has_entity(m_element) || !(entity = scene.get_entity(m_element))->is_element()) {
@@ -170,6 +169,10 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_close_pointer_down() {
     console::log("PenTool::close");
+    if (!m_element) return;
+
+    Editor::scene().get_entity(m_element).get_component<PathComponent>().path.close();
+
     m_mode = Mode::Close;
   }
 
@@ -263,7 +266,38 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_join_pointer_move() {}
 
-  void PenTool::on_close_pointer_move() {}
+  void PenTool::on_close_pointer_move() {
+    if (!m_element) return;
+
+    Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
+    auto vertex_ptr = path.last();
+
+    if (!path.closed() || vertex_ptr.expired()) return;
+
+    auto& first_segment = path.segments().front();
+    auto& last_segment = path.segments().back();
+    auto vertex = vertex_ptr.lock();
+
+    if (!last_segment.has_p2()) {
+      last_segment.create_p2(vertex->get());
+    }
+
+    auto p2_ptr = last_segment.p2_ptr().lock();
+    p2_ptr->move_to(vertex->get() - InputManager::pointer.scene.delta);
+
+    if (InputManager::keys.alt) return;
+
+    if (!first_segment.has_p1()) {
+      first_segment.create_p1(vertex->get());
+    }
+
+    auto p1_ptr = first_segment.p1_ptr().lock();
+
+    vec2 dir = Math::normalize(InputManager::pointer.scene.delta);
+    float length = Math::length(p1_ptr->get() - p1_ptr->delta() - vertex->get() + vertex->delta());
+
+    p1_ptr->move_to(dir * length + vertex->get());
+  }
 
   void PenTool::on_sub_pointer_move() {}
 
@@ -295,7 +329,14 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_join_pointer_up() {}
 
-  void PenTool::on_close_pointer_up() {}
+  void PenTool::on_close_pointer_up() {
+    if (!m_element) return;
+
+    Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
+    path.last().lock()->deep_apply();
+
+    m_element = 0;
+  }
 
   void PenTool::on_sub_pointer_up() {}
 

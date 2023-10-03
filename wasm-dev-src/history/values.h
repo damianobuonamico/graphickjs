@@ -3,6 +3,8 @@
 #include "../math/vec2.h"
 #include "../math/vector.h"
 
+#include "../utils/uuid.h"
+
 #include <vector>
 
 namespace Graphick::History {
@@ -59,6 +61,24 @@ namespace Graphick::History {
   private:
     int m_value;
     int m_delta = 0;
+  };
+
+  // TODO: value operators
+  class UUIDValue {
+  public:
+    UUIDValue() = default;
+    UUIDValue(const uuid value) : m_value(value) {}
+
+    inline uuid get() const { return m_value; }
+
+    void set(const uuid value);
+
+    inline void operator=(const uuid value) { set(value); }
+
+    inline operator uuid() const { return m_value; }
+    inline operator bool() const { return m_value != 0; }
+  private:
+    uuid m_value;
   };
 
   class Vec2Value {
