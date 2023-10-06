@@ -10,6 +10,7 @@
 #include "../../../utils/console.h"
 
 // TODO: esc to cancel pen and other tools
+// TODO: cleanup (code repetition, make more robus and consistent)
 namespace Graphick::Editor::Input {
 
   PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
@@ -46,6 +47,7 @@ namespace Graphick::Editor::Input {
             on_join_pointer_down();
             return;
           } else {
+            m_element = entity->id();
             on_start_pointer_down();
             return;
           }
@@ -119,6 +121,7 @@ namespace Graphick::Editor::Input {
   void PenTool::reset() {
     m_mode = Mode::New;
     m_element = 0;
+    m_reverse = false;
   }
 
   void PenTool::render_overlays() const {
@@ -131,11 +134,20 @@ namespace Graphick::Editor::Input {
     if (path.vacant() || path.closed()) return;
 
     Renderer::Geometry::Internal::PathInternal segment{};
-    auto out_handle = path.out_handle_ptr();
+    History::Vec2Value* handle = nullptr;
+
     segment.move_to(path.last().lock()->get());
 
-    if (out_handle.has_value()) {
-      segment.cubic_to(out_handle.value()->get(), InputManager::pointer.scene.position, true);
+    if (m_reverse) {
+      auto in_handle_ptr = path.in_handle_ptr();
+      if (in_handle_ptr.has_value()) handle = in_handle_ptr->get();
+    } else {
+      auto out_handle_ptr = path.out_handle_ptr();
+      if (out_handle_ptr.has_value()) handle = out_handle_ptr->get();
+    }
+
+    if (handle) {
+      segment.cubic_to(handle->get(), InputManager::pointer.scene.position, !m_reverse);
     } else {
       segment.line_to(InputManager::pointer.scene.position);
     }
@@ -146,13 +158,12 @@ namespace Graphick::Editor::Input {
   /* -- on_pointer_down -- */
 
   void PenTool::on_new_pointer_down() {
-    console::log("PenTool::down");
+    console::log("PenTool::new");
 
     std::optional<Entity> entity = std::nullopt;
     Scene& scene = Editor::scene();
 
     if (!m_element) {
-      // TODO: set element position to pointer position and vertex to (0, 0)
       entity = scene.create_element();
       // TODO: always add this history to batch
       m_element = entity->id();
@@ -165,13 +176,27 @@ namespace Graphick::Editor::Input {
 
     Renderer::Geometry::Path& path = entity->get_component<PathComponent>().path;
 
+    if (m_reverse) {
+      console::log("reverse");
+    }
+
     if (path.vacant()) {
       path.move_to(InputManager::pointer.scene.position);
 
       scene.selection.clear();
       scene.selection.select(m_element);
+    } else if (m_reverse) {
+      auto in_handle_ptr = path.in_handle_ptr();
+
+      if (in_handle_ptr.has_value()) {
+        path.cubic_to(in_handle_ptr.value()->get(), InputManager::pointer.scene.position, true);
+        path.clear_out_handle();
+      } else {
+        path.line_to(InputManager::pointer.scene.position);
+      }
     } else {
       auto out_handle_ptr = path.out_handle_ptr();
+
       if (out_handle_ptr.has_value()) {
         path.cubic_to(out_handle_ptr.value()->get(), InputManager::pointer.scene.position, true);
         path.clear_out_handle();
@@ -185,14 +210,17 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_join_pointer_down() {
     console::log("PenTool::join");
-    m_mode = Mode::New;
+    m_mode = Mode::Join;
   }
 
   void PenTool::on_close_pointer_down() {
     console::log("PenTool::close");
     if (!m_element) return;
 
-    Editor::scene().get_entity(m_element).get_component<PathComponent>().path.close();
+    Entity entity = Editor::scene().get_entity(m_element);
+    auto& path = entity.get_component<PathComponent>().path;
+
+    path.close();
 
     m_mode = Mode::Close;
   }
@@ -209,11 +237,38 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_angle_pointer_down() {
     console::log("PenTool::angle");
+
+    if (!m_element) return;
+
+    Entity entity = Editor::scene().get_entity(m_element);
+    auto& path = entity.get_component<PathComponent>().path;
+
+    path.clear_out_handle();
+
     m_mode = Mode::Angle;
   }
 
   void PenTool::on_start_pointer_down() {
     console::log("PenTool::start");
+
+    if (!m_element || !m_vertex) return;
+
+    Entity entity = Editor::scene().get_entity(m_element);
+    auto& path = entity.get_component<PathComponent>().path;
+    auto vertex = m_vertex->lock();
+
+    if (!m_vertex) return;
+
+    Editor::scene().selection.select_vertex(vertex->id, m_element);
+
+    if (vertex->id == path.segments().front().p0_id()) {
+      m_reverse = true;
+      path.reverse();
+    } else {
+      m_reverse = false;
+      path.reverse(false);
+    }
+
     m_mode = Mode::Start;
   }
 
@@ -290,6 +345,8 @@ namespace Graphick::Editor::Input {
   void PenTool::on_close_pointer_move() {
     if (!m_element) return;
 
+    // TODO: space to move vertex
+
     Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
     auto vertex_ptr = path.last();
 
@@ -314,7 +371,7 @@ namespace Graphick::Editor::Input {
 
     auto p1_ptr = first_segment.p1_ptr().lock();
 
-    vec2 dir = Math::normalize(InputManager::pointer.scene.delta);
+    vec2 dir = Math::normalize(vertex->get() - p2_ptr->get());
     float length = Math::length(p1_ptr->get() - p1_ptr->delta() - vertex->get() + vertex->delta());
 
     p1_ptr->move_to(dir * length + vertex->get());
@@ -324,12 +381,62 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_add_pointer_move() {}
 
-  void PenTool::on_angle_pointer_move() {}
+  void PenTool::on_angle_pointer_move() {
+    on_new_pointer_move();
+  }
 
-  void PenTool::on_start_pointer_move() {}
+  void PenTool::on_start_pointer_move() {
+    if (!m_element || !m_vertex) return;
+
+    Entity entity = Editor::scene().get_entity(m_element);
+    auto& path = entity.get_component<PathComponent>().path;
+
+    auto vertex = m_vertex->lock();
+
+    if (!m_vertex) return;
+
+    History::Vec2Value* p1_ptr = nullptr;
+    History::Vec2Value* p2_ptr = nullptr;
+
+    if (m_reverse) {
+      path.create_in_handle(InputManager::pointer.scene.origin);
+      p1_ptr = path.in_handle_ptr().value().get();
+    } else {
+      path.create_out_handle(InputManager::pointer.scene.origin);
+      p1_ptr = path.out_handle_ptr().value().get();
+    }
+
+    p1_ptr->set_delta(InputManager::pointer.scene.delta);
+
+    if (InputManager::keys.alt || Math::is_almost_equal(p1_ptr->get(), vertex->get())) return;
+
+    if (m_reverse) {
+      Renderer::Geometry::Segment& segment = path.segments().front();
+
+      if (!segment.has_p1()) {
+        segment.create_p1(InputManager::pointer.scene.origin);
+      }
+
+      p2_ptr = segment.p1_ptr().lock().get();
+    } else {
+      Renderer::Geometry::Segment& segment = path.segments().back();
+
+      if (!segment.has_p2()) {
+        segment.create_p2(InputManager::pointer.scene.origin);
+      }
+
+      p2_ptr = segment.p2_ptr().lock().get();
+    }
+
+    vec2 dir = Math::normalize(vertex->get() - p1_ptr->get());
+    float length = Math::length(p2_ptr->get() - p2_ptr->delta() - vertex->get() + vertex->delta());
+
+    p2_ptr->move_to(dir * length + vertex->get());
+  }
 
   /* -- on_pointer_up -- */
 
+  // TODO: support reversed paths
   void PenTool::on_new_pointer_up() {
     if (!m_element) return;
 
@@ -363,8 +470,12 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_add_pointer_up() {}
 
-  void PenTool::on_angle_pointer_up() {}
+  void PenTool::on_angle_pointer_up() {
+    on_new_pointer_up();
+  }
 
-  void PenTool::on_start_pointer_up() {}
+  void PenTool::on_start_pointer_up() {
+    on_new_pointer_up();
+  }
 
 }

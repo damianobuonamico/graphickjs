@@ -44,6 +44,7 @@ namespace Graphick::Renderer::Geometry {
       inline const Segment& back() const { return *m_value.back(); }
 
       void push_back(const std::shared_ptr<Segment>& value);
+      void insert(const std::shared_ptr<Segment>& value, size_t index);
     private:
       std::vector<std::shared_ptr<Segment>> m_value;
       Path* m_path;
@@ -83,6 +84,7 @@ namespace Graphick::Renderer::Geometry {
     void round_rect(vec2 p, vec2 size, float radius, bool centered = false);
 
     void close();
+    void reverse(bool reversed = true);
 
     Math::rect bounding_rect() const;
     Math::rect approx_bounding_rect() const;
@@ -99,7 +101,9 @@ namespace Graphick::Renderer::Geometry {
 
     void rehydrate_cache() const;
   private:
+    bool m_reversed = false;
     bool m_closed = false;
+
     Segment::ControlPointVertex m_last_point = nullptr;
     SegmentsVector m_segments;
 

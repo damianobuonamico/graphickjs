@@ -111,13 +111,14 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-#define TIGER
+  // #define TIGER
+  // #define OBJECTS
 
 #ifdef TIGER
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   Graphick::io::svg::parse_svg(content);
-#else
+#elif defined(OBJECTS)
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Entity");
   Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_element("Test Entity 1");
 

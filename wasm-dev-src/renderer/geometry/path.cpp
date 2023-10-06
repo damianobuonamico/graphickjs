@@ -20,7 +20,7 @@ namespace Graphick::History {
       : InsertInVectorCommand(vector, value), m_path(path) {}
 
     InsertInSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, const std::shared_ptr<Renderer::Geometry::Segment>& value, int index)
-      : InsertInVectorCommand(vector, value), m_path(path) {}
+      : InsertInVectorCommand(vector, value, index), m_path(path) {}
 
     virtual void execute() override {
       clear_relative_handles();
@@ -32,7 +32,11 @@ namespace Graphick::History {
       clear_relative_handles();
 
       if (this->m_vector->size() == 1) {
-        m_path->m_last_point = this->m_vector->front()->m_p0;
+        if (m_path->m_reversed) {
+          m_path->m_last_point = this->m_vector->back()->m_p3;
+        } else {
+          m_path->m_last_point = this->m_vector->front()->m_p0;
+        }
       }
 
       InsertInVectorCommand::undo();
@@ -63,7 +67,11 @@ namespace Graphick::History {
 
     void recalculate() {
       if (!this->m_vector->empty()) {
-        m_path->m_last_point = this->m_vector->back()->m_p3;
+        if (m_path->m_reversed) {
+          m_path->m_last_point = this->m_vector->front()->m_p0;
+        } else {
+          m_path->m_last_point = this->m_vector->back()->m_p3;
+        }
 
         if (m_path->in_handle_ptr() != std::nullopt) this->m_vector->front()->m_p0->set_relative_handle(m_path->m_in_handle);
         if (m_path->out_handle_ptr() != std::nullopt) this->m_vector->back()->m_p3->set_relative_handle(m_path->m_out_handle);
@@ -78,7 +86,11 @@ namespace Graphick::History {
 
       Editor::Editor::scene().selection.clear();
       if (!m_vector->empty()) {
-        Editor::Editor::scene().selection.select_vertex(m_vector->back()->m_p3->id, m_path->id);
+        if (m_path->m_reversed) {
+          Editor::Editor::scene().selection.select_vertex(m_vector->front()->m_p0->id, m_path->id);
+        } else {
+          Editor::Editor::scene().selection.select_vertex(m_vector->back()->m_p3->id, m_path->id);
+        }
       } else if (m_path->m_last_point) {
         Editor::Editor::scene().selection.select_vertex(m_path->m_last_point->id, m_path->id);
       }
@@ -99,18 +111,24 @@ namespace Graphick::Renderer::Geometry {
 
   Path::Path(const uuid id, const Path& path) :
     id(id),
+    m_closed(path.m_closed),
+    m_reversed(path.m_reversed),
     m_in_handle(path.m_in_handle),
     m_out_handle(path.m_out_handle),
     m_segments(this, path.m_segments) {}
 
   Path::Path(const Path& path) :
     id(path.id),
+    m_closed(path.m_closed),
+    m_reversed(path.m_reversed),
     m_in_handle(path.m_in_handle),
     m_out_handle(path.m_out_handle),
     m_segments(this, path.m_segments) {}
 
   Path::Path(Path&& path) noexcept :
     id(path.id),
+    m_closed(path.m_closed),
+    m_reversed(path.m_reversed),
     m_in_handle(std::move(path.m_in_handle)),
     m_out_handle(std::move(path.m_out_handle)),
     m_segments(this, std::move(path.m_segments)) {}
@@ -182,13 +200,13 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::line_to(vec2 p) {
-    // if (m_segments.size()) {
-    //   m_last_point = m_segments.back().m_p3;
-    // }
-
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p);
-    m_segments.push_back(std::make_shared<Segment>(m_last_point, point));
-    // m_last_point = point;
+
+    if (m_reversed) {
+      m_segments.insert(std::make_shared<Segment>(point, m_last_point), 0);
+    } else {
+      m_segments.push_back(std::make_shared<Segment>(m_last_point, point));
+    }
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
@@ -401,6 +419,18 @@ namespace Graphick::Renderer::Geometry {
     }
 
     m_closed = true;
+  }
+
+  void Path::reverse(bool reversed) {
+    if (m_segments.empty()) return;
+
+    m_reversed = reversed;
+
+    if (reversed) {
+      m_last_point = m_segments.front().m_p0;
+    } else {
+      m_last_point = m_segments.back().m_p3;
+    }
   }
 
   Math::rect Path::bounding_rect() const {
@@ -624,6 +654,10 @@ namespace Graphick::Renderer::Geometry {
 
   void Path::SegmentsVector::push_back(const std::shared_ptr<Segment>& value) {
     History::CommandHistory::add(std::make_unique<History::InsertInSegmentsVectorCommand>(m_path, &m_value, value));
+  }
+
+  void Path::SegmentsVector::insert(const std::shared_ptr<Segment>& value, size_t index) {
+    History::CommandHistory::add(std::make_unique<History::InsertInSegmentsVectorCommand>(m_path, &m_value, value, index));
   }
 
 }
