@@ -220,33 +220,33 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
-    // if (m_segments.size()) {
-    //   m_last_point = m_segments.back().m_p3;
-    // }
-
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p2);
-    m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, point, true));
-    // m_last_point = point;
+
+    if (m_reversed) {
+      m_segments.insert(std::make_shared<Segment>(point, p1, m_last_point, false), 0);
+    } else {
+      m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, point, true));
+    }
   }
 
   void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
-    // if (m_segments.size()) {
-    //   m_last_point = m_segments.back().m_p3;
-    // }
-
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
-    m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, p2, point));
-    // m_last_point = point;
+
+    if (m_reversed) {
+      m_segments.insert(std::make_shared<Segment>(point, p2, p1, m_last_point), 0);
+    } else {
+      m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, p2, point));
+    }
   }
 
   void Path::cubic_to(vec2 p, vec2 p3, bool is_p1) {
-    // if (m_segments.size()) {
-    //   m_last_point = m_segments.back().m_p3;
-    // }
-
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
-    m_segments.push_back(std::make_shared<Segment>(m_last_point, p, point, false, is_p1));
-    // m_last_point = point;
+
+    if (m_reversed) {
+      m_segments.insert(std::make_shared<Segment>(point, p, m_last_point, false, !is_p1), 0);
+    } else {
+      m_segments.push_back(std::make_shared<Segment>(m_last_point, p, point, false, is_p1));
+    }
   }
 
   void Path::arc_to(vec2 c, vec2 radius, float x_axis_rotation, bool large_arc_flag, bool sweep_flag, vec2 p) {
@@ -414,17 +414,35 @@ namespace Graphick::Renderer::Geometry {
 
       first_segment.m_p0 = last_segment.m_p3;
     } else {
-      auto in_handle = in_handle_ptr();
-      auto out_handle = out_handle_ptr();
+      History::Vec2Value* in_handle = nullptr;
+      History::Vec2Value* out_handle = nullptr;
 
-      if (in_handle && out_handle) {
-        m_segments.push_back(std::make_shared<Segment>(m_last_point, out_handle.value()->get(), in_handle.value()->get(), first_segment.m_p0));
-      } else if (in_handle) {
-        m_segments.push_back(std::make_shared<Segment>(m_last_point, in_handle.value()->get(), first_segment.m_p0, false, false));
-      } else if (out_handle) {
-        m_segments.push_back(std::make_shared<Segment>(m_last_point, out_handle.value()->get(), first_segment.m_p0, false, true));
+      auto in_ptr = in_handle_ptr();
+      auto out_ptr = out_handle_ptr();
+
+      if (in_ptr.has_value()) in_handle = in_ptr->get();
+      if (out_ptr.has_value()) out_handle = out_ptr->get();
+
+      if (m_reversed) {
+        if (in_handle && out_handle) {
+          m_segments.insert(std::make_shared<Segment>(last_segment.m_p3, out_handle->get(), in_handle->get(), m_last_point), 0);
+        } else if (in_handle) {
+          m_segments.insert(std::make_shared<Segment>(last_segment.m_p3, in_handle->get(), m_last_point, false, false), 0);
+        } else if (out_handle) {
+          m_segments.insert(std::make_shared<Segment>(last_segment.m_p3, out_handle->get(), m_last_point, false, true), 0);
+        } else {
+          m_segments.insert(std::make_shared<Segment>(last_segment.m_p3, m_last_point), 0);
+        }
       } else {
-        m_segments.push_back(std::make_shared<Segment>(m_last_point, first_segment.m_p0));
+        if (in_handle && out_handle) {
+          m_segments.push_back(std::make_shared<Segment>(m_last_point, out_handle->get(), in_handle->get(), first_segment.m_p0));
+        } else if (in_handle) {
+          m_segments.push_back(std::make_shared<Segment>(m_last_point, in_handle->get(), first_segment.m_p0, false, false));
+        } else if (out_handle) {
+          m_segments.push_back(std::make_shared<Segment>(m_last_point, out_handle->get(), first_segment.m_p0, false, true));
+        } else {
+          m_segments.push_back(std::make_shared<Segment>(m_last_point, first_segment.m_p0));
+        }
       }
     }
 

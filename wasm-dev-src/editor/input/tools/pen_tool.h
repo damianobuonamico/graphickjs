@@ -2,12 +2,15 @@
 
 #include "../tool.h"
 
-#include "../../../renderer/geometry/control_point.h"
-
 #include "../../../utils/uuid.h"
 
 #include <memory>
 #include <optional>
+
+namespace Graphick::Renderer::Geometry {
+  class ControlPoint;
+  class Path;
+}
 
 namespace Graphick::Editor::Input {
 
@@ -21,7 +24,8 @@ namespace Graphick::Editor::Input {
 
     virtual void render_overlays() const override;
 
-    void set_pen_element(const uuid id);
+    inline uuid pen_element() const { return m_element; }
+    inline void set_pen_element(const uuid id) { m_element = id; }
   private:
     PenTool();
 
@@ -60,11 +64,11 @@ namespace Graphick::Editor::Input {
     };
   private:
     Mode m_mode = Mode::New;
-    bool m_reverse = false;
-
     // TODO: use equivalent of std::nullopt
     uuid m_element = 0;
-    std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
+
+    Renderer::Geometry::ControlPoint* m_vertex = nullptr;
+    Renderer::Geometry::Path* m_path = nullptr;
   private:
     friend class ToolState;
   };

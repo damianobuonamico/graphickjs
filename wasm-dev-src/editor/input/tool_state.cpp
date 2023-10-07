@@ -56,7 +56,11 @@ namespace Graphick::Editor::Input {
 
   void ToolState::on_pointer_down() {
     if (m_active == Tool::ToolType::DirectSelect && m_current == Tool::ToolType::Pen) {
-      if (InputManager::hover.type() != HoverState::HoverType::Handle) {
+      if (InputManager::hover.type() == HoverState::HoverType::Vertex) {
+        if (InputManager::hover.entity_id() != static_cast<PenTool*>(&current())->pen_element()) {
+          reset_tool();
+        }
+      } else if (InputManager::hover.type() != HoverState::HoverType::Handle) {
         reset_tool();
       }
     } else if (m_last_tool != m_active && m_active != Tool::ToolType::Pan && m_active != Tool::ToolType::Zoom) {

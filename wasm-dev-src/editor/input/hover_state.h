@@ -31,6 +31,7 @@ namespace Graphick::Editor::Input {
     ~HoverState() = default;
 
     inline HoverType type() const { return m_type; }
+    inline uuid entity_id() const { return m_entity; }
 
     std::optional<Entity> entity() const;
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> vertex() const;

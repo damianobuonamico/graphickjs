@@ -58,6 +58,7 @@ namespace Graphick::Renderer::Geometry {
     inline bool vacant() const { return m_segments.empty() && m_last_point == nullptr; }
     inline bool empty() const { return m_segments.empty(); }
     inline bool closed() const { return m_closed; }
+    inline bool reversed() const { return m_reversed; }
 
     inline const std::weak_ptr<ControlPoint> last() const { return m_last_point; }
     inline const SegmentsVector& segments() const { return m_segments; }

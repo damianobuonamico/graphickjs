@@ -1,5 +1,6 @@
 #include "control_point.h"
 
+// TODO: remove relative handles
 namespace Graphick::Renderer::Geometry {
 
   void ControlPoint::set_relative_handle(std::weak_ptr<History::Vec2Value> handle) {
