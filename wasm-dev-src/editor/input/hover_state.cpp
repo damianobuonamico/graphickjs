@@ -106,7 +106,6 @@ namespace Graphick::Editor::Input {
         }
 
         if (segment->is_inside(transformed_pos, false, threshold)) {
-          console::log("HoverState::set_hovered: segment");
           m_type = HoverType::Segment;
           return;
         }

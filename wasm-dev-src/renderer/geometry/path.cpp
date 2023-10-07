@@ -84,15 +84,25 @@ namespace Graphick::History {
         m_path->m_closed = false;
       }
 
-      Editor::Editor::scene().selection.clear();
+      Editor::Scene& scene = Editor::Editor::scene();
+
+      scene.selection.clear();
       if (!m_vector->empty()) {
         if (m_path->m_reversed) {
-          Editor::Editor::scene().selection.select_vertex(m_vector->front()->m_p0->id, m_path->id);
+          scene.selection.select_vertex(m_vector->front()->m_p0->id, m_path->id);
         } else {
-          Editor::Editor::scene().selection.select_vertex(m_vector->back()->m_p3->id, m_path->id);
+          scene.selection.select_vertex(m_vector->back()->m_p3->id, m_path->id);
         }
       } else if (m_path->m_last_point) {
-        Editor::Editor::scene().selection.select_vertex(m_path->m_last_point->id, m_path->id);
+        scene.selection.select_vertex(m_path->m_last_point->id, m_path->id);
+      }
+
+      if (scene.tool_state.current().type() != Editor::Input::Tool::ToolType::Pen) return;
+
+      if (m_path->vacant() || m_path->closed()) {
+        static_cast<Editor::Input::PenTool*>(&scene.tool_state.current())->set_pen_element(0);
+      } else {
+        static_cast<Editor::Input::PenTool*>(&scene.tool_state.current())->set_pen_element(m_path->id);
       }
     }
   private:

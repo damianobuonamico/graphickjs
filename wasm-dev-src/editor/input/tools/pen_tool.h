@@ -20,6 +20,8 @@ namespace Graphick::Editor::Input {
     virtual void reset() override;
 
     virtual void render_overlays() const override;
+
+    void set_pen_element(const uuid id);
   private:
     PenTool();
 
@@ -61,7 +63,7 @@ namespace Graphick::Editor::Input {
     bool m_reverse = false;
 
     // TODO: use equivalent of std::nullopt
-    History::UUIDValue m_element = uuid{ 0 };
+    uuid m_element = 0;
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
   private:
     friend class ToolState;

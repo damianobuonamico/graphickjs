@@ -101,7 +101,7 @@ namespace Graphick::Renderer::Geometry {
 
     void rehydrate_cache() const;
   private:
-    bool m_reversed = false;
+    History::BoolValue m_reversed = false;
     bool m_closed = false;
 
     Segment::ControlPointVertex m_last_point = nullptr;

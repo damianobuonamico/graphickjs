@@ -20,8 +20,10 @@ namespace Graphick::History {
 
   class InsertInRegistryCommand : public Command {
   public:
-    InsertInRegistryCommand(Editor::Scene* scene, std::unordered_map<uuid, entt::entity>* entities, uuid id)
-      : Command(Type::InsertInRegistry), m_scene(scene), m_entities(entities), m_ids({ id }) {}
+    InsertInRegistryCommand(Editor::Scene* scene, std::unordered_map<uuid, entt::entity>* entities, uuid id) :
+      Command(Type::InsertInRegistry),
+      m_scene(scene), m_entities(entities), m_ids({ id }),
+      m_pen(scene->tool_state.active().type() == Editor::Input::Tool::ToolType::Pen) {}
 
     ~InsertInRegistryCommand() override {
       if (m_should_destroy) {
@@ -48,6 +50,10 @@ namespace Graphick::History {
       m_scene->selection.clear();
       for (uuid id : m_ids) {
         m_scene->selection.select(id);
+      }
+
+      if (m_pen && m_scene->tool_state.current().type() == Editor::Input::Tool::ToolType::Pen) {
+        static_cast<Editor::Input::PenTool*>(&m_scene->tool_state.current())->set_pen_element(m_ids.back());
       }
     }
 
@@ -79,7 +85,9 @@ namespace Graphick::History {
     Editor::Scene* m_scene;
     std::unordered_map<uuid, entt::entity>* m_entities;
     std::vector<uuid> m_ids;
+
     bool m_should_destroy = false;
+    bool m_pen = false;
   };
 
 }

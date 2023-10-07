@@ -5,6 +5,8 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
+#include "../../../history/command_history.h"
+
 #include "../../../renderer/renderer.h"
 
 #include "../../../utils/console.h"
@@ -15,6 +17,7 @@ namespace Graphick::Editor::Input {
 
   PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
 
+  // TODO: fix close move not working by caching path and vertex 
   void PenTool::on_pointer_down() {
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
@@ -32,7 +35,7 @@ namespace Graphick::Editor::Input {
       auto vertex = m_vertex->lock();
 
       if (path.is_open_end(vertex->id)) {
-        if (entity->id() == m_element.get()) {
+        if (entity->id() == m_element) {
           if (path.empty() ||
             (m_reverse ? path.segments().front().p0_id() == vertex->id : path.segments().back().p3_id() == vertex->id)
             ) {
@@ -47,7 +50,7 @@ namespace Graphick::Editor::Input {
             on_join_pointer_down();
             return;
           } else {
-            m_element = entity->id();
+            set_pen_element(entity->id());
             on_start_pointer_down();
             return;
           }
@@ -120,8 +123,8 @@ namespace Graphick::Editor::Input {
 
   void PenTool::reset() {
     m_mode = Mode::New;
-    m_element = 0;
     m_reverse = false;
+    set_pen_element(0);
   }
 
   void PenTool::render_overlays() const {
@@ -155,6 +158,10 @@ namespace Graphick::Editor::Input {
     Renderer::Renderer::draw_outline(segment, { 0.0f, 0.0f });
   }
 
+  void PenTool::set_pen_element(const uuid id) {
+    m_element = id;
+  }
+
   /* -- on_pointer_down -- */
 
   void PenTool::on_new_pointer_down() {
@@ -165,11 +172,10 @@ namespace Graphick::Editor::Input {
 
     if (!m_element) {
       entity = scene.create_element();
-      // TODO: always add this history to batch
-      m_element = entity->id();
+      set_pen_element(entity->id());
     } else {
       if (!scene.has_entity(m_element) || !(entity = scene.get_entity(m_element))->is_element()) {
-        m_element = 0;
+        set_pen_element(0);
         return;
       }
     }
@@ -463,7 +469,7 @@ namespace Graphick::Editor::Input {
     Renderer::Geometry::Path& path = Editor::scene().get_entity(m_element).get_component<PathComponent>().path;
     path.last().lock()->deep_apply();
 
-    m_element = 0;
+    set_pen_element(0);
   }
 
   void PenTool::on_sub_pointer_up() {}

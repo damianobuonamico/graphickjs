@@ -17,6 +17,10 @@ namespace Graphick::History {
     inline bool get() const { return m_value; };
 
     void set(const bool value);
+
+    inline void operator=(const bool value) { set(value); }
+
+    inline operator bool() const { return m_value; }
   private:
     bool m_value;
   };
