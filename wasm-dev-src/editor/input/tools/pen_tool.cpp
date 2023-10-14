@@ -139,6 +139,8 @@ namespace Graphick::Editor::Input {
     auto& path = entity.get_component<PathComponent>().path;
     if (path.vacant() || path.closed()) return;
 
+    console::log("reversed", path.reversed());
+
     Renderer::Geometry::Internal::PathInternal segment{};
     History::Vec2Value* handle = nullptr;
 

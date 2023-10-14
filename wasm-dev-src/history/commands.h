@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 
 namespace Graphick::History {
 
@@ -21,7 +22,8 @@ namespace Graphick::History {
       // Implemented in segment.cpp
       CreateHandle,
       InsertInVector,
-      EraseFromVector
+      EraseFromVector,
+      Function
     };
   public:
     const Type type;
@@ -245,6 +247,31 @@ namespace Graphick::History {
     vector* m_vector;
     vector m_values;
     std::vector<int> m_indices;
+  };
+
+  class FunctionCommand : public Command {
+  public:
+    FunctionCommand(std::function<void()> execute_fn, std::function<void()> undo_fn)
+      : Command(Type::Function), m_execute_fn(execute_fn), m_undo_fn(undo_fn) {}
+
+    inline virtual void execute() override {
+      m_execute_fn();
+    }
+
+    inline virtual void undo() override {
+      m_undo_fn();
+    }
+
+    inline virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      return false;
+    }
+
+    virtual uintptr_t pointer() override {
+      return reinterpret_cast<uintptr_t>(&m_execute_fn);
+    }
+  private:
+    std::function<void()> m_execute_fn;
+    std::function<void()> m_undo_fn;
   };
 
 }

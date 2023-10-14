@@ -450,14 +450,45 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::reverse(bool reversed) {
-    if (m_segments.empty()) return;
+
+    if (m_segments.empty() || m_reversed == reversed) return;
 
     m_reversed = reversed;
 
     if (reversed) {
-      m_last_point = m_segments.front().m_p0;
+      History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
+        [this]() {
+          Editor::Scene& scene = Editor::Editor::scene();
+          m_last_point = m_segments.front().m_p0;
+
+          scene.selection.clear();
+          scene.selection.select_vertex(m_segments.front().m_p0->id, id);
+        },
+        [this]() {
+          Editor::Scene& scene = Editor::Editor::scene();
+          m_last_point = m_segments.back().m_p3;
+
+          scene.selection.clear();
+          scene.selection.select_vertex(m_segments.back().m_p3->id, id);
+        }
+      ));
     } else {
-      m_last_point = m_segments.back().m_p3;
+      History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
+        [this]() {
+          Editor::Scene& scene = Editor::Editor::scene();
+          m_last_point = m_segments.back().m_p3;
+
+          scene.selection.clear();
+          scene.selection.select_vertex(m_segments.back().m_p3->id, id);
+        },
+        [this]() {
+          Editor::Scene& scene = Editor::Editor::scene();
+          m_last_point = m_segments.front().m_p0;
+
+          scene.selection.clear();
+          scene.selection.select_vertex(m_segments.front().m_p0->id, id);
+        }
+      ));
     }
   }
 
