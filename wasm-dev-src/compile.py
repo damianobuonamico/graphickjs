@@ -13,7 +13,6 @@ OPTIONS = [
   'MAX_WEBGL_VERSION=2', 
   'USE_WEBGL2', 
   'FULL_ES3', 
-  # 'NO_DISABLE_EXCEPTION_CATCHING', 
   'EXPORTED_FUNCTIONS="["_malloc", "_free"]"',
   'EXPORTED_RUNTIME_METHODS="["cwrap", "allocateUTF8"]"'
 ]

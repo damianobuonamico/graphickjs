@@ -1,6 +1,5 @@
 import { Component, createEffect, Match, onMount, Switch } from "solid-js";
 import { createStore } from "solid-js/store";
-import Renderer from "./renderer/renderer";
 import SceneManager from "./scene";
 import InputManager from "./input";
 import Whiteboard from "@/ui/workspaces/Whiteboard";
@@ -17,7 +16,6 @@ const Editor: Component = () => {
     timelineHeight: 500,
   });
 
-  // Renderer.init();
   InputManager.init({}, (tool: Tool) => {
     setState({ tool });
   });

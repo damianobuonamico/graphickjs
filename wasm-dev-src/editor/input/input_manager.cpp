@@ -26,6 +26,7 @@ namespace Graphick::Editor::Input {
 
   void InputManager::shutdown() {
     delete s_instance;
+    s_instance = nullptr;
   }
 
   bool InputManager::on_pointer_event(

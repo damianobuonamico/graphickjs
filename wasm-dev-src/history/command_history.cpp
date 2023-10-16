@@ -17,6 +17,7 @@ namespace Graphick::History {
 
   void CommandHistory::shutdown() {
     delete s_instance;
+    s_instance = nullptr;
   }
 
   void CommandHistory::add(std::unique_ptr<Command> command) {

@@ -96,6 +96,14 @@ extern "C" {
     path.close();
   }
 
+  void EMSCRIPTEN_KEEPALIVE prepare_refresh() {
+    Graphick::Editor::Editor::prepare_refresh();
+  }
+
+  void EMSCRIPTEN_KEEPALIVE refresh() {
+    Graphick::Editor::Editor::refresh();
+  }
+
   void EMSCRIPTEN_KEEPALIVE shutdown() {
     Graphick::Editor::Editor::shutdown();
   }

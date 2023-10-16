@@ -17,7 +17,6 @@ namespace Graphick::Editor::Input {
 
   PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
 
-  // TODO: fix close move not working by caching path and vertex 
   void PenTool::on_pointer_down() {
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
@@ -143,8 +142,6 @@ namespace Graphick::Editor::Input {
     auto& path = entity.get_component<PathComponent>().path;
     if (path.vacant() || path.closed()) return;
 
-    console::log("reversed", path.reversed());
-
     Renderer::Geometry::Internal::PathInternal segment{};
     History::Vec2Value* handle = nullptr;
 
@@ -229,6 +226,9 @@ namespace Graphick::Editor::Input {
 
     m_vertex = m_path->last().lock().get();
     m_mode = Mode::Close;
+
+    Editor::Editor::prepare_refresh();
+    Editor::Editor::refresh();
   }
 
   void PenTool::on_sub_pointer_down() {
@@ -359,7 +359,6 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_join_pointer_move() {}
 
-  // TODO: fix reverse path history
   // TODO: snap handles to vertex destroys them on apply
   void PenTool::on_close_pointer_move() {
     if (!m_path || !m_vertex || !m_path->closed()) return;
@@ -418,7 +417,6 @@ namespace Graphick::Editor::Input {
     if (!handles.in_segment || !handles.out_segment) return;
 
     // TODO: space to move vertex
-    // TODO: fix pen element on undo/redo
 
     if (m_add_direction == 0) {
       float cos = 0;

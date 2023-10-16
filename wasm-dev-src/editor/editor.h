@@ -14,6 +14,8 @@ namespace Graphick::Editor {
     Editor(Editor&&) = delete;
 
     static void init();
+    static void prepare_refresh();
+    static void refresh();
     static void shutdown();
 
     static Scene& scene();

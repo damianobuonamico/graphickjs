@@ -27,6 +27,7 @@ namespace Graphick::Utils {
     }
 
     delete s_instance;
+    s_instance = nullptr;
   }
 
   void Debugger::clear() {

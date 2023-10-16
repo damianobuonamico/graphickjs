@@ -1,7 +1,16 @@
-import { Component } from "solid-js";
+import { Component, onMount, onCleanup } from "solid-js";
 import { Renderer } from "@renderer";
+import API from "@/wasm/loader";
 
 const Canvas: Component = () => {
+  onMount(() => {
+    API._refresh();
+  });
+
+  onCleanup(() => {
+    API._prepare_refresh();
+  });
+
   return (
     <div class="flex grow overflow-hidden first-line:z-0">
       <canvas

@@ -49,6 +49,11 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::init() {
+    if (s_instance != nullptr) {
+      console::error("Renderer already initialized, call shutdown() before reinitializing!");
+      return;
+    }
+
 #ifdef EMSCRIPTEN
     EmscriptenWebGLContextAttributes attr;
     emscripten_webgl_init_context_attributes(&attr);
@@ -64,11 +69,6 @@ namespace Graphick::Renderer {
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
     emscripten_webgl_make_context_current(ctx);
 #endif
-
-    if (s_instance != nullptr) {
-      console::error("Renderer already initialized, call shutdown() before reinitializing!");
-      return;
-    }
 
     GPU::Device::init(GPU::DeviceVersion::GLES3, 0);
     GPU::Memory::Allocator::init();
@@ -98,9 +98,15 @@ namespace Graphick::Renderer {
     }
 
     delete s_instance;
+    s_instance = nullptr;
 
     GPU::Memory::Allocator::shutdown();
     GPU::Device::shutdown();
+
+#ifdef EMSCRIPTEN
+    EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_get_current_context();
+    emscripten_webgl_destroy_context(ctx);
+#endif
   }
 
   void Renderer::begin_frame(const Viewport& viewport) {
@@ -282,7 +288,8 @@ namespace Graphick::Renderer {
       *vertex_array.vertex_array,
       GPU::Primitive::Triangles,
       {
-        { { get()->m_programs.default_program.texture_uniform, font_atlas.gl_texture }, font_atlas }
+        // TODO: fix texture_units (should be 0 only if there is no other texture)
+        { { get()->m_programs.default_program.texture_uniform, 0 }, font_atlas }
       },
       {},
       {
@@ -408,7 +415,7 @@ namespace Graphick::Renderer {
       *tile_vertex_array.vertex_array,
       GPU::Primitive::Triangles,
       {
-        { { m_programs.masked_tile_program.masks_texture_uniform, segments_texture.gl_texture }, segments_texture }
+        { { m_programs.masked_tile_program.masks_texture_uniform, 0 }, segments_texture }
       },
       {},
       {
@@ -492,7 +499,7 @@ namespace Graphick::Renderer {
       *tile_vertex_array.vertex_array,
       GPU::Primitive::Triangles,
       {
-        { { m_programs.masked_tile_program.masks_texture_uniform, masks_texture.gl_texture }, masks_texture }
+        { { m_programs.masked_tile_program.masks_texture_uniform, 0 }, masks_texture }
       },
       {},
       {

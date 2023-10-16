@@ -24,6 +24,7 @@ namespace Graphick::Editor {
 
   Editor* Editor::s_instance = nullptr;
 
+  // TODO: fix all todos (one day)
   void Editor::init() {
     // TODO: Editor reinitialization
     if (s_instance != nullptr) {
@@ -46,6 +47,14 @@ namespace Graphick::Editor {
     // scene().load();
   }
 
+  void Editor::prepare_refresh() {
+    Renderer::Renderer::shutdown();
+  }
+
+  void Editor::refresh() {
+    Renderer::Renderer::init();
+  }
+
   void Editor::shutdown() {
     if (s_instance == nullptr) {
       console::error("Renderer already shutdown, call init() before shutting down!");
@@ -61,6 +70,7 @@ namespace Graphick::Editor {
     Input::InputManager::shutdown();
 
     delete s_instance;
+    s_instance = nullptr;
   }
 
   Scene& Editor::scene() {

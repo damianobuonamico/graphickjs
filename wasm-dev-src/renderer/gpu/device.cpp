@@ -29,6 +29,7 @@ namespace Graphick::Renderer::GPU {
     }
 
     delete s_device;
+    s_device = nullptr;
   }
 
 }

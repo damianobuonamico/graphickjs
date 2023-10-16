@@ -5,6 +5,8 @@ const fallback: any = () => {};
 
 const API: Api = {
   _init: fallback,
+  _prepare_refresh: fallback,
+  _refresh: fallback,
   _shutdown: fallback,
   _on_pointer_event: fallback,
   _on_keyboard_event: fallback,
@@ -24,6 +26,8 @@ const API: Api = {
 
 wasm().then((module: any) => {
   API._init = module._init;
+  API._prepare_refresh = module._prepare_refresh;
+  API._refresh = module._refresh;
   API._shutdown = module._shutdown;
 
   API._on_pointer_event = module._on_pointer_event;
@@ -72,11 +76,11 @@ wasm().then((module: any) => {
   module._init();
   Renderer.resize();
 
-  fetch(
-    "https://upload.wikimedia.org/wikipedia/commons/f/fd/Ghostscript_Tiger.svg"
-  )
-    .then((res) => res.arrayBuffer())
-    .then((text) => API._load_svg(text));
+  // fetch(
+  //   "https://upload.wikimedia.org/wikipedia/commons/f/fd/Ghostscript_Tiger.svg"
+  // )
+  //   .then((res) => res.arrayBuffer())
+  //   .then((text) => API._load_svg(text));
 
   // fetch(
   //   "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"

@@ -1,5 +1,7 @@
 interface Api {
   _init(): void;
+  _prepare_refresh(): void;
+  _refresh(): void;
   _shutdown(): void;
 
   _on_pointer_event(

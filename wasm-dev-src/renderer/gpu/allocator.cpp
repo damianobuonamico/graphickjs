@@ -35,6 +35,7 @@ namespace Graphick::Renderer::GPU::Memory {
     }
 
     delete s_instance;
+    s_instance = nullptr;
   }
 
   uuid Allocator::allocate_texture(const ivec2 size, const TextureFormat format, const std::string& tag) {
