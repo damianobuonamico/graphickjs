@@ -16,14 +16,15 @@ namespace Graphick::History {
       Batch,
       ChangePrimitive,
       ChangeVec2,
+      InsertInVector,
+      EraseFromVector,
+      Function,
       // Implemented in scene.cpp
       InsertInRegistry,
       EraseFromRegistry,
       // Implemented in segment.cpp
       CreateHandle,
-      InsertInVector,
-      EraseFromVector,
-      Function
+      RemoveHandle
     };
   public:
     const Type type;
@@ -243,7 +244,7 @@ namespace Graphick::History {
     virtual uintptr_t pointer() override {
       return reinterpret_cast<uintptr_t>(m_vector) << 1;
     }
-  private:
+  protected:
     vector* m_vector;
     vector m_values;
     std::vector<int> m_indices;

@@ -30,6 +30,14 @@ namespace Graphick::Editor::Input {
     }
   }
 
+  PenTool* ToolState::pen() const {
+    if (m_active == Tool::ToolType::Pen || m_current == Tool::ToolType::Pen) {
+      return static_cast<Editor::Input::PenTool*>(m_tools[static_cast<int>(Tool::ToolType::Pen)]);
+    }
+
+    return nullptr;
+  }
+
   void ToolState::reset_tool() {
     current().reset();
     active().reset();

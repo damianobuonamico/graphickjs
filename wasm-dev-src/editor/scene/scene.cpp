@@ -22,8 +22,13 @@ namespace Graphick::History {
   public:
     InsertInRegistryCommand(Editor::Scene* scene, std::unordered_map<uuid, entt::entity>* entities, uuid id) :
       Command(Type::InsertInRegistry),
-      m_scene(scene), m_entities(entities), m_ids({ id }),
-      m_pen(scene->tool_state.active().type() == Editor::Input::Tool::ToolType::Pen) {}
+      m_scene(scene), m_entities(entities), m_ids({ id })
+    {
+      Editor::Input::PenTool* pen = scene->tool_state.pen();
+      if (!pen) return;
+
+      m_pen = pen->pen_element() == id;
+    }
 
     ~InsertInRegistryCommand() override {
       if (m_should_destroy) {
@@ -52,9 +57,12 @@ namespace Graphick::History {
         m_scene->selection.select(id);
       }
 
-      if (m_pen && m_scene->tool_state.current().type() == Editor::Input::Tool::ToolType::Pen) {
-        static_cast<Editor::Input::PenTool*>(&m_scene->tool_state.current())->set_pen_element(m_ids.back());
-      }
+      if (!m_pen) return;
+      
+      Editor::Input::PenTool* pen = m_scene->tool_state.pen();
+      if (!pen) return;
+
+      pen->set_pen_element(m_ids.back());
     }
 
     inline virtual void undo() override {

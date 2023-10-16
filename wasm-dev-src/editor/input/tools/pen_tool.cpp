@@ -91,9 +91,11 @@ namespace Graphick::Editor::Input {
     case Mode::Start:
       on_start_pointer_move();
       break;
-    default:
     case Mode::New:
       on_new_pointer_move();
+      break;
+    default:
+    case Mode::None:
       break;
     }
   }
@@ -118,9 +120,11 @@ namespace Graphick::Editor::Input {
     case Mode::Start:
       on_start_pointer_up();
       break;
-    default:
     case Mode::New:
       on_new_pointer_up();
+      break;
+    default:
+    case Mode::None:
       break;
     }
   }
@@ -234,6 +238,23 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_add_pointer_down() {
     console::log("PenTool::add");
+    if (!m_path) return;
+
+    std::optional<std::pair<std::weak_ptr<Renderer::Geometry::Segment>, float>> segment_hover = InputManager::hover.segment();
+    if (!segment_hover.has_value()) return;
+
+    auto& [segment_ptr, t] = segment_hover.value();
+    if (segment_ptr.expired()) return;
+
+    auto new_vertex = m_path->split(*segment_ptr.lock(), t);
+
+    if (!new_vertex.has_value() || new_vertex->expired()) {
+      m_mode = Mode::None;
+      return;
+    }
+
+    m_vertex = new_vertex->lock().get();
+    m_add_direction = 0;
     m_mode = Mode::Add;
   }
 
@@ -390,7 +411,59 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_sub_pointer_move() {}
 
-  void PenTool::on_add_pointer_move() {}
+  void PenTool::on_add_pointer_move() {
+    if (!m_path || !m_vertex) return;
+
+    auto handles = m_path->relative_handles(m_vertex->id);
+    if (!handles.in_segment || !handles.out_segment) return;
+
+    // TODO: space to move vertex
+    // TODO: fix pen element on undo/redo
+
+    if (m_add_direction == 0) {
+      float cos = 0;
+
+      if (handles.out_handle) {
+        cos = Math::dot(-InputManager::pointer.scene.delta, handles.out_handle->get() - m_vertex->get());
+      } else if (handles.out_segment) {
+        cos = Math::dot(-InputManager::pointer.scene.delta, (handles.out_segment->has_p2() ? handles.out_segment->p2() : handles.out_segment->p3()) - m_vertex->get());
+      }
+
+      if (cos > 0) m_add_direction = -1;
+      else m_add_direction = 1;
+    }
+
+    if (m_add_direction < 0) {
+      std::swap(handles.in_handle, handles.out_handle);
+      std::swap(handles.in_segment, handles.out_segment);
+    }
+
+    if (!handles.out_handle) {
+      if (m_add_direction < 0) {
+        handles.out_segment->create_p2(m_vertex->get());
+        handles.out_handle = handles.out_segment->p2_ptr().lock().get();
+      } else {
+        handles.out_segment->create_p1(m_vertex->get());
+        handles.out_handle = handles.out_segment->p1_ptr().lock().get();
+      }
+    }
+
+    handles.out_handle->move_to(m_vertex->get() + InputManager::pointer.scene.delta);
+
+    if (InputManager::keys.alt) return;
+
+    if (!handles.in_handle) {
+      if (m_add_direction < 0) {
+        handles.in_segment->create_p1(m_vertex->get());
+        handles.in_handle = handles.in_segment->p1_ptr().lock().get();
+      } else {
+        handles.in_segment->create_p2(m_vertex->get());
+        handles.in_handle = handles.in_segment->p2_ptr().lock().get();
+      }
+    }
+
+    handles.in_handle->move_to(m_vertex->get() - InputManager::pointer.scene.delta);
+  }
 
   void PenTool::on_angle_pointer_move() {
     on_new_pointer_move();
@@ -443,7 +516,6 @@ namespace Graphick::Editor::Input {
 
   /* -- on_pointer_up -- */
 
-  // TODO: support reversed paths
   void PenTool::on_new_pointer_up() {
     if (!m_element || !m_path) return;
 
@@ -475,7 +547,21 @@ namespace Graphick::Editor::Input {
 
   void PenTool::on_sub_pointer_up() {}
 
-  void PenTool::on_add_pointer_up() {}
+  void PenTool::on_add_pointer_up() {
+    if (!m_path || !m_vertex) return;
+
+    auto handles = m_path->relative_handles(m_vertex->id);
+    if (!handles.in_segment || !handles.out_segment) return;
+
+    if (handles.in_handle) {
+      handles.in_handle->apply();
+    }
+    if (handles.out_handle) {
+      handles.out_handle->apply();
+    }
+
+    m_vertex->deep_apply();
+  }
 
   void PenTool::on_angle_pointer_up() {
     on_new_pointer_up();

@@ -162,6 +162,18 @@ namespace Graphick::Math {
     return sum >= 0.0f;
   }
 
+  inline std::tuple<vec2, vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t) {
+    vec2 p = bezier(p0, p1, p2, p3, t);
+
+    vec2 q0 = lerp(p0, p1, t);
+    vec2 q1 = lerp(p1, p2, t);
+    vec2 q2 = lerp(p2, p3, t);
+    vec2 r0 = lerp(q0, q1, t);
+    vec2 r1 = lerp(q1, q2, t);
+
+    return { p, q0, r0, r1, q2 };
+  }
+
   inline int hash(const std::initializer_list<float> floats) {
     int h = 1;
 

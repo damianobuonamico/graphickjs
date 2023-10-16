@@ -4,6 +4,7 @@
 #include "rect.h"
 
 #include <vector>
+#include <tuple>
 
 namespace Graphick::Math {
 
@@ -22,6 +23,8 @@ namespace Graphick::Math {
   vec2 circle_center(const vec2 a, const vec2 b, const vec2 c);
 
   bool clockwise(const std::vector<vec2>& points);
+
+  std::tuple<vec2, vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t);
 
   int hash(std::initializer_list<float> floats);
 }

@@ -55,6 +55,48 @@ namespace Graphick::History {
     bool m_is_p1;
   };
 
+  class RemoveHandleCommand : public Command {
+  public:
+    RemoveHandleCommand(Renderer::Geometry::Segment* segment, std::shared_ptr<History::Vec2Value> handle, bool is_p1)
+      : Command(Type::RemoveHandle), m_segment(segment), m_handle(handle), m_is_p1(is_p1) {}
+
+    inline virtual void execute() override {
+      if (m_is_p1) {
+        m_segment->m_p1.reset();
+        m_segment->m_p0->remove_relative_handle(m_handle);
+      } else {
+        m_segment->m_p2.reset();
+        m_segment->m_p3->remove_relative_handle(m_handle);
+      }
+
+      m_segment->recalculate_kind();
+    }
+
+    inline virtual void undo() override {
+      if (m_is_p1) {
+        m_segment->m_p1 = m_handle;
+        m_segment->m_p0->set_relative_handle(m_handle);
+      } else {
+        m_segment->m_p2 = m_handle;
+        m_segment->m_p3->set_relative_handle(m_handle);
+      }
+
+      m_segment->recalculate_kind();
+    }
+
+    inline virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      return false;
+    }
+
+    inline virtual uintptr_t pointer() override {
+      return reinterpret_cast<uintptr_t>(m_handle.get());
+    }
+  private:
+    Renderer::Geometry::Segment* m_segment;
+    std::shared_ptr<History::Vec2Value> m_handle;
+    bool m_is_p1;
+  };
+
 }
 
 namespace Graphick::Renderer::Geometry {
@@ -64,10 +106,11 @@ namespace Graphick::Renderer::Geometry {
     m_p0(std::make_shared<ControlPoint>(p0)),
     m_p3(std::make_shared<ControlPoint>(p3)) {}
 
-  Segment::Segment(vec2 p0, vec2 p1, vec2 p3, bool is_quadratic) :
+  Segment::Segment(vec2 p0, vec2 p, vec2 p3, bool is_quadratic, bool is_p1) :
     m_kind(is_quadratic ? Kind::Quadratic : Kind::Cubic),
     m_p0(std::make_shared<ControlPoint>(p0)),
-    m_p1(std::make_shared<History::Vec2Value>(p1)),
+    m_p1((is_quadratic || is_p1) ? (p == p0 || p == p3 ? nullptr : std::make_shared<History::Vec2Value>(p)) : nullptr),
+    m_p2((!is_quadratic && !is_p1) ? (p == p0 || p == p3 ? nullptr : std::make_shared<History::Vec2Value>(p)) : nullptr),
     m_p3(std::make_shared<ControlPoint>(p3))
   {
     m_p0->set_relative_handle(m_p1);
@@ -76,8 +119,8 @@ namespace Graphick::Renderer::Geometry {
   Segment::Segment(vec2 p0, vec2 p1, vec2 p2, vec2 p3) :
     m_kind(Kind::Cubic),
     m_p0(std::make_shared<ControlPoint>(p0)),
-    m_p1(std::make_shared<History::Vec2Value>(p1)),
-    m_p2(std::make_shared<History::Vec2Value>(p2)),
+    m_p1(p1 == p0 ? nullptr : std::make_shared<History::Vec2Value>(p1)),
+    m_p2(p2 == p3 ? nullptr : std::make_shared<History::Vec2Value>(p2)),
     m_p3(std::make_shared<ControlPoint>(p3))
   {
     m_p0->set_relative_handle(m_p1);
@@ -92,8 +135,8 @@ namespace Graphick::Renderer::Geometry {
   Segment::Segment(ControlPointVertex p0, vec2 p, ControlPointVertex p3, bool is_quadratic, bool is_p1) :
     m_kind(is_quadratic ? Kind::Quadratic : Kind::Cubic),
     m_p0(p0),
-    m_p1((is_quadratic || is_p1) ? std::make_shared<History::Vec2Value>(p) : nullptr),
-    m_p2((!is_quadratic && !is_p1) ? std::make_shared<History::Vec2Value>(p) : nullptr),
+    m_p1((is_quadratic || is_p1) ? (p == p0->get() || p == p3->get() ? nullptr : std::make_shared<History::Vec2Value>(p)) : nullptr),
+    m_p2((!is_quadratic && !is_p1) ? (p == p0->get() || p == p3->get() ? nullptr : std::make_shared<History::Vec2Value>(p)) : nullptr),
     m_p3(p3)
   {
     m_p0->set_relative_handle(m_p1);
@@ -102,10 +145,11 @@ namespace Graphick::Renderer::Geometry {
   Segment::Segment(ControlPointVertex p0, vec2 p1, vec2 p2, ControlPointVertex p3) :
     m_kind(Kind::Cubic),
     m_p0(p0),
-    m_p1(std::make_shared<History::Vec2Value>(p1)),
-    m_p2(std::make_shared<History::Vec2Value>(p2)),
+    m_p1(p1 == p0->get() ? nullptr : std::make_shared<History::Vec2Value>(p1)),
+    m_p2(p2 == p3->get() ? nullptr : std::make_shared<History::Vec2Value>(p2)),
     m_p3(p3)
   {
+    // TODO: remove all of relative_handles related stuff
     m_p0->set_relative_handle(m_p1);
     m_p3->set_relative_handle(m_p2);
   }
@@ -273,6 +317,10 @@ namespace Graphick::Renderer::Geometry {
     return bounding_rect().size();
   }
 
+  Segment::SegmentPointDistance Segment::closest_to(const vec2 position, int iterations) const {
+    return SEGMENT_CALL(closest_to, position, iterations);
+  }
+
   bool Segment::is_inside(const vec2 position, bool deep_search, float threshold) const {
     if (!Math::is_point_in_rect(position, deep_search ? approx_bounding_rect() : bounding_rect(), threshold)) {
       return false;
@@ -355,6 +403,18 @@ namespace Graphick::Renderer::Geometry {
     }
 
     History::CommandHistory::add(std::make_unique<History::CreateHandleCommand>(this, std::make_shared<History::Vec2Value>(position), false));
+  }
+
+  void Segment::remove_p1() {
+    if (!m_p1) return;
+
+    History::CommandHistory::add(std::make_unique<History::RemoveHandleCommand>(this, m_p1, true));
+  }
+
+  void Segment::remove_p2() {
+    if (!m_p2) return;
+
+    History::CommandHistory::add(std::make_unique<History::RemoveHandleCommand>(this, m_p2, false));
   }
 
   void Segment::recalculate_kind() {

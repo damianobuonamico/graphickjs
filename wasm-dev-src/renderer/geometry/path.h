@@ -8,6 +8,7 @@
 
 namespace Graphick::History {
   class InsertInSegmentsVectorCommand;
+  class EraseFromSegmentsVectorCommand;
 }
 
 namespace Graphick::Renderer::Geometry {
@@ -44,10 +45,19 @@ namespace Graphick::Renderer::Geometry {
       inline const Segment& back() const { return *m_value.back(); }
 
       void push_back(const std::shared_ptr<Segment>& value);
-      void insert(const std::shared_ptr<Segment>& value, size_t index);
+      void insert(const std::shared_ptr<Segment>& value, int index);
+      void erase(int index);
     private:
       std::vector<std::shared_ptr<Segment>> m_value;
       Path* m_path;
+    };
+
+    struct RelativeHandles {
+      History::Vec2Value* in_handle = nullptr;
+      History::Vec2Value* out_handle = nullptr;
+
+      Segment* in_segment = nullptr;
+      Segment* out_segment = nullptr;
     };
   public:
     Path(const uuid id);
@@ -70,6 +80,8 @@ namespace Graphick::Renderer::Geometry {
     std::optional<Segment::ControlPointHandle> in_handle_ptr() const;
     std::optional<Segment::ControlPointHandle> out_handle_ptr() const;
 
+    RelativeHandles relative_handles(const uuid id);
+
     bool is_open_end(const uuid id) const;
 
     void move_to(vec2 p);
@@ -86,6 +98,7 @@ namespace Graphick::Renderer::Geometry {
 
     void close();
     void reverse(bool reversed = true);
+    std::optional<std::weak_ptr<ControlPoint>> split(Segment& segment, float t);
 
     Math::rect bounding_rect() const;
     Math::rect approx_bounding_rect() const;
@@ -117,6 +130,7 @@ namespace Graphick::Renderer::Geometry {
     mutable std::optional<Math::rect> m_approx_bounding_rect_cache = std::nullopt;
   private:
     friend class History::InsertInSegmentsVectorCommand;
+    friend class History::EraseFromSegmentsVectorCommand;
   };
 
 }

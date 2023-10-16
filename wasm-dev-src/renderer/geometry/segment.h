@@ -10,7 +10,9 @@
 
 namespace Graphick::History {
   class CreateHandleCommand;
+  class RemoveHandleCommand;
   class InsertInSegmentsVectorCommand;
+  class EraseFromSegmentsVectorCommand;
 }
 
 namespace Graphick::Renderer::Geometry {
@@ -36,7 +38,7 @@ namespace Graphick::Renderer::Geometry {
     };
   public:
     Segment(vec2 p0, vec2 p3);
-    Segment(vec2 p0, vec2 p1, vec2 p3, bool is_quadratic = true);
+    Segment(vec2 p0, vec2 p1, vec2 p3, bool is_quadratic = true, bool is_p1 = true);
     Segment(vec2 p0, vec2 p1, vec2 p2, vec2 p3);
 
     Segment(ControlPointVertex p0, ControlPointVertex p3);
@@ -78,6 +80,8 @@ namespace Graphick::Renderer::Geometry {
     rect approx_bounding_rect() const;
     vec2 size() const;
 
+    SegmentPointDistance closest_to(const vec2 position, int iterations = 4) const;
+
     bool is_inside(const vec2 position, bool deep_search = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
     bool intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const;
@@ -85,6 +89,8 @@ namespace Graphick::Renderer::Geometry {
 
     void create_p1(const vec2 position);
     void create_p2(const vec2 position);
+    void remove_p1();
+    void remove_p2();
 
     bool rehydrate_cache() const;
   private:
@@ -131,7 +137,9 @@ namespace Graphick::Renderer::Geometry {
     // TEMP: remove
     friend class Path;
     friend class History::CreateHandleCommand;
+    friend class History::RemoveHandleCommand;
     friend class History::InsertInSegmentsVectorCommand;
+    friend class History::EraseFromSegmentsVectorCommand;
   };
 
 }

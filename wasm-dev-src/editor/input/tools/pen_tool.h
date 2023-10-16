@@ -54,7 +54,8 @@ namespace Graphick::Editor::Input {
     void on_start_pointer_up();
   private:
     enum class Mode {
-      New = 0,
+      None = 0,
+      New,
       Join,
       Close,
       Sub,
@@ -69,6 +70,8 @@ namespace Graphick::Editor::Input {
 
     Renderer::Geometry::ControlPoint* m_vertex = nullptr;
     Renderer::Geometry::Path* m_path = nullptr;
+
+    int m_add_direction = 0;
   private:
     friend class ToolState;
   };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../renderer/geometry/control_point.h"
+#include "../../renderer/geometry/segment.h"
 
 #include "../../utils/uuid.h"
 
@@ -34,6 +35,7 @@ namespace Graphick::Editor::Input {
     inline uuid entity_id() const { return m_entity; }
 
     std::optional<Entity> entity() const;
+    std::optional<std::pair<std::weak_ptr<Renderer::Geometry::Segment>, float>> segment() const;
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> vertex() const;
     std::optional<std::weak_ptr<History::Vec2Value>> handle() const;
   private:
@@ -43,8 +45,9 @@ namespace Graphick::Editor::Input {
     HoverType m_type = HoverType::None;
 
     uuid m_entity = 0;
-    std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex;
-    std::optional<std::weak_ptr<History::Vec2Value>> m_handle;
+    std::optional<std::pair<std::weak_ptr<Renderer::Geometry::Segment>, float>> m_segment = std::nullopt;
+    std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
+    std::optional<std::weak_ptr<History::Vec2Value>> m_handle = std::nullopt;
   private:
     friend class InputManager;
   };

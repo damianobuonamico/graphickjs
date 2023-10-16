@@ -17,30 +17,66 @@ namespace Graphick::History {
   class InsertInSegmentsVectorCommand : public InsertInVectorCommand<std::shared_ptr<Renderer::Geometry::Segment>> {
   public:
     InsertInSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, const std::shared_ptr<Renderer::Geometry::Segment>& value)
-      : InsertInVectorCommand(vector, value), m_path(path) {}
+      : InsertInVectorCommand(vector, value), m_path(path) {
+      Editor::Input::PenTool* pen = Editor::Editor::scene().tool_state.pen();
+      if (!pen) return;
+
+      m_pen = pen->pen_element() == m_path->id;
+    }
 
     InsertInSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, const std::shared_ptr<Renderer::Geometry::Segment>& value, int index)
-      : InsertInVectorCommand(vector, value, index), m_path(path) {}
+      : InsertInVectorCommand(vector, value, index), m_path(path) {
+      Editor::Input::PenTool* pen = Editor::Editor::scene().tool_state.pen();
+      if (!pen) return;
+
+      m_pen = pen->pen_element() == m_path->id;
+    }
 
     virtual void execute() override {
       clear_relative_handles();
       InsertInVectorCommand::execute();
       recalculate();
+
+      Editor::Scene& scene = Editor::Editor::scene();
+
+      scene.selection.clear();
+      if (!m_vector->empty()) {
+        if (m_path->m_reversed) {
+          scene.selection.select_vertex(m_values.back()->m_p0->id, m_path->id);
+        } else {
+          scene.selection.select_vertex(m_values.back()->m_p3->id, m_path->id);
+        }
+      } else if (m_path->m_last_point) {
+        scene.selection.select_vertex(m_path->m_last_point->id, m_path->id);
+      }
     }
 
     virtual void undo() override {
       clear_relative_handles();
 
-      if (this->m_vector->size() == 1) {
+      if (m_vector->size() == 1) {
         if (m_path->m_reversed) {
-          m_path->m_last_point = this->m_vector->back()->m_p3;
+          m_path->m_last_point = m_vector->back()->m_p3;
         } else {
-          m_path->m_last_point = this->m_vector->front()->m_p0;
+          m_path->m_last_point = m_vector->front()->m_p0;
         }
       }
 
       InsertInVectorCommand::undo();
       recalculate();
+
+      Editor::Scene& scene = Editor::Editor::scene();
+
+      scene.selection.clear();
+      if (!m_vector->empty()) {
+        if (m_path->m_reversed) {
+          scene.selection.select_vertex(m_vector->front()->m_p0->id, m_path->id);
+        } else {
+          scene.selection.select_vertex(m_vector->back()->m_p3->id, m_path->id);
+        }
+      } else if (m_path->m_last_point) {
+        scene.selection.select_vertex(m_path->m_last_point->id, m_path->id);
+      }
     }
 
     virtual bool merge_with(std::unique_ptr<Command>& command) override {
@@ -56,27 +92,113 @@ namespace Graphick::History {
     }
   private:
     void clear_relative_handles() {
-      if (this->m_vector->empty()) {
+      if (m_vector->empty()) {
         if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_in_handle);
         if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_out_handle);
       } else {
-        if (m_path->in_handle_ptr() != std::nullopt) this->m_vector->front()->m_p0->remove_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) this->m_vector->back()->m_p3->remove_relative_handle(m_path->m_out_handle);
+        if (m_path->in_handle_ptr() != std::nullopt) m_vector->front()->m_p0->remove_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) m_vector->back()->m_p3->remove_relative_handle(m_path->m_out_handle);
       }
     }
 
     void recalculate() {
-      if (!this->m_vector->empty()) {
+      if (!m_vector->empty()) {
         if (m_path->m_reversed) {
-          m_path->m_last_point = this->m_vector->front()->m_p0;
+          m_path->m_last_point = m_vector->front()->m_p0;
         } else {
-          m_path->m_last_point = this->m_vector->back()->m_p3;
+          m_path->m_last_point = m_vector->back()->m_p3;
         }
 
-        if (m_path->in_handle_ptr() != std::nullopt) this->m_vector->front()->m_p0->set_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) this->m_vector->back()->m_p3->set_relative_handle(m_path->m_out_handle);
+        if (m_path->in_handle_ptr() != std::nullopt) m_vector->front()->m_p0->set_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) m_vector->back()->m_p3->set_relative_handle(m_path->m_out_handle);
 
-        m_path->m_closed = this->m_vector->front()->p0_id() == this->m_vector->back()->p3_id();
+        m_path->m_closed = m_vector->front()->p0_id() == m_vector->back()->p3_id();
+      } else {
+        if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_out_handle);
+
+        m_path->m_closed = false;
+      }
+
+      Editor::Input::PenTool* pen = Editor::Editor::scene().tool_state.pen();
+      if (!pen) return;
+
+      if (m_path->vacant() || m_path->closed()) {
+        pen->set_pen_element(0);
+      } else if (m_pen) {
+        pen->set_pen_element(m_path->id);
+      }
+    }
+  private:
+    Renderer::Geometry::Path* m_path;
+    bool m_pen;
+  };
+
+  class EraseFromSegmentsVectorCommand : public EraseFromVectorCommand<std::shared_ptr<Renderer::Geometry::Segment>> {
+  public:
+    EraseFromSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, int index)
+      : EraseFromVectorCommand(vector, vector->at(index), index), m_path(path) {
+      Editor::Input::PenTool* pen = Editor::Editor::scene().tool_state.pen();
+      if (!pen) return;
+
+      m_pen = pen->pen_element() == m_path->id;
+    }
+
+    virtual void execute() override {
+      clear_relative_handles();
+
+      if (m_vector->size() == 1) {
+        if (m_path->m_reversed) {
+          m_path->m_last_point = m_vector->back()->m_p3;
+        } else {
+          m_path->m_last_point = m_vector->front()->m_p0;
+        }
+      }
+
+      EraseFromVectorCommand::execute();
+      recalculate();
+    }
+
+    virtual void undo() override {
+      clear_relative_handles();
+      EraseFromVectorCommand::undo();
+      recalculate();
+    }
+
+    virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      if (command->type != Type::EraseFromVector) return false;
+
+      EraseFromSegmentsVectorCommand* casted_command = static_cast<EraseFromSegmentsVectorCommand*>(command.get());
+
+      if (casted_command->m_path != this->m_path || casted_command->m_vector != this->m_vector) return false;
+      casted_command->m_values.insert(casted_command->m_values.end(), m_values.begin(), m_values.end());
+      casted_command->m_indices.insert(casted_command->m_indices.end(), m_indices.begin(), m_indices.end());
+
+      return true;
+    }
+  private:
+    void clear_relative_handles() {
+      if (m_vector->empty()) {
+        if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_out_handle);
+      } else {
+        if (m_path->in_handle_ptr() != std::nullopt) m_vector->front()->m_p0->remove_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) m_vector->back()->m_p3->remove_relative_handle(m_path->m_out_handle);
+      }
+    }
+
+    void recalculate() {
+      if (!m_vector->empty()) {
+        if (m_path->m_reversed) {
+          m_path->m_last_point = m_vector->front()->m_p0;
+        } else {
+          m_path->m_last_point = m_vector->back()->m_p3;
+        }
+
+        if (m_path->in_handle_ptr() != std::nullopt) m_vector->front()->m_p0->set_relative_handle(m_path->m_in_handle);
+        if (m_path->out_handle_ptr() != std::nullopt) m_vector->back()->m_p3->set_relative_handle(m_path->m_out_handle);
+
+        m_path->m_closed = m_vector->front()->p0_id() == m_vector->back()->p3_id();
       } else {
         if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_in_handle);
         if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_out_handle);
@@ -97,16 +219,18 @@ namespace Graphick::History {
         scene.selection.select_vertex(m_path->m_last_point->id, m_path->id);
       }
 
-      if (scene.tool_state.current().type() != Editor::Input::Tool::ToolType::Pen) return;
+      Editor::Input::PenTool* pen = scene.tool_state.pen();
+      if (!pen) return;
 
       if (m_path->vacant() || m_path->closed()) {
-        static_cast<Editor::Input::PenTool*>(&scene.tool_state.current())->set_pen_element(0);
-      } else {
-        static_cast<Editor::Input::PenTool*>(&scene.tool_state.current())->set_pen_element(m_path->id);
+        pen->set_pen_element(0);
+      } else if (m_pen) {
+        pen->set_pen_element(m_path->id);
       }
     }
   private:
     Renderer::Geometry::Path* m_path;
+    bool m_pen;
   };
 
 }
@@ -194,6 +318,44 @@ namespace Graphick::Renderer::Geometry {
   std::optional<Segment::ControlPointHandle> Path::out_handle_ptr() const {
     if (!m_out_handle || m_out_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
     return m_out_handle;
+  }
+
+  Path::RelativeHandles Path::relative_handles(const uuid id) {
+    RelativeHandles handles;
+    size_t i = 0;
+
+    for (auto& segment : m_segments) {
+      if (segment->p0_id() == id) {
+        handles.out_segment = segment.get();
+        if (segment->has_p1()) handles.out_handle = segment->m_p1.get();
+
+        break;
+      }
+
+      i++;
+    }
+
+    if (i == 0) {
+      auto in_handle = in_handle_ptr();
+      if (in_handle.has_value()) {
+        handles.in_handle = in_handle.value().get();
+      }
+    } else if (i >= m_segments.size()) {
+      if (m_segments.back().p3_id() == id) {
+        handles.in_segment = &m_segments.back();
+        if (m_segments.back().has_p2()) handles.in_handle = m_segments.back().m_p2.get();
+
+        auto out_handle = out_handle_ptr();
+        if (out_handle.has_value()) {
+          handles.out_handle = out_handle.value().get();
+        }
+      }
+    } else {
+      handles.in_segment = &m_segments[i - 1];
+      if (handles.in_segment->has_p2()) handles.in_handle = handles.in_segment->m_p2.get();
+    }
+
+    return handles;
   }
 
   bool Path::is_open_end(const uuid id) const {
@@ -450,7 +612,6 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::reverse(bool reversed) {
-
     if (m_segments.empty() || m_reversed == reversed) return;
 
     m_reversed = reversed;
@@ -490,6 +651,54 @@ namespace Graphick::Renderer::Geometry {
         }
       ));
     }
+  }
+
+  std::optional<std::weak_ptr<ControlPoint>> Path::split(Segment& segment, float t) {
+    if (m_segments.empty()) return std::nullopt;
+
+    int index = 0;
+
+    for (int i = 0; i < m_segments.size(); i++) {
+      if (&m_segments[i] == &segment) {
+        index = i;
+        break;
+      }
+    }
+
+    std::optional<std::shared_ptr<ControlPoint>> new_vertex = std::nullopt;
+    std::shared_ptr<ControlPoint> first_vertex = segment.m_p0;
+    std::shared_ptr<ControlPoint> last_vertex = segment.m_p3;
+
+    if (segment.is_linear()) {
+      new_vertex = std::make_shared<ControlPoint>(segment.get(t));
+      m_segments.erase(index);
+
+      if (m_reversed) {
+        m_segments.insert(std::make_shared<Segment>(first_vertex, new_vertex.value()), index);
+        m_segments.insert(std::make_shared<Segment>(new_vertex.value(), last_vertex), index + 1);
+      } else {
+        m_segments.insert(std::make_shared<Segment>(new_vertex.value(), last_vertex), index);
+        m_segments.insert(std::make_shared<Segment>(first_vertex, new_vertex.value()), index);
+      }
+    } else {
+      auto [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(segment.p0(), segment.p1(), segment.p2(), segment.p3(), t);
+
+      new_vertex = std::make_shared<ControlPoint>(p);
+      m_segments.erase(index);
+
+      if (m_reversed) {
+        m_segments.insert(std::make_shared<Segment>(first_vertex, in_p1, in_p2, new_vertex.value()), index);
+        m_segments.insert(std::make_shared<Segment>(new_vertex.value(), out_p1, out_p2, last_vertex), index + 1);
+      } else {
+        m_segments.insert(std::make_shared<Segment>(new_vertex.value(), out_p1, out_p2, last_vertex), index);
+        m_segments.insert(std::make_shared<Segment>(first_vertex, in_p1, in_p2, new_vertex.value()), index);
+      }
+    }
+
+    uuid new_vertex_id = new_vertex.value()->id;
+    uuid element_id = id;
+
+    return new_vertex;
   }
 
   Math::rect Path::bounding_rect() const {
@@ -715,8 +924,14 @@ namespace Graphick::Renderer::Geometry {
     History::CommandHistory::add(std::make_unique<History::InsertInSegmentsVectorCommand>(m_path, &m_value, value));
   }
 
-  void Path::SegmentsVector::insert(const std::shared_ptr<Segment>& value, size_t index) {
+  void Path::SegmentsVector::insert(const std::shared_ptr<Segment>& value, int index) {
+    if (m_value.size() < index || index < 0) return;
     History::CommandHistory::add(std::make_unique<History::InsertInSegmentsVectorCommand>(m_path, &m_value, value, index));
+  }
+
+  void Path::SegmentsVector::erase(int index) {
+    if (m_value.size() <= index || index < 0) return;
+    History::CommandHistory::add(std::make_unique<History::EraseFromSegmentsVectorCommand>(m_path, &m_value, index));
   }
 
 }

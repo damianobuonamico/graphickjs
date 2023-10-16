@@ -12,6 +12,11 @@ namespace Graphick::Editor::Input {
     return Editor::scene().get_entity(m_entity);
   }
 
+  std::optional<std::pair<std::weak_ptr<Renderer::Geometry::Segment>, float>> HoverState::segment() const {
+    if (m_entity == 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;
+    return m_segment;
+  }
+
   std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> HoverState::vertex() const {
     if (m_entity == 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;
     return m_vertex;
@@ -105,8 +110,13 @@ namespace Graphick::Editor::Input {
           return;
         }
 
-        if (segment->is_inside(transformed_pos, false, threshold)) {
+        auto closest = segment->closest_to(transformed_pos);
+
+        if (closest.sq_distance <= threshold * threshold) {
           m_type = HoverType::Segment;
+          m_segment = std::make_pair(std::weak_ptr<Renderer::Geometry::Segment>(segment), closest.t);
+          m_vertex.reset();
+          m_handle.reset();
           return;
         }
       }
@@ -138,6 +148,7 @@ namespace Graphick::Editor::Input {
   void HoverState::reset() {
     m_type = HoverType::None;
     m_entity = 0;
+    m_segment.reset();
     m_vertex.reset();
     m_handle.reset();
   }

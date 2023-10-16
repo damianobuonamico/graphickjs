@@ -22,6 +22,8 @@ namespace Graphick::Editor::Input {
     inline Tool& current() const { return *m_tools[(int)m_current]; }
     inline Tool& active() const { return *m_tools[(int)m_active]; }
 
+    PenTool* pen() const;
+
     void reset_tool();
 
     void set_current(Tool::ToolType tool);
