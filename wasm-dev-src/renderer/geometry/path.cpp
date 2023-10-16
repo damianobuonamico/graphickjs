@@ -359,6 +359,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   bool Path::is_open_end(const uuid id) const {
+    if (m_closed) return false;
+
     if (m_segments.empty()) {
       if (m_last_point == nullptr) return false;
       return m_last_point->id == id;
@@ -653,6 +655,148 @@ namespace Graphick::Renderer::Geometry {
     }
   }
 
+  void Path::remove(uuid id) {
+    if (m_segments.empty()) return;
+
+    std::shared_ptr<ControlPoint> p = nullptr;
+    std::optional<vec2> in_handle = std::nullopt;
+    std::optional<vec2> out_handle = std::nullopt;
+
+    // TODO: implement object/vertex deletion
+    if (m_segments.size() == 1 || (m_closed && m_segments.size() == 2)) {
+      if (m_segments.front().p0_id() == id) {
+        p = m_segments.front().m_p3;
+
+        if (m_segments.front().has_p2()) {
+          in_handle = m_segments.front().p2();
+        }
+
+        if (m_closed) {
+          if (m_segments.back().has_p1()) {
+            out_handle = m_segments.back().p1();
+          }
+        }
+      } else if (m_segments.front().p3_id() == id) {
+        p = m_segments.front().m_p0;
+
+        if (m_segments.front().has_p1()) {
+          out_handle = m_segments.front().p1();
+        }
+
+        if (m_closed) {
+          if (m_segments.back().has_p2()) {
+            in_handle = m_segments.back().p2();
+          }
+        }
+      } else {
+        return;
+      }
+
+      m_segments.clear();
+
+      if (p == nullptr) return;
+
+      if (in_handle.has_value()) {
+        create_in_handle(in_handle.value());
+      } else {
+        clear_in_handle();
+      }
+      if (out_handle.has_value()) {
+        create_out_handle(out_handle.value());
+      } else {
+        clear_out_handle();
+      }
+
+      History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
+        [this, p]() {
+          Editor::Editor::scene().selection.select_vertex(p->id, this->id);
+          m_last_point = p;
+        },
+        []() {}
+      ));
+
+      return;
+    }
+
+    int index = 0;
+
+    for (auto& segment : m_segments) {
+      if (segment->p0_id() == id) {
+        break;
+      }
+
+      index++;
+    }
+
+    if (m_closed && (index == 0 || index == m_segments.size())) {
+      std::shared_ptr<ControlPoint> p0 = m_segments.back().m_p0;
+      std::optional<vec2> p1 = std::nullopt;
+      std::optional<vec2> p2 = std::nullopt;
+      std::shared_ptr<ControlPoint> p3 = m_segments.front().m_p3;
+
+      if (m_segments.back().has_p1()) {
+        p1 = m_segments.back().p1();
+      }
+      if (m_segments.front().has_p2()) {
+        p2 = m_segments.front().p2();
+      }
+
+      m_segments.erase(0);
+      m_segments.pop_back();
+
+      if (p1.has_value() && p2.has_value()) {
+        m_segments.insert(std::make_shared<Segment>(p0, p1.value(), p2.value(), p3), 0);
+      } else if (p1.has_value()) {
+        m_segments.insert(std::make_shared<Segment>(p0, p1.value(), p3, false, true), 0);
+      } else if (p2.has_value()) {
+        m_segments.insert(std::make_shared<Segment>(p0, p2.value(), p3, false, false), 0);
+      } else {
+        m_segments.insert(std::make_shared<Segment>(p0, p3), 0);
+      }
+    } else if (index == 0) {
+      if (m_segments[index].has_p2()) {
+        create_in_handle(m_segments[index].p2());
+      } else {
+        clear_in_handle();
+      }
+
+      m_segments.erase(index);
+    } else if (index == m_segments.size()) {
+      if (m_segments[index].has_p1()) {
+        create_out_handle(m_segments[index].p1());
+      } else {
+        clear_out_handle();
+      }
+
+      m_segments.erase(index);
+    } else {
+      std::shared_ptr<ControlPoint> p0 = m_segments[index - 1].m_p0;
+      std::optional<vec2> p1 = std::nullopt;
+      std::optional<vec2> p2 = std::nullopt;
+      std::shared_ptr<ControlPoint> p3 = m_segments[index].m_p3;
+
+      if (m_segments[index - 1].has_p1()) {
+        p1 = m_segments[index - 1].p1();
+      }
+      if (m_segments[index].has_p2()) {
+        p2 = m_segments[index].p2();
+      }
+
+      m_segments.erase(index);
+      m_segments.erase(index - 1);
+
+      if (p1.has_value() && p2.has_value()) {
+        m_segments.insert(std::make_shared<Segment>(p0, p1.value(), p2.value(), p3), index - 1);
+      } else if (p1.has_value()) {
+        m_segments.insert(std::make_shared<Segment>(p0, p1.value(), p3, false, true), index - 1);
+      } else if (p2.has_value()) {
+        m_segments.insert(std::make_shared<Segment>(p0, p2.value(), p3, false, false), index - 1);
+      } else {
+        m_segments.insert(std::make_shared<Segment>(p0, p3), index - 1);
+      }
+    }
+  }
+
   std::optional<std::weak_ptr<ControlPoint>> Path::split(Segment& segment, float t) {
     if (m_segments.empty()) return std::nullopt;
 
@@ -929,9 +1073,21 @@ namespace Graphick::Renderer::Geometry {
     History::CommandHistory::add(std::make_unique<History::InsertInSegmentsVectorCommand>(m_path, &m_value, value, index));
   }
 
+  void Path::SegmentsVector::pop_back() {
+    erase(m_value.size() - 1);
+  }
+
   void Path::SegmentsVector::erase(int index) {
     if (m_value.size() <= index || index < 0) return;
     History::CommandHistory::add(std::make_unique<History::EraseFromSegmentsVectorCommand>(m_path, &m_value, index));
+  }
+
+  void Path::SegmentsVector::clear() {
+    if (m_value.empty()) return;
+
+    for (int i = (int)m_value.size() - 1; i >= 0; i--) {
+      History::CommandHistory::add(std::make_unique<History::EraseFromSegmentsVectorCommand>(m_path, &m_value, i));
+    }
   }
 
 }

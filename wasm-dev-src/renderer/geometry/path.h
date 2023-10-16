@@ -46,7 +46,9 @@ namespace Graphick::Renderer::Geometry {
 
       void push_back(const std::shared_ptr<Segment>& value);
       void insert(const std::shared_ptr<Segment>& value, int index);
+      void pop_back();
       void erase(int index);
+      void clear();
     private:
       std::vector<std::shared_ptr<Segment>> m_value;
       Path* m_path;
@@ -98,6 +100,7 @@ namespace Graphick::Renderer::Geometry {
 
     void close();
     void reverse(bool reversed = true);
+    void remove(uuid id);
     std::optional<std::weak_ptr<ControlPoint>> split(Segment& segment, float t);
 
     Math::rect bounding_rect() const;

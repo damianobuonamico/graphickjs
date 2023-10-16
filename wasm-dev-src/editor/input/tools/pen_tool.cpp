@@ -272,6 +272,7 @@ namespace Graphick::Editor::Input {
     m_mode = Mode::Angle;
   }
 
+  // TODO: fix creating bezier on linear segment or empty path
   void PenTool::on_start_pointer_down() {
     console::log("PenTool::start");
 
@@ -279,10 +280,12 @@ namespace Graphick::Editor::Input {
 
     Editor::scene().selection.select_vertex(m_vertex->id, m_element);
 
-    if (m_vertex->id == m_path->segments().front().p0_id()) {
-      m_path->reverse();
-    } else {
-      m_path->reverse(false);
+    if (!m_path->segments().empty()) {
+      if (m_vertex->id == m_path->segments().front().p0_id()) {
+        m_path->reverse();
+      } else {
+        m_path->reverse(false);
+      }
     }
 
     m_mode = Mode::Start;
@@ -488,7 +491,14 @@ namespace Graphick::Editor::Input {
 
     if (InputManager::keys.alt || Math::is_almost_equal(p1_ptr->get(), m_vertex->get())) return;
 
-    if (path.reversed()) {
+
+    if (path.empty()) {
+      if (!path.in_handle_ptr().has_value()) {
+        path.create_in_handle(InputManager::pointer.scene.origin);
+      }
+
+      p2_ptr = path.in_handle_ptr().value().get();
+    } else if (path.reversed()) {
       Renderer::Geometry::Segment& segment = path.segments().front();
 
       if (!segment.has_p1()) {
@@ -543,7 +553,11 @@ namespace Graphick::Editor::Input {
     set_pen_element(0);
   }
 
-  void PenTool::on_sub_pointer_up() {}
+  void PenTool::on_sub_pointer_up() {
+    if (!m_vertex || !m_path || Math::squared_length(InputManager::pointer.client.delta) > 10.0f) return;
+
+    m_path->remove(m_vertex->id);
+  }
 
   void PenTool::on_add_pointer_up() {
     if (!m_path || !m_vertex) return;
