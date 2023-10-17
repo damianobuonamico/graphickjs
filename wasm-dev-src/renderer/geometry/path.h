@@ -43,6 +43,8 @@ namespace Graphick::Renderer::Geometry {
       inline Segment& back() { return *m_value.back(); }
       inline const Segment& front() const { return *m_value.front(); }
       inline const Segment& back() const { return *m_value.back(); }
+      inline const Segment& at(size_t index) const { return *m_value.at(index); }
+      inline const std::shared_ptr<Segment>& at_ptr(size_t index) const { return m_value.at(index); }
 
       void push_back(const std::shared_ptr<Segment>& value);
       void insert(const std::shared_ptr<Segment>& value, int index);

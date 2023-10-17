@@ -17,6 +17,7 @@ namespace Graphick::Renderer::Geometry {
 
 namespace Graphick::History {
   class InsertInRegistryCommand;
+  class EraseFromRegistryCommand;
 }
 
 namespace Graphick::Editor {
@@ -44,6 +45,7 @@ namespace Graphick::Editor {
     Entity create_entity(const std::string& tag = "");
     Entity create_entity(const uuid id, const std::string& tag = "");
     void delete_entity(Entity entity);
+    void delete_entity(uuid id);
 
     template <typename... C>
     inline auto get_all_entities_with() { return m_registry.view<C...>(); }
@@ -67,6 +69,7 @@ namespace Graphick::Editor {
     friend class Editor;
     friend class Entity;
     friend class History::InsertInRegistryCommand;
+    friend class History::EraseFromRegistryCommand;
   };
 
 }

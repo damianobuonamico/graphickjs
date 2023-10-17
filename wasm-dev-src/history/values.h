@@ -141,6 +141,11 @@ namespace Graphick::History {
     inline const T& back() const { return m_value.back(); }
 
     void push_back(const T& value);
+    void insert(const T& value, int index);
+    void pop_back();
+    void erase(const T& value);
+    void erase(int index);
+    void clear();
   private:
     std::vector<T> m_value;
   };

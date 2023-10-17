@@ -58,7 +58,7 @@ namespace Graphick::History {
       }
 
       if (!m_pen) return;
-      
+
       Editor::Input::PenTool* pen = m_scene->tool_state.pen();
       if (!pen) return;
 
@@ -79,6 +79,86 @@ namespace Graphick::History {
       if (command->type != Type::InsertInRegistry) return false;
 
       InsertInRegistryCommand* casted_command = static_cast<InsertInRegistryCommand*>(command.get());
+
+      if (&casted_command->m_scene->m_registry != &this->m_scene->m_registry || casted_command->m_entities != this->m_entities || casted_command->m_should_destroy != this->m_should_destroy) return false;
+      casted_command->m_ids.insert(casted_command->m_ids.end(), m_ids.begin(), m_ids.end());
+
+      return true;
+    }
+
+    inline virtual uintptr_t pointer() override {
+      return reinterpret_cast<uintptr_t>(&m_scene->m_registry);
+    }
+  private:
+    Editor::Scene* m_scene;
+    std::unordered_map<uuid, entt::entity>* m_entities;
+    std::vector<uuid> m_ids;
+
+    bool m_should_destroy = false;
+    bool m_pen = false;
+  };
+
+  class EraseFromRegistryCommand : public Command {
+  public:
+    EraseFromRegistryCommand(Editor::Scene* scene, std::unordered_map<uuid, entt::entity>* entities, uuid id) :
+      Command(Type::EraseFromRegistry),
+      m_scene(scene), m_entities(entities), m_ids({ id })
+    {
+      Editor::Input::PenTool* pen = scene->tool_state.pen();
+      if (!pen) return;
+
+      m_pen = pen->pen_element() == id;
+    }
+
+    ~EraseFromRegistryCommand() override {
+      if (m_should_destroy) {
+        for (uuid id : m_ids) {
+          auto it = m_entities->find(id);
+          if (it == m_entities->end()) continue;
+
+          entt::entity entity = it->second;
+
+          m_scene->selection.deselect(id);
+          m_scene->m_registry.destroy(entity);
+          m_entities->erase(it);
+        }
+
+        console::log("Destroyed entities", m_ids.size());
+      }
+
+      Command::~Command();
+    }
+
+    inline virtual void execute() override {
+      m_should_destroy = true;
+
+      for (uuid id : m_ids) {
+        m_scene->selection.deselect(id);
+      }
+
+      m_scene->tool_state.reset_tool();
+    }
+
+    inline virtual void undo() override {
+      m_should_destroy = false;
+
+      m_scene->selection.clear();
+      for (uuid id : m_ids) {
+        m_scene->selection.select(id);
+      }
+
+      if (!m_pen) return;
+
+      Editor::Input::PenTool* pen = m_scene->tool_state.pen();
+      if (!pen) return;
+
+      pen->set_pen_element(m_ids.back());
+    }
+
+    virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      if (command->type != Type::EraseFromRegistry) return false;
+
+      EraseFromRegistryCommand* casted_command = static_cast<EraseFromRegistryCommand*>(command.get());
 
       if (&casted_command->m_scene->m_registry != &this->m_scene->m_registry || casted_command->m_entities != this->m_entities || casted_command->m_should_destroy != this->m_should_destroy) return false;
       casted_command->m_ids.insert(casted_command->m_ids.end(), m_ids.begin(), m_ids.end());
@@ -128,17 +208,20 @@ namespace Graphick::Editor {
     m_entities[id] = entity;
     m_order.push_back(entity);
 
-    // TODO: reset pen tool state on undo
     History::CommandHistory::add(std::make_unique<History::InsertInRegistryCommand>(this, &m_entities, id));
 
     return entity;
   }
 
   void Scene::delete_entity(Entity entity) {
-    // TODO: implement deletion and z-ordering
-    // m_order.erase(std::remove(m_order.begin(), m_order.end(), entity), m_order.end());
-    // m_entities.erase(entity.id());
-    // m_registry.destroy(entity);
+    // TODO: implement z-ordering
+    History::CommandHistory::add(std::make_unique<History::EraseFromRegistryCommand>(this, &m_entities, entity.id()));
+    m_order.erase((entt::entity)entity);
+  }
+
+  void Scene::delete_entity(uuid id) {
+    History::CommandHistory::add(std::make_unique<History::EraseFromRegistryCommand>(this, &m_entities, id));
+    m_order.erase((entt::entity)get_entity(id));
   }
 
   bool Scene::has_entity(const uuid id) const {

@@ -1074,7 +1074,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::SegmentsVector::pop_back() {
-    erase(m_value.size() - 1);
+    erase((int)m_value.size() - 1);
   }
 
   void Path::SegmentsVector::erase(int index) {

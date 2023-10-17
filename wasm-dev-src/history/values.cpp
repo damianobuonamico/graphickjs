@@ -83,6 +83,37 @@ namespace Graphick::History {
     CommandHistory::add(std::make_unique<InsertInVectorCommand<T>>(&m_value, value));
   }
 
+  template<typename T>
+  void VectorValue<T>::insert(const T& value, int index) {
+    if (m_value.size() < index || index < 0) return;
+    History::CommandHistory::add(std::make_unique<History::InsertInVectorCommand<T>>(&m_value, value, index));
+  }
+
+  template<typename T>
+  void VectorValue<T>::pop_back() {
+    erase((int)m_value.size() - 1);
+  }
+
+  template<typename T>
+  void VectorValue<T>::erase(const T& value) {
+    History::CommandHistory::add(std::make_unique<History::EraseFromVectorCommand<T>>(&m_value, value));
+  }
+
+  template<typename T>
+  void VectorValue<T>::erase(int index) {
+    if (m_value.size() <= index || index < 0) return;
+    History::CommandHistory::add(std::make_unique<History::EraseFromVectorCommand<T>>(&m_value, m_value.at(index), index));
+  }
+
+  template<typename T>
+  void VectorValue<T>::clear() {
+    if (m_value.empty()) return;
+
+    for (int i = (int)m_value.size() - 1; i >= 0; i--) {
+      History::CommandHistory::add(std::make_unique<History::EraseFromVectorCommand<T>>(&m_value, m_value.at(i), i));
+    }
+  }
+
 }
 
 namespace entt {
