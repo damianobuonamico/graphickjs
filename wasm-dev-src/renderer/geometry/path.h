@@ -102,7 +102,7 @@ namespace Graphick::Renderer::Geometry {
 
     void close();
     void reverse(bool reversed = true);
-    void remove(uuid id);
+    void remove(const uuid id, bool fit_shape);
     std::optional<std::weak_ptr<ControlPoint>> split(Segment& segment, float t);
 
     Math::rect bounding_rect() const;

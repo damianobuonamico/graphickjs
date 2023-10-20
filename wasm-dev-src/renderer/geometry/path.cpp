@@ -3,6 +3,7 @@
 #include "../../math/math.h"
 #include "../../math/mat2.h"
 #include "../../math/vector.h"
+#include "../../math/algorithms/fit.h"
 
 #include "../../editor/editor.h"
 
@@ -679,15 +680,15 @@ namespace Graphick::Renderer::Geometry {
     }
   }
 
-  void Path::remove(uuid id) {
+  void Path::remove(const uuid id, bool fit_shape) {
     if (m_segments.empty()) return;
-
-    std::shared_ptr<ControlPoint> p = nullptr;
-    std::optional<vec2> in_handle = std::nullopt;
-    std::optional<vec2> out_handle = std::nullopt;
 
     // TODO: implement object/vertex deletion
     if (m_segments.size() == 1 || (m_closed && m_segments.size() == 2)) {
+      std::shared_ptr<ControlPoint> p = nullptr;
+      std::optional<vec2> in_handle = std::nullopt;
+      std::optional<vec2> out_handle = std::nullopt;
+
       if (m_segments.front().p0_id() == id) {
         p = m_segments.front().m_p3;
 
@@ -744,81 +745,78 @@ namespace Graphick::Renderer::Geometry {
 
     int index = 0;
 
-    for (auto& segment : m_segments) {
-      if (segment->p0_id() == id) {
-        break;
-      }
-
-      index++;
+    for (; index < m_segments.size(); index++) {
+      if (m_segments.at(index).p0_id() == id) break;
     }
 
+    int first_segment_index = 0;
+    int second_segment_index = 0;
+
     if (m_closed && (index == 0 || index == m_segments.size())) {
-      std::shared_ptr<ControlPoint> p0 = m_segments.back().m_p0;
-      std::optional<vec2> p1 = std::nullopt;
-      std::optional<vec2> p2 = std::nullopt;
-      std::shared_ptr<ControlPoint> p3 = m_segments.front().m_p3;
-
-      if (m_segments.back().has_p1()) {
-        p1 = m_segments.back().p1();
-      }
-      if (m_segments.front().has_p2()) {
-        p2 = m_segments.front().p2();
-      }
-
-      m_segments.erase(0);
-      m_segments.pop_back();
-
-      if (p1.has_value() && p2.has_value()) {
-        m_segments.insert(std::make_shared<Segment>(p0, p1.value(), p2.value(), p3), 0);
-      } else if (p1.has_value()) {
-        m_segments.insert(std::make_shared<Segment>(p0, p1.value(), p3, false, true), 0);
-      } else if (p2.has_value()) {
-        m_segments.insert(std::make_shared<Segment>(p0, p2.value(), p3, false, false), 0);
-      } else {
-        m_segments.insert(std::make_shared<Segment>(p0, p3), 0);
-      }
+      first_segment_index = (int)m_segments.size() - 1;
+      second_segment_index = 0;
     } else if (index == 0) {
-      if (m_segments[index].has_p2()) {
-        create_in_handle(m_segments[index].p2());
+      if (m_segments.front().has_p2()) {
+        create_in_handle(m_segments.front().p2());
       } else {
         clear_in_handle();
       }
 
       m_segments.erase(index);
-    } else if (index == m_segments.size()) {
-      if (m_segments[index].has_p1()) {
-        create_out_handle(m_segments[index].p1());
+
+      return;
+    } else if (index >= m_segments.size()) {
+      if (m_segments.back().has_p1()) {
+        create_out_handle(m_segments.back().p1());
       } else {
         clear_out_handle();
       }
 
-      m_segments.erase(index);
+      m_segments.pop_back();
+
+      return;
     } else {
-      std::shared_ptr<ControlPoint> p0 = m_segments[index - 1].m_p0;
-      std::optional<vec2> p1 = std::nullopt;
-      std::optional<vec2> p2 = std::nullopt;
-      std::shared_ptr<ControlPoint> p3 = m_segments[index].m_p3;
-
-      if (m_segments[index - 1].has_p1()) {
-        p1 = m_segments[index - 1].p1();
-      }
-      if (m_segments[index].has_p2()) {
-        p2 = m_segments[index].p2();
-      }
-
-      m_segments.erase(index);
-      m_segments.erase(index - 1);
-
-      if (p1.has_value() && p2.has_value()) {
-        m_segments.insert(std::make_shared<Segment>(p0, p1.value(), p2.value(), p3), index - 1);
-      } else if (p1.has_value()) {
-        m_segments.insert(std::make_shared<Segment>(p0, p1.value(), p3, false, true), index - 1);
-      } else if (p2.has_value()) {
-        m_segments.insert(std::make_shared<Segment>(p0, p2.value(), p3, false, false), index - 1);
-      } else {
-        m_segments.insert(std::make_shared<Segment>(p0, p3), index - 1);
-      }
+      first_segment_index = index - 1;
+      second_segment_index = index;
     }
+
+    Segment& first_segment = m_segments[first_segment_index];
+    Segment& second_segment = m_segments[second_segment_index];
+
+    std::shared_ptr<Segment> new_segment = nullptr;
+
+    if (fit_shape) {
+      const int n_points = 25;
+      std::vector<vec2> points(n_points * 2 + 1);
+
+      for (int i = 0; i < n_points; i++) {
+        float t = (float)i / (float)n_points;
+
+        points[i] = first_segment.get(t);
+        points[n_points + i] = second_segment.get(t);
+      }
+
+      points.back() = second_segment.get(1.0f);
+
+      auto cubic = Math::Algorithms::fit_points_to_cubic(points, 0.01f);
+
+      new_segment = std::make_shared<Segment>(first_segment.m_p0, cubic.p1, cubic.p2, second_segment.m_p3);
+    } else {
+      new_segment = std::make_shared<Segment>(
+        first_segment.m_p0,
+        first_segment.has_p1() ? std::optional{ first_segment.p1() } : std::nullopt,
+        second_segment.has_p2() ? std::optional{ second_segment.p2() } : std::nullopt,
+        second_segment.m_p3
+      );
+    }
+
+    int min_index = std::min(first_segment_index, second_segment_index);
+    int max_index = std::max(first_segment_index, second_segment_index);
+
+    m_segments.erase(max_index);
+    m_segments.erase(min_index);
+
+    m_segments.insert(new_segment, min_index);
   }
 
   std::optional<std::weak_ptr<ControlPoint>> Path::split(Segment& segment, float t) {

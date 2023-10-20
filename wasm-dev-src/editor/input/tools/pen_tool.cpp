@@ -207,8 +207,7 @@ namespace Graphick::Editor::Input {
       set_pen_element(0);
     } else if (m_mode == Mode::Sub) {
       if (m_vertex && Math::squared_length(InputManager::pointer.scene.delta) < 10.0f / Editor::scene().viewport.zoom()) {
-        // TODO: keep shape if shift key is down 
-        m_path->remove(m_vertex->id);
+        m_path->remove(m_vertex->id, InputManager::keys.shift);
       }
 
       return;
