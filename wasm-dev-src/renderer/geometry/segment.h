@@ -45,6 +45,8 @@ namespace Graphick::Renderer::Geometry {
     Segment(ControlPointVertex p0, vec2 p, ControlPointVertex p3, bool is_quadratic = true, bool is_p1 = true);
     Segment(ControlPointVertex p0, vec2 p1, vec2 p2, ControlPointVertex p3);
 
+    Segment(ControlPointVertex p0, std::optional<vec2> p1, std::optional<vec2> p2, ControlPointVertex p3);
+
     Segment(const Segment& other);
     Segment(Segment&& other) noexcept;
 
@@ -93,6 +95,8 @@ namespace Graphick::Renderer::Geometry {
     void remove_p2();
 
     bool rehydrate_cache() const;
+  public:
+    static std::shared_ptr<Segment> reverse(const Segment& segment);
   private:
     void recalculate_kind();
 

@@ -154,6 +154,18 @@ namespace Graphick::Renderer::Geometry {
     m_p3->set_relative_handle(m_p2);
   }
 
+  Segment::Segment(ControlPointVertex p0, std::optional<vec2> p1, std::optional<vec2> p2, ControlPointVertex p3)
+    : m_kind(Kind::Cubic),
+    m_p0(p0),
+    m_p1(p1.has_value() && p1.value() != p0->get() ? std::make_shared<History::Vec2Value>(p1.value()) : nullptr),
+    m_p2(p2.has_value() && p2.value() != p3->get() ? std::make_shared<History::Vec2Value>(p2.value()) : nullptr),
+    m_p3(p3)
+  {
+    if (!m_p1 && !m_p2) {
+      m_kind = Kind::Linear;
+    }
+  }
+
   Segment::Segment(const Segment& other) :
     m_kind(other.m_kind),
     m_p0(other.m_p0),
@@ -452,6 +464,18 @@ namespace Graphick::Renderer::Geometry {
     m_bounding_rect_cache.reset();
 
     return true;
+  }
+
+  std::shared_ptr<Segment> Segment::reverse(const Segment& segment) {
+    if (segment.is_linear()) {
+      return std::make_shared<Renderer::Geometry::Segment>(segment.p3_ptr().lock(), segment.p0_ptr().lock());
+    } else if (segment.has_p1() && segment.has_p2()) {
+      return std::make_shared<Renderer::Geometry::Segment>(segment.p3_ptr().lock(), segment.p2(), segment.p1(), segment.p0_ptr().lock());
+    } else if (segment.has_p1()) {
+      return std::make_shared<Renderer::Geometry::Segment>(segment.p3_ptr().lock(), segment.p1(), segment.p0_ptr().lock(), false, false);
+    }
+
+    return std::make_shared<Renderer::Geometry::Segment>(segment.p3_ptr().lock(), segment.p2(), segment.p0_ptr().lock(), false, true);
   }
 
   vec2 Segment::linear_get(const float t) const {

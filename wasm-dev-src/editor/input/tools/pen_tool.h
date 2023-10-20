@@ -36,22 +36,6 @@ namespace Graphick::Editor::Input {
     void on_add_pointer_down();
     void on_angle_pointer_down();
     void on_start_pointer_down();
-
-    void on_new_pointer_move();
-    void on_join_pointer_move();
-    void on_close_pointer_move();
-    void on_sub_pointer_move();
-    void on_add_pointer_move();
-    void on_angle_pointer_move();
-    void on_start_pointer_move();
-
-    void on_new_pointer_up();
-    void on_join_pointer_up();
-    void on_close_pointer_up();
-    void on_sub_pointer_up();
-    void on_add_pointer_up();
-    void on_angle_pointer_up();
-    void on_start_pointer_up();
   private:
     enum class Mode {
       None = 0,
@@ -65,13 +49,12 @@ namespace Graphick::Editor::Input {
     };
   private:
     Mode m_mode = Mode::New;
-    // TODO: use equivalent of std::nullopt
-    uuid m_element = 0;
+    uuid m_element = uuid::null;
 
     Renderer::Geometry::ControlPoint* m_vertex = nullptr;
     Renderer::Geometry::Path* m_path = nullptr;
 
-    int m_add_direction = 0;
+    int m_direction = 0;
   private:
     friend class ToolState;
   };

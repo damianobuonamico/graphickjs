@@ -322,7 +322,20 @@ namespace Graphick::Renderer::Geometry {
 
   Path::RelativeHandles Path::relative_handles(const uuid id) {
     RelativeHandles handles;
+
+    if (vacant()) return handles;
+
+    auto in_handle = in_handle_ptr();
+    auto out_handle = out_handle_ptr();
+
     size_t i = 0;
+
+    if (m_segments.empty()) {
+      if (in_handle) handles.in_handle = in_handle->get();
+      if (out_handle) handles.out_handle = out_handle->get();
+
+      return handles;
+    }
 
     for (auto& segment : m_segments) {
       if (segment->p0_id() == id) {
@@ -336,23 +349,34 @@ namespace Graphick::Renderer::Geometry {
     }
 
     if (i == 0) {
-      auto in_handle = in_handle_ptr();
-      if (in_handle.has_value()) {
-        handles.in_handle = in_handle.value().get();
+      if (m_closed) {
+        handles.in_segment = &m_segments.back();
+        if (handles.in_segment->has_p2()) {
+          handles.in_handle = m_segments.back().m_p2.get();
+        }
+      } else if (in_handle) {
+        handles.in_handle = in_handle->get();
       }
     } else if (i >= m_segments.size()) {
       if (m_segments.back().p3_id() == id) {
         handles.in_segment = &m_segments.back();
         if (m_segments.back().has_p2()) handles.in_handle = m_segments.back().m_p2.get();
 
-        auto out_handle = out_handle_ptr();
-        if (out_handle.has_value()) {
-          handles.out_handle = out_handle.value().get();
+        if (m_closed) {
+          handles.out_segment = &m_segments.front();
+          if (handles.out_segment->has_p1()) handles.out_handle = handles.out_segment->m_p1.get();
+        } else if (out_handle) {
+          handles.out_handle = out_handle->get();
         }
       }
     } else {
       handles.in_segment = &m_segments[i - 1];
       if (handles.in_segment->has_p2()) handles.in_handle = handles.in_segment->m_p2.get();
+    }
+
+    if (m_reversed) {
+      std::swap(handles.in_segment, handles.out_segment);
+      std::swap(handles.in_handle, handles.out_handle);
     }
 
     return handles;

@@ -7,6 +7,8 @@ namespace Graphick::Utils {
 
   class uuid {
   public:
+    static const uuid null;
+  public:
     uuid();
     uuid(uint64_t uuid);
     uuid(const uuid& other);

@@ -110,6 +110,8 @@ namespace Graphick::Renderer::Geometry {
   void ControlPoint::deep_apply() {
     m_value.apply();
 
+    
+
     for (auto& handle : m_relative_handles) {
       if (auto handle_ptr = handle.lock()) {
         handle_ptr->apply();
