@@ -5,6 +5,7 @@
 #include "../../math/rect.h"
 
 #include <vector>
+#include <memory>
 #include <unordered_set>
 #include <optional>
 

@@ -50,9 +50,10 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Calculates the value of the B-spline basis function of degree 0 at the given parameter value.
+   * @brief Calculates the value of the B-spline basis function of degree 0 at the given parameter value.
    *
    * @param u The parameter value.
+   *
    * @return The value of the B-spline basis function of degree 0 at the given parameter value.
    */
   static float B0(float u) {
@@ -61,8 +62,10 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Calculates the first basis function for the cubic B-spline curve.
+   * @brief Calculates the first basis function for the cubic B-spline curve.
+   *
    * @param u The parameter value.
+   *
    * @return The value of the first basis function at the given parameter value.
    */
   static float B1(float u) {
@@ -71,7 +74,7 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Calculates the second basis function for a cubic B-spline.
+   * @brief Calculates the second basis function for a cubic B-spline.
    *
    * @param u The parameter value to evaluate the basis function at.
    * @return The value of the second basis function at the given parameter value.
@@ -82,9 +85,10 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Calculates the cubic B-spline basis function of degree 3 at the given parameter value.
+   * @brief Calculates the cubic B-spline basis function of degree 3 at the given parameter value.
    *
    * @param u The parameter value.
+   *
    * @return The value of the cubic B-spline basis function at the given parameter value.
    */
   static float B3(float u) {
@@ -92,7 +96,7 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Use least-squares method to find CubicBezier control points for region.
+   * @brief Use least-squares method to find CubicBezier control points for region.
    *
    * @param points The set of control points.
    * @param first The index of the first control point in the set.
@@ -193,10 +197,12 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Calculates the value of the B-spline basis function of degree `degree` and index `i` at parameter value `t`.
+   * @brief Calculates the value of the B-spline basis function of degree `degree` and index `i` at parameter value `t`.
+   *
    * @param degree The degree of the B-spline basis function.
    * @param V An array of control points.
    * @param t The parameter value at which to evaluate the basis function.
+   *
    * @return The value of the B-spline basis function at parameter value `t`.
    */
   static vec2 BII(int degree, const vec2* V, float t) {
@@ -225,11 +231,12 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Computes the root of a cubic bezier curve using the Newton-Raphson method.
+   * @brief Computes the root of a cubic bezier curve using the Newton-Raphson method.
    *
    * @param Q The cubic bezier curve.
    * @param P The point to find the root for.
    * @param u The initial guess for the root.
+   *
    * @return The root of the cubic bezier curve.
    */
   static float newton_raphson_root_find(const CubicBezier& Q, const vec2& P, const float u) {
@@ -273,12 +280,14 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Tries to find a better parameterization for a given set of points.
+   * @brief Tries to find a better parameterization for a given set of points.
+   *
    * @param points The set of points to match the curve to.
    * @param first The index of the first point in the section.
    * @param last The index of the last point in the section.
    * @param u The original parameterization.
    * @param bez_curve The cubic Bezier curve to reparameterize.
+   *
    * @return A vector of new parameter values for the section.
    */
   static std::vector<float> reparameterize(
@@ -295,10 +304,11 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Computes the left tangent of a point on a curve defined by a vector of points.
+   * @brief Computes the left tangent of a point on a curve defined by a vector of points.
    *
    * @param points A vector of points defining the curve.
    * @param end The index of the point to compute the left tangent for.
+   *
    * @return A vec2 representing the left tangent of the specified point.
    */
   static vec2 compute_left_tangent(const std::vector<vec2>& points, size_t end) {
@@ -311,7 +321,7 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Computes the right tangent of a point in a vector of points.
+   * @brief Computes the right tangent of a point in a vector of points.
    *
    * @param points The vector of points.
    * @param end The index of the point to compute the right tangent for.
@@ -327,10 +337,11 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Computes the center tangent of a set of points around a given center index.
+   * @brief Computes the center tangent of a set of points around a given center index.
    *
    * @param points The vector of points to compute the center tangent for.
    * @param center The index of the center point to compute the tangent around.
+   *
    * @return The center tangent as a vec2.
    */
   static vec2 compute_center_tangent(const std::vector<vec2>& points, size_t center) {
@@ -346,7 +357,7 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Computes the chord length parameterization for a given set of points.
+   * @brief Computes the chord length parameterization for a given set of points.
    *
    * @param points The vector of 2D points to parameterize.
    * @param first The index of the first point to parameterize.
@@ -371,7 +382,7 @@ namespace Graphick::Math::Algorithms {
   }
 
   /**
-   * Computes the maximum error (squared distance) between a cubic Bezier curve and a set of path points.
+   * @brief Computes the maximum error (squared distance) between a cubic Bezier curve and a set of path points.
    *
    * @param points The set of path points to compare against the curve.
    * @param first The index of the first point to compare.
@@ -379,6 +390,7 @@ namespace Graphick::Math::Algorithms {
    * @param bez_curve The cubic Bezier curve to compare against the points.
    * @param u The set of parameter values for the curve.
    * @param split_point A pointer to the index of the point where the curve should be split (maximum error index).
+   *
    * @return The maximum error between the curve and the points.
    */
   static float compute_max_error(
@@ -412,20 +424,20 @@ namespace Graphick::Math::Algorithms {
     const std::vector<vec2>& points,
     float error
   ) {
-    uint32_t first = 0;                         /* Index of first control point */
-    uint32_t last = points.size() - 1;          /* Index of last control point */
+    uint32_t first = 0;                       /* Index of first control point */
+    uint32_t last = (int)points.size() - 1;   /* Index of last control point */
 
-    CubicBezier bez_curve;                  /* Control points of fitted CubicBezier curve */
+    CubicBezier bez_curve;                    /* Control points of fitted CubicBezier curve */
 
-    std::vector<float> u;                   /* Parameter values for point */
-    std::vector<float> u_prime;             /* Improved parameter values */
+    std::vector<float> u;                     /* Parameter values for point */
+    std::vector<float> u_prime;               /* Improved parameter values */
 
-    float	max_error;                        /* Maximum fitting error */
-    float	iteration_error = error * 4.0f;   /* Error below which you try iterating */
-    int max_iterations = 4;                 /* Max times to try iterating */
+    float	max_error;                          /* Maximum fitting error */
+    float	iteration_error = error * 4.0f;     /* Error below which you try iterating */
+    int max_iterations = 4;                   /* Max times to try iterating */
 
-    size_t split_point;                     /* Point to split point set at */
-    size_t n_pts = last - first + 1;        /* Number of points in subset */
+    size_t split_point;                       /* Point to split point set at */
+    size_t n_pts = last - first + 1;          /* Number of points in subset */
 
     /* Unit tangent vectors at endpoints */
     vec2 t_hat_1 = compute_left_tangent(points, first);

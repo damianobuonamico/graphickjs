@@ -2,6 +2,7 @@
 
 #include "../../math/math.h"
 #include "../../math/vector.h"
+#include "../../math/scalar.h"
 
 #include "../../utils/defines.h"
 #include "../../utils/console.h"
@@ -48,11 +49,11 @@ namespace Graphick::Editor {
   }
 
   void Viewport::zoom_to(float zoom) {
-    m_zoom = Math::round(std::clamp(zoom, std::max(m_min_zoom, ZOOM_MIN), ZOOM_MAX), 0.0001f);
+    m_zoom = Math::round(Math::clamp(zoom, std::max(m_min_zoom, ZOOM_MIN), ZOOM_MAX), 0.0001f);
   }
 
   void Viewport::zoom_to(float zoom, const vec2 zoom_origin) {
-    float zoom_value = Math::round(std::clamp(zoom, std::max(m_min_zoom, ZOOM_MIN), ZOOM_MAX), 0.0001f);
+    float zoom_value = Math::round(Math::clamp(zoom, std::max(m_min_zoom, ZOOM_MIN), ZOOM_MAX), 0.0001f);
 
     vec2 position_delta = client_to_scene(zoom_origin, zoom_value) - client_to_scene(zoom_origin);
 

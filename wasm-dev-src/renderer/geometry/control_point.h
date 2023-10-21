@@ -2,9 +2,8 @@
 
 #include "../../history/values.h"
 
-#include "../../utils/uuid.h"
-
 #include <vector>
+#include <memory>
 
 namespace Graphick::Renderer::Geometry {
 

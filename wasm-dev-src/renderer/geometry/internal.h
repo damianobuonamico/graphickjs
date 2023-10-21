@@ -4,6 +4,7 @@
 #include "../../math/rect.h"
 
 #include <vector>
+#include <memory>
 
 namespace Graphick::Renderer::Geometry::Internal {
 

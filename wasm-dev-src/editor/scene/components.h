@@ -2,9 +2,9 @@
 
 #include "../../history/values.h"
 
-#include "../../utils/uuid.h"
-
 #include "../../renderer/geometry/path.h"
+
+#include "../../math/vec4.h"
 
 namespace Graphick::Editor {
 
@@ -34,6 +34,7 @@ namespace Graphick::Editor {
   };
 
   struct PathComponent {
+    // TODO: make shared_ptr
     Renderer::Geometry::Path path;
 
     PathComponent(const uuid id) : path(id) {}

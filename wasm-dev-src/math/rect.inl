@@ -5,7 +5,7 @@ namespace Graphick::Math {
   /* -- Component accesses -- */
 
   constexpr vec2& rect::operator[](uint8_t i) {
-    assert(i >= 0 && i < 2);
+    // assert(i >= 0 && i < 2);
     switch (i) {
     default:
     case 0:
@@ -16,7 +16,7 @@ namespace Graphick::Math {
   }
 
   constexpr vec2 const& rect::operator[](uint8_t i) const {
-    assert(i >= 0 && i < 2);
+    // assert(i >= 0 && i < 2);
     switch (i) {
     default:
     case 0:

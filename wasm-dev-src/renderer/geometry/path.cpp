@@ -6,6 +6,7 @@
 #include "../../math/algorithms/fit.h"
 
 #include "../../editor/editor.h"
+#include "../../editor/input/tools/pen_tool.h"
 
 #include "../../history/command_history.h"
 #include "../../history/commands.h"

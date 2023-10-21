@@ -6,6 +6,21 @@
 
 #include <vector>
 
+#ifndef FLT_EPSILON
+#define FLT_EPSILON 1.192092896e-07f    /* Smallest such that 1.0f + FLT_EPSILON != 1.0f */
+#endif
+
+#define XY(v) Graphick::Math::vec2{ v.x, v.y }
+#define RG(v) Graphick::Math::vec2{ v.r, v.g }
+#define ST(v) Graphick::Math::vec2{ v.s, v.t }
+
+#define XYZ(v) Graphick::Math::vec3{ v.x, v.y, v.z }
+#define RGB(v) Graphick::Math::vec3{ v.r, v.g, v.b }
+#define STP(v) Graphick::Math::vec3{ v.s, v.t, v.p }
+
+#define IVEC2_TO_VEC2(v) Graphick::Math::vec2{ (float)v.x, (float)v.y }
+#define VEC2_TO_IVEC2(v) Graphick::Math::vec2{ (int)v.x, (int)v.y }
+
 namespace Graphick::Math {
 
   vec2 min(const vec2 v1, const vec2 v2);
@@ -82,9 +97,9 @@ namespace Graphick::Math {
   vec3& abs(const vec3& v, vec3& out);
   vec4& abs(const vec4& v, vec4& out);
 
-  void zero(const vec2& v);
-  void zero(const vec3& v);
-  void zero(const vec4& v);
+  void zero(vec2& v);
+  void zero(vec3& v);
+  void zero(vec4& v);
 
   bool is_zero(const vec2 v);
   bool is_zero(const vec3& v);
@@ -94,13 +109,13 @@ namespace Graphick::Math {
   bool not_zero(const vec3& v);
   bool not_zero(const vec4& v);
 
-  bool is_almost_zero(const vec2 v, const float eps);
-  bool is_almost_zero(const vec3& v, const float eps);
-  bool is_almost_zero(const vec4& v, const float eps);
+  bool is_almost_zero(const vec2 v, const float eps = FLT_EPSILON);
+  bool is_almost_zero(const vec3& v, const float eps = FLT_EPSILON);
+  bool is_almost_zero(const vec4& v, const float eps = FLT_EPSILON);
 
-  bool is_almost_equal(const vec2 v1, const vec2 v2, const float eps);
-  bool is_almost_equal(const vec3& v1, const vec3& v2, const float eps);
-  bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps);
+  bool is_almost_equal(const vec2 v1, const vec2 v2, const float eps = FLT_EPSILON);
+  bool is_almost_equal(const vec3& v1, const vec3& v2, const float eps = FLT_EPSILON);
+  bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps = FLT_EPSILON);
 
   vec2 floor(const vec2 v);
   vec3 floor(const vec3& v);
@@ -129,23 +144,10 @@ namespace Graphick::Math {
   vec2 swap_coordinates(const vec2 v);
   vec2& swap_coordinates(const vec2 v, vec2& out);
 
-  bool collinear(const vec2 v1, const vec2 v2, const vec2 v3, const float eps);
+  bool collinear(const vec2 v1, const vec2 v2, const vec2 v3, const float eps = FLT_EPSILON);
 
   std::string stringify(const vec2 v);
   std::string stringify(const vec3& v);
   std::string stringify(const vec4& v);
 
 }
-
-#define XY(v) Graphick::Math::vec2{ v.x, v.y }
-#define RG(v) Graphick::Math::vec2{ v.r, v.g }
-#define ST(v) Graphick::Math::vec2{ v.s, v.t }
-
-#define XYZ(v) Graphick::Math::vec3{ v.x, v.y, v.z }
-#define RGB(v) Graphick::Math::vec3{ v.r, v.g, v.b }
-#define STP(v) Graphick::Math::vec3{ v.s, v.t, v.p }
-
-#define IVEC2_TO_VEC2(v) Graphick::Math::vec2{ (float)v.x, (float)v.y }
-#define VEC2_TO_IVEC2(v) Graphick::Math::vec2{ (int)v.x, (int)v.y }
-
-#include "vector.inl"

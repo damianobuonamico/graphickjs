@@ -2,7 +2,8 @@
  * @file fit.h
  * @brief Contains functions for fitting cubic Bezier curves to sets of points.
  *
- * The functions use the least-squares method to find the best-fitting curve, which minimizes the sum of the squared distances between the curve and the points.
+ * The functions use the least-squares method to find the best-fitting curve,
+ * which minimizes the sum of the squared distances between the curve and the points.
  */
 
 #pragma once
@@ -14,8 +15,9 @@
 namespace Graphick::Math::Algorithms {
 
   /**
-   * @struct CubicBezier
    * @brief Represents a cubic Bezier curve.
+   *
+   * @struct CubicBezier
    */
   struct CubicBezier {
     vec2 p0;              /* The first control point. */
@@ -39,6 +41,7 @@ namespace Graphick::Math::Algorithms {
    *
    * @param points The points to fit the curve to.
    * @param error The maximum allowed error between the curve and the points.
+   *
    * @return A cubic Bezier curve that approximates the given points.
    */
   CubicBezier fit_points_to_cubic(

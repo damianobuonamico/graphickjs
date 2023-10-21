@@ -1,14 +1,10 @@
 #pragma once
 
 #include "tool.h"
-#include "tools/pan_tool.h"
-#include "tools/zoom_tool.h"
-#include "tools/select_tool.h"
-#include "tools/direct_select_tool.h"
-#include "tools/pen_tool.h"
-#include "tools/pencil_tool.h"
 
 namespace Graphick::Editor::Input {
+
+  class PenTool;
 
   class ToolState {
   public:
@@ -39,14 +35,7 @@ namespace Graphick::Editor::Input {
 
     void recalculate_active();
   private:
-    Tool* m_tools[static_cast<int>(Tool::ToolType::None)] = {
-      new PanTool(),
-      new ZoomTool(),
-      new SelectTool(),
-      new DirectSelectTool(),
-      new PenTool(),
-      new PencilTool(),
-    };
+    Tool* m_tools[static_cast<int>(Tool::ToolType::None)];
 
     Tool::ToolType m_current;
     Tool::ToolType m_active;

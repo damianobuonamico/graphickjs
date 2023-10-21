@@ -3,9 +3,16 @@
 #include "../scene/entity.h"
 #include "../editor.h"
 
+#include "../../renderer/geometry/control_point.h"
+#include "../../renderer/geometry/segment.h"
+
+#include "../../history/values.h"
+
 #include "../../math/math.h"
 
 namespace Graphick::Editor::Input {
+
+  HoverState::~HoverState() {}
 
   std::optional<Entity> HoverState::entity() const {
     if (m_entity == 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;

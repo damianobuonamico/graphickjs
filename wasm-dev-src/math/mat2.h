@@ -2,6 +2,8 @@
 
 #include "vec2.h"
 
+#include <ostream>
+
 namespace Graphick::Math {
 
   struct mat2 {

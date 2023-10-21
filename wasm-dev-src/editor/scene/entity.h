@@ -3,8 +3,7 @@
 #include "scene.h"
 #include "components.h"
 
-#include "../../utils/console.h"
-#include "../../lib/entt/entt.hpp"
+#include "../../utils/assert.h"
 
 namespace Graphick::Editor {
 

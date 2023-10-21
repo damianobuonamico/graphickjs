@@ -1,10 +1,19 @@
+/**
+ * @file vec2.h
+ * @brief This file contains the definition of the vec2 struct.
+ */
+
 #pragma once
 
-#include <stdint.h>
-#include <ostream>
+#include <cstdint>
 
 namespace Graphick::Math {
 
+  /**
+   * @brief A 2D vector struct with x and y components.
+   *
+   * @struct vec2
+   */
   struct vec2 {
     union { float x, r, s; };
     union { float y, g, t; };

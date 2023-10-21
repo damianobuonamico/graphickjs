@@ -3,10 +3,6 @@
 #include "tiler.h"
 #include "gpu/shaders.h"
 
-#include "../math/ivec2.h"
-#include "../math/vec2.h"
-#include "../math/mat4.h"
-
 #include "../utils/uuid.h"
 
 #include "../lib/stb/stb_truetype.h"

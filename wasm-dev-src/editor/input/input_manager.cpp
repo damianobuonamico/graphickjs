@@ -6,6 +6,7 @@
 
 #include "../../math/ivec2.h"
 #include "../../math/math.h"
+#include "../../math/scalar.h"
 
 #include "../../history/command_history.h"
 

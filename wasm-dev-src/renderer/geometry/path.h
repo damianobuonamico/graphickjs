@@ -2,8 +2,6 @@
 
 #include "segment.h"
 
-#include "../../history/values.h"
-
 #include <unordered_set>
 
 namespace Graphick::History {

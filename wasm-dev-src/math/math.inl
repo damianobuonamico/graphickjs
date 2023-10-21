@@ -1,5 +1,7 @@
 #pragma once
 
+#include "scalar.h"
+
 #include "../utils/defines.h"
 
 namespace Graphick::Math {

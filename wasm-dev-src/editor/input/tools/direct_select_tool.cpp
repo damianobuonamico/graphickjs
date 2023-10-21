@@ -9,6 +9,8 @@
 
 #include "../../../utils/console.h"
 
+#include "../../../math/vector.h"
+
 namespace Graphick::Editor::Input {
 
   DirectSelectTool::DirectSelectTool() : Tool(ToolType::DirectSelect, CategoryDirect) {}

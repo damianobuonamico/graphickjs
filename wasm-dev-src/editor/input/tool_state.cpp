@@ -2,6 +2,13 @@
 
 #include "input_manager.h"
 
+#include "tools/pan_tool.h"
+#include "tools/zoom_tool.h"
+#include "tools/select_tool.h"
+#include "tools/direct_select_tool.h"
+#include "tools/pen_tool.h"
+#include "tools/pencil_tool.h"
+
 #include "../../utils/console.h"
 
 #ifdef EMSCRIPTEN
@@ -21,8 +28,16 @@ void update_tool_ui(int type) {}
 
 namespace Graphick::Editor::Input {
 
-  ToolState::ToolState()
-    : m_current(Tool::ToolType::Pen), m_active(m_current), m_last_tool(m_current) {}
+  ToolState::ToolState() :
+    m_current(Tool::ToolType::Pen), m_active(m_current), m_last_tool(m_current),
+    m_tools{
+      new PanTool(),
+      new ZoomTool(),
+      new SelectTool(),
+      new DirectSelectTool(),
+      new PenTool(),
+      new PencilTool()
+    } {}
 
   ToolState::~ToolState() {
     for (auto tool : m_tools) {

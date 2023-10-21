@@ -1,3 +1,8 @@
+/**
+ * @file pen_tool.cpp
+ * @brief Implements the PenTool class.
+ */
+
 #include "pen_tool.h"
 
 #include "../input_manager.h"
@@ -5,17 +10,29 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
+#include "../../../math/vector.h"
+#include "../../../math/scalar.h"
+
 #include "../../../history/command_history.h"
 #include "../../../history/commands.h"
 
 #include "../../../renderer/renderer.h"
+#include "../../../renderer/geometry/internal.h"
 
-#include "../../../utils/console.h"
-
-// TODO: esc to cancel pen and other tools
-// TODO: fix pen for translated elements
+ // TODO: esc to cancel pen and other tools
+ // TODO: fix pen for translated elements
+ // TODO: move pen_pointer_move in common.h and use also in direct_select
 namespace Graphick::Editor::Input {
 
+  /**
+   * @brief Moves a control point of a path using the pen tool.
+   *
+   * @param path The path to modify.
+   * @param vertex The control point to move.
+   * @param keep_in_handle_length Whether to keep the length of the incoming handle when moving the control point.
+   * @param swap_in_out Whether to swap the incoming and outgoing handles when moving the control point.
+   * @param direction A pointer to an integer that will be set to the direction of the move (1 for forward, -1 for backward).
+   */
   static void pen_pointer_move(Renderer::Geometry::Path& path, Renderer::Geometry::ControlPoint& vertex, bool keep_in_handle_length = false, bool swap_in_out = false, int* direction = nullptr) {
     if (InputManager::keys.space) {
       vertex.add_delta(InputManager::pointer.scene.movement);
@@ -235,7 +252,6 @@ namespace Graphick::Editor::Input {
             if (m_path->reversed()) m_path->clear_out_handle();
             else m_path->clear_in_handle();
           }
-          console::log("collapsed in handle");
         } else {
           handles.in_handle->apply();
         }
@@ -250,7 +266,6 @@ namespace Graphick::Editor::Input {
             if (m_path->reversed()) m_path->clear_in_handle();
             else m_path->clear_out_handle();
           }
-          console::log("collapsed out handle");
         } else {
           handles.out_handle->apply();
         }

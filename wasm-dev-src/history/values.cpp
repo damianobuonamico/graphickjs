@@ -3,6 +3,8 @@
 #include "command_history.h"
 #include "commands.h"
 
+#include "../math/vector.h"
+
 namespace Graphick::History {
 
   /* -- BoolValue -- */

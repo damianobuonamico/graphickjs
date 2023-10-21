@@ -1,14 +1,7 @@
 #pragma once
 
-#include "../../math/vec2.h"
-
-#include "keys.h"
 #include "tool.h"
 #include "hover_state.h"
-
-#include "../../math/vec2.h"
-
-#include "../../utils/uuid.h"
 
 namespace Graphick::Editor {
   class Entity;

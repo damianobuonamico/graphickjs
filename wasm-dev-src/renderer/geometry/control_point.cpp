@@ -1,5 +1,7 @@
 #include "control_point.h"
 
+#include "../../math/vector.h"
+
 // TODO: remove relative handles
 namespace Graphick::Renderer::Geometry {
 

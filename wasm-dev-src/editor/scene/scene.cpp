@@ -3,6 +3,7 @@
 #include "entity.h"
 
 #include "../input/input_manager.h"
+#include "../input/tools/pen_tool.h"
 
 #include "../../renderer/renderer.h"
 

@@ -1,14 +1,23 @@
 #pragma once
 
-#include "../../renderer/geometry/control_point.h"
-#include "../../renderer/geometry/segment.h"
+#include "../../math/vec2.h"
 
 #include "../../utils/uuid.h"
 
 #include <optional>
+#include <memory>
 
 namespace Graphick::Editor {
   class Entity;
+}
+
+namespace Graphick::Renderer::Geometry {
+  class Segment;
+  class ControlPoint;
+}
+
+namespace Graphick::History {
+  class Vec2Value;
 }
 
 namespace Graphick::Editor::Input {
@@ -29,7 +38,7 @@ namespace Graphick::Editor::Input {
     HoverState(const HoverState&) = delete;
     HoverState(HoverState&&) = delete;
 
-    ~HoverState() = default;
+    ~HoverState();
 
     inline HoverType type() const { return m_type; }
     inline uuid entity_id() const { return m_entity; }
@@ -44,7 +53,7 @@ namespace Graphick::Editor::Input {
   private:
     HoverType m_type = HoverType::None;
 
-    uuid m_entity = 0;
+    uuid m_entity = uuid::null;
     std::optional<std::pair<std::weak_ptr<Renderer::Geometry::Segment>, float>> m_segment = std::nullopt;
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
     std::optional<std::weak_ptr<History::Vec2Value>> m_handle = std::nullopt;
