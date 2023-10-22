@@ -296,18 +296,19 @@ namespace Graphick::Editor {
     Entity entity = create_entity(tag);
 
     entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    entity.add_component<PathComponent>(entity.id());
-    entity.add_component<TransformComponent>();
+    PathComponent& path_component = entity.add_component<PathComponent>(entity.id());
+    entity.add_component<TransformComponent>(&path_component);
 
     return entity;
   }
+
 
   Entity Scene::create_element(Renderer::Geometry::Path& path, const std::string& tag) {
     Entity entity = create_entity(tag);
 
     entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    entity.add_component<PathComponent>(entity.id(), path);
-    entity.add_component<TransformComponent>();
+    PathComponent& path_component = entity.add_component<PathComponent>(entity.id(), path);
+    entity.add_component<TransformComponent>(&path_component);
 
     return entity;
   }
@@ -337,6 +338,8 @@ namespace Graphick::Editor {
       auto& selected = selection.selected();
       auto& temp_selected = selection.temp_selected();
 
+      bool draw_vertices = tool_state.active().is_in_category(Input::Tool::CategoryDirect);
+
       for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
         if (!m_registry.all_of<IDComponent, PathComponent, TransformComponent>(*it)) continue;
 
@@ -361,7 +364,7 @@ namespace Graphick::Editor {
         }
 
         if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
-          Renderer::Renderer::draw_outline(id, path, position);
+          Renderer::Renderer::draw_outline(id, path, position, draw_vertices);
         }
 
         // Math::rect bounding_rect = path.bounding_rect();
@@ -392,7 +395,7 @@ namespace Graphick::Editor {
     {
       OPTICK_EVENT("Render Overlays");
 
-      tool_state.active().render_overlays();
+      tool_state.render_overlays();
     }
 
     Renderer::Renderer::end_frame();

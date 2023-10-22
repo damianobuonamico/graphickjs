@@ -5,6 +5,8 @@
 #include "../../renderer/geometry/path.h"
 
 #include "../../math/vec4.h"
+#include "../../math/rect.h"
+#include "../../math/mat3.h"
 
 namespace Graphick::Editor {
 
@@ -46,6 +48,14 @@ namespace Graphick::Editor {
     History::Vec2Value position = { 0.0f, 0.0f };
     vec2 scale = { 1.0f, 1.0f };
     float rotation = 0.0f;
+
+    TransformComponent(const PathComponent* path_ptr = nullptr);
+
+    rect bounding_rect() const;
+  private:
+    mat3 m_matrix;
+
+    const PathComponent* m_path_ptr;    /* A pointer to the path component of the entity, can be nullptr if the entity is not an element. */
   };
 
   struct FillComponent {

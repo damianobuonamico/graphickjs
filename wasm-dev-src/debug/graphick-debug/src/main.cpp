@@ -111,7 +111,7 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
 
-  // #define TIGER
+#define TIGER
   // #define OBJECTS
 
 #ifdef TIGER

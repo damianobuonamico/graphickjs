@@ -3,9 +3,30 @@
 #include "scene.h"
 #include "entity.h"
 
+#include "../../math/vector.h"
+
+#include "../../utils/console.h"
+
 namespace Graphick::Editor {
 
   Selection::Selection(Scene* scene) : m_scene(scene) {}
+
+  // TODO: optimize selection parsing and rendering
+  rect Selection::bounding_rect() const {
+    GK_TOTAL("Selection::bounding_rect");
+
+    rect selection_rect;
+
+    for (auto& [id, _] : m_selected) {
+      Entity entity = m_scene->get_entity(id);
+      rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
+
+      Math::min(selection_rect.min, entity_rect.min, selection_rect.min);
+      Math::max(selection_rect.max, entity_rect.max, selection_rect.max);
+    }
+
+    return selection_rect;
+  }
 
   bool Selection::has(const uuid id, bool include_temp) const {
     return m_selected.find(id) != m_selected.end() || (include_temp && m_temp_selected.find(id) != m_temp_selected.end());

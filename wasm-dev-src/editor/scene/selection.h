@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../math/rect.h"
+
 #include "../../utils/uuid.h"
 
 #include <unordered_set>
@@ -42,6 +44,8 @@ namespace Graphick::Editor {
     inline bool empty() const { return size() < 1; }
     inline const SelectionEntry& get(const uuid id) const { return m_selected.at(id); }
 
+    rect bounding_rect() const;
+
     bool has(const uuid id, bool include_temp = false) const;
     bool has_vertex(const uuid id, const uuid element_id, bool include_temp = false) const;
 
@@ -58,10 +62,7 @@ namespace Graphick::Editor {
     void sync();
   private:
     std::unordered_map<uuid, SelectionEntry> m_selected;
-    // std::unordered_set<uuid> m_selected_vertices;
-
     std::unordered_map<uuid, SelectionEntry> m_temp_selected;
-    // std::unordered_set<uuid> m_temp_selected_vertices;
 
     Scene* m_scene;
   };

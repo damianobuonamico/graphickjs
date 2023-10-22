@@ -42,7 +42,7 @@ namespace Graphick::Editor::Input {
     };
   public:
     /**
-     * Deleted default constructor, copy constructor, move constructor, and destructor.
+     * @brief Deleted default constructor, copy constructor, move constructor, and destructor.
      */
     Tool() = delete;
     Tool(const Tool&) = delete;

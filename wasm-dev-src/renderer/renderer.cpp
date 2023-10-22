@@ -163,11 +163,11 @@ namespace Graphick::Renderer {
     get()->m_tiler.process_path(path, translation, color, z_index);
   }
 
-  void Renderer::draw_outline(const uuid id, const Geometry::Path& path, const vec2 translation) {
+  void Renderer::draw_outline(const uuid id, const Geometry::Path& path, const vec2 translation, bool draw_vertices) {
     if (path.vacant()) return;
 
     get()->add_line_instances(path, translation);
-    get()->add_vertex_instances(id, path, translation);
+    if (draw_vertices) get()->add_vertex_instances(id, path, translation);
   }
 
   void Renderer::draw_outline(const Geometry::Internal::PathInternal& path, const vec2 translation) {

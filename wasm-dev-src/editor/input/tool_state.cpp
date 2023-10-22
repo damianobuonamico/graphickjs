@@ -9,7 +9,7 @@
 #include "tools/pen_tool.h"
 #include "tools/pencil_tool.h"
 
-#include "../../utils/console.h"
+#include "../../../renderer/renderer.h"
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
@@ -29,7 +29,7 @@ void update_tool_ui(int type) {}
 namespace Graphick::Editor::Input {
 
   ToolState::ToolState() :
-    m_current(Tool::ToolType::Pen), m_active(m_current), m_last_tool(m_current),
+    m_current(Tool::ToolType::Select), m_active(m_current), m_last_tool(m_current),
     m_tools{
       new PanTool(),
       new ZoomTool(),
@@ -133,6 +133,16 @@ namespace Graphick::Editor::Input {
     } else {
       set_active(m_current);
     }
+  }
+
+  void ToolState::render_overlays() const {
+    Tool& tool = active();
+
+    tool.render_overlays();
+
+    if (tool.is_in_category(Tool::CategoryDirect) || !manipulator.update()) return;
+
+    Renderer::Renderer::draw_outline(manipulator.path(), manipulator.position());
   }
 
 }
