@@ -27,9 +27,9 @@ namespace Graphick::Renderer {
     static void begin_frame(const Viewport& viewport);
     static void end_frame();
 
-    static void draw(const Geometry::Path& path, const float z_index, const vec2 translation = { 0.0f, 0.0f }, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
-    static void draw_outline(const uuid id, const Geometry::Path& path, const vec2 translation, bool draw_vertices = false);
-    static void draw_outline(const Geometry::Internal::PathInternal& path, const vec2 translation);
+    static void draw(const Geometry::Path& path, const float z_index, const mat2x3& transform = {}, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
+    static void draw_outline(const uuid id, const Geometry::Path& path, const mat2x3& transform = {}, bool draw_vertices = false);
+    static void draw_outline(const Geometry::Internal::PathInternal& path, const mat2x3& transform = {});
 
     static void debug_rect(const Math::rect rect, const vec4& color = { 0.0f, 0.0f, 0.0f, 0.5f });
     static void debug_text(const std::string& text, const vec2 position, const vec4& color = { 1.0f, 1.0f, 1.0f, 1.0f });
@@ -46,11 +46,11 @@ namespace Graphick::Renderer {
     void init_instanced_renderers();
     void begin_instanced_renderers();
 
-    void add_line_instances(const Geometry::Path& path, const vec2 translation);
-    void add_line_instances(const Geometry::Internal::PathInternal& path, const vec2 translation);
+    void add_line_instances(const Geometry::Path& path, const mat2x3& transform);
+    void add_line_instances(const Geometry::Internal::PathInternal& path, const mat2x3& transform);
     void add_linear_segment_instance(const vec2 p0, const vec2 p3);
     void add_cubic_segment_instance(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
-    void add_vertex_instances(const uuid id, const Geometry::Path& path, const vec2 translation);
+    void add_vertex_instances(const uuid id, const Geometry::Path& path, const mat2x3& transform);
     void add_square_instance(const vec2 position);
     void add_white_square_instance(const vec2 position);
     void add_circle_instance(const vec2 position);

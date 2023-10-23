@@ -308,7 +308,9 @@ namespace Graphick::Editor::Input {
       segment.line_to(InputManager::pointer.scene.position);
     }
 
-    Renderer::Renderer::draw_outline(segment, { 0.0f, 0.0f });
+    {
+      Renderer::Renderer::draw_outline(segment);
+    }
   }
 
   /* -- on_pointer_down -- */

@@ -16,15 +16,14 @@ namespace Graphick::History {
       Batch,
       ChangePrimitive,
       ChangeVec2,
+      ChangeMat2x3,
       InsertInVector,
       EraseFromVector,
       Function,
-      // Implemented in scene.cpp
-      InsertInRegistry,
-      EraseFromRegistry,
-      // Implemented in segment.cpp
-      CreateHandle,
-      RemoveHandle
+      InsertInRegistry,     /* Implemented in scene.cpp */
+      EraseFromRegistry,    /* Implemented in scene.cpp */
+      CreateHandle,         /* Implemented in segment.cpp */
+      RemoveHandle          /* Implemented in segment.cpp */
     };
   public:
     const Type type;
@@ -115,6 +114,40 @@ namespace Graphick::History {
     vec2& m_value;
     vec2 m_new_value;
     vec2 m_old_value;
+  };
+
+  class ChangeMat2x3Command : public Command {
+  public:
+    ChangeMat2x3Command(mat2x3& old_value, const mat2x3& new_value)
+      : Command(Type::ChangeMat2x3), m_value(old_value), m_new_value(new_value), m_old_value({}) {}
+
+    inline virtual void execute() override {
+      m_old_value = m_value;
+      m_value = m_new_value;
+    }
+
+    inline virtual void undo() override {
+      m_value = m_old_value;
+    }
+
+    virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      if (command->type != Type::ChangeMat2x3) return false;
+
+      ChangeMat2x3Command* casted_command = static_cast<ChangeMat2x3Command*>(command.get());
+
+      if (&casted_command->m_value != &this->m_value) return false;
+      casted_command->m_new_value = this->m_new_value;
+
+      return true;
+    }
+
+    inline virtual uintptr_t pointer() override {
+      return reinterpret_cast<uintptr_t>(&m_value);
+    }
+  private:
+    mat2x3& m_value;
+    mat2x3 m_new_value;
+    mat2x3 m_old_value;
   };
 
   template <typename T>

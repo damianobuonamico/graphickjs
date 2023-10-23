@@ -2,6 +2,7 @@
 
 #include "geometry/path.h"
 
+#include "../math/mat2x3.h"
 #include "../math/math.h"
 
 #include "../utils/console.h"
@@ -177,7 +178,7 @@ namespace Graphick::Renderer {
     return clip_to_bottom(points, visible.max.y);
   }
 
-  PathTiler::PathTiler(const Geometry::Path& path, const vec2 translation, const vec4& color, const rect& visible, float zoom, ivec2 position, const std::vector<bool>& culled, const ivec2 tiles_count) :
+  PathTiler::PathTiler(const Geometry::Path& path, const mat2x3& transform, const vec4& color, const rect& visible, float zoom, ivec2 position, const std::vector<bool>& culled, const ivec2 tiles_count) :
     m_zoom(zoom),
     m_position(position),
     m_tile_y_prev(0)
@@ -185,11 +186,15 @@ namespace Graphick::Renderer {
     // OPTICK_EVENT();
 
     // TODO: cache bounding_rects
-    rect rect = path.bounding_rect() + translation;
+    rect rect = path.bounding_rect();
+
+    rect.min = transform * rect.min;
+    rect.max = transform * rect.max;
 
     float intersection_overlap = Math::rect_rect_intersection_area(rect, visible) / rect.area();
     if (intersection_overlap <= 0.0f) return;
 
+    mat2x3 transform_zoom = transform * zoom;
     float zoom_factor = m_zoom / TILE_SIZE;
 
     rect.min = floor(rect.min * zoom_factor) * TILE_SIZE;
@@ -203,13 +208,13 @@ namespace Graphick::Renderer {
 
     const auto& segments = path.segments();
 
-    m_prev = (segments.front().p0() + translation) * m_zoom - rect.min;
+    m_prev = transform_zoom * segments.front().p0() - rect.min;
 
     if (intersection_overlap < 0.7f) {
       std::vector<vec2> points;
       points.reserve(segments.size() + 1);
 
-      vec2 first_point = (segments.front().p0() + translation) * m_zoom/* - rect.min*/;
+      vec2 first_point = transform_zoom * segments.front().p0();
       points.push_back(first_point);
 
       Math::rect vis = visible * zoom;
@@ -218,14 +223,18 @@ namespace Graphick::Renderer {
       vis.max = ceil(vis.max / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 1;
 
       for (const auto& segment : segments) {
-        vec2 p0 = (segment->p0() + translation) * m_zoom;
-        vec2 p3 = (segment->p3() + translation) * m_zoom;
+        vec2 p0 = transform_zoom * segment->p0();
+        vec2 p3 = transform_zoom * segment->p3();
 
         if (segment->is_cubic()) {
-          vec2 p1 = (segment->p1() + translation) * m_zoom;
-          vec2 p2 = (segment->p2() + translation) * m_zoom;
+          vec2 p1 = transform_zoom * segment->p1();
+          vec2 p2 = transform_zoom * segment->p2();
 
-          Math::rect segment_rect = segment->bounding_rect() + translation;
+          Math::rect segment_rect = segment->bounding_rect();
+
+          segment_rect.min = transform * segment_rect.min;
+          segment_rect.max = transform * segment_rect.max;
+
           if (Math::does_rect_intersect_rect(segment_rect, visible)) {
             vec2 a = -1.0f * p0 + 3.0f * p1 - 3.0f * p2 + p3;
             vec2 b = 3.0f * (p0 - 2.0f * p1 + p2);
@@ -249,7 +258,7 @@ namespace Graphick::Renderer {
             points.push_back(p3);
           }
         } else if (segment->is_quadratic()) {
-          vec2 p1 = (segment->p1() + translation) * m_zoom;
+          vec2 p1 = transform_zoom * segment->p1();
 
           float dt = std::sqrtf((4.0f * tolerance) / Math::length(p0 - 2.0f * p1 + p3));
           float t = 0.0f;
@@ -283,16 +292,16 @@ namespace Graphick::Renderer {
       m_offset = tile_coords(min) + m_position;
     } else {
       for (const auto& segment : segments) {
-        vec2 p0 = (segment->p0() + translation) * m_zoom - rect.min;
-        vec2 p3 = (segment->p3() + translation) * m_zoom - rect.min;
+        vec2 p0 = transform_zoom * segment->p0() - rect.min;
+        vec2 p3 = transform_zoom * segment->p3() - rect.min;
 
         if (segment->is_cubic()) {
-          vec2 p1 = (segment->p1() + translation) * m_zoom - rect.min;
-          vec2 p2 = (segment->p2() + translation) * m_zoom - rect.min;
+          vec2 p1 = transform_zoom * segment->p1() - rect.min;
+          vec2 p2 = transform_zoom * segment->p2() - rect.min;
 
           process_cubic_segment(p0, p1, p2, p3);
         } else if (segment->is_quadratic()) {
-          vec2 p1 = (segment->p1() + translation) * m_zoom - rect.min;
+          vec2 p1 = transform_zoom * segment->p1() - rect.min;
 
           process_quadratic_segment(p0, p1, p3);
         } else {
@@ -301,8 +310,8 @@ namespace Graphick::Renderer {
       }
 
       if (!path.closed()) {
-        vec2 p0 = (segments.back().p3() + translation) * m_zoom - rect.min;
-        vec2 p3 = (segments.front().p0() + translation) * m_zoom - rect.min;
+        vec2 p0 = transform_zoom * segments.back().p3() - rect.min;
+        vec2 p3 = transform_zoom * segments.front().p0() - rect.min;
 
         process_linear_segment(p0, p3);
       }
@@ -583,10 +592,10 @@ namespace Graphick::Renderer {
     m_culled_tiles = std::vector<bool>(m_tiles_count.x * m_tiles_count.y, false);
   }
 
-  void Tiler::process_path(const Geometry::Path& path, const vec2 translation, const vec4& color, const float z_index) {
+  void Tiler::process_path(const Geometry::Path& path, const mat2x3& transform, const vec4& color, const float z_index) {
     // OPTICK_EVENT();
 
-    PathTiler tiler(path, translation, color, m_visible, m_zoom, m_position, m_culled_tiles, m_tiles_count);
+    PathTiler tiler(path, transform, color, m_visible, m_zoom, m_position, m_culled_tiles, m_tiles_count);
 
     const std::vector<PathTiler::Span>& spans = tiler.spans();
     const std::unordered_map<int, PathTiler::Mask>& masks = tiler.masks();

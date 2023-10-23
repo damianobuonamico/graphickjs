@@ -353,7 +353,7 @@ namespace Graphick::Renderer::Geometry {
 
     auto a = SEGMENT_CALL(closest_to, position, 8).sq_distance;
 
-    return a <= threshold * threshold;
+    return a <= threshold * threshold / 3.0f;   /* Adjusted threshold for segment hover. */
   }
 
   bool Segment::intersects(const Math::rect& rect) const {

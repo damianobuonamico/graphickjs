@@ -926,32 +926,23 @@ namespace Graphick::Renderer::Geometry {
 
   Math::rect Path::large_bounding_rect() const {
     GK_TOTAL("Path::large_bounding_rect");
-    // Don't cache this one, it's not used often enough and in/out handles do not rehydrate cache.
+    if (m_large_bounding_rect_cache.has_value()) return m_large_bounding_rect_cache.value();
 
-    Math::rect rect{};
+    Math::rect rect = approx_bounding_rect();
 
-    if (m_segments.empty()) {
-      if (m_last_point == nullptr) return { };
+    auto in_handle = in_handle_ptr();
+    auto out_handle = out_handle_ptr();
 
-      vec2 p = m_last_point->get();
-      rect = { p, p };
-    } else {
-      for (const auto& segment : m_segments) {
-        Math::rect segment_rect = segment->approx_bounding_rect();
-
-        min(rect.min, segment_rect.min, rect.min);
-        max(rect.max, segment_rect.max, rect.max);
-      }
+    if (in_handle) {
+      min(rect.min, in_handle.value()->get(), rect.min);
+      max(rect.max, in_handle.value()->get(), rect.max);
+    }
+    if (out_handle) {
+      min(rect.min, out_handle.value()->get(), rect.min);
+      max(rect.max, out_handle.value()->get(), rect.max);
     }
 
-    if (m_in_handle != nullptr) {
-      min(rect.min, m_in_handle->get(), rect.min);
-      max(rect.max, m_in_handle->get(), rect.max);
-    }
-    if (m_out_handle != nullptr) {
-      min(rect.min, m_out_handle->get(), rect.min);
-      max(rect.max, m_out_handle->get(), rect.max);
-    }
+    m_large_bounding_rect_cache = rect;
 
     return rect;
   }
@@ -1084,6 +1075,7 @@ namespace Graphick::Renderer::Geometry {
     if (rehydrate) {
       m_bounding_rect_cache.reset();
       m_approx_bounding_rect_cache.reset();
+      m_large_bounding_rect_cache.reset();
     }
   }
 

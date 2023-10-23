@@ -52,14 +52,14 @@ namespace Graphick::Editor::Input {
     /**
      * @brief Returns the type of the tool.
      *
-     * @return ToolType The type of the tool.
+     * @return The type of the tool.
      */
     inline ToolType type() const { return m_type; }
 
     /**
      * @brief Returns the category of the tool.
      *
-     * @return int The category of the tool.
+     * @return The category of the tool.
      */
     inline int category() const { return m_category; }
 
@@ -68,8 +68,7 @@ namespace Graphick::Editor::Input {
      *
      * @param category The category to check.
      *
-     * @return true If the tool is in the given category.
-     * @return false If the tool is not in the given category.
+     * @return true if the tool is in the given category, false othwerwise.
      */
     inline bool is_in_category(Category category) const { return m_category & category; }
 

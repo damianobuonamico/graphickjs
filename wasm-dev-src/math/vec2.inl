@@ -212,9 +212,17 @@ namespace std {
   template<>
   class numeric_limits<Graphick::Math::vec2> {
   public:
-    static inline Graphick::Math::vec2 min() { return Graphick::Math::vec2{ numeric_limits<float>::min() }; }
-    static inline Graphick::Math::vec2 max() { return Graphick::Math::vec2{ numeric_limits<float>::max() }; }
-    static inline Graphick::Math::vec2 lowest() { return Graphick::Math::vec2{ numeric_limits<float>::lowest() }; }
+    static inline Graphick::Math::vec2 min() {
+      return Graphick::Math::vec2{ numeric_limits<float>::min() };
+    }
+
+    static inline Graphick::Math::vec2 max() {
+      return Graphick::Math::vec2{ numeric_limits<float>::max() };
+    }
+
+    static inline Graphick::Math::vec2 lowest() {
+      return Graphick::Math::vec2{ numeric_limits<float>::lowest() };
+    }
   };
 
 }

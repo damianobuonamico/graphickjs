@@ -237,11 +237,11 @@ namespace Graphick::Editor {
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
         const auto& path = m_registry.get<PathComponent>(*it).path;
-        const vec2 translation = m_registry.get<TransformComponent>(*it).position.get();
+        const vec2 transformed_pos = m_registry.get<TransformComponent>(*it).revert(position);
         const uuid id = m_registry.get<IDComponent>(*it).id;
         // auto pos = transform.Map(position.x, position.y);
         // if (path.is_inside({ (float)pos.X, (float)pos.Y }, deep_search, threshold)) return id;
-        if (path.is_inside(position - translation, deep_search && selection.has(id), threshold)) {
+        if (path.is_inside(transformed_pos, deep_search && selection.has(id), threshold)) {
           return id;
         }
       }
@@ -265,12 +265,13 @@ namespace Graphick::Editor {
 
       const uuid id = std::get<0>(components).id;
       const Renderer::Geometry::Path& path = std::get<1>(components).path;
-      const vec2 position = std::get<2>(components).position.get();
+      const TransformComponent& transform = std::get<2>(components);
+
+      // TODO: optimize double inversion
+      Math::rect selection_rect = { transform.revert(rect.min), transform.revert(rect.max) };
 
       if (deep_search) {
         vertices.clear();
-
-        Math::rect selection_rect = rect - position;
 
         if (Math::is_rect_in_rect(path.bounding_rect(), selection_rect)) {
           entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
@@ -283,7 +284,7 @@ namespace Graphick::Editor {
           entities.insert({ id, Selection::SelectionElementEntry{ vertices } });
         }
       } else {
-        if (path.intersects(rect - position)) {
+        if (path.intersects(selection_rect)) {
           entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
         }
       }
@@ -347,7 +348,7 @@ namespace Graphick::Editor {
 
         const uuid id = std::get<0>(components).id;
         const Renderer::Geometry::Path& path = std::get<1>(components).path;
-        const vec2 position = std::get<2>(components).position.get();
+        const TransformComponent& transform = std::get<2>(components);
 
         if (!has_entity(id)) return;
 
@@ -355,16 +356,19 @@ namespace Graphick::Editor {
           path.rehydrate_cache();
         }
 
-        if (!Math::does_rect_intersect_rect(path.large_bounding_rect() + position, visible_rect)) continue;
+        // TODO: add threshold equal to stroke width
+        if (!Math::does_rect_intersect_rect(transform.large_bounding_rect(), visible_rect)) continue;
+
+        mat2x3 transform_matrix = transform.get();
 
         if (m_registry.all_of<FillComponent>(*it)) {
-          Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, position, m_registry.get<FillComponent>(*it).color);
+          Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, transform_matrix, m_registry.get<FillComponent>(*it).color);
         } else {
-          Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, position);
+          Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, transform_matrix);
         }
 
         if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
-          Renderer::Renderer::draw_outline(id, path, position, draw_vertices);
+          Renderer::Renderer::draw_outline(id, path, transform_matrix, draw_vertices);
         }
 
         // Math::rect bounding_rect = path.bounding_rect();

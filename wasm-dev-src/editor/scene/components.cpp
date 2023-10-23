@@ -12,8 +12,19 @@ namespace Graphick::Editor {
   rect TransformComponent::bounding_rect() const {
     if (!m_path_ptr) return { position.get(), position.get() };
 
-    // TODO: transform rect
-    return m_path_ptr->path.bounding_rect();
+    rect path_rect = m_path_ptr->path.bounding_rect();
+    mat2x3 matrix = get();
+
+    return { matrix * path_rect.min, matrix * path_rect.max };
+  }
+
+  rect TransformComponent::large_bounding_rect() const {
+    if (!m_path_ptr) return { position.get(), position.get() };
+
+    rect path_rect = m_path_ptr->path.large_bounding_rect();
+    mat2x3 matrix = get();
+
+    return { matrix * path_rect.min, matrix * path_rect.max };
   }
 
 }

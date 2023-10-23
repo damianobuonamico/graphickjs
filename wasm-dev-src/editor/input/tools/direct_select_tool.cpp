@@ -123,7 +123,13 @@ namespace Graphick::Editor::Input {
   void DirectSelectTool::render_overlays() const {
     if (!m_selection_rect.active()) return;
 
-    Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.position());
+    vec2 position = m_selection_rect.position();
+    mat2x3 transform;
+
+    transform[0].z = position.x;
+    transform[1].z = position.y;
+
+    Renderer::Renderer::draw_outline(m_selection_rect.path(), transform);
   }
 
   void DirectSelectTool::populate_cache() {
@@ -149,6 +155,7 @@ namespace Graphick::Editor::Input {
           }
         }
       } else if (entity.has_component<TransformComponent>()) {
+        // TODO: fix
         m_cache.push_back(&entity.get_component<TransformComponent>().position);
       }
     }

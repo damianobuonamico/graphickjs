@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../math/vec2.h"
+#include "../math/mat2x3.h"
 
 #include "../utils/uuid.h"
 
@@ -105,6 +106,27 @@ namespace Graphick::History {
   private:
     vec2 m_value;
     vec2 m_delta = { 0.0f, 0.0f };
+  };
+
+  class Mat2x3Value {
+  public:
+    Mat2x3Value() : m_value(1.0f) {};
+    Mat2x3Value(const mat2x3 value) : m_value(value) {};
+    ~Mat2x3Value() = default;
+
+    inline mat2x3 get() const { return m_value + m_delta; };
+    inline mat2x3 delta() const { return m_delta; };
+
+    void set(const mat2x3& value);
+
+    void translate(const vec2 amount);
+    void scale(const vec2 amount);
+    void rotate(const float amount);
+
+    void apply();
+  private:
+    mat2x3 m_value;
+    mat2x3 m_delta = mat2x3{ 0.0f };
   };
 
   template <typename T>

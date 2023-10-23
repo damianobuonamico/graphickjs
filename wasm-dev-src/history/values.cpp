@@ -4,6 +4,7 @@
 #include "commands.h"
 
 #include "../math/vector.h"
+#include "../math/matrix.h"
 
 namespace Graphick::History {
 
@@ -75,6 +76,35 @@ namespace Graphick::History {
   void Vec2Value::apply() {
     if (Math::is_zero(m_delta)) return;
     CommandHistory::add(std::make_unique<ChangeVec2Command>(m_value, get()));
+    Math::zero(m_delta);
+  };
+
+  /* -- Mat2x3Value -- */
+
+  void Mat2x3Value::set(const mat2x3& value) {
+    if (m_value == value) return;
+    CommandHistory::add(std::make_unique<ChangeMat2x3Command>(m_value, value));
+    Math::zero(m_delta);
+  };
+
+  // TODO: maybe reduce memory footprint by storing only the angle / translation / scale / shear delta
+  void Mat2x3Value::translate(const vec2 amount) {
+    if (Math::is_zero(amount)) return;
+
+    m_delta = Math::translate(m_value, amount) - m_value;
+  }
+
+  void Mat2x3Value::scale(const vec2 amount) {
+    if (Math::is_zero(amount)) return;
+  }
+
+  void Mat2x3Value::rotate(const float amount) {
+    if (amount == 0) return;
+  }
+
+  void Mat2x3Value::apply() {
+    if (Math::is_zero(m_delta)) return;
+    CommandHistory::add(std::make_unique<ChangeMat2x3Command>(m_value, get()));
     Math::zero(m_delta);
   };
 

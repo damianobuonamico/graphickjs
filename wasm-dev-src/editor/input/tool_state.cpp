@@ -142,7 +142,13 @@ namespace Graphick::Editor::Input {
 
     if (tool.is_in_category(Tool::CategoryDirect) || !manipulator.update()) return;
 
-    Renderer::Renderer::draw_outline(manipulator.path(), manipulator.position());
+    vec2 position = manipulator.position();
+    mat2x3 transform;
+
+    transform[0].z = position.x;
+    transform[1].z = position.y;
+
+    Renderer::Renderer::draw_outline(manipulator.path(), transform);
   }
 
 }

@@ -53,7 +53,6 @@ namespace Graphick::Math::Algorithms {
    * @brief Calculates the value of the B-spline basis function of degree 0 at the given parameter value.
    *
    * @param u The parameter value.
-   *
    * @return The value of the B-spline basis function of degree 0 at the given parameter value.
    */
   static float B0(float u) {
@@ -65,7 +64,6 @@ namespace Graphick::Math::Algorithms {
    * @brief Calculates the first basis function for the cubic B-spline curve.
    *
    * @param u The parameter value.
-   *
    * @return The value of the first basis function at the given parameter value.
    */
   static float B1(float u) {
@@ -76,7 +74,7 @@ namespace Graphick::Math::Algorithms {
   /**
    * @brief Calculates the second basis function for a cubic B-spline.
    *
-   * @param u The parameter value to evaluate the basis function at.
+   * @param u The parameter value to evaluate the basis function at. 
    * @return The value of the second basis function at the given parameter value.
    */
   static float B2(float u) {
@@ -88,7 +86,6 @@ namespace Graphick::Math::Algorithms {
    * @brief Calculates the cubic B-spline basis function of degree 3 at the given parameter value.
    *
    * @param u The parameter value.
-   *
    * @return The value of the cubic B-spline basis function at the given parameter value.
    */
   static float B3(float u) {
@@ -104,7 +101,6 @@ namespace Graphick::Math::Algorithms {
    * @param u_prime The set of tangent vectors for each control point.
    * @param t_hat_1 The tangent vector at the first control point.
    * @param t_hat_2 The tangent vector at the last control point.
-   *
    * @return A cubic Bezier curve.
    */
   static CubicBezier generate_bezier(
@@ -202,7 +198,6 @@ namespace Graphick::Math::Algorithms {
    * @param degree The degree of the B-spline basis function.
    * @param V An array of control points.
    * @param t The parameter value at which to evaluate the basis function.
-   *
    * @return The value of the B-spline basis function at parameter value `t`.
    */
   static vec2 BII(int degree, const vec2* V, float t) {
@@ -236,7 +231,6 @@ namespace Graphick::Math::Algorithms {
    * @param Q The cubic bezier curve.
    * @param P The point to find the root for.
    * @param u The initial guess for the root.
-   *
    * @return The root of the cubic bezier curve.
    */
   static float newton_raphson_root_find(const CubicBezier& Q, const vec2& P, const float u) {
@@ -287,7 +281,6 @@ namespace Graphick::Math::Algorithms {
    * @param last The index of the last point in the section.
    * @param u The original parameterization.
    * @param bez_curve The cubic Bezier curve to reparameterize.
-   *
    * @return A vector of new parameter values for the section.
    */
   static std::vector<float> reparameterize(
@@ -308,7 +301,6 @@ namespace Graphick::Math::Algorithms {
    *
    * @param points A vector of points defining the curve.
    * @param end The index of the point to compute the left tangent for.
-   *
    * @return A vec2 representing the left tangent of the specified point.
    */
   static vec2 compute_left_tangent(const std::vector<vec2>& points, size_t end) {
@@ -324,7 +316,7 @@ namespace Graphick::Math::Algorithms {
    * @brief Computes the right tangent of a point in a vector of points.
    *
    * @param points The vector of points.
-   * @param end The index of the point to compute the right tangent for.
+   * @param end The index of the point to compute the right tangent for. 
    * @return The right tangent of the specified point.
    */
   static vec2 compute_right_tangent(const std::vector<vec2>& points, size_t end) {
@@ -341,7 +333,6 @@ namespace Graphick::Math::Algorithms {
    *
    * @param points The vector of points to compute the center tangent for.
    * @param center The index of the center point to compute the tangent around.
-   *
    * @return The center tangent as a vec2.
    */
   static vec2 compute_center_tangent(const std::vector<vec2>& points, size_t center) {
@@ -362,7 +353,6 @@ namespace Graphick::Math::Algorithms {
    * @param points The vector of 2D points to parameterize.
    * @param first The index of the first point to parameterize.
    * @param last The index of the last point to parameterize.
-   *
    * @return A vector of floats representing the chord length parameterization.
    */
   static std::vector<float> chord_length_parameterize(const std::vector<vec2>& points, size_t first, size_t last) {
@@ -390,7 +380,6 @@ namespace Graphick::Math::Algorithms {
    * @param bez_curve The cubic Bezier curve to compare against the points.
    * @param u The set of parameter values for the curve.
    * @param split_point A pointer to the index of the point where the curve should be split (maximum error index).
-   *
    * @return The maximum error between the curve and the points.
    */
   static float compute_max_error(

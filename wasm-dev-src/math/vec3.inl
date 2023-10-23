@@ -1,13 +1,17 @@
+/**
+ * @file vec3.inl
+ * @brief This file contains the inline implementation of the vec3 struct.
+ */
+
 #pragma once
 
-#include <assert.h>
+#include <limits>
 
 namespace Graphick::Math {
 
   /* -- Component accesses -- */
 
   constexpr float& vec3::operator[](uint8_t i) {
-    assert(i >= 0 && i < this->length());
     switch (i) {
     default:
     case 0:
@@ -20,7 +24,6 @@ namespace Graphick::Math {
   }
 
   constexpr const float& vec3::operator[](uint8_t i) const {
-    assert(i >= 0 && i < this->length());
     switch (i) {
     default:
     case 0:
@@ -183,15 +186,15 @@ namespace Graphick::Math {
   }
 
   constexpr vec3 operator%(const vec3& v, float scalar) {
-    return vec3(std::fmod(v.x, scalar), std::fmod(v.y, scalar), std::fmod(v.z, scalar));
+    return vec3((float)((int)(v.x) % (int)(scalar)), (float)((int)(v.y) % (int)(scalar)), (float)((int)(v.z) % (int)(scalar)));
   }
 
   constexpr vec3 operator%(float scalar, const vec3& v) {
-    return vec3(std::fmod(scalar, v.x), std::fmod(scalar, v.y), std::fmod(scalar, v.z));
+    return vec3((float)((int)(scalar) % (int)(v.x)), (float)((int)(scalar) % (int)(v.y)), (float)((int)(scalar) % (int)(v.z)));
   }
 
   constexpr vec3 operator%(const vec3& v1, const vec3& v2) {
-    return vec3(std::fmod(v1.x, v2.x), std::fmod(v1.y, v2.y), std::fmod(v1.z, v2.z));
+    return vec3((float)((int)(v1.x) % (int)(v2.x)), (float)((int)(v1.y) % (int)(v2.y)), (float)((int)(v1.z) % (int)(v2.z)));
   }
 
   /* -- Boolean operators -- */
@@ -218,13 +221,25 @@ namespace Graphick::Math {
 
 }
 
-/* -- std -- */
-
 namespace std {
 
-  inline ostream& operator<<(ostream& os, const Graphick::Math::vec3& v) {
-    os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
-    return os;
-  }
+  /* -- numeric_limits -- */
+
+  template<>
+  class numeric_limits<Graphick::Math::vec3> {
+  public:
+    static inline Graphick::Math::vec3 min() {
+      return Graphick::Math::vec3{ numeric_limits<float>::min() };
+    }
+    
+    static inline Graphick::Math::vec3 max() {
+      return Graphick::Math::vec3{ numeric_limits<float>::max() };
+    }
+
+    static inline Graphick::Math::vec3 lowest() {
+      return Graphick::Math::vec3{ numeric_limits<float>::lowest() };
+    }
+  };
 
 }
+

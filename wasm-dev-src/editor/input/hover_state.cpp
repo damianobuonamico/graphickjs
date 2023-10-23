@@ -58,8 +58,7 @@ namespace Graphick::Editor::Input {
     }
 
     const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
-    const vec2 translation = entity.get_component<TransformComponent>().position.get();
-    const vec2 transformed_pos = position - translation;
+    const vec2 transformed_pos = entity.get_component<TransformComponent>().revert(position);
 
     bool deep = deep_search && scene.selection.has(id);
 
@@ -119,7 +118,8 @@ namespace Graphick::Editor::Input {
 
         auto closest = segment->closest_to(transformed_pos);
 
-        if (closest.sq_distance <= threshold * threshold) {
+        /* Adjusted threshold for segment hover. */
+        if (closest.sq_distance <= threshold * threshold / 3.0f) {
           m_type = HoverType::Segment;
           m_segment = std::make_pair(std::weak_ptr<Renderer::Geometry::Segment>(segment), closest.t);
           m_vertex.reset();

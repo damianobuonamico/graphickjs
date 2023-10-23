@@ -52,9 +52,11 @@ namespace Graphick::Editor::Input {
         m_dragging_occurred = true;
         for (auto& [id, _] : Editor::scene().selection.selected()) {
           Entity entity = Editor::scene().get_entity(id);
+          // TODO: all entities should have transform component
           if (!entity.has_component<TransformComponent>()) continue;
 
-          entity.get_component<TransformComponent>().position.set_delta(delta);
+          entity.get_component<TransformComponent>().translate(delta);
+          // entity.get_component<TransformComponent>().position.set_delta(delta);
         }
         //     for (auto& [id, entity] : Editor::scene().selection) {
         //       entity->transform()->translate(delta - entity->transform()->position().delta());
@@ -80,7 +82,7 @@ namespace Graphick::Editor::Input {
         Entity entity = Editor::scene().get_entity(id);
         if (!entity.has_component<TransformComponent>()) continue;
 
-        entity.get_component<TransformComponent>().position.apply();
+        entity.get_component<TransformComponent>().apply();
       }
       // for (auto& [id, entity] : Editor::scene().selection) {
       //   entity->transform()->position().apply();
@@ -100,7 +102,13 @@ namespace Graphick::Editor::Input {
   void SelectTool::render_overlays() const {
     if (!m_selection_rect.active()) return;
 
-    Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.position());
+    vec2 position = m_selection_rect.position();
+    mat2x3 transform;
+
+    transform[0].z = position.x;
+    transform[1].z = position.y;
+
+    Renderer::Renderer::draw_outline(m_selection_rect.path(), transform);
   }
 
 }

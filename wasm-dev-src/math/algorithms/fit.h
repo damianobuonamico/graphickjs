@@ -41,7 +41,6 @@ namespace Graphick::Math::Algorithms {
    *
    * @param points The points to fit the curve to.
    * @param error The maximum allowed error between the curve and the points.
-   *
    * @return A cubic Bezier curve that approximates the given points.
    */
   CubicBezier fit_points_to_cubic(

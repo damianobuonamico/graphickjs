@@ -1,10 +1,19 @@
+/**
+ * @file vec3.h
+ * @brief This file contains the definition of the vec3 struct.
+ */
+
 #pragma once
 
-#include <stdint.h>
-#include <ostream>
+#include <cstdint>
 
 namespace Graphick::Math {
 
+  /**
+   * @brief A 3D vector struct with x, y and z components.
+   *
+   * @struct vec3
+   */
   struct vec3 {
     union { float x, r, s; };
     union { float y, g, t; };

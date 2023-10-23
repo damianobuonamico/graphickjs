@@ -1,19 +1,156 @@
+/**
+ * @file matrix.h
+ * @brief This file contains the definition of the matrix functions.
+ */
+
+
 #pragma once
 
 #include "mat2.h"
 #include "mat3.h"
 #include "mat4.h"
 
+#include "mat2x3.h"
+
 namespace Graphick::Math {
 
+  /**
+   * Sets all elements of the given 2x2 matrix to zero.
+   *
+   * @param m The matrix to be zeroed.
+   */
+  void zero(mat2& m);
+
+  /**
+   * Sets all elements of the given 3x3 matrix to zero.
+   *
+   * @param m The matrix to be zeroed.
+   */
+  void zero(mat3& m);
+
+  /**
+   * Sets all elements of the given 4x4 matrix to zero.
+   *
+   * @param m The matrix to be zeroed.
+   */
+  void zero(mat4& m);
+
+  /**
+   * Sets all elements of the given 2x3 matrix to zero.
+   *
+   * @param m The matrix to be zeroed.
+   */
+  void zero(mat2x3& m);
+
+  /**
+   * Checks if a 2x2 matrix is a zero matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is a zero matrix, false otherwise.
+   */
+  bool is_zero(const mat2& m);
+
+  /**
+   * Checks if a 3x3 matrix is a zero matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is a zero matrix, false otherwise.
+   */
+  bool is_zero(const mat3& m);
+
+  /**
+   * Checks if a 4x4 matrix is a zero matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is a zero matrix, false otherwise.
+   */
+  bool is_zero(const mat4& m);
+
+  /**
+   * Checks if a 2x3 matrix is a zero matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is a zero matrix, false otherwise.
+   */
+  bool is_zero(const mat2x3& m);
+
+  /**
+   * @brief Calculates the determinant of a 2x2 matrix.
+   *
+   * @param m The matrix to calculate the determinant of.
+   * @return The determinant of the matrix.
+   */
   float determinant(const mat2& m);
+
+  /**
+   * @brief Calculates the determinant of a 3x3 matrix.
+   *
+   * @param m The matrix to calculate the determinant of.
+   * @return The determinant of the matrix.
+   */
   float determinant(const mat3& m);
+
+  /**
+   * @brief Calculates the determinant of a 4x4 matrix.
+   *
+   * @param m The matrix to calculate the determinant of.
+   * @return The determinant of the matrix.
+   */
   float determinant(const mat4& m);
 
+  /**
+   * @brief Calculates the determinant of a 2x3 matrix.
+   *
+   * Although the inverse of a 2x3 matrix is not defined, this function treats
+   * the matrix as a 3x3 matrix with the last row being [0, 0, 1].
+   *
+   * @param m The matrix to calculate the determinant of.
+   * @return The determinant of the matrix.
+   */
+  float determinant(const mat2x3& m);
+
+  /**
+   * @brief Calculates the inverse of a 2x2 matrix.
+   *
+   * @param m The matrix to calculate the inverse of.
+   * @return The inverse of the matrix.
+   */
   mat2 inverse(const mat2& m);
+
+  /**
+   * @brief Calculates the inverse of a 3x3 matrix.
+   *
+   * @param m The matrix to calculate the inverse of.
+   * @return The inverse of the matrix.
+   */
   mat3 inverse(const mat3& m);
+
+  /**
+   * @brief Calculates the inverse of a 4x4 matrix.
+   *
+   * @param m The matrix to calculate the inverse
+   * @return The inverse of the matrix.
+   */
   mat4 inverse(const mat4& m);
 
-}
+  /**
+   * @brief Calculates the inverse of a 2x3 matrix.
+   *
+   * Although the inverse of a 2x3 matrix is not defined, this function treats
+   * the matrix as a 3x3 matrix with the last row being [0, 0, 1].
+   *
+   * @param m The matrix to calculate the inverse of.
+   * @return The inverse of the matrix.
+   */
+  mat2x3 inverse(const mat2x3& m);
 
-#include "matrix.inl"
+  /**
+   * @brief Performs a 2D translation to a 2x3 matrix.
+   *
+   * @param m The matrix to translate.
+   * @param v The vector to translate by.
+   * @return The translated matrix.
+   */
+  mat2x3 translate(const mat2x3& m, const vec2 v);
+
+}

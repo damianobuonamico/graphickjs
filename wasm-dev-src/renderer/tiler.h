@@ -2,6 +2,7 @@
 
 #include "renderer_data.h"
 
+#include "../math/mat2x3.h"
 #include "../math/rect.h"
 
 #include <vector>
@@ -45,7 +46,7 @@ namespace Graphick::Renderer {
 
     PathTiler(
       const Geometry::Path& path,
-      const vec2 translation,
+      const mat2x3& translation,
       const vec4& color,
       const rect& visible,
       float zoom,
@@ -99,7 +100,7 @@ namespace Graphick::Renderer {
     inline const size_t segments_size() const { return m_segments_ptr - m_segments; };
 
     void reset(const Viewport& viewport);
-    void process_path(const Geometry::Path& path, const vec2 translation, const vec4& color, const float z_index);
+    void process_path(const Geometry::Path& path, const mat2x3& translation, const vec4& color, const float z_index);
   private:
     void push_mask(const PathTiler::Mask& tile, int index, const vec4& color);
   private:

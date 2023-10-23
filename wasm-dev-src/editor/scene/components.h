@@ -6,7 +6,7 @@
 
 #include "../../math/vec4.h"
 #include "../../math/rect.h"
-#include "../../math/mat3.h"
+#include "../../math/mat2x3.h"
 
 namespace Graphick::Editor {
 
@@ -46,14 +46,26 @@ namespace Graphick::Editor {
 
   struct TransformComponent {
     History::Vec2Value position = { 0.0f, 0.0f };
-    vec2 scale = { 1.0f, 1.0f };
-    float rotation = 0.0f;
+    // vec2 scale = { 1.0f, 1.0f };
+    // float rotation = 0.0f;
 
     TransformComponent(const PathComponent* path_ptr = nullptr);
 
+    inline mat2x3 get() const { return m_matrix.get(); }
+
     rect bounding_rect() const;
+    rect large_bounding_rect() const;
+
+    inline vec2 transform(vec2 point) const { return m_matrix.get() * point; }
+    inline vec2 revert(vec2 point) const { return m_matrix.get() / point; }
+
+    inline void translate(vec2 delta) { m_matrix.translate(delta); }
+    inline void scale(vec2 delta) { m_matrix.scale(delta); }
+    inline void rotate(float delta) { m_matrix.rotate(delta); }
+
+    inline void apply() { m_matrix.apply(); }
   private:
-    mat3 m_matrix;
+    History::Mat2x3Value m_matrix;
 
     const PathComponent* m_path_ptr;    /* A pointer to the path component of the entity, can be nullptr if the entity is not an element. */
   };

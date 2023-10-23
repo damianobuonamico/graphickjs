@@ -131,6 +131,7 @@ namespace Graphick::Renderer::Geometry {
 
     mutable std::optional<Math::rect> m_bounding_rect_cache = std::nullopt;
     mutable std::optional<Math::rect> m_approx_bounding_rect_cache = std::nullopt;
+    mutable std::optional<Math::rect> m_large_bounding_rect_cache = std::nullopt;
   private:
     friend class History::InsertInSegmentsVectorCommand;
     friend class History::EraseFromSegmentsVectorCommand;
