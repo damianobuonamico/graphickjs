@@ -19,7 +19,7 @@ namespace Graphick::Editor {
 
     for (auto& [id, _] : m_selected) {
       Entity entity = m_scene->get_entity(id);
-      rect entity_rect = entity.get_component<TransformComponent>().large_bounding_rect();
+      rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
 
       Math::min(selection_rect.min, entity_rect.min, selection_rect.min);
       Math::max(selection_rect.max, entity_rect.max, selection_rect.max);

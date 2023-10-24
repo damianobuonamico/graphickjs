@@ -23,7 +23,8 @@ namespace Graphick::Editor::Input {
     m_entity = 0;
     m_vertex.reset();
     m_handle.reset();
-    m_cache.clear();
+    m_vector_cache.clear();
+    m_matrix_cache.clear();
 
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
@@ -145,31 +146,36 @@ namespace Graphick::Editor::Input {
 
         for (auto& vertex : path.vertices()) {
           if (entry.vertices.find(vertex->id) == entry.vertices.end()) continue;
-          m_cache.push_back(&vertex->_value());
+          m_vector_cache.push_back(vertex);
 
-          for (auto& handle_ptr : vertex->relative_handles()) {
-            auto handle = handle_ptr.lock();
-            if (handle) {
-              m_cache.push_back(handle.get());
-            }
-          }
+          auto handles = path.relative_handles(vertex->id);
+
+          if (handles.in_handle) m_vector_cache.push_back(handles.in_handle);
+          if (handles.out_handle) m_vector_cache.push_back(handles.out_handle);
         }
       } else if (entity.has_component<TransformComponent>()) {
-        // TODO: fix
-        m_cache.push_back(&entity.get_component<TransformComponent>().position);
+        m_matrix_cache.push_back(entity.get_component<TransformComponent>()._value());
       }
     }
   }
 
   // TODO: Implement rotation
   void DirectSelectTool::translate_selected() {
-    for (Graphick::History::Vec2Value* value : m_cache) {
+    for (Graphick::History::Vec2Value* value : m_vector_cache) {
       value->set_delta(InputManager::pointer.scene.delta);
+    }
+
+    for (Graphick::History::Mat2x3Value* value : m_matrix_cache) {
+      value->translate(InputManager::pointer.scene.delta);
     }
   }
 
   void DirectSelectTool::apply_selected() {
-    for (Graphick::History::Vec2Value* value : m_cache) {
+    for (Graphick::History::Vec2Value* value : m_vector_cache) {
+      value->apply();
+    }
+
+    for (Graphick::History::Mat2x3Value* value : m_matrix_cache) {
       value->apply();
     }
   }
@@ -400,8 +406,9 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_handle_pointer_move() {
+    auto vertex = m_vertex->lock();
+
     if (InputManager::keys.space && m_vertex.has_value()) {
-      auto vertex = m_vertex->lock();
       if (vertex) {
         vertex->add_delta(InputManager::pointer.scene.movement);
       }
@@ -416,21 +423,18 @@ namespace Graphick::Editor::Input {
 
     handle->set_delta(InputManager::pointer.scene.delta);
 
-    if (InputManager::keys.alt) return;
+    if (InputManager::keys.alt || m_entity == uuid::null || !vertex || Math::is_almost_equal(handle->get(), vertex->get())) return;
 
-    auto vertex = m_vertex->lock();
-    auto handles = vertex->relative_handles();
-    if (!vertex || handles.size() < 2 || Math::is_almost_equal(handle->get(), vertex->get())) return;
+    auto handles = Editor::scene().get_entity(m_entity).get_component<PathComponent>().path.relative_handles(m_vertex->lock()->id);
+    if (!handles.in_handle && !handles.out_handle) return;
+
+    History::Vec2Value* other_handle = handles.in_handle == handle.get() ? handles.out_handle : handles.in_handle;
+    if (!other_handle) return;
 
     vec2 dir = Math::normalize(vertex->get() - handle->get());
+    float length = Math::length(other_handle->get() - other_handle->delta() - vertex->get() + vertex->delta());
 
-    for (auto h : handles) {
-      auto h_ptr = h.lock();
-      if (h_ptr && h_ptr != handle) {
-        float length = Math::length(h_ptr->get() - h_ptr->delta() - vertex->get() + vertex->delta());
-        h_ptr->move_to(dir * length + vertex->get());
-      }
-    }
+    other_handle->move_to(dir * length + vertex->get());
   }
 
   /* -- on_pointer_up -- */
@@ -522,7 +526,14 @@ namespace Graphick::Editor::Input {
     auto handle = m_handle->lock();
 
     if (handle) handle->apply();
-    if (vertex) vertex->deep_apply();
+    if (vertex && m_entity) {
+      auto handles = Editor::scene().get_entity(m_entity).get_component<PathComponent>().path.relative_handles(vertex->id);
+
+      if (handles.in_handle) handles.in_handle->apply();
+      if (handles.out_handle) handles.out_handle->apply();
+
+      vertex->apply();
+    }
   }
 
 }

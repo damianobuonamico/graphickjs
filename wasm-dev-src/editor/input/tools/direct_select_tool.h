@@ -73,11 +73,12 @@ namespace Graphick::Editor::Input {
 
     Mode m_mode = Mode::None;
 
-    uuid m_entity = 0;
+    uuid m_entity = uuid::null;
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
     std::optional<std::weak_ptr<History::Vec2Value>> m_handle = std::nullopt;
 
-    std::vector<History::Vec2Value*> m_cache;
+    std::vector<History::Vec2Value*> m_vector_cache;
+    std::vector<History::Mat2x3Value*> m_matrix_cache;
 
     SelectionRect m_selection_rect;
   private:

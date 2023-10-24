@@ -35,7 +35,6 @@ namespace Graphick::History {
     }
 
     virtual void execute() override {
-      clear_relative_handles();
       InsertInVectorCommand::execute();
       recalculate();
 
@@ -54,8 +53,6 @@ namespace Graphick::History {
     }
 
     virtual void undo() override {
-      clear_relative_handles();
-
       if (m_vector->size() == 1) {
         if (m_path->m_reversed) {
           m_path->m_last_point = m_vector->back()->m_p3;
@@ -93,16 +90,6 @@ namespace Graphick::History {
       return true;
     }
   private:
-    void clear_relative_handles() {
-      if (m_vector->empty()) {
-        if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_out_handle);
-      } else {
-        if (m_path->in_handle_ptr() != std::nullopt) m_vector->front()->m_p0->remove_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) m_vector->back()->m_p3->remove_relative_handle(m_path->m_out_handle);
-      }
-    }
-
     void recalculate() {
       if (!m_vector->empty()) {
         if (m_path->m_reversed) {
@@ -111,14 +98,8 @@ namespace Graphick::History {
           m_path->m_last_point = m_vector->back()->m_p3;
         }
 
-        if (m_path->in_handle_ptr() != std::nullopt) m_vector->front()->m_p0->set_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) m_vector->back()->m_p3->set_relative_handle(m_path->m_out_handle);
-
         m_path->m_closed = m_vector->front()->p0_id() == m_vector->back()->p3_id();
       } else {
-        if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_out_handle);
-
         m_path->m_closed = false;
       }
 
@@ -147,8 +128,6 @@ namespace Graphick::History {
     }
 
     virtual void execute() override {
-      clear_relative_handles();
-
       if (m_vector->size() == 1) {
         if (m_path->m_reversed) {
           m_path->m_last_point = m_vector->back()->m_p3;
@@ -162,7 +141,6 @@ namespace Graphick::History {
     }
 
     virtual void undo() override {
-      clear_relative_handles();
       EraseFromVectorCommand::undo();
       recalculate();
     }
@@ -179,16 +157,6 @@ namespace Graphick::History {
       return true;
     }
   private:
-    void clear_relative_handles() {
-      if (m_vector->empty()) {
-        if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->remove_relative_handle(m_path->m_out_handle);
-      } else {
-        if (m_path->in_handle_ptr() != std::nullopt) m_vector->front()->m_p0->remove_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) m_vector->back()->m_p3->remove_relative_handle(m_path->m_out_handle);
-      }
-    }
-
     void recalculate() {
       if (!m_vector->empty()) {
         if (m_path->m_reversed) {
@@ -197,14 +165,8 @@ namespace Graphick::History {
           m_path->m_last_point = m_vector->back()->m_p3;
         }
 
-        if (m_path->in_handle_ptr() != std::nullopt) m_vector->front()->m_p0->set_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) m_vector->back()->m_p3->set_relative_handle(m_path->m_out_handle);
-
         m_path->m_closed = m_vector->front()->p0_id() == m_vector->back()->p3_id();
       } else {
-        if (m_path->in_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_in_handle);
-        if (m_path->out_handle_ptr() != std::nullopt) m_path->m_last_point->set_relative_handle(m_path->m_out_handle);
-
         m_path->m_closed = false;
       }
 
@@ -323,6 +285,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   Path::RelativeHandles Path::relative_handles(const uuid id) {
+    GK_TOTAL("Path::relative_handles");
+
     RelativeHandles handles;
 
     if (vacant()) return handles;
@@ -598,10 +562,6 @@ namespace Graphick::Renderer::Geometry {
     Segment& last_segment = m_segments.back();
 
     if (is_almost_equal(last_segment.p3(), first_segment.p0())) {
-      if (first_segment.has_p1()) {
-        last_segment.m_p3->set_relative_handle(first_segment.m_p1);
-      }
-
       first_segment.m_p0 = last_segment.m_p3;
     } else {
       History::Vec2Value* in_handle = nullptr;
@@ -1024,32 +984,16 @@ namespace Graphick::Renderer::Geometry {
     return found;
   }
 
-  // TODO: fix relative handles
   void Path::create_in_handle(const vec2 position) {
     if (m_closed || vacant()) return;
 
     m_in_handle->set(position);
-
-    if (m_segments.empty()) {
-      m_last_point->set_relative_handle(m_in_handle);
-      return;
-    }
-
-    m_segments.front().m_p0->set_relative_handle(m_in_handle);
   }
 
-  // TODO: fix relative handles
   void Path::create_out_handle(const vec2 position) {
     if (m_closed || vacant()) return;
 
     m_out_handle->set(position);
-
-    if (m_segments.empty()) {
-      m_last_point->set_relative_handle(m_out_handle);
-      return;
-    }
-
-    m_segments.back().m_p3->set_relative_handle(m_out_handle);
   }
 
   void Path::clear_in_handle() {

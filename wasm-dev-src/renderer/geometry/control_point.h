@@ -2,43 +2,16 @@
 
 #include "../../history/values.h"
 
-#include <vector>
-#include <memory>
-
 namespace Graphick::Renderer::Geometry {
 
-  class ControlPoint {
+  class ControlPoint : public History::Vec2Value {
   public:
     uuid id;
   public:
-    ControlPoint() : m_value() {}
-    ControlPoint(const vec2 value) : m_value(value) {}
-    ControlPoint(float x, float y) : m_value(x, y) {}
+    ControlPoint() : History::Vec2Value() {}
+    ControlPoint(const vec2 value) : History::Vec2Value(value) {}
+    ControlPoint(float x, float y) : History::Vec2Value(x, y) {}
     ~ControlPoint() = default;
-
-    inline vec2 get() const { return m_value.get(); }
-    inline vec2 delta() const { return m_value.delta(); }
-
-    inline History::Vec2Value& _value() { return m_value; }
-
-    inline std::vector<std::weak_ptr<History::Vec2Value>>& relative_handles() { return m_relative_handles; }
-
-    void set_relative_handle(std::weak_ptr<History::Vec2Value> handle);
-    void remove_relative_handle(std::weak_ptr<History::Vec2Value> handle);
-    void reset_relative_handles();
-
-    void set(const vec2 value);
-    void add(const vec2 amount);
-
-    void set_delta(const vec2 value);
-    void add_delta(const vec2 amount);
-    void move_to(const vec2 value);
-
-    void apply();
-    void deep_apply();
-  private:
-    History::Vec2Value m_value;
-    std::vector<std::weak_ptr<History::Vec2Value>> m_relative_handles;
   };
 
 }

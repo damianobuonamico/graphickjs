@@ -1,6 +1,11 @@
 /**
  * @file pen_tool.cpp
  * @brief Implements the PenTool class.
+ *
+ * @todo esc to cancel pen and other tools
+ * @todo move pen_pointer_move in common.h and use also in direct_select
+ * @todo shift to slow down movement
+ * @todo fix element scaling on movement
  */
 
 #include "pen_tool.h"
@@ -15,13 +20,11 @@
 
 #include "../../../history/command_history.h"
 #include "../../../history/commands.h"
+#include "../../../history/values.h"
 
 #include "../../../renderer/renderer.h"
 #include "../../../renderer/geometry/internal.h"
 
- // TODO: esc to cancel pen and other tools
- // TODO: fix pen for translated elements
- // TODO: move pen_pointer_move in common.h and use also in direct_select
 namespace Graphick::Editor::Input {
 
   /**
@@ -33,11 +36,13 @@ namespace Graphick::Editor::Input {
    * @param swap_in_out Whether to swap the incoming and outgoing handles when moving the control point.
    * @param direction A pointer to an integer that will be set to the direction of the move (1 for forward, -1 for backward).
    */
-  static void pen_pointer_move(Renderer::Geometry::Path& path, Renderer::Geometry::ControlPoint& vertex, bool keep_in_handle_length = false, bool swap_in_out = false, int* direction = nullptr) {
+  static void pen_pointer_move(Renderer::Geometry::Path& path, Renderer::Geometry::ControlPoint& vertex, const mat2x3& transform, bool keep_in_handle_length = false, bool swap_in_out = false, int* direction = nullptr) {
     if (InputManager::keys.space) {
       vertex.add_delta(InputManager::pointer.scene.movement);
       return;
     }
+
+    vec2 pointer_position = transform / InputManager::pointer.scene.position;
 
     auto handles = path.relative_handles(vertex.id);
 
@@ -56,7 +61,7 @@ namespace Graphick::Editor::Input {
         handles.in_handle = path.in_handle_ptr()->get();
       }
 
-      handles.in_handle->move_to(2.0f * vertex.get() - InputManager::pointer.scene.position);
+      handles.in_handle->move_to(2.0f * vertex.get() - pointer_position);
 
       return;
     }
@@ -81,9 +86,8 @@ namespace Graphick::Editor::Input {
       }
     }
 
-    // TODO: shift to slow down movement
-    vec2 out_handle_position = InputManager::pointer.scene.position;
-    vec2 in_handle_position = 2.0f * vertex.get() - InputManager::pointer.scene.position;
+    vec2 out_handle_position = pointer_position;
+    vec2 in_handle_position = 2.0f * vertex.get() - pointer_position;
 
     if (swap_in_out) {
       std::swap(handles.in_segment, handles.out_segment);
@@ -96,10 +100,10 @@ namespace Graphick::Editor::Input {
     if (!handles.out_handle) {
       if (handles.out_segment) {
         if (should_reverse_out) {
-          handles.out_segment->create_p1(InputManager::pointer.scene.position);
+          handles.out_segment->create_p1(pointer_position);
           handles.out_handle = handles.out_segment->p1_ptr().lock().get();
         } else {
-          handles.out_segment->create_p2(InputManager::pointer.scene.position);
+          handles.out_segment->create_p2(pointer_position);
           handles.out_handle = handles.out_segment->p2_ptr().lock().get();
         }
       } else {
@@ -119,10 +123,10 @@ namespace Graphick::Editor::Input {
 
     if (!handles.in_handle) {
       if ((!direction && path.reversed() == swap_in_out) || (direction && *direction > 0)) {
-        handles.in_segment->create_p2(InputManager::pointer.scene.position);
+        handles.in_segment->create_p2(pointer_position);
         handles.in_handle = handles.in_segment->p2_ptr().lock().get();
       } else {
-        handles.in_segment->create_p1(InputManager::pointer.scene.position);
+        handles.in_segment->create_p1(pointer_position);
         handles.in_handle = handles.in_segment->p1_ptr().lock().get();
       }
     }
@@ -155,6 +159,7 @@ namespace Graphick::Editor::Input {
     auto hovered_vertex = InputManager::hover.vertex();
 
     m_path = &entity->get_component<PathComponent>().path;
+    m_transform = entity->get_component<TransformComponent>()._value();
 
     if (hover_type == HoverState::HoverType::Vertex && hovered_vertex.has_value()) {
       m_vertex = hovered_vertex->lock().get();
@@ -193,22 +198,22 @@ namespace Graphick::Editor::Input {
   }
 
   void PenTool::on_pointer_move() {
-    if (!m_path || !m_vertex) return;
+    if (!m_path || !m_vertex || !m_transform) return;
 
     switch (m_mode) {
     case Mode::Close:
       if (!m_path->closed()) return;
     case Mode::Join:
-      return pen_pointer_move(*m_path, *m_vertex, true, true);
+      return pen_pointer_move(*m_path, *m_vertex, m_transform->get(), true, true);
     case Mode::Add:
-      pen_pointer_move(*m_path, *m_vertex, false, false, &m_direction);
+      pen_pointer_move(*m_path, *m_vertex, m_transform->get(), false, false, &m_direction);
       break;
     case Mode::Angle:
     case Mode::Start:
-      pen_pointer_move(*m_path, *m_vertex, true, false);
+      pen_pointer_move(*m_path, *m_vertex, m_transform->get(), true, false);
       break;
     case Mode::New:
-      pen_pointer_move(*m_path, *m_vertex);
+      pen_pointer_move(*m_path, *m_vertex, m_transform->get());
       break;
     default:
     case Mode::Sub:
@@ -271,7 +276,7 @@ namespace Graphick::Editor::Input {
         }
       }
     } else if (!vertex_ptr.expired()) {
-      vertex_ptr.lock()->deep_apply();
+      vertex_ptr.lock()->apply();
     }
   }
 
@@ -308,8 +313,15 @@ namespace Graphick::Editor::Input {
       segment.line_to(InputManager::pointer.scene.position);
     }
 
-    {
-      Renderer::Renderer::draw_outline(segment);
+    Renderer::Renderer::draw_outline(segment);
+  }
+
+  void PenTool::set_pen_element(const uuid id) {
+    m_element = id;
+
+    if (id != uuid::null) {
+      Entity entity = Editor::scene().get_entity(id);
+      m_transform = entity.get_component<TransformComponent>()._value();
     }
   }
 
@@ -330,9 +342,10 @@ namespace Graphick::Editor::Input {
     }
 
     m_path = &entity->get_component<PathComponent>().path;
+    vec2 pointer_position = m_transform->get() / InputManager::pointer.scene.position;
 
     if (m_path->vacant()) {
-      m_path->move_to(InputManager::pointer.scene.position);
+      m_path->move_to(pointer_position);
 
       scene.selection.clear();
       scene.selection.select(m_element);
@@ -340,19 +353,19 @@ namespace Graphick::Editor::Input {
       auto in_handle_ptr = m_path->in_handle_ptr();
 
       if (in_handle_ptr.has_value()) {
-        m_path->cubic_to(in_handle_ptr.value()->get(), InputManager::pointer.scene.position, true);
+        m_path->cubic_to(in_handle_ptr.value()->get(), pointer_position, true);
         m_path->clear_in_handle();
       } else {
-        m_path->line_to(InputManager::pointer.scene.position);
+        m_path->line_to(pointer_position);
       }
     } else {
       auto out_handle_ptr = m_path->out_handle_ptr();
 
       if (out_handle_ptr.has_value()) {
-        m_path->cubic_to(out_handle_ptr.value()->get(), InputManager::pointer.scene.position, true);
+        m_path->cubic_to(out_handle_ptr.value()->get(), pointer_position, true);
         m_path->clear_out_handle();
       } else {
-        m_path->line_to(InputManager::pointer.scene.position);
+        m_path->line_to(pointer_position);
       }
     }
 

@@ -17,6 +17,10 @@ namespace Graphick::Renderer::Geometry {
   class Path;
 }
 
+namespace Graphick::History {
+  class Mat2x3Value;
+}
+
 namespace Graphick::Editor::Input {
 
   /**
@@ -50,7 +54,7 @@ namespace Graphick::Editor::Input {
      *
      * @param id The UUID of the pen element to set.
      */
-    inline void set_pen_element(const uuid id) { m_element = id; }
+    void set_pen_element(const uuid id);
   private:
     PenTool();
 
@@ -107,6 +111,7 @@ namespace Graphick::Editor::Input {
   private:
     Mode m_mode = Mode::New;                                /* The current mode of the pen tool. */
     uuid m_element = uuid::null;                            /* The UUID of the pen element. */
+    History::Mat2x3Value* m_transform = nullptr;            /* The transform of the pen element. */
 
     Renderer::Geometry::ControlPoint* m_vertex = nullptr;   /* The active vertex. */
     Renderer::Geometry::Path* m_path = nullptr;             /* The active path. */

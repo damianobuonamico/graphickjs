@@ -21,10 +21,8 @@ namespace Graphick::History {
     inline virtual void execute() override {
       if (m_is_p1) {
         m_segment->m_p1 = m_handle;
-        m_segment->m_p0->set_relative_handle(m_handle);
       } else {
         m_segment->m_p2 = m_handle;
-        m_segment->m_p3->set_relative_handle(m_handle);
       }
 
       m_segment->recalculate_kind();
@@ -33,10 +31,8 @@ namespace Graphick::History {
     inline virtual void undo() override {
       if (m_is_p1) {
         m_segment->m_p1.reset();
-        m_segment->m_p0->remove_relative_handle(m_handle);
       } else {
         m_segment->m_p2.reset();
-        m_segment->m_p3->remove_relative_handle(m_handle);
       }
 
       m_segment->recalculate_kind();
@@ -63,10 +59,8 @@ namespace Graphick::History {
     inline virtual void execute() override {
       if (m_is_p1) {
         m_segment->m_p1.reset();
-        m_segment->m_p0->remove_relative_handle(m_handle);
       } else {
         m_segment->m_p2.reset();
-        m_segment->m_p3->remove_relative_handle(m_handle);
       }
 
       m_segment->recalculate_kind();
@@ -75,10 +69,8 @@ namespace Graphick::History {
     inline virtual void undo() override {
       if (m_is_p1) {
         m_segment->m_p1 = m_handle;
-        m_segment->m_p0->set_relative_handle(m_handle);
       } else {
         m_segment->m_p2 = m_handle;
-        m_segment->m_p3->set_relative_handle(m_handle);
       }
 
       m_segment->recalculate_kind();
@@ -111,21 +103,14 @@ namespace Graphick::Renderer::Geometry {
     m_p0(std::make_shared<ControlPoint>(p0)),
     m_p1((is_quadratic || is_p1) ? (p == p0 || p == p3 ? nullptr : std::make_shared<History::Vec2Value>(p)) : nullptr),
     m_p2((!is_quadratic && !is_p1) ? (p == p0 || p == p3 ? nullptr : std::make_shared<History::Vec2Value>(p)) : nullptr),
-    m_p3(std::make_shared<ControlPoint>(p3))
-  {
-    m_p0->set_relative_handle(m_p1);
-  }
+    m_p3(std::make_shared<ControlPoint>(p3)) {}
 
   Segment::Segment(vec2 p0, vec2 p1, vec2 p2, vec2 p3) :
     m_kind(Kind::Cubic),
     m_p0(std::make_shared<ControlPoint>(p0)),
     m_p1(p1 == p0 ? nullptr : std::make_shared<History::Vec2Value>(p1)),
     m_p2(p2 == p3 ? nullptr : std::make_shared<History::Vec2Value>(p2)),
-    m_p3(std::make_shared<ControlPoint>(p3))
-  {
-    m_p0->set_relative_handle(m_p1);
-    m_p3->set_relative_handle(m_p2);
-  }
+    m_p3(std::make_shared<ControlPoint>(p3)) {}
 
   Segment::Segment(ControlPointVertex p0, ControlPointVertex p3) :
     m_kind(Kind::Linear),
@@ -137,22 +122,14 @@ namespace Graphick::Renderer::Geometry {
     m_p0(p0),
     m_p1((is_quadratic || is_p1) ? (p == p0->get() || p == p3->get() ? nullptr : std::make_shared<History::Vec2Value>(p)) : nullptr),
     m_p2((!is_quadratic && !is_p1) ? (p == p0->get() || p == p3->get() ? nullptr : std::make_shared<History::Vec2Value>(p)) : nullptr),
-    m_p3(p3)
-  {
-    m_p0->set_relative_handle(m_p1);
-  }
+    m_p3(p3) {}
 
   Segment::Segment(ControlPointVertex p0, vec2 p1, vec2 p2, ControlPointVertex p3) :
     m_kind(Kind::Cubic),
     m_p0(p0),
     m_p1(p1 == p0->get() ? nullptr : std::make_shared<History::Vec2Value>(p1)),
     m_p2(p2 == p3->get() ? nullptr : std::make_shared<History::Vec2Value>(p2)),
-    m_p3(p3)
-  {
-    // TODO: remove all of relative_handles related stuff
-    m_p0->set_relative_handle(m_p1);
-    m_p3->set_relative_handle(m_p2);
-  }
+    m_p3(p3) {}
 
   Segment::Segment(ControlPointVertex p0, std::optional<vec2> p1, std::optional<vec2> p2, ControlPointVertex p3)
     : m_kind(Kind::Cubic),
@@ -171,22 +148,14 @@ namespace Graphick::Renderer::Geometry {
     m_p0(other.m_p0),
     m_p1(other.m_p1),
     m_p2(other.m_p2),
-    m_p3(other.m_p3)
-  {
-    m_p0->set_relative_handle(m_p1);
-    m_p3->set_relative_handle(m_p2);
-  }
+    m_p3(other.m_p3) {}
 
   Segment::Segment(Segment&& other) noexcept :
     m_kind(other.m_kind),
     m_p0(other.m_p0),
     m_p1(other.m_p1),
     m_p2(other.m_p2),
-    m_p3(other.m_p3)
-  {
-    m_p0->set_relative_handle(m_p1);
-    m_p3->set_relative_handle(m_p2);
-  }
+    m_p3(other.m_p3) {}
 
   Segment& Segment::operator=(const Segment& other) {
     m_kind = other.m_kind;
@@ -194,9 +163,6 @@ namespace Graphick::Renderer::Geometry {
     m_p1 = other.m_p1 ? std::make_shared<History::Vec2Value>(*other.m_p1) : nullptr;
     m_p2 = other.m_p2 ? std::make_shared<History::Vec2Value>(*other.m_p2) : nullptr;
     m_p3 = other.m_p3;
-
-    m_p0->set_relative_handle(m_p1);
-    m_p3->set_relative_handle(m_p2);
 
     return *this;
   }
@@ -207,9 +173,6 @@ namespace Graphick::Renderer::Geometry {
     m_p1 = std::move(other.m_p1);
     m_p2 = std::move(other.m_p2);
     m_p3 = other.m_p3;
-
-    m_p0->set_relative_handle(m_p1);
-    m_p3->set_relative_handle(m_p2);
 
     return *this;
   }
@@ -267,11 +230,11 @@ namespace Graphick::Renderer::Geometry {
 
     new_p1 = Math::midpoint(p1, p2);
 
-    // L1 norm
+    /* L1 norm */
     vec2 diff = Math::abs(p1 - p2);
     float mag = diff.x + diff.y;
 
-    // Manhattan distance of d1 and d2.
+    /* Manhattan distance of d1 and d2. */
     float edges = std::fabsf(d1.x) + std::fabsf(d1.y) + std::fabsf(d2.x) + std::fabsf(d2.y);
     return mag * 4096 <= edges;
   }
@@ -763,7 +726,7 @@ namespace Graphick::Renderer::Geometry {
       d = m * (A.x - line.min.x) - A.y + line.min.y;
     }
 
-    // If the cubic bezier is an approximation of a quadratic curve, ignore the third degree term
+    /* If the cubic bezier is an approximation of a quadratic curve, ignore the third degree term */
     if (std::abs(a) < GEOMETRY_MAX_INTERSECTION_ERROR) {
       float delta = c * c - 4.0f * b * d;
 
