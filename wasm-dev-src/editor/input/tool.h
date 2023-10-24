@@ -67,7 +67,6 @@ namespace Graphick::Editor::Input {
      * @brief Checks if the tool is in the given category.
      *
      * @param category The category to check.
-     *
      * @return true if the tool is in the given category, false othwerwise.
      */
     inline bool is_in_category(Category category) const { return m_category & category; }

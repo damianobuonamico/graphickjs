@@ -37,11 +37,11 @@ namespace Graphick::Math {
     return min + (t - min) % range_size;
   }
 
-  inline bool is_almost_zero(const double t, const float eps = FLT_EPSILON) {
+  inline bool is_almost_zero(const double t, const float eps = GK_EPSILON) {
     return std::abs(t) <= eps;
   }
 
-  inline bool is_almost_equal(const float t1, const float t2, const float eps = FLT_EPSILON) {
+  inline bool is_almost_equal(const float t1, const float t2, const float eps = GK_EPSILON) {
     return std::abs(t1 - t2) <= eps;
   }
 

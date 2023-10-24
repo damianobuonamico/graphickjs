@@ -4,11 +4,9 @@
 #include "vec3.h"
 #include "vec4.h"
 
-#include <vector>
+#include "../utils/defines.h"
 
-#ifndef FLT_EPSILON
-#define FLT_EPSILON 1.192092896e-07f    /* Smallest such that 1.0f + FLT_EPSILON != 1.0f */
-#endif
+#include <vector>
 
 #define XY(v) Graphick::Math::vec2{ v.x, v.y }
 #define RG(v) Graphick::Math::vec2{ v.r, v.g }
@@ -109,13 +107,13 @@ namespace Graphick::Math {
   bool not_zero(const vec3& v);
   bool not_zero(const vec4& v);
 
-  bool is_almost_zero(const vec2 v, const float eps = FLT_EPSILON);
-  bool is_almost_zero(const vec3& v, const float eps = FLT_EPSILON);
-  bool is_almost_zero(const vec4& v, const float eps = FLT_EPSILON);
+  bool is_almost_zero(const vec2 v, const float eps = GK_EPSILON);
+  bool is_almost_zero(const vec3& v, const float eps = GK_EPSILON);
+  bool is_almost_zero(const vec4& v, const float eps = GK_EPSILON);
 
-  bool is_almost_equal(const vec2 v1, const vec2 v2, const float eps = FLT_EPSILON);
-  bool is_almost_equal(const vec3& v1, const vec3& v2, const float eps = FLT_EPSILON);
-  bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps = FLT_EPSILON);
+  bool is_almost_equal(const vec2 v1, const vec2 v2, const float eps = GK_EPSILON);
+  bool is_almost_equal(const vec3& v1, const vec3& v2, const float eps = GK_EPSILON);
+  bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps = GK_EPSILON);
 
   vec2 floor(const vec2 v);
   vec3 floor(const vec3& v);
@@ -137,6 +135,7 @@ namespace Graphick::Math {
   float atan2(const vec2 v1, const vec2 v2);
 
   vec2 rotate(const vec2 v, const vec2 c, float t);
+  vec2 rotate(const vec2 v, const vec2 c, float sin_t, float cos_t);
 
   vec2 orthogonal(const vec2 v);
   void orthogonal(const vec2 v, vec2& out);
@@ -144,7 +143,7 @@ namespace Graphick::Math {
   vec2 swap_coordinates(const vec2 v);
   vec2& swap_coordinates(const vec2 v, vec2& out);
 
-  bool collinear(const vec2 v1, const vec2 v2, const vec2 v3, const float eps = FLT_EPSILON);
+  bool collinear(const vec2 v1, const vec2 v2, const vec2 v3, const float eps = GK_EPSILON);
 
   std::string stringify(const vec2 v);
   std::string stringify(const vec3& v);

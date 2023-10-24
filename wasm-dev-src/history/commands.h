@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../math/vec2.h"
+#include "../math/mat2x3.h"
 
 #include "../utils/uuid.h"
 

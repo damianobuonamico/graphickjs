@@ -907,7 +907,7 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  bool Path::is_inside(const vec2 position, bool deep_search, float threshold) const {
+  bool Path::is_inside(const vec2 position, bool filled_search, bool deep_search, float threshold) const {
     GK_TOTAL("Path::is_inside");
 
     if (m_segments.empty()) {
@@ -917,6 +917,24 @@ namespace Graphick::Renderer::Geometry {
     } else {
       if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : approx_bounding_rect(), threshold)) {
         return false;
+      }
+
+      if (true/*filled_search*/) {
+        // TODO: implement non-zero winding rule
+
+        Math::rect line = { position, { std::numeric_limits<float>::max(), position.y } };
+        int intersections = 0;
+
+        for (const auto& segment : m_segments) {
+          auto points = segment->line_intersection_points(line);
+          if (points) intersections += (int)points->size();
+        }
+
+        if (!m_closed) {
+          intersections += (int)Math::line_line_intersection_points({ m_segments.back().p3(), m_segments.front().p0() }, line).size();
+        }
+
+        if (intersections % 2 != 0) return true;
       }
 
       for (const auto& segment : m_segments) {

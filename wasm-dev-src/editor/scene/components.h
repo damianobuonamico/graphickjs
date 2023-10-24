@@ -52,6 +52,7 @@ namespace Graphick::Editor {
     TransformComponent(const PathComponent* path_ptr = nullptr);
 
     inline mat2x3 get() const { return m_matrix.get(); }
+    inline mat2x3 inverse() const { return m_matrix.inverse(); }
     inline History::Mat2x3Value* _value() { return &m_matrix; }
 
     rect bounding_rect() const;

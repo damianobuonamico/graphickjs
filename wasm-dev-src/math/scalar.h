@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../utils/defines.h"
+
 #include <cstdint>
 #include <cfloat>
 #include <cmath>

@@ -9,7 +9,7 @@
 #include "tools/pen_tool.h"
 #include "tools/pencil_tool.h"
 
-#include "../../../renderer/renderer.h"
+#include "../../renderer/renderer.h"
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>

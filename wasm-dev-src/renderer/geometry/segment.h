@@ -3,6 +3,7 @@
 #include "control_point.h"
 
 #include "../../math/rect.h"
+#include "../../math/mat2x3.h"
 
 #include <vector>
 #include <memory>
@@ -98,6 +99,7 @@ namespace Graphick::Renderer::Geometry {
     bool rehydrate_cache() const;
   public:
     static std::shared_ptr<Segment> reverse(const Segment& segment);
+    static void transform(Segment& segment, const mat2x3& matrix, bool transform_p3 = true);
   private:
     void recalculate_kind();
 
@@ -118,7 +120,7 @@ namespace Graphick::Renderer::Geometry {
     SegmentPointDistance quadratic_closest_to(const vec2 position, int iterations = 4) const;
     SegmentPointDistance cubic_closest_to(const vec2 position, int iterations = 4) const;
 
-    std::optional<std::vector<vec2>> line_intersection_points(const rect& line) const;
+    std::optional<std::vector<vec2>> line_intersection_points(const rect& line, const float threshold = 1e-5) const;
     std::vector<float> line_intersections(const rect& line) const;
 
     std::vector<float> linear_line_intersections(const rect& line) const;

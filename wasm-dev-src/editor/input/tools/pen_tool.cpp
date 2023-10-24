@@ -6,6 +6,7 @@
  * @todo move pen_pointer_move in common.h and use also in direct_select
  * @todo shift to slow down movement
  * @todo fix element scaling on movement
+ * @todo fix joining elements
  */
 
 #include "pen_tool.h"
@@ -286,7 +287,7 @@ namespace Graphick::Editor::Input {
   }
 
   void PenTool::render_overlays() const {
-    if (!m_element || InputManager::pointer.down) return;
+    if (!m_element || !m_transform || InputManager::pointer.down) return;
 
     Entity entity = Editor::scene().get_entity(m_element);
     if (!entity.is_element()) return;
@@ -295,9 +296,10 @@ namespace Graphick::Editor::Input {
     if (path.vacant() || path.closed()) return;
 
     Renderer::Geometry::Internal::PathInternal segment{};
+    mat2x3 transform = m_transform->get();
     History::Vec2Value* handle = nullptr;
 
-    segment.move_to(path.last().lock()->get());
+    segment.move_to(transform * path.last().lock()->get());
 
     if (path.reversed()) {
       auto in_handle_ptr = path.in_handle_ptr();
@@ -308,7 +310,7 @@ namespace Graphick::Editor::Input {
     }
 
     if (handle) {
-      segment.cubic_to(handle->get(), InputManager::pointer.scene.position, !path.reversed());
+      segment.cubic_to(transform * handle->get(), InputManager::pointer.scene.position, !path.reversed());
     } else {
       segment.line_to(InputManager::pointer.scene.position);
     }
@@ -393,8 +395,9 @@ namespace Graphick::Editor::Input {
       }
     ));
 
-    Entity new_entity = Editor::scene().create_element();
     Entity first_entity = Editor::scene().get_entity(m_element);
+    Entity second_entity = Editor::scene().get_entity(m_path->id);
+    Entity new_entity = Editor::scene().create_element();
 
     auto& first_path = first_entity.get_component<PathComponent>().path;
     auto& second_path = *m_path;
@@ -403,6 +406,10 @@ namespace Graphick::Editor::Input {
     auto& first_segments = first_path.segments();
     auto& second_segments = second_path.segments();
     auto& new_segments = new_path.segments();
+
+    mat2x3 first_transform = first_entity.get_component<TransformComponent>().get();
+    mat2x3 second_transform = second_entity.get_component<TransformComponent>().get();
+    History::Mat2x3Value* new_transform = new_entity.get_component<TransformComponent>()._value();
 
     std::shared_ptr<Renderer::Geometry::ControlPoint> p0 =
       first_path.empty() ? first_path.last().lock() :
@@ -416,18 +423,27 @@ namespace Graphick::Editor::Input {
 
     if (first_path.reversed()) {
       for (int i = (int)first_segments.size() - 1; i >= 0; i--) {
-        new_segments.push_back(Renderer::Geometry::Segment::reverse(first_segments.at(i)));
+        std::shared_ptr<Renderer::Geometry::Segment> reversed = Renderer::Geometry::Segment::reverse(first_segments.at(i));
+        Renderer::Geometry::Segment::transform(*reversed, first_transform, false);
+        new_segments.push_back(reversed);
       }
 
-      if (in_handle) p1 = in_handle.value()->get();
-      if (out_handle) new_path.create_in_handle(out_handle.value()->get());
+      auto last_ptr = new_segments.back().p3_ptr().lock();
+      last_ptr->set(first_transform * last_ptr->get());
+
+      if (in_handle) p1 = first_transform * in_handle.value()->get();
+      if (out_handle) new_path.create_in_handle(first_transform * out_handle.value()->get());
     } else {
       for (auto& segment : first_segments) {
+        Renderer::Geometry::Segment::transform(*segment, first_transform, false);
         new_segments.push_back(segment);
       }
 
-      if (out_handle) p1 = out_handle.value()->get();
-      if (in_handle) new_path.create_in_handle(in_handle.value()->get());
+      auto last_ptr = new_segments.back().p3_ptr().lock();
+      last_ptr->set(first_transform * last_ptr->get());
+
+      if (out_handle) p1 = first_transform * out_handle.value()->get();
+      if (in_handle) new_path.create_in_handle(first_transform * in_handle.value()->get());
     }
 
     in_handle = second_path.in_handle_ptr();
@@ -435,45 +451,58 @@ namespace Graphick::Editor::Input {
 
     if (second_path.empty()) {
       std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_path.last().lock();
+      p3->set(second_transform * p3->get());
 
-      if (in_handle) p2 = in_handle.value()->get();
-      if (out_handle) new_path.create_out_handle(out_handle.value()->get());
+      if (in_handle) p2 = second_transform * in_handle.value()->get();
+      if (out_handle) new_path.create_out_handle(second_transform * out_handle.value()->get());
 
       new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
     } else if (m_vertex->id == second_segments.front().p0_id()) {
       std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_segments.front().p0_ptr().lock();
 
-      if (in_handle) p2 = in_handle.value()->get();
-      if (out_handle) new_path.create_out_handle(out_handle.value()->get());
+      if (in_handle) p2 = second_transform * in_handle.value()->get();
+      if (out_handle) new_path.create_out_handle(second_transform * out_handle.value()->get());
 
       new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
 
       for (auto& segment : second_segments) {
+        Renderer::Geometry::Segment::transform(*segment, second_transform, false);
         new_segments.push_back(segment);
       }
+
+      auto last_ptr = new_segments.back().p3_ptr().lock();
+      last_ptr->set(second_transform * last_ptr->get());
     } else {
       std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_segments.back().p3_ptr().lock();
 
-      if (out_handle) p2 = out_handle.value()->get();
-      if (in_handle) new_path.create_out_handle(in_handle.value()->get());
+      if (out_handle) p2 = second_transform * out_handle.value()->get();
+      if (in_handle) new_path.create_out_handle(second_transform * in_handle.value()->get());
 
       new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
 
+      size_t size = new_segments.size();
+
       for (int i = (int)second_segments.size() - 1; i >= 0; i--) {
-        new_segments.push_back(Renderer::Geometry::Segment::reverse(second_segments.at(i)));
+        std::shared_ptr<Renderer::Geometry::Segment> reversed = Renderer::Geometry::Segment::reverse(second_segments.at(i));
+        Renderer::Geometry::Segment::transform(*reversed, second_transform, false);
+        new_segments.push_back(reversed);
       }
+
+      auto last_ptr = new_segments.back().p3_ptr().lock();
+      last_ptr->set(second_transform * last_ptr->get());
     }
 
     Editor::scene().delete_entity(first_entity);
     Editor::scene().delete_entity(second_path.id);
 
     History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
-      [this, new_path, vertex_id]() {
+      [this, new_path, new_transform, vertex_id]() {
         Scene& scene = Editor::scene();
 
         scene.selection.clear();
         scene.selection.select_vertex(vertex_id, new_path.id);
 
+        m_transform = new_transform;
         set_pen_element(0);
       },
       []() {}

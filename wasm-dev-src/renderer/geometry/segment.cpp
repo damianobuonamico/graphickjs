@@ -441,6 +441,15 @@ namespace Graphick::Renderer::Geometry {
     return std::make_shared<Renderer::Geometry::Segment>(segment.p3_ptr().lock(), segment.p2(), segment.p0_ptr().lock(), false, true);
   }
 
+  void Segment::transform(Segment& segment, const mat2x3& matrix, bool transform_p3) {
+    segment.p0_ptr().lock()->set(matrix * segment.p0());
+
+    if (segment.has_p1()) segment.m_p1->set(matrix * segment.p1());
+    if (segment.has_p2()) segment.m_p2->set(matrix * segment.p2());
+
+    if (transform_p3) segment.p3_ptr().lock()->set(matrix * segment.p3());
+  }
+
   vec2 Segment::linear_get(const float t) const {
     return Math::lerp(p0(), p3(), t);
   }
@@ -648,22 +657,40 @@ namespace Graphick::Renderer::Geometry {
     return params;
   }
 
-  std::optional<std::vector<vec2>> Segment::line_intersection_points(const Math::rect& line) const {
+  std::optional<std::vector<vec2>> Segment::line_intersection_points(const Math::rect& line, const float threshold) const {
     std::vector<float> intersections = line_intersections(line);
     if (intersections.empty()) return std::nullopt;
 
     std::vector<vec2> points{};
     Math::rect rect = { min(line.min, line.max), max(line.min, line.max) };
 
-    for (float intersection : intersections) {
-      vec2 point = get(intersection);
-      if (Math::is_point_in_rect(point, rect, GEOMETRY_MAX_INTERSECTION_ERROR)) {
-        points.push_back(point);
+    if (Math::is_almost_equal(rect.min.x, rect.max.x, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+      for (float intersection : intersections) {
+        vec2 point = get(intersection);
+
+        if (point.y >= rect.min.y && point.y <= rect.max.y) {
+          points.push_back(point);
+        }
+      }
+    } else if (Math::is_almost_equal(rect.min.y, rect.max.y, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+      for (float intersection : intersections) {
+        vec2 point = get(intersection);
+
+        if (point.x >= rect.min.x && point.x <= rect.max.x) {
+          points.push_back(point);
+        }
+      }
+    } else {
+      for (float intersection : intersections) {
+        vec2 point = get(intersection);
+
+        if (Math::is_point_in_rect(point, rect)) {
+          points.push_back(point);
+        }
       }
     }
 
-    if (points.empty()) return std::nullopt;
-    return points;
+    return points.empty() ? std::nullopt : std::optional{ points };
   }
 
   std::vector<float> Segment::line_intersections(const rect& line) const {
@@ -700,91 +727,87 @@ namespace Graphick::Renderer::Geometry {
   }
 
   std::vector<float> Segment::cubic_line_intersections(const rect& line) const {
-    vec2 A = p0();
-    vec2 B = p1();
-    vec2 C = p2();
-    vec2 D = p3();
+    float alpha = -std::atan2f(line.max.y - line.min.y, line.max.x - line.min.x);
+    float sin_alpha = std::sinf(alpha);
+    float cos_alpha = std::cosf(alpha);
 
-    float a, b, c, d;
-    float den = line.max.x - line.min.x;
+    vec2 A = Math::rotate(p0() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
+    vec2 B = Math::rotate(p1() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
+    vec2 C = Math::rotate(p2() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
+    vec2 D = Math::rotate(p3() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
 
-    std::vector<float> roots{};
+    float pa = A.y;
+    float pb = B.y;
+    float pc = C.y;
+    float pd = D.y;
 
-    if (Math::is_almost_zero(den)) {
-      a = -A.x + 3.0f * B.x - 3.0f * C.x + D.x;
-      b = 3.0f * A.x - 6.0f * B.x + 3.0f * C.x;
-      c = -3.0f * A.x + 3.0f * B.x;
-      d = A.x - line.min.x;
-    } else {
-      float m = (line.max.y - line.min.y) / den;
+    float d = -pa + 3 * pb - 3 * pc + pd;
+    float a = 3 * pa - 6 * pb + 3 * pc;
+    float b = -3 * pa + 3 * pb;
+    float c = pa;
 
-      a = m * (-A.x + 3.0f * B.x - 3.0f * C.x + D.x) +
-        1 * (A.y - 3.0f * B.y + 3.0f * C.y - D.y);
-      b = m * (3.0f * A.x - 6.0f * B.x + 3.0f * C.x) +
-        1 * (-3.0f * A.y + 6.0f * B.y - 3.0f * C.y);
-      c = m * (-3.0f * A.x + 3.0f * B.x) + 1 * (3.0f * A.y - 3.0f * B.y);
-      d = m * (A.x - line.min.x) - A.y + line.min.y;
-    }
+    std::vector<float> roots = {};
 
-    /* If the cubic bezier is an approximation of a quadratic curve, ignore the third degree term */
-    if (std::abs(a) < GEOMETRY_MAX_INTERSECTION_ERROR) {
-      float delta = c * c - 4.0f * b * d;
-
-      if (Math::is_almost_zero(delta)) {
-        roots.push_back(-c / (2.0f * b));
-      } else if (delta > 0.0f) {
-        float sqrt_delta = std::sqrtf(delta);
-
-        float t1 = (-c + sqrt_delta) / (2.0f * b);
-        float t2 = (-c - sqrt_delta) / (2.0f * b);
-
-        if (t1 > 0.0f && t1 < 1.0f) {
-          roots.push_back(t1);
+    if (Math::is_almost_zero(d)) {
+      /* This is not a cubic curve. */
+      if (Math::is_almost_zero(a)) {
+        /* This is not a quadratic curve either. */
+        if (Math::is_almost_zero(b)) {
+          return {};
         }
-        if (t2 > 0.0f && t2 < 1.0f && t2 != t1) {
-          roots.push_back(t2);
-        }
-      }
 
-      return roots;
-    }
-
-    float a_sq = a * a;
-    float b_sq = b * b;
-
-    float p = (3.0f * a * c - b_sq) / (3.0f * a_sq);
-    float q = (2.0f * b_sq * b - 9.0f * a * b * c + 27.0f * a_sq * d) / (27.0f * a_sq * a);
-
-    if (Math::is_almost_zero(p)) {
-      roots.push_back(-std::cbrtf(q));
-    } else if (Math::is_almost_zero(q)) {
-      if (p < 0.0f) {
-        float sqrt_p = std::sqrtf(-p);
-        roots.insert(roots.begin(), { 0.0f, sqrt_p, -sqrt_p });
+        roots.push_back(-c / b);
       } else {
-        roots.push_back(0.0f);
+        float q = std::sqrt(b * b - 4 * a * c);
+        float a2 = 2 * a;
+
+        roots.insert(roots.end(), { (q - b) / a2, (-b - q) / a2 });
       }
     } else {
-      float s = q * q / 4.0f + p * p * p / 27.0f;
+      a /= d;
+      b /= d;
+      c /= d;
 
-      if (Math::is_almost_zero(s)) {
-        roots.insert(roots.begin(), { -1.5f * q / p, 3.0f * q / p });
-      } else if (s > 0.0f) {
-        float u = std::cbrtf(-0.5f * q - std::sqrtf(s));
-        roots.push_back(u - p / (3.0f * u));
+      float p = (3 * b - a * a) / 3;
+      float p3 = p / 3;
+      float q = (2 * a * a * a - 9 * a * b + 27 * c) / 27;
+      float q2 = q / 2;
+      float discriminant = q2 * q2 + p3 * p3 * p3;
+
+      float u1, v1, x1, x2, x3;
+      if (discriminant < 0) {
+        float mp3 = -p / 3;
+        float mp33 = mp3 * mp3 * mp3;
+        float r = sqrt(mp33);
+        float t = -q / (2 * r);
+        float cosphi = t < -1 ? -1 : t > 1 ? 1 : t;
+        float phi = acos(cosphi);
+        float cbrtr = std::cbrt(r);
+        float t1 = 2 * cbrtr;
+
+        x1 = t1 * std::cosf(phi / 3) - a / 3;
+        x2 = t1 * std::cosf((phi + MATH_TWO_PI) / 3) - a / 3;
+        x3 = t1 * std::cosf((phi + 2 * MATH_TWO_PI) / 3) - a / 3;
+
+        roots.insert(roots.end(), { x1, x2, x3 });
+      } else if (Math::is_almost_zero(discriminant)) {
+        u1 = q2 < 0 ? std::cbrt(-q2) : -std::cbrt(q2);
+        x1 = 2 * u1 - a / 3;
+        x2 = -u1 - a / 3;
+
+        roots.insert(roots.end(), { x1, x2 });
       } else {
-        float u = 2.0f * std::sqrtf(-p / 3.0f);
-        float t = std::acosf(3.0f * q / p / u) / 3.0f;
-        float k = MATH_TWO_PI / 3.0f;
+        float sd = std::sqrt(discriminant);
+        u1 = std::cbrt(-q2 + sd);
+        v1 = std::cbrt(q2 + sd);
 
-        roots.insert(roots.begin(), { u * std::cosf(t), u * std::cosf(t - k), u * std::cosf(t - 2.0f * k) });
+        roots.push_back(u1 - v1 - a / 3);
       }
     }
 
-    std::vector<float> parsed_roots{};
+    std::vector<float> parsed_roots = {};
 
-    for (float root : roots) {
-      float t = root - b / (3.0f * a);
+    for (float t : roots) {
       if (t >= 0.0f && t <= 1.0f) {
         parsed_roots.push_back(t);
       }

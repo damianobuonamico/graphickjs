@@ -117,6 +117,8 @@ namespace Graphick::History {
     inline mat2x3 get() const { return m_value + m_delta; };
     inline mat2x3 delta() const { return m_delta; };
 
+    mat2x3 inverse() const;
+
     void set(const mat2x3& value);
 
     void translate(const vec2 amount);

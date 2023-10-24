@@ -107,7 +107,7 @@ namespace Graphick::Renderer::Geometry {
     Math::rect approx_bounding_rect() const;
     Math::rect large_bounding_rect() const;
 
-    bool is_inside(const vec2 position, bool deep_search = false, float threshold = 0.0f) const;
+    bool is_inside(const vec2 position, bool filled_search, bool deep_search = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
     bool intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const;
 

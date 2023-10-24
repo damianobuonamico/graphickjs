@@ -67,10 +67,29 @@ namespace Graphick::Math {
     std::vector<vec2> points{};
     rect rect = { min(b.min, b.max), max(b.min, b.max) };
 
-    for (float value : values) {
-      vec2 point = lerp(a.min, a.max, value);
-      if (is_point_in_rect(point, rect, GEOMETRY_MAX_INTERSECTION_ERROR)) {
-        points.push_back(point);
+    if (Math::is_almost_equal(b.min.x, b.max.x, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+      for (float value : values) {
+        vec2 point = lerp(a.min, a.max, value);
+
+        if (point.y >= rect.min.y && point.y <= rect.max.y) {
+          points.push_back(point);
+        }
+      }
+    } else if (Math::is_almost_equal(b.min.y, b.max.y, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+      for (float value : values) {
+        vec2 point = lerp(a.min, a.max, value);
+
+        if (point.x >= rect.min.x && point.x <= rect.max.x) {
+          points.push_back(point);
+        }
+      }
+    } else {
+      for (float value : values) {
+        vec2 point = lerp(a.min, a.max, value);
+
+        if (is_point_in_rect(point, rect, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+          points.push_back(point);
+        }
       }
     }
 
@@ -142,7 +161,7 @@ namespace Graphick::Math {
     float cd = 0.5f * (offset - (squared_length(c)));
     float det = (a.x - b.x) * (b.y - c.y) - (b.x - c.x) * (a.y - b.y);
 
-    if (std::fabsf(det) < FLT_EPSILON) {
+    if (std::fabsf(det) < GK_EPSILON) {
       return { 0.0f, 0.0f };
     }
 

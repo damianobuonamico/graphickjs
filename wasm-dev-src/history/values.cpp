@@ -81,6 +81,10 @@ namespace Graphick::History {
 
   /* -- Mat2x3Value -- */
 
+  mat2x3 Mat2x3Value::inverse() const {
+    return Math::inverse(get());
+  }
+
   void Mat2x3Value::set(const mat2x3& value) {
     if (m_value == value) return;
     CommandHistory::add(std::make_unique<ChangeMat2x3Command>(m_value, value));

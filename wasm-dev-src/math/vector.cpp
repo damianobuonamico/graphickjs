@@ -712,6 +712,16 @@ namespace Graphick::Math {
     };
   }
 
+  vec2 rotate(const vec2 v, const vec2 c, float sin_t, float cos_t) {
+    float cx = v.x - c.x;
+    float cy = v.y - c.y;
+
+    return vec2{
+      cx * cos_t - cy * sin_t + c.x,
+      cx * sin_t + cy * cos_t + c.y,
+    };
+  }
+
   /* -- orthogonal -- */
 
   vec2 orthogonal(const vec2 v) {
