@@ -253,38 +253,38 @@ namespace Graphick::Math {
   /* -- transform -- */
 
   mat2x3 translate(const mat2x3& m, const vec2 v) {
-    const float src_a00 = m[0][0];
-    const float src_a01 = m[0][1];
-    const float src_a02 = m[0][2];
-    const float src_a10 = m[1][0];
-    const float src_a11 = m[1][1];
-    const float src_a12 = m[1][2];
+    const float src_b00 = m[0][0];
+    const float src_b01 = m[0][1];
+    const float src_b02 = m[0][2];
+    const float src_b10 = m[1][0];
+    const float src_b11 = m[1][1];
+    const float src_b12 = m[1][2];
 
     mat2x3 result;
-    result[0][0] = src_a00;
-    result[0][1] = src_a01;
-    result[0][2] = src_a00 * v.x + src_a01 * v.y + src_a02;
-    result[1][0] = src_a10;
-    result[1][1] = src_a11;
-    result[1][2] = src_a10 * v.x + src_a11 * v.y + src_a12;
+    result[0][0] = src_b00;
+    result[0][1] = src_b01;
+    result[0][2] = src_b02 + v.x;
+    result[1][0] = src_b10;
+    result[1][1] = src_b11;
+    result[1][2] = src_b12 + v.y;
     return result;
   }
 
   mat2x3 scale(const mat2x3& m, const vec2 v) {
-    const float src_a00 = m[0][0];
-    const float src_a01 = m[0][1];
-    const float src_a02 = m[0][2];
-    const float src_a10 = m[1][0];
-    const float src_a11 = m[1][1];
-    const float src_a12 = m[1][2];
+    const float src_b00 = m[0][0];
+    const float src_b01 = m[0][1];
+    const float src_b02 = m[0][2];
+    const float src_b10 = m[1][0];
+    const float src_b11 = m[1][1];
+    const float src_b12 = m[1][2];
 
     mat2x3 result;
-    result[0][0] = src_a00 * v.x;
-    result[0][1] = src_a01 * v.y;
-    result[0][2] = src_a02;
-    result[1][0] = src_a10 * v.x;
-    result[1][1] = src_a11 * v.y;
-    result[1][2] = src_a12;
+    result[0][0] = v.x * src_b00;
+    result[0][1] = v.x * src_b01;
+    result[0][2] = v.x * src_b02;
+    result[1][0] = v.y * src_b10;
+    result[1][1] = v.y * src_b11;
+    result[1][2] = v.y * src_b12;
     return result;
   }
 
