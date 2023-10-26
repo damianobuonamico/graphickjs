@@ -176,6 +176,11 @@ namespace Graphick::Renderer {
     get()->add_line_instances(path, transform);
   }
 
+  void Renderer::draw_square(const vec2 position, const float radius) {
+    get()->add_square_instance(position);
+    get()->add_white_square_instance(position);
+  }
+
   void Renderer::debug_rect(const Math::rect rect, const vec4& color) {
     const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(get()->m_debug_vertex_buffer_id);
 

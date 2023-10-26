@@ -137,6 +137,8 @@ namespace Graphick::Math {
   vec2 rotate(const vec2 v, const vec2 c, float t);
   vec2 rotate(const vec2 v, const vec2 c, float sin_t, float cos_t);
 
+  vec2 scale(const vec2 v, const vec2 c, const vec2 s);
+
   vec2 orthogonal(const vec2 v);
   void orthogonal(const vec2 v, vec2& out);
 

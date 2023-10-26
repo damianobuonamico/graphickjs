@@ -6,6 +6,10 @@
 
 #include "../../../renderer/geometry/internal.h"
 
+namespace Graphick::History {
+  class Mat2x3Value;
+}
+
 namespace Graphick::Editor::Input {
 
   /**
@@ -104,6 +108,17 @@ namespace Graphick::Editor::Input {
   class Manipulator : public SelectionRect {
   public:
     /**
+     * @brief An enum class representing the different types of handles that can be used to transform an entity.
+     */
+    enum HandleType {
+      N, S, E, W,                 /* Edge scale handles. */
+      NE, NW, SE, SW,             /* Corner scale handles. */
+      RN, RS, RE, RW,             /* Edge rotate handles. */
+      RNE, RNW, RSE, RSW,         /* Corner rotate handles. */
+      HandleNone
+    };
+  public:
+    /**
      * @brief Constructs a Manipulator object.
      */
     Manipulator() : SelectionRect(false) {}
@@ -128,11 +143,63 @@ namespace Graphick::Editor::Input {
     ~Manipulator() = default;
 
     /**
+     * @brief Returns whether the tool is currently in use.
+     *
+     * @return true if the tool is in use, false otherwise.
+     */
+    inline bool in_use() const { return m_in_use; }
+
+    /**
+     * @brief Returns the positions of the manipulator handles.
+     *
+     * @return An array of vec2 objects representing the positions of the handles, it's size is equal to HandleNone.
+     */
+    inline const vec2* handles() const { return m_handles; }
+
+    /**
      * @brief Updates the state of the manipulator.
      *
      * @return A boolean value indicating whether the manipulator is active or not.
      */
     bool update();
+
+    /**
+     * @brief Pointer down event handler.
+     *
+     * @param position The position of the pointer.
+     * @param threshold The virtual size of the handles.
+     * @return A boolean value indicating whether the event was handled or not.
+     */
+    bool on_pointer_down(const vec2 position, const float threshold);
+
+    /**
+     * @brief Pointer move event handler.
+     *
+     * @param position The position of the pointer.
+     */
+    void on_pointer_move(const vec2 position);
+
+    /**
+     * @brief Pointer up event handler.
+     */
+    void on_pointer_up();
+  private:
+    /**
+     * @brief Updates the positions of the handles.
+     *
+     * @param bounding_rect The target bounding rectangle of the manipulator.
+     */
+    void update_positions(const rect& bounding_rect);
+  private:
+    std::vector<History::Mat2x3Value*> m_cache;   /* The cache of the transform matrices. */
+    vec2 m_handles[HandleNone];                   /* The positions of the handles. */
+
+    bool m_in_use = false;                        /* Whether the manipulator is in use or not. */
+    vec2 m_center = { 0.0f, 0.0f };               /* The center of the manipulator. */
+    vec2 m_handle = { 0.0f, 0.0f };               /* The active handle start position. */
+    HandleType m_active_handle;                   /* The active handle. */
+
+    rect m_start_bounding_rect;                   /* The start bounding rectangle of the manipulator. */
   };
 
 }

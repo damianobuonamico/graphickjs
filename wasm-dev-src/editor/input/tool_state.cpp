@@ -29,7 +29,7 @@ void update_tool_ui(int type) {}
 namespace Graphick::Editor::Input {
 
   ToolState::ToolState() :
-    m_current(Tool::ToolType::Pen), m_active(m_current), m_last_tool(m_current),
+    m_current(Tool::ToolType::Select), m_active(m_current), m_last_tool(m_current),
     m_tools{
       new PanTool(),
       new ZoomTool(),
@@ -77,7 +77,11 @@ namespace Graphick::Editor::Input {
     update_tool_ui(static_cast<int>(tool));
   }
 
-  void ToolState::on_pointer_down() {
+  void ToolState::on_pointer_down(const float zoom) {
+    Tool& tool = active();
+
+    if (!tool.is_in_category(Tool::CategoryDirect) && manipulator.on_pointer_down(InputManager::pointer.scene.position, 5.0f / zoom)) return;
+
     if (m_active == Tool::ToolType::DirectSelect && m_current == Tool::ToolType::Pen) {
       if (InputManager::hover.type() == HoverState::HoverType::Vertex) {
         if (InputManager::hover.entity_id() != static_cast<PenTool*>(&current())->pen_element()) {
@@ -91,14 +95,27 @@ namespace Graphick::Editor::Input {
     }
 
     active().on_pointer_down();
+    manipulator.update();
   }
 
   void ToolState::on_pointer_move() {
+    if (manipulator.in_use()) {
+      manipulator.on_pointer_move(InputManager::pointer.scene.position);
+      return;
+    }
+
     active().on_pointer_move();
+    manipulator.update();
   }
 
   void ToolState::on_pointer_up() {
+    if (manipulator.in_use()) {
+      manipulator.on_pointer_up();
+      return;
+    }
+
     active().on_pointer_up();
+    manipulator.update();
   }
 
   void ToolState::on_pointer_hover() {
@@ -135,12 +152,12 @@ namespace Graphick::Editor::Input {
     }
   }
 
-  void ToolState::render_overlays() const {
+  void ToolState::render_overlays(const float zoom) const {
     Tool& tool = active();
 
     tool.render_overlays();
 
-    if (tool.is_in_category(Tool::CategoryDirect) || !manipulator.update()) return;
+    if (tool.is_in_category(Tool::CategoryDirect) || !manipulator.active()) return;
 
     vec2 position = manipulator.position();
     mat2x3 transform;
@@ -149,6 +166,12 @@ namespace Graphick::Editor::Input {
     transform[1].z = position.y;
 
     Renderer::Renderer::draw_outline(manipulator.path(), transform);
+
+    const vec2* handles = manipulator.handles();
+
+    for (int i = 0; i < Manipulator::RN; i++) {
+      Renderer::Renderer::draw_square(handles[i], 5.0f / zoom);
+    }
   }
 
 }

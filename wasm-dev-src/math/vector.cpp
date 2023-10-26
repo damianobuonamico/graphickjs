@@ -722,6 +722,15 @@ namespace Graphick::Math {
     };
   }
 
+  /* -- scale -- */
+
+  vec2 scale(const vec2 v, const vec2 c, const vec2 s) {
+    return vec2{
+      (v.x - c.x) * s.x + c.x,
+      (v.y - c.y) * s.y + c.y
+    };
+  }
+
   /* -- orthogonal -- */
 
   vec2 orthogonal(const vec2 v) {

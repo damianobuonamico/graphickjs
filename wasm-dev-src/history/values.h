@@ -121,9 +121,13 @@ namespace Graphick::History {
 
     void set(const mat2x3& value);
 
+    inline void set_delta(const mat2x3& value) { m_delta = value; }
+
     void translate(const vec2 amount);
     void scale(const vec2 amount);
+    void scale(const vec2 center, const vec2 amount);
     void rotate(const float amount);
+    void rotate(const vec2 center, const float amount);
 
     void apply();
   private:

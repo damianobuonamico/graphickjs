@@ -23,7 +23,7 @@ namespace Graphick::Editor::Input {
    */
   class ToolState {
   public:
-    mutable Manipulator manipulator;    /* The manipulator object */
+    Manipulator manipulator;    /* The manipulator object */
   public:
     /**
      * @brief Constructs a ToolState object.
@@ -93,8 +93,10 @@ namespace Graphick::Editor::Input {
      * @brief Handles the pointer down event.
      *
      * This function dispatches the pointer down event to the active tool.
+     *
+     * @param zoom The current zoom level, used for thresholding.
      */
-    void on_pointer_down();
+    void on_pointer_down(const float zoom);
 
     /**
      * @brief Handles the pointer move event.
@@ -139,7 +141,7 @@ namespace Graphick::Editor::Input {
      *
      * This function queues to the renderer the overlays for the current tool and the manipulator (if active).
      */
-    void render_overlays() const;
+    void render_overlays(const float zoom) const;
   private:
     Tool* m_tools[static_cast<int>(Tool::ToolType::None)];    /* An array of pointers to the tools. */
 

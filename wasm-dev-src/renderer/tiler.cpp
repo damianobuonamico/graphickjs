@@ -3,6 +3,7 @@
 #include "geometry/path.h"
 
 #include "../math/mat2x3.h"
+#include "../math/matrix.h"
 #include "../math/math.h"
 
 #include "../utils/console.h"
@@ -185,11 +186,7 @@ namespace Graphick::Renderer {
   {
     // OPTICK_EVENT();
 
-    // TODO: cache bounding_rects
-    rect rect = path.bounding_rect();
-
-    rect.min = transform * rect.min;
-    rect.max = transform * rect.max;
+    rect rect = transform * path.bounding_rect();
 
     float intersection_overlap = Math::rect_rect_intersection_area(rect, visible) / rect.area();
     if (intersection_overlap <= 0.0f) return;
@@ -230,10 +227,7 @@ namespace Graphick::Renderer {
           vec2 p1 = transform_zoom * segment->p1();
           vec2 p2 = transform_zoom * segment->p2();
 
-          Math::rect segment_rect = segment->bounding_rect();
-
-          segment_rect.min = transform * segment_rect.min;
-          segment_rect.max = transform * segment_rect.max;
+          Math::rect segment_rect = transform * segment->bounding_rect();
 
           if (Math::does_rect_intersect_rect(segment_rect, visible)) {
             vec2 a = -1.0f * p0 + 3.0f * p1 - 3.0f * p2 + p3;

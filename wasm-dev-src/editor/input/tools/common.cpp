@@ -1,6 +1,13 @@
 #include "common.h"
 
 #include "../../editor.h"
+#include "../../scene/entity.h"
+
+#include "../../../history/values.h"
+
+#include "../../../math/math.h"
+
+#include "../../../utils/console.h"
 
 namespace Graphick::Editor::Input {
 
@@ -64,16 +71,143 @@ namespace Graphick::Editor::Input {
   bool Manipulator::update() {
     Selection& selection = Editor::scene().selection;
 
-    if (selection.empty()) {
-      return m_active = false;
-    }
+    if (selection.empty()) return m_active = false;
 
-    rect selection_rect = selection.bounding_rect();
-
-    set(selection_rect.min);
-    size(selection_rect.size());
+    update_positions(selection.bounding_rect());
 
     return true;
+  }
+
+  bool Manipulator::on_pointer_down(const vec2 position, const float threshold) {
+    m_cache.clear();
+
+    if (!m_active) {
+      m_active_handle = HandleNone;
+      m_in_use = false;
+
+      return false;
+    }
+
+    for (int i = 0; i < HandleNone; i++) {
+      if (Math::is_point_in_circle(position, m_handles[i], i >= 8 ? threshold * 2.0f : threshold)) {
+        m_active_handle = static_cast<HandleType>(i);
+        m_in_use = true;
+
+        switch (i) {
+        case N:
+          m_center = m_handles[S];
+          break;
+        case S:
+          m_center = m_handles[N];
+          break;
+        case E:
+          m_center = m_handles[W];
+          break;
+        case W:
+          m_center = m_handles[E];
+          break;
+        case NE:
+          m_center = m_handles[SW];
+          break;
+        case NW:
+          m_center = m_handles[SE];
+          break;
+        case SE:
+          m_center = m_handles[NW];
+          break;
+        case SW:
+          m_center = m_handles[NE];
+          break;
+        }
+
+        m_start_bounding_rect = bounding_rect();
+        m_handle = m_handles[i];
+
+        Scene& scene = Editor::scene();
+        auto& selected = scene.selection.selected();
+
+        m_cache.reserve(selected.size());
+
+        for (const auto& [id, _] : selected) {
+          if (scene.has_entity(id)) {
+            Entity entity = scene.get_entity(id);
+
+            if (entity.has_component<TransformComponent>()) {
+              m_cache.push_back(entity.get_component<TransformComponent>()._value());
+            }
+          }
+        }
+
+        return true;
+      }
+    }
+
+    m_active_handle = HandleNone;
+    m_in_use = false;
+
+    return false;
+  }
+
+  void Manipulator::on_pointer_move(const vec2 position) {
+    if (!m_active || m_active_handle > SW) return;
+
+    vec2 old_delta = m_handle - m_center;
+    vec2 delta = position - m_center;
+
+    vec2 magnitude = delta / old_delta;
+
+    if (m_active_handle == N || m_active_handle == S) {
+      magnitude.x = 1.0f;
+      delta.x = old_delta.x;
+    } else if (m_active_handle == E || m_active_handle == W) {
+      magnitude.y = 1.0f;
+      delta.y = old_delta.y;
+    }
+
+    rect new_bounding_rect = {
+      Math::scale(m_start_bounding_rect.min, m_center, magnitude),
+      Math::scale(m_start_bounding_rect.max, m_center, magnitude)
+    };
+
+    update_positions(new_bounding_rect);
+
+    for (History::Mat2x3Value* matrix : m_cache) {
+      matrix->set_delta(mat2x3{ 0.0f });
+      matrix->scale(m_center, magnitude);
+    }
+  }
+
+  void Manipulator::on_pointer_up() {
+    m_active_handle = HandleNone;
+    m_in_use = false;
+
+    for (History::Mat2x3Value* matrix : m_cache) {
+      matrix->apply();
+    }
+
+    m_cache.clear();
+  }
+
+  void Manipulator::update_positions(const rect& bounding_rect) {
+    set(bounding_rect.min);
+    size(bounding_rect.size());
+
+    float x = bounding_rect.min.x;
+    float y = bounding_rect.min.y;
+    float w = bounding_rect.size().x;
+    float h = bounding_rect.size().y;
+    float h2 = h / 2.0f;
+    float w2 = w / 2.0f;
+
+    m_handles[N] = m_handles[RN] = { x + w2, y };
+    m_handles[S] = m_handles[RS] = { x + w2, y + h };
+    m_handles[E] = m_handles[RE] = { x + w, y + h2 };
+    m_handles[W] = m_handles[RW] = { x, y + h2 };
+
+    m_handles[NW] = m_handles[RNW] = { x, y };
+    m_handles[NE] = m_handles[RNE] = { x + w, y };
+    m_handles[SE] = m_handles[RSE] = { x + w, y + h };
+    m_handles[SW] = m_handles[RSW] = { x, y + h };
   }
 
 }

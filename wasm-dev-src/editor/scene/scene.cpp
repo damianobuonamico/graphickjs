@@ -398,7 +398,7 @@ namespace Graphick::Editor {
     {
       OPTICK_EVENT("Render Overlays");
 
-      tool_state.render_overlays();
+      tool_state.render_overlays(viewport.zoom());
     }
 
     Renderer::Renderer::end_frame();

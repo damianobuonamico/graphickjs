@@ -5,6 +5,7 @@
 
 #include "matrix.h"
 
+#include "scalar.h"
 #include "vector.h"
 
 namespace Graphick::Math {
@@ -267,6 +268,72 @@ namespace Graphick::Math {
     result[1][1] = src_a11;
     result[1][2] = src_a10 * v.x + src_a11 * v.y + src_a12;
     return result;
+  }
+
+  mat2x3 scale(const mat2x3& m, const vec2 v) {
+    const float src_a00 = m[0][0];
+    const float src_a01 = m[0][1];
+    const float src_a02 = m[0][2];
+    const float src_a10 = m[1][0];
+    const float src_a11 = m[1][1];
+    const float src_a12 = m[1][2];
+
+    mat2x3 result;
+    result[0][0] = src_a00 * v.x;
+    result[0][1] = src_a01 * v.y;
+    result[0][2] = src_a02;
+    result[1][0] = src_a10 * v.x;
+    result[1][1] = src_a11 * v.y;
+    result[1][2] = src_a12;
+    return result;
+  }
+
+  mat2x3 scale(const mat2x3& m, const vec2 c, const vec2 v) {
+    return translate(scale(translate(m, -c), v), c);
+  }
+
+  mat2x3 rotate(const mat2x3& m, const float t) {
+    mat2x3 result;
+    return result;
+  }
+
+  mat2x3 rotate(const mat2x3& m, const vec2 c, const float t) {
+    mat2x3 result;
+    return result;
+  }
+
+  /* -- decompose -- */
+
+  DecomposedTransform decompose(const mat2x3& m) {
+    DecomposedTransform decomposed;
+
+    decomposed.rotation = std::atan2f(m[1][0], m[0][0]);
+
+    decomposed.shear = std::atan2f(m[1][1], m[0][1]) - MATH_PI / 2.0f - decomposed.rotation;
+
+    decomposed.translation.x = m[0][2];
+    decomposed.translation.y = m[1][2];
+
+    decomposed.scale.x = std::hypotf(m[0][0], m[1][0]);
+    decomposed.scale.y = std::hypotf(m[0][1], m[1][1]) * std::cosf(decomposed.shear);
+
+    return decomposed;
+  }
+
+  /* -- operators -- */
+
+  rect operator*(const mat2x3& m, const rect& r) {
+    vec2 trans_min = m * r.min;
+    vec2 trans_max = m * r.max;
+
+    return {
+      min(trans_min, trans_max),
+      max(trans_min, trans_max)
+    };
+  }
+
+  rect operator/(const mat2x3& m, const rect& r) {
+    return inverse(m) * r;
   }
 
 }

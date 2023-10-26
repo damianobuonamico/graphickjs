@@ -2,6 +2,8 @@
 
 #include "../../renderer/geometry/path.h"
 
+#include "../../math/matrix.h"
+
 namespace Graphick::Editor {
 
   /* -- TransformComponent -- */
@@ -15,7 +17,7 @@ namespace Graphick::Editor {
     rect path_rect = m_path_ptr->path.bounding_rect();
     mat2x3 matrix = get();
 
-    return { matrix * path_rect.min, matrix * path_rect.max };
+    return matrix * path_rect;
   }
 
   rect TransformComponent::large_bounding_rect() const {
@@ -24,7 +26,7 @@ namespace Graphick::Editor {
     rect path_rect = m_path_ptr->path.large_bounding_rect();
     mat2x3 matrix = get();
 
-    return { matrix * path_rect.min, matrix * path_rect.max };
+    return matrix * path_rect;
   }
 
 }

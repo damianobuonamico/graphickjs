@@ -147,14 +147,16 @@ namespace Graphick::Editor::Input {
   void InputManager::recalculate_hover() {
     OPTICK_EVENT();
 
-    if (!Editor::scene().tool_state.active().is_in_category(Tool::CategoryImmediate)) {
-      float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 5.0f / Editor::scene().viewport.zoom();
+    Scene& scene = Editor::scene();
 
-      hover.set_hovered(Editor::scene().entity_at(
+    if (!scene.tool_state.active().is_in_category(Tool::CategoryImmediate)) {
+      float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 5.0f / scene.viewport.zoom();
+
+      hover.set_hovered(scene.entity_at(
         pointer.scene.position,
-        Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect),
+        scene.tool_state.active().is_in_category(Tool::CategoryDirect),
         threshold
-      ), pointer.scene.position, Editor::scene().tool_state.active().is_in_category(Tool::CategoryDirect), threshold);
+      ), pointer.scene.position, scene.tool_state.active().is_in_category(Tool::CategoryDirect), threshold);
     }
   }
 
@@ -162,6 +164,8 @@ namespace Graphick::Editor::Input {
     pointer.target = target;
 
     if (target != PointerTarget::Canvas) return false;
+
+    Scene& scene = Editor::scene();
 
     vec2 current_position = { x, y };
 
@@ -171,7 +175,7 @@ namespace Graphick::Editor::Input {
     pointer.client.origin = current_position;
 
     pointer.scene.movement = { 0.0f, 0.0f };
-    pointer.scene.position = Editor::scene().viewport.client_to_scene(current_position);
+    pointer.scene.position = scene.viewport.client_to_scene(current_position);
     pointer.scene.delta = { 0.0f, 0.0f };
     pointer.scene.origin = pointer.scene.position;
 
@@ -183,12 +187,12 @@ namespace Graphick::Editor::Input {
     recalculate_hover();
 
     if (pointer.button == PointerButton::Middle) {
-      Editor::scene().tool_state.set_active(keys.ctrl_state_changed ? Tool::ToolType::Zoom : Tool::ToolType::Pan);
+      scene.tool_state.set_active(keys.ctrl_state_changed ? Tool::ToolType::Zoom : Tool::ToolType::Pan);
     }
 
     History::CommandHistory::end_batch();
 
-    Editor::scene().tool_state.on_pointer_down();
+    scene.tool_state.on_pointer_down(scene.viewport.zoom());
 
     Editor::render();
 
@@ -200,21 +204,23 @@ namespace Graphick::Editor::Input {
 
     OPTICK_EVENT();
 
+    Scene& scene = Editor::scene();
+
     vec2 current_position = { x, y };
 
     pointer.client.movement = current_position - pointer.client.position;
     pointer.client.position = current_position;
     pointer.client.delta = current_position - pointer.client.origin;
 
-    pointer.scene.movement = pointer.client.movement / Editor::scene().viewport.zoom();
-    pointer.scene.position = Editor::scene().viewport.client_to_scene(current_position);
+    pointer.scene.movement = pointer.client.movement / scene.viewport.zoom();
+    pointer.scene.position = scene.viewport.client_to_scene(current_position);
     pointer.scene.delta = pointer.scene.position - pointer.scene.origin;
 
     recalculate_hover();
 
     if (!m_moving && pointer.down) {
       if (
-        Editor::scene().tool_state.active().is_in_category(Tool::CategoryImmediate) ||
+        scene.tool_state.active().is_in_category(Tool::CategoryImmediate) ||
         length(pointer.client.delta) > INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type]
         ) {
         m_moving = true;
@@ -224,10 +230,10 @@ namespace Graphick::Editor::Input {
     }
 
     if (m_moving && !m_abort) {
-      Editor::scene().tool_state.on_pointer_move();
+      scene.tool_state.on_pointer_move();
       Editor::render();
     } else if (!pointer.down) {
-      Editor::scene().tool_state.on_pointer_hover();
+      scene.tool_state.on_pointer_hover();
       Editor::render();
     }
 
@@ -237,19 +243,21 @@ namespace Graphick::Editor::Input {
   bool InputManager::on_pointer_up() {
     if (!pointer.down) return false;
 
+    Scene& scene = Editor::scene();
+
     pointer.target = PointerTarget::Other;
     pointer.down = false;
 
     m_moving = false;
 
-    Editor::scene().tool_state.on_pointer_up();
+    scene.tool_state.on_pointer_up();
 
     History::CommandHistory::end_batch();
 
     if (pointer.button == PointerButton::Middle) {
-      Editor::scene().tool_state.set_active(Editor::scene().tool_state.current().type());
+      scene.tool_state.set_active(scene.tool_state.current().type());
     } else {
-      Editor::scene().tool_state.recalculate_active();
+      scene.tool_state.recalculate_active();
     }
 
     Editor::render();
@@ -299,13 +307,15 @@ namespace Graphick::Editor::Input {
     keys.ctrl_state_changed = keys.ctrl != ctrl;
     keys.ctrl = ctrl;
 
+    Scene& scene = Editor::scene();
+
     if (keys.ctrl) {
       // Zoom
       // TODO: Move in scene specific input code
-      Editor::scene().viewport.zoom_to(Math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) * Editor::scene().viewport.zoom(), pointer.client.position);
+      scene.viewport.zoom_to(Math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) * scene.viewport.zoom(), pointer.client.position);
     } else {
       // Scroll
-      Editor::scene().viewport.move(PAN_STEP * vec2{ -delta_x, -delta_y } / Editor::scene().viewport.zoom());
+      scene.viewport.move(PAN_STEP * vec2{ -delta_x, -delta_y } / scene.viewport.zoom());
     }
 
     Editor::render();
@@ -328,7 +338,9 @@ namespace Graphick::Editor::Input {
   bool InputManager::on_pinch(PointerTarget target, float delta, float center_x, float center_y) {
     if (target == PointerTarget::Other) return false;
 
-    Editor::scene().viewport.zoom_to(Editor::scene().viewport.zoom() * delta, vec2{ center_x, center_y });
+    Scene& scene = Editor::scene();
+
+    scene.viewport.zoom_to(scene.viewport.zoom() * delta, vec2{ center_x, center_y });
     Editor::render();
 
     return true;
@@ -337,7 +349,9 @@ namespace Graphick::Editor::Input {
   bool InputManager::on_drag(PointerTarget target, float delta_x, float delta_y) {
     if (target == PointerTarget::Other) return false;
 
-    Editor::scene().viewport.move(vec2{ delta_x, delta_y } / Editor::scene().viewport.zoom());
+    Scene& scene = Editor::scene();
+
+    scene.viewport.move(vec2{ delta_x, delta_y } / scene.viewport.zoom());
     Editor::render();
 
     return true;

@@ -31,6 +31,8 @@ namespace Graphick::Renderer {
     static void draw_outline(const uuid id, const Geometry::Path& path, const mat2x3& transform = {}, bool draw_vertices = false);
     static void draw_outline(const Geometry::Internal::PathInternal& path, const mat2x3& transform = {});
 
+    static void draw_square(const vec2 position, const float radius);
+
     static void debug_rect(const Math::rect rect, const vec4& color = { 0.0f, 0.0f, 0.0f, 0.5f });
     static void debug_text(const std::string& text, const vec2 position, const vec4& color = { 1.0f, 1.0f, 1.0f, 1.0f });
   private:

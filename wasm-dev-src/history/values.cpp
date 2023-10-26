@@ -100,9 +100,32 @@ namespace Graphick::History {
 
   void Mat2x3Value::scale(const vec2 amount) {
     if (Math::is_zero(amount)) return;
+
+    m_delta = Math::scale(m_value, amount) - m_value;
+  }
+
+  void Mat2x3Value::scale(const vec2 center, const vec2 amount) {
+    if (Math::is_zero(amount)) return;
+
+    Math::DecomposedTransform decomposed = Math::decompose(m_value);
+
+    vec2 translation = decomposed.translation;
+
+    mat2x3 untranslated = Math::translate(m_value, -translation);
+
+    mat2x3 scaled = Math::scale(untranslated, center - translation, amount);
+
+    m_delta = Math::translate(scaled, translation) - m_value;
+
+
+    // m_delta = Math::scale(m_value, center, amount) - m_value;
   }
 
   void Mat2x3Value::rotate(const float amount) {
+    if (amount == 0) return;
+  }
+
+  void Mat2x3Value::rotate(const vec2 center, const float amount) {
     if (amount == 0) return;
   }
 
