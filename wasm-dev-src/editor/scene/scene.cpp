@@ -11,6 +11,7 @@
 #include "../../history/commands.h"
 
 // TEMP
+#include "../../math/matrix.h"
 #include "../../math/math.h"
 
 #include "../../utils/debugger.h"
@@ -264,29 +265,66 @@ namespace Graphick::Editor {
 
       const uuid id = std::get<0>(components).id;
       const Renderer::Geometry::Path& path = std::get<1>(components).path;
-      const TransformComponent& transform = std::get<2>(components);
+      const TransformComponent& transform_component = std::get<2>(components);
+      const mat2x3 transform = transform_component.get();
 
-      // TODO: optimize double inversion
-      Math::rect selection_rect = { transform.revert(rect.min), transform.revert(rect.max) };
+      // vec2 r1 = transform / rect.min;
+      // vec2 r2 = transform / vec2{ rect.max.x, rect.min.y };
+      // vec2 r3 = transform / vec2{ rect.min.x, rect.max.y };
+      // vec2 r4 = transform / rect.max;
 
-      if (deep_search) {
-        vertices.clear();
+      // std::tuple<vec2, vec2, vec2, vec2> rect_points = { r1, r2, r3, r4 };
 
-        if (Math::is_rect_in_rect(path.bounding_rect(), selection_rect)) {
-          entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
-          continue;
-        }
+      // TODO: add constructor for 4 vec2s
+      // Math::rect selection_rect = {
+      //   min(min(r1, r2), min(r3, r4)),
+      //   max(max(r1, r2), max(r3, r4))
+      // };
 
-        vertices.reserve(path.segments().size() + 1);
+      float angle = Math::rotation(transform);
 
-        if (path.intersects(selection_rect, vertices)) {
-          entities.insert({ id, Selection::SelectionElementEntry{ vertices } });
+      if (Math::is_almost_zero(std::fmodf(angle, MATH_TWO_PI))) {
+        Math::rect selection_rect = transform / rect;
+
+        if (deep_search) {
+          vertices.clear();
+
+          if (Math::is_rect_in_rect(transform_component.bounding_rect(), rect)) {
+            entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+            continue;
+          }
+
+          vertices.reserve(path.segments().size() + 1);
+
+          if (path.intersects(selection_rect, vertices)) {
+            entities.insert({ id, Selection::SelectionElementEntry{ vertices } });
+          }
+        } else {
+          if (path.intersects(selection_rect)) {
+            entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+          }
         }
       } else {
-        if (path.intersects(selection_rect)) {
-          entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+        if (deep_search) {
+          vertices.clear();
+
+          if (Math::is_rect_in_rect(transform_component.bounding_rect(), rect)) {
+            entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+            continue;
+          }
+
+          vertices.reserve(path.segments().size() + 1);
+
+          if (path.intersects(rect, transform, vertices)) {
+            entities.insert({ id, Selection::SelectionElementEntry{ vertices } });
+          }
+        } else {
+          if (path.intersects(rect, transform)) {
+            entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+          }
         }
       }
+
     }
 
     return entities;

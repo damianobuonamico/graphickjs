@@ -104,12 +104,15 @@ namespace Graphick::Renderer::Geometry {
     std::optional<std::weak_ptr<ControlPoint>> split(Segment& segment, float t);
 
     Math::rect bounding_rect() const;
+    Math::rect bounding_rect(const mat2x3& transform) const;
     Math::rect approx_bounding_rect() const;
     Math::rect large_bounding_rect() const;
 
     bool is_inside(const vec2 position, bool filled_search, bool deep_search = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
+    bool intersects(const Math::rect& rect, const mat2x3& transform) const;
     bool intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const;
+    bool intersects(const Math::rect& rect, const mat2x3& transform, std::unordered_set<uuid>& vertices) const;
 
     void create_in_handle(const vec2 position);
     void create_out_handle(const vec2 position);

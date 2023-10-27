@@ -124,13 +124,7 @@ namespace Graphick::Editor::Input {
   void DirectSelectTool::render_overlays() const {
     if (!m_selection_rect.active()) return;
 
-    vec2 position = m_selection_rect.position();
-    mat2x3 transform;
-
-    transform[0].z = position.x;
-    transform[1].z = position.y;
-
-    Renderer::Renderer::draw_outline(m_selection_rect.path(), transform);
+    Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
   }
 
   void DirectSelectTool::populate_cache() {

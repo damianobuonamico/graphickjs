@@ -2,6 +2,7 @@
 
 #include "../../math/math.h"
 #include "../../math/vector.h"
+#include "../../math/matrix.h"
 
 #include "../../history/command_history.h"
 #include "../../history/commands.h"
@@ -243,6 +244,7 @@ namespace Graphick::Renderer::Geometry {
     return SEGMENT_CALL(get, t);
   }
 
+  // TODO: check if segment level cache is worth it (probably is invalidated when path level cache is invalidated)
   rect Segment::bounding_rect() const {
     GK_TOTAL("Segment::bounding_rect");
 
@@ -260,6 +262,21 @@ namespace Graphick::Renderer::Geometry {
 
     return rect;
   }
+
+  rect Segment::bounding_rect(const mat2x3& transform) const {
+    GK_TOTAL("Segment::bounding_rect(transform)");
+
+    rect rect{};
+    std::vector<vec2> points = extrema(transform);
+
+    for (vec2& point : points) {
+      Math::min(rect.min, point, rect.min);
+      Math::max(rect.max, point, rect.max);
+    }
+
+    return rect;
+  }
+
 
   rect Segment::approx_bounding_rect() const {
     GK_TOTAL("Segment::approx_bounding_rect");
@@ -332,9 +349,20 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
-  bool Segment::intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const {
-    Math::rect bounding_rect = this->bounding_rect();
+  bool Segment::intersects(const Math::rect& rect, const mat2x3& transform) const {
+    Math::rect bounding_rect = transform * this->bounding_rect();
 
+    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
+    if (Math::is_point_in_rect(transform * p0(), rect) || Math::is_point_in_rect(transform * p3(), rect)) return true;
+
+    for (Math::rect& line : Math::lines_from_rect(rect)) {
+      if (intersects_line(line, transform)) return true;
+    }
+
+    return false;
+  }
+
+  bool Segment::intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const {
     if (found) {
       if (Math::is_point_in_rect(p0(), rect)) vertices.insert(m_p0->id);
       if (Math::is_point_in_rect(p3(), rect)) vertices.insert(m_p3->id);
@@ -342,6 +370,7 @@ namespace Graphick::Renderer::Geometry {
       return false;
     }
 
+    Math::rect bounding_rect = this->bounding_rect();
     if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
 
     bool p0_inside = Math::is_point_in_rect(p0(), rect);
@@ -358,8 +387,37 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
+  bool Segment::intersects(const Math::rect& rect, const bool found, const mat2x3& transform, std::unordered_set<uuid>& vertices) const {
+    if (found) {
+      if (Math::is_point_in_rect(transform * p0(), rect)) vertices.insert(m_p0->id);
+      if (Math::is_point_in_rect(transform * p3(), rect)) vertices.insert(m_p3->id);
+
+      return false;
+    }
+
+    Math::rect bounding_rect = transform * this->bounding_rect();
+    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
+
+    bool p0_inside = Math::is_point_in_rect(transform * p0(), rect);
+    bool p3_inside = Math::is_point_in_rect(transform * p3(), rect);
+
+    if (p0_inside) vertices.insert(m_p0->id);
+    if (p3_inside) vertices.insert(m_p3->id);
+    if (p0_inside || p3_inside) return true;
+
+    for (Math::rect& line : Math::lines_from_rect(rect)) {
+      if (intersects_line(line, transform)) return true;
+    }
+
+    return false;
+  }
+
   bool Segment::intersects_line(const Math::rect& line) const {
     return line_intersection_points(line).has_value();
+  }
+
+  bool Segment::intersects_line(const Math::rect& line, const mat2x3& transform) const {
+    return line_intersection_points(line, transform).has_value();
   }
 
   void Segment::create_p1(const vec2 position) {
@@ -481,10 +539,25 @@ namespace Graphick::Renderer::Geometry {
     return extrema;
   }
 
+  std::vector<vec2> Segment::extrema(const mat2x3& transform) const {
+    std::vector <vec2> extrema;
+
+    for (float t : SEGMENT_CALL(extrema, transform)) {
+      extrema.push_back(transform * get(t));
+    }
+
+    return extrema;
+  }
+
   std::vector<float> Segment::linear_extrema() const {
     return { 0.0f, 1.0f };
   }
 
+  std::vector<float> Segment::linear_extrema(const mat2x3& transform) const {
+    return { 0.0f, 1.0f };
+  }
+
+  // TODO: extract quadratic_extrema in math.h
   std::vector<float> Segment::quadratic_extrema() const {
     const vec2 A = p0();
     const vec2 B = p1();
@@ -507,8 +580,34 @@ namespace Graphick::Renderer::Geometry {
     return roots;
   }
 
+  std::vector<float> Segment::quadratic_extrema(const mat2x3& transform) const {
+    const vec2 A = transform * p0();
+    const vec2 B = transform * p1();
+    const vec2 C = transform * p3();
+
+    const vec2 a = A - 2.0f * B + C;
+    const vec2 b = 2.0f * (B - A);
+
+    std::vector<float> roots = { 0.0f, 1.0f };
+
+    for (int i = 0; i < 2; i++) {
+      if (Math::is_almost_zero(a[i] - b[i])) continue;
+
+      float t = a[i] / (a[i] - b[i]);
+      if (t > 0.0f && t < 1.0f) {
+        roots.push_back(t);
+      }
+    }
+
+    return roots;
+  }
+
   std::vector<float> Segment::cubic_extrema() const {
     return Math::bezier_extrema(p0(), p1(), p2(), p3());
+  }
+
+  std::vector<float> Segment::cubic_extrema(const mat2x3& transform) const {
+    return Math::bezier_extrema(transform * p0(), transform * p1(), transform * p2(), transform * p3());
   }
 
   Segment::SegmentPointDistance Segment::linear_closest_to(const vec2 position, int iterations) const {
@@ -693,13 +792,79 @@ namespace Graphick::Renderer::Geometry {
     return points.empty() ? std::nullopt : std::optional{ points };
   }
 
+  std::optional<std::vector<vec2>> Segment::line_intersection_points(const rect& line, const mat2x3& transform, const float threshold) const {
+    std::vector<float> intersections = line_intersections(line, transform);
+    if (intersections.empty()) return std::nullopt;
+
+    std::vector<vec2> points{};
+    Math::rect rect = { min(line.min, line.max), max(line.min, line.max) };
+
+    if (Math::is_almost_equal(rect.min.x, rect.max.x, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+      for (float intersection : intersections) {
+        vec2 point = transform * get(intersection);
+
+        if (point.y >= rect.min.y && point.y <= rect.max.y) {
+          points.push_back(point);
+        }
+      }
+    } else if (Math::is_almost_equal(rect.min.y, rect.max.y, GEOMETRY_MAX_INTERSECTION_ERROR)) {
+      for (float intersection : intersections) {
+        vec2 point = transform * get(intersection);
+
+        if (point.x >= rect.min.x && point.x <= rect.max.x) {
+          points.push_back(point);
+        }
+      }
+    } else {
+      for (float intersection : intersections) {
+        vec2 point = transform * get(intersection);
+
+        if (Math::is_point_in_rect(point, rect)) {
+          points.push_back(point);
+        }
+      }
+    }
+
+    return points.empty() ? std::nullopt : std::optional{ points };
+  }
+
   std::vector<float> Segment::line_intersections(const rect& line) const {
     return SEGMENT_CALL(line_intersections, line);
   }
 
+  std::vector<float> Segment::line_intersections(const rect& line, const mat2x3& transform) const {
+    return SEGMENT_CALL(line_intersections, line, transform);
+  }
+
+  // TOOD: extract in math.h
   std::vector<float> Segment::linear_line_intersections(const rect& line) const {
     const vec2 A = p0();
     const vec2 B = p3();
+
+    float den = line.max.x - line.min.x;
+
+    if (Math::is_almost_zero(den)) {
+      float t = (line.min.x - A.x) / (B.x - A.x);
+      if (t >= 0.0f && t <= 1.0f) {
+        return { t };
+      }
+
+      return {};
+    }
+
+    float m = (line.max.y - line.min.y) / den;
+
+    float t = (m * line.min.x - line.min.y + A.y - m * A.x) / (m * (B.x - A.x) + A.y - B.y);
+    if (t >= 0.0f && t <= 1.0f) {
+      return { t };
+    }
+
+    return {};
+  }
+
+  std::vector<float> Segment::linear_line_intersections(const rect& line, const mat2x3& transform) const {
+    const vec2 A = transform * p0();
+    const vec2 B = transform * p3();
 
     float den = line.max.x - line.min.x;
 
@@ -726,6 +891,11 @@ namespace Graphick::Renderer::Geometry {
     return {};
   }
 
+  std::vector<float> Segment::quadratic_line_intersections(const rect& line, const mat2x3& transform) const {
+    return {};
+  }
+
+  // TODO: extract in math.h
   std::vector<float> Segment::cubic_line_intersections(const rect& line) const {
     float alpha = -std::atan2f(line.max.y - line.min.y, line.max.x - line.min.x);
     float sin_alpha = std::sinf(alpha);
@@ -735,6 +905,96 @@ namespace Graphick::Renderer::Geometry {
     vec2 B = Math::rotate(p1() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
     vec2 C = Math::rotate(p2() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
     vec2 D = Math::rotate(p3() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
+
+    float pa = A.y;
+    float pb = B.y;
+    float pc = C.y;
+    float pd = D.y;
+
+    float d = -pa + 3 * pb - 3 * pc + pd;
+    float a = 3 * pa - 6 * pb + 3 * pc;
+    float b = -3 * pa + 3 * pb;
+    float c = pa;
+
+    std::vector<float> roots = {};
+
+    if (Math::is_almost_zero(d)) {
+      /* This is not a cubic curve. */
+      if (Math::is_almost_zero(a)) {
+        /* This is not a quadratic curve either. */
+        if (Math::is_almost_zero(b)) {
+          return {};
+        }
+
+        roots.push_back(-c / b);
+      } else {
+        float q = std::sqrt(b * b - 4 * a * c);
+        float a2 = 2 * a;
+
+        roots.insert(roots.end(), { (q - b) / a2, (-b - q) / a2 });
+      }
+    } else {
+      a /= d;
+      b /= d;
+      c /= d;
+
+      float p = (3 * b - a * a) / 3;
+      float p3 = p / 3;
+      float q = (2 * a * a * a - 9 * a * b + 27 * c) / 27;
+      float q2 = q / 2;
+      float discriminant = q2 * q2 + p3 * p3 * p3;
+
+      float u1, v1, x1, x2, x3;
+      if (discriminant < 0) {
+        float mp3 = -p / 3;
+        float mp33 = mp3 * mp3 * mp3;
+        float r = sqrt(mp33);
+        float t = -q / (2 * r);
+        float cosphi = t < -1 ? -1 : t > 1 ? 1 : t;
+        float phi = acos(cosphi);
+        float cbrtr = std::cbrt(r);
+        float t1 = 2 * cbrtr;
+
+        x1 = t1 * std::cosf(phi / 3) - a / 3;
+        x2 = t1 * std::cosf((phi + MATH_TWO_PI) / 3) - a / 3;
+        x3 = t1 * std::cosf((phi + 2 * MATH_TWO_PI) / 3) - a / 3;
+
+        roots.insert(roots.end(), { x1, x2, x3 });
+      } else if (Math::is_almost_zero(discriminant)) {
+        u1 = q2 < 0 ? std::cbrt(-q2) : -std::cbrt(q2);
+        x1 = 2 * u1 - a / 3;
+        x2 = -u1 - a / 3;
+
+        roots.insert(roots.end(), { x1, x2 });
+      } else {
+        float sd = std::sqrt(discriminant);
+        u1 = std::cbrt(-q2 + sd);
+        v1 = std::cbrt(q2 + sd);
+
+        roots.push_back(u1 - v1 - a / 3);
+      }
+    }
+
+    std::vector<float> parsed_roots = {};
+
+    for (float t : roots) {
+      if (t >= 0.0f && t <= 1.0f) {
+        parsed_roots.push_back(t);
+      }
+    }
+
+    return parsed_roots;
+  }
+
+  std::vector<float> Segment::cubic_line_intersections(const rect& line, const mat2x3& transform) const {
+    float alpha = -std::atan2f(line.max.y - line.min.y, line.max.x - line.min.x);
+    float sin_alpha = std::sinf(alpha);
+    float cos_alpha = std::cosf(alpha);
+
+    vec2 A = Math::rotate(transform * p0() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
+    vec2 B = Math::rotate(transform * p1() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
+    vec2 C = Math::rotate(transform * p2() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
+    vec2 D = Math::rotate(transform * p3() - line.min, { 0.0f, 0.0f }, sin_alpha, cos_alpha);
 
     float pa = A.y;
     float pb = B.y;

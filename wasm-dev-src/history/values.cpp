@@ -113,10 +113,26 @@ namespace Graphick::History {
 
   void Mat2x3Value::rotate(const float amount) {
     if (amount == 0) return;
+
+    m_delta = Math::rotate(m_value, amount) - m_value;
+  }
+
+  void Mat2x3Value::rotate(const float sin_amount, const float cos_amount) {
+    if (sin_amount == 0 && cos_amount == 1) return;
+
+    m_delta = Math::rotate(m_value, sin_amount, cos_amount) - m_value;
   }
 
   void Mat2x3Value::rotate(const vec2 center, const float amount) {
     if (amount == 0) return;
+
+    m_delta = Math::rotate(m_value, center, amount) - m_value;
+  }
+
+  void Mat2x3Value::rotate(const vec2 center, const float sin_amount, const float cos_amount) {
+    if (sin_amount == 0 && cos_amount == 1) return;
+
+    m_delta = Math::rotate(m_value, center, sin_amount, cos_amount) - m_value;
   }
 
   void Mat2x3Value::apply() {

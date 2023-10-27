@@ -127,7 +127,9 @@ namespace Graphick::History {
     void scale(const vec2 amount);
     void scale(const vec2 center, const vec2 amount);
     void rotate(const float amount);
+    void rotate(const float sin_amount, const float cos_amount);
     void rotate(const vec2 center, const float amount);
+    void rotate(const vec2 center, const float sin_amount, const float cos_amount);
 
     void apply();
   private:

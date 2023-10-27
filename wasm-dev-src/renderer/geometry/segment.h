@@ -81,6 +81,7 @@ namespace Graphick::Renderer::Geometry {
     vec2 get(const float t) const;
 
     rect bounding_rect() const;
+    rect bounding_rect(const mat2x3& transform) const;
     rect approx_bounding_rect() const;
     vec2 size() const;
 
@@ -88,8 +89,11 @@ namespace Graphick::Renderer::Geometry {
 
     bool is_inside(const vec2 position, bool deep_search = false, float threshold = 0.0f) const;
     bool intersects(const Math::rect& rect) const;
+    bool intersects(const Math::rect& rect, const mat2x3& transform) const;
     bool intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const;
+    bool intersects(const Math::rect& rect, const bool found, const mat2x3& transform, std::unordered_set<uuid>& vertices) const;
     bool intersects_line(const Math::rect& line) const;
+    bool intersects_line(const Math::rect& line, const mat2x3& transform) const;
 
     void create_p1(const vec2 position);
     void create_p2(const vec2 position);
@@ -111,21 +115,30 @@ namespace Graphick::Renderer::Geometry {
     vec2 cubic_get(const float t) const;
 
     std::vector<vec2> extrema() const;
+    std::vector<vec2> extrema(const mat2x3& transform) const;
 
     std::vector<float> linear_extrema() const;
+    std::vector<float> linear_extrema(const mat2x3& transform) const;
     std::vector<float> quadratic_extrema() const;
+    std::vector<float> quadratic_extrema(const mat2x3& transform) const;
     std::vector<float> cubic_extrema() const;
+    std::vector<float> cubic_extrema(const mat2x3& transform) const;
 
     SegmentPointDistance linear_closest_to(const vec2 position, int iterations = 4) const;
     SegmentPointDistance quadratic_closest_to(const vec2 position, int iterations = 4) const;
     SegmentPointDistance cubic_closest_to(const vec2 position, int iterations = 4) const;
 
-    std::optional<std::vector<vec2>> line_intersection_points(const rect& line, const float threshold = 1e-5) const;
+    std::optional<std::vector<vec2>> line_intersection_points(const rect& line, const float threshold = 1e-5f) const;
+    std::optional<std::vector<vec2>> line_intersection_points(const rect& line, const mat2x3& transform, const float threshold = 1e-5f) const;
     std::vector<float> line_intersections(const rect& line) const;
+    std::vector<float> line_intersections(const rect& line, const mat2x3& transform) const;
 
     std::vector<float> linear_line_intersections(const rect& line) const;
+    std::vector<float> linear_line_intersections(const rect& line, const mat2x3& transform) const;
     std::vector<float> quadratic_line_intersections(const rect& line) const;
+    std::vector<float> quadratic_line_intersections(const rect& line, const mat2x3& transform) const;
     std::vector<float> cubic_line_intersections(const rect& line) const;
+    std::vector<float> cubic_line_intersections(const rect& line, const mat2x3& transform) const;
   private:
     // The type of segment: linear, quadratic, or cubic bezier.
     Kind m_kind;

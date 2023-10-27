@@ -131,6 +131,9 @@ namespace Graphick::Math {
   float dot(const vec3& v1, const vec3& v2);
   float dot(const vec4& v1, const vec4& v2);
 
+  float cross(const vec2 v1, const vec2 v2);
+  vec3 cross(const vec3& v1, const vec3& v2);
+
   float angle(const vec2 v1, const vec2 v2);
   float atan2(const vec2 v1, const vec2 v2);
 

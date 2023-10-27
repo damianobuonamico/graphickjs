@@ -176,9 +176,11 @@ namespace Graphick::Renderer {
     get()->add_line_instances(path, transform);
   }
 
-  void Renderer::draw_square(const vec2 position, const float radius) {
-    get()->add_square_instance(position);
-    get()->add_white_square_instance(position);
+  void Renderer::draw_square(const vec2 position, const float radius, const mat2x3& transform) {
+    vec2 transformed_position = transform * position;
+
+    get()->add_square_instance(transformed_position);
+    get()->add_white_square_instance(transformed_position);
   }
 
   void Renderer::debug_rect(const Math::rect rect, const vec4& color) {

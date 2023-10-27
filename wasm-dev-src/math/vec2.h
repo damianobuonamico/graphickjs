@@ -15,8 +15,8 @@ namespace Graphick::Math {
    * @struct vec2
    */
   struct vec2 {
-    union { float x, r, s; };
-    union { float y, g, t; };
+    union { float x, r, s; };   /* The 0 component of the vector. */
+    union { float y, g, t; };   /* The 1 component of the vector. */
 
     /* -- Component accesses -- */
 

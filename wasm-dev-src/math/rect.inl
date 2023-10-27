@@ -38,6 +38,10 @@ namespace Graphick::Math {
     return max - min;
   };
 
+  constexpr vec2 rect::center() const {
+    return (min + max) / 2.0f;
+  }
+
   constexpr float rect::area() const {
     vec2 size = this->size();
     return size.x * size.y;

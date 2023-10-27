@@ -159,18 +159,14 @@ namespace Graphick::Editor::Input {
 
     if (tool.is_in_category(Tool::CategoryDirect) || !manipulator.active()) return;
 
-    vec2 position = manipulator.position();
-    mat2x3 transform;
-
-    transform[0].z = position.x;
-    transform[1].z = position.y;
+    mat2x3 transform = manipulator.transform();
 
     Renderer::Renderer::draw_outline(manipulator.path(), transform);
 
     const vec2* handles = manipulator.handles();
 
     for (int i = 0; i < Manipulator::RN; i++) {
-      Renderer::Renderer::draw_square(handles[i], 5.0f / zoom);
+      Renderer::Renderer::draw_square(handles[i], 5.0f / zoom, transform);
     }
   }
 

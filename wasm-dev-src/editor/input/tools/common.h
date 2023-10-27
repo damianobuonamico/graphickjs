@@ -6,6 +6,8 @@
 
 #include "../../../renderer/geometry/internal.h"
 
+#include "../../../math/mat2x3.h"
+
 namespace Graphick::History {
   class Mat2x3Value;
 }
@@ -71,6 +73,13 @@ namespace Graphick::Editor::Input {
     inline Renderer::Geometry::Internal::PathInternal path() const { return m_path; }
 
     /**
+     * @brief Returns the transform matrix of the selection rectangle.
+     *
+     * @return A mat2x3 object representing the transform matrix of the selection rectangle.
+     */
+    mat2x3 transform() const;
+
+    /**
      * @brief Returns the bounding rectangle of the selection rectangle.
      *
      * @return A rect object representing the bounding rectangle of the selection rectangle.
@@ -89,7 +98,14 @@ namespace Graphick::Editor::Input {
      *
      * @param size A vec2 object representing the new size of the selection rectangle.
      */
-    void size(const vec2 size);
+    inline void size(const vec2 size) { m_size = size; }
+
+    /**
+     * @brief Sets the angle of the selection rectangle.
+     *
+     * @param angle A float value representing the new angle of the selection rectangle.
+     */
+    inline void angle(const float angle) { m_angle = angle; }
 
     /**
      * @brief Resets the selection rectangle to its default state.
@@ -101,6 +117,8 @@ namespace Graphick::Editor::Input {
 
     vec2 m_position;                                      /* Position of the selection rectangle. */
     vec2 m_anchor_position;                               /* Absolute anchor position of the selection rectangle. */
+    vec2 m_size = { 1.0f, 1.0f };                         /* Size of the selection rectangle. */
+    float m_angle = 0.0f;                                 /* Angle of the selection rectangle. */
 
     Renderer::Geometry::Internal::PathInternal m_path;    /* The path to render. */
   };
@@ -189,10 +207,25 @@ namespace Graphick::Editor::Input {
      *
      * @param bounding_rect The target bounding rectangle of the manipulator.
      */
-    void update_positions(const rect& bounding_rect);
+    void update_positions(const rrect& bounding_rect);
+
+    /**
+     * @brief Scale pointer move event handler.
+     *
+     * @param position The position of the pointer.
+     */
+    void on_scale_pointer_move(const vec2 position);
+
+    /**
+     * @brief Rotate pointer move event handler.
+     *
+     * @param position The position of the pointer.
+     */
+    void on_rotate_pointer_move(const vec2 position);
   private:
     std::vector<History::Mat2x3Value*> m_cache;   /* The cache of the transform matrices. */
     vec2 m_handles[HandleNone];                   /* The positions of the handles. */
+    float m_threshold = 0.0f;                     /* The virtual size of the handles. */
 
     bool m_in_use = false;                        /* Whether the manipulator is in use or not. */
     vec2 m_center = { 0.0f, 0.0f };               /* The center of the manipulator. */
@@ -200,6 +233,7 @@ namespace Graphick::Editor::Input {
     HandleType m_active_handle;                   /* The active handle. */
 
     rect m_start_bounding_rect;                   /* The start bounding rectangle of the manipulator. */
+    mat2x3 m_start_transform;                     /* The start transform matrix of the manipulator. */
   };
 
 }

@@ -6,8 +6,36 @@
 
 namespace Graphick::Math {
 
+  inline rect rrect_to_rect(const rrect& r) {
+    vec2 center = r.center();
+
+    float sin = std::sinf(r.angle);
+    float cos = std::cosf(r.angle);
+
+    vec2 r1 = rotate(r.min, center, sin, cos);
+    vec2 r2 = rotate({ r.min.x, r.max.y }, center, sin, cos);
+    vec2 r3 = rotate(r.max, center, sin, cos);
+    vec2 r4 = rotate({ r.max.x, r.min.y }, center, sin, cos);
+
+    return {
+      min(min(r1, r2), min(r3, r4)),
+      max(max(r1, r2), max(r3, r4))
+    };
+  }
+
+  inline rect straighten_rect(const rect& r) {
+    return {
+      min(r.min, r.max),
+      max(r.min, r.max)
+    };
+  }
+
   inline bool is_point_in_circle(const vec2 point, const vec2 center, const float radius) {
     return squared_distance(point, center) <= radius * radius;
+  }
+
+  inline bool is_point_in_ellipse(const vec2 point, const vec2 center, const vec2 radius) {
+    return std::pow((point.x - center.x), 2) / std::pow(radius.x, 2) + std::pow((point.y - center.y), 2) / std::pow(radius.y, 2) <= 1.0f;
   }
 
   inline bool is_point_in_rect(const vec2 point, const rect& rect, const float threshold = 0.0f) {

@@ -2,6 +2,7 @@
 
 #include "../../math/math.h"
 #include "../../math/mat2.h"
+#include "../../math/matrix.h"
 #include "../../math/vector.h"
 #include "../../math/algorithms/fit.h"
 
@@ -856,6 +857,32 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
+  Math::rect Path::bounding_rect(const mat2x3& transform) const {
+    GK_TOTAL("Path::bounding_rect(mat2x3)");
+    // TODO: cache
+    // if (m_bounding_rect_cache.has_value()) return m_bounding_rect_cache.value();
+
+    if (m_segments.empty()) {
+      if (m_last_point == nullptr) return { };
+
+      vec2 p = transform * m_last_point->get();
+      return { p, p };
+    }
+
+    Math::rect rect{};
+
+    for (const auto& segment : m_segments) {
+      Math::rect segment_rect = segment->bounding_rect(transform);
+
+      min(rect.min, segment_rect.min, rect.min);
+      max(rect.max, segment_rect.max, rect.max);
+    }
+
+    // m_bounding_rect_cache = rect;
+
+    return rect;
+  }
+
   Math::rect Path::approx_bounding_rect() const {
     GK_TOTAL("Path::approx_bounding_rect");
     // base ~ 0.36ms
@@ -978,8 +1005,29 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
+  bool Path::intersects(const Math::rect& rect, const mat2x3& transform) const {
+    GK_TOTAL("Path::intersects(mat2x3)");
+
+    if (m_segments.empty()) {
+      if (m_last_point && Math::is_point_in_rect(transform * m_last_point->get(), rect)) {
+        return true;
+      }
+      return false;
+    }
+
+    Math::rect bounding_rect = transform * approx_bounding_rect();
+
+    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
+
+    for (const auto& segment : m_segments) {
+      if (segment->intersects(rect, transform)) return true;
+    }
+
+    return false;
+  }
+
   bool Path::intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const {
-    GK_TOTAL("Path::intersects (deep)");
+    GK_TOTAL("Path::intersects(deep)");
 
     if (m_segments.empty()) {
       if (m_last_point == nullptr) return false;
@@ -997,6 +1045,31 @@ namespace Graphick::Renderer::Geometry {
     bool found = false;
     for (const auto& segment : m_segments) {
       if (segment->intersects(rect, found, vertices)) found = true;
+    }
+
+    return found;
+  }
+
+
+  bool Path::intersects(const Math::rect& rect, const mat2x3& transform, std::unordered_set<uuid>& vertices) const {
+    GK_TOTAL("Path::intersects(deep, mat2x3)");
+
+    if (m_segments.empty()) {
+      if (m_last_point == nullptr) return false;
+
+      if (Math::is_point_in_rect(transform * m_last_point->get(), rect)) {
+        vertices.insert(m_last_point->id);
+        return true;
+      }
+    }
+
+    Math::rect bounding_rect = transform * approx_bounding_rect();
+
+    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
+
+    bool found = false;
+    for (const auto& segment : m_segments) {
+      if (segment->intersects(rect, found, transform, vertices)) found = true;
     }
 
     return found;

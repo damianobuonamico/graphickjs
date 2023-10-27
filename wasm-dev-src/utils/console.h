@@ -3,6 +3,8 @@
 #include "assert.h"
 #include "debugger.h"
 
+#include "../math/vec2.h"
+
 #include <stdio.h>
 #include <sstream>
 #include <ostream>
@@ -184,6 +186,15 @@ namespace Graphick::Utils {
     std::string id;
     bool total;
   };
+
+}
+
+namespace std {
+
+  inline ostream& operator<<(ostream& os, const Graphick::Math::vec2& v) {
+    os << "(" << v.x << ", " << v.y << ")";
+    return os;
+  }
 
 }
 

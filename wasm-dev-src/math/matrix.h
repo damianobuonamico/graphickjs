@@ -196,6 +196,18 @@ namespace Graphick::Math {
   mat2x3 rotate(const mat2x3& m, const float t);
 
   /**
+   * @brief Performs a 2D rotation to a 2x3 matrix.
+   *
+   * This function is faster than the regular rotate function because it does not need to calculate the sine and cosine of the angle.
+   *
+   * @param m The matrix to rotate.
+   * @param sin_t The sine of the angle to rotate by.
+   * @param cos_t The cosine of the angle to rotate by.
+   * @return The rotated matrix.
+   */
+  mat2x3 rotate(const mat2x3& m, const float sin_t, const float cos_t);
+
+  /**
    * @brief Performs a 2D rotation from an origin point to a 2x3 matrix.
    *
    * @param m The matrix to rotate.
@@ -206,12 +218,32 @@ namespace Graphick::Math {
   mat2x3 rotate(const mat2x3& m, const vec2 c, const float t);
 
   /**
+   * @brief Performs a 2D rotation to a 2x3 matrix.
+   *
+   * This function is faster than the regular rotate function because it does not need to calculate the sine and cosine of the angle.
+   *
+   * @param m The matrix to rotate.
+   * @param sin_t The sine of the angle to rotate by.
+   * @param cos_t The cosine of the angle to rotate by.
+   * @return The rotated matrix.
+   */
+  mat2x3 rotate(const mat2x3& m, const vec2 c, const float sin_t, const float cos_t);
+
+  /**
    * @brief Decomposes a 2x3 matrix into its translation, scale, and rotation components.
    *
    * @param m The matrix to decompose.
    * @return The decomposed matrix.
    */
   DecomposedTransform decompose(const mat2x3& m);
+
+  /**
+   * @brief Calculates the rotation component of a 2x3 matrix.
+   *
+   * @param m The matrix to calculate the rotation component of.
+   * @return The rotation component of the matrix.
+   */
+  float rotation(const mat2x3& m);
 
   /**
    * @brief Overloaded operators for transforming rects.

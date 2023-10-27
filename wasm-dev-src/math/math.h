@@ -8,7 +8,11 @@
 
 namespace Graphick::Math {
 
+  rect rrect_to_rect(const rrect& r);
+  rect straighten_rect(const rect& r);
+
   bool is_point_in_circle(const vec2 point, const vec2 center, const float radius);
+  bool is_point_in_ellipse(const vec2 point, const vec2 center, const vec2 radius);
   bool is_point_in_rect(const vec2 point, const rect& rect, const float threshold);
 
   bool does_rect_intersect_rect(const rect& a, const rect& b);

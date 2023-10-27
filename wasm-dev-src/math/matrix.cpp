@@ -293,13 +293,33 @@ namespace Graphick::Math {
   }
 
   mat2x3 rotate(const mat2x3& m, const float t) {
+    return rotate(m, std::sinf(t), std::cosf(t));
+  }
+
+  mat2x3 rotate(const mat2x3& m, const float sin_t, const float cos_t) {
+    const float src_b00 = m[0][0];
+    const float src_b01 = m[0][1];
+    const float src_b02 = m[0][2];
+    const float src_b10 = m[1][0];
+    const float src_b11 = m[1][1];
+    const float src_b12 = m[1][2];
+
     mat2x3 result;
+    result[0][0] = cos_t * src_b00 - sin_t * src_b10;
+    result[0][1] = cos_t * src_b01 - sin_t * src_b11;
+    result[0][2] = cos_t * src_b02 - sin_t * src_b12;
+    result[1][0] = sin_t * src_b00 + cos_t * src_b10;
+    result[1][1] = sin_t * src_b01 + cos_t * src_b11;
+    result[1][2] = sin_t * src_b02 + cos_t * src_b12;
     return result;
   }
 
   mat2x3 rotate(const mat2x3& m, const vec2 c, const float t) {
-    mat2x3 result;
-    return result;
+    return translate(rotate(translate(m, -c), t), c);
+  }
+
+  mat2x3 rotate(const mat2x3& m, const vec2 c, const float sin_t, const float cos_t) {
+    return translate(rotate(translate(m, -c), sin_t, cos_t), c);
   }
 
   /* -- decompose -- */
@@ -320,15 +340,21 @@ namespace Graphick::Math {
     return decomposed;
   }
 
+  float rotation(const mat2x3& m) {
+    return std::atan2f(m[1][0], m[0][0]);
+  }
+
   /* -- operators -- */
 
   rect operator*(const mat2x3& m, const rect& r) {
-    vec2 trans_min = m * r.min;
-    vec2 trans_max = m * r.max;
+    vec2 r1 = m * r.min;
+    vec2 r2 = m * vec2{ r.min.x, r.max.y };
+    vec2 r3 = m * r.max;
+    vec2 r4 = m * vec2{ r.max.x, r.min.y };
 
     return {
-      min(trans_min, trans_max),
-      max(trans_min, trans_max)
+      min(min(r1, r2), min(r3, r4)),
+      max(max(r1, r2), max(r3, r4))
     };
   }
 
