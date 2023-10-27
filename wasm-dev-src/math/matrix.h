@@ -238,6 +238,14 @@ namespace Graphick::Math {
   DecomposedTransform decompose(const mat2x3& m);
 
   /**
+   * @brief Calculates the translation component of a 2x3 matrix.
+   *
+   * @param m The matrix to calculate the translation component of.
+   * @return The translation component of the matrix.
+   */
+  vec2 translation(const mat2x3& m);
+
+  /**
    * @brief Calculates the rotation component of a 2x3 matrix.
    *
    * @param m The matrix to calculate the rotation component of.

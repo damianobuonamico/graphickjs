@@ -77,7 +77,8 @@ namespace Graphick::Editor::Input {
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
     std::optional<std::weak_ptr<History::Vec2Value>> m_handle = std::nullopt;
 
-    std::vector<History::Vec2Value*> m_vector_cache;
+    std::vector<std::pair<History::Vec2Value*, size_t>> m_vector_cache;
+    std::vector<std::pair<History::Mat2x3Value*, vec2>> m_transform_cache;
     std::vector<History::Mat2x3Value*> m_matrix_cache;
 
     SelectionRect m_selection_rect;

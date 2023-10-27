@@ -340,6 +340,10 @@ namespace Graphick::Math {
     return decomposed;
   }
 
+  vec2 translation(const mat2x3& m) {
+    return { m[0][2], m[1][2] };
+  }
+
   float rotation(const mat2x3& m) {
     return std::atan2f(m[1][0], m[0][0]);
   }

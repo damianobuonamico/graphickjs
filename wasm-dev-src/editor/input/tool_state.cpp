@@ -80,7 +80,7 @@ namespace Graphick::Editor::Input {
   void ToolState::on_pointer_down(const float zoom) {
     Tool& tool = active();
 
-    if (!tool.is_in_category(Tool::CategoryDirect) && manipulator.on_pointer_down(InputManager::pointer.scene.position, 5.0f / zoom)) return;
+    if (!tool.is_in_category(Tool::CategoryDirect) && !tool.is_in_category(Tool::CategoryImmediate) && manipulator.on_pointer_down(InputManager::pointer.scene.position, 5.0f / zoom)) return;
 
     if (m_active == Tool::ToolType::DirectSelect && m_current == Tool::ToolType::Pen) {
       if (InputManager::hover.type() == HoverState::HoverType::Vertex) {
@@ -157,7 +157,7 @@ namespace Graphick::Editor::Input {
 
     tool.render_overlays();
 
-    if (tool.is_in_category(Tool::CategoryDirect) || !manipulator.active()) return;
+    if (tool.is_in_category(Tool::CategoryDirect) || tool.is_in_category(Tool::CategoryImmediate) || !manipulator.active()) return;
 
     mat2x3 transform = manipulator.transform();
 

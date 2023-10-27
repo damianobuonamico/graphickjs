@@ -10,6 +10,7 @@
 #include "../../../utils/console.h"
 
 #include "../../../math/vector.h"
+#include "../../../math/matrix.h"
 
 namespace Graphick::Editor::Input {
 
@@ -134,29 +135,39 @@ namespace Graphick::Editor::Input {
       if (!scene.has_entity(id)) continue;
 
       Entity entity = scene.get_entity(id);
+      History::Mat2x3Value* transform = entity.get_component<TransformComponent>()._value();
 
       if (entry.type == Selection::SelectionEntry::Type::Element && entity.is_element() && !((Selection::SelectionElementEntry&)(entry)).full()) {
         Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
 
+        m_transform_cache.emplace_back(transform, vec2{ 0.0f });
+
         for (auto& vertex : path.vertices()) {
           if (entry.vertices.find(vertex->id) == entry.vertices.end()) continue;
-          m_vector_cache.push_back(vertex);
-
           auto handles = path.relative_handles(vertex->id);
+          size_t i = m_transform_cache.size() - 1;
 
-          if (handles.in_handle) m_vector_cache.push_back(handles.in_handle);
-          if (handles.out_handle) m_vector_cache.push_back(handles.out_handle);
+          m_vector_cache.emplace_back(vertex, i);
+
+          if (handles.in_handle) m_vector_cache.emplace_back(handles.in_handle, i);
+          if (handles.out_handle) m_vector_cache.emplace_back(handles.out_handle, i);
         }
       } else if (entity.has_component<TransformComponent>()) {
-        m_matrix_cache.push_back(entity.get_component<TransformComponent>()._value());
+        m_matrix_cache.push_back(transform);
       }
     }
   }
 
-  // TODO: Implement rotation
   void DirectSelectTool::translate_selected() {
-    for (Graphick::History::Vec2Value* value : m_vector_cache) {
-      value->set_delta(InputManager::pointer.scene.delta);
+    for (size_t i = 0; i < m_transform_cache.size(); i++) {
+      auto& [transform, _] = m_transform_cache[i];
+      mat2x3 matrix = m_transform_cache[i].first->inverse();
+
+      m_transform_cache[i].second = matrix * InputManager::pointer.scene.position - matrix * InputManager::pointer.scene.origin;
+    }
+
+    for (auto& [value, i] : m_vector_cache) {
+      value->set_delta(m_transform_cache[i].second);
     }
 
     for (Graphick::History::Mat2x3Value* value : m_matrix_cache) {
@@ -165,7 +176,7 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::apply_selected() {
-    for (Graphick::History::Vec2Value* value : m_vector_cache) {
+    for (auto& [value, _] : m_vector_cache) {
       value->apply();
     }
 
