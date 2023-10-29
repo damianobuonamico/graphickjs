@@ -901,11 +901,11 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::flush_square_instances() {
-    flush_generic_square_instances(m_square_data, vec4{ 0.22f, 0.76f, 0.95f, 1.0f }, 5.0f / (float)m_viewport.zoom);
+    flush_generic_square_instances(m_square_data, vec4{ 0.22f, 0.76f, 0.95f, 1.0f }, std::round(5.0f * m_viewport.dpr) / m_viewport.zoom);
   }
 
   void Renderer::flush_white_square_instances() {
-    flush_generic_square_instances(m_white_square_data, vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, 3.0f / (float)m_viewport.zoom);
+    flush_generic_square_instances(m_white_square_data, vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, std::round(3.0f * m_viewport.dpr) / m_viewport.zoom);
   }
 
   void Renderer::flush_circle_instances() {
@@ -943,7 +943,7 @@ namespace Graphick::Renderer {
       {
         { m_programs.circle_program.view_projection_uniform, generate_projection_matrix(m_viewport.size, m_viewport.zoom) * translation },
         { m_programs.circle_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
-        { m_programs.circle_program.radius_uniform, 2.5f / (float)m_viewport.zoom },
+        { m_programs.circle_program.radius_uniform, 2.5f / m_viewport.zoom * m_viewport.dpr },
         { m_programs.circle_program.zoom_uniform, (float)m_viewport.zoom }
       },
       {

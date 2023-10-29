@@ -22,7 +22,8 @@ namespace Graphick::Renderer {
   struct Viewport {
     vec2 size;
     vec2 position;
-    float zoom;
+    float zoom;   /* This already includes the dpr. */
+    float dpr;
 
     vec4 background;
   };

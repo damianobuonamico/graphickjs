@@ -79,6 +79,7 @@ namespace Graphick::Editor::Input {
 
     if (!pointer.down && (keys.ctrl_state_changed || keys.space_state_changed)) {
       Editor::scene().tool_state.recalculate_active();
+      Editor::render();
     }
 
     if (instance->m_moving && !instance->m_abort) {

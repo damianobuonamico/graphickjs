@@ -361,6 +361,7 @@ namespace Graphick::Editor {
       Math::round(IVEC2_TO_VEC2(viewport.size()) * viewport.dpr()),
       viewport.position(),
       viewport.zoom() * viewport.dpr(),
+      viewport.dpr(),
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 

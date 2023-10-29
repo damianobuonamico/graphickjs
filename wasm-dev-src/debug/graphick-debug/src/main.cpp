@@ -21,11 +21,12 @@ struct PointerState {
 };
 
 static PointerState pointer_state;
+static float dpr;
 
 static void cursor_position_callback(GLFWwindow* window, double x, double y) {
   OPTICK_EVENT();
 
-  pointer_state.position = { (float)x, (float)y };
+  pointer_state.position = Graphick::vec2{ (float)x, (float)y } / dpr;
 
   Graphick::Editor::Input::InputManager::on_pointer_event(
     Graphick::Editor::Input::InputManager::PointerTarget::Canvas, Graphick::Editor::Input::InputManager::PointerEvent::Move,
@@ -47,7 +48,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 }
 
 static void window_resize_callback(GLFWwindow* window, int width, int height) {
-  Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
+  Graphick::Editor::Input::InputManager::on_resize_event((int)(width / dpr), (int)(height / dpr), dpr, 0, 0);
 }
 
 static void scroll_callback(GLFWwindow* window, double delta_x, double delta_y) {
@@ -82,7 +83,7 @@ int main() {
     return -1;
   }
 
-  int width = 801;
+  int width = 800;
   int height = 600;
 
   window = glfwCreateWindow(width, height, "Graphick", nullptr, nullptr);
@@ -93,6 +94,11 @@ int main() {
     glfwTerminate();
     return -1;
   }
+
+  float x_scale, y_scale;
+  glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &x_scale, &y_scale);
+
+  dpr = (x_scale + y_scale) / 2.0f;
 
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1); // Enable vsync
@@ -109,7 +115,7 @@ int main() {
   glEnable(GL_DEPTH);
 
   Graphick::Editor::Editor::init();
-  Graphick::Editor::Input::InputManager::on_resize_event(width, height, 1.0f, 0, 0);
+  Graphick::Editor::Input::InputManager::on_resize_event((int)(width / dpr), (int)(height / dpr), dpr, 0, 0);
 
   // #define TIGER
 #define OBJECTS
@@ -173,9 +179,6 @@ int main() {
     GK_FRAME("MainThread");
 
     glfwPollEvents();
-
-    int display_w, display_h;
-    glfwGetFramebufferSize(window, &display_w, &display_h);
 
     Graphick::Editor::Editor::render(true);
 
