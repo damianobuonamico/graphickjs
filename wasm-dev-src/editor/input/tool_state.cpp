@@ -100,7 +100,7 @@ namespace Graphick::Editor::Input {
 
   void ToolState::on_pointer_move() {
     if (manipulator.in_use()) {
-      manipulator.on_pointer_move(InputManager::pointer.scene.position);
+      manipulator.on_pointer_move(InputManager::pointer.scene.position, InputManager::keys.shift);
       return;
     }
 

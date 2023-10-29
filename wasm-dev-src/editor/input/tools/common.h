@@ -194,8 +194,9 @@ namespace Graphick::Editor::Input {
      * @brief Pointer move event handler.
      *
      * @param position The position of the pointer.
+     * @param shift Whether the shift key is pressed or not, triggers uniform scaling or rotation snapping.
      */
-    void on_pointer_move(const vec2 position);
+    void on_pointer_move(const vec2 position, const bool shift);
 
     /**
      * @brief Pointer up event handler.
@@ -213,15 +214,17 @@ namespace Graphick::Editor::Input {
      * @brief Scale pointer move event handler.
      *
      * @param position The position of the pointer.
+     * @param shift Whether the shift key is pressed or not, triggers uniform scaling.
      */
-    void on_scale_pointer_move(const vec2 position);
+    void on_scale_pointer_move(const vec2 position, const bool shift);
 
     /**
      * @brief Rotate pointer move event handler.
      *
      * @param position The position of the pointer.
+     * @param shift Whether the shift key is pressed or not, triggers rotation snapping.
      */
-    void on_rotate_pointer_move(const vec2 position);
+    void on_rotate_pointer_move(const vec2 position, const bool shift);
   private:
     std::vector<History::Mat2x3Value*> m_cache;   /* The cache of the transform matrices. */
     vec2 m_handles[HandleNone];                   /* The positions of the handles. */

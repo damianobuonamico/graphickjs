@@ -165,11 +165,11 @@ namespace Graphick::Editor::Input {
     return false;
   }
 
-  void Manipulator::on_pointer_move(const vec2 position) {
+  void Manipulator::on_pointer_move(const vec2 position, const bool shift) {
     if (!m_active) return;
 
-    if (m_active_handle > SW) on_rotate_pointer_move(position);
-    else on_scale_pointer_move(position);
+    if (m_active_handle > SW) on_rotate_pointer_move(position, shift);
+    else on_scale_pointer_move(position, shift);
   }
 
   void Manipulator::on_pointer_up() {
@@ -192,14 +192,14 @@ namespace Graphick::Editor::Input {
     size(rect_size);
     angle(bounding_rect.angle);
 
-    if (rect_size.x >= m_threshold * 7.0f) {
+    if (std::abs(rect_size.x) >= m_threshold * 7.0f) {
       m_handles[N] = m_handles[RN] = vec2{ 0.0f, -0.5f };
       m_handles[S] = m_handles[RS] = vec2{ 0.0f, 0.5f };
     } else {
       m_handles[N] = m_handles[RN] = m_handles[S] = m_handles[RS] = std::numeric_limits<vec2>::max();
     }
 
-    if (rect_size.y >= m_threshold * 7.0f) {
+    if (std::abs(rect_size.y) >= m_threshold * 7.0f) {
       m_handles[E] = m_handles[RE] = vec2{ 0.5f, 0.0f };
       m_handles[W] = m_handles[RW] = vec2{ -0.5f, 0.0f };
     } else {
@@ -212,16 +212,33 @@ namespace Graphick::Editor::Input {
     m_handles[SW] = m_handles[RSW] = vec2{ -0.5f, 0.5f };
   }
 
-  void Manipulator::on_scale_pointer_move(const vec2 position) {
+  void Manipulator::on_scale_pointer_move(const vec2 position, const bool shift) {
     vec2 old_delta = m_handle - m_center;
     vec2 delta = m_start_transform / position - m_center;
 
     vec2 magnitude = delta / old_delta;
+    uint8_t axial = 0;    /* 0 = none, 1 = x, 2 = y */
 
     if (m_active_handle == N || m_active_handle == S) {
       magnitude.x = 1.0f;
+      axial = 1;
     } else if (m_active_handle == E || m_active_handle == W) {
       magnitude.y = 1.0f;
+      axial = 2;
+    }
+
+    if (shift) {
+      if (axial == 1) {
+        magnitude.x = magnitude.y;
+      } else if (axial == 2) {
+        magnitude.y = magnitude.x;
+      } else {
+        if (magnitude.x > magnitude.y) {
+          magnitude.x = magnitude.y;
+        } else {
+          magnitude.y = magnitude.x;
+        }
+      }
     }
 
     vec2 center = m_start_transform * m_center;
@@ -239,7 +256,7 @@ namespace Graphick::Editor::Input {
     }
   }
 
-  void Manipulator::on_rotate_pointer_move(const vec2 position) {
+  void Manipulator::on_rotate_pointer_move(const vec2 position, const bool shift) {
     float angle = Math::angle(m_handle - m_center, m_start_transform / position - m_center);
     float sin_angle = std::sinf(angle);
     float cos_angle = std::cosf(angle);
