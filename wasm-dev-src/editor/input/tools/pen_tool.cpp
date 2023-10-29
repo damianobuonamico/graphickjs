@@ -3,13 +3,12 @@
  * @brief Implements the PenTool class.
  *
  * @todo esc to cancel pen and other tools
- * @todo move pen_pointer_move in common.h and use also in direct_select
  * @todo shift to slow down movement
- * @todo fix element scaling on movement
- * @todo fix joining elements
  */
 
 #include "pen_tool.h"
+
+#include "common.h"
 
 #include "../input_manager.h"
 
@@ -27,120 +26,6 @@
 #include "../../../renderer/geometry/internal.h"
 
 namespace Graphick::Editor::Input {
-
-  /**
-   * @brief Moves a control point of a path using the pen tool.
-   *
-   * @param path The path to modify.
-   * @param vertex The control point to move.
-   * @param keep_in_handle_length Whether to keep the length of the incoming handle when moving the control point.
-   * @param swap_in_out Whether to swap the incoming and outgoing handles when moving the control point.
-   * @param direction A pointer to an integer that will be set to the direction of the move (1 for forward, -1 for backward).
-   */
-  static void pen_pointer_move(Renderer::Geometry::Path& path, Renderer::Geometry::ControlPoint& vertex, const mat2x3& transform, bool keep_in_handle_length = false, bool swap_in_out = false, int* direction = nullptr) {
-    if (InputManager::keys.space) {
-      vertex.add_delta(InputManager::pointer.scene.movement);
-      return;
-    }
-
-    vec2 pointer_position = transform / InputManager::pointer.scene.position;
-
-    auto handles = path.relative_handles(vertex.id);
-
-    if (path.empty()) {
-      if (!handles.out_handle) {
-        path.create_out_handle(InputManager::pointer.scene.origin);
-        handles.out_handle = path.out_handle_ptr()->get();
-      }
-
-      handles.out_handle->set_delta(InputManager::pointer.scene.delta);
-
-      if (InputManager::keys.alt) return;
-
-      if (!handles.in_handle) {
-        path.create_in_handle(InputManager::pointer.scene.origin);
-        handles.in_handle = path.in_handle_ptr()->get();
-      }
-
-      handles.in_handle->move_to(2.0f * vertex.get() - pointer_position);
-
-      return;
-    }
-
-    if (direction) {
-      if (*direction == 0) {
-        float cos = 0;
-
-        if (handles.out_handle) {
-          cos = Math::dot(-InputManager::pointer.scene.delta, handles.out_handle->get() - vertex.get());
-        } else if (handles.out_segment) {
-          cos = Math::dot(-InputManager::pointer.scene.delta, (handles.out_segment->has_p2() ? handles.out_segment->p2() : handles.out_segment->p3()) - vertex.get());
-        }
-
-        if (cos > 0) *direction = -1;
-        else *direction = 1;
-      }
-
-      if (*direction < 0) {
-        std::swap(handles.in_handle, handles.out_handle);
-        std::swap(handles.in_segment, handles.out_segment);
-      }
-    }
-
-    vec2 out_handle_position = pointer_position;
-    vec2 in_handle_position = 2.0f * vertex.get() - pointer_position;
-
-    if (swap_in_out) {
-      std::swap(handles.in_segment, handles.out_segment);
-      std::swap(handles.in_handle, handles.out_handle);
-      std::swap(out_handle_position, in_handle_position);
-    }
-
-    bool should_reverse_out = (!direction && path.reversed()) || (direction && *direction > 0);
-
-    if (!handles.out_handle) {
-      if (handles.out_segment) {
-        if (should_reverse_out) {
-          handles.out_segment->create_p1(pointer_position);
-          handles.out_handle = handles.out_segment->p1_ptr().lock().get();
-        } else {
-          handles.out_segment->create_p2(pointer_position);
-          handles.out_handle = handles.out_segment->p2_ptr().lock().get();
-        }
-      } else {
-        if (should_reverse_out) {
-          path.create_in_handle(InputManager::pointer.scene.origin);
-          handles.out_handle = path.in_handle_ptr()->get();
-        } else {
-          path.create_out_handle(InputManager::pointer.scene.origin);
-          handles.out_handle = path.out_handle_ptr()->get();
-        }
-      }
-    }
-
-    handles.out_handle->move_to(out_handle_position);
-
-    if (InputManager::keys.alt || Math::is_almost_equal(handles.out_handle->get(), vertex.get()) || (!handles.in_handle && keep_in_handle_length)) return;
-
-    if (!handles.in_handle) {
-      if ((!direction && path.reversed() == swap_in_out) || (direction && *direction > 0)) {
-        handles.in_segment->create_p2(pointer_position);
-        handles.in_handle = handles.in_segment->p2_ptr().lock().get();
-      } else {
-        handles.in_segment->create_p1(pointer_position);
-        handles.in_handle = handles.in_segment->p1_ptr().lock().get();
-      }
-    }
-
-    if (keep_in_handle_length) {
-      vec2 dir = Math::normalize(vertex.get() - handles.out_handle->get());
-      float length = Math::length(handles.in_handle->get() - handles.in_handle->delta() - vertex.get() + vertex.delta());
-
-      in_handle_position = dir * length + vertex.get();
-    }
-
-    handles.in_handle->move_to(in_handle_position);
-  }
 
   PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
 
@@ -205,16 +90,16 @@ namespace Graphick::Editor::Input {
     case Mode::Close:
       if (!m_path->closed()) return;
     case Mode::Join:
-      return pen_pointer_move(*m_path, *m_vertex, m_transform->get(), true, true);
+      return handle_pointer_move(*m_path, *m_vertex, m_transform->get(), true, true, true);
     case Mode::Add:
-      pen_pointer_move(*m_path, *m_vertex, m_transform->get(), false, false, &m_direction);
+      handle_pointer_move(*m_path, *m_vertex, m_transform->get(), true, false, false, &m_direction);
       break;
     case Mode::Angle:
     case Mode::Start:
-      pen_pointer_move(*m_path, *m_vertex, m_transform->get(), true, false);
+      handle_pointer_move(*m_path, *m_vertex, m_transform->get(), true, true, false);
       break;
     case Mode::New:
-      pen_pointer_move(*m_path, *m_vertex, m_transform->get());
+      handle_pointer_move(*m_path, *m_vertex, m_transform->get(), true, false);
       break;
     default:
     case Mode::Sub:

@@ -19,8 +19,6 @@ namespace Graphick::Editor::Input {
     virtual void on_pointer_move() override;
     virtual void on_pointer_up() override;
 
-    virtual void on_key(const bool down, const KeyboardKey key) override;
-
     virtual void render_overlays() const override;
   private:
     DirectSelectTool();

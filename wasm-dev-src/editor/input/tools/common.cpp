@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "../input_manager.h"
+
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
@@ -8,9 +10,144 @@
 #include "../../../math/math.h"
 #include "../../../math/matrix.h"
 
+#include "../../../renderer/geometry/path.h"
+
 #include "../../../utils/console.h"
 
 namespace Graphick::Editor::Input {
+
+  /* -- Methods -- */
+
+  void handle_pointer_move(
+    Renderer::Geometry::Path& path,
+    Renderer::Geometry::ControlPoint& vertex,
+    const mat2x3& transform,
+    bool create_handles, bool keep_in_handle_length, bool swap_in_out,
+    int* direction, History::Vec2Value* in_use_handle
+  ) {
+    mat2x3 inverse_transform = Math::inverse(transform);
+
+    vec2 pointer_position = inverse_transform * InputManager::pointer.scene.position;
+    vec2 pointer_origin = inverse_transform * InputManager::pointer.scene.origin;
+    vec2 pointer_last = inverse_transform * (InputManager::pointer.scene.position - InputManager::pointer.scene.movement);
+    vec2 pointer_delta = pointer_position - pointer_origin;
+    vec2 pointer_movement = pointer_position - pointer_last;
+
+    auto handles = path.relative_handles(vertex.id);
+
+    if (InputManager::keys.space) {
+      vertex.add_delta(pointer_movement);
+
+      if (handles.in_handle) handles.in_handle->add_delta(pointer_movement);
+      if (handles.out_handle) handles.out_handle->add_delta(pointer_movement);
+
+      return;
+    }
+
+    if (in_use_handle && in_use_handle != handles.out_handle) {
+      std::swap(handles.in_handle, handles.out_handle);
+      std::swap(handles.in_segment, handles.out_segment);
+    }
+
+    if (path.empty()) {
+      if (create_handles && !handles.out_handle) {
+        path.create_out_handle(pointer_origin);
+        handles.out_handle = path.out_handle_ptr()->get();
+      }
+
+      if (handles.out_handle) handles.out_handle->set_delta(pointer_delta);
+
+      if (InputManager::keys.alt) return;
+
+      if (create_handles && !handles.in_handle) {
+        path.create_in_handle(pointer_origin);
+        handles.in_handle = path.in_handle_ptr()->get();
+      }
+
+      if (handles.in_handle) handles.in_handle->move_to(2.0f * vertex.get() - pointer_position);
+
+      return;
+    }
+
+    if (direction) {
+      if (*direction == 0) {
+        float cos = 0;
+
+        if (handles.out_handle) {
+          cos = Math::dot(-pointer_delta, handles.out_handle->get() - vertex.get());
+        } else if (handles.out_segment) {
+          cos = Math::dot(-pointer_delta, (handles.out_segment->has_p2() ? handles.out_segment->p2() : handles.out_segment->p3()) - vertex.get());
+        }
+
+        if (cos > 0) *direction = -1;
+        else *direction = 1;
+      }
+
+      if (*direction < 0) {
+        std::swap(handles.in_handle, handles.out_handle);
+        std::swap(handles.in_segment, handles.out_segment);
+      }
+    }
+
+    vec2 out_handle_position = pointer_position;
+    vec2 in_handle_position = 2.0f * vertex.get() - pointer_position;
+
+    if (swap_in_out) {
+      std::swap(handles.in_segment, handles.out_segment);
+      std::swap(handles.in_handle, handles.out_handle);
+      std::swap(out_handle_position, in_handle_position);
+    }
+
+    bool should_reverse_out = (!direction && path.reversed()) || (direction && *direction > 0);
+
+    if (create_handles && !handles.out_handle) {
+      if (handles.out_segment) {
+        if (should_reverse_out) {
+          handles.out_segment->create_p1(pointer_position);
+          handles.out_handle = handles.out_segment->p1_ptr().lock().get();
+        } else {
+          handles.out_segment->create_p2(pointer_position);
+          handles.out_handle = handles.out_segment->p2_ptr().lock().get();
+        }
+      } else {
+        if (should_reverse_out) {
+          path.create_in_handle(pointer_origin);
+          handles.out_handle = path.in_handle_ptr()->get();
+        } else {
+          path.create_out_handle(pointer_origin);
+          handles.out_handle = path.out_handle_ptr()->get();
+        }
+      }
+    }
+
+    if (handles.out_handle) handles.out_handle->move_to(out_handle_position);
+
+    if (
+      InputManager::keys.alt ||
+      Math::is_almost_equal(handles.out_handle->get(), vertex.get()) ||
+      (!handles.in_handle && keep_in_handle_length) ||
+      (!create_handles && !handles.in_handle)
+      ) return;
+
+    if (!handles.in_handle) {
+      if ((!direction && path.reversed() == swap_in_out) || (direction && *direction > 0)) {
+        handles.in_segment->create_p2(pointer_position);
+        handles.in_handle = handles.in_segment->p2_ptr().lock().get();
+      } else {
+        handles.in_segment->create_p1(pointer_position);
+        handles.in_handle = handles.in_segment->p1_ptr().lock().get();
+      }
+    }
+
+    if (keep_in_handle_length) {
+      vec2 dir = Math::normalize(vertex.get() - handles.out_handle->get());
+      float length = Math::length(handles.in_handle->get() - handles.in_handle->delta() - vertex.get() + vertex.delta());
+
+      in_handle_position = dir * length + vertex.get();
+    }
+
+    handles.in_handle->move_to(in_handle_position);
+  }
 
   /* -- SelectionRect -- */
 
@@ -40,29 +177,6 @@ namespace Graphick::Editor::Input {
     size({ 0.0f, 0.0f });
   }
 
-  // void SelectionRect::size(const vec2 size) {
-  //   const auto& segments = m_path.segments();
-
-  //   if (segments.size() < 4) return;
-
-  //   vec2 new_size = size;
-
-  //   m_position = m_anchor_position;
-
-  //   if (size.x < 0) {
-  //     m_position.x = m_anchor_position.x + size.x;
-  //     new_size.x = -size.x;
-  //   }
-  //   if (size.y < 0) {
-  //     m_position.y = m_anchor_position.y + size.y;
-  //     new_size.y = -size.y;
-  //   }
-
-  //   *segments[0].p3_ptr().lock() = { new_size.x, 0.0f };
-  //   *segments[1].p3_ptr().lock() = new_size;
-  //   *segments[2].p3_ptr().lock() = { 0.0f, new_size.y };
-  // }
-
   void SelectionRect::reset() {
     m_position = m_anchor_position;
     m_active = false;
@@ -82,7 +196,7 @@ namespace Graphick::Editor::Input {
     return true;
   }
 
-  bool Manipulator::on_pointer_down(const vec2 position, const float threshold) {
+  bool Manipulator::on_pointer_down(const float threshold) {
     m_start_transform = transform();
     m_threshold = threshold;
     m_cache.clear();
@@ -94,7 +208,7 @@ namespace Graphick::Editor::Input {
       return false;
     }
 
-    vec2 transformed_position = transform() / position;
+    vec2 transformed_position = transform() / InputManager::pointer.scene.position;
     vec2 handle_size = vec2{ threshold } / m_size;
 
     for (int i = 0; i < HandleNone; i++) {
@@ -165,11 +279,11 @@ namespace Graphick::Editor::Input {
     return false;
   }
 
-  void Manipulator::on_pointer_move(const vec2 position, const bool shift) {
+  void Manipulator::on_pointer_move() {
     if (!m_active) return;
 
-    if (m_active_handle > SW) on_rotate_pointer_move(position, shift);
-    else on_scale_pointer_move(position, shift);
+    if (m_active_handle > SW) on_rotate_pointer_move();
+    else on_scale_pointer_move();
   }
 
   void Manipulator::on_pointer_up() {
@@ -183,6 +297,16 @@ namespace Graphick::Editor::Input {
     m_cache.clear();
 
     update();
+  }
+
+  bool Manipulator::on_key(const bool down, const KeyboardKey key) {
+    if (!m_active) return false;
+
+    if (InputManager::keys.shift_state_changed) {
+      on_pointer_move();
+    }
+
+    return true;
   }
 
   void Manipulator::update_positions(const rrect& bounding_rect) {
@@ -212,9 +336,9 @@ namespace Graphick::Editor::Input {
     m_handles[SW] = m_handles[RSW] = vec2{ -0.5f, 0.5f };
   }
 
-  void Manipulator::on_scale_pointer_move(const vec2 position, const bool shift) {
+  void Manipulator::on_scale_pointer_move() {
     vec2 old_delta = m_handle - m_center;
-    vec2 delta = m_start_transform / position - m_center;
+    vec2 delta = m_start_transform / InputManager::pointer.scene.position - m_center;
 
     vec2 magnitude = delta / old_delta;
     uint8_t axial = 0;    /* 0 = none, 1 = x, 2 = y */
@@ -227,7 +351,7 @@ namespace Graphick::Editor::Input {
       axial = 2;
     }
 
-    if (shift) {
+    if (InputManager::keys.shift) {
       if (axial == 1) {
         magnitude.x = magnitude.y;
       } else if (axial == 2) {
@@ -256,8 +380,8 @@ namespace Graphick::Editor::Input {
     }
   }
 
-  void Manipulator::on_rotate_pointer_move(const vec2 position, const bool shift) {
-    float angle = Math::angle(m_handle - m_center, m_start_transform / position - m_center);
+  void Manipulator::on_rotate_pointer_move() {
+    float angle = Math::angle(m_handle - m_center, m_start_transform / InputManager::pointer.scene.position - m_center);
     float sin_angle = std::sinf(angle);
     float cos_angle = std::cosf(angle);
 

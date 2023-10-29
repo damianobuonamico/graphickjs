@@ -4,15 +4,37 @@
  */
 #pragma once
 
+#include "../keys.h"
+
 #include "../../../renderer/geometry/internal.h"
 
 #include "../../../math/mat2x3.h"
 
+namespace Graphick::Renderer::Geometry {
+  class ControlPoint;
+  class Path;
+};
+
 namespace Graphick::History {
   class Mat2x3Value;
+  class Vec2Value;
 }
 
 namespace Graphick::Editor::Input {
+
+  /**
+   * @brief Moves a control point of a path using the pen tool.
+   *
+   * @param path The path to modify.
+   * @param vertex The control point to move.
+   * @param transform The transform of the element containing the path.
+   * @param create_handles Whether to create handles if not present when moving the control point, default is false.
+   * @param keep_in_handle_length Whether to keep the length of the incoming handle when moving the control point, default is true.
+   * @param swap_in_out Whether to swap the incoming and outgoing handles when moving the control point, default is false.
+   * @param direction A pointer to an integer that will be set to the direction of the move (1 for forward, -1 for backward), default is nullptr.
+   * @param in_use_handle A pointer to a History::Vec2Value object that will be set to the handle that is currently in use (out handle), default is nullptr.
+   */
+  void handle_pointer_move(Renderer::Geometry::Path& path, Renderer::Geometry::ControlPoint& vertex, const mat2x3& transform, bool create_handles = false, bool keep_in_handle_length = true, bool swap_in_out = false, int* direction = nullptr, History::Vec2Value* in_use_handle = nullptr);
 
   /**
    * @brief A class representing a selection rectangle.
@@ -184,24 +206,31 @@ namespace Graphick::Editor::Input {
     /**
      * @brief Pointer down event handler.
      *
-     * @param position The position of the pointer.
      * @param threshold The virtual size of the handles.
      * @return A boolean value indicating whether the event was handled or not.
      */
-    bool on_pointer_down(const vec2 position, const float threshold);
+    bool on_pointer_down(const float threshold);
 
     /**
      * @brief Pointer move event handler.
      *
-     * @param position The position of the pointer.
-     * @param shift Whether the shift key is pressed or not, triggers uniform scaling or rotation snapping.
+     * If the shift key is pressed, uniform scaling or rotation snapping is triggered.
      */
-    void on_pointer_move(const vec2 position, const bool shift);
+    void on_pointer_move();
 
     /**
      * @brief Pointer up event handler.
      */
     void on_pointer_up();
+
+    /**
+     * @brief Key event handler.
+     *
+     * @param down Whether the key was pressed or released.
+     * @param key The key that was pressed or released.
+     * @return A boolean value indicating whether the event was handled or not.
+     */
+    bool on_key(const bool down, const KeyboardKey key);
   private:
     /**
      * @brief Updates the positions of the handles.
@@ -213,18 +242,16 @@ namespace Graphick::Editor::Input {
     /**
      * @brief Scale pointer move event handler.
      *
-     * @param position The position of the pointer.
-     * @param shift Whether the shift key is pressed or not, triggers uniform scaling.
+     * If the shift key is pressed, uniform scaling is triggered.
      */
-    void on_scale_pointer_move(const vec2 position, const bool shift);
+    void on_scale_pointer_move();
 
     /**
      * @brief Rotate pointer move event handler.
      *
-     * @param position The position of the pointer.
-     * @param shift Whether the shift key is pressed or not, triggers rotation snapping.
+     * If the shift key is pressed, rotation snapping is triggered.
      */
-    void on_rotate_pointer_move(const vec2 position, const bool shift);
+    void on_rotate_pointer_move();
   private:
     std::vector<History::Mat2x3Value*> m_cache;   /* The cache of the transform matrices. */
     vec2 m_handles[HandleNone];                   /* The positions of the handles. */

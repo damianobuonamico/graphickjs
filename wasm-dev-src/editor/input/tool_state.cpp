@@ -80,7 +80,7 @@ namespace Graphick::Editor::Input {
   void ToolState::on_pointer_down(const float zoom) {
     Tool& tool = active();
 
-    if (!tool.is_in_category(Tool::CategoryDirect) && !tool.is_in_category(Tool::CategoryImmediate) && manipulator.on_pointer_down(InputManager::pointer.scene.position, 5.0f / zoom)) return;
+    if (!tool.is_in_category(Tool::CategoryDirect) && !tool.is_in_category(Tool::CategoryImmediate) && manipulator.on_pointer_down(5.0f / zoom)) return;
 
     if (m_active == Tool::ToolType::DirectSelect && m_current == Tool::ToolType::Pen) {
       if (InputManager::hover.type() == HoverState::HoverType::Vertex) {
@@ -100,7 +100,7 @@ namespace Graphick::Editor::Input {
 
   void ToolState::on_pointer_move() {
     if (manipulator.in_use()) {
-      manipulator.on_pointer_move(InputManager::pointer.scene.position, InputManager::keys.shift);
+      manipulator.on_pointer_move();
       return;
     }
 
@@ -123,7 +123,11 @@ namespace Graphick::Editor::Input {
   }
 
   void ToolState::on_key(const bool down, const KeyboardKey key) {
-    active().on_key(down, key);
+    Tool& tool = active();
+
+    if (!tool.is_in_category(Tool::CategoryDirect) && !tool.is_in_category(Tool::CategoryImmediate) && manipulator.on_key(down, key)) return;
+
+    tool.on_key(down, key);
   }
 
   void ToolState::recalculate_active() {

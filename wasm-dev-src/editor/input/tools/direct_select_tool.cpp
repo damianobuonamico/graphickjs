@@ -116,12 +116,6 @@ namespace Graphick::Editor::Input {
     }
   }
 
-  void DirectSelectTool::on_key(const bool down, const KeyboardKey key) {
-    if (InputManager::keys.alt_state_changed) {
-      on_pointer_move();
-    }
-  }
-
   void DirectSelectTool::render_overlays() const {
     if (!m_selection_rect.active()) return;
 
@@ -411,6 +405,13 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_handle_pointer_move() {
+    Entity entity = Editor::scene().get_entity(m_entity);
+    Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
+    mat2x3 transform = entity.get_component<TransformComponent>().get();
+
+    handle_pointer_move(path, *m_vertex->lock(), transform, false, true, false, nullptr, m_handle->lock().get());
+    return;
+
     auto vertex = m_vertex->lock();
 
     if (InputManager::keys.space && m_vertex.has_value()) {
