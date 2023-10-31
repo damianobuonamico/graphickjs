@@ -84,6 +84,7 @@ namespace Graphick::Renderer {
     uuid m_quad_vertex_positions_buffer_id = 0;
     uuid m_quad_vertex_indices_buffer_id = 0;
     uuid m_masks_texture_id = 0;
+    uuid m_cover_table_id = 0;
 
     // Replace with render state / render options
     Viewport m_viewport;

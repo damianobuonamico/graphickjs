@@ -6,7 +6,7 @@ namespace Graphick::Renderer::GPU {
     program(Device::create_program("default")),
     view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
     color_uniform(Device::get_uniform(program, "uColor").value()),
-    texture_uniform(Device::get_uniform(program, "uTexture").value()) {}
+    texture(Device::get_texture_parameter(program, "uTexture").value()) {}
 
   OpaqueTileProgram::OpaqueTileProgram() :
     program(Device::create_program("opaque_tile")),
@@ -19,8 +19,10 @@ namespace Graphick::Renderer::GPU {
     offset_uniform(Device::get_uniform(program, "uOffset").value()),
     framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
     tile_size_uniform(Device::get_uniform(program, "uTileSize").value()),
-    masks_texture_uniform(Device::get_uniform(program, "uMasksTexture").value()),
-    masks_texture_size_uniform(Device::get_uniform(program, "uMasksTextureSize").value()) {}
+    masks_texture_size_uniform(Device::get_uniform(program, "uMasksTextureSize").value()),
+    cover_table_texture_size_uniform(Device::get_uniform(program, "uCoverTableTextureSize").value()),
+    masks_texture(Device::get_texture_parameter(program, "uMasksTexture").value()),
+    cover_table_texture(Device::get_texture_parameter(program, "uCoverTableTexture").value()) {}
 
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
@@ -45,8 +47,8 @@ namespace Graphick::Renderer::GPU {
   GPUPathProgram::GPUPathProgram() :
     program(Device::create_program("gpu_path")),
     view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
-    paths_texture_uniform(Device::get_uniform(program, "uPathsTexture").value()),
-    paths_texture_size_uniform(Device::get_uniform(program, "uPathsTextureSize").value()) {}
+    paths_texture_size_uniform(Device::get_uniform(program, "uPathsTextureSize").value()),
+    paths_texture(Device::get_texture_parameter(program, "uPathsTexture").value()) {}
 
   Programs::Programs() :
     opaque_tile_program(),
@@ -166,6 +168,7 @@ namespace Graphick::Renderer::GPU {
     VertexAttr color_attr = Device::get_vertex_attr(masked_tile_program.program, "aColor").value();
     VertexAttr index_attr = Device::get_vertex_attr(masked_tile_program.program, "aIndex").value();
     VertexAttr mask_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aSegmentsCoords").value();
+    VertexAttr cover_table_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aCoverTableCoords").value();
     VertexAttr z_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aZIndex").value();
 
     VertexAttrDescriptor position_desc = {
@@ -198,12 +201,24 @@ namespace Graphick::Renderer::GPU {
       1
     };
 
+    // TODO: try to use I16 for cover table index (opengl crashes)
     VertexAttrDescriptor mask_index_desc = {
       2,
       VertexAttrClass::Int,
-      VertexAttrType::I32,
+      VertexAttrType::U16,
       32,
       20,
+      1,
+      1
+    };
+
+    // TODO: try to use I16 for cover table index (opengl crashes)
+    VertexAttrDescriptor cover_table_index_desc = {
+      2,
+      VertexAttrClass::Int,
+      VertexAttrType::U16,
+      32,
+      24,
       1,
       1
     };
@@ -225,6 +240,7 @@ namespace Graphick::Renderer::GPU {
     Device::configure_vertex_attr(*vertex_array, color_attr, color_desc);
     Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
     Device::configure_vertex_attr(*vertex_array, mask_index_attr, mask_index_desc);
+    Device::configure_vertex_attr(*vertex_array, cover_table_index_attr, cover_table_index_desc);
     Device::configure_vertex_attr(*vertex_array, z_index_attr, z_index_desc);
 
     Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);

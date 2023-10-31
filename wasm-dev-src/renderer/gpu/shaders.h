@@ -8,7 +8,7 @@ namespace Graphick::Renderer::GPU {
     Program program;
     Uniform view_projection_uniform;
     Uniform color_uniform;
-    Uniform texture_uniform;
+    TextureParameter texture;
 
     DefaultProgram();
   };
@@ -27,8 +27,10 @@ namespace Graphick::Renderer::GPU {
     Uniform offset_uniform;
     Uniform framebuffer_size_uniform;
     Uniform tile_size_uniform;
-    Uniform masks_texture_uniform;
     Uniform masks_texture_size_uniform;
+    Uniform cover_table_texture_size_uniform;
+    TextureParameter masks_texture;
+    TextureParameter cover_table_texture;
 
     MaskedTileProgram();
   };
@@ -66,8 +68,8 @@ namespace Graphick::Renderer::GPU {
     Program program;
     Uniform view_projection_uniform;
     Uniform color_uniform;
-    Uniform paths_texture_uniform;
     Uniform paths_texture_size_uniform;
+    TextureParameter paths_texture;
 
     GPUPathProgram();
   };

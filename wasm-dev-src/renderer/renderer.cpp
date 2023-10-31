@@ -25,6 +25,7 @@ static const std::vector<float> LINE_VERTEX_POSITIONS = {
   1.0f, 1.0f, 1.0f, 0.0f
 };
 
+// TODO: glBufferData(nullptr) to discard old data
 namespace Graphick::Renderer {
 
   Renderer* Renderer::s_instance = nullptr;
@@ -78,6 +79,7 @@ namespace Graphick::Renderer {
     s_instance->m_quad_vertex_positions_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<uint16_t>(QUAD_VERTEX_POSITIONS.size(), "QuadVertexPositions");
     s_instance->m_quad_vertex_indices_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(QUAD_VERTEX_INDICES.size(), "QuadVertexIndices");
     s_instance->m_masks_texture_id = GPU::Memory::Allocator::allocate_texture({ SEGMENTS_TEXTURE_SIZE, SEGMENTS_TEXTURE_SIZE }, GPU::TextureFormat::RGBA8, "Masks");
+    s_instance->m_cover_table_id = GPU::Memory::Allocator::allocate_texture({ SEGMENTS_TEXTURE_SIZE, SEGMENTS_TEXTURE_SIZE }, GPU::TextureFormat::R32F, "CoverTable");
 
     const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(s_instance->m_quad_vertex_positions_buffer_id);
     const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(s_instance->m_quad_vertex_indices_buffer_id);
@@ -295,8 +297,7 @@ namespace Graphick::Renderer {
       *vertex_array.vertex_array,
       GPU::Primitive::Triangles,
       {
-        // TODO: fix texture_units (should be 0 only if there is no other texture)
-        { { get()->m_programs.default_program.texture_uniform, 0 }, font_atlas }
+        { get()->m_programs.default_program.texture, font_atlas }
       },
       {},
       {
@@ -396,6 +397,7 @@ namespace Graphick::Renderer {
   void Renderer::draw_masked_tiles() {
     const std::vector<MaskedTile>& reverse_tiles = m_tiler.masked_tiles();
     const uint8_t* segments = m_tiler.segments();
+    const float* cover_table = m_tiler.cover_table();
 
     const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reverse_tiles.rbegin(), reverse_tiles.rend());
 
@@ -405,9 +407,11 @@ namespace Graphick::Renderer {
     const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
     const GPU::Buffer& tiles_buffer = GPU::Memory::Allocator::get_general_buffer(tiles_buffer_id);
     const GPU::Texture& segments_texture = GPU::Memory::Allocator::get_texture(m_masks_texture_id);
+    const GPU::Texture& cover_table_texture = GPU::Memory::Allocator::get_texture(m_cover_table_id);
 
     GPU::Device::upload_to_buffer(tiles_buffer, 0, tiles, GPU::BufferTarget::Vertex);
     GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, segments);
+    GPU::Device::upload_to_texture(cover_table_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, cover_table);
 
     GPU::MaskedTileVertexArray tile_vertex_array(
       m_programs.masked_tile_program,
@@ -422,14 +426,16 @@ namespace Graphick::Renderer {
       *tile_vertex_array.vertex_array,
       GPU::Primitive::Triangles,
       {
-        { { m_programs.masked_tile_program.masks_texture_uniform, 0 }, segments_texture }
+        { m_programs.masked_tile_program.masks_texture, segments_texture },
+        { m_programs.masked_tile_program.cover_table_texture, cover_table_texture }
       },
       {},
       {
         { m_programs.masked_tile_program.offset_uniform, (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE },
         { m_programs.masked_tile_program.tile_size_uniform, (int)TILE_SIZE },
         { m_programs.masked_tile_program.framebuffer_size_uniform, m_viewport.size },
-        { m_programs.masked_tile_program.masks_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE }
+        { m_programs.masked_tile_program.masks_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE },
+        { m_programs.masked_tile_program.cover_table_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE },
       },
       {
         { 0.0f, 0.0f },
@@ -506,7 +512,7 @@ namespace Graphick::Renderer {
       *tile_vertex_array.vertex_array,
       GPU::Primitive::Triangles,
       {
-        { { m_programs.masked_tile_program.masks_texture_uniform, 0 }, masks_texture }
+        { m_programs.masked_tile_program.masks_texture, masks_texture }
       },
       {},
       {

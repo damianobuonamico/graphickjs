@@ -65,6 +65,10 @@ namespace Graphick::Renderer::GPU::GL {
 
   struct GLUniform {
     GLint location;
+
+    bool operator==(const GLUniform& other) const {
+      return location == other.location;
+    }
   };
 
   struct GLProgramParameters {

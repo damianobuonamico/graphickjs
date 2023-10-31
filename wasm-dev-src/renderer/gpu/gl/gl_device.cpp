@@ -287,21 +287,20 @@ namespace Graphick::Renderer::GPU::GL {
 
   std::optional<GLTextureParameter> GLDevice::get_texture_parameter(GLProgram& program, const std::string& name) const {
     GLUniform uniform = get_uniform(program, name).value();
+    auto& textures = program.parameters.textures;
 
-    int index = -1;
-    for (int u = 0; u < program.parameters.textures.size(); u++) {
-      if (u == uniform.location) {
-        index = u;
-        break;
-      }
+    auto it = std::find(textures.begin(), textures.end(), uniform);
+
+    GLuint index;
+
+    if (it != textures.end()) {
+      index = static_cast<GLuint>(std::distance(textures.begin(), it));
+    } else {
+      index = static_cast<GLuint>(textures.size());
+      textures.push_back(uniform);
     }
 
-    if (index < 0) {
-      index = (int)program.parameters.textures.size();
-      program.parameters.textures.push_back(uniform);
-    }
-
-    return GLTextureParameter{ uniform, (GLuint)index };
+    return GLTextureParameter{ uniform, index };
   }
 
   std::optional<GLStorageBuffer> GLDevice::get_storage_buffer(const GLProgram& program, const std::string& name, const uint32_t binding) const {

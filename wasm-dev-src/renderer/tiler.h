@@ -32,7 +32,7 @@ namespace Graphick::Renderer {
     };
     struct Mask {
       std::vector<uvec4> segments;
-      uint8_t cover_table[TILE_SIZE] = { 0 };
+      float cover_table[TILE_SIZE] = { 0.0f };
     };
 
     enum class StepDirection {
@@ -97,12 +97,11 @@ namespace Graphick::Renderer {
     inline const std::vector<MaskedTile>& masked_tiles() const { return m_masked_tiles; }
 
     inline const uint8_t* segments() const { return m_segments; };
+    inline const float* cover_table() const { return m_cover_table; };
     inline const size_t segments_size() const { return m_segments_ptr - m_segments; };
 
     void reset(const Viewport& viewport);
     void process_path(const Geometry::Path& path, const mat2x3& translation, const vec4& color, const float z_index);
-  private:
-    void push_mask(const PathTiler::Mask& tile, int index, const vec4& color);
   private:
     std::vector<MaskedTile> m_masked_tiles;
     std::vector<OpaqueTile> m_opaque_tiles;
@@ -116,6 +115,8 @@ namespace Graphick::Renderer {
     // TODO: replace with array of textures
     uint8_t* m_segments = nullptr;
     uint8_t* m_segments_ptr = nullptr;
+    float* m_cover_table = nullptr;
+    float* m_cover_table_ptr = nullptr;
   };
 
 }

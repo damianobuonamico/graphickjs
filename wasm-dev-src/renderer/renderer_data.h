@@ -101,7 +101,8 @@ namespace Graphick::Renderer {
     // TODO: Replace with a pointer to the color texture
     vec4 color;
     int32_t index;
-    ivec2 segments_coords;
+    uint16_t segments_coords[2];
+    uint16_t cover_table_coords[2];
     float z_index;
   };
 

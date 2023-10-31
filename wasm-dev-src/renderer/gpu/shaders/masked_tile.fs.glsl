@@ -4,10 +4,13 @@ R"(
   precision highp sampler2D;
 
   uniform sampler2D uMasksTexture;
+  uniform sampler2D uCoverTableTexture;
   uniform mediump int uMasksTextureSize;
+  uniform mediump int uCoverTableTextureSize;
   uniform lowp int uTileSize;
 
   flat in vec2 vSegmentsCoords;
+  flat in vec2 vCoverTableCoords;
   in vec4 vColor;
   in vec2 vCoords;
 
@@ -38,9 +41,11 @@ R"(
 
   void main() {
     float one_over_size = 1.0 / float(uMasksTextureSize);
+    float one_over_cover_table_size = 1.0 / float(uCoverTableTextureSize);
     float tile_size_over_255 = float(uTileSize) / 255.0;
 
     vec2 coords = vSegmentsCoords;
+    vec2 cover_table = vCoverTableCoords;
 
     vec4 metadata = texture(uMasksTexture, coords) * 255.0;
     int n = int(uint(metadata.r) | (uint(metadata.g) << 8) | (uint(metadata.b) << 16) | (uint(metadata.a) << 24));
@@ -53,17 +58,21 @@ R"(
     float x0 = floor(vCoords.x);
     float x1 = x0 + 1.0;
 
-    vec4 coverage_block = texture(uMasksTexture, step_coords(coords, 1 + int(y0) / 4, one_over_size));
-    coords = step_coords(coords, uTileSize / 4, one_over_size);
+    // vec4 coverage_block = texture(uMasksTexture, step_coords(coords, 1 + int(y0) / 4, one_over_size));
+    // coords = step_coords(coords, uTileSize / 4, one_over_size);
 
     float alpha = 0.0;
 
+    // cover_table = step_coords(cover_table, int(y0), one_over_cover_table_size);
+
+    /* step_coords() is not needed here, because uCoverTableTextureSize is always a multiple of uTileSize */
+    alpha += texture(uCoverTableTexture, cover_table + vec2(y0 * one_over_cover_table_size, 0.0)).r;
     // TODO: cache similar operations in constexpr arrays
-    int reminder = int(y0) % 4;
-    if (reminder == 0) alpha += data_to_coverage(coverage_block.r);
-    else if (reminder == 1) alpha += data_to_coverage(coverage_block.g);
-    else if (reminder == 2) alpha += data_to_coverage(coverage_block.b);
-    else if (reminder == 3) alpha += data_to_coverage(coverage_block.a);
+    // int reminder = int(y0) % 4;
+    // if (reminder == 0) alpha += data_to_coverage(coverage_block.r);
+    // else if (reminder == 1) alpha += data_to_coverage(coverage_block.g);
+    // else if (reminder == 2) alpha += data_to_coverage(coverage_block.b);
+    // else if (reminder == 3) alpha += data_to_coverage(coverage_block.a);
 
     // oFragColor = vec4(vColor.rgb, abs(alpha - 2.0 * round(0.5 * alpha)));
     // return;
@@ -159,7 +168,7 @@ R"(
     }
 
     // Non-zero winding rule
-    // float opacity = vColor.a * min(abs(alpha), 1.0);
+    // float opacity = /*vColor.a * */min(abs(alpha), 1.0);
     // Even-odd winding rule
     float opacity = /*vColor.a * */abs(alpha - 2.0 * round(0.5 * alpha));
     if (opacity < 0.01) opacity = 0.0;
