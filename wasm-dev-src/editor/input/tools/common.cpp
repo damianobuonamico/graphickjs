@@ -302,7 +302,7 @@ namespace Graphick::Editor::Input {
   bool Manipulator::on_key(const bool down, const KeyboardKey key) {
     if (!m_active) return false;
 
-    if (InputManager::keys.shift_state_changed) {
+    if (InputManager::keys.shift_state_changed || InputManager::keys.alt_state_changed) {
       on_pointer_move();
     }
 
@@ -337,8 +337,10 @@ namespace Graphick::Editor::Input {
   }
 
   void Manipulator::on_scale_pointer_move() {
-    vec2 old_delta = m_handle - m_center;
-    vec2 delta = m_start_transform / InputManager::pointer.scene.position - m_center;
+    vec2 local_center = InputManager::keys.alt ? vec2{ 0.0f } : m_center;
+
+    vec2 old_delta = m_handle - local_center;
+    vec2 delta = m_start_transform / InputManager::pointer.scene.position - local_center;
 
     vec2 magnitude = delta / old_delta;
     uint8_t axial = 0;    /* 0 = none, 1 = x, 2 = y */
@@ -365,7 +367,7 @@ namespace Graphick::Editor::Input {
       }
     }
 
-    vec2 center = m_start_transform * m_center;
+    vec2 center = m_start_transform * local_center;
 
     rrect new_bounding_rect = {
       Math::scale(m_start_bounding_rect.min, center, magnitude),

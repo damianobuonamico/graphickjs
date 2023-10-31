@@ -320,32 +320,28 @@ namespace Graphick::Renderer {
 
     int index = tile_index(tile_x, tile_y, m_bounds_size.x);
 
-    if (m_masks.find(index) == m_masks.end()) {
-      if (segment.y0 == segment.y1) {
-        m_masks.insert({ index, { { } } });
-      } else {
-        m_masks.insert({ index, { { segment } } });
-      }
-    } else {
-      if (segment.y0 != segment.y1) {
-        m_masks.at(index).segments.push_back(segment);
-      }
+    auto& mask = m_masks[index];
+
+    if (segment.y0 != segment.y1) {
+      mask.segments.push_back(segment);
     }
   }
 
+  inline static int16_t sign(float x) {
+    return (0 < x) - (x < 0);
+  }
+
   void PathTiler::process_linear_segment(const vec2 p0, const vec2 p3) {
-    // OPTICK_EVENT();
-
-    m_prev = p3;
-    m_tile_y_prev = (int16_t)std::floor(p0.y) / TILE_SIZE;
-
     if (Math::is_almost_equal(p0, p3)) return;
 
     float x_vec = p3.x - p0.x;
     float y_vec = p3.y - p0.y;
 
-    int16_t x_dir = (int16_t)std::copysign(1, x_vec);
-    int16_t y_dir = (int16_t)std::copysign(1, y_vec);
+    int16_t x_dir = sign(x_vec);
+    int16_t y_dir = sign(y_vec);
+
+    int16_t x_tile_dir = x_dir * TILE_SIZE;
+    int16_t y_tile_dir = y_dir * TILE_SIZE;
 
     float dtdx = (float)TILE_SIZE / (x_vec);
     float dtdy = (float)TILE_SIZE / (y_vec);
@@ -353,15 +349,21 @@ namespace Graphick::Renderer {
     int16_t x = (int16_t)std::floor(p0.x);
     int16_t y = (int16_t)std::floor(p0.y);
 
+    m_prev = p3;
+    m_tile_y_prev = y / TILE_SIZE;
+
     float row_t1 = std::numeric_limits<float>::infinity();
     float col_t1 = std::numeric_limits<float>::infinity();
 
+    int16_t tile_x = x / TILE_SIZE;
+    int16_t tile_y = y / TILE_SIZE;
+
     if (p0.y != p3.y) {
-      float next_y = (float)(y / TILE_SIZE + (p3.y > p0.y ? 1 : 0)) * TILE_SIZE;
+      float next_y = (float)(tile_y + (p3.y > p0.y ? 1 : 0)) * TILE_SIZE;
       row_t1 = std::min(1.0f, (next_y - p0.y) / (y_vec));
     }
     if (p0.x != p3.x) {
-      float next_x = (float)(x / TILE_SIZE + (p3.x > p0.x ? 1 : 0)) * TILE_SIZE;
+      float next_x = (float)(tile_x + (p3.x > p0.x ? 1 : 0)) * TILE_SIZE;
       col_t1 = std::min(1.0f, (next_x - p0.x) / (x_vec));
     }
 
@@ -369,14 +371,12 @@ namespace Graphick::Renderer {
     float y_step = std::abs(dtdy);
 
     vec2 from = p0;
+    float max_over_tile_size = 255.0f / TILE_SIZE;
 
     while (true) {
       float t1 = std::min(row_t1, col_t1);
 
       vec2 to = lerp(p0, p3, t1);
-
-      int16_t tile_x = x / TILE_SIZE;
-      int16_t tile_y = y / TILE_SIZE;
 
       if (tile_x != m_bin.tile_x || tile_y != m_bin.tile_y) {
         m_bins.push_back(m_bin);
@@ -388,34 +388,40 @@ namespace Graphick::Renderer {
       vec2 to_delta = to - tile_pos;
 
       push_segment({
-        (uint8_t)std::round(from_delta.x / TILE_SIZE * 255),
-        (uint8_t)std::round(from_delta.y / TILE_SIZE * 255),
-        (uint8_t)std::round(to_delta.x / TILE_SIZE * 255),
-        (uint8_t)std::round(to_delta.y / TILE_SIZE * 255),
+        (uint8_t)std::round(from_delta.x * max_over_tile_size),
+        (uint8_t)std::round(from_delta.y * max_over_tile_size),
+        (uint8_t)std::round(to_delta.x * max_over_tile_size),
+        (uint8_t)std::round(to_delta.y * max_over_tile_size),
         }, tile_x, tile_y);
 
       bool fuzzy_equal;
 
       if (row_t1 < col_t1) {
-        fuzzy_equal = Math::is_almost_equal(row_t1, 1.0f, 0.0001f);
+        fuzzy_equal = row_t1 >= 1.0f - 0.0001f;
         row_t1 = std::min(1.0f, row_t1 + y_step);
-        y += y_dir * TILE_SIZE;
+
+        y += y_tile_dir;
+        tile_y += y_dir;
       } else {
-        fuzzy_equal = Math::is_almost_equal(col_t1, 1.0f, 0.0001f);
+        fuzzy_equal = col_t1 >= 1.0f - 0.0001f;
         col_t1 = std::min(1.0f, col_t1 + x_step);
-        x += x_dir * TILE_SIZE;
+
+        x += x_tile_dir;
+        tile_x += x_dir;
       }
 
       if (fuzzy_equal) {
         x = (int16_t)std::floor(p3.x);
         y = (int16_t)std::floor(p3.y);
+
+        tile_x = x / TILE_SIZE;
+        tile_y = y / TILE_SIZE;
       }
 
-      tile_y = y / TILE_SIZE;
       from = to;
 
       if (tile_y != m_tile_y_prev) {
-        m_tile_increments.push_back(Increment{ (int16_t)(x / TILE_SIZE), std::min(tile_y, m_tile_y_prev), (int8_t)(tile_y - m_tile_y_prev) });
+        m_tile_increments.push_back(Increment{ tile_x, std::min(tile_y, m_tile_y_prev), (int8_t)(tile_y - m_tile_y_prev) });
         m_tile_y_prev = tile_y;
       }
 
@@ -461,9 +467,6 @@ namespace Graphick::Renderer {
   }
 
   void PathTiler::finish(const ivec2 tiles_count) {
-    GK_TOTAL("PathTiler::finish");
-    // OPTICK_EVENT();
-
     m_bins.push_back(m_bin);
 
     {
@@ -494,35 +497,36 @@ namespace Graphick::Renderer {
         }
 
         int index = tile_index({ bin.tile_x, bin.tile_y }, m_bounds_size);
-        const auto& it = m_masks.find(index);
+        if (index < 0 || index >= m_bounds_size.x * m_bounds_size.y) continue;
+        // const auto& it = m_masks.find(index);
 
-        if (it != m_masks.end()) {
-          Mask& mask = it->second;
+        // if (it != m_masks.end()) {
+        Mask& mask = m_masks[index];
 
-          memcpy(mask.cover_table, cover_table, TILE_SIZE * sizeof(float));
+        memcpy(mask.cover_table, cover_table, TILE_SIZE * sizeof(float));
 
-          {
-            // GK_TOTAL("Calculate Cover");
-            // TODO: Optimize further if possible, maybe use SIMD
+        {
+          // GK_TOTAL("Calculate Cover");
+          // TODO: Optimize further if possible, maybe use SIMD
 
-            float tile_size_over_255 = (float)TILE_SIZE / 255.0f;
+          float tile_size_over_255 = (float)TILE_SIZE / 255.0f;
 
-            for (auto& segment : mask.segments) {
-              float p0_y = tile_size_over_255 * (float)segment.y0;
-              float p1_y = tile_size_over_255 * (float)segment.y1;
+          for (auto& segment : mask.segments) {
+            float p0_y = tile_size_over_255 * (float)segment.y0;
+            float p1_y = tile_size_over_255 * (float)segment.y1;
 
-              /* Segment is always on the left of the tile so we don't need to check x */
-              for (int j = 0; j < TILE_SIZE; j++) {
-                float y0 = (float)j;
-                float y1 = y0 + 1.0f;
+            /* Segment is always on the left of the tile so we don't need to check x */
+            for (int j = 0; j < TILE_SIZE; j++) {
+              float y0 = (float)j;
+              float y1 = y0 + 1.0f;
 
-                cover_table[j] += std::clamp(p1_y, y0, y1) - std::clamp(p0_y, y0, y1);
-              }
+              cover_table[j] += std::clamp(p1_y, y0, y1) - std::clamp(p0_y, y0, y1);
             }
           }
-
-          prev_coords = coords;
         }
+
+        prev_coords = coords;
+        // }
       }
 
       if (i + 1 == bins_len || m_bins[i + 1].tile_x != bin.tile_x || m_bins[i + 1].tile_y != bin.tile_y) {
@@ -582,7 +586,6 @@ namespace Graphick::Renderer {
 
   void Tiler::process_path(const Geometry::Path& path, const mat2x3& transform, const vec4& color, const float z_index) {
     GK_TOTAL("Tiler::process_path");
-    // OPTICK_EVENT();
 
     PathTiler tiler(path, transform, color, m_visible, m_zoom, m_position, m_culled_tiles, m_tiles_count);
 
@@ -591,71 +594,63 @@ namespace Graphick::Renderer {
     const ivec2 offset = tiler.offset();
     const ivec2 size = tiler.size();
 
-    {
-      GK_TOTAL("Tiler::process_path::masks");
+    for (const auto& [index, mask] : masks) {
+      ivec2 coords = {
+        index % size.x + offset.x + 1,
+        index / size.x + offset.y + 1
+      };
 
-      for (const auto& [index, mask] : masks) {
-        ivec2 coords = {
-          index % size.x + offset.x + 1,
-          index / size.x + offset.y + 1
-        };
+      if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
 
-        if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
+      int absolute_index = tile_index(coords, m_tiles_count);
+      if (m_culled_tiles[absolute_index]) continue;
 
-        int absolute_index = tile_index(coords, m_tiles_count);
-        if (m_culled_tiles[absolute_index]) continue;
+      int offset = (int)(m_segments_ptr - m_segments) / 4;
+      int cover_offset = (int)(m_cover_table_ptr - m_cover_table);
 
-        int offset = (int)(m_segments_ptr - m_segments) / 4;
-        int cover_offset = (int)(m_cover_table_ptr - m_cover_table);
+      uint32_t segments_size = (uint32_t)mask.segments.size();
 
-        uint32_t segments_size = (uint32_t)mask.segments.size();
+      m_segments_ptr[0] = (uint8_t)segments_size;
+      m_segments_ptr[1] = (uint8_t)(segments_size >> 8);
+      m_segments_ptr[2] = (uint8_t)(segments_size >> 16);
+      m_segments_ptr[3] = (uint8_t)(segments_size >> 24);
+      m_segments_ptr += 4;
 
-        m_segments_ptr[0] = (uint8_t)segments_size;
-        m_segments_ptr[1] = (uint8_t)(segments_size >> 8);
-        m_segments_ptr[2] = (uint8_t)(segments_size >> 16);
-        m_segments_ptr[3] = (uint8_t)(segments_size >> 24);
+      for (auto segment : mask.segments) {
+        m_segments_ptr[0] = segment.x0;
+        m_segments_ptr[1] = segment.y0;
+        m_segments_ptr[2] = segment.x1;
+        m_segments_ptr[3] = segment.y1;
         m_segments_ptr += 4;
-
-        for (auto segment : mask.segments) {
-          m_segments_ptr[0] = segment.x0;
-          m_segments_ptr[1] = segment.y0;
-          m_segments_ptr[2] = segment.x1;
-          m_segments_ptr[3] = segment.y1;
-          m_segments_ptr += 4;
-        }
-
-        // TODO: bounds check
-        memcpy(m_cover_table_ptr, &mask.cover_table, TILE_SIZE * sizeof(float));
-        m_cover_table_ptr += TILE_SIZE;
-
-        m_masked_tiles.push_back(MaskedTile{
-          color,
-          absolute_index,
-          { (uint16_t)(offset % SEGMENTS_TEXTURE_SIZE), (uint16_t)(offset / SEGMENTS_TEXTURE_SIZE) },
-          { (uint16_t)(cover_offset % SEGMENTS_TEXTURE_SIZE), (uint16_t)(cover_offset / SEGMENTS_TEXTURE_SIZE) },
-          z_index
-          });
       }
+
+      // TODO: bounds check
+      memcpy(m_cover_table_ptr, &mask.cover_table, TILE_SIZE * sizeof(float));
+      m_cover_table_ptr += TILE_SIZE;
+
+      m_masked_tiles.push_back(MaskedTile{
+        color,
+        absolute_index,
+        { (uint16_t)(offset % SEGMENTS_TEXTURE_SIZE), (uint16_t)(offset / SEGMENTS_TEXTURE_SIZE) },
+        { (uint16_t)(cover_offset % SEGMENTS_TEXTURE_SIZE), (uint16_t)(cover_offset / SEGMENTS_TEXTURE_SIZE) },
+        z_index
+        });
     }
 
-    {
-      GK_TOTAL("Tiler::process_path::opaque");
+    for (auto& span : spans) {
+      ivec2 coords = { span.tile_x + offset.x + 1, span.tile_y + offset.y + 1 };
+      if (coords.x + span.width < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
 
-      for (auto& span : spans) {
-        ivec2 coords = { span.tile_x + offset.x + 1, span.tile_y + offset.y + 1 };
-        if (coords.x + span.width < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
+      int16_t width = coords.x < 0 ? span.width + coords.x : span.width;
+      coords.x = std::max(coords.x, 0);
 
-        int16_t width = coords.x < 0 ? span.width + coords.x : span.width;
-        coords.x = std::max(coords.x, 0);
+      for (int i = 0; i < width; i++) {
+        if (coords.x + i >= m_tiles_count.x) break;
 
-        for (int i = 0; i < width; i++) {
-          if (coords.x + i >= m_tiles_count.x) break;
-
-          int index = tile_index({ coords.x + i, coords.y }, m_tiles_count);
-          if (!m_culled_tiles[index]/*&& color.a == 1.0f*/) {
-            m_opaque_tiles.push_back({ color, index, z_index });
-            m_culled_tiles[index] = true;
-          }
+        int index = tile_index({ coords.x + i, coords.y }, m_tiles_count);
+        if (!m_culled_tiles[index]/*&& color.a == 1.0f*/) {
+          m_opaque_tiles.push_back({ color, index, z_index });
+          m_culled_tiles[index] = true;
         }
       }
     }
