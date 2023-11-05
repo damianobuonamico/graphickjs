@@ -47,6 +47,15 @@ namespace Graphick::Math {
       );
   }
 
+  inline bool is_point_in_rect(const vec2 point, const rect& rect, const vec2 threshold) {
+    return (
+      point.x + threshold.x >= rect.min.x &&
+      point.x - threshold.x <= rect.max.x &&
+      point.y + threshold.y >= rect.min.y &&
+      point.y - threshold.y <= rect.max.y
+      );
+  }
+
   inline bool does_rect_intersect_rect(const rect& a, const rect& b) {
     return b.max.x >= a.min.x && a.max.x >= b.min.x && b.max.y >= a.min.y && a.max.y >= b.min.y;
   }
@@ -217,10 +226,43 @@ namespace Graphick::Math {
     vec2 q0 = lerp(p0, p1, t);
     vec2 q1 = lerp(p1, p2, t);
     vec2 q2 = lerp(p2, p3, t);
+
     vec2 r0 = lerp(q0, q1, t);
     vec2 r1 = lerp(q1, q2, t);
 
     return { p, q0, r0, r1, q2 };
+  }
+
+  // TODO: try inlining lerps
+  inline std::tuple<vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t1, const float t2) {
+    float a = t1;
+    float b = t2;
+
+    vec2 P000 = p0;
+    vec2 P001 = p1;
+    vec2 P011 = p2;
+    vec2 P111 = p3;
+
+    vec2 P00a = lerp(P000, P001, a);
+    vec2 P00b = lerp(P000, P001, b);
+    vec2 P01a = lerp(P001, P011, a);
+    vec2 P01b = lerp(P001, P011, b);
+    vec2 Pa11 = lerp(P011, P111, a);
+    vec2 Pb11 = lerp(P011, P111, b);
+
+    vec2 P0aa = lerp(P00a, P01a, a);
+    vec2 P0bb = lerp(P00b, P01b, b);
+    // vec2 P0ab = lerp(P00a, P01a, b);
+    vec2 P1aa = lerp(P01a, Pa11, a);
+    vec2 P1bb = lerp(P01b, Pb11, b);
+    // vec2 P1ab = lerp(P01a, Pa11, b);
+
+    vec2 Paaa = lerp(P0aa, P1aa, a);
+    vec2 Paab = lerp(P0aa, P1aa, b);
+    vec2 Pabb = lerp(P0bb, P1bb, a);
+    vec2 Pbbb = lerp(P0bb, P1bb, b);
+
+    return { Paaa, Paab, Pabb, Pbbb };
   }
 
   inline int hash(const std::initializer_list<float> floats) {

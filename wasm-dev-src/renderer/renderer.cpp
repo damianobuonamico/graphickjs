@@ -157,12 +157,29 @@ namespace Graphick::Renderer {
     GPU::Device::end_commands();
   }
 
-  void Renderer::draw(const Geometry::Path& path, const float z_index, const mat2x3& transform, const vec4& color) {
+  // void Renderer::draw(const Geometry::Path& path, const float z_index, const mat2x3& transform, const vec4& color) {
+  //   if (path.empty()) return;
+
+  //   OPTICK_EVENT();
+
+  //   get()->m_tiler.process_path(path, transform, color, z_index);
+  // }
+
+  void Renderer::draw(const Geometry::Path& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform) {
+    if (path.empty()) return;
+    get()->m_tiler.process_stroke(path, transform, stroke);
+    get()->m_tiler.process_fill(path, transform, fill);
+  }
+
+  void Renderer::draw(const Geometry::Path& path, const Stroke& stroke, const mat2x3& transform) {
     if (path.empty()) return;
 
-    OPTICK_EVENT();
+    get()->m_tiler.process_stroke(path, transform, stroke);
+  }
 
-    get()->m_tiler.process_path(path, transform, color, z_index);
+  void Renderer::draw(const Geometry::Path& path, const Fill& fill, const mat2x3& transform) {
+    if (path.empty()) return;
+    get()->m_tiler.process_fill(path, transform, fill);
   }
 
   void Renderer::draw_outline(const uuid id, const Geometry::Path& path, const mat2x3& transform, bool draw_vertices) {

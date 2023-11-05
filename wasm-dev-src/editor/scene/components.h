@@ -3,6 +3,7 @@
 #include "../../history/values.h"
 
 #include "../../renderer/geometry/path.h"
+#include "../../renderer/properties.h"
 
 #include "../../math/vec4.h"
 #include "../../math/rect.h"
@@ -72,8 +73,23 @@ namespace Graphick::Editor {
     const PathComponent* m_path_ptr;    /* A pointer to the path component of the entity, can be nullptr if the entity is not an element. */
   };
 
+  struct StrokeComponent {
+    History::Vec4Value color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    History::FloatValue width = 1.0f;
+    History::EnumValue<Renderer::LineCap> cap = Renderer::LineCap::Butt;
+    History::EnumValue<Renderer::LineJoin> join = Renderer::LineJoin::Miter;
+    History::FloatValue miter_limit = 10.0f;
+    History::BoolValue visible = true;
+
+    StrokeComponent() = default;
+    StrokeComponent(const StrokeComponent& other) = default;
+    StrokeComponent(const vec4& color) : color(color) {}
+  };
+
   struct FillComponent {
-    vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    History::Vec4Value color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    History::EnumValue<Renderer::FillRule> rule = Renderer::FillRule::NonZero;
+    History::BoolValue visible = true;
 
     FillComponent() = default;
     FillComponent(const FillComponent& other) = default;

@@ -168,9 +168,9 @@ R"(
     }
 
     // Non-zero winding rule
-    // float opacity = /*vColor.a * */min(abs(alpha), 1.0);
+    float opacity = /*vColor.a * */min(abs(alpha), 1.0);
     // Even-odd winding rule
-    float opacity = /*vColor.a * */abs(alpha - 2.0 * round(0.5 * alpha));
+    // float opacity = /*vColor.a * */abs(alpha - 2.0 * round(0.5 * alpha));
     if (opacity < 0.01) opacity = 0.0;
 
     oFragColor = vec4(vColor.rgb, opacity);

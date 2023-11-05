@@ -758,6 +758,12 @@ namespace Graphick::Math {
     out.y = temp;
   }
 
+  /* -- normal -- */
+
+  vec2 normal(const vec2 v1, const vec2 v2) {
+    return normalize({ v2.y - v1.y, v1.x - v2.x });
+  }
+
   /* -- swap_coordinates -- */
 
   vec2 swap_coordinates(const vec2 v) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #define GK_EPSILON 1e-6f
+#define GK_POINT_EPSILON 1e-3f
 
 #define ZOOM_MIN 0.02f
 #define ZOOM_MAX 640.0f

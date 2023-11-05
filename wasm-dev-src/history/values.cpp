@@ -14,7 +14,7 @@ namespace Graphick::History {
   void BoolValue::set(const bool value) {
     if (m_value == value) return;
     CommandHistory::add(std::make_unique<ChangePrimitiveCommand<bool>>(m_value, value));
-  };
+  }
 
   /* -- FloatValue -- */
 
@@ -22,18 +22,18 @@ namespace Graphick::History {
     if (m_value == value) return;
     CommandHistory::add(std::make_unique<ChangePrimitiveCommand<float>>(m_value, value));
     m_delta = 0.0f;
-  };
+  }
 
   void FloatValue::add(const float amount) {
     if (amount == 0.0f) return;
     CommandHistory::add(std::make_unique<ChangePrimitiveCommand<float>>(m_value, m_value + amount));
-  };
+  }
 
   void FloatValue::apply() {
     if (m_delta == 0.0f) return;
     CommandHistory::add(std::make_unique<ChangePrimitiveCommand<float>>(m_value, get()));
     m_delta = 0.0f;
-  };
+  }
 
   /* -- IntValue -- */
 
@@ -41,44 +41,71 @@ namespace Graphick::History {
     if (m_value == value) return;
     CommandHistory::add(std::make_unique<ChangePrimitiveCommand<int>>(m_value, value));
     m_delta = 0;
-  };
+  }
 
   void IntValue::add(const int amount) {
     if (amount == 0) return;
     CommandHistory::add(std::make_unique<ChangePrimitiveCommand<int>>(m_value, m_value + amount));
-  };
+  }
 
   void IntValue::apply() {
     if (m_delta == 0) return;
     CommandHistory::add(std::make_unique<ChangePrimitiveCommand<int>>(m_value, get()));
     m_delta = 0;
-  };
+  }
+
+  /* -- EnumValue -- */
+
+  template<typename E>
+  void EnumValue<E>::set(const E value) {
+    if (m_value == value) return;
+    CommandHistory::add(std::make_unique<ChangePrimitiveCommand<E>>(m_value, value));
+  }
 
   /* -- UUIDValue -- */
 
   void UUIDValue::set(const uuid value) {
     if (m_value == value) return;
     CommandHistory::add(std::make_unique<ChangePrimitiveCommand<uuid>>(m_value, value));
-  };
+  }
 
   /* -- Vec2Value -- */
 
-  void Vec2Value::set(const vec2& value) {
+  void Vec2Value::set(const vec2 value) {
     if (m_value == value) return;
     CommandHistory::add(std::make_unique<ChangeVec2Command>(m_value, value));
     Math::zero(m_delta);
-  };
+  }
 
-  void Vec2Value::add(const vec2& amount) {
+  void Vec2Value::add(const vec2 amount) {
     if (Math::is_zero(amount)) return;
     CommandHistory::add(std::make_unique<ChangeVec2Command>(m_value, m_value + amount));
-  };
+  }
 
   void Vec2Value::apply() {
     if (Math::is_zero(m_delta)) return;
     CommandHistory::add(std::make_unique<ChangeVec2Command>(m_value, get()));
     Math::zero(m_delta);
-  };
+  }
+
+  /* -- Vec4Value -- */
+
+  void Vec4Value::set(const vec4& value) {
+    if (m_value == value) return;
+    CommandHistory::add(std::make_unique<ChangeVec4Command>(m_value, value));
+    Math::zero(m_delta);
+  }
+
+  void Vec4Value::add(const vec4& amount) {
+    if (Math::is_zero(amount)) return;
+    CommandHistory::add(std::make_unique<ChangeVec4Command>(m_value, m_value + amount));
+  }
+
+  void Vec4Value::apply() {
+    if (Math::is_zero(m_delta)) return;
+    CommandHistory::add(std::make_unique<ChangeVec4Command>(m_value, get()));
+    Math::zero(m_delta);
+  }
 
   /* -- Mat2x3Value -- */
 
@@ -90,7 +117,7 @@ namespace Graphick::History {
     if (m_value == value) return;
     CommandHistory::add(std::make_unique<ChangeMat2x3Command>(m_value, value));
     Math::zero(m_delta);
-  };
+  }
 
   // TODO: maybe reduce memory footprint by storing only the angle / translation / scale / shear delta
   void Mat2x3Value::translate(const vec2 amount) {
@@ -139,7 +166,7 @@ namespace Graphick::History {
     if (Math::is_zero(m_delta)) return;
     CommandHistory::add(std::make_unique<ChangeMat2x3Command>(m_value, get()));
     Math::zero(m_delta);
-  };
+  }
 
   /* -- VectorValue -- */
 

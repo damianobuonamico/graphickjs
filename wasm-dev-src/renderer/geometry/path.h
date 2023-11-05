@@ -18,7 +18,7 @@ namespace Graphick::Renderer::Geometry {
     class SegmentsVector {
     public:
       using iterator = typename std::vector<std::shared_ptr<Segment>>::iterator;
-      using const_iterator = typename std::vector<std::shared_ptr<Segment>> ::const_iterator;
+      using const_iterator = typename std::vector<std::shared_ptr<Segment>>::const_iterator;
     public:
       SegmentsVector(Path* path, const std::vector<std::shared_ptr<Segment>>& vector) : m_value(vector), m_path(path) {}
       SegmentsVector(Path* path, const SegmentsVector& vector) : m_value(vector.m_value), m_path(path ? path : vector.m_path) {}
@@ -32,6 +32,11 @@ namespace Graphick::Renderer::Geometry {
       inline iterator end() { return m_value.end(); }
       inline const_iterator begin() const { return m_value.begin(); }
       inline const_iterator end() const { return m_value.end(); }
+
+      inline std::reverse_iterator<iterator> rbegin() { return m_value.rbegin(); }
+      inline std::reverse_iterator<iterator> rend() { return m_value.rend(); }
+      inline std::reverse_iterator<const_iterator> rbegin() const { return m_value.rbegin(); }
+      inline std::reverse_iterator<const_iterator> rend() const { return m_value.rend(); }
 
       inline size_t size() const { return m_value.size(); }
       inline bool empty() const { return m_value.empty(); }
@@ -108,7 +113,7 @@ namespace Graphick::Renderer::Geometry {
     Math::rect approx_bounding_rect() const;
     Math::rect large_bounding_rect() const;
 
-    bool is_inside(const vec2 position, bool filled_search, bool deep_search = false, float threshold = 0.0f) const;
+    bool is_inside(const vec2 position, bool filled_search, bool deep_search = false, vec2 threshold = vec2{ 0.0f }) const;
     bool intersects(const Math::rect& rect) const;
     bool intersects(const Math::rect& rect, const mat2x3& transform) const;
     bool intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const;

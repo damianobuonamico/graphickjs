@@ -27,7 +27,9 @@ namespace Graphick::Renderer {
     static void begin_frame(const Viewport& viewport);
     static void end_frame();
 
-    static void draw(const Geometry::Path& path, const float z_index, const mat2x3& transform = {}, const vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f });
+    static void draw(const Geometry::Path& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform);
+    static void draw(const Geometry::Path& path, const Stroke& stroke, const mat2x3& transform);
+    static void draw(const Geometry::Path& path, const Fill& fill, const mat2x3& transform);
     static void draw_outline(const uuid id, const Geometry::Path& path, const mat2x3& transform = {}, bool draw_vertices = false);
     static void draw_outline(const Geometry::Internal::PathInternal& path, const mat2x3& transform = {});
 

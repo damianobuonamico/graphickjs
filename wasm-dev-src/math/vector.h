@@ -145,6 +145,8 @@ namespace Graphick::Math {
   vec2 orthogonal(const vec2 v);
   void orthogonal(const vec2 v, vec2& out);
 
+  vec2 normal(const vec2 v1, const vec2 v2);
+
   vec2 swap_coordinates(const vec2 v);
   vec2& swap_coordinates(const vec2 v, vec2& out);
 

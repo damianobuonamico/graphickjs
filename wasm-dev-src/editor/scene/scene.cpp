@@ -238,10 +238,12 @@ namespace Graphick::Editor {
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
         const auto& path = m_registry.get<PathComponent>(*it).path;
-        const vec2 transformed_pos = m_registry.get<TransformComponent>(*it).revert(position);
+        const TransformComponent& transform = m_registry.get<TransformComponent>(*it);
+        const vec2 transformed_pos = transform.revert(position);
+        const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform.get()).scale;
         const uuid id = m_registry.get<IDComponent>(*it).id;
 
-        if (path.is_inside(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), threshold)) {
+        if (path.is_inside(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {
           return id;
         }
       }
@@ -340,7 +342,6 @@ namespace Graphick::Editor {
     return entity;
   }
 
-
   Entity Scene::create_element(Renderer::Geometry::Path& path, const std::string& tag) {
     Entity entity = create_entity(tag);
 
@@ -365,7 +366,7 @@ namespace Graphick::Editor {
       vec4{1.0f, 1.0f, 1.0f, 1.0f}
       });
 
-    const size_t z_far = m_order.size() + 1;
+    const size_t z_far = m_order.size() * 2 + 1;
     float z_index = 1.0f;
 
     // TODO: maybe check for rehydration only if actions performed are destructive
@@ -394,15 +395,51 @@ namespace Graphick::Editor {
           path.rehydrate_cache();
         }
 
-        // TODO: add threshold equal to stroke width
-        if (!Math::does_rect_intersect_rect(transform.large_bounding_rect(), visible_rect)) continue;
+        bool has_stroke = m_registry.all_of<StrokeComponent>(*it);
+        std::optional<StrokeComponent> stroke = has_stroke ? std::optional<StrokeComponent>(m_registry.get<StrokeComponent>(*it)) : std::nullopt;
+
+        rect entity_rect = transform.large_bounding_rect();
+
+        if (has_stroke) {
+          entity_rect.min -= vec2{ stroke->width.get() };
+          entity_rect.max += vec2{ stroke->width.get() };
+        }
+
+        if (!Math::does_rect_intersect_rect(entity_rect, visible_rect)) continue;
 
         mat2x3 transform_matrix = transform.get();
 
-        if (m_registry.all_of<FillComponent>(*it)) {
-          Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, transform_matrix, m_registry.get<FillComponent>(*it).color);
-        } else {
-          Renderer::Renderer::draw(path, (/*z_far - */z_index++) / z_far, transform_matrix);
+        bool has_fill = m_registry.all_of<FillComponent>(*it);
+        std::optional<FillComponent> fill = has_fill ? std::optional<FillComponent>(m_registry.get<FillComponent>(*it)) : std::nullopt;
+
+        if (has_fill && !fill->visible) has_fill = false;
+        if (has_stroke && !stroke->visible) has_stroke = false;
+
+        if (has_fill && has_stroke) {
+          Renderer::Renderer::draw(
+            path,
+            Renderer::Stroke{ stroke->color.get(), stroke->cap, stroke->join, stroke->width.get(), stroke->miter_limit.get(), z_index / z_far },
+            Renderer::Fill{ fill->color.get(), fill->rule, (z_index + 1) / z_far },
+            transform_matrix
+          );
+
+          z_index += 2;
+        } else if (has_fill) {
+          Renderer::Renderer::draw(
+            path,
+            Renderer::Fill{ fill->color.get(), fill->rule, z_index / z_far },
+            transform_matrix
+          );
+
+          z_index += 1;
+        } else if (has_stroke) {
+          Renderer::Renderer::draw(
+            path,
+            Renderer::Stroke{ stroke->color.get(), stroke->cap, stroke->join, stroke->width.get(), stroke->miter_limit.get(), z_index / z_far },
+            transform_matrix
+          );
+
+          z_index += 1;
         }
 
         if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {

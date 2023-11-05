@@ -14,6 +14,7 @@ namespace Graphick::Math {
   bool is_point_in_circle(const vec2 point, const vec2 center, const float radius);
   bool is_point_in_ellipse(const vec2 point, const vec2 center, const vec2 radius);
   bool is_point_in_rect(const vec2 point, const rect& rect, const float threshold);
+  bool is_point_in_rect(const vec2 point, const rect& rect, const vec2 threshold);
 
   bool does_rect_intersect_rect(const rect& a, const rect& b);
   bool is_rect_in_rect(const rect& a, const rect& b);
@@ -29,8 +30,9 @@ namespace Graphick::Math {
   bool clockwise(const std::vector<vec2>& points);
 
   std::tuple<vec2, vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t);
+  std::tuple<vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t1, const float t2);
 
-  int hash(std::initializer_list<float> floats);
-}
+    int hash(std::initializer_list<float> floats);
+  }
 
 #include "math.inl"

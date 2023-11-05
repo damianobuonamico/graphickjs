@@ -4,6 +4,7 @@
  *
  * @todo esc to cancel pen and other tools
  * @todo shift to slow down movement
+ * @todo create element at current position to avoid flickering at far distances
  */
 
 #include "pen_tool.h"
@@ -220,6 +221,7 @@ namespace Graphick::Editor::Input {
 
     if (!m_element) {
       entity = scene.create_element();
+      entity->add_component<StrokeComponent>();
       set_pen_element(entity->id());
     } else {
       if (!scene.has_entity(m_element) || !(entity = scene.get_entity(m_element))->is_element()) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../math/vec2.h"
+#include "../math/vec4.h"
 #include "../math/mat2x3.h"
 
 #include "../utils/uuid.h"
@@ -17,6 +18,7 @@ namespace Graphick::History {
       Batch,
       ChangePrimitive,
       ChangeVec2,
+      ChangeVec4,
       ChangeMat2x3,
       InsertInVector,
       EraseFromVector,
@@ -115,6 +117,40 @@ namespace Graphick::History {
     vec2& m_value;
     vec2 m_new_value;
     vec2 m_old_value;
+  };
+
+  class ChangeVec4Command : public Command {
+  public:
+    ChangeVec4Command(vec4& old_value, const vec4& new_value)
+      : Command(Type::ChangeVec4), m_value(old_value), m_new_value(new_value), m_old_value({}) {}
+
+    inline virtual void execute() override {
+      m_old_value = m_value;
+      m_value = m_new_value;
+    }
+
+    inline virtual void undo() override {
+      m_value = m_old_value;
+    }
+
+    virtual bool merge_with(std::unique_ptr<Command>& command) override {
+      if (command->type != Type::ChangeVec4) return false;
+
+      ChangeVec4Command* casted_command = static_cast<ChangeVec4Command*>(command.get());
+
+      if (&casted_command->m_value != &this->m_value) return false;
+      casted_command->m_new_value = this->m_new_value;
+
+      return true;
+    }
+
+    inline virtual uintptr_t pointer() override {
+      return reinterpret_cast<uintptr_t>(&m_value);
+    }
+  private:
+    vec4& m_value;
+    vec4 m_new_value;
+    vec4 m_old_value;
   };
 
   class ChangeMat2x3Command : public Command {

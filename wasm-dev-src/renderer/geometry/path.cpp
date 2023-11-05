@@ -365,6 +365,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::line_to(vec2 p) {
+    if (Math::is_almost_equal(p, m_last_point->get(), GK_POINT_EPSILON)) return;
+
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p);
 
     if (m_reversed) {
@@ -375,6 +377,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::quadratic_to(vec2 p1, vec2 p2) {
+    if (Math::is_almost_equal(p2, m_last_point->get(), GK_POINT_EPSILON) && Math::is_almost_equal(p1, m_last_point->get(), GK_POINT_EPSILON)) return;
+
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p2);
 
     if (m_reversed) {
@@ -385,6 +389,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
+    if (Math::is_almost_equal(p3, m_last_point->get(), GK_POINT_EPSILON) && Math::is_almost_equal(p2, m_last_point->get(), GK_POINT_EPSILON) && Math::is_almost_equal(p1, m_last_point->get(), GK_POINT_EPSILON)) return;
+
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
 
     if (m_reversed) {
@@ -395,6 +401,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::cubic_to(vec2 p, vec2 p3, bool is_p1) {
+    if (Math::is_almost_equal(p3, m_last_point->get(), GK_POINT_EPSILON) && Math::is_almost_equal(p, m_last_point->get(), GK_POINT_EPSILON)) return;
+
     Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
 
     if (m_reversed) {
@@ -562,8 +570,15 @@ namespace Graphick::Renderer::Geometry {
     Segment& first_segment = m_segments.front();
     Segment& last_segment = m_segments.back();
 
-    if (is_almost_equal(last_segment.p3(), first_segment.p0())) {
-      first_segment.m_p0 = last_segment.m_p3;
+    if (Math::is_almost_equal(last_segment.p3(), first_segment.p0(), GK_POINT_EPSILON)) {
+      std::shared_ptr<Segment> new_first_segment = std::make_shared<Segment>(last_segment.m_p3, first_segment.p1(), first_segment.p2(), first_segment.m_p3);
+      std::shared_ptr<Segment> new_second_segment = std::make_shared<Segment>(last_segment.m_p0, last_segment.p1(), last_segment.p2(), last_segment.m_p3);
+
+      m_segments.pop_back();
+      m_segments.erase(0);
+
+      m_segments.insert(new_first_segment, 0);
+      m_segments.push_back(new_second_segment);
     } else {
       History::Vec2Value* in_handle = nullptr;
       History::Vec2Value* out_handle = nullptr;
@@ -934,11 +949,11 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  bool Path::is_inside(const vec2 position, bool filled_search, bool deep_search, float threshold) const {
+  bool Path::is_inside(const vec2 position, bool filled_search, bool deep_search, vec2 threshold) const {
     GK_TOTAL("Path::is_inside");
 
     if (m_segments.empty()) {
-      if (m_last_point && Math::is_point_in_circle(position, m_last_point->get(), threshold)) {
+      if (m_last_point && Math::is_point_in_ellipse(position, m_last_point->get(), threshold)) {
         return true;
       }
     } else {
@@ -972,10 +987,10 @@ namespace Graphick::Renderer::Geometry {
     }
 
     if (deep_search) {
-      if (m_in_handle && Math::is_point_in_circle(position, m_in_handle->get(), threshold)) {
+      if (m_in_handle && Math::is_point_in_ellipse(position, m_in_handle->get(), threshold)) {
         return true;
       }
-      if (m_out_handle && Math::is_point_in_circle(position, m_out_handle->get(), threshold)) {
+      if (m_out_handle && Math::is_point_in_ellipse(position, m_out_handle->get(), threshold)) {
         return true;
       }
     }

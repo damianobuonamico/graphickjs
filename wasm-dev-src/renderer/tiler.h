@@ -1,6 +1,12 @@
+/**
+ * @file tiler.h
+ * @brief Contains the classes used to generate segments and cover tables for a collection of drawables.
+ */
+
 #pragma once
 
 #include "renderer_data.h"
+#include "drawable.h"
 
 #include "../math/mat2x3.h"
 #include "../math/rect.h"
@@ -8,6 +14,39 @@
 #include <vector>
 
 namespace Graphick::Renderer {
+
+  enum PointFlags {
+    NONE = 0x00,
+    /// This point is the first control point of a cubic Bézier curve or the only control point
+    /// of a quadratic Bézier curve.
+    CONTROL_POINT_0 = 0x01,
+    /// This point is the second point of a quadratic Bézier curve.
+    CONTROL_POINT_1 = 0x02
+  };
+
+  enum PushSegmentFlags {
+    /// The bounds should be updated.
+    UPDATE_BOUNDS = 0x01,
+    /// The "from" point of the segme
+    INCLUDE_FROM_POINT = 0x02
+  };
+
+  struct ContourSegment;
+
+  struct Contour {
+    std::vector<vec2> points;
+    std::vector<PointFlags> flags;
+    rect bounds;
+    bool closed;
+
+    size_t len() const;
+    bool might_need_join(const LineJoin join) const;
+    vec2 position_of_last(const size_t index) const;
+    void push_point(const vec2 point, const PointFlags flag, const bool update_bounds);
+    void push_endpoint(const vec2 to);
+    void push_segment(const ContourSegment& segment, const int flags);
+    void add_join(const float distance, const LineJoin join, const vec2 join_point, const rect next_tangent);
+  };
 
   namespace Geometry {
     class Path;
@@ -85,6 +124,160 @@ namespace Graphick::Renderer {
     ivec2 m_bounds_size;
   };
 
+  /**
+   * @brief Class used to generate segments and cover tables for a drawable.
+   *
+   * @class DrawableTiler
+   */
+  class DrawableTiler {
+  public:
+    /**
+     * @brief The increment used to step through the tiles of a drawable.
+     *
+     * @struct Increment
+     */
+    struct Increment {
+      int16_t tile_x;   /* The x coordinate of the tile. */
+      int16_t tile_y;   /* The y coordinate of the tile. */
+      int8_t sign;      /* The sign of the increment. */
+    };
+
+    /**
+     * @brief The bin used to represent a tile that is intersected by a contour.
+     * @todo Maybe remove this, should be useless
+     *
+     * @struct Bin
+     */
+    struct Bin {
+      int16_t tile_x;   /* The x coordinate of the tile. */
+      int16_t tile_y;   /* The y coordinate of the tile. */
+    };
+
+    /**
+     * @brief The span used to represent a completely covered array of tiles.
+     *
+     * @struct Span
+     */
+    struct Span {
+      int16_t tile_x;   /* The x coordinate of the tile. */
+      int16_t tile_y;   /* The y coordinate of the tile. */
+      int16_t width;    /* The width of the span. */
+    };
+
+    /**
+     * @brief The packed mask used to represent a partially covered tile.
+     *
+     * @struct Mask
+     */
+    struct Mask {
+      std::vector<uvec4> segments;                /* GPU packed segments of the tile. */
+      float cover_table[TILE_SIZE] = { 0.0f };    /* GPU packed cover table of the tile. */
+    };
+
+    /**
+     * @brief The direction used to step through the tiles intersected by a segment of the drawable.
+     */
+    enum class StepDirection {
+      None = 0,   /* End of segment. */
+      X,          /* Step in the X direction. */
+      Y           /* Step in the Y direction. */
+    };
+  public:
+    /**
+     * @brief Default copy constructor, move constructor and destructor.
+     */
+    DrawableTiler(const DrawableTiler&) = default;
+    DrawableTiler(DrawableTiler&&) = default;
+    ~DrawableTiler() = default;
+
+    /**
+     * @brief Constructs a new DrawableTiler object.
+     *
+     * @param drawable The drawable to tile.
+     * @param visible The bounds of the viewport.
+     * @param zoom The zoom of the viewport.
+     * @param position The position of the viewport.
+     * @param subpixel The subpixel offset of the viewport.
+     * @param tiles_count The dimensions in tiles of the viewport.
+     */
+    DrawableTiler(const Drawable& drawable, const rect& visible, const float zoom, const ivec2 position, const vec2 subpixel, const ivec2 tiles_count);
+
+    /**
+     * @brief Returns the offset of the drawable.
+     *
+     * @return The offset of the drawable.
+     */
+    inline ivec2 offset() const { return m_offset; }
+
+    /**
+     * @brief Returns the size of the drawable.
+     *
+     * @return The size of the drawable.
+     */
+    inline ivec2 size() const { return m_size; }
+
+    /**
+     * @brief Returns the masks of the drawable.
+     *
+     * @return The masks of the drawable.
+     */
+    inline const std::unordered_map<int, Mask>& masks() const { return m_masks; }
+
+    /**
+     * @brief Returns the spans of the drawable.
+     *
+     * @return The spans of the drawable.
+     */
+    inline const std::vector<Span>& spans() const { return m_spans; }
+  private:
+    /**
+     * @brief Moves the drawing cursor to the specified point.
+     *
+     * @param p0 The start point of the contour.
+     */
+    void move_to(const vec2 p0);
+
+    /**
+     * @brief Draws a line from the cursor position to the specified point.
+     *
+     * @param p3 The end point of the line.
+     */
+    void line_to(const vec2 p3);
+
+    /**
+     * @brief Adds a segment to the mask at the specified tile coordinates
+     *
+     * If the mask doesn't exist, it is automatically created.
+     *
+     * @param segment The segment to add.
+     * @param tile_x The x coordinate of the tile.
+     * @param tile_y The y coordinate of the tile.
+     */
+    void push_segment(const uvec4 segment, int16_t tile_x, int16_t tile_y);
+
+    /**
+     * @brief Finishes the tiling of the drawable.
+     *
+     * @param rule The fill rule used to determine how self-intersecting paths are filled.
+     * @param tiles_count The dimensions in tiles of the viewport.
+     */
+    void pack(const FillRule rule, const ivec2 tiles_count);
+  private:
+    vec2 m_p0;                                  /* The last point. */
+
+    ivec2 m_offset;                             /* The tile offset of the drawable. */
+    ivec2 m_size;                               /* The size in tiles of the drawable. */
+
+    std::vector<Increment> m_tile_increments;   /* The increments used to step through the tiles of the drawable. */
+    std::vector<Bin> m_bins;                    /* The bins used to represent the tiles intersected by the drawable. */
+    std::vector<Span> m_spans;                  /* The spans used to represent the completely covered tiles of the drawable. */
+    std::unordered_map<int, Mask> m_masks;      /* The masks used to represent the partially covered tiles of the drawable. */
+
+    Bin m_bin = { 0, 0 };                       /* The current bin. */
+
+    int16_t m_tile_y_prev = 0;                  /* The y coordinate of the previous tile. */
+  };
+
   class Tiler {
   public:
     Tiler(const Tiler&) = delete;
@@ -101,7 +294,11 @@ namespace Graphick::Renderer {
     inline const size_t segments_size() const { return m_segments_ptr - m_segments; };
 
     void reset(const Viewport& viewport);
-    void process_path(const Geometry::Path& path, const mat2x3& translation, const vec4& color, const float z_index);
+    void process_path(const Geometry::Path& path, const mat2x3& transform, const vec4& color, const float z_index);
+
+    void process_drawable(const Drawable& drawable, const rect& visible, const vec2 offset = { 0.0f, 0.0f }, const bool clip = true);
+    void process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke);
+    void process_fill(const Geometry::Path& path, const mat2x3& transform, const Fill& fill);
   private:
     std::vector<MaskedTile> m_masked_tiles;
     std::vector<OpaqueTile> m_opaque_tiles;
@@ -110,6 +307,7 @@ namespace Graphick::Renderer {
     float m_zoom = 1.0f;
     ivec2 m_position = { 0, 0 };
     ivec2 m_tiles_count = { 0, 0 };
+    vec2 m_subpixel = { 0.0f, 0.0f };
     rect m_visible;
 
     // TODO: replace with array of textures

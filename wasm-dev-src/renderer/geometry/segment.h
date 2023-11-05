@@ -87,7 +87,7 @@ namespace Graphick::Renderer::Geometry {
 
     SegmentPointDistance closest_to(const vec2 position, int iterations = 4) const;
 
-    bool is_inside(const vec2 position, bool deep_search = false, float threshold = 0.0f) const;
+    bool is_inside(const vec2 position, bool deep_search = false, vec2 threshold = vec2{ 0.0f }) const;
     bool intersects(const Math::rect& rect) const;
     bool intersects(const Math::rect& rect, const mat2x3& transform) const;
     bool intersects(const Math::rect& rect, const bool found, std::unordered_set<uuid>& vertices) const;
@@ -100,15 +100,15 @@ namespace Graphick::Renderer::Geometry {
     void remove_p1();
     void remove_p2();
 
+    bool is_masquerading_linear() const;
+    bool is_masquerading_quadratic(vec2& new_p1) const;
+
     bool rehydrate_cache() const;
   public:
     static std::shared_ptr<Segment> reverse(const Segment& segment);
     static void transform(Segment& segment, const mat2x3& matrix, bool transform_p3 = true);
   private:
     void recalculate_kind();
-
-    bool is_masquerading_linear() const;
-    bool is_masquerading_quadratic(vec2& new_p1) const;
 
     vec2 linear_get(const float t) const;
     vec2 quadratic_get(const float t) const;

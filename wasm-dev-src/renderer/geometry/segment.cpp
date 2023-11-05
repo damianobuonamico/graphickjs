@@ -313,27 +313,29 @@ namespace Graphick::Renderer::Geometry {
     return SEGMENT_CALL(closest_to, position, iterations);
   }
 
-  bool Segment::is_inside(const vec2 position, bool deep_search, float threshold) const {
+  bool Segment::is_inside(const vec2 position, bool deep_search, vec2 threshold) const {
     if (!Math::is_point_in_rect(position, deep_search ? approx_bounding_rect() : bounding_rect(), threshold)) {
       return false;
     }
 
-    if (Math::is_point_in_circle(position, p0(), threshold) || Math::is_point_in_circle(position, p3(), threshold)) {
+    if (Math::is_point_in_ellipse(position, p0(), threshold) || Math::is_point_in_ellipse(position, p3(), threshold)) {
       return true;
     }
 
     if (deep_search) {
-      if (m_p1 != nullptr && Math::is_point_in_circle(position, p1(), threshold)) {
+      if (m_p1 != nullptr && Math::is_point_in_ellipse(position, p1(), threshold)) {
         return true;
       }
-      if (m_p2 != nullptr && Math::is_point_in_circle(position, p2(), threshold)) {
+      if (m_p2 != nullptr && Math::is_point_in_ellipse(position, p2(), threshold)) {
         return true;
       }
     }
 
     auto a = SEGMENT_CALL(closest_to, position, 8).sq_distance;
+    float mean_threshold = (threshold.x + threshold.y) / 2.0f;
 
-    return a <= threshold * threshold / 3.0f;   /* Adjusted threshold for segment hover. */
+    // TODO: fix threshold for exclusive horizontal or vertical stretches
+    return a <= mean_threshold * mean_threshold / 3.0f;   /* Adjusted threshold for segment hover. */
   }
 
   bool Segment::intersects(const Math::rect& rect) const {

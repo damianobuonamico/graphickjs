@@ -4,6 +4,7 @@
 
 #include "../../math/vec2.h"
 #include "../../math/vec4.h"
+#include "../../math/vector.h"
 
 #include "../../editor/editor.h"
 #include "../../editor/scene/entity.h"
@@ -552,7 +553,8 @@ namespace Graphick::io::svg {
     std::string name;
     std::string value;
     int ignoring = 0;
-    std::vector<vec4> colors = { { 1.0f, 0.0f, 0.0f, 1.0f } };
+    std::vector<vec4> fill_colors = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+    std::vector<vec4> stroke_colors = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 
     auto remove_comments = [](std::string& value) {
       size_t start = value.find("/*");
@@ -590,7 +592,8 @@ namespace Graphick::io::svg {
         if (!read_identifier(ptr, end, name)) return false;
 
         if (name == "g") {
-          colors.pop_back();
+          fill_colors.pop_back();
+          stroke_colors.pop_back();
         }
 
         skip_ws(ptr, end);
@@ -667,7 +670,8 @@ namespace Graphick::io::svg {
       // TODO: Implement
 
       if (name == "g") {
-        colors.push_back({ 0.0f, 0.0f, 0.0f, 0.0f });
+        fill_colors.push_back({ 0.0f, 0.0f, 0.0f, 0.0f });
+        stroke_colors.push_back({ 0.0f, 0.0f, 0.0f, 0.0f });
       }
       std::string temp_name = name;
 
@@ -695,7 +699,7 @@ namespace Graphick::io::svg {
 
         if (!skip_until(ptr, end, quote)) return false;
 
-        if (name == "fill") {
+        if (name == "fill" || name == "stroke") {
           decode_text(start, rtrim(start, ptr), value);
           // TOOD: refactor
           int r = 0, g = 0, b = 0;
@@ -728,10 +732,10 @@ namespace Graphick::io::svg {
             ss.clear();
           }
 
-          colors.back() = { r / 255.0f, g / 255.0f, b / 255.0f, 1.0f };
-
+          if (name == "fill") fill_colors.back() = { r / 255.0f, g / 255.0f, b / 255.0f, 1.0f };
+          else stroke_colors.back() = { r / 255.0f, g / 255.0f, b / 255.0f, 1.0f };
         } if (name == "d") {
-          // if (colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 1.0f }) {
+          // if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 1.0f }) {
           decode_text(start, rtrim(start, ptr), value);
           // TODO: optimize copy
           History::CommandHistory::disable();
@@ -739,9 +743,19 @@ namespace Graphick::io::svg {
           History::CommandHistory::enable();
 
           if (!path.empty()) {
+            if (!path.closed() && Math::is_almost_equal(path.segments().front().p0(), path.segments().back().p3(), GK_POINT_EPSILON)) {
+              path.close();
+            }
+
             // TODO: reimplement svg creation, element creation, path optimization
             Editor::Entity element = Editor::Editor::scene().create_element(path);
-            element.add_component<Editor::FillComponent>(colors.back());
+
+            if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {
+              element.add_component<Editor::FillComponent>(fill_colors.back());
+            }
+            if (stroke_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {
+              element.add_component<Editor::StrokeComponent>(stroke_colors.back());
+            }
           }
         }
 

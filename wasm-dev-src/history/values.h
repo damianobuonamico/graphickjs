@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../math/vec2.h"
+#include "../math/vec4.h"
 #include "../math/mat2x3.h"
 
 #include "../utils/uuid.h"
@@ -67,6 +68,23 @@ namespace Graphick::History {
     int m_delta = 0;
   };
 
+  template <typename E>
+  class EnumValue {
+  public:
+    EnumValue() : m_value(E(0)) {};
+    EnumValue(const E value) : m_value(value) {};
+
+    inline bool get() const { return m_value; };
+
+    void set(const E value);
+
+    inline void operator=(const E value) { set(value); }
+
+    inline operator E() const { return m_value; }
+  private:
+    E m_value;
+  };
+
   // TODO: value operators
   class UUIDValue {
   public:
@@ -95,17 +113,40 @@ namespace Graphick::History {
     inline vec2 get() const { return m_value + m_delta; };
     inline vec2 delta() const { return m_delta; };
 
-    void set(const vec2& value);
-    void add(const vec2& amount);
+    void set(const vec2 value);
+    void add(const vec2 amount);
 
-    inline void set_delta(const vec2& value) { m_delta = value; }
-    inline void add_delta(const vec2& amount) { m_delta += amount; }
-    inline void move_to(const vec2& value) { m_delta += value - get(); }
+    inline void set_delta(const vec2 value) { m_delta = value; }
+    inline void add_delta(const vec2 amount) { m_delta += amount; }
+    inline void move_to(const vec2 value) { m_delta += value - get(); }
 
     void apply();
   private:
     vec2 m_value;
-    vec2 m_delta = { 0.0f, 0.0f };
+    vec2 m_delta = vec2{ 0.0f };
+  };
+
+  class Vec4Value {
+  public:
+    Vec4Value() : m_value(0.0f) {};
+    Vec4Value(const vec4& value) : m_value(value) {};
+    Vec4Value(float x, float y, float z, float w) : m_value({ x, y, z, w }) {};
+    ~Vec4Value() = default;
+
+    inline vec4 get() const { return m_value + m_delta; };
+    inline vec4 delta() const { return m_delta; };
+
+    void set(const vec4& value);
+    void add(const vec4& amount);
+
+    inline void set_delta(const vec4& value) { m_delta = value; }
+    inline void add_delta(const vec4& amount) { m_delta += amount; }
+    inline void move_to(const vec4& value) { m_delta += value - get(); }
+
+    void apply();
+  private:
+    vec4 m_value;
+    vec4 m_delta = vec4{ 0.0f };
   };
 
   class Mat2x3Value {

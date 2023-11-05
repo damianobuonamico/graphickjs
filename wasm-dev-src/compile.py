@@ -14,7 +14,7 @@ OPTIONS = [
   'USE_WEBGL2', 
   'FULL_ES3', 
   'EXPORTED_FUNCTIONS="["_malloc", "_free"]"',
-  'EXPORTED_RUNTIME_METHODS="["cwrap", "allocateUTF8"]"'
+  'EXPORTED_RUNTIME_METHODS="["cwrap", "allocateUTF8"]"',
 ]
 
 files = []
