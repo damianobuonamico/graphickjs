@@ -1054,6 +1054,17 @@ namespace Graphick::Renderer {
 
   /* -- DrawableTiler -- */
 
+  struct TempTile {
+    std::vector<uvec4> segments;
+    float cover_table[TILE_SIZE];
+    int8_t sign;
+
+    ~TempTile() = default;
+  };
+
+  // static std::vector<int16_t> backdrops;
+  static std::vector<std::unique_ptr<TempTile>> temp_tiles;
+
   DrawableTiler::DrawableTiler(const Drawable& drawable, const rect& visible, const float zoom, const ivec2 position, const vec2 subpixel, const ivec2 tiles_count) {
     rect bounds = {
       Math::floor((drawable.bounds.min - subpixel - 1.0f) / TILE_SIZE) * TILE_SIZE,
@@ -1067,6 +1078,12 @@ namespace Graphick::Renderer {
 
     m_offset = min_coords;
     m_size = max_coords - min_coords;
+
+    temp_tiles.clear();
+    temp_tiles.resize(m_size.x * m_size.y);
+
+    // backdrops.clear();
+    // backdrops.resize(m_size.x * m_size.y, 0);
 
     for (const Geometry::Contour& contour : drawable.contours) {
       if (contour.points.size() < 2) continue;
@@ -1085,6 +1102,7 @@ namespace Graphick::Renderer {
     m_p0 = p0;
   }
 
+#if 0
   void DrawableTiler::line_to(const vec2 p3) {
     if (Math::is_almost_equal(m_p0, p3)) return;
 
@@ -1281,6 +1299,280 @@ namespace Graphick::Renderer {
       }
     }
   }
+#else
+  static constexpr float max_over_tile_size = 255.0f / (float)TILE_SIZE;
+  static constexpr float tile_size_over_max = (float)TILE_SIZE / 255.0f;
+
+  void DrawableTiler::line_to(const vec2 p3) {
+    if (Math::is_almost_equal(m_p0, p3)) return;
+
+    vec2 p0 = m_p0;
+    vec2 vec = p3 - p0;
+
+    int16_t x_dir = sign(vec.x);
+    int16_t y_dir = sign(vec.y);
+    int16_t x = (int16_t)std::floor(p0.x);
+    int16_t y = (int16_t)std::floor(p0.y);
+    int16_t x_tile_dir = x_dir * TILE_SIZE;
+    int16_t y_tile_dir = y_dir * TILE_SIZE;
+    int16_t tile_x = x / TILE_SIZE;
+    int16_t tile_y = y / TILE_SIZE;
+
+    m_p0 = p3;
+    m_tile_y_prev = tile_y;
+
+    float row_t1 = std::numeric_limits<float>::infinity();
+    float col_t1 = std::numeric_limits<float>::infinity();
+    float dtdx = (float)TILE_SIZE / (vec.x);
+    float dtdy = (float)TILE_SIZE / (vec.y);
+
+    if (p0.y != p3.y) {
+      float next_y = (float)(tile_y + (p3.y > p0.y ? 1 : 0)) * TILE_SIZE;
+      row_t1 = std::min(1.0f, (next_y - p0.y) / vec.y);
+    }
+
+    if (p0.x != p3.x) {
+      float next_x = (float)(tile_x + (p3.x > p0.x ? 1 : 0)) * TILE_SIZE;
+      col_t1 = std::min(1.0f, (next_x - p0.x) / vec.x);
+    }
+
+    vec2 step = { std::abs(dtdx), std::abs(dtdy) };
+    vec2 from = p0;
+
+    // StepDirection dir = StepDirection::None;
+
+    while (true) {
+      float t1 = std::min(row_t1, col_t1);
+
+      vec2 to = p0 + vec * t1;
+      vec2 tile_pos = TILE_SIZE * vec2{ (float)tile_x, (float)tile_y };
+      vec2 from_delta = from - tile_pos;
+      vec2 to_delta = to - tile_pos;
+
+      int index = tile_index(tile_x, tile_y, m_size.x);
+
+      if (temp_tiles[index].get() == nullptr) {
+        temp_tiles[index] = std::make_unique<TempTile>();
+        temp_tiles[index]->segments.reserve(25);
+      }
+
+      if (from_delta.y != to_delta.y) {
+        uint8_t y0 = static_cast<uint8_t>(std::roundf(from_delta.y * max_over_tile_size));
+        uint8_t y1 = static_cast<uint8_t>(std::roundf(to_delta.y * max_over_tile_size));
+
+#if 1
+        if (y0 != y1) {
+          uint8_t x0 = static_cast<uint8_t>(std::roundf(from_delta.x * max_over_tile_size));
+          uint8_t x1 = static_cast<uint8_t>(std::roundf(to_delta.x * max_over_tile_size));
+
+          float cover, fy0, fy1;
+
+          if (y0 < y1) {
+            fy0 = (float)y0 * tile_size_over_max;
+            fy1 = (float)y1 * tile_size_over_max;
+            cover = 1.0f;
+          } else {
+            fy0 = (float)y1 * tile_size_over_max;
+            fy1 = (float)y0 * tile_size_over_max;
+            cover = -1.0f;
+          }
+
+          float iy0 = std::floorf(fy0);
+          float iy1 = std::ceilf(fy1);
+
+          int i0 = (int)iy0;
+          int i1 = (int)iy1;
+
+          temp_tiles[index]->cover_table[i0] += cover * (iy0 + 1.0f - fy0);
+
+          for (int j = i0 + 1; j < i1; j++) {
+            temp_tiles[index]->cover_table[j] += cover * (1.0f);
+          }
+
+          temp_tiles[index]->cover_table[i1 - 1] -= cover * (iy1 - fy1);
+
+          temp_tiles[index]->segments.emplace_back(x0, y0, x1, y1);
+        }
+#else
+        float fy0 = (float)y0 * tile_size_over_max;
+        float fy1 = (float)y1 * tile_size_over_max;
+
+        if (y0 < y1) {
+          float iy0 = std::floorf(fy0);
+          float iy1 = std::ceilf(fy1);
+
+          int i0 = (int)iy0;
+          int i1 = (int)iy1;
+
+          temp_tiles[index]->cover_table[i0] += iy0 + 1.0f - fy0;
+
+          for (int j = i0 + 1; j < i1; j++) {
+            temp_tiles[index]->cover_table[j] += 1.0f;
+          }
+
+          temp_tiles[index]->cover_table[i1 - 1] -= iy1 - fy1;
+        } else if (y0 > y1) {
+          float iy0 = std::ceilf(fy0);
+          float iy1 = std::floorf(fy1);
+
+          int i0 = (int)iy0;
+          int i1 = (int)iy1;
+
+          temp_tiles[index]->cover_table[i1] -= iy1 + 1.0f - fy1;
+
+          for (int j = i1 + 1; j < i0; j++) {
+            temp_tiles[index]->cover_table[j] -= 1.0f;
+          }
+
+          temp_tiles[index]->cover_table[i0 - 1] += iy0 - fy0;
+        }
+
+        temp_tiles[index]->segments.emplace_back(x0, y0, x1, y1);
+#endif
+
+        // for (int j = 0; j < TILE_SIZE; j++) {
+        //   float y0 = (float)j;
+        //   float y1 = y0 + 1.0f;
+
+        //   temp_tiles[index]->cover_table[j] += std::clamp(rounded_y1, y0, y1) - std::clamp(rounded_y0, y0, y1);
+        // }
+
+      }
+
+      // push_segment({
+      //   (uint8_t)std::round(from_delta.x * max_over_tile_size),
+      //   (uint8_t)std::round(from_delta.y * max_over_tile_size),
+      //   (uint8_t)std::round(to_delta.x * max_over_tile_size),
+      //   (uint8_t)std::round(to_delta.y * max_over_tile_size),
+      //   }, tile_x, tile_y);
+
+      // if (dir == StepDirection::Y && y_dir < 0) {
+      //   backdrops[tile_index(tile_x, tile_y, m_size.x)] += 1;
+      // }
+
+      // if (dir == StepDirection::Y && y_dir > 0) {
+      //   backdrops[tile_index(tile_x, tile_y, m_size.x)] += 1;
+      // } else if (dir == StepDirection::X && x_dir > 0) {
+      //   backdrops[tile_index(tile_x, tile_y, m_size.x)] -= 1;
+      // }
+
+      bool fuzzy_equal;
+
+      if (row_t1 < col_t1) {
+        fuzzy_equal = row_t1 >= 1.0f - 0.0001f;
+        row_t1 = std::min(1.0f, row_t1 + step.y);
+        // dir = StepDirection::Y;
+
+        // if (y_dir > 0) {
+        //   backdrops[tile_index(tile_x, tile_y, m_size.x)] -= 1;
+        // }
+
+        // if (y_dir < 0) {
+        //   backdrops[tile_index(tile_x, tile_y, m_size.x)] += 1;
+        // } else {
+        //   backdrops[tile_index(tile_x, tile_y, m_size.x)] -= 1;
+        // }
+
+        y += y_tile_dir;
+        tile_y += y_dir;
+      } else {
+        fuzzy_equal = col_t1 >= 1.0f - 0.0001f;
+        col_t1 = std::min(1.0f, col_t1 + step.x);
+        // dir = StepDirection::X;
+
+        // if (x_dir > 0 && y_dir > 0) {
+        //   backdrops[tile_index(tile_x, tile_y, m_size.x)] -= 1;
+        // }
+
+        // if (x_dir > 0 && y_dir > 0) {
+        //   backdrops[tile_index(tile_x, tile_y, m_size.x)] -= 1;
+        // } else {
+        //   backdrops[tile_index(tile_x, tile_y, m_size.x)] -= 1;
+        // }
+
+        x += x_tile_dir;
+        tile_x += x_dir;
+      }
+
+      if (fuzzy_equal) {
+        x = (int16_t)std::floorf(p3.x);
+        y = (int16_t)std::floorf(p3.y);
+
+        tile_x = x / TILE_SIZE;
+        tile_y = y / TILE_SIZE;
+      }
+
+      if (tile_y != m_tile_y_prev) {
+        int sign_index = tile_index(tile_x, std::min(tile_y, m_tile_y_prev), m_size.x);
+
+        if (temp_tiles[sign_index].get() == nullptr) {
+          temp_tiles[sign_index] = std::make_unique<TempTile>();
+        }
+
+        temp_tiles[sign_index]->sign += (int8_t)(tile_y - m_tile_y_prev);
+        m_tile_y_prev = tile_y;
+      }
+
+      from = to;
+
+      if (fuzzy_equal) break;
+    }
+  }
+
+  void DrawableTiler::push_segment(const uvec4 segment, int16_t tile_x, int16_t tile_y) {
+    if (tile_x >= m_size.x || tile_y >= m_size.y) return;
+
+    int index = tile_index(tile_x, tile_y, m_size.x);
+
+    auto& mask = m_masks[index];
+
+    if (segment.y0 != segment.y1) {
+      mask.segments.push_back(segment);
+    }
+  }
+
+  void DrawableTiler::pack(const FillRule rule, const ivec2 tiles_count) {
+    float cover_table[TILE_SIZE] = { 0.0f };
+    int winding = 0;
+
+    for (int16_t y = 0; y < m_size.y; y++) {
+      std::memset(cover_table, 0, TILE_SIZE * sizeof(float));
+      winding = 0;
+
+      for (int16_t x = 0; x < m_size.x; x++) {
+        int index = tile_index(x, y, m_size.x);
+
+        if (temp_tiles[index].get() != nullptr) {
+          auto& mask = m_masks[index];
+
+          std::memcpy(mask.cover_table, cover_table, TILE_SIZE * sizeof(float));
+          winding += temp_tiles[index]->sign;
+
+          if (temp_tiles[index]->segments.empty()) {
+            continue;
+          }
+
+          mask.segments = std::move(temp_tiles[index]->segments);
+
+          for (int i = 0; i < TILE_SIZE; i++) {
+            cover_table[i] += temp_tiles[index]->cover_table[i];
+          }
+        } else if (
+          (rule == FillRule::NonZero && winding != 0) ||
+          (rule == FillRule::EvenOdd && winding % 2 != 0)
+          ) {
+          m_spans.push_back(Span{ x, y, 1 });
+        }
+
+        // if (backdrop != 0) {
+        //   m_spans.push_back(Span{ x, y, 1 });
+        // }
+
+        // backdrop += backdrops[index];
+      }
+    }
+  }
+#endif
 
   /* -- Tiler -- */
 

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <sstream>
 
+// TODO: inline most of these functions
+
 namespace Graphick::Math {
 
   /* -- min -- */

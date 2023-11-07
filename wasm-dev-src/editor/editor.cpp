@@ -94,6 +94,7 @@ namespace Graphick::Editor {
 #endif
   ) {
 #ifdef EMSCRIPTEN
+    // TODO: add emscripten loop or something similar
     emscripten_request_animation_frame(render_callback, nullptr);
 #else
     if (is_main_loop) {

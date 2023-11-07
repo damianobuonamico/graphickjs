@@ -12,6 +12,8 @@
 
 #include "../../utils/console.h"
 
+// TOOD: fix events clogging animation frame queue
+
 namespace Graphick::Editor::Input {
 
   InputManager* InputManager::s_instance = nullptr;
@@ -77,15 +79,20 @@ namespace Graphick::Editor::Input {
       keys.space_state_changed = false;
     }
 
+    bool should_render = false;
+
     if (!pointer.down && (keys.ctrl_state_changed || keys.space_state_changed)) {
       Editor::scene().tool_state.recalculate_active();
-      Editor::render();
+      should_render = true;
     }
 
     if (instance->m_moving && !instance->m_abort) {
       Editor::scene().tool_state.on_key(event == KeyboardEvent::Down, key);
-      Editor::render();
+      should_render = true;
     }
+
+    // TODO: request frame and let editor collapse calls
+    if (should_render && (keys.ctrl_state_changed || keys.space_state_changed)) Editor::render();
 
     switch (event) {
     case KeyboardEvent::Down:

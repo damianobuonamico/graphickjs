@@ -4,6 +4,8 @@
 
 namespace Graphick::Renderer::Geometry {
 
+  static constexpr float tolerance = 0.25f;
+
   void Contour::begin(const vec2 p0, const bool push) {
     if (push) points.push_back(p0);
     m_p0 = p0;
@@ -19,16 +21,19 @@ namespace Graphick::Renderer::Geometry {
     vec2 a = -m_p0 + 3.0f * p1 - 3.0f * p2 + p3;
     vec2 b = 3.0f * m_p0 - 6.0f * p1 + 3.0f * p2;
     vec2 c = -3.0f * m_p0 + 3.0f * p1;
-
     vec2 p;
 
-    for (int i = 1; i < 10; i++) {
-      float t = (float)i / 10.0f;
+    float conc = std::max(Math::length(b), Math::length(a + b));
+    float dt = std::sqrtf((std::sqrtf(8.0f) * tolerance) / conc);
+    float t = dt;
+
+    while (t < 1.0f) {
       float t_sq = t * t;
 
       p = a * t_sq * t + b * t_sq + c * t + m_p0;
-
       points.push_back(p);
+
+      t += dt;
     }
 
     points.push_back(p3);
