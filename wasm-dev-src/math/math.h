@@ -32,7 +32,7 @@ namespace Graphick::Math {
   std::tuple<vec2, vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t);
   std::tuple<vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t1, const float t2);
 
-    int hash(std::initializer_list<float> floats);
-  }
+  int hash(std::initializer_list<float> floats);
+}
 
 #include "math.inl"

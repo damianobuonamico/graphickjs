@@ -15,114 +15,10 @@
 
 namespace Graphick::Renderer {
 
-  enum PointFlags {
-    NONE = 0x00,
-    /// This point is the first control point of a cubic Bézier curve or the only control point
-    /// of a quadratic Bézier curve.
-    CONTROL_POINT_0 = 0x01,
-    /// This point is the second point of a quadratic Bézier curve.
-    CONTROL_POINT_1 = 0x02
-  };
-
-  enum PushSegmentFlags {
-    /// The bounds should be updated.
-    UPDATE_BOUNDS = 0x01,
-    /// The "from" point of the segme
-    INCLUDE_FROM_POINT = 0x02
-  };
-
-  struct ContourSegment;
-
-  struct Contour {
-    std::vector<vec2> points;
-    std::vector<PointFlags> flags;
-    rect bounds;
-    bool closed;
-
-    size_t len() const;
-    bool might_need_join(const LineJoin join) const;
-    vec2 position_of_last(const size_t index) const;
-    void push_point(const vec2 point, const PointFlags flag, const bool update_bounds);
-    void push_endpoint(const vec2 to);
-    void push_segment(const ContourSegment& segment, const int flags);
-    void add_join(const float distance, const LineJoin join, const vec2 join_point, const rect next_tangent);
-  };
-
   namespace Geometry {
     class Path;
     class Segment;
   }
-
-  class PathTiler {
-  public:
-    struct Increment {
-      int16_t tile_x;
-      int16_t tile_y;
-      int8_t sign;
-    };
-    struct Span {
-      int16_t tile_x;
-      int16_t tile_y;
-      int16_t width;
-    };
-    struct Bin {
-      int16_t tile_x;
-      int16_t tile_y;
-    };
-    struct Mask {
-      std::vector<uvec4> segments;
-      float cover_table[TILE_SIZE] = { 0.0f };
-    };
-
-    enum class StepDirection {
-      None = 0,
-      X,
-      Y
-    };
-  public:
-    PathTiler(const PathTiler&) = default;
-    PathTiler(PathTiler&&) = default;
-
-    PathTiler(
-      const Geometry::Path& path,
-      const mat2x3& translation,
-      const vec4& color,
-      const rect& visible,
-      float zoom,
-      ivec2 position,
-      const std::vector<bool>& culled,
-      const ivec2 tiles_count
-    );
-    ~PathTiler() = default;
-
-    inline const std::unordered_map<int, Mask>& masks() const { return m_masks; }
-    inline const std::vector<Span>& spans() const { return m_spans; }
-
-    inline ivec2 offset() const { return m_offset; }
-    inline ivec2 size() const { return m_bounds_size; }
-  private:
-    void process_linear_segment(const vec2 p0, const vec2 p3);
-    void process_quadratic_segment(const vec2 p0, const vec2 p1, const vec2 p3);
-    void process_cubic_segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
-    void push_segment(const uvec4 segment, int16_t tile_x, int16_t tile_y);
-
-    void finish(const ivec2 tiles_count);
-  private:
-    std::vector<Increment> m_tile_increments;
-    std::vector<Bin> m_bins;
-    Bin m_bin = { 0, 0 };
-
-    std::unordered_map<int, Mask> m_masks;
-    std::vector<Span> m_spans;
-
-    int16_t m_tile_y_prev = 0;
-    vec2 m_prev = { 0.0f, 0.0f };
-
-    float m_zoom;
-    ivec2 m_position;
-    ivec2 m_offset;
-    ivec2 m_bounds_size;
-  };
 
   /**
    * @brief Class used to generate segments and cover tables for a drawable.
@@ -131,28 +27,6 @@ namespace Graphick::Renderer {
    */
   class DrawableTiler {
   public:
-    /**
-     * @brief The increment used to step through the tiles of a drawable.
-     *
-     * @struct Increment
-     */
-    struct Increment {
-      int16_t tile_x;   /* The x coordinate of the tile. */
-      int16_t tile_y;   /* The y coordinate of the tile. */
-      int8_t sign;      /* The sign of the increment. */
-    };
-
-    /**
-     * @brief The bin used to represent a tile that is intersected by a contour.
-     * @todo Maybe remove this, should be useless
-     *
-     * @struct Bin
-     */
-    struct Bin {
-      int16_t tile_x;   /* The x coordinate of the tile. */
-      int16_t tile_y;   /* The y coordinate of the tile. */
-    };
-
     /**
      * @brief The span used to represent a completely covered array of tiles.
      *
@@ -172,15 +46,6 @@ namespace Graphick::Renderer {
     struct Mask {
       std::vector<uvec4> segments;                /* GPU packed segments of the tile. */
       float cover_table[TILE_SIZE] = { 0.0f };    /* GPU packed cover table of the tile. */
-    };
-
-    /**
-     * @brief The direction used to step through the tiles intersected by a segment of the drawable.
-     */
-    enum class StepDirection {
-      None = 0,   /* End of segment. */
-      X,          /* Step in the X direction. */
-      Y           /* Step in the Y direction. */
     };
   public:
     /**
@@ -245,17 +110,6 @@ namespace Graphick::Renderer {
     void line_to(const vec2 p3);
 
     /**
-     * @brief Adds a segment to the mask at the specified tile coordinates
-     *
-     * If the mask doesn't exist, it is automatically created.
-     *
-     * @param segment The segment to add.
-     * @param tile_x The x coordinate of the tile.
-     * @param tile_y The y coordinate of the tile.
-     */
-    void push_segment(const uvec4 segment, int16_t tile_x, int16_t tile_y);
-
-    /**
      * @brief Finishes the tiling of the drawable.
      *
      * @param rule The fill rule used to determine how self-intersecting paths are filled.
@@ -268,12 +122,8 @@ namespace Graphick::Renderer {
     ivec2 m_offset;                             /* The tile offset of the drawable. */
     ivec2 m_size;                               /* The size in tiles of the drawable. */
 
-    std::vector<Increment> m_tile_increments;   /* The increments used to step through the tiles of the drawable. */
-    std::vector<Bin> m_bins;                    /* The bins used to represent the tiles intersected by the drawable. */
     std::vector<Span> m_spans;                  /* The spans used to represent the completely covered tiles of the drawable. */
     std::unordered_map<int, Mask> m_masks;      /* The masks used to represent the partially covered tiles of the drawable. */
-
-    Bin m_bin = { 0, 0 };                       /* The current bin. */
 
     int16_t m_tile_y_prev = 0;                  /* The y coordinate of the previous tile. */
   };
@@ -294,7 +144,6 @@ namespace Graphick::Renderer {
     inline const size_t segments_size() const { return m_segments_ptr - m_segments; };
 
     void reset(const Viewport& viewport);
-    void process_path(const Geometry::Path& path, const mat2x3& transform, const vec4& color, const float z_index);
 
     void process_drawable(const Drawable& drawable, const rect& visible, const vec2 offset = { 0.0f, 0.0f }, const bool clip = true);
     void process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke);
