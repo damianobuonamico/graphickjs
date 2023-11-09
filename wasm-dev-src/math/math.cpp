@@ -7,6 +7,10 @@
 
 #include "math.h"
 
+#include "dvec2.h"
+
+#include <algorithm>
+
 namespace Graphick::Math {
 
   /**
@@ -244,6 +248,82 @@ namespace Graphick::Math {
     } else {
       return {};
     }
+  }
+
+  std::vector<vec2> line_rect_intersection_points(const vec2 p0, const vec2 p3, const rect& rect) {
+    std::vector<vec2> intersection_points;
+    std::vector<double> intersections;
+
+    dvec2 dp0 = { p0.x, p0.y };
+    dvec2 dp3 = { p3.x, p3.y };
+
+    dvec2 a = dp3 - dp0;
+
+    double t1 = solve_linear(a.x, dp0.x - (double)rect.min.x);
+    double t2 = solve_linear(a.x, dp0.x - (double)rect.max.x);
+    double t3 = solve_linear(a.y, dp0.y - (double)rect.min.y);
+    double t4 = solve_linear(a.y, dp0.y - (double)rect.max.y);
+
+    if (t1 >= 0.0 && t1 <= 1.0) intersections.push_back(t1);
+    if (t2 >= 0.0 && t2 <= 1.0) intersections.push_back(t2);
+    if (t3 >= 0.0 && t3 <= 1.0) intersections.push_back(t3);
+    if (t4 >= 0.0 && t4 <= 1.0) intersections.push_back(t4);
+
+    if (intersections.empty()) return intersection_points;
+
+    std::sort(intersections.begin(), intersections.end());
+
+    for (double t : intersections) {
+      dvec2 p = dp0 + (dp3 - dp0) * t;
+
+      if (is_point_in_rect({ (float)p.x, (float)p.y }, rect, GK_POINT_EPSILON)) {
+        intersection_points.push_back({ (float)p.x, (float)p.y });
+      }
+    }
+
+    return intersection_points;
+  }
+
+  std::vector<float> bezier_rect_intersections(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const rect& rect) {
+    std::vector<float> intersections_t;
+    std::vector<double> intersections;
+
+    dvec2 dp0 = { p0.x, p0.y };
+    dvec2 dp1 = { p1.x, p1.y };
+    dvec2 dp2 = { p2.x, p2.y };
+    dvec2 dp3 = { p3.x, p3.y };
+
+    dvec2 a = -dp0 + 3.0 * dp1 - 3.0 * dp2 + dp3;
+    dvec2 b = 3.0 * dp0 - 6.0 * dp1 + 3.0 * dp2;
+    dvec2 c = -3.0 * dp0 + 3.0 * dp1;
+
+    for (int j = 0; j < 2; j++) {
+      for (int k = 0; k < 2; k++) {
+        CubicSolutions roots = solve_cubic(a[k], b[k], c[k], dp0[k] - rect[j][k]);
+
+        for (uint8_t i = 0; i < roots.count; i++) {
+          double t = roots.solutions[i];
+
+          if (t >= 0.0 && t <= 1.0) intersections.push_back(t);
+        }
+      }
+    }
+
+    if (intersections.empty()) return intersections_t;
+
+    std::sort(intersections.begin(), intersections.end());
+
+
+    for (double t : intersections) {
+      double t_sq = t * t;
+      dvec2 p = a * t_sq * t + b * t_sq + c * t + dp0;
+
+      if (is_point_in_rect({ (float)p.x, (float)p.y }, rect, GK_POINT_EPSILON)) {
+        intersections_t.push_back((float)t);
+      }
+    }
+
+    return intersections_t;
   }
 
   void clip_to_left(std::vector<vec2>& points, float x) {

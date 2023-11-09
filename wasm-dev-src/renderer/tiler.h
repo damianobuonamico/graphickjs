@@ -1,6 +1,8 @@
 /**
  * @file tiler.h
  * @brief Contains the classes used to generate segments and cover tables for a collection of drawables.
+ *
+ * @todo cleanup and doc Tiler class
  */
 
 #pragma once
@@ -33,9 +35,11 @@ namespace Graphick::Renderer {
      * @struct Tile
      */
     struct Tile {
+      bool active = false;                        /* Whether the tile is active. */
+      int8_t winding = 0;                         /* Winding number increment. */
+
       float cover_table[TILE_SIZE] = { 0.0f };    /* Cover table of the tile. */
       std::vector<uvec4> segments;                /* Segments of the tile. */
-      int8_t winding;                             /* Winding number increment. */
     };
 
     /**
@@ -133,15 +137,17 @@ namespace Graphick::Renderer {
      */
     void pack(const FillRule rule, const ivec2 tiles_count);
   private:
-    vec2 m_p0;                                  /* The last point. */
+    vec2 m_p0;                           /* The last point. */
 
-    ivec2 m_offset;                             /* The tile offset of the drawable. */
-    ivec2 m_size;                               /* The size in tiles of the drawable. */
+    ivec2 m_offset;                      /* The tile offset of the drawable. */
+    ivec2 m_size;                        /* The size in tiles of the drawable. */
 
-    std::vector<Span> m_spans;                  /* The spans used to represent the completely covered tiles of the drawable. */
-    std::vector<Mask> m_masks;                  /* The masks used to represent the partially covered tiles of the drawable. */
+    std::vector<Span> m_spans;           /* The spans used to represent the completely covered tiles of the drawable. */
+    std::vector<Mask> m_masks;           /* The masks used to represent the partially covered tiles of the drawable. */
 
-    int16_t m_tile_y_prev = 0;                  /* The y coordinate of the previous tile. */
+    int16_t m_tile_y_prev = 0;           /* The y coordinate of the previous tile. */
+
+    std::vector<Tile>* m_memory_pool;    /* The memory pool of tiles to use. */
   };
 
   class Tiler {
@@ -168,6 +174,8 @@ namespace Graphick::Renderer {
     std::vector<MaskedTile> m_masked_tiles;
     std::vector<OpaqueTile> m_opaque_tiles;
     std::vector<bool> m_culled_tiles;
+
+    std::vector<DrawableTiler::Tile> m_memory_pool;
 
     float m_zoom = 1.0f;
     ivec2 m_position = { 0, 0 };
