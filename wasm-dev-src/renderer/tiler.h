@@ -28,6 +28,17 @@ namespace Graphick::Renderer {
   class DrawableTiler {
   public:
     /**
+     * @brief The intermediate tile object used to process segments.
+     *
+     * @struct Tile
+     */
+    struct Tile {
+      float cover_table[TILE_SIZE] = { 0.0f };    /* Cover table of the tile. */
+      std::vector<uvec4> segments;                /* Segments of the tile. */
+      int8_t winding;                             /* Winding number increment. */
+    };
+
+    /**
      * @brief The span used to represent a completely covered array of tiles.
      *
      * @struct Span
@@ -35,17 +46,21 @@ namespace Graphick::Renderer {
     struct Span {
       int16_t tile_x;   /* The x coordinate of the tile. */
       int16_t tile_y;   /* The y coordinate of the tile. */
+
       int16_t width;    /* The width of the span. */
     };
 
     /**
-     * @brief The packed mask used to represent a partially covered tile.
+     * @brief The mask used to represent a partially covered tile.
      *
      * @struct Mask
      */
     struct Mask {
-      std::vector<uvec4> segments;                /* GPU packed segments of the tile. */
+      int16_t tile_x;                             /* The x coordinate of the tile. */
+      int16_t tile_y;                             /* The y coordinate of the tile. */
+
       float cover_table[TILE_SIZE] = { 0.0f };    /* GPU packed cover table of the tile. */
+      std::vector<uvec4> segments;                /* GPU packed segments of the tile. */
     };
   public:
     /**
@@ -64,8 +79,9 @@ namespace Graphick::Renderer {
      * @param position The position of the viewport.
      * @param subpixel The subpixel offset of the viewport.
      * @param tiles_count The dimensions in tiles of the viewport.
+     * @param pool The memory pool of tiles to use.
      */
-    DrawableTiler(const Drawable& drawable, const rect& visible, const float zoom, const ivec2 position, const vec2 subpixel, const ivec2 tiles_count);
+    DrawableTiler(const Drawable& drawable, const rect& visible, const float zoom, const ivec2 position, const vec2 subpixel, const ivec2 tiles_count, std::vector<Tile>& pool);
 
     /**
      * @brief Returns the offset of the drawable.
@@ -86,7 +102,7 @@ namespace Graphick::Renderer {
      *
      * @return The masks of the drawable.
      */
-    inline const std::unordered_map<int, Mask>& masks() const { return m_masks; }
+    inline const std::vector<Mask>& masks() const { return m_masks; }
 
     /**
      * @brief Returns the spans of the drawable.
@@ -123,7 +139,7 @@ namespace Graphick::Renderer {
     ivec2 m_size;                               /* The size in tiles of the drawable. */
 
     std::vector<Span> m_spans;                  /* The spans used to represent the completely covered tiles of the drawable. */
-    std::unordered_map<int, Mask> m_masks;      /* The masks used to represent the partially covered tiles of the drawable. */
+    std::vector<Mask> m_masks;                  /* The masks used to represent the partially covered tiles of the drawable. */
 
     int16_t m_tile_y_prev = 0;                  /* The y coordinate of the previous tile. */
   };

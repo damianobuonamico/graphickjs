@@ -6,6 +6,7 @@
 #include "../math/mat2x3.h"
 #include "../math/matrix.h"
 #include "../math/math.h"
+#include "../math/dvec2.h"
 
 #include "../utils/console.h"
 
@@ -19,170 +20,68 @@ namespace Graphick::Renderer {
 #define OPAQUE_AND_MASKED 0
 #define SAMPLE_COUNT 16
 
-  static constexpr float tolerance = 0.25f;
-
+  /**
+   * @brief Calculates the tile coordinates of a point.
+   *
+   * @param p The point.
+   * @return The tile coordinates.
+   */
   static inline ivec2 tile_coords(const vec2 p) {
-    return { (int)std::floor(p.x / TILE_SIZE), (int)std::floor(p.y / TILE_SIZE) };
+    return {
+      static_cast<int>(std::floorf(p.x / TILE_SIZE)),
+      static_cast<int>(std::floorf(p.y / TILE_SIZE))
+    };
   }
 
+  /**
+   * @brief Calculates the tile coordinates of a point and clamps them to the tiles count.
+   *
+   * @param p The point.
+   * @param tiles_count The tiles count.
+   * @return The tile coordinates.
+   */
   static inline ivec2 tile_coords_clamp(const vec2 p, const ivec2 tiles_count) {
-    return { std::clamp((int)std::floor(p.x / TILE_SIZE), 0, tiles_count.x - 1), std::clamp((int)std::floor(p.y / TILE_SIZE), 0, tiles_count.y - 1) };
+    return {
+      std::clamp(static_cast<int>(std::floorf(p.x / TILE_SIZE)), 0, tiles_count.x - 1),
+      std::clamp(static_cast<int>(std::floorf(p.y / TILE_SIZE)), 0, tiles_count.y - 1)
+    };
   }
 
+  /**
+   * @brief Calculates the tile index of a tile.
+   *
+   * This function is slower than the (int16_t, int16_t, int16_t) variant.
+   *
+   * @param coords The tile coordinates.
+   * @param tiles_count The tiles count.
+   * @return The tile index.
+   */
   static inline int tile_index(const ivec2 coords, const ivec2 tiles_count) {
     return coords.x + coords.y * tiles_count.x;
   }
 
+  /**
+   * @brief Calculates the tile index of a tile.
+   *
+   * This function is faster than the (ivec2, ivec2) variant.
+   *
+   * @param tile_x The x coordinate of the tile.
+   * @param tile_y The y coordinate of the tile.
+   * @param tiles_count_x The x dimension of the tiles count.
+   * @return The tile index.
+   */
   static inline int tile_index(const int16_t tile_x, const int16_t tile_y, const int16_t tiles_count_x) {
     return tile_x + tile_y * tiles_count_x;
   }
 
-  static inline float x_intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
-    float num = (x1 * y2 - y1 * x2) * (x3 - x4) -
-      (x1 - x2) * (x3 * y4 - y3 * x4);
-    float den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    return num / den;
-  }
-
-  static inline float x_intersect(float one_over_m, float q, float y) {
-    return (y - q) * one_over_m;
-  }
-
-  static inline float y_intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
-    float num = (x1 * y2 - y1 * x2) * (y3 - y4) -
-      (y1 - y2) * (x3 * y4 - y3 * x4);
-    float den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    return num / den;
-  }
-
-  static inline float y_intersect(float m, float q, float x) {
-    return m * x + q;
-  }
-
-  static void clip_to_left(std::vector<vec2>& points, float x) {
-    if (points.empty()) return;
-    std::vector<vec2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      vec2 point = points[i];
-
-      if (point.x < x) {
-        if (points[i + 1].x > x) {
-          new_points.push_back({ x, y_intersect(x, -1000.0f, x, 1000.0f, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].x < x) {
-          new_points.push_back({ x, y_intersect(x, -1000.0f, x, 1000.0f, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  static void clip_to_right(std::vector<vec2>& points, float x) {
-    if (points.empty()) return;
-    std::vector<vec2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      vec2 point = points[i];
-
-      if (point.x > x) {
-        if (points[i + 1].x < x) {
-          new_points.push_back({ x, y_intersect(x, -1000.0f, x, 1000.0f, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].x > x) {
-          new_points.push_back({ x, y_intersect(x, -1000.0f, x, 1000.0f, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  static void clip_to_top(std::vector<vec2>& points, float y) {
-    if (points.empty()) return;
-    std::vector<vec2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      vec2 point = points[i];
-
-      if (point.y < y) {
-        if (points[i + 1].y > y) {
-          new_points.push_back({ x_intersect(-1000.0f, y, 1000.0f, y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].y < y) {
-          new_points.push_back({ x_intersect(-1000.0f, y, 1000.0f, y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  static vec2 clip_to_bottom(std::vector<vec2>& points, float y) {
-    vec2 min = std::numeric_limits<vec2>::max();
-
-    if (points.empty()) return min;
-    std::vector<vec2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      vec2 point = points[i];
-
-      if (point.y > y) {
-        if (points[i + 1].y < y) {
-          new_points.push_back({ x_intersect(-1000.0f, y, 1000.0f, y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-          min = Math::min(min, new_points.back());
-        }
-      } else {
-        new_points.push_back(point);
-        min = Math::min(min, new_points.back());
-
-        if (points[i + 1].y > y) {
-          new_points.push_back({ x_intersect(-1000.0f, y, 1000.0f, y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-          min = Math::min(min, new_points.back());
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-      min = Math::min(min, new_points.back());
-    }
-
-    points = new_points;
-
-    return min;
-  }
-
-  static vec2 clip(std::vector<vec2>& points, rect visible) {
-    clip_to_left(points, visible.min.x);
-    clip_to_right(points, visible.max.x);
-    clip_to_top(points, visible.min.y);
-
-    return clip_to_bottom(points, visible.max.y);
-  }
-
+  /**
+   * @brief Calculates the sign of a float.
+   *
+   * This method is designed and optimized to return an int16_t value (-1, 0, 1).
+   *
+   * @param x The float.
+   * @return The sign of the float.
+   */
   inline static int16_t sign(float x) {
     return (0 < x) - (x < 0);
   }
@@ -192,14 +91,14 @@ namespace Graphick::Renderer {
   struct TempTile {
     std::vector<uvec4> segments;
     float cover_table[TILE_SIZE];
-    int8_t sign;
+    int8_t winding;
 
     ~TempTile() = default;
   };
 
   static std::vector<std::unique_ptr<TempTile>> temp_tiles;
 
-  DrawableTiler::DrawableTiler(const Drawable& drawable, const rect& visible, const float zoom, const ivec2 position, const vec2 subpixel, const ivec2 tiles_count) {
+  DrawableTiler::DrawableTiler(const Drawable& drawable, const rect& visible, const float zoom, const ivec2 position, const vec2 subpixel, const ivec2 tiles_count, std::vector<Tile>& pool) {
     rect bounds = {
       Math::floor((drawable.bounds.min - subpixel - 1.0f) / TILE_SIZE) * TILE_SIZE,
       Math::ceil((drawable.bounds.max - subpixel + 1.0f) / TILE_SIZE) * TILE_SIZE
@@ -288,13 +187,16 @@ namespace Graphick::Renderer {
         temp_tiles[index]->segments.reserve(25);
       }
 
+      auto& tile = *temp_tiles[index];
+
       if (from_delta.y != to_delta.y) {
-        uint8_t y0 = static_cast<uint8_t>(std::roundf(from_delta.y * max_over_tile_size));
-        uint8_t y1 = static_cast<uint8_t>(std::roundf(to_delta.y * max_over_tile_size));
+        /* Direct cast to uint8_t without passing to std::roundf() is 10x faster in this case. */
+        uint8_t y0 = static_cast<uint8_t>(from_delta.y * max_over_tile_size + 0.5f);
+        uint8_t y1 = static_cast<uint8_t>(to_delta.y * max_over_tile_size + 0.5f);
 
         if (y0 != y1) {
-          uint8_t x0 = static_cast<uint8_t>(std::roundf(from_delta.x * max_over_tile_size));
-          uint8_t x1 = static_cast<uint8_t>(std::roundf(to_delta.x * max_over_tile_size));
+          uint8_t x0 = static_cast<uint8_t>(from_delta.x * max_over_tile_size + 0.5f);
+          uint8_t x1 = static_cast<uint8_t>(to_delta.x * max_over_tile_size + 0.5f);
 
           float cover, fy0, fy1;
 
@@ -314,15 +216,15 @@ namespace Graphick::Renderer {
           int i0 = (int)iy0;
           int i1 = (int)iy1;
 
-          temp_tiles[index]->cover_table[i0] += cover * (iy0 + 1.0f - fy0);
+          tile.cover_table[i0] += cover * (iy0 + 1.0f - fy0);
 
           for (int j = i0 + 1; j < i1; j++) {
-            temp_tiles[index]->cover_table[j] += cover * (1.0f);
+            tile.cover_table[j] += cover;
           }
 
-          temp_tiles[index]->cover_table[i1 - 1] -= cover * (iy1 - fy1);
+          tile.cover_table[i1 - 1] -= cover * (iy1 - fy1);
 
-          temp_tiles[index]->segments.emplace_back(x0, y0, x1, y1);
+          tile.segments.emplace_back(x0, y0, x1, y1);
         }
       }
 
@@ -356,7 +258,7 @@ namespace Graphick::Renderer {
           temp_tiles[sign_index] = std::make_unique<TempTile>();
         }
 
-        temp_tiles[sign_index]->sign += (int8_t)(tile_y - m_tile_y_prev);
+        temp_tiles[sign_index]->winding += (int8_t)(tile_y - m_tile_y_prev);
         m_tile_y_prev = tile_y;
       }
 
@@ -378,24 +280,28 @@ namespace Graphick::Renderer {
         int index = tile_index(x, y, m_size.x);
 
         if (temp_tiles[index].get() != nullptr) {
-          auto& mask = m_masks[index];
+          auto& tile = *temp_tiles[index];
+          auto& mask = m_masks.emplace_back();
+
+          winding += tile.winding;
+
+          mask.tile_x = x;
+          mask.tile_y = y;
 
           std::memcpy(mask.cover_table, cover_table, TILE_SIZE * sizeof(float));
-          winding += temp_tiles[index]->sign;
 
-          if (temp_tiles[index]->segments.empty()) {
-            continue;
-          }
+          if (tile.segments.empty()) continue;
 
-          mask.segments = std::move(temp_tiles[index]->segments);
+          mask.segments = std::move(tile.segments);
 
           for (int i = 0; i < TILE_SIZE; i++) {
-            cover_table[i] += temp_tiles[index]->cover_table[i];
+            cover_table[i] += tile.cover_table[i];
           }
         } else if (
           (rule == FillRule::NonZero && winding != 0) ||
           (rule == FillRule::EvenOdd && winding % 2 != 0)
           ) {
+          // TODO: batch spans together
           m_spans.push_back(Span{ x, y, 1 });
         }
       }
@@ -437,150 +343,6 @@ namespace Graphick::Renderer {
     m_culled_tiles = std::vector<bool>(m_tiles_count.x * m_tiles_count.y, false);
   }
 
-  struct QuadraticSolutions {
-    uint8_t count;
-    double solutions[2];
-
-    QuadraticSolutions() : count(0), solutions{ 0.0f, 0.0f } {}
-    QuadraticSolutions(const double x) : count(1), solutions{ x, 0.0f } {}
-    QuadraticSolutions(const double x1, const double x2) : count(2), solutions{ x1, x2 } {}
-  };
-
-  struct CubicSolutions {
-    uint8_t count;
-    double solutions[3];
-
-    CubicSolutions() : count(0), solutions{ 0.0f, 0.0f, 0.0f } {}
-    CubicSolutions(const double x) : count(1), solutions{ x, 0.0f, 0.0f } {}
-    CubicSolutions(const double x1, const double x2) : count(2), solutions{ x1, x2, 0.0f } {}
-    CubicSolutions(const double x1, const double x2, const double x3) : count(3), solutions{ x1, x2, x3 } {}
-    CubicSolutions(const QuadraticSolutions& quadratic) : count(quadratic.count), solutions{ quadratic.solutions[0], quadratic.solutions[1], 0.0f } {}
-  };
-
-
-  static inline double solve_linear(const double a, const double b) {
-    /* Assuming a != 0 */
-    return -b / a;
-  }
-
-  static QuadraticSolutions solve_quadratic(double a, double b, double c) {
-    if (Math::is_almost_zero(a)) {
-      /* It is a linear equation */
-
-      return { solve_linear(b, c) };
-    }
-
-    double discriminant = b * b - 4.0 * a * c;
-
-    if (Math::is_almost_zero(discriminant)) {
-      /* One real root. */
-
-      double root = -b / (2.0 * a);
-
-      // TODO: ask if roots with multiplicity > 1 should be considered as separate roots
-      return { root, root };
-    } else if (discriminant < 0.0) {
-      /* No real roots. */
-
-      return {};
-    }
-
-    /* Two real roots. */
-
-    double q = std::sqrt(discriminant);
-    double a2 = 2.0 * a;
-
-    return { (q - b) / a2, (-b - q) / a2 };
-  }
-
-  static CubicSolutions solve_cubic(double a, double b, double c, double d) {
-    if (Math::is_almost_zero(a)) {
-      /* It is a quadratic equation */
-
-      return solve_quadratic(b, c, d);
-    }
-
-    if (Math::is_almost_zero(d)) {
-      /* One root is 0. */
-
-      CubicSolutions solutions = solve_quadratic(a, b, c);
-      solutions.count++;
-      return solutions;
-    }
-
-    double p = (3 * a * c - b * b) / (3 * a * a);
-    /* Calculate coefficients of the depressed cubic equation: y^3 + py + q = 0 */
-    // double q = (2 * b * b * b - 9 * a * b * c + 27 * a * a * d) / (27 * a * a * a);
-    double q = (2 * b * b / a - 9 * c + 27 * a * d / b) / (27 * a * a / b);
-
-    double discriminant = (q * q) / 4 + (p * p * p) / 27;
-    /* Calculate discriminant */
-
-    if (Math::is_almost_zero(discriminant)) {
-      double u = std::cbrt(-q / 2);
-      /* Three real roots, two of them are equal */
-      double realRoot1 = 2 * u - b / (3 * a);
-      double realRoot2 = -u - b / (3 * a);
-
-      // TODO: ask if roots with multiplicity > 1 should be considered as different roots
-      return { realRoot1, realRoot2, realRoot2 };
-    } else if (discriminant > 0) {
-      double u = std::cbrt(-q / 2 + std::sqrt(discriminant));
-      /* One real root and two complex roots */
-      double v = std::cbrt(-q / 2 - std::sqrt(discriminant));
-      double realRoot = u + v - b / (3 * a);
-
-      return { realRoot };
-    } else {
-      double phi = std::acos(-q / 2 * std::sqrt(-27 / (p * p * p)));
-      double b1 = -b / (3.0 * a);
-      double xi = 2.0 * std::sqrt(-p / 3);
-      /* Three distinct real roots */
-      double root1 = xi * std::cos(phi / 3) + b1;
-      double root2 = xi * std::cos((phi + 2 * MATH_PI) / 3) + b1;
-      double root3 = xi * std::cos((phi + 4 * MATH_PI) / 3) + b1;
-
-      return { root1, root2, root3 };
-    }
-  }
-
-  struct dvec2 {
-    double x;
-    double y;
-
-    double operator[] (const int i) const {
-      return i == 0 ? x : y;
-    }
-
-    dvec2 operator* (const double s) const {
-      return { x * s, y * s };
-    }
-
-    dvec2 operator+ (const dvec2& v) const {
-      return { x + v.x, y + v.y };
-    }
-
-    dvec2 operator+(const double s) const {
-      return { x + s, y + s };
-    }
-
-    dvec2 operator- (const dvec2& v) const {
-      return { x - v.x, y - v.y };
-    }
-
-    dvec2 operator- (const double s) const {
-      return { x - s, y - s };
-    }
-
-    dvec2 operator- () const {
-      return { -x, -y };
-    }
-  };
-
-  dvec2 operator* (const double s, const dvec2& v) {
-    return { v.x * s, v.y * s };
-  }
-
   static std::vector<vec2> line_rect_intersection_points(const vec2 p0, const vec2 p3, const rect& rect) {
     std::vector<vec2> intersection_points;
     std::vector<double> intersections;
@@ -590,10 +352,10 @@ namespace Graphick::Renderer {
 
     dvec2 a = dp3 - dp0;
 
-    double t1 = solve_linear(a.x, dp0.x - (double)rect.min.x);
-    double t2 = solve_linear(a.x, dp0.x - (double)rect.max.x);
-    double t3 = solve_linear(a.y, dp0.y - (double)rect.min.y);
-    double t4 = solve_linear(a.y, dp0.y - (double)rect.max.y);
+    double t1 = Math::solve_linear(a.x, dp0.x - (double)rect.min.x);
+    double t2 = Math::solve_linear(a.x, dp0.x - (double)rect.max.x);
+    double t3 = Math::solve_linear(a.y, dp0.y - (double)rect.min.y);
+    double t4 = Math::solve_linear(a.y, dp0.y - (double)rect.max.y);
 
     if (t1 >= 0.0 && t1 <= 1.0) intersections.push_back(t1);
     if (t2 >= 0.0 && t2 <= 1.0) intersections.push_back(t2);
@@ -615,8 +377,8 @@ namespace Graphick::Renderer {
     return intersection_points;
   }
 
-  static std::vector<vec3> bezier_rect_intersection_points(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const rect& rect) {
-    std::vector<vec3> intersection_points;
+  static std::vector<float> bezier_rect_intersections(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const rect& rect) {
+    std::vector<float> intersections_t;
     std::vector<double> intersections;
 
     dvec2 dp0 = { p0.x, p0.y };
@@ -630,7 +392,7 @@ namespace Graphick::Renderer {
 
     for (int j = 0; j < 2; j++) {
       for (int k = 0; k < 2; k++) {
-        CubicSolutions roots = solve_cubic(a[k], b[k], c[k], dp0[k] - rect[j][k]);
+        Math::CubicSolutions roots = Math::solve_cubic(a[k], b[k], c[k], dp0[k] - rect[j][k]);
 
         for (uint8_t i = 0; i < roots.count; i++) {
           double t = roots.solutions[i];
@@ -640,7 +402,7 @@ namespace Graphick::Renderer {
       }
     }
 
-    if (intersections.empty()) return intersection_points;
+    if (intersections.empty()) return intersections_t;
 
     std::sort(intersections.begin(), intersections.end());
 
@@ -650,13 +412,11 @@ namespace Graphick::Renderer {
       dvec2 p = a * t_sq * t + b * t_sq + c * t + dp0;
 
       if (Math::is_point_in_rect({ (float)p.x, (float)p.y }, rect, GK_POINT_EPSILON)) {
-        intersection_points.push_back({ (float)t, (float)p.x, (float)p.y });
+        intersections_t.push_back((float)t);
       }
     }
 
-    // intersection_points.erase(std::unique(intersection_points.begin(), intersection_points.end(), [](const vec3& l, const vec3& r) { return std::abs(l.y - r.y) < GEOMETRY_CURVE_ERROR && std::abs(l.z - r.z) < GEOMETRY_CURVE_ERROR; }), intersection_points.end());
-
-    return intersection_points;
+    return intersections_t;
   }
 
   struct Segment {
@@ -688,10 +448,10 @@ namespace Graphick::Renderer {
 
     dvec2 a = dp3 - dp0;
 
-    double t1 = solve_linear(a.x, dp0.x - (double)rect.min.x);
-    double t2 = solve_linear(a.x, dp0.x - (double)rect.max.x);
-    double t3 = solve_linear(a.y, dp0.y - (double)rect.min.y);
-    double t4 = solve_linear(a.y, dp0.y - (double)rect.max.y);
+    double t1 = Math::solve_linear(a.x, dp0.x - (double)rect.min.x);
+    double t2 = Math::solve_linear(a.x, dp0.x - (double)rect.max.x);
+    double t3 = Math::solve_linear(a.y, dp0.y - (double)rect.min.y);
+    double t4 = Math::solve_linear(a.y, dp0.y - (double)rect.max.y);
 
     if (t1 >= 0.0 && t1 <= 1.0) intersections.emplace_back(t1, Bound::BoundLeft);
     if (t2 >= 0.0 && t2 <= 1.0) intersections.emplace_back(t2, Bound::BoundRight);
@@ -720,15 +480,11 @@ namespace Graphick::Renderer {
     for (auto& contour : drawable.contours) {
       Geometry::Contour& clipped_contour = clipped.contours.emplace_back();
 
-      std::vector<vec2> new_points = contour.points;
+      std::vector<vec2> points = contour.points;
 
-      clip_to_left(new_points, clip.min.x);
-      clip_to_top(new_points, clip.min.y);
-      clip_to_bottom(new_points, clip.max.y);
-      clip_to_right(new_points, clip.max.x);
+      Math::clip(points, clip);
 
-      clipped_contour.points = new_points;
-
+      clipped_contour.points = std::move(points);
       clipped_contour.close();
     }
 
@@ -739,17 +495,27 @@ namespace Graphick::Renderer {
     ivec2 tile_offset = tile_coords(offset);
     vec2 pixel_offset = offset - TILE_SIZE * vec2{ (float)tile_offset.x, (float)tile_offset.y };
 
-    DrawableTiler tiler(clip ? clip_drawable(drawable, rect{ { -32.0f, -32.0f }, (visible.max - visible.min) * m_zoom + 32.0f }) : drawable, visible, m_zoom, m_position + tile_offset, m_subpixel - pixel_offset, m_tiles_count);
+    std::vector<DrawableTiler::Tile> pool;
 
-    const std::unordered_map<int, DrawableTiler::Mask>& masks = tiler.masks();
+    DrawableTiler tiler(
+      clip ? clip_drawable(drawable, rect{ { -32.0f, -32.0f }, (visible.max - visible.min) * m_zoom + 32.0f }) : drawable,
+      visible,
+      m_zoom,
+      m_position + tile_offset,
+      m_subpixel - pixel_offset,
+      m_tiles_count,
+      pool
+    );
+
+    const std::vector<DrawableTiler::Mask>& masks = tiler.masks();
     const std::vector<DrawableTiler::Span>& spans = tiler.spans();
     const ivec2 tiler_offset = tiler.offset();
     const ivec2 size = tiler.size();
 
-    for (const auto& [index, mask] : masks) {
+    for (const auto& mask : masks) {
       ivec2 coords = {
-        index % size.x + tiler_offset.x + 1,
-        index / size.x + tiler_offset.y + 1
+        mask.tile_x + tiler_offset.x + 1,
+        mask.tile_y + tiler_offset.y + 1
       };
 
       if (coords.x < 0 || coords.y < 0 || coords.x >= m_tiles_count.x || coords.y >= m_tiles_count.y) continue;
@@ -883,8 +649,6 @@ namespace Graphick::Renderer {
 
     std::vector<std::vector<Segment>> clipped_contours(1);
 
-    // TODO: if only one clipped contour, close it
-
     rect visible = m_visible;
 
     visible.min -= 1.1f * 0.5f * stroke.width * (stroke.join == LineJoin::Miter ? stroke.miter_limit : 1.0f);
@@ -930,7 +694,7 @@ namespace Graphick::Renderer {
         vec2 p2 = transform * raw_segment.p2() - visible.min;
 
         // TODO: check if all inside or all outside with control points
-        std::vector<vec3> intersections = bezier_rect_intersection_points(p0, p1, p2, p3, visible - visible.min);
+        std::vector<float> intersections = bezier_rect_intersections(p0, p1, p2, p3, visible - visible.min);
 
         if (intersections.empty()) {
           if (p0_in) {
@@ -948,12 +712,9 @@ namespace Graphick::Renderer {
           if (k % 2 == 0) {
             if (p0_in) {
               auto segment = Math::split_bezier(
-                p0,
-                p1,
-                p2,
-                p3,
-                (k < 1 ? 0.0f : intersections[k - 1].x),
-                intersections[k].x
+                p0, p1, p2, p3,
+                (k < 1 ? 0.0f : intersections[k - 1]),
+                intersections[k]
               );
 
               clipped_contours.back().emplace_back(std::get<0>(segment), std::get<1>(segment), std::get<2>(segment), std::get<3>(segment));
@@ -961,12 +722,9 @@ namespace Graphick::Renderer {
               if (!clipped_contours.back().empty()) clipped_contours.emplace_back();
 
               auto segment = Math::split_bezier(
-                p0,
-                p1,
-                p2,
-                p3,
-                intersections[k].x,
-                (k >= intersections.size() - 1 ? 1.0f : intersections[k + 1].x)
+                p0, p1, p2, p3,
+                intersections[k],
+                (k >= intersections.size() - 1 ? 1.0f : intersections[k + 1])
               );
 
               clipped_contours.back().emplace_back(std::get<0>(segment), std::get<1>(segment), std::get<2>(segment), std::get<3>(segment));
@@ -975,12 +733,9 @@ namespace Graphick::Renderer {
             if (!clipped_contours.back().empty()) clipped_contours.emplace_back();
 
             auto segment = Math::split_bezier(
-              p0,
-              p1,
-              p2,
-              p3,
-              intersections[k].x,
-              (k >= intersections.size() - 1 ? 1.0f : intersections[k + 1].x)
+              p0, p1, p2, p3,
+              intersections[k],
+              (k >= intersections.size() - 1 ? 1.0f : intersections[k + 1])
             );
 
             clipped_contours.back().emplace_back(std::get<0>(segment), std::get<1>(segment), std::get<2>(segment), std::get<3>(segment));

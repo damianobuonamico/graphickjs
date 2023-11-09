@@ -972,8 +972,8 @@ namespace Graphick::Renderer::Geometry {
           if (points) intersections += (int)points->size();
         }
 
-        if (!m_closed) {
-          intersections += (int)Math::line_line_intersection_points({ m_segments.back().p3(), m_segments.front().p0() }, line).size();
+        if (!m_closed && Math::line_line_intersection_point({ m_segments.back().p3(), m_segments.front().p0() }, line).has_value()) {
+          intersections += 1;
         }
 
         if (intersections % 2 != 0) return true;

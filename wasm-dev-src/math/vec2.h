@@ -1,6 +1,6 @@
 /**
  * @file vec2.h
- * @brief This file contains the definition of the vec2 struct.
+ * @brief This file contains the definition of the vec2 struct, a 2D single precision vector.
  */
 
 #pragma once
