@@ -122,6 +122,7 @@ namespace Graphick::Renderer {
 
   static constexpr float max_over_tile_size = 255.0f / (float)TILE_SIZE;
   static constexpr float tile_size_over_max = (float)TILE_SIZE / 255.0f;
+  static constexpr float one_shifted = static_cast<float>(1 << 8);
 
   void DrawableTiler::line_to(const vec2 p3) {
     if (Math::is_almost_equal(m_p0, p3)) return;
@@ -187,31 +188,28 @@ namespace Graphick::Renderer {
           uint8_t x0 = static_cast<uint8_t>(from_delta.x * max_over_tile_size + 0.5f);
           uint8_t x1 = static_cast<uint8_t>(to_delta.x * max_over_tile_size + 0.5f);
 
-          float cover, fy0, fy1;
+          int icover = 1;
+          int ify0 = (((y0 << 8) * 32) / 255);
+          int ify1 = (((y1 << 8) * 32) / 255);
 
-          if (y0 < y1) {
-            fy0 = (float)y0 * tile_size_over_max;
-            fy1 = (float)y1 * tile_size_over_max;
-            cover = 1.0f;
-          } else {
-            fy0 = (float)y1 * tile_size_over_max;
-            fy1 = (float)y0 * tile_size_over_max;
-            cover = -1.0f;
+          if (y0 > y1) {
+            icover = -1;
+            std::swap(ify0, ify1);
           }
 
-          float iy0 = std::floorf(fy0);
-          float iy1 = std::ceilf(fy1);
+          int ii0 = ify0 >> 8;
+          int ii1 = (ify1 >> 8) + 1;
 
-          int i0 = (int)iy0;
-          int i1 = (int)iy1;
+          int iiy0 = ii0 << 8;
+          int iiy1 = ii1 << 8;
 
-          tile.cover_table[i0] += cover * (iy0 + 1.0f - fy0);
+          tile.cover_table[ii0] += icover * (iiy0 + (1 << 8) - ify0) / one_shifted;
 
-          for (int j = i0 + 1; j < i1; j++) {
-            tile.cover_table[j] += cover;
+          for (int j = ii0 + 1; j < ii1; j++) {
+            tile.cover_table[j] += icover;
           }
 
-          tile.cover_table[i1 - 1] -= cover * (iy1 - fy1);
+          tile.cover_table[ii1 - 1] -= icover * (iiy1 - ify1) / one_shifted;
 
           tile.segments.emplace_back(x0, y0, x1, y1);
         }

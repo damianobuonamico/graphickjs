@@ -18,6 +18,8 @@ namespace Graphick::Renderer::Geometry {
 
   // TODO: polar parameterization vs error minimization performance
   void Contour::push_segment(const vec2 p1, const vec2 p2, const vec2 p3) {
+    return push_segment(p3);
+
     vec2 a = -m_p0 + 3.0f * p1 - 3.0f * p2 + p3;
     vec2 b = 3.0f * m_p0 - 6.0f * p1 + 3.0f * p2;
     vec2 c = -3.0f * m_p0 + 3.0f * p1;
@@ -51,6 +53,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Contour::offset_segment(const vec2 p1, const vec2 p2, const vec2 p3, const float radius) {
+    return offset_segment(p3, radius);
+
     vec2 a = -m_p0 + 3.0f * p1 - 3.0f * p2 + p3;
     vec2 b = 3.0f * m_p0 - 6.0f * p1 + 3.0f * p2;
     vec2 c = -3.0f * m_p0 + 3.0f * p1;
