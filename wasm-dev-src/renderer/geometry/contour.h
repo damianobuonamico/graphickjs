@@ -1,11 +1,29 @@
 #pragma once
 
-#include "../../math/vec2.h"
+#include "../../math/f8x8.h"
+#include "../../math/f24x8.h"
 
 #include <vector>
 
 namespace Graphick::Renderer::Geometry {
 
+#ifdef USE_F8x8
+  struct Contour {
+    std::vector<f24x8x2> points;
+
+    void begin(const f24x8x2 p0, const bool push = true);
+
+    void push_segment(const f24x8x2 p3);
+    void push_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3);
+
+    void offset_segment(const f24x8x2 p3, const f24x8 radius);
+    void offset_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3, const f24x8 radius);
+
+    void close();
+  private:
+    f24x8x2 m_p0 = 0;
+  };
+#else
   struct Contour {
     std::vector<vec2> points;
 
@@ -21,5 +39,6 @@ namespace Graphick::Renderer::Geometry {
   private:
     vec2 m_p0;
   };
+#endif
 
 }

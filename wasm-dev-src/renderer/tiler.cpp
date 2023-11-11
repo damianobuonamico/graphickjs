@@ -160,7 +160,6 @@ namespace Graphick::Renderer {
     vec2 step = { std::abs(dtdx), std::abs(dtdy) };
     vec2 from = p0;
 
-
     while (true) {
       float t1 = std::min(row_t1, col_t1);
 
@@ -299,6 +298,362 @@ namespace Graphick::Renderer {
 
   /* -- Tiler -- */
 
+#ifdef USE_F8x8
+
+  inline static f24x8x2 transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const double zoom) {
+    double x = (
+      static_cast<double>(transform[0][0]) * static_cast<double>(point.x) +
+      static_cast<double>(transform[0][1]) * static_cast<double>(point.y) +
+      static_cast<double>(transform[0][2]) - offset.x
+      ) * zoom;
+    double y = (
+      static_cast<double>(transform[1][0]) * static_cast<double>(point.x) +
+      static_cast<double>(transform[1][1]) * static_cast<double>(point.y) +
+      static_cast<double>(transform[1][2]) - offset.y
+      ) * zoom;
+
+    return Math::double_to_f24x8x2(x, y);
+  }
+
+  inline static f24x8 sign(const f24x8 x) {
+    return ((0 < x) - (x < 0)) << FRACBITS;
+  }
+
+  struct Drawable8x8Tiler {
+    struct Tile {
+      bool active = false;
+      int8_t winding = 0;
+
+      float cover_table[TILE_SIZE] = { 0.0f };
+      std::vector<f8x8x4> segments;
+    };
+
+    struct Span {
+      int16_t tile_x;
+      int16_t tile_y;
+
+      int16_t width;
+    };
+
+    struct Mask {
+      int16_t tile_x;
+      int16_t tile_y;
+
+      float cover_table[TILE_SIZE] = { 0.0f };
+      std::vector<f8x8x4> segments;
+    };
+
+    inline const std::vector<Mask>& masks() const { return m_masks; }
+    inline const std::vector<Span>& spans() const { return m_spans; }
+    inline const ivec2 offset() const { return m_offset; }
+    inline const ivec2 size() const { return m_size; }
+
+    Drawable8x8Tiler(
+      const Drawable& drawable,
+      const ivec2 position,
+      const ivec2 tiles_count,
+      std::vector<Tile>& pool
+    ) {
+      rect bounds = {
+        Math::floor((drawable.bounds.min - 1.0f) / TILE_SIZE) * TILE_SIZE,
+        Math::ceil((drawable.bounds.max + 1.0f) / TILE_SIZE) * TILE_SIZE
+      };
+
+      ivec2 min_coords = tile_coords(bounds.min) + position;
+      ivec2 max_coords = tile_coords(bounds.max) + position;
+
+      // TODO: move this offset in tiler
+      f24x8 x_offset = Math::float_to_f24x8(bounds.min.x);
+      f24x8 y_offset = Math::float_to_f24x8(bounds.min.y);
+
+      m_offset = min_coords;
+      m_size = max_coords - min_coords;
+
+      m_memory_pool = &pool;
+
+      m_memory_pool->clear();
+      m_memory_pool->resize(m_size.x * m_size.y);
+
+      for (const Geometry::Contour& contour : drawable.contours) {
+        if (contour.points.size() < 2) continue;
+
+        f24x8 x_p = static_cast<f24x8>(contour.points.front() >> 32) - x_offset;
+        f24x8 y_p = static_cast<f24x8>(contour.points.front()) - y_offset;
+
+        move_to(x_p, y_p);
+
+        for (size_t i = 1; i < contour.points.size(); i++) {
+          x_p = static_cast<f24x8>(contour.points[i] >> 32) - x_offset;
+          y_p = static_cast<f24x8>(contour.points[i]) - y_offset;
+
+          line_to(x_p, y_p);
+        }
+      }
+
+      pack(drawable.paint.rule, tiles_count);
+
+      m_memory_pool = nullptr;
+    }
+
+    void move_to(f24x8 x, f24x8 y) {
+      m_x = x;
+      m_y = y;
+    }
+
+    void line_to(f24x8 x, f24x8 y) {
+      if (m_x == x && m_y == y) return;
+
+      f24x8 x_vec = x - m_x;
+      f24x8 y_vec = y - m_y;
+      f24x8 x_dir = sign(x_vec);
+      f24x8 y_dir = sign(y_vec);
+      f24x8 x_tile_dir = x_dir * TILE_SIZE;
+      f24x8 y_tile_dir = y_dir * TILE_SIZE;
+
+      // TODO: to_int function
+      int16_t tile_x = (x >> FRACBITS) / TILE_SIZE;
+      int16_t tile_y = (y >> FRACBITS) / TILE_SIZE;
+
+      m_x = x;
+      m_y = y;
+      m_tile_y_prev = tile_y;
+
+      f24x8 m_new = 2 * (y - m_y);
+      f24x8 slope_error_new = m_new - (x - m_x);
+      for (int n_x = m_x, n_y = m_y; m_x <= x; n_x += TILE_SIZE) {
+        m_spans.push_back({
+          (int16_t)((n_x >> FRACBITS) / TILE_SIZE),
+          (int16_t)((n_y >> FRACBITS) / TILE_SIZE),
+          1
+          });
+
+        // Add slope to increment angle formed 
+        slope_error_new += m_new;
+
+        // Slope error reached limit, time to 
+        // increment y and update slope error. 
+        if (slope_error_new >= 0) {
+          n_y += TILE_SIZE;
+          slope_error_new -= 2 * (x - m_x);
+        }
+      }
+    }
+
+    void pack(const FillRule rule, const ivec2 tiles_count) {
+      return;
+      float cover_table[TILE_SIZE] = { 0.0f };
+      int winding = 0;
+
+      for (int16_t y = 0; y < m_size.y; y++) {
+        std::memset(cover_table, 0, TILE_SIZE * sizeof(float));
+        winding = 0;
+
+        for (int16_t x = 0; x < m_size.x; x++) {
+          int index = tile_index(x, y, m_size.x);
+          Tile& tile = (*m_memory_pool)[index];
+
+          if (tile.active) {
+            Mask& mask = m_masks.emplace_back();
+
+            winding += tile.winding;
+
+            mask.tile_x = x;
+            mask.tile_y = y;
+
+            std::memcpy(mask.cover_table, cover_table, TILE_SIZE * sizeof(float));
+
+            if (tile.segments.empty()) continue;
+
+            mask.segments = std::move(tile.segments);
+
+            for (int i = 0; i < TILE_SIZE; i++) {
+              cover_table[i] += tile.cover_table[i];
+            }
+          } else if (
+            (rule == FillRule::NonZero && winding != 0) ||
+            (rule == FillRule::EvenOdd && winding % 2 != 0)
+            ) {
+            // TODO: batch spans together
+            m_spans.push_back(Span{ x, y, 1 });
+          }
+        }
+      }
+    }
+  private:
+    f24x8 m_x;
+    f24x8 m_y;
+
+    ivec2 m_offset;
+    ivec2 m_size;
+
+    std::vector<Mask> m_masks;
+    std::vector<Span> m_spans;
+
+    int16_t m_tile_y_prev;
+
+    std::vector<Tile>* m_memory_pool;
+  };
+
+  static std::vector<Drawable8x8Tiler::Tile> s_pool;
+
+  void Tiler::reset(const Viewport& viewport) {
+    vec2 offset = {
+      std::fmodf(viewport.position.x * viewport.zoom, TILE_SIZE),
+      std::fmodf(viewport.position.y * viewport.zoom, TILE_SIZE)
+    };
+
+    m_zoom = static_cast<double>(viewport.zoom);
+
+    m_position = {
+      static_cast<int>(viewport.position.x > 0 ? std::floorf(viewport.position.x * viewport.zoom / TILE_SIZE) : std::ceilf(viewport.position.x * viewport.zoom / TILE_SIZE)),
+      static_cast<int>(viewport.position.y > 0 ? std::floorf(viewport.position.y * viewport.zoom / TILE_SIZE) : std::ceilf(viewport.position.y * viewport.zoom / TILE_SIZE))
+    };
+    m_size = {
+      static_cast<int>(std::ceilf(static_cast<float>(viewport.size.x) / TILE_SIZE)) + 2,
+      static_cast<int>(std::ceilf(static_cast<float>(viewport.size.y) / TILE_SIZE)) + 2
+    };
+
+    m_subpixel = (viewport.position * viewport.zoom) % TILE_SIZE - offset;
+
+    m_visible = {
+      -viewport.position,
+      -viewport.position + vec2{
+        static_cast<float>(viewport.size.x) / viewport.zoom,
+        static_cast<float>(viewport.size.y) / viewport.zoom
+      }
+    };
+    m_visible_min = {
+      static_cast<double>(m_visible.min.x + m_subpixel.x),
+      static_cast<double>(m_visible.min.y + m_subpixel.y)
+    };
+
+    s_pool = std::vector<Drawable8x8Tiler::Tile>(m_size.x * m_size.y);
+    m_culled_tiles = std::vector<bool>(m_size.x * m_size.y, false);
+
+    m_filled_batches = std::vector<FilledTilesBatch>(1);
+    m_masked_batches = std::vector<MaskedTilesBatch>(1);
+  }
+
+  void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {}
+
+  void Tiler::process_fill(const Geometry::Path& path, const mat2x3& transform, const Fill& fill) {
+    GK_TOTAL("Tiler::process_fill");
+
+    const rect path_rect = transform * path.bounding_rect();
+    const float overlap = Math::rect_rect_intersection_area(path_rect, m_visible) / path_rect.area();
+
+    if (overlap <= 0.0f) return;
+
+    Drawable drawable(1, fill, (path_rect - m_visible.min) * m_zoom);
+    Geometry::Contour& contour = drawable.contours.front();
+
+    const auto& segments = path.segments();
+    const f24x8x2 first = transform_point(transform, segments.front().p0(), m_visible_min, m_zoom);
+
+    contour.begin(first);
+
+    for (size_t i = 0; i < segments.size(); i++) {
+      auto& raw_segment = segments[i];
+
+      if (raw_segment.is_linear()) {
+        contour.push_segment(transform_point(transform, raw_segment.p3(), m_visible_min, m_zoom));
+      } else {
+        contour.push_segment(
+          transform_point(transform, raw_segment.p1(), m_visible_min, m_zoom),
+          transform_point(transform, raw_segment.p2(), m_visible_min, m_zoom),
+          transform_point(transform, raw_segment.p3(), m_visible_min, m_zoom)
+        );
+      }
+    }
+
+    contour.close();
+
+    process_drawable(drawable, m_visible, m_visible.min * m_zoom, overlap < 0.7f);
+  }
+
+  void Tiler::process_drawable(const Drawable& drawable, const rect& visible, const vec2 offset, const bool clip) {
+    ivec2 tile_offset = tile_coords(offset);
+    vec2 pixel_offset = offset - TILE_SIZE * IVEC2_TO_VEC2(tile_offset);
+
+    Drawable8x8Tiler tiler(
+      drawable,
+      m_position + tile_offset,
+      m_size,
+      s_pool
+    );
+
+    const std::vector<Drawable8x8Tiler::Mask>& masks = tiler.masks();
+    const std::vector<Drawable8x8Tiler::Span>& spans = tiler.spans();
+    const ivec2 tiler_offset = tiler.offset();
+    const ivec2 size = tiler.size();
+
+    FilledTilesBatch& fills_batch = m_filled_batches.front();
+    MaskedTilesBatch& masks_batch = m_masked_batches.front();
+
+    for (const auto& mask : masks) {
+      ivec2 coords = {
+        mask.tile_x + tiler_offset.x + 1,
+        mask.tile_y + tiler_offset.y + 1
+      };
+
+      if (coords.x < 0 || coords.y < 0 || coords.x >= m_size.x || coords.y >= m_size.y) continue;
+
+      int absolute_index = tile_index(coords, m_size);
+      if (m_culled_tiles[absolute_index]) continue;
+
+      int offset = (int)(masks_batch.segments_ptr - masks_batch.segments) / 4;
+      int cover_offset = (int)(masks_batch.cover_table_ptr - masks_batch.cover_table);
+
+      uint32_t segments_size = (uint32_t)mask.segments.size();
+
+      masks_batch.segments_ptr[0] = (uint8_t)segments_size;
+      masks_batch.segments_ptr[1] = (uint8_t)(segments_size >> 8);
+      masks_batch.segments_ptr[2] = (uint8_t)(segments_size >> 16);
+      masks_batch.segments_ptr[3] = (uint8_t)(segments_size >> 24);
+      masks_batch.segments_ptr += 4;
+
+      for (auto segment : mask.segments) {
+        masks_batch.segments_ptr[0] = (uint8_t)std::clamp(Math::f24x8_to_float((f8x8)(segment.p0 >> 16)) * 255 / TILE_SIZE, 0.0f, 255.0f);
+        masks_batch.segments_ptr[1] = (uint8_t)std::clamp(Math::f24x8_to_float((f8x8)(segment.p0)) * 255 / TILE_SIZE, 0.0f, 255.0f);
+        masks_batch.segments_ptr[2] = (uint8_t)std::clamp(Math::f24x8_to_float((f8x8)(segment.p1 >> 16)) * 255 / TILE_SIZE, 0.0f, 255.0f);
+        masks_batch.segments_ptr[3] = (uint8_t)std::clamp(Math::f24x8_to_float((f8x8)(segment.p1)) * 255 / TILE_SIZE, 0.0f, 255.0f);
+        masks_batch.segments_ptr += 4;
+      }
+
+      // TODO: bounds check
+      memcpy(masks_batch.cover_table_ptr, &mask.cover_table, TILE_SIZE * sizeof(float));
+      masks_batch.cover_table_ptr += TILE_SIZE;
+
+      masks_batch.tiles.push_back(MaskedTile{
+        drawable.paint.color,
+        absolute_index,
+        { (uint16_t)(offset % SEGMENTS_TEXTURE_SIZE), (uint16_t)(offset / SEGMENTS_TEXTURE_SIZE) },
+        { (uint16_t)(cover_offset % SEGMENTS_TEXTURE_SIZE), (uint16_t)(cover_offset / SEGMENTS_TEXTURE_SIZE) },
+        drawable.paint.z_index
+        });
+    }
+
+    for (auto& span : spans) {
+      ivec2 coords = { span.tile_x + tiler_offset.x + 1, span.tile_y + tiler_offset.y + 1 };
+      if (coords.x + span.width < 0 || coords.y < 0 || coords.x >= m_size.x || coords.y >= m_size.y) continue;
+
+      int16_t width = coords.x < 0 ? span.width + coords.x : span.width;
+      coords.x = std::max(coords.x, 0);
+
+      for (int i = 0; i < width; i++) {
+        if (coords.x + i >= m_size.x) break;
+
+        int index = tile_index({ coords.x + i, coords.y }, m_size);
+        if (!m_culled_tiles[index]/*&& color.a == 1.0f*/) {
+          // TODO: abstract
+          fills_batch.tiles.push_back({ drawable.paint.color, index, drawable.paint.z_index });
+          m_culled_tiles[index] = true;
+        }
+      }
+    }
+  }
+
+#else
   Tiler::Tiler() {
     m_segments = new uint8_t[SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE * 4];
     m_cover_table = new float[SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE];
@@ -729,6 +1084,7 @@ namespace Graphick::Renderer {
     contour.close();
 
     process_drawable(drawable, m_visible, m_visible.min * m_zoom, overlap < 0.7f);
-  }
+}
+#endif
 
 }

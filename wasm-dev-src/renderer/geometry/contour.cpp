@@ -4,6 +4,32 @@
 
 namespace Graphick::Renderer::Geometry {
 
+#ifdef USE_F8x8
+  void Contour::begin(const f24x8x2 p0, const bool push) {
+    if (push) points.push_back(p0);
+    m_p0 = p0;
+  }
+
+  void Contour::push_segment(const f24x8x2 p3) {
+    points.push_back(p3);
+    m_p0 = p3;
+  }
+
+  void Contour::push_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3) {
+    push_segment(p3);
+  }
+
+  void Contour::offset_segment(const f24x8x2 p3, const f24x8 radius) {}
+
+  void Contour::offset_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3, const f24x8 radius) {}
+
+  void Contour::close() {
+    if (!points.empty() && points[0] != points[points.size() - 1]) {
+      points.push_back(points[0]);
+    }
+  }
+
+#else
   static constexpr float tolerance = 0.25f;
 
   void Contour::begin(const vec2 p0, const bool push) {
@@ -96,5 +122,5 @@ namespace Graphick::Renderer::Geometry {
     if (points.empty() || points[0] == points[points.size() - 1]) return;
     points.push_back(points[0]);
   }
-
+#endif
 }

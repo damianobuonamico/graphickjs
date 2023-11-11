@@ -87,7 +87,7 @@ namespace Graphick::Renderer {
   };
 
   struct OpaqueTile {
-    // TODO: Replace with a pointer to the color texture
+    // TODO: Replace with a pointer to the color texture and two uint16_t instead of index
     vec4 color;
     int32_t index;
     float z_index;
@@ -97,6 +97,12 @@ namespace Graphick::Renderer {
     uint8_t x0, y0, x1, y1;
 
     uvec4(const uint8_t x0, const uint8_t y0, const uint8_t x1, const uint8_t y1) : x0(x0), y0(y0), x1(x1), y1(y1) {}
+  };
+
+  struct FilledTile {
+    vec4 color;
+    int32_t index;
+    float z_index;
   };
 
   struct MaskedTile {

@@ -348,18 +348,18 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::draw_opaque_tiles() {
-    const std::vector<OpaqueTile>& tiles = m_tiler.opaque_tiles();
-    if (tiles.empty()) return;
+    const Tiler::FilledTilesBatch& batch = m_tiler.filled_tiles_batches().front();
+    if (batch.tiles.empty()) return;
 
     OPTICK_EVENT();
 
-    uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<OpaqueTile>(tiles.size(), "OpaqueTiles");
+    uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<OpaqueTile>(batch.tiles.size(), "OpaqueTiles");
 
     const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
     const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
     const GPU::Buffer& tiles_buffer = GPU::Memory::Allocator::get_general_buffer(tiles_buffer_id);
 
-    GPU::Device::upload_to_buffer(tiles_buffer, 0, tiles, GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(tiles_buffer, 0, batch.tiles, GPU::BufferTarget::Vertex);
 
     GPU::OpaqueTileVertexArray vertex_array(
       m_programs.opaque_tile_program,
@@ -406,17 +406,17 @@ namespace Graphick::Renderer {
       }
     };
 
-    GPU::Device::draw_elements_instanced(6, tiles.size(), state);
+    GPU::Device::draw_elements_instanced(6, batch.tiles.size(), state);
 
     GPU::Memory::Allocator::free_general_buffer(tiles_buffer_id);
   }
 
   void Renderer::draw_masked_tiles() {
-    const std::vector<MaskedTile>& reverse_tiles = m_tiler.masked_tiles();
-    const uint8_t* segments = m_tiler.segments();
-    const float* cover_table = m_tiler.cover_table();
+    const Tiler::MaskedTilesBatch& batch = m_tiler.masked_tiles_batches().front();
+    const uint8_t* segments = batch.segments;
+    const float* cover_table = batch.cover_table;
 
-    const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reverse_tiles.rbegin(), reverse_tiles.rend());
+    const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(batch.tiles.rbegin(), batch.tiles.rend());
 
     uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<MaskedTile>(tiles.size(), "MaskedTiles");
 
