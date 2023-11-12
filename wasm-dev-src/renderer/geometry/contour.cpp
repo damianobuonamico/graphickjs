@@ -24,7 +24,7 @@ namespace Graphick::Renderer::Geometry {
   void Contour::offset_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3, const f24x8 radius) {}
 
   void Contour::close() {
-    if (!points.empty() && points[0] != points[points.size() - 1]) {
+    if (!points.empty() && points[0].x != points[points.size() - 1].x && points[0].y != points[points.size() - 1].y) {
       points.push_back(points[0]);
     }
   }

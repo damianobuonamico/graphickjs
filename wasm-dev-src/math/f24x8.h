@@ -17,7 +17,13 @@
 namespace Graphick::Math {
 
   using f24x8 = int32_t;
-  using f24x8x2 = uint64_t;
+
+  struct f24x8x2 {
+    f24x8 x;
+    f24x8 y;
+
+    f24x8x2(const f24x8 x, const f24x8 y) : x(x), y(y) {}
+  };
 
   /**
     * @brief Converts a float to a f24.8 fixed point number.
@@ -47,7 +53,7 @@ namespace Graphick::Math {
    * @return The converted f24.8x2 fixed point number.
    */
   inline f24x8x2 double_to_f24x8x2(const double x, const double y) {
-    return (static_cast<f24x8x2>(double_to_f24x8(x)) << 32) | static_cast<f24x8x2>(double_to_f24x8(y));
+    return { double_to_f24x8(x), double_to_f24x8(y) };
   }
 
   /**

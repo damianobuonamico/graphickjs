@@ -17,11 +17,21 @@
 namespace Graphick::Math {
 
   using f8x8 = int16_t;
-  using f8x8x2 = uint32_t;
+
+  struct f8x8x2 {
+    f8x8 x;
+    f8x8 y;
+
+    f8x8x2(const f8x8 x, const f8x8 y) : x(x), y(y) {}
+  };
 
   struct f8x8x4 {
-    f8x8x2 p0;
-    f8x8x2 p1;
+    f8x8 x0;
+    f8x8 y0;
+    f8x8 x1;
+    f8x8 y1;
+
+    f8x8x4(const f8x8 x0, const f8x8 y0, const f8x8 x1, const f8x8 y1) : x0(x0), y0(y0), x1(x1), y1(y1) {}
   };
 }
 

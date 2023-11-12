@@ -21,7 +21,7 @@ namespace Graphick::Renderer::Geometry {
 
     void close();
   private:
-    f24x8x2 m_p0 = 0;
+    f24x8x2 m_p0 = { 0, 0 };
   };
 #else
   struct Contour {
