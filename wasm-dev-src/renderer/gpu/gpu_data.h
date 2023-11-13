@@ -31,6 +31,7 @@ namespace Graphick::Renderer::GPU {
   enum class TextureFormat {
     R8,
     RGBA8,
+    RGBA8UI,
     R32F,
     RGBA32F
   };

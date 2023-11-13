@@ -33,6 +33,24 @@ namespace Graphick::Math {
 
     f8x8x4(const f8x8 x0, const f8x8 y0, const f8x8 x1, const f8x8 y1) : x0(x0), y0(y0), x1(x1), y1(y1) {}
   };
+
+  /**
+   * @brief Converts a f8.8 fixed point number to a float.
+   *
+   * @param x The f8.8 fixed point number to convert.
+   * @return The converted float.
+   */
+  inline float f8x8_to_float(const f8x8 x) {
+    return static_cast<float>(x) / FRACUNIT;
+  }
+
+  inline f8x8 int_bits(const f8x8 x) {
+    return (x >> FRACBITS) << FRACBITS;
+  }
+
+  inline f8x8 frac_bits(const f8x8 x) {
+    return (x << FRACBITS) >> FRACBITS;
+  }
 }
 
 namespace Graphick {

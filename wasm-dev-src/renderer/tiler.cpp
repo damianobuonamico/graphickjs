@@ -104,11 +104,13 @@ namespace Graphick::Renderer {
     for (const Geometry::Contour& contour : drawable.contours) {
       if (contour.points.size() < 2) continue;
 
-      // move_to(contour.points.front() - bounds.min);
+#ifndef USE_F8x8
+      move_to(contour.points.front() - bounds.min);
 
-      // for (size_t i = 1; i < contour.points.size(); i++) {
-      //   line_to(contour.points[i] - bounds.min);
-      // }
+      for (size_t i = 1; i < contour.points.size(); i++) {
+        line_to(contour.points[i] - bounds.min);
+      }
+#endif
     }
 
     pack(drawable.paint.rule, tiles_count);
@@ -300,16 +302,16 @@ namespace Graphick::Renderer {
 
 #ifdef USE_F8x8
 
-  inline static f24x8x2 transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const double zoom) {
+  inline static f24x8x2 transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const vec2 subpixel, const double zoom) {
     double x = (
       static_cast<double>(transform[0][0]) * static_cast<double>(point.x) +
       static_cast<double>(transform[0][1]) * static_cast<double>(point.y) +
-      static_cast<double>(transform[0][2]) - offset.x
+      static_cast<double>(transform[0][2]) - offset.x + (double)subpixel.x
       ) * zoom;
     double y = (
       static_cast<double>(transform[1][0]) * static_cast<double>(point.x) +
       static_cast<double>(transform[1][1]) * static_cast<double>(point.y) +
-      static_cast<double>(transform[1][2]) - offset.y
+      static_cast<double>(transform[1][2]) - offset.y + (double)subpixel.y
       ) * zoom;
 
     return Math::double_to_f24x8x2(x, y);
@@ -413,7 +415,6 @@ namespace Graphick::Renderer {
       if (m_x == x && m_y == y) return;
 
 #if 1
-
       f24x8 vec_x = x - m_x;
       f24x8 vec_y = y - m_y;
 
@@ -475,7 +476,28 @@ namespace Graphick::Renderer {
         }
 
         if (y0 != y1) {
-          // int icover = 1;
+          tile.segments.emplace_back(x0, y0, x1, y1);
+
+          float cover = 1;
+
+          if (y0 > y1) {
+            cover = -1.0f;
+            std::swap(y0, y1);
+          }
+
+          f8x8 y0_int = Math::int_bits(y0);
+          f8x8 y1_int = Math::int_bits(y1) + FRACUNIT;
+
+          int8_t i0 = static_cast<int8_t>(y0_int >> FRACBITS);
+          int8_t i1 = static_cast<int8_t>(y1_int >> FRACBITS);
+
+          tile.cover_table[i0] += cover * Math::f8x8_to_float(y0_int + FRACUNIT - y0);
+
+          for (int j = i0 + 1; j < i1; j++) {
+            tile.cover_table[j] += cover;
+          }
+
+          tile.cover_table[i1 - 1] -= cover * Math::f8x8_to_float(y1_int - y1);
           // int ify0 = (((y0 << 8) * 32) / 255);
           // int ify1 = (((y1 << 8) * 32) / 255);
 
@@ -498,8 +520,10 @@ namespace Graphick::Renderer {
 
           // tile.cover_table[ii1 - 1] -= icover * (iiy1 - ify1) / one_shifted;
 
-          tile.segments.emplace_back(x0, y0, x1, y1);
         }
+
+        from_x = to_x;
+        from_y = to_y;
 
         bool fuzzy_equal;
 
@@ -507,12 +531,17 @@ namespace Graphick::Renderer {
           fuzzy_equal = t1_x >= 1.0f - 0.0001f;
           t1_x = std::min(1.0f, t1_x + step_y);
 
-          y += y_tile_dir;
+          // TODO: cache max
+          from_y = ((tile_y + std::max(0, dir_y)) * TILE_SIZE) << FRACBITS;
+
           tile_y += dir_y;
         } else {
           fuzzy_equal = t1_y >= 1.0f - 0.0001f;
           t1_y = std::min(1.0f, t1_y + step_x);
-          x += x_tile_dir;
+
+          // TODO: cache max
+          from_x = ((tile_x + std::max(0, dir_x)) * TILE_SIZE) << FRACBITS;
+
           tile_x += dir_x;
         }
 
@@ -534,9 +563,6 @@ namespace Graphick::Renderer {
           sign_tile.winding += (int8_t)(tile_y - m_tile_y_prev);
           m_tile_y_prev = tile_y;
         }
-
-        from_x = to_x;
-        from_y = to_y;
 
         if (fuzzy_equal) break;
       }
@@ -831,16 +857,17 @@ namespace Graphick::Renderer {
 
     if (overlap <= 0.0f) return;
 
+    // TODO: convert to ivec2 to make clear that we are rounding down
     dvec2 offset = {
-      std::round(m_visible_min.x * m_zoom / TILE_SIZE) * TILE_SIZE / m_zoom,
-      std::round(m_visible_min.y * m_zoom / TILE_SIZE) * TILE_SIZE / m_zoom
+      (std::round(m_visible_min.x * m_zoom / TILE_SIZE) * TILE_SIZE) / m_zoom,
+      (std::round(m_visible_min.y * m_zoom / TILE_SIZE) * TILE_SIZE) / m_zoom
     };
 
-    Drawable drawable(1, fill, (path_rect - vec2{ (float)offset.x, (float)offset.y }) * m_zoom);
+    Drawable drawable(1, fill, (path_rect - vec2{ (float)offset.x, (float)offset.y }) * m_zoom + m_subpixel);
     Geometry::Contour& contour = drawable.contours.front();
 
     const auto& segments = path.segments();
-    const f24x8x2 first = transform_point(transform, segments.front().p0(), offset, m_zoom);
+    const f24x8x2 first = transform_point(transform, segments.front().p0(), offset, m_subpixel / m_zoom, m_zoom);
 
     contour.begin(first);
 
@@ -848,12 +875,12 @@ namespace Graphick::Renderer {
       auto& raw_segment = segments[i];
 
       if (raw_segment.is_linear()) {
-        contour.push_segment(transform_point(transform, raw_segment.p3(), offset, m_zoom));
+        contour.push_segment(transform_point(transform, raw_segment.p3(), offset, m_subpixel / m_zoom, m_zoom));
       } else {
         contour.push_segment(
-          transform_point(transform, raw_segment.p1(), offset, m_zoom),
-          transform_point(transform, raw_segment.p2(), offset, m_zoom),
-          transform_point(transform, raw_segment.p3(), offset, m_zoom)
+          transform_point(transform, raw_segment.p1(), offset, m_subpixel / m_zoom, m_zoom),
+          transform_point(transform, raw_segment.p2(), offset, m_subpixel / m_zoom, m_zoom),
+          transform_point(transform, raw_segment.p3(), offset, m_subpixel / m_zoom, m_zoom)
         );
       }
     }
@@ -898,6 +925,10 @@ namespace Graphick::Renderer {
 
       uint32_t segments_size = (uint32_t)mask.segments.size();
 
+      // masks_batch.segments_ptr[0] = (uint8_t)segments_size;
+      // masks_batch.segments_ptr[1] = 0;
+      // masks_batch.segments_ptr[2] = 0;
+      // masks_batch.segments_ptr[3] = 0;
       masks_batch.segments_ptr[0] = (uint8_t)segments_size;
       masks_batch.segments_ptr[1] = (uint8_t)(segments_size >> 8);
       masks_batch.segments_ptr[2] = (uint8_t)(segments_size >> 16);
@@ -905,11 +936,21 @@ namespace Graphick::Renderer {
       masks_batch.segments_ptr += 4;
 
       for (auto segment : mask.segments) {
-        masks_batch.segments_ptr[0] = (uint8_t)std::clamp(Math::f24x8_to_float(segment.x0) * 255 / TILE_SIZE, 0.0f, 255.0f);
-        masks_batch.segments_ptr[1] = (uint8_t)std::clamp(Math::f24x8_to_float(segment.y0) * 255 / TILE_SIZE, 0.0f, 255.0f);
-        masks_batch.segments_ptr[2] = (uint8_t)std::clamp(Math::f24x8_to_float(segment.x1) * 255 / TILE_SIZE, 0.0f, 255.0f);
-        masks_batch.segments_ptr[3] = (uint8_t)std::clamp(Math::f24x8_to_float(segment.y1) * 255 / TILE_SIZE, 0.0f, 255.0f);
-        masks_batch.segments_ptr += 4;
+        masks_batch.segments_ptr[0] = static_cast<uint8_t>(segment.x0 >> FRACBITS);
+        masks_batch.segments_ptr[1] = static_cast<uint8_t>(segment.x0);
+        masks_batch.segments_ptr[2] = static_cast<uint8_t>(segment.y0 >> FRACBITS);
+        masks_batch.segments_ptr[3] = static_cast<uint8_t>(segment.y0);
+        masks_batch.segments_ptr[4] = static_cast<uint8_t>(segment.x1 >> FRACBITS);
+        masks_batch.segments_ptr[5] = static_cast<uint8_t>(segment.x1);
+        masks_batch.segments_ptr[6] = static_cast<uint8_t>(segment.y1 >> FRACBITS);
+        masks_batch.segments_ptr[7] = static_cast<uint8_t>(segment.y1);
+
+        // memcpy(masks_batch.segments_ptr, &segment, sizeof(f8x8x4));
+        // masks_batch.segments_ptr[0] = (uint8_t)std::clamp(Math::f8x8_to_float(segment.x0) * 255 / TILE_SIZE, 0.0f, 255.0f);
+        // masks_batch.segments_ptr[1] = (uint8_t)std::clamp(Math::f8x8_to_float(segment.y0) * 255 / TILE_SIZE, 0.0f, 255.0f);
+        // masks_batch.segments_ptr[2] = (uint8_t)std::clamp(Math::f8x8_to_float(segment.x1) * 255 / TILE_SIZE, 0.0f, 255.0f);
+        // masks_batch.segments_ptr[3] = (uint8_t)std::clamp(Math::f8x8_to_float(segment.y1) * 255 / TILE_SIZE, 0.0f, 255.0f);
+        masks_batch.segments_ptr += 8;
       }
 
       // TODO: bounds check

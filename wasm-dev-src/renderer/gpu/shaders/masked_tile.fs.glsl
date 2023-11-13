@@ -3,7 +3,13 @@ R"(
   precision highp float;
   precision highp sampler2D;
 
+// #define USE_F
+
+#ifdef USE_F
   uniform sampler2D uMasksTexture;
+#else
+  uniform usampler2D uMasksTexture;
+#endif
   uniform sampler2D uCoverTableTexture;
   uniform mediump int uMasksTextureSize;
   uniform mediump int uCoverTableTextureSize;
@@ -47,8 +53,17 @@ R"(
     vec2 coords = vSegmentsCoords;
     vec2 cover_table = vCoverTableCoords;
 
-    vec4 metadata = texture(uMasksTexture, coords) * 255.0;
-    int n = int(uint(metadata.r) | (uint(metadata.g) << 8) | (uint(metadata.b) << 16) | (uint(metadata.a) << 24));
+#ifdef USE_F
+    vec4 metadata = texture(uMasksTexture, coords);
+    // int n = int(metadata.r | (metadata.g << 8) | (metadata.b << 16) | (metadata.a << 24));
+    int n = min(int(metadata.r * 255.0), 1);
+#else
+    uvec4 metadata = texture(uMasksTexture, coords);
+    int n = int(metadata.r | (metadata.g << 8) | (metadata.b << 16) | (metadata.a << 24));
+    // int n = metadata.r;
+#endif
+    // vec4 metadata = vec4(texture(uMasksTexture, vec2(0.0, 0.0)));
+    // int n = min(int(metadata.r * 255.0), 1);
 
     // oFragColor = vec4(metadata.rgb, vColor.a);
     // return;
@@ -77,12 +92,23 @@ R"(
     // oFragColor = vec4(vColor.rgb, abs(alpha - 2.0 * round(0.5 * alpha)));
     // return;
 
-    for (int i = 1; i <= n; i++) {
-      vec2 segment_cords = step_coords(coords, i, one_over_size);
-      vec4 segment = texture(uMasksTexture, segment_cords) * float(uTileSize);
+    for (int i = 0; i < n; i++) {
+      vec2 p0_coords = step_coords(coords, i * 2 + 1, one_over_size);
+      vec2 p3_coords = step_coords(coords, i * 2 + 2, one_over_size);
+      
+      uvec4 p0_raw = texture(uMasksTexture, p0_coords);
+      uvec4 p3_raw = texture(uMasksTexture, p3_coords);
 
-      vec2 p0 = segment.rg;
-      vec2 p3 = segment.ba;
+      vec2 p0 = vec2(float(p0_raw.r) + float(p0_raw.g) / float(1 << 8), float(p0_raw.b) + float(p0_raw.a) / float(1 << 8));
+      vec2 p3 = vec2(float(p3_raw.r) + float(p3_raw.g) / float(1 << 8), float(p3_raw.b) + float(p3_raw.a) / float(1 << 8));
+
+      // vec2 p0 = vec2(float(p0_raw.r), float(p0_raw.b));
+      // vec2 p3 = vec2(float(p3_raw.r), float(p3_raw.b));
+
+      // vec4 segment = texture(uMasksTexture, segment_cords) * float(uTileSize);
+
+      // vec2 p0 = segment.rg;
+      // vec2 p3 = segment.ba;
 
       if (min(p0.y, p3.y) >= y1 || max(p0.y, p3.y) <= y0) {
         // Segment is outside the scanline
@@ -173,7 +199,12 @@ R"(
     // float opacity = /*vColor.a * */abs(alpha - 2.0 * round(0.5 * alpha));
     if (opacity < 0.01) opacity = 0.0;
 
+#ifdef USE_F
+    oFragColor = vec4(vColor.rgb, opacity) * 0.00001 + vec4(1.0 / float(metadata.r * 255.0), 0.0, 0.0, 1.0);
+#else
     oFragColor = vec4(vColor.rgb, opacity);
+    // oFragColor = vec4(vColor.rgb, opacity) * 0.00001 + vec4(1.0 / float(n), 0.0, 0.0, 1.0);
+#endif
 
     // oFragColor = vec4(float(n) / 10.0, 0.0, 0.0, a);
   }

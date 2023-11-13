@@ -3,6 +3,10 @@
 #include "../../math/f8x8.h"
 #include "../../math/f24x8.h"
 
+#ifndef USE_F8x8
+#include "../../math/vec2.h"
+#endif
+
 #include <vector>
 
 namespace Graphick::Renderer::Geometry {

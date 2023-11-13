@@ -78,7 +78,7 @@ namespace Graphick::Renderer {
 
     s_instance->m_quad_vertex_positions_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<uint16_t>(QUAD_VERTEX_POSITIONS.size(), "QuadVertexPositions");
     s_instance->m_quad_vertex_indices_buffer_id = GPU::Memory::Allocator::allocate_index_buffer<uint32_t>(QUAD_VERTEX_INDICES.size(), "QuadVertexIndices");
-    s_instance->m_masks_texture_id = GPU::Memory::Allocator::allocate_texture({ SEGMENTS_TEXTURE_SIZE, SEGMENTS_TEXTURE_SIZE }, GPU::TextureFormat::RGBA8, "Masks");
+    s_instance->m_masks_texture_id = GPU::Memory::Allocator::allocate_texture({ SEGMENTS_TEXTURE_SIZE, SEGMENTS_TEXTURE_SIZE }, GPU::TextureFormat::RGBA8UI, "Masks");
     s_instance->m_cover_table_id = GPU::Memory::Allocator::allocate_texture({ SEGMENTS_TEXTURE_SIZE, SEGMENTS_TEXTURE_SIZE }, GPU::TextureFormat::R32F, "CoverTable");
 
     const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(s_instance->m_quad_vertex_positions_buffer_id);
@@ -348,18 +348,28 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::draw_opaque_tiles() {
+#ifdef USE_F8x8
     const Tiler::FilledTilesBatch& batch = m_tiler.filled_tiles_batches().front();
     if (batch.tiles.empty()) return;
 
     OPTICK_EVENT();
 
     uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<OpaqueTile>(batch.tiles.size(), "OpaqueTiles");
+#else
+    const auto& tiles = m_tiler.opaque_tiles();
+    if (tiles.empty()) return;
 
+    uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<OpaqueTile>(tiles.size(), "OpaqueTiles");
+#endif
     const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
     const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
     const GPU::Buffer& tiles_buffer = GPU::Memory::Allocator::get_general_buffer(tiles_buffer_id);
 
+#ifdef USE_F8x8
     GPU::Device::upload_to_buffer(tiles_buffer, 0, batch.tiles, GPU::BufferTarget::Vertex);
+#else
+    GPU::Device::upload_to_buffer(tiles_buffer, 0, tiles, GPU::BufferTarget::Vertex);
+#endif
 
     GPU::OpaqueTileVertexArray vertex_array(
       m_programs.opaque_tile_program,
@@ -406,17 +416,29 @@ namespace Graphick::Renderer {
       }
     };
 
+#ifdef USE_F8x8
     GPU::Device::draw_elements_instanced(6, batch.tiles.size(), state);
+#else
+    GPU::Device::draw_elements_instanced(6, tiles.size(), state);
+#endif
 
     GPU::Memory::Allocator::free_general_buffer(tiles_buffer_id);
   }
 
   void Renderer::draw_masked_tiles() {
+#ifdef USE_F8x8
     const Tiler::MaskedTilesBatch& batch = m_tiler.masked_tiles_batches().front();
     const uint8_t* segments = batch.segments;
     const float* cover_table = batch.cover_table;
 
     const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(batch.tiles.rbegin(), batch.tiles.rend());
+#else
+    const auto& reversed_tiles = m_tiler.masked_tiles();
+    const uint8_t* segments = m_tiler.segments();
+    const float* cover_table = m_tiler.cover_table();
+
+    const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reversed_tiles.rbegin(), reversed_tiles.rend());
+#endif
 
     uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<MaskedTile>(tiles.size(), "MaskedTiles");
 
