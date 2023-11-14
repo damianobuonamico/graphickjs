@@ -31,6 +31,7 @@ namespace Graphick::Math {
     f8x8 x1;
     f8x8 y1;
 
+    f8x8x4() : x0(0), y0(0), x1(0), y1(0) {}
     f8x8x4(const f8x8 x0, const f8x8 y0, const f8x8 x1, const f8x8 y1) : x0(x0), y0(y0), x1(x1), y1(y1) {}
   };
 

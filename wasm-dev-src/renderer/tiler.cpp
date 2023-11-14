@@ -328,6 +328,8 @@ namespace Graphick::Renderer {
 
       float cover_table[TILE_SIZE] = { 0.0f };
       std::vector<f8x8x4> segments;
+
+      Tile() = default;
     };
 
     struct Span {
@@ -414,7 +416,6 @@ namespace Graphick::Renderer {
     void line_to(f24x8 x, f24x8 y) {
       if (m_x == x && m_y == y) return;
 
-#if 1
       f24x8 vec_x = x - m_x;
       f24x8 vec_y = y - m_y;
 
@@ -468,15 +469,20 @@ namespace Graphick::Renderer {
 
         Tile& tile = (*m_memory_pool)[index];
 
+        // console::log("size", tile.segments.size());
+
         if (!tile.active) {
           // TODO: test again
-          tile.segments.reserve(25);
+          // tile.segments.reserve(25);
           tile.active = true;
           m_masks_num++;
+        } else {
+          // console::log("size active", tile.segments.size());
         }
 
         if (y0 != y1) {
           tile.segments.emplace_back(x0, y0, x1, y1);
+          // console::log("size pushed", tile.segments.size());
 
           float cover = 1;
 
@@ -486,10 +492,13 @@ namespace Graphick::Renderer {
           }
 
           f8x8 y0_int = Math::int_bits(y0);
-          f8x8 y1_int = Math::int_bits(y1) + FRACUNIT;
+          f8x8 y1_int = std::min(Math::int_bits(y1) + FRACUNIT, TILE_SIZE << FRACBITS);
 
           int8_t i0 = static_cast<int8_t>(y0_int >> FRACBITS);
           int8_t i1 = static_cast<int8_t>(y1_int >> FRACBITS);
+
+          // console::log("i0", (int)i0);
+          // console::log("i1", (int)i1);
 
           tile.cover_table[i0] += cover * Math::f8x8_to_float(y0_int + FRACUNIT - y0);
 
@@ -498,28 +507,6 @@ namespace Graphick::Renderer {
           }
 
           tile.cover_table[i1 - 1] -= cover * Math::f8x8_to_float(y1_int - y1);
-          // int ify0 = (((y0 << 8) * 32) / 255);
-          // int ify1 = (((y1 << 8) * 32) / 255);
-
-          // if (y0 > y1) {
-          //   icover = -1;
-          //   std::swap(ify0, ify1);
-          // }
-
-          // int ii0 = ify0 >> 8;
-          // int ii1 = (ify1 >> 8) + 1;
-
-          // int iiy0 = ii0 << 8;
-          // int iiy1 = ii1 << 8;
-
-          // tile.cover_table[ii0] += icover * (iiy0 + (1 << 8) - ify0) / one_shifted;
-
-          // for (int j = ii0 + 1; j < ii1; j++) {
-          //   tile.cover_table[j] += icover;
-          // }
-
-          // tile.cover_table[ii1 - 1] -= icover * (iiy1 - ify1) / one_shifted;
-
         }
 
         from_x = to_x;
@@ -569,184 +556,6 @@ namespace Graphick::Renderer {
 
       m_x = x;
       m_y = y;
-#elif 0
-      f8x8 tile_size = TILE_SIZE << FRACBITS;
-      f8x8 tile_size_recip = FRACUNIT / TILE_SIZE;
-
-      f24x8 from_tile_coords_x = Math::int_bits(m_x * tile_size_recip / FRACUNIT);
-      f24x8 from_tile_coords_y = Math::int_bits(m_y * tile_size_recip / FRACUNIT);
-      f24x8 to_tile_coords_x = Math::int_bits(x * tile_size_recip / FRACUNIT);
-      f24x8 to_tile_coords_y = Math::int_bits(y * tile_size_recip / FRACUNIT);
-
-      f24x8 vec_x = x - m_x;
-      f24x8 vec_y = y - m_y;
-
-      f8x8 step_x = vec_x < 0 ? -FRACUNIT : FRACUNIT;
-      f8x8 step_y = vec_y < 0 ? -FRACUNIT : FRACUNIT;
-
-      f24x8 first_tile_crossing_x = from_tile_coords_x + (vec_x >= 0 ? FRACUNIT : 0);
-      f24x8 first_tile_crossing_y = from_tile_coords_y + (vec_y >= 0 ? FRACUNIT : 0);
-
-      f8x8 t_max_x = (first_tile_crossing_x - m_x) * FRACUNIT / vec_x;
-      f8x8 t_max_y = vec_y != 0 ? (first_tile_crossing_y - m_y) * FRACUNIT / vec_y : 255 << FRACBITS;
-
-      f8x8 t_delta_x = std::abs(step_x * FRACUNIT / vec_x);
-      f8x8 t_delta_y = vec_y != 0 ? std::abs(step_y * FRACUNIT / vec_y) : 255 << FRACBITS;
-
-      f24x8 current_x = m_x;
-      f24x8 current_y = m_y;
-      f24x8 current_tile_x = from_tile_coords_x;
-      f24x8 current_tile_y = from_tile_coords_y;
-
-      StepDirection last_step_direction = StepDirection::None;
-
-      while (true) {
-        StepDirection next_step_direction = t_max_x < t_max_y ? StepDirection::X : StepDirection::Y;
-
-        if (t_max_x == t_max_y) {
-          next_step_direction = step_x > 0 ? StepDirection::X : StepDirection::Y;
-        }
-
-        // TODO: custom min function
-        f8x8 next_t = std::min((int)(next_step_direction == StepDirection::X ? t_max_x : t_max_y), FRACUNIT);
-
-        next_step_direction = (current_tile_x == to_tile_coords_x && current_tile_y == to_tile_coords_y) ? StepDirection::None : next_step_direction;
-
-        f24x8 next_x = current_x + (next_t * vec_x / FRACUNIT);
-        f24x8 next_y = current_y + (next_t * vec_y / FRACUNIT);
-
-        f8x8 x0 = static_cast<f8x8>(current_x - current_tile_x);
-        f8x8 y0 = static_cast<f8x8>(current_y - current_tile_y);
-        f8x8 x1 = static_cast<f8x8>(next_x - current_tile_x);
-        f8x8 y1 = static_cast<f8x8>(next_y - current_tile_y);
-
-        int index = tile_index(current_tile_x >> FRACBITS, current_tile_y >> FRACBITS, m_size.x);
-
-        Tile& tile = (*m_memory_pool)[index];
-
-        if (!tile.active) {
-          tile.active = true;
-        }
-
-        tile.segments.emplace_back(x0, y0, x1, y1);
-
-        if (next_step_direction == StepDirection::X) {
-          if (current_tile_x == to_tile_coords_x) break;
-
-          t_max_x += t_delta_x;
-          current_tile_x += step_x;
-        } else if (next_step_direction == StepDirection::Y) {
-          if (current_tile_y == to_tile_coords_y) break;
-
-          t_max_y += t_delta_y;
-          current_tile_y += step_y;
-        } else break;
-
-        current_x = next_x;
-        current_y = next_y;
-        last_step_direction = next_step_direction;
-      }
-
-      m_x = x;
-      m_y = y;
-#elif 0
-      f24x8 dx = std::abs(x - m_x);
-      f24x8 dy = std::abs(y - m_y);
-      f24x8 x_inc = (x > m_x) ? (1 << 8) * TILE_SIZE : -(1 << 8) * TILE_SIZE;
-      f24x8 y_inc = (y > m_y) ? (1 << 8) * TILE_SIZE : -(1 << 8) * TILE_SIZE;
-      f24x8 error = dx - dy;
-
-      int n = 1 + ((dx + dy) >> FRACBITS);
-
-      dx *= 2;
-      dy *= 2;
-
-      f24x8 x_last = m_x;
-      f24x8 y_last = m_y;
-
-      for (; n > 0; n -= (1 << FRACBITS)) {
-        m_spans.emplace_back((x_last / TILE_SIZE) >> FRACBITS, (y_last / TILE_SIZE) >> FRACBITS, 1);
-
-        if (error > 0) {
-          x_last += x_inc;
-          error -= dy;
-        } else {
-          y_last += y_inc;
-          error += dx;
-        }
-      }
-
-      m_x = x;
-      m_y = y;
-#else
-      int16_t x_from_tile = (x >> FRACBITS) / TILE_SIZE;
-      int16_t y_from_tile = (y >> FRACBITS) / TILE_SIZE;
-      int16_t x_to_tile = (m_x >> FRACBITS) / TILE_SIZE;
-      int16_t y_to_tile = (m_y >> FRACBITS) / TILE_SIZE;
-
-      int16_t x_tile_vec = x_to_tile - x_from_tile;
-      int16_t y_tile_vec = y_to_tile - y_from_tile;
-      int16_t x_sign = sign(x_tile_vec);
-      int16_t y_sign = sign(y_tile_vec);
-      int16_t x_delta = std::abs(x_tile_vec);
-      int16_t y_delta = std::abs(y_tile_vec);
-
-      std::vector<f24x8x2> intersections;
-
-      // TODO: maybe can avoid multiplying and dividing by FRACUNIT
-      f24x8 m = (y - m_y) * FRACUNIT / (x - m_x);
-      f24x8 q = y - m * x / FRACUNIT;
-
-      f24x8 x_last = m_x;
-      f24x8 y_last = m_y;
-
-      for (int16_t i = 1; i <= x_delta; i++) {
-        int16_t x_tile = x_from_tile + i * TILE_SIZE;
-        f24x8 x_tile_pos = (x_tile) << FRACBITS;
-        // float num = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
-        // float den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-
-        // return num / den;
-
-        // f24x8 num = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
-        // f24x8 den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-
-        f24x8 y_int = m * x_tile_pos / FRACUNIT + q;
-
-        int16_t y_tile = (y_int >> FRACBITS) / TILE_SIZE;
-        f24x8 y_tile_pos = (y_tile) << FRACBITS;
-
-        Tile& tile = m_memory_pool->emplace_back();
-
-        f8x8 x0 = static_cast<f8x8>(x_tile_pos - (x_from_tile + (i - 1) * TILE_SIZE) << FRACBITS);
-        f8x8
-
-          // tile.segments.push_back
-
-
-
-          x_last = x_tile_pos;
-        y_last = y_int;
-      }
-
-      // TODO: to_int function
-      // int16_t x_tile = (x >> FRACBITS) / TILE_SIZE;
-      // int16_t y_tile = (y >> FRACBITS) / TILE_SIZE;
-
-      // f24x8 x_vec = x - m_x;
-      // f24x8 y_vec = y - m_y;
-      // f24x8 x_dir = sign(x_vec);
-      // f24x8 y_dir = sign(y_vec);
-      // f24x8 x_tile_dir = x_dir * TILE_SIZE;
-      // f24x8 y_tile_dir = y_dir * TILE_SIZE;
-      // f24x8 x_tile_pos = (x_tile * TILE_SIZE) << FRACBITS;
-      // f24x8 y_tile_pos = (y_tile * TILE_SIZE) << FRACBITS;
-
-      // m_x = x;
-      // m_y = y;
-#endif
-
-
     }
 
     void pack(const FillRule rule, const ivec2 tiles_count) {
@@ -772,6 +581,8 @@ namespace Graphick::Renderer {
             mask.tile_y = y;
 
             std::memcpy(mask.cover_table, cover_table, TILE_SIZE * sizeof(float));
+
+            // console::log("size", tile.segments.size());
 
             if (tile.segments.empty()) continue;
 

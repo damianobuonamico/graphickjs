@@ -222,6 +222,7 @@ namespace Graphick::Editor::Input {
     if (!m_element) {
       entity = scene.create_element();
       entity->add_component<StrokeComponent>();
+      entity->add_component<FillComponent>();
       set_pen_element(entity->id());
     } else {
       if (!scene.has_entity(m_element) || !(entity = scene.get_entity(m_element))->is_element()) {

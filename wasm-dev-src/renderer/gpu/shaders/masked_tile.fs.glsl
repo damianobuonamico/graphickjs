@@ -2,6 +2,7 @@ R"(
 
   precision highp float;
   precision highp sampler2D;
+  precision lowp usampler2D;
 
 // #define USE_F
 
