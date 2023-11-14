@@ -32,6 +32,8 @@ namespace Graphick::Renderer::Geometry {
     float dt = std::sqrtf((std::sqrtf(8.0f) * tolerance) / conc);
     float t = dt;
 
+    points.reserve(static_cast<int>(1.0f / dt) + 1);
+
     while (t < 1.0f) {
       float t_sq = t * t;
 

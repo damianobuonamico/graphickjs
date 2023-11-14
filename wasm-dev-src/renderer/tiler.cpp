@@ -405,6 +405,9 @@ namespace Graphick::Renderer {
     void move_to(f24x8 x, f24x8 y) {
       m_x = x;
       m_y = y;
+
+      m_tile_x = (x >> FRACBITS) / TILE_SIZE;
+      m_tile_y = (y >> FRACBITS) / TILE_SIZE;
     }
 
     enum class StepDirection {
@@ -416,34 +419,25 @@ namespace Graphick::Renderer {
     void line_to(f24x8 x, f24x8 y) {
       if (m_x == x && m_y == y) return;
 
-      f24x8 vec_x = x - m_x;
-      f24x8 vec_y = y - m_y;
+      // int16_t tile_x = (m_x >> FRACBITS) / TILE_SIZE;
+      // int16_t tile_y = (m_y >> FRACBITS) / TILE_SIZE;
 
-      f24x8 dir_x = sign(vec_x);
-      f24x8 dir_y = sign(vec_y);
+      m_tile_y_prev = m_tile_y;
 
-      int16_t x_tile_dir = static_cast<int16_t>(dir_x * TILE_SIZE);
-      int16_t y_tile_dir = static_cast<int16_t>(dir_y * TILE_SIZE);
-
-      int16_t tile_x = (m_x >> FRACBITS) / TILE_SIZE;
-      int16_t tile_y = (m_y >> FRACBITS) / TILE_SIZE;
-
-      m_tile_y_prev = tile_y;
-
-#if 1
       int16_t to_tile_x = (x >> FRACBITS) / TILE_SIZE;
       int16_t to_tile_y = (y >> FRACBITS) / TILE_SIZE;
+#if 1
 
-      if (tile_x == to_tile_x && tile_y == to_tile_y) {
-        f24x8 tile_pos_x = (tile_x * TILE_SIZE) << FRACBITS;
-        f24x8 tile_pos_y = (tile_y * TILE_SIZE) << FRACBITS;
+      if (m_tile_x == to_tile_x && m_tile_y == to_tile_y) {
+        f24x8 tile_pos_x = (m_tile_x * TILE_SIZE) << FRACBITS;
+        f24x8 tile_pos_y = (m_tile_y * TILE_SIZE) << FRACBITS;
 
         f8x8 x0 = static_cast<f8x8>(m_x - tile_pos_x);
         f8x8 y0 = static_cast<f8x8>(m_y - tile_pos_y);
         f8x8 x1 = static_cast<f8x8>(x - tile_pos_x);
         f8x8 y1 = static_cast<f8x8>(y - tile_pos_y);
 
-        int index = tile_index(tile_x, tile_y, m_size.x);
+        int index = tile_index(m_tile_x, m_tile_y, m_size.x);
 
         Tile& tile = (*m_memory_pool)[index];
 
@@ -485,6 +479,15 @@ namespace Graphick::Renderer {
       }
 #endif
 
+      f24x8 vec_x = x - m_x;
+      f24x8 vec_y = y - m_y;
+
+      f24x8 dir_x = sign(vec_x);
+      f24x8 dir_y = sign(vec_y);
+
+      int16_t x_tile_dir = static_cast<int16_t>(std::max(0, dir_x) * TILE_SIZE);
+      int16_t y_tile_dir = static_cast<int16_t>(std::max(0, dir_y) * TILE_SIZE);
+
       float fvec_x = Math::f24x8_to_float(vec_x);
       float fvec_y = Math::f24x8_to_float(vec_y);
       float t1_x = std::numeric_limits<float>::infinity();
@@ -495,12 +498,12 @@ namespace Graphick::Renderer {
       float step_y = std::abs(dtdy);
 
       if (y != m_y) {
-        f24x8 next_y = ((tile_y + (y > m_y ? 1 : 0)) * TILE_SIZE) << FRACBITS;
+        f24x8 next_y = ((m_tile_y + (y > m_y ? 1 : 0)) * TILE_SIZE) << FRACBITS;
         t1_x = std::min(1.0f, Math::f24x8_to_float(next_y - m_y) / fvec_y);
       }
 
       if (x != m_x) {
-        f24x8 next_x = ((tile_x + (x > m_x ? 1 : 0)) * TILE_SIZE) << FRACBITS;
+        f24x8 next_x = ((m_tile_x + (x > m_x ? 1 : 0)) * TILE_SIZE) << FRACBITS;
         t1_y = std::min(1.0f, Math::f24x8_to_float(next_x - m_x) / fvec_x);
       }
 
@@ -512,15 +515,15 @@ namespace Graphick::Renderer {
 
         f24x8 to_x = m_x + Math::float_to_f24x8(t1 * fvec_x);
         f24x8 to_y = m_y + Math::float_to_f24x8(t1 * fvec_y);
-        f24x8 tile_pos_x = (tile_x * TILE_SIZE) << FRACBITS;
-        f24x8 tile_pos_y = (tile_y * TILE_SIZE) << FRACBITS;
+        f24x8 tile_pos_x = (m_tile_x * TILE_SIZE) << FRACBITS;
+        f24x8 tile_pos_y = (m_tile_y * TILE_SIZE) << FRACBITS;
 
         f8x8 x0 = static_cast<f8x8>(from_x - tile_pos_x);
         f8x8 y0 = static_cast<f8x8>(from_y - tile_pos_y);
         f8x8 x1 = static_cast<f8x8>(to_x - tile_pos_x);
         f8x8 y1 = static_cast<f8x8>(to_y - tile_pos_y);
 
-        int index = tile_index(tile_x, tile_y, m_size.x);
+        int index = tile_index(m_tile_x, m_tile_y, m_size.x);
 
         Tile& tile = (*m_memory_pool)[index];
 
@@ -562,8 +565,6 @@ namespace Graphick::Renderer {
           tile.cover_table[i1 - 1] -= cover * Math::f8x8_to_float(y1_int - y1);
         }
 
-        from_x = to_x;
-        from_y = to_y;
 
         bool fuzzy_equal;
 
@@ -571,27 +572,27 @@ namespace Graphick::Renderer {
           fuzzy_equal = t1_x >= 1.0f - 0.0001f;
           t1_x = std::min(1.0f, t1_x + step_y);
 
-          // TODO: cache max
-          from_y = ((tile_y + std::max(0, dir_y)) * TILE_SIZE) << FRACBITS;
+          from_x = to_x;
+          from_y = (m_tile_y * TILE_SIZE + y_tile_dir) << FRACBITS;
 
-          tile_y += dir_y;
+          m_tile_y += dir_y;
         } else {
           fuzzy_equal = t1_y >= 1.0f - 0.0001f;
           t1_y = std::min(1.0f, t1_y + step_x);
 
-          // TODO: cache max
-          from_x = ((tile_x + std::max(0, dir_x)) * TILE_SIZE) << FRACBITS;
+          from_x = (m_tile_x * TILE_SIZE + x_tile_dir) << FRACBITS;
+          from_y = to_y;
 
-          tile_x += dir_x;
+          m_tile_x += dir_x;
         }
 
         if (fuzzy_equal) {
-          tile_x = (x >> FRACBITS) / TILE_SIZE;
-          tile_y = (y >> FRACBITS) / TILE_SIZE;
+          m_tile_x = (x >> FRACBITS) / TILE_SIZE;
+          m_tile_y = (y >> FRACBITS) / TILE_SIZE;
         }
 
-        if (tile_y != m_tile_y_prev) {
-          int sign_index = tile_index(tile_x, std::min(tile_y, m_tile_y_prev), m_size.x);
+        if (m_tile_y != m_tile_y_prev) {
+          int sign_index = tile_index(m_tile_x, std::min(m_tile_y, m_tile_y_prev), m_size.x);
 
           Tile& sign_tile = (*m_memory_pool)[sign_index];
 
@@ -600,8 +601,8 @@ namespace Graphick::Renderer {
             m_masks_num++;
           }
 
-          sign_tile.winding += (int8_t)(tile_y - m_tile_y_prev);
-          m_tile_y_prev = tile_y;
+          sign_tile.winding += (int8_t)(m_tile_y - m_tile_y_prev);
+          m_tile_y_prev = m_tile_y;
         }
 
         if (fuzzy_equal) break;
@@ -609,6 +610,9 @@ namespace Graphick::Renderer {
 
       m_x = x;
       m_y = y;
+
+      m_tile_x = to_tile_x;
+      m_tile_y = to_tile_y;
     }
 
     void pack(const FillRule rule, const ivec2 tiles_count) {
@@ -657,6 +661,9 @@ namespace Graphick::Renderer {
   private:
     f24x8 m_x;
     f24x8 m_y;
+
+    int16_t m_tile_x;
+    int16_t m_tile_y;
 
     ivec2 m_offset;
     ivec2 m_size;
@@ -727,11 +734,11 @@ namespace Graphick::Renderer {
       (std::round(m_visible_min.y * m_zoom / TILE_SIZE) * TILE_SIZE) / m_zoom
     };
 
-    Drawable drawable(1, fill, (path_rect - vec2{ (float)offset.x, (float)offset.y }) * m_zoom + m_subpixel);
+    Drawable drawable(1, fill, (path_rect - vec2{ (float)offset.x, (float)offset.y }) * m_zoom - m_subpixel);
     Geometry::Contour& contour = drawable.contours.front();
 
     const auto& segments = path.segments();
-    const f24x8x2 first = transform_point(transform, segments.front().p0(), offset, m_subpixel / m_zoom, m_zoom);
+    const f24x8x2 first = transform_point(transform, segments.front().p0(), offset, -m_subpixel / m_zoom, m_zoom);
 
     contour.begin(first);
 
@@ -739,12 +746,12 @@ namespace Graphick::Renderer {
       auto& raw_segment = segments[i];
 
       if (raw_segment.is_linear()) {
-        contour.push_segment(transform_point(transform, raw_segment.p3(), offset, m_subpixel / m_zoom, m_zoom));
+        contour.push_segment(transform_point(transform, raw_segment.p3(), offset, -m_subpixel / m_zoom, m_zoom));
       } else {
         contour.push_segment(
-          transform_point(transform, raw_segment.p1(), offset, m_subpixel / m_zoom, m_zoom),
-          transform_point(transform, raw_segment.p2(), offset, m_subpixel / m_zoom, m_zoom),
-          transform_point(transform, raw_segment.p3(), offset, m_subpixel / m_zoom, m_zoom)
+          transform_point(transform, raw_segment.p1(), offset, -m_subpixel / m_zoom, m_zoom),
+          transform_point(transform, raw_segment.p2(), offset, -m_subpixel / m_zoom, m_zoom),
+          transform_point(transform, raw_segment.p3(), offset, -m_subpixel / m_zoom, m_zoom)
         );
       }
     }
