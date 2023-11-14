@@ -430,6 +430,61 @@ namespace Graphick::Renderer {
 
       m_tile_y_prev = tile_y;
 
+#if 1
+      int16_t to_tile_x = (x >> FRACBITS) / TILE_SIZE;
+      int16_t to_tile_y = (y >> FRACBITS) / TILE_SIZE;
+
+      if (tile_x == to_tile_x && tile_y == to_tile_y) {
+        f24x8 tile_pos_x = (tile_x * TILE_SIZE) << FRACBITS;
+        f24x8 tile_pos_y = (tile_y * TILE_SIZE) << FRACBITS;
+
+        f8x8 x0 = static_cast<f8x8>(m_x - tile_pos_x);
+        f8x8 y0 = static_cast<f8x8>(m_y - tile_pos_y);
+        f8x8 x1 = static_cast<f8x8>(x - tile_pos_x);
+        f8x8 y1 = static_cast<f8x8>(y - tile_pos_y);
+
+        int index = tile_index(tile_x, tile_y, m_size.x);
+
+        Tile& tile = (*m_memory_pool)[index];
+
+        if (!tile.active) {
+          tile.segments.reserve(25);
+          tile.active = true;
+          m_masks_num++;
+        }
+
+        if (y0 != y1) {
+          tile.segments.emplace_back(x0, y0, x1, y1);
+
+          float cover = 1;
+
+          if (y0 > y1) {
+            cover = -1.0f;
+            std::swap(y0, y1);
+          }
+
+          f8x8 y0_int = Math::int_bits(y0);
+          f8x8 y1_int = std::min(Math::int_bits(y1) + FRACUNIT, TILE_SIZE << FRACBITS);
+
+          int8_t i0 = static_cast<int8_t>(y0_int >> FRACBITS);
+          int8_t i1 = static_cast<int8_t>(y1_int >> FRACBITS);
+
+          tile.cover_table[i0] += cover * Math::f8x8_to_float(y0_int + FRACUNIT - y0);
+
+          for (int j = i0 + 1; j < i1; j++) {
+            tile.cover_table[j] += cover;
+          }
+
+          tile.cover_table[i1 - 1] -= cover * Math::f8x8_to_float(y1_int - y1);
+        }
+
+        m_x = x;
+        m_y = y;
+
+        return;
+      }
+#endif
+
       float fvec_x = Math::f24x8_to_float(vec_x);
       float fvec_y = Math::f24x8_to_float(vec_y);
       float t1_x = std::numeric_limits<float>::infinity();
@@ -473,11 +528,9 @@ namespace Graphick::Renderer {
 
         if (!tile.active) {
           // TODO: test again
-          // tile.segments.reserve(25);
+          tile.segments.reserve(25);
           tile.active = true;
           m_masks_num++;
-        } else {
-          // console::log("size active", tile.segments.size());
         }
 
         if (y0 != y1) {

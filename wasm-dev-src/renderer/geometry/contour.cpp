@@ -5,6 +5,8 @@
 namespace Graphick::Renderer::Geometry {
 
 #ifdef USE_F8x8
+  static constexpr float tolerance = 0.25f;
+
   void Contour::begin(const f24x8x2 p0, const bool push) {
     if (push) points.push_back(p0);
     m_p0 = p0;
@@ -16,7 +18,32 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Contour::push_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3) {
-    push_segment(p3);
+    vec2 fp0 = { Math::f24x8_to_float(m_p0.x), Math::f24x8_to_float(m_p0.y) };
+    vec2 fp1 = { Math::f24x8_to_float(p1.x), Math::f24x8_to_float(p1.y) };
+    vec2 fp2 = { Math::f24x8_to_float(p2.x), Math::f24x8_to_float(p2.y) };
+    vec2 fp3 = { Math::f24x8_to_float(p3.x), Math::f24x8_to_float(p3.y) };
+
+    vec2 a = -fp0 + 3.0f * fp1 - 3.0f * fp2 + fp3;
+    vec2 b = 3.0f * fp0 - 6.0f * fp1 + 3.0f * fp2;
+    vec2 c = -3.0f * fp0 + 3.0f * fp1;
+    vec2 p;
+
+    float conc = std::max(Math::length(b), Math::length(a + b));
+    float dt = std::sqrtf((std::sqrtf(8.0f) * tolerance) / conc);
+    float t = dt;
+
+    while (t < 1.0f) {
+      float t_sq = t * t;
+
+      p = a * t_sq * t + b * t_sq + c * t + fp0;
+      points.emplace_back(Math::float_to_f24x8(p.x), Math::float_to_f24x8(p.y));
+
+      t += dt;
+    }
+
+    points.push_back(p3);
+
+    m_p0 = p3;
   }
 
   void Contour::offset_segment(const f24x8x2 p3, const f24x8 radius) {}

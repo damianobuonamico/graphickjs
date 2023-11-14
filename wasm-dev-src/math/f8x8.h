@@ -36,6 +36,16 @@ namespace Graphick::Math {
   };
 
   /**
+    * @brief Converts a float to a f8.8 fixed point number.
+    *
+    * @param x The float to convert.
+    * @return The converted f8.8 fixed point number.
+    */
+  inline f8x8 float_to_f8x8(const float x) {
+    return static_cast<f8x8>(x * FRACUNIT);
+  }
+
+  /**
    * @brief Converts a f8.8 fixed point number to a float.
    *
    * @param x The f8.8 fixed point number to convert.
