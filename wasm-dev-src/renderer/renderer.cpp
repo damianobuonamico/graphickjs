@@ -69,9 +69,12 @@ namespace Graphick::Renderer {
 
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
     emscripten_webgl_make_context_current(ctx);
-#endif
 
     GPU::Device::init(GPU::DeviceVersion::GLES3, 0);
+#else
+    GPU::Device::init(GPU::DeviceVersion::GL3, 0);
+#endif
+
     GPU::Memory::Allocator::init();
 
     s_instance = new Renderer();
