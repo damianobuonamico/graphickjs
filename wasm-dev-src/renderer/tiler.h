@@ -37,11 +37,14 @@ namespace Graphick::Renderer {
      * @struct Tile
      */
     struct Tile {
-      bool active = false;                        /* Whether the tile is active. */
-      int8_t winding = 0;                         /* Winding number increment. */
+      bool active = false;                                /* Whether the tile is active. */
+      int8_t winding = 0;                                 /* Winding number increment. */
 
-      float cover_table[TILE_SIZE] = { 0.0f };    /* Cover table of the tile. */
-      std::vector<uvec4> segments;                /* Segments of the tile. */
+      float cover_table[TILE_SIZE] = { 0.0f };            /* Cover table of the tile. */
+      std::vector<std::pair<f8x8x4*, size_t>> segments;   /* Pair of pointer to segments and number of segments stored in the memory pool. */
+
+      Tile() = default;
+      Tile(f8x8x4* segments) : segments({ { segments, 0 } }) {}
     };
 
     /**
@@ -66,7 +69,32 @@ namespace Graphick::Renderer {
       int16_t tile_y;                             /* The y coordinate of the tile. */
 
       float cover_table[TILE_SIZE] = { 0.0f };    /* GPU packed cover table of the tile. */
-      std::vector<uvec4> segments;                /* GPU packed segments of the tile. */
+      f8x8x4* segments = nullptr;                 /* GPU packed segments of the tile. */
+      size_t segments_size = 0;                   /* Number of segments. */
+      // std::vector<f8x8x4> segments;               /* GPU packed segments of the tile. */
+
+      Mask() = default;
+      ~Mask() { delete[] segments; }
+    };
+
+    // TODO: document
+    class MemoryPool {
+    public:
+      MemoryPool();
+      ~MemoryPool();
+
+      inline Tile& get(const size_t index) { return m_tiles[index]; }
+
+      void resize(const size_t size);
+
+      void emplace_segment(const f8x8x4 segment, const size_t tile_index);
+    private:
+      Tile* m_tiles = nullptr;
+      f8x8x4* m_segments = nullptr;
+      f8x8x4* m_segments_ptr = nullptr;
+
+      size_t m_capacity = 0;
+      size_t m_size = 0;
     };
   public:
     /**
@@ -87,7 +115,7 @@ namespace Graphick::Renderer {
      * @param tiles_count The dimensions in tiles of the viewport.
      * @param pool The memory pool of tiles to use.
      */
-    DrawableTiler(const Drawable& drawable, const rect& visible, const float zoom, const ivec2 position, const vec2 subpixel, const ivec2 tiles_count, std::vector<Tile>& pool);
+    DrawableTiler(const Drawable& drawable, const ivec2 position, const ivec2 tiles_count, MemoryPool* pool);
 
     /**
      * @brief Returns the offset of the drawable.
@@ -120,39 +148,44 @@ namespace Graphick::Renderer {
     /**
      * @brief Moves the drawing cursor to the specified point.
      *
-     * @param p0 The start point of the contour.
+     * @param x The x coordinate of the starting point of the contour.
+     * @param y The y coordinate of the starting point of the contour.
      */
-    void move_to(const vec2 p0);
+    void move_to(const f24x8 x, const f24x8 y);
 
     /**
      * @brief Draws a line from the cursor position to the specified point.
      *
-     * @param p3 The end point of the line.
+     * @param x The x coordinate of the end point of the line.
+     * @param y The y coordinate of the end point of the line.
      */
-    void line_to(const vec2 p3);
+    void line_to(const f24x8 x, const f24x8 y);
 
     /**
-     * @brief Finishes the tiling of the drawable.
+     * @brief Packs the tiling of the drawable.
      *
      * @param rule The fill rule used to determine how self-intersecting paths are filled.
      * @param tiles_count The dimensions in tiles of the viewport.
      */
     void pack(const FillRule rule, const ivec2 tiles_count);
   private:
-    vec2 m_p0;                           /* The last point. */
+    f24x8 m_x;                              /* The x coordinate of the cursor. */
+    f24x8 m_y;                              /* The y coordinate of the cursor. */
 
-    ivec2 m_offset;                      /* The tile offset of the drawable. */
-    ivec2 m_size;                        /* The size in tiles of the drawable. */
+    int16_t m_tile_x;                       /* The x coordinate of the current tile. */
+    int16_t m_tile_y;                       /* The y coordinate of the current tile. */
 
-    std::vector<Span> m_spans;           /* The spans used to represent the completely covered tiles of the drawable. */
-    std::vector<Mask> m_masks;           /* The masks used to represent the partially covered tiles of the drawable. */
+    ivec2 m_offset;                         /* The tile offset of the drawable. */
+    ivec2 m_size;                           /* The size in tiles of the drawable. */
 
-    int16_t m_tile_y_prev = 0;           /* The y coordinate of the previous tile. */
+    std::vector<Span> m_spans;              /* The spans used to represent the completely covered tiles of the drawable. */
+    std::vector<Mask> m_masks;              /* The masks used to represent the partially covered tiles of the drawable. */
 
-    std::vector<Tile>* m_memory_pool;    /* The memory pool of tiles to use. */
+    int16_t m_tile_y_prev = 0;              /* The y coordinate of the previous tile. */
+    uint16_t m_masks_num = 0;               /* The number of active masks. */
+
+    MemoryPool* m_memory_pool = nullptr;    /* The memory pool of tiles to use. */
   };
-
-#ifdef USE_F8x8
 
   /**
    * @brief Class used to generate segments and cover tables for a collection of drawables.
@@ -256,7 +289,7 @@ namespace Graphick::Renderer {
     std::vector<FilledTilesBatch> m_filled_batches;    /* The filled tiles, grouped in batches. */
     std::vector<MaskedTilesBatch> m_masked_batches;    /* The masked tiles, grouped in batches. */
 
-    std::vector<DrawableTiler::Tile> m_memory_pool;    /* The memory pool of tiles to use. */
+    DrawableTiler::MemoryPool m_memory_pool;           /* The memory pool of tiles to use during the tiling process. */
     std::vector<bool> m_culled_tiles;                  /* The culled tiles. */
 
     double m_zoom = 1.0;                               /* The zoom of the viewport. */
@@ -269,58 +302,6 @@ namespace Graphick::Renderer {
     rect m_visible;                                    /* The bounds of the viewport in scene space. */
 
     dvec2 m_visible_min;                               /* The upper left corner of the viewport. */
-
-    // float m_zoom = 1.0f;                               /* The zoom of the viewport. */
-    // ivec2 m_position = { 0, 0 };                       /* The position of the viewport. */
-    // ivec2 m_tiles_count = { 0, 0 };                    /* The dimensions in tiles of the viewport. */
-    // vec2 m_subpixel = { 0.0f, 0.0f };                  /* The subpixel offset of the viewport. */
-    // rect m_visible;                                    /* The bounds of the viewport. */
-
-    // uint8_t* m_segments = nullptr;                     /* The segments of the tiles. */
-    // uint8_t* m_segments_ptr = nullptr;                 /* The pointer to the next segment. */
-    // float* m_cover_table = nullptr;                    /* The cover tables of the tiles. */
-    // float* m_cover_table_ptr = nullptr;                /* The pointer to the next cover table. */
   };
-#else
-  class Tiler {
-  public:
-    Tiler(const Tiler&) = delete;
-    Tiler(Tiler&&) = delete;
-
-    Tiler();
-    ~Tiler();
-
-    inline const std::vector<OpaqueTile>& opaque_tiles() const { return m_opaque_tiles; }
-    inline const std::vector<MaskedTile>& masked_tiles() const { return m_masked_tiles; }
-
-    inline const uint8_t* segments() const { return m_segments; };
-    inline const float* cover_table() const { return m_cover_table; };
-    inline const size_t segments_size() const { return m_segments_ptr - m_segments; };
-
-    void reset(const Viewport& viewport);
-
-    void process_drawable(const Drawable& drawable, const rect& visible, const vec2 offset = { 0.0f, 0.0f }, const bool clip = true);
-    void process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke);
-    void process_fill(const Geometry::Path& path, const mat2x3& transform, const Fill& fill);
-  private:
-    std::vector<MaskedTile> m_masked_tiles;
-    std::vector<OpaqueTile> m_opaque_tiles;
-    std::vector<bool> m_culled_tiles;
-
-    std::vector<DrawableTiler::Tile> m_memory_pool;
-
-    float m_zoom = 1.0f;
-    ivec2 m_position = { 0, 0 };
-    ivec2 m_tiles_count = { 0, 0 };
-    vec2 m_subpixel = { 0.0f, 0.0f };
-    rect m_visible;
-
-    // TODO: replace with array of textures
-    uint8_t* m_segments = nullptr;
-    uint8_t* m_segments_ptr = nullptr;
-    float* m_cover_table = nullptr;
-    float* m_cover_table_ptr = nullptr;
-  };
-#endif
 
 }
