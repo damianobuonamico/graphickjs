@@ -1,3 +1,16 @@
+/**
+ * @file tiler.cpp
+ * @brief Tiler implementation.
+ *
+ * @todo further optimize the tiler (i.e. Contour::push_segment() can definitely be faster).
+ * @todo join offset and subpixel in transform_point() in a single variable, and avoid useless float to double casts.
+ * @todo simplify and move offset logic from DrawableTiler to Tiler.
+ * @todo boundary checking or error handling in MemoryPool::emplace_segment().
+ * @todo batch spans by row.
+ * @todo reimplement clipping
+ * @todo abstract away batching logic in tiler (bounds checking, etc.)
+ */
+
 #include "tiler.h"
 
 #include "geometry/path.h"
@@ -9,8 +22,7 @@
 
 #include "../utils/console.h"
 
-// TODO: zoom and transform operations should use doubles
-// TODO: fix right border of tiger (near min_y)
+#define SEGMENTS_MEMORY_POOL_SIZE 30
 
 namespace Graphick::Renderer {
 
@@ -69,17 +81,15 @@ namespace Graphick::Renderer {
   }
 
   /**
-   * @brief Calculates the sign of a float.
+   * @brief Applies a transformation matrix to a vec2 point and returns the result as a f24x8x2.
    *
-   * This method is designed and optimized to return an int16_t value (-1, 0, 1).
-   *
-   * @param x The float.
-   * @return The sign of the float.
+   * @param transform The transformation matrix.
+   * @param point The point.
+   * @param offset The offset to apply to the point.
+   * @param subpixel The subpixel offset to apply to the point.
+   * @param zoom The zoom to apply to the point.
+   * @return The transformed point.
    */
-  inline static int16_t sign(float x) {
-    return (0 < x) - (x < 0);
-  }
-
   inline static f24x8x2 transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const vec2 subpixel, const double zoom) {
     double x = (
       static_cast<double>(transform[0][0]) * static_cast<double>(point.x) +
@@ -95,13 +105,7 @@ namespace Graphick::Renderer {
     return Math::double_to_f24x8x2(x, y);
   }
 
-  inline static f24x8 sign(const f24x8 x) {
-    return (0 < x) - (x < 0);
-  }
-
-  /* -- DrawableTiler -- */
-
-#define SEGMENTS_MEMORY_POOL_SIZE 30
+  /* -- DrawableTiler::MemoryPool -- */
 
   DrawableTiler::MemoryPool::MemoryPool() : m_tiles(nullptr), m_segments(nullptr), m_size(0), m_capacity(0) {}
 
@@ -112,9 +116,8 @@ namespace Graphick::Renderer {
 
   void DrawableTiler::MemoryPool::resize(const size_t new_size) {
     if (new_size > m_capacity) {
-      /* Reallocation needed. */
+      /* Reallocation needed, the old data is discarded. */
 
-      /* The old data can be discarded. */
       delete[] m_tiles;
       delete[] m_segments;
 
@@ -130,8 +133,6 @@ namespace Graphick::Renderer {
 
     /* Clear the old data. */
 
-    // TODO: test if is better to reallocate  
-
     for (size_t i = 0; i < m_size; i++) {
       Tile& tile = m_tiles[i];
 
@@ -144,27 +145,8 @@ namespace Graphick::Renderer {
       std::memset(tile.cover_table, 0, sizeof(tile.cover_table));
     }
 
-    // std::fill(m_tiles, m_tiles + new_size, Tile{});
     m_segments_ptr = m_segments;
-
     m_size = new_size;
-
-    // for (auto& tile : tiles) {
-    //   if (!tile.active) continue;
-
-    //   tile.active = false;
-    //   tile.winding = 0;
-    //   tile.segments.clear();
-    //   tile.segments.reserve(SEGMENTS_MEMORY_POOL_SIZE);
-
-    //   std::memset(tile.cover_table, 0, sizeof(tile.cover_table));
-    // }
-
-    // if (size > capacity) {
-    //   capacity = size;
-
-    //   tiles.resize(size);
-    // }
   }
 
   void DrawableTiler::MemoryPool::emplace_segment(const f8x8x4 segment, const size_t tile_index) {
@@ -184,9 +166,10 @@ namespace Graphick::Renderer {
     std::memcpy(m_segments_ptr, &segment, sizeof(f8x8x4));
 
     m_tiles[tile_index].segments.emplace_back(m_segments_ptr, 1);
-
     m_segments_ptr += SEGMENTS_MEMORY_POOL_SIZE;
   }
+
+  /* -- DrawableTiler -- */
 
   DrawableTiler::DrawableTiler(const Drawable& drawable, const ivec2 position, const ivec2 tiles_count, MemoryPool* pool) {
     rect bounds = {
@@ -197,7 +180,6 @@ namespace Graphick::Renderer {
     ivec2 min_coords = tile_coords(bounds.min) + position;
     ivec2 max_coords = tile_coords(bounds.max) + position;
 
-    // TODO: move this offset in tiler
     f24x8 x_offset = Math::float_to_f24x8(bounds.min.x);
     f24x8 y_offset = Math::float_to_f24x8(bounds.min.y);
 
@@ -261,14 +243,12 @@ namespace Graphick::Renderer {
       Tile& tile = m_memory_pool->get(index);
 
       if (!tile.active) {
-        // tile.segments.reserve(25);
         tile.active = true;
         m_masks_num++;
       }
 
       if (y0 != y1) {
         m_memory_pool->emplace_segment({ x0, y0, x1, y1 }, index);
-        // tile.segments.emplace_back(x0, y0, x1, y1);
 
         float cover = 1;
 
@@ -301,8 +281,8 @@ namespace Graphick::Renderer {
     f24x8 vec_x = x - m_x;
     f24x8 vec_y = y - m_y;
 
-    f24x8 dir_x = sign(vec_x);
-    f24x8 dir_y = sign(vec_y);
+    f24x8 dir_x = Math::sign(vec_x);
+    f24x8 dir_y = Math::sign(vec_y);
 
     int16_t x_tile_dir = static_cast<int16_t>(std::max(0, dir_x) * TILE_SIZE);
     int16_t y_tile_dir = static_cast<int16_t>(std::max(0, dir_y) * TILE_SIZE);
@@ -347,15 +327,12 @@ namespace Graphick::Renderer {
       Tile& tile = m_memory_pool->get(index);
 
       if (!tile.active) {
-        // TODO: test again
-        // tile.segments.reserve(25);
         tile.active = true;
         m_masks_num++;
       }
 
       if (y0 != y1) {
         m_memory_pool->emplace_segment({ x0, y0, x1, y1 }, index);
-        // tile.segments.emplace_back(x0, y0, x1, y1);
 
         float cover = 1;
 
@@ -453,33 +430,19 @@ namespace Graphick::Renderer {
 
           std::memcpy(mask.cover_table, cover_table, TILE_SIZE * sizeof(float));
 
-          // console::log("size", tile.segments.size());
-
           if (tile.segments.empty()) continue;
-
 
           for (const auto& [_, size] : tile.segments) {
             mask.segments_size += size;
           }
 
           mask.segments = new f8x8x4[mask.segments_size];
-          // mask.segments = static_cast<f8x8x4*>(std::malloc(mask.segments_size * sizeof(f8x8x4)));
-          // mask.segments.resize(total_size); // Reserve space
-
           size_t start_pos = 0;
 
           for (const auto& [segments, size] : tile.segments) {
             std::memcpy(&mask.segments[start_pos], segments, size * sizeof(f8x8x4));
-            // mask.segments.insert(mask.segments.end(), segments, segments + size);
-            // std::transform(segments, segments + size, std::back_inserter(mask.segments),
-            //   [](const f8x8x4& element) { return element; });
-
             start_pos += size;
           }
-
-          // for (auto& [segments, size] : tile.segments) {
-          //   mask.segments.insert(mask.segments.end(), segments, segments + size);
-          // }
 
           for (int i = 0; i < TILE_SIZE; i++) {
             cover_table[i] += tile.cover_table[i];
@@ -488,7 +451,6 @@ namespace Graphick::Renderer {
           (rule == FillRule::NonZero && winding != 0) ||
           (rule == FillRule::EvenOdd && winding % 2 != 0)
           ) {
-          // TODO: batch spans together
           m_spans.push_back(Span{ x, y, 1 });
         }
       }
@@ -545,7 +507,6 @@ namespace Graphick::Renderer {
 
     if (overlap <= 0.0f) return;
 
-    // TODO: convert to ivec2 to make clear that we are rounding down
     dvec2 offset = {
       (std::round(m_visible_min.x * m_zoom / TILE_SIZE) * TILE_SIZE) / m_zoom,
       (std::round(m_visible_min.y * m_zoom / TILE_SIZE) * TILE_SIZE) / m_zoom
@@ -611,12 +572,6 @@ namespace Graphick::Renderer {
       int offset = (int)(masks_batch.segments_ptr - masks_batch.segments) / 4;
       int cover_offset = (int)(masks_batch.cover_table_ptr - masks_batch.cover_table);
 
-      // uint32_t segments_size = (uint32_t)mask.segments.size();
-
-      // masks_batch.segments_ptr[0] = (uint8_t)segments_size;
-      // masks_batch.segments_ptr[1] = 0;
-      // masks_batch.segments_ptr[2] = 0;
-      // masks_batch.segments_ptr[3] = 0;
       masks_batch.segments_ptr[0] = (uint8_t)mask.segments_size;
       masks_batch.segments_ptr[1] = (uint8_t)(mask.segments_size >> 8);
       masks_batch.segments_ptr[2] = (uint8_t)(mask.segments_size >> 16);
@@ -633,11 +588,6 @@ namespace Graphick::Renderer {
         masks_batch.segments_ptr[6] = static_cast<uint8_t>(mask.segments[i].y1 >> FRACBITS);
         masks_batch.segments_ptr[7] = static_cast<uint8_t>(mask.segments[i].y1);
 
-        // memcpy(masks_batch.segments_ptr, &segment, sizeof(f8x8x4));
-        // masks_batch.segments_ptr[0] = (uint8_t)std::clamp(Math::f8x8_to_float(segment.x0) * 255 / TILE_SIZE, 0.0f, 255.0f);
-        // masks_batch.segments_ptr[1] = (uint8_t)std::clamp(Math::f8x8_to_float(segment.y0) * 255 / TILE_SIZE, 0.0f, 255.0f);
-        // masks_batch.segments_ptr[2] = (uint8_t)std::clamp(Math::f8x8_to_float(segment.x1) * 255 / TILE_SIZE, 0.0f, 255.0f);
-        // masks_batch.segments_ptr[3] = (uint8_t)std::clamp(Math::f8x8_to_float(segment.y1) * 255 / TILE_SIZE, 0.0f, 255.0f);
         masks_batch.segments_ptr += 8;
       }
 
@@ -1108,4 +1058,4 @@ namespace Graphick::Renderer {
   }
 #endif
 
-}
+  }

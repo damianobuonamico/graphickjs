@@ -30,7 +30,7 @@ namespace Graphick::Math {
   size_t next_power_of_two(size_t n);
 
   template <typename T>
-  inline int sign(T val) {
+  inline T sign(T val) {
     return (T(0) < val) - (val < T(0));
   }
 

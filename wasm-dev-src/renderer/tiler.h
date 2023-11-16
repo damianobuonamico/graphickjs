@@ -1,8 +1,6 @@
 /**
  * @file tiler.h
  * @brief Contains the classes used to generate segments and cover tables for a collection of drawables.
- *
- * @todo cleanup and doc Tiler class
  */
 
 #pragma once
@@ -42,9 +40,6 @@ namespace Graphick::Renderer {
 
       float cover_table[TILE_SIZE] = { 0.0f };            /* Cover table of the tile. */
       std::vector<std::pair<f8x8x4*, size_t>> segments;   /* Pair of pointer to segments and number of segments stored in the memory pool. */
-
-      Tile() = default;
-      Tile(f8x8x4* segments) : segments({ { segments, 0 } }) {}
     };
 
     /**
@@ -71,30 +66,56 @@ namespace Graphick::Renderer {
       float cover_table[TILE_SIZE] = { 0.0f };    /* GPU packed cover table of the tile. */
       f8x8x4* segments = nullptr;                 /* GPU packed segments of the tile. */
       size_t segments_size = 0;                   /* Number of segments. */
-      // std::vector<f8x8x4> segments;               /* GPU packed segments of the tile. */
 
-      Mask() = default;
-      ~Mask() { delete[] segments; }
+      ~Mask() { delete[] segments; }              /* Destructor, clean up the segments. */
     };
 
-    // TODO: document
+    /**
+     * @brief The memory pool of tiles used to store tiles and segments.
+     *
+     * @class MemoryPool
+     */
     class MemoryPool {
     public:
+      /**
+       * @brief Constructor and destructor of the memory pool.
+       */
       MemoryPool();
       ~MemoryPool();
 
+      /**
+       * @brief Returns the tile object at the specified index.
+       *
+       * @param index The index of the tile.
+       * @return The tile object at the specified index.
+       */
       inline Tile& get(const size_t index) { return m_tiles[index]; }
 
+      /**
+       * @brief Resizes the memory pool.
+       *
+       * The memory pool capacity is updated (through reallocation) only if the new size is greater than the current capacity.
+       *
+       * @param size The new size of the memory pool.
+       */
       void resize(const size_t size);
 
+      /**
+       * @brief Emplaces a segment in the tile at the specified index.
+       *
+       * The segment is stored in a memory block of the memory pool, the tile is updated with the current block pointer and size.
+       *
+       * @param segment The segment to emplace.
+       * @param tile_index The index of the tile.
+      */
       void emplace_segment(const f8x8x4 segment, const size_t tile_index);
     private:
-      Tile* m_tiles = nullptr;
-      f8x8x4* m_segments = nullptr;
-      f8x8x4* m_segments_ptr = nullptr;
+      Tile* m_tiles = nullptr;             /* Pointer to the first tile. */
+      f8x8x4* m_segments = nullptr;        /* Pointer to the first segment block. */
+      f8x8x4* m_segments_ptr = nullptr;    /* Pointer to the first free segments block. */
 
-      size_t m_capacity = 0;
-      size_t m_size = 0;
+      size_t m_capacity = 0;               /* The capacity of the memory pool (in tiles). */
+      size_t m_size = 0;                   /* The size of the memory pool (in tiles). */
     };
   public:
     /**
@@ -209,12 +230,12 @@ namespace Graphick::Renderer {
      * @struct MaskedTilesBatch
      */
     struct MaskedTilesBatch {
-      std::vector<MaskedTile> tiles;    /* The masked tiles. */
+      std::vector<MaskedTile> tiles;       /* The masked tiles. */
 
-      uint8_t* segments = nullptr;                     /* The segments of the tiles. */
-      uint8_t* segments_ptr = nullptr;                 /* The pointer to the next segment. */
-      float* cover_table = nullptr;                    /* The cover tables of the tiles. */
-      float* cover_table_ptr = nullptr;                /* The pointer to the next cover table. */
+      uint8_t* segments = nullptr;         /* The segments of the tiles. */
+      uint8_t* segments_ptr = nullptr;     /* The pointer to the next segment. */
+      float* cover_table = nullptr;        /* The cover tables of the tiles. */
+      float* cover_table_ptr = nullptr;    /* The pointer to the next cover table. */
 
       MaskedTilesBatch() {
         segments = new uint8_t[SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE * 4];
