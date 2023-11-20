@@ -179,8 +179,9 @@ namespace Graphick::Renderer {
      *
      * @param x The x coordinate of the end point of the line.
      * @param y The y coordinate of the end point of the line.
+     * @param pool The memory pool of tiles to use.
      */
-    void line_to(const f24x8 x, const f24x8 y);
+    void line_to(const f24x8 x, const f24x8 y, MemoryPool* pool);
 
     /**
      * @brief Packs the tiling of the drawable.
@@ -188,7 +189,7 @@ namespace Graphick::Renderer {
      * @param rule The fill rule used to determine how self-intersecting paths are filled.
      * @param tiles_count The dimensions in tiles of the viewport.
      */
-    void pack(const FillRule rule, const ivec2 tiles_count);
+    void pack(const FillRule rule, const ivec2 tiles_count, MemoryPool* pool);
   private:
     f24x8 m_x;                              /* The x coordinate of the cursor. */
     f24x8 m_y;                              /* The y coordinate of the cursor. */
@@ -204,8 +205,6 @@ namespace Graphick::Renderer {
 
     int16_t m_tile_y_prev = 0;              /* The y coordinate of the previous tile. */
     uint16_t m_masks_num = 0;               /* The number of active masks. */
-
-    MemoryPool* m_memory_pool = nullptr;    /* The memory pool of tiles to use. */
   };
 
   /**
@@ -305,7 +304,7 @@ namespace Graphick::Renderer {
      * @param offset The offset of the drawable.
      * @param clip Whether to clip the drawable.
      */
-    void process_drawable(const Drawable& drawable, const rect& visible, const vec2 offset = { 0.0f, 0.0f }, const bool clip = true);
+    void process_drawable(Drawable& drawable, const rect& visible, const vec2 offset = { 0.0f, 0.0f }, const bool clip = true);
   private:
     std::vector<FilledTilesBatch> m_filled_batches;    /* The filled tiles, grouped in batches. */
     std::vector<MaskedTilesBatch> m_masked_batches;    /* The masked tiles, grouped in batches. */

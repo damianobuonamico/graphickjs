@@ -3,7 +3,7 @@
  * @brief Tiler implementation.
  *
  * @todo further optimize the tiler (i.e. Contour::push_segment() can definitely be faster).
- * @todo join offset and subpixel in transform_point() in a single variable, and avoid useless float to double casts.
+ * @todo avoid useless float to double casts.
  * @todo simplify and move offset logic from DrawableTiler to Tiler.
  * @todo boundary checking or error handling in MemoryPool::emplace_segment().
  * @todo batch spans by row.
@@ -90,19 +90,31 @@ namespace Graphick::Renderer {
    * @param zoom The zoom to apply to the point.
    * @return The transformed point.
    */
-  inline static f24x8x2 transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const vec2 subpixel, const double zoom) {
+  inline static f24x8x2 transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const double zoom) {
     double x = (
       static_cast<double>(transform[0][0]) * static_cast<double>(point.x) +
       static_cast<double>(transform[0][1]) * static_cast<double>(point.y) +
-      static_cast<double>(transform[0][2]) - offset.x + (double)subpixel.x
+      static_cast<double>(transform[0][2]) - offset.x
       ) * zoom;
     double y = (
       static_cast<double>(transform[1][0]) * static_cast<double>(point.x) +
       static_cast<double>(transform[1][1]) * static_cast<double>(point.y) +
-      static_cast<double>(transform[1][2]) - offset.y + (double)subpixel.y
+      static_cast<double>(transform[1][2]) - offset.y
       ) * zoom;
 
     return Math::double_to_f24x8x2(x, y);
+  }
+
+  static void clip_drawable(Drawable& drawable, const f24x8x4 clip) {
+    for (auto& contour : drawable.contours) {
+      Math::clip(contour.points, clip);
+      contour.close();
+    }
+
+    drawable.bounds.x0 = std::max(drawable.bounds.x0, clip.x0);
+    drawable.bounds.y0 = std::max(drawable.bounds.y0, clip.y0);
+    drawable.bounds.x1 = std::min(drawable.bounds.x1, clip.x1);
+    drawable.bounds.y1 = std::min(drawable.bounds.y1, clip.y1);
   }
 
   /* -- DrawableTiler::MemoryPool -- */
@@ -172,44 +184,38 @@ namespace Graphick::Renderer {
   /* -- DrawableTiler -- */
 
   DrawableTiler::DrawableTiler(const Drawable& drawable, const ivec2 position, const ivec2 tiles_count, MemoryPool* pool) {
-    rect bounds = {
-      Math::floor((drawable.bounds.min - 32.0f) / TILE_SIZE) * TILE_SIZE,
-      Math::ceil((drawable.bounds.max + 32.0f) / TILE_SIZE) * TILE_SIZE
+    f24x8x4 bounds = {
+      ((((drawable.bounds.x0 - (32 << FRACBITS)) / TILE_SIZE) >> FRACBITS) << FRACBITS) * TILE_SIZE,
+      ((((drawable.bounds.y0 - (32 << FRACBITS)) / TILE_SIZE) >> FRACBITS) << FRACBITS) * TILE_SIZE,
+      (((((drawable.bounds.x1 + (32 << FRACBITS)) / TILE_SIZE) >> FRACBITS) + 1) << FRACBITS) * TILE_SIZE,
+      (((((drawable.bounds.y1 + (32 << FRACBITS)) / TILE_SIZE) >> FRACBITS) + 1) << FRACBITS) * TILE_SIZE
     };
 
-    ivec2 min_coords = tile_coords(bounds.min) + position;
-    ivec2 max_coords = tile_coords(bounds.max) + position;
-
-    f24x8 x_offset = Math::float_to_f24x8(bounds.min.x);
-    f24x8 y_offset = Math::float_to_f24x8(bounds.min.y);
+    ivec2 min_coords = position + ivec2{ (bounds.x0 / TILE_SIZE) >> FRACBITS, (bounds.y0 / TILE_SIZE) >> FRACBITS };
+    ivec2 max_coords = position + ivec2{ (bounds.x1 / TILE_SIZE) >> FRACBITS, (bounds.y1 / TILE_SIZE) >> FRACBITS };
 
     m_offset = min_coords;
     m_size = max_coords - min_coords;
 
-    m_memory_pool = pool;
-
-    m_memory_pool->resize(m_size.x * m_size.y);
+    pool->resize(m_size.x * m_size.y);
 
     for (const Geometry::Contour& contour : drawable.contours) {
       if (contour.points.size() < 2) continue;
 
-      f24x8 x_p = contour.points.front().x - x_offset;
-      f24x8 y_p = contour.points.front().y - y_offset;
+      f24x8 x_p = contour.points.front().x - bounds.x0;
+      f24x8 y_p = contour.points.front().y - bounds.y0;
 
       move_to(x_p, y_p);
 
       for (size_t i = 1; i < contour.points.size(); i++) {
-        x_p = contour.points[i].x - x_offset;
-        y_p = contour.points[i].y - y_offset;
+        x_p = contour.points[i].x - bounds.x0;
+        y_p = contour.points[i].y - bounds.y0;
 
-
-        line_to(x_p, y_p);
+        line_to(x_p, y_p, pool);
       }
     }
 
-    pack(drawable.paint.rule, tiles_count);
-
-    m_memory_pool = nullptr;
+    pack(drawable.paint.rule, tiles_count, pool);
   }
 
   void DrawableTiler::move_to(f24x8 x, f24x8 y) {
@@ -220,9 +226,8 @@ namespace Graphick::Renderer {
     m_tile_y = (y >> FRACBITS) / TILE_SIZE;
   }
 
-  void DrawableTiler::line_to(f24x8 x, f24x8 y) {
+  void DrawableTiler::line_to(f24x8 x, f24x8 y, MemoryPool* pool) {
     if (m_x == x && m_y == y) return;
-
 
     m_tile_y_prev = m_tile_y;
 
@@ -240,7 +245,7 @@ namespace Graphick::Renderer {
 
       size_t index = tile_index(m_tile_x, m_tile_y, m_size.x);
 
-      Tile& tile = m_memory_pool->get(index);
+      Tile& tile = pool->get(index);
 
       if (!tile.active) {
         tile.active = true;
@@ -248,7 +253,7 @@ namespace Graphick::Renderer {
       }
 
       if (y0 != y1) {
-        m_memory_pool->emplace_segment({ x0, y0, x1, y1 }, index);
+        pool->emplace_segment({ x0, y0, x1, y1 }, index);
 
         float cover = 1;
 
@@ -324,7 +329,7 @@ namespace Graphick::Renderer {
 
       size_t index = tile_index(m_tile_x, m_tile_y, m_size.x);
 
-      Tile& tile = m_memory_pool->get(index);
+      Tile& tile = pool->get(index);
 
       if (!tile.active) {
         tile.active = true;
@@ -332,7 +337,7 @@ namespace Graphick::Renderer {
       }
 
       if (y0 != y1) {
-        m_memory_pool->emplace_segment({ x0, y0, x1, y1 }, index);
+        pool->emplace_segment({ x0, y0, x1, y1 }, index);
 
         float cover = 1;
 
@@ -383,9 +388,9 @@ namespace Graphick::Renderer {
       }
 
       if (m_tile_y != m_tile_y_prev) {
-        int sign_index = tile_index(m_tile_x, std::min(m_tile_y, m_tile_y_prev), m_size.x);
+        size_t sign_index = tile_index(m_tile_x, std::min(m_tile_y, m_tile_y_prev), m_size.x);
 
-        Tile& sign_tile = m_memory_pool->get(sign_index);
+        Tile& sign_tile = pool->get(sign_index);
 
         if (!sign_tile.active) {
           sign_tile.active = true;
@@ -406,7 +411,7 @@ namespace Graphick::Renderer {
     m_tile_y = to_tile_y;
   }
 
-  void DrawableTiler::pack(const FillRule rule, const ivec2 tiles_count) {
+  void DrawableTiler::pack(const FillRule rule, const ivec2 tiles_count, MemoryPool* pool) {
     float cover_table[TILE_SIZE] = { 0.0f };
     int winding = 0;
 
@@ -418,7 +423,7 @@ namespace Graphick::Renderer {
 
       for (int16_t x = 0; x < m_size.x; x++) {
         size_t index = tile_index(x, y, m_size.x);
-        Tile& tile = m_memory_pool->get(index);
+        Tile& tile = pool->get(index);
 
         if (tile.active) {
           Mask& mask = m_masks.emplace_back();
@@ -507,16 +512,21 @@ namespace Graphick::Renderer {
 
     if (overlap <= 0.0f) return;
 
-    dvec2 offset = {
-      (std::round(m_visible_min.x * m_zoom / TILE_SIZE) * TILE_SIZE) / m_zoom,
-      (std::round(m_visible_min.y * m_zoom / TILE_SIZE) * TILE_SIZE) / m_zoom
+    dvec2 offset = VEC2_TO_DVEC2(Math::round(DVEC2_TO_VEC2(m_visible_min) * m_zoom / TILE_SIZE)) * TILE_SIZE / m_zoom;
+    dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+
+    f24x8x4 bound = {
+      Math::double_to_f24x8((path_rect.min.x - offset.x) * m_zoom - m_subpixel.x),
+      Math::double_to_f24x8((path_rect.min.y - offset.y) * m_zoom - m_subpixel.y),
+      Math::double_to_f24x8((path_rect.max.x - offset.x) * m_zoom - m_subpixel.x),
+      Math::double_to_f24x8((path_rect.max.y - offset.y) * m_zoom - m_subpixel.y)
     };
 
-    Drawable drawable(1, fill, (path_rect - vec2{ (float)offset.x, (float)offset.y }) * m_zoom - m_subpixel);
+    Drawable drawable(1, fill, bound);
     Geometry::Contour& contour = drawable.contours.front();
 
     const auto& segments = path.segments();
-    const f24x8x2 first = transform_point(transform, segments.front().p0(), offset, -m_subpixel / m_zoom, m_zoom);
+    const f24x8x2 first = transform_point(transform, segments.front().p0(), subpixel_offset, m_zoom);
 
     contour.begin(first);
 
@@ -524,12 +534,12 @@ namespace Graphick::Renderer {
       auto& raw_segment = segments[i];
 
       if (raw_segment.is_linear()) {
-        contour.push_segment(transform_point(transform, raw_segment.p3(), offset, -m_subpixel / m_zoom, m_zoom));
+        contour.push_segment(transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom));
       } else {
         contour.push_segment(
-          transform_point(transform, raw_segment.p1(), offset, -m_subpixel / m_zoom, m_zoom),
-          transform_point(transform, raw_segment.p2(), offset, -m_subpixel / m_zoom, m_zoom),
-          transform_point(transform, raw_segment.p3(), offset, -m_subpixel / m_zoom, m_zoom)
+          transform_point(transform, raw_segment.p1(), subpixel_offset, m_zoom),
+          transform_point(transform, raw_segment.p2(), subpixel_offset, m_zoom),
+          transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom)
         );
       }
     }
@@ -539,9 +549,24 @@ namespace Graphick::Renderer {
     process_drawable(drawable, m_visible, { (float)(offset.x * m_zoom), (float)(offset.y * m_zoom) }, overlap < 0.7f);
   }
 
-  void Tiler::process_drawable(const Drawable& drawable, const rect& visible, const vec2 offset, const bool clip) {
+  void Tiler::process_drawable(Drawable& drawable, const rect& visible, const vec2 offset, const bool clip) {
     ivec2 tile_offset = tile_coords(offset);
     vec2 pixel_offset = offset - TILE_SIZE * IVEC2_TO_VEC2(tile_offset);
+
+    if (clip) {
+      // TODO: cache on tiler reset
+      f24x8x4 clipping_rect = {
+        -(TILE_SIZE << FRACBITS),
+        -(TILE_SIZE << FRACBITS),
+        Math::double_to_f24x8((visible.max.x - visible.min.x) * m_zoom + TILE_SIZE),
+        Math::double_to_f24x8((visible.max.y - visible.min.y) * m_zoom + TILE_SIZE)
+        // 0, 0,
+        // Math::double_to_f24x8((visible.max.x - visible.min.x) * m_zoom),
+        // Math::double_to_f24x8((visible.max.y - visible.min.y) * m_zoom)
+      };
+
+      clip_drawable(drawable, clipping_rect);
+    }
 
     DrawableTiler tiler(
       drawable,
@@ -1058,4 +1083,4 @@ namespace Graphick::Renderer {
   }
 #endif
 
-  }
+}

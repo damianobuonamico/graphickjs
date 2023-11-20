@@ -3,15 +3,10 @@
 #include "../../math/f8x8.h"
 #include "../../math/f24x8.h"
 
-#ifndef USE_F8x8
-#include "../../math/vec2.h"
-#endif
-
 #include <vector>
 
 namespace Graphick::Renderer::Geometry {
 
-#ifdef USE_F8x8
   struct Contour {
     std::vector<f24x8x2> points;
 
@@ -27,22 +22,5 @@ namespace Graphick::Renderer::Geometry {
   private:
     f24x8x2 m_p0 = { 0, 0 };
   };
-#else
-  struct Contour {
-    std::vector<vec2> points;
-
-    void begin(const vec2 p0, const bool push = true);
-
-    void push_segment(const vec2 p3);
-    void push_segment(const vec2 p1, const vec2 p2, const vec2 p3);
-
-    void offset_segment(const vec2 p3, const float radius);
-    void offset_segment(const vec2 p1, const vec2 p2, const vec2 p3, const float radius);
-
-    void close();
-  private:
-    vec2 m_p0;
-  };
-#endif
 
 }

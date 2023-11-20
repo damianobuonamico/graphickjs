@@ -23,6 +23,23 @@ namespace Graphick::Math {
     f24x8 y;
 
     f24x8x2(const f24x8 x, const f24x8 y) : x(x), y(y) {}
+
+    inline bool operator==(const f24x8x2 other) const {
+      return x == other.x && y == other.y;
+    }
+
+    inline bool operator!=(const f24x8x2 other) const {
+      return x != other.x || y != other.y;
+    }
+  };
+
+  struct f24x8x4 {
+    f24x8 x0;
+    f24x8 y0;
+    f24x8 x1;
+    f24x8 y1;
+
+    f24x8x4(const f24x8 x0, const f24x8 y0, const f24x8 x1, const f24x8 y1) : x0(x0), y0(y0), x1(x1), y1(y1) {}
   };
 
   /**
@@ -80,5 +97,6 @@ namespace Graphick {
 
   using f24x8 = Math::f24x8;
   using f24x8x2 = Math::f24x8x2;
+  using f24x8x4 = Math::f24x8x4;
 
 }

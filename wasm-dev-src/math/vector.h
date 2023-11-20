@@ -9,6 +9,7 @@
 #include "vec3.h"
 #include "vec4.h"
 
+#include "dvec2.h"
 #include "ivec2.h"
 
 #include "../utils/defines.h"
@@ -23,8 +24,11 @@
 #define RGB(v) Graphick::Math::vec3{ v.r, v.g, v.b }
 #define STP(v) Graphick::Math::vec3{ v.s, v.t, v.p }
 
-#define IVEC2_TO_VEC2(v) Graphick::Math::vec2{ (float)v.x, (float)v.y }
-#define VEC2_TO_IVEC2(v) Graphick::Math::ivec2{ (int)v.x, (int)v.y }
+#define IVEC2_TO_VEC2(v) Graphick::Math::vec2{ static_cast<float>(v.x), static_cast<float>(v.y) }
+#define DVEC2_TO_VEC2(v) Graphick::Math::vec2{ static_cast<float>(v.x), static_cast<float>(v.y) }
+
+#define VEC2_TO_IVEC2(v) Graphick::Math::ivec2{ static_cast<int>(v.x), static_cast<int>(v.y) }
+#define VEC2_TO_DVEC2(v) Graphick::Math::dvec2{ static_cast<double>(v.x), static_cast<double>(v.y) }
 
 namespace Graphick::Math {
 

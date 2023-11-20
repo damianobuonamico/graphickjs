@@ -11,6 +11,8 @@
 #include "vector.h"
 #include "rect.h"
 
+#include "f24x8.h"
+
 #include <optional>
 #include <vector>
 #include <tuple>
@@ -286,6 +288,7 @@ namespace Graphick::Math {
    * @param x The x value to clip to.
    */
   void clip_to_left(std::vector<vec2>& points, float x);
+  void clip_to_left(std::vector<f24x8x2>& points, f24x8 x);
 
   /**
    * @brief Clips a polygon to the left of a given x value.
@@ -296,6 +299,7 @@ namespace Graphick::Math {
    * @param x The x value to clip to.
    */
   void clip_to_right(std::vector<vec2>& points, float x);
+  void clip_to_right(std::vector<f24x8x2>& points, f24x8 x);
 
   /**
    * @brief Clips a polygon to the bottom of a given y value.
@@ -306,6 +310,7 @@ namespace Graphick::Math {
    * @param y The y value to clip to.
    */
   void clip_to_top(std::vector<vec2>& points, float y);
+  void clip_to_top(std::vector<f24x8x2>& points, f24x8 y);
 
   /**
    * @brief Clips a polygon to the top of a given y value.
@@ -316,6 +321,7 @@ namespace Graphick::Math {
    * @param y The y value to clip to.
    */
   void clip_to_bottom(std::vector<vec2>& points, float y);
+  void clip_to_bottom(std::vector<f24x8x2>& points, f24x8 y);
 
   /**
    * @brief Clips a polygon to a given rect.
@@ -330,6 +336,12 @@ namespace Graphick::Math {
     clip_to_right(points, rect.max.x);
     clip_to_top(points, rect.min.y);
     clip_to_bottom(points, rect.max.y);
+  }
+  inline void clip(std::vector<f24x8x2>& points, const f24x8x4& rect) {
+    clip_to_left(points, rect.x0);
+    clip_to_right(points, rect.x1);
+    clip_to_top(points, rect.y0);
+    clip_to_bottom(points, rect.y1);
   }
 
   /**

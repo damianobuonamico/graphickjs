@@ -16,7 +16,7 @@ namespace Graphick::Math {
   /**
    * @brief Calculates the x-coordinate of the intersection point between two lines defined by their endpoints.
    *
-   * If one of the lines is horizontal, use the x_intersect_hotizontal() function.
+   * If one of the lines is horizontal, use the x_intersect_horizontal() function.
    *
    * @param x1, y1, x2, y2 The coordinates of the first line.
    * @param x3, y3, x4, y4 The coordinates of the second line.
@@ -54,11 +54,17 @@ namespace Graphick::Math {
    * @param x1, y1, x2, y2 The coordinates of the second line.
    * @return The x-coordinate of the intersection point.
    */
-  static inline float x_intersect_hotizontal(float y, float x1, float y1, float x2, float y2) {
+  static inline float x_intersect_horizontal(float y, float x1, float y1, float x2, float y2) {
     float num = x1 * y2 - y1 * x2 - y * (x1 - x2);
     float den = y2 - y1;
 
     return num / den;
+  }
+  static inline f24x8 x_intersect_horizontal(f24x8 y, f24x8 x1, f24x8 y1, f24x8 x2, f24x8 y2) {
+    int64_t num = static_cast<int64_t>(x1) * y2 - static_cast<int64_t>(y1) * x2 - static_cast<int64_t>(y) * (x1 - x2);
+    int64_t den = y2 - y1;
+
+    return static_cast<f24x8>(num / den);
   }
 
   /**
@@ -75,6 +81,12 @@ namespace Graphick::Math {
     float den = x1 - x2;
 
     return num / den;
+  }
+  static inline f24x8 y_intersect_vertical(f24x8 x, f24x8 x1, f24x8 y1, f24x8 x2, f24x8 y2) {
+    int64_t num = static_cast<int64_t>(x1) * y2 - static_cast<int64_t>(y1) * x2 + static_cast<int64_t>(x) * (y1 - y2);
+    int64_t den = x1 - x2;
+
+    return static_cast<f24x8>(num / den);
   }
 
   QuadraticSolutions solve_quadratic(double a, double b, double c) {
@@ -354,6 +366,34 @@ namespace Graphick::Math {
     points = new_points;
   }
 
+  void clip_to_left(std::vector<f24x8x2>& points, f24x8 x) {
+    if (points.empty()) return;
+
+    std::vector<f24x8x2> new_points;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      f24x8x2 point = points[i];
+
+      if (point.x < x) {
+        if (points[i + 1].x > x) {
+          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
+        }
+      } else {
+        new_points.push_back(point);
+
+        if (points[i + 1].x < x) {
+          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
+        }
+      }
+    }
+
+    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
+      new_points.push_back(new_points.front());
+    }
+
+    points = new_points;
+  }
+
   void clip_to_right(std::vector<vec2>& points, float x) {
     if (points.empty()) return;
 
@@ -361,6 +401,34 @@ namespace Graphick::Math {
 
     for (int i = 0; i < points.size() - 1; i++) {
       vec2 point = points[i];
+
+      if (point.x > x) {
+        if (points[i + 1].x < x) {
+          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
+        }
+      } else {
+        new_points.push_back(point);
+
+        if (points[i + 1].x > x) {
+          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
+        }
+      }
+    }
+
+    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
+      new_points.push_back(new_points.front());
+    }
+
+    points = new_points;
+  }
+
+  void clip_to_right(std::vector<f24x8x2>& points, f24x8 x) {
+    if (points.empty()) return;
+
+    std::vector<f24x8x2> new_points;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      f24x8x2 point = points[i];
 
       if (point.x > x) {
         if (points[i + 1].x < x) {
@@ -392,13 +460,41 @@ namespace Graphick::Math {
 
       if (point.y < y) {
         if (points[i + 1].y > y) {
-          new_points.push_back({ x_intersect_hotizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
         }
       } else {
         new_points.push_back(point);
 
         if (points[i + 1].y < y) {
-          new_points.push_back({ x_intersect_hotizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+        }
+      }
+    }
+
+    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
+      new_points.push_back(new_points.front());
+    }
+
+    points = new_points;
+  }
+
+  void clip_to_top(std::vector<f24x8x2>& points, f24x8 y) {
+    if (points.empty()) return;
+
+    std::vector<f24x8x2> new_points;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      f24x8x2 point = points[i];
+
+      if (point.y < y) {
+        if (points[i + 1].y > y) {
+          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+        }
+      } else {
+        new_points.push_back(point);
+
+        if (points[i + 1].y < y) {
+          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
         }
       }
     }
@@ -420,13 +516,41 @@ namespace Graphick::Math {
 
       if (point.y > y) {
         if (points[i + 1].y < y) {
-          new_points.push_back({ x_intersect_hotizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
         }
       } else {
         new_points.push_back(point);
 
         if (points[i + 1].y > y) {
-          new_points.push_back({ x_intersect_hotizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+        }
+      }
+    }
+
+    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
+      new_points.push_back(new_points.front());
+    }
+
+    points = new_points;
+  }
+
+  void clip_to_bottom(std::vector<f24x8x2>& points, f24x8 y) {
+    if (points.empty()) return;
+
+    std::vector<f24x8x2> new_points;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      f24x8x2 point = points[i];
+
+      if (point.y > y) {
+        if (points[i + 1].y < y) {
+          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
+        }
+      } else {
+        new_points.push_back(point);
+
+        if (points[i + 1].y > y) {
+          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
         }
       }
     }
