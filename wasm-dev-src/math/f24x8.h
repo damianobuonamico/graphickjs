@@ -39,6 +39,7 @@ namespace Graphick::Math {
     f24x8 x1;
     f24x8 y1;
 
+    f24x8x4() = default;
     f24x8x4(const f24x8 x0, const f24x8 y0, const f24x8 x1, const f24x8 y1) : x0(x0), y0(y0), x1(x1), y1(y1) {}
   };
 

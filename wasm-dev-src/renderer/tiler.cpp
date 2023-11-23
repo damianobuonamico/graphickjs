@@ -184,15 +184,8 @@ namespace Graphick::Renderer {
   /* -- DrawableTiler -- */
 
   DrawableTiler::DrawableTiler(const Drawable& drawable, const ivec2 position, const ivec2 tiles_count, MemoryPool* pool) {
-    f24x8x4 bounds = {
-      ((((drawable.bounds.x0 - (32 << FRACBITS)) / TILE_SIZE) >> FRACBITS) << FRACBITS) * TILE_SIZE,
-      ((((drawable.bounds.y0 - (32 << FRACBITS)) / TILE_SIZE) >> FRACBITS) << FRACBITS) * TILE_SIZE,
-      (((((drawable.bounds.x1 + (32 << FRACBITS)) / TILE_SIZE) >> FRACBITS) + 1) << FRACBITS) * TILE_SIZE,
-      (((((drawable.bounds.y1 + (32 << FRACBITS)) / TILE_SIZE) >> FRACBITS) + 1) << FRACBITS) * TILE_SIZE
-    };
-
-    ivec2 min_coords = position + ivec2{ (bounds.x0 / TILE_SIZE) >> FRACBITS, (bounds.y0 / TILE_SIZE) >> FRACBITS };
-    ivec2 max_coords = position + ivec2{ (bounds.x1 / TILE_SIZE) >> FRACBITS, (bounds.y1 / TILE_SIZE) >> FRACBITS };
+    ivec2 min_coords = position + ivec2{ (drawable.bounds.x0 / TILE_SIZE) >> FRACBITS, (drawable.bounds.y0 / TILE_SIZE) >> FRACBITS };
+    ivec2 max_coords = position + ivec2{ (drawable.bounds.x1 / TILE_SIZE) >> FRACBITS, (drawable.bounds.y1 / TILE_SIZE) >> FRACBITS };
 
     m_offset = min_coords;
     m_size = max_coords - min_coords;
@@ -202,14 +195,14 @@ namespace Graphick::Renderer {
     for (const Geometry::Contour& contour : drawable.contours) {
       if (contour.points.size() < 2) continue;
 
-      f24x8 x_p = contour.points.front().x - bounds.x0;
-      f24x8 y_p = contour.points.front().y - bounds.y0;
+      f24x8 x_p = contour.points.front().x - drawable.bounds.x0;
+      f24x8 y_p = contour.points.front().y - drawable.bounds.y0;
 
       move_to(x_p, y_p);
 
       for (size_t i = 1; i < contour.points.size(); i++) {
-        x_p = contour.points[i].x - bounds.x0;
-        y_p = contour.points[i].y - bounds.y0;
+        x_p = contour.points[i].x - drawable.bounds.x0;
+        y_p = contour.points[i].y - drawable.bounds.y0;
 
         line_to(x_p, y_p, pool);
       }
@@ -484,15 +477,15 @@ namespace Graphick::Renderer {
     m_subpixel = (viewport.position * viewport.zoom) % TILE_SIZE - offset;
 
     m_visible = {
-      -viewport.position,
+      -viewport.position + m_subpixel / m_zoom,
       -viewport.position + vec2{
         static_cast<float>(viewport.size.x) / viewport.zoom,
         static_cast<float>(viewport.size.y) / viewport.zoom
-      }
+      } + m_subpixel / m_zoom
     };
     m_visible_min = {
-      static_cast<double>(m_visible.min.x + m_subpixel.x),
-      static_cast<double>(m_visible.min.y + m_subpixel.y)
+      static_cast<double>(m_visible.min.x),
+      static_cast<double>(m_visible.min.y)
     };
 
     m_memory_pool.resize(m_size.x * m_size.y);
@@ -536,6 +529,7 @@ namespace Graphick::Renderer {
       if (raw_segment.is_linear()) {
         contour.push_segment(transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom));
       } else {
+        // TODO: can do better job tessellating only in frame curves, keeping the rest as linear
         contour.push_segment(
           transform_point(transform, raw_segment.p1(), subpixel_offset, m_zoom),
           transform_point(transform, raw_segment.p2(), subpixel_offset, m_zoom),
@@ -553,7 +547,10 @@ namespace Graphick::Renderer {
     ivec2 tile_offset = tile_coords(offset);
     vec2 pixel_offset = offset - TILE_SIZE * IVEC2_TO_VEC2(tile_offset);
 
+    // TODO: fix precision issues on zoom + distance from origin
+
     if (clip) {
+      // TODO: fix border tiles being masked instead of filled
       // TODO: cache on tiler reset
       f24x8x4 clipping_rect = {
         -(TILE_SIZE << FRACBITS),
@@ -567,6 +564,15 @@ namespace Graphick::Renderer {
 
       clip_drawable(drawable, clipping_rect);
     }
+
+    f24x8x4 bounds = {
+      (((drawable.bounds.x0 / TILE_SIZE - FRACUNIT) >> FRACBITS) << FRACBITS) * TILE_SIZE,
+      (((drawable.bounds.y0 / TILE_SIZE - FRACUNIT) >> FRACBITS) << FRACBITS) * TILE_SIZE,
+      ((((drawable.bounds.x1 / TILE_SIZE) >> FRACBITS) + 1) << FRACBITS) * TILE_SIZE,
+      ((((drawable.bounds.y1 / TILE_SIZE) >> FRACBITS) + 1) << FRACBITS) * TILE_SIZE
+    };
+
+    drawable.bounds = bounds;
 
     DrawableTiler tiler(
       drawable,
