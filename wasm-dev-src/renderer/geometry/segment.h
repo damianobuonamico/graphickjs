@@ -100,6 +100,8 @@ namespace Graphick::Renderer::Geometry {
     void remove_p1();
     void remove_p2();
 
+    const std::vector<float>& parameterize(const double zoom) const;
+
     bool is_masquerading_linear() const;
     bool is_masquerading_quadratic(vec2& new_p1) const;
 
@@ -153,6 +155,7 @@ namespace Graphick::Renderer::Geometry {
     mutable int m_hash = 0;
 
     mutable std::optional<Math::rect> m_bounding_rect_cache = std::nullopt;
+    mutable std::optional<std::vector<float>> m_parameterization = std::nullopt;
   private:
     // TEMP: remove
     friend class Path;

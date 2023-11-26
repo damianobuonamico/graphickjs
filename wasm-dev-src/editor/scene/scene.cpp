@@ -415,8 +415,6 @@ namespace Graphick::Editor {
         if (has_fill && !fill->visible) has_fill = false;
         if (has_stroke && !stroke->visible) has_stroke = false;
 
-        has_stroke = false;
-
         if (has_fill && has_stroke) {
           Renderer::Renderer::draw(
             path,

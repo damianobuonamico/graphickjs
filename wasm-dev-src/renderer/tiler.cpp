@@ -9,6 +9,9 @@
  * @todo batch spans by row.
  * @todo reimplement clipping
  * @todo abstract away batching logic in tiler (bounds checking, etc.)
+ * @todo can do better job tessellating only in frame curves, keeping the rest as linear
+ * @todo fix precision issues on zoom + distance from origin
+ * @todo fix border tiles being masked instead of filled
  */
 
 #include "tiler.h"
@@ -23,6 +26,7 @@
 #include "../utils/console.h"
 
 #define SEGMENTS_MEMORY_POOL_SIZE 30
+#define OVERLAP_CLIP_THRESHOLD 0.7f
 
 namespace Graphick::Renderer {
 
@@ -32,10 +36,10 @@ namespace Graphick::Renderer {
    * @param p The point.
    * @return The tile coordinates.
    */
-  static inline ivec2 tile_coords(const vec2 p) {
+  static inline ivec2 tile_coords(const dvec2 p) {
     return {
-      static_cast<int>(std::floorf(p.x / TILE_SIZE)),
-      static_cast<int>(std::floorf(p.y / TILE_SIZE))
+      static_cast<int>(std::round(p.x / TILE_SIZE)),
+      static_cast<int>(std::round(p.y / TILE_SIZE))
     };
   }
 
@@ -487,6 +491,12 @@ namespace Graphick::Renderer {
       static_cast<double>(m_visible.min.x),
       static_cast<double>(m_visible.min.y)
     };
+    m_clipping_rect = {
+      -(TILE_SIZE << FRACBITS),
+      -(TILE_SIZE << FRACBITS),
+      Math::double_to_f24x8((m_visible.max.x - m_visible.min.x) * m_zoom + TILE_SIZE),
+      Math::double_to_f24x8((m_visible.max.y - m_visible.min.y) * m_zoom + TILE_SIZE)
+    };
 
     m_memory_pool.resize(m_size.x * m_size.y);
     m_culled_tiles = std::vector<bool>(m_size.x * m_size.y, false);
@@ -495,7 +505,94 @@ namespace Graphick::Renderer {
     m_masked_batches = std::vector<MaskedTilesBatch>(1);
   }
 
-  void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {}
+  void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {
+    GK_TOTAL("Tiler::process_stroke");
+
+    const float radius = 0.5f * stroke.width * m_zoom;
+    const float radius_safe = 0.55f * stroke.width * (stroke.join == LineJoin::Miter ? stroke.miter_limit : 1.0f);
+
+    /* Expand path rect to include the width of the stroke */
+    const rect path_rect = transform * path.bounding_rect() + rect{ vec2{ -radius_safe }, vec2{ radius_safe } };
+    const float overlap = Math::rect_rect_intersection_area(path_rect, m_visible) / path_rect.area();
+
+    if (overlap <= 0.0f) return;
+
+    const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
+    const dvec2 offset = TILE_SIZE / m_zoom * dvec2{ std::round(tile_offset.x), std::round(tile_offset.y) };
+    const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+    const dvec2 drawable_offset = offset * m_zoom;
+
+    const bool clip_drawable = stroke.width > std::min(m_visible.width(), m_visible.height());
+
+    f24x8x4 bound = {
+      Math::double_to_f24x8((path_rect.min.x - offset.x) * m_zoom - m_subpixel.x),
+      Math::double_to_f24x8((path_rect.min.y - offset.y) * m_zoom - m_subpixel.y),
+      Math::double_to_f24x8((path_rect.max.x - offset.x) * m_zoom - m_subpixel.x),
+      Math::double_to_f24x8((path_rect.max.y - offset.y) * m_zoom - m_subpixel.y)
+    };
+
+    const auto& segments = path.segments();
+    if (true || overlap > OVERLAP_CLIP_THRESHOLD) {
+      Drawable drawable(2, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, bound);
+      Geometry::Contour& forward = drawable.contours.front();
+      Geometry::Contour& backward = drawable.contours.back();
+
+      f24x8x2 last = transform_point(transform, segments.front().p0(), subpixel_offset, m_zoom);
+      f24x8x2 next = last;
+
+      forward.begin(next, false);
+
+      for (size_t i = 0; i < segments.size(); i++) {
+        auto& raw_segment = segments[i];
+
+        next = transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom);
+
+        //vec2 normal = { Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) };
+        //float magnitude = std::sqrtf(fnormal.x * fnormal.x + fnormal.y * fnormal.y);
+        vec2 normal = Math::normalize({ Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) }) * radius;
+        //vec2 fn = { raw_radius * fnormal.x / fmagnitude, raw_radius * fnormal.y / fmagnitude };
+        f24x8x2 n = { Math::float_to_f24x8(normal.x), Math::float_to_f24x8(normal.y) };
+
+        //f24x8x2 normal = { last.y - next.y, next.x - last.x };
+        //f24x8 magnitude = std::sqrt(normal.x * normal.x + normal.y * normal.y);
+
+        //if (magnitude <= 0) {
+          //magnitude = 1;
+        //}
+        // f24x8 length = magnitude > 0 ? radius * FRACUNIT / magnitude : 1;
+        //f24x8x2 n = { radius * normal.x / magnitude, radius * normal.y / magnitude };
+
+        forward.points.emplace_back(last.x - n.x, last.y - n.y);
+        forward.points.emplace_back(next.x - n.x, next.y - n.y);
+
+        backward.points.emplace_back(last.x + n.x, last.y + n.y);
+        backward.points.emplace_back(next.x + n.x, next.y + n.y);
+
+        // if (raw_segment.is_linear()) {
+
+        // } else {
+        //   const std::vector<float>& parameterization = raw_segment.parameterize(m_zoom);
+
+        // }
+
+        last = next;
+      }
+
+
+      if (path.closed()) {
+        backward.reverse();
+        forward.close();
+        backward.close();
+      } else {
+        forward.points.insert(forward.points.end(), backward.points.rbegin(), backward.points.rend());
+        forward.close();
+
+        drawable.contours.pop_back();
+      }
+
+      process_drawable(drawable, drawable_offset, clip_drawable);
+    }
+  }
 
   void Tiler::process_fill(const Geometry::Path& path, const mat2x3& transform, const Fill& fill) {
     GK_TOTAL("Tiler::process_fill");
@@ -505,8 +602,10 @@ namespace Graphick::Renderer {
 
     if (overlap <= 0.0f) return;
 
-    dvec2 offset = VEC2_TO_DVEC2(Math::round(DVEC2_TO_VEC2(m_visible_min) * m_zoom / TILE_SIZE)) * TILE_SIZE / m_zoom;
-    dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+    const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
+    const dvec2 offset = TILE_SIZE / m_zoom * dvec2{ std::round(tile_offset.x), std::round(tile_offset.y) };
+    const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+    const dvec2 drawable_offset = offset * m_zoom;
 
     f24x8x4 bound = {
       Math::double_to_f24x8((path_rect.min.x - offset.x) * m_zoom - m_subpixel.x),
@@ -529,7 +628,6 @@ namespace Graphick::Renderer {
       if (raw_segment.is_linear()) {
         contour.push_segment(transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom));
       } else {
-        // TODO: can do better job tessellating only in frame curves, keeping the rest as linear
         contour.push_segment(
           transform_point(transform, raw_segment.p1(), subpixel_offset, m_zoom),
           transform_point(transform, raw_segment.p2(), subpixel_offset, m_zoom),
@@ -540,29 +638,14 @@ namespace Graphick::Renderer {
 
     contour.close();
 
-    process_drawable(drawable, m_visible, { (float)(offset.x * m_zoom), (float)(offset.y * m_zoom) }, overlap < 0.7f);
+    process_drawable(drawable, drawable_offset, overlap < OVERLAP_CLIP_THRESHOLD);
   }
 
-  void Tiler::process_drawable(Drawable& drawable, const rect& visible, const vec2 offset, const bool clip) {
+  void Tiler::process_drawable(Drawable& drawable, const dvec2 offset, const bool clip) {
     ivec2 tile_offset = tile_coords(offset);
-    vec2 pixel_offset = offset - TILE_SIZE * IVEC2_TO_VEC2(tile_offset);
-
-    // TODO: fix precision issues on zoom + distance from origin
 
     if (clip) {
-      // TODO: fix border tiles being masked instead of filled
-      // TODO: cache on tiler reset
-      f24x8x4 clipping_rect = {
-        -(TILE_SIZE << FRACBITS),
-        -(TILE_SIZE << FRACBITS),
-        Math::double_to_f24x8((visible.max.x - visible.min.x) * m_zoom + TILE_SIZE),
-        Math::double_to_f24x8((visible.max.y - visible.min.y) * m_zoom + TILE_SIZE)
-        // 0, 0,
-        // Math::double_to_f24x8((visible.max.x - visible.min.x) * m_zoom),
-        // Math::double_to_f24x8((visible.max.y - visible.min.y) * m_zoom)
-      };
-
-      clip_drawable(drawable, clipping_rect);
+      clip_drawable(drawable, m_clipping_rect);
     }
 
     f24x8x4 bounds = {
@@ -1086,7 +1169,7 @@ namespace Graphick::Renderer {
     contour.close();
 
     process_drawable(drawable, m_visible, m_visible.min * m_zoom, overlap < 0.7f);
-  }
+}
 #endif
 
-}
+  }

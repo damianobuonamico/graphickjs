@@ -188,6 +188,14 @@ namespace Graphick::Renderer::Geometry {
     return true;
   }
 
+  const std::vector<float>& Segment::parameterize(const double zoom) const {
+    if (m_bounding_rect_cache.has_value()) return m_parameterization.value();
+
+    m_parameterization = std::vector<float>{ 0.0f, 1.0f };
+
+    return m_parameterization.value();
+  }
+
   bool Segment::is_masquerading_linear() const {
     if (kind() == Kind::Linear) return true;
 

@@ -32,6 +32,8 @@ namespace Graphick::Math {
 
     /* -- Dimensions -- */
 
+    constexpr float width() const;
+    constexpr float height() const;
     constexpr vec2 size() const;
     constexpr vec2 center() const;
     constexpr float area() const;
@@ -67,16 +69,18 @@ namespace Graphick::Math {
 
   /* -- Binary operators -- */
 
-  constexpr rect operator+(const rect r, float scalar);
-  constexpr rect operator+(const rect r, const vec2 v);
-  constexpr rect operator-(const rect r, float scalar);
-  constexpr rect operator-(const rect r, const vec2 v);
-  constexpr rect operator*(const rect r, float scalar);
-  constexpr rect operator*(const rect r, const vec2 v);
-  constexpr rect operator/(const rect r, float scalar);
-  constexpr rect operator/(const rect r, const vec2 v);
-  constexpr rect operator%(const rect r, float scalar);
-  constexpr rect operator%(const rect r, const vec2 v);
+  constexpr rect operator+(const rect& r1, const rect& r2);
+  constexpr rect operator+(const rect& r, float scalar);
+  constexpr rect operator+(const rect& r, const vec2 v);
+  constexpr rect operator-(const rect& r1, const rect& r2);
+  constexpr rect operator-(const rect& r, float scalar);
+  constexpr rect operator-(const rect& r, const vec2 v);
+  constexpr rect operator*(const rect& r, float scalar);
+  constexpr rect operator*(const rect& r, const vec2 v);
+  constexpr rect operator/(const rect& r, float scalar);
+  constexpr rect operator/(const rect& r, const vec2 v);
+  constexpr rect operator%(const rect& r, float scalar);
+  constexpr rect operator%(const rect& r, const vec2 v);
 
 }
 

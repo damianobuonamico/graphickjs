@@ -300,11 +300,10 @@ namespace Graphick::Renderer {
      * @brief Processes a drawable.
      *
      * @param drawable The drawable to process.
-     * @param visible The bounds of the viewport.
      * @param offset The offset of the drawable.
      * @param clip Whether to clip the drawable.
      */
-    void process_drawable(Drawable& drawable, const rect& visible, const vec2 offset = { 0.0f, 0.0f }, const bool clip = true);
+    void process_drawable(Drawable& drawable, const dvec2 offset = { 0.0, 0.0 }, const bool clip = true);
   private:
     std::vector<FilledTilesBatch> m_filled_batches;    /* The filled tiles, grouped in batches. */
     std::vector<MaskedTilesBatch> m_masked_batches;    /* The masked tiles, grouped in batches. */
@@ -322,6 +321,7 @@ namespace Graphick::Renderer {
     rect m_visible;                                    /* The bounds of the viewport in scene space. */
 
     dvec2 m_visible_min;                               /* The upper left corner of the viewport. */
+    f24x8x4 m_clipping_rect;                           /* The rect used to clip drawables. */
   };
 
 }

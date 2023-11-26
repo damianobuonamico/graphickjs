@@ -34,6 +34,14 @@ namespace Graphick::Math {
 
   /* -- Dimensions -- */
 
+  constexpr float rect::width() const {
+    return max.x - min.x;
+  }
+
+  constexpr float rect::height() const {
+    return max.y - min.y;
+  }
+
   constexpr vec2 rect::size() const {
     return max - min;
   };
@@ -99,43 +107,51 @@ namespace Graphick::Math {
 
   /* -- Binary operators -- */
 
-  constexpr rect operator+(const rect r, float scalar) {
+  constexpr rect operator+(const rect& r1, const rect& r2) {
+    return rect(r1.min + r2.min, r1.max + r2.max);
+  }
+
+  constexpr rect operator+(const rect& r, float scalar) {
     return rect(r.min + scalar, r.max + scalar);
   }
 
-  constexpr rect operator+(const rect r, const vec2 v) {
+  constexpr rect operator+(const rect& r, const vec2 v) {
     return rect(r.min + v, r.max + v);
   }
 
-  constexpr rect operator-(const rect r, float scalar) {
+  constexpr rect operator-(const rect& r1, const rect& r2) {
+    return rect(r1.min - r2.min, r1.max - r2.max);
+  }
+
+  constexpr rect operator-(const rect& r, float scalar) {
     return rect(r.min - scalar, r.max - scalar);
   }
 
-  constexpr rect operator-(const rect r, const vec2 v) {
+  constexpr rect operator-(const rect& r, const vec2 v) {
     return rect(r.min - v, r.max - v);
   }
 
-  constexpr rect operator*(const rect r, float scalar) {
+  constexpr rect operator*(const rect& r, float scalar) {
     return rect(r.min * scalar, r.max * scalar);
   }
 
-  constexpr rect operator*(const rect r, const vec2 v) {
+  constexpr rect operator*(const rect& r, const vec2 v) {
     return rect(r.min * v, r.max * v);
   }
 
-  constexpr rect operator/(const rect r, float scalar) {
+  constexpr rect operator/(const rect& r, float scalar) {
     return rect(r.min / scalar, r.max / scalar);
   }
 
-  constexpr rect operator/(const rect r, const vec2 v) {
+  constexpr rect operator/(const rect& r, const vec2 v) {
     return rect(r.min / v, r.max / v);
   }
 
-  constexpr rect operator%(const rect r, float scalar) {
+  constexpr rect operator%(const rect& r, float scalar) {
     return rect(r.min % scalar, r.max % scalar);
   }
 
-  constexpr rect operator%(const rect r, const vec2 v) {
+  constexpr rect operator%(const rect& r, const vec2 v) {
     return rect(r.min % v, r.max % v);
   }
 

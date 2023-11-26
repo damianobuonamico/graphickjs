@@ -19,6 +19,7 @@ namespace Graphick::Renderer::Geometry {
     void offset_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3, const f24x8 radius);
 
     void close();
+    void reverse();
   private:
     f24x8x2 m_p0 = { 0, 0 };
   };

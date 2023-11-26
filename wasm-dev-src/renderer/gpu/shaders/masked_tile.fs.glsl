@@ -4,13 +4,7 @@ R"(
   precision highp sampler2D;
   precision lowp usampler2D;
 
-// #define USE_F
-
-#ifdef USE_F
-  uniform sampler2D uMasksTexture;
-#else
   uniform usampler2D uMasksTexture;
-#endif
   uniform sampler2D uCoverTableTexture;
   uniform mediump int uMasksTextureSize;
   uniform mediump int uCoverTableTextureSize;
@@ -23,6 +17,8 @@ R"(
 
   out vec4 oFragColor;
 
+  #define FRACBITS 8
+
   vec2 step_coords(vec2 coords, int delta, float one_over_size) {
     coords.x += float(delta) * one_over_size;
 
@@ -32,10 +28,6 @@ R"(
     }
 
     return coords;
-  }
-
-  float data_to_coverage(float data) {
-    return 2.0 * data * 255.0 / 254.0 - 1.0;
   }
 
   float x_intersect(float one_over_m, float q, float y) {
@@ -54,44 +46,15 @@ R"(
     vec2 coords = vSegmentsCoords;
     vec2 cover_table = vCoverTableCoords;
 
-#ifdef USE_F
-    vec4 metadata = texture(uMasksTexture, coords);
-    // int n = int(metadata.r | (metadata.g << 8) | (metadata.b << 16) | (metadata.a << 24));
-    int n = min(int(metadata.r * 255.0), 1);
-#else
     uvec4 metadata = texture(uMasksTexture, coords);
     int n = int(metadata.r | (metadata.g << 8) | (metadata.b << 16) | (metadata.a << 24));
-    // int n = metadata.r;
-#endif
-    // vec4 metadata = vec4(texture(uMasksTexture, vec2(0.0, 0.0)));
-    // int n = min(int(metadata.r * 255.0), 1);
-
-    // oFragColor = vec4(metadata.rgb, vColor.a);
-    // return;
 
     float y0 = floor(vCoords.y);
     float y1 = y0 + 1.0;
     float x0 = floor(vCoords.x);
     float x1 = x0 + 1.0;
 
-    // vec4 coverage_block = texture(uMasksTexture, step_coords(coords, 1 + int(y0) / 4, one_over_size));
-    // coords = step_coords(coords, uTileSize / 4, one_over_size);
-
-    float alpha = 0.0;
-
-    // cover_table = step_coords(cover_table, int(y0), one_over_cover_table_size);
-
-    /* step_coords() is not needed here, because uCoverTableTextureSize is always a multiple of uTileSize */
-    alpha += texture(uCoverTableTexture, cover_table + vec2(y0 * one_over_cover_table_size, 0.0)).r;
-    // TODO: cache similar operations in constexpr arrays
-    // int reminder = int(y0) % 4;
-    // if (reminder == 0) alpha += data_to_coverage(coverage_block.r);
-    // else if (reminder == 1) alpha += data_to_coverage(coverage_block.g);
-    // else if (reminder == 2) alpha += data_to_coverage(coverage_block.b);
-    // else if (reminder == 3) alpha += data_to_coverage(coverage_block.a);
-
-    // oFragColor = vec4(vColor.rgb, abs(alpha - 2.0 * round(0.5 * alpha)));
-    // return;
+    float alpha = texture(uCoverTableTexture, cover_table + vec2(y0 * one_over_cover_table_size, 0.0)).r;
 
     for (int i = 0; i < n; i++) {
       vec2 p0_coords = step_coords(coords, i * 2 + 1, one_over_size);
@@ -100,16 +63,8 @@ R"(
       uvec4 p0_raw = texture(uMasksTexture, p0_coords);
       uvec4 p3_raw = texture(uMasksTexture, p3_coords);
 
-      vec2 p0 = vec2(float(p0_raw.r) + float(p0_raw.g) / float(1 << 8), float(p0_raw.b) + float(p0_raw.a) / float(1 << 8));
-      vec2 p3 = vec2(float(p3_raw.r) + float(p3_raw.g) / float(1 << 8), float(p3_raw.b) + float(p3_raw.a) / float(1 << 8));
-
-      // vec2 p0 = vec2(float(p0_raw.r), float(p0_raw.b));
-      // vec2 p3 = vec2(float(p3_raw.r), float(p3_raw.b));
-
-      // vec4 segment = texture(uMasksTexture, segment_cords) * float(uTileSize);
-
-      // vec2 p0 = segment.rg;
-      // vec2 p3 = segment.ba;
+      vec2 p0 = vec2(float((p0_raw.r << FRACBITS) + p0_raw.g) / float(1 << FRACBITS), float((p0_raw.b << FRACBITS) + p0_raw.a) / float(1 << FRACBITS));
+      vec2 p3 = vec2(float((p3_raw.r << FRACBITS) + p3_raw.g) / float(1 << FRACBITS), float((p3_raw.b << FRACBITS) + p3_raw.a) / float(1 << FRACBITS));
 
       if (min(p0.y, p3.y) >= y1 || max(p0.y, p3.y) <= y0) {
         // Segment is outside the scanline
@@ -122,20 +77,10 @@ R"(
       // Check if segment is almost vertical
       if (abs(p0.x - p3.x) < 0.1) {
         // Treating segment as vertical, horizontal segments are discarded in CPU preprocessing
-        if (p0.x > x1) {
-          // Segment is on the right side of the pixel
-          continue;
+          
+        if (p0.x < x1) {
+          alpha += (clamp(p3.y, y0, y1) - clamp(p0.y, y0, y1)) * (p0.x < x0 ? 1.0 : x1 - p0.x);
         }
-
-        if (p0.x < x0) {
-          // Segment is on the left side of the pixel
-          cover += clamp(p3.y, y0, y1) - clamp(p0.y, y0, y1);
-        } else {
-          // Segment is inside the pixel
-          area += (clamp(p3.y, y0, y1) - clamp(p0.y, y0, y1)) * (x1 - p0.x);
-        }
-
-        alpha += area + cover;
 
         continue;
       }
@@ -200,14 +145,7 @@ R"(
     // float opacity = /*vColor.a * */abs(alpha - 2.0 * round(0.5 * alpha));
     if (opacity < 0.01) opacity = 0.0;
 
-#ifdef USE_F
-    oFragColor = vec4(vColor.rgb, opacity) * 0.00001 + vec4(1.0 / float(metadata.r * 255.0), 0.0, 0.0, 1.0);
-#else
     oFragColor = vec4(vColor.rgb, opacity);
-    // oFragColor = vec4(vColor.rgb, opacity) * 0.00001 + vec4(1.0 / float(n), 0.0, 0.0, 1.0);
-#endif
-
-    // oFragColor = vec4(float(n) / 10.0, 0.0, 0.0, a);
   }
 
 )"
