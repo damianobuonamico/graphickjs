@@ -141,14 +141,14 @@ int main() {
   // path.line_to({ 380.0f, -40.0f });
   // path.close();
 
-  path.move_to({ 300.0f, 100.0f });
-  path.line_to({ 350.0f, 200.0f });
-  path.line_to({ 250.0f, 200.0f });
-  path.close();
+  // path.move_to({ 300.0f, 100.0f });
+  // path.line_to({ 350.0f, 200.0f });
+  // path.line_to({ 250.0f, 200.0f });
+  // path.close();
 
-  // path.move_to({ 0.0f, 0.0f });
+  path.move_to({ 0.0f, 0.0f });
   // path.line_to({ 100.0f, 100.0f });
-  // path.cubic_to({ 100.0f, 0.0f }, { -47.0f, -36.0f }, { -50.0f, -40.0f });
+  path.cubic_to({ 100.0f, 0.0f }, { -47.0f, -36.0f }, { -50.0f, -40.0f });
 
   // path.move_to({ 0.0f, 0.0f });
   // path.cubic_to({ -2.0f, 10.0f }, { -2.0f, 90.0f }, { 0.0f, 100.0f });

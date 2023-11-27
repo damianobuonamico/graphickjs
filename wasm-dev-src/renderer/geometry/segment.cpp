@@ -188,12 +188,99 @@ namespace Graphick::Renderer::Geometry {
     return true;
   }
 
-  const std::vector<float>& Segment::parameterize(const double zoom) const {
-    if (m_bounding_rect_cache.has_value()) return m_parameterization.value();
+  static float threshold_angle = 0.1f;
+  static float min_threshold_angle = 0.01f;
 
-    m_parameterization = std::vector<float>{ 0.0f, 1.0f };
+  const std::vector<float>& Segment::parameterize(const float zoom) const {
+    // TODO: better cache recalculation
+    if (m_parameterization.has_value() && zoom == m_parameterization->first) return m_parameterization->second;
 
-    return m_parameterization.value();
+    GK_TOTAL("Segment::parameterize");
+
+    const std::vector<vec2> angles = turning_angles();
+    m_parameterization = std::make_pair(zoom, std::vector<float>{});
+
+    const float facet_angle = std::max(threshold_angle / static_cast<float>(zoom), min_threshold_angle);
+    float last_t = 0.0f;
+
+    const vec2 A = p0();
+    const vec2 B = p1();
+    const vec2 C = p2();
+    const vec2 D = p3();
+
+    const vec2 a = 3.0f * (-A + 3.0f * B - 3.0f * C + D);
+    const vec2 b = 6.0f * (A - 2.0f * B + C);
+    const vec2 c = -3.0f * (A - B);
+
+    // TODO: do better job with m_parameterization->reserve()
+
+    for (size_t i = 0; i < angles.size() - 1; i++) {
+      float checkpoint_t = 0.5f * (angles[i].x + angles[i + 1].x);
+      vec2 checkpoint = a * checkpoint_t * checkpoint_t + b * checkpoint_t + c;
+      float checkpoint_angle = std::atan2f(checkpoint.y, checkpoint.x);
+
+      float difference = angles[i + 1].y - angles[i].y;
+
+      float k1 = (checkpoint_angle - angles[i].y) / difference;
+      float k2 = (checkpoint_angle + MATH_TWO_PI - angles[i].y) / difference;
+
+      if (!(Math::is_normalized(k1) || Math::is_normalized(k2))) {
+        difference += -Math::sign(difference) * MATH_TWO_PI;
+      }
+
+      int increments = std::max(std::abs((int)std::ceilf(difference / facet_angle)), 1);
+      float increment = difference / (float)increments;
+
+      m_parameterization->second.reserve(increments);
+      m_parameterization->second.push_back(last_t = angles[i].x);
+
+      for (int j = 1; j < increments; j++) {
+        float theta = angles[i].y + (float)j * increment;
+        float tan = std::tanf(theta);
+
+        float p = a.y - tan * a.x;
+        float q = b.y - tan * b.x;
+        float r = c.y - tan * c.x;
+
+        vec2 t_values;
+
+        if (Math::is_almost_zero(p)) {
+          if (Math::is_almost_zero(q)) continue;
+          else t_values = { -r / q, -1.0f };
+        } else {
+          float delta = q * q - 4.0f * p * r;
+
+          if (Math::is_almost_zero(delta)) {
+            t_values = { -q / (2.0f * p), -1.0f };
+          } else if (delta > 0.0f) {
+            float sqrt_delta = std::sqrtf(delta);
+            float t1 = (-q + sqrt_delta) / (2.0f * p);
+            float t2 = (-q - sqrt_delta) / (2.0f * p);
+
+            t_values = { t1, t2 };
+          } else continue;
+        }
+
+        bool is_t1_bad = !Math::is_in_range(t_values.x, last_t, angles[i + 1].x, false);
+        bool is_t2_bad = !Math::is_in_range(t_values.y, last_t, angles[i + 1].x, false);
+
+        if (is_t1_bad || is_t2_bad) {
+          if (is_t1_bad && is_t2_bad) continue;
+
+          m_parameterization->second.push_back(last_t = (float)is_t1_bad * t_values.y + (float)is_t2_bad * t_values.x);
+        } else if (t_values.x - last_t < t_values.y - last_t) {
+          m_parameterization->second.push_back(last_t = t_values.x);
+        } else {
+          m_parameterization->second.push_back(last_t = t_values.y);
+        }
+      }
+    }
+
+    m_parameterization->second.push_back(1.0f);
+
+    // console::log("params", m_parameterization->second.size());
+
+    return m_parameterization->second;
   }
 
   bool Segment::is_masquerading_linear() const {
@@ -493,6 +580,7 @@ namespace Graphick::Renderer::Geometry {
     m_hash = hash;
 
     m_bounding_rect_cache.reset();
+    m_parameterization.reset();
 
     return true;
   }
@@ -1086,4 +1174,102 @@ namespace Graphick::Renderer::Geometry {
     return parsed_roots;
   }
 
+  std::vector<float> Segment::inflections() const {
+    vec2 P1 = p1();
+    vec2 P2 = p2();
+
+    vec2 A = P1 - p0();
+    vec2 B = P2 - P1 - A;
+    vec2 C = p3() - P2 - A - 2.0f * B;
+
+    float a = B.x * C.y - B.y * C.x;
+    float b = A.x * C.y - A.y * C.x;
+    float c = A.x * B.y - A.y * B.x;
+
+    if (Math::is_almost_zero(a)) {
+      if (Math::is_almost_zero(b)) {
+        return { 0.0f, 1.0f };
+      }
+
+      float t = -c / b;
+      if (t > 0.0f && t < 1.0f) {
+        return { 0.0f, t, 1.0f };
+      }
+
+      return { 0.0f, 1.0f };
+    }
+
+    float delta = b * b - 4.0f * a * c;
+
+    if (Math::is_almost_zero(delta)) {
+      float t = -b / (2.0f * a);
+      if (t > 0.0f && t < 1.0f) {
+        return { 0.0f, t, 1.0f };
+      }
+    } else if (delta > 0.0f) {
+      float sqrt_delta = sqrtf(delta);
+      float t1 = (-b + sqrt_delta) / (2.0f * a);
+      float t2 = (-b - sqrt_delta) / (2.0f * a);
+
+      if (t1 > t2) {
+        std::swap(t1, t2);
+      }
+
+      std::vector<float> values = { 0.0f };
+      if (t1 > 0.0f && t1 < 1.0f) {
+        values.push_back(t1);
+      }
+      if (t2 > 0.0f && t2 < 1.0f) {
+        values.push_back(t2);
+      }
+
+      values.push_back(1.0f);
+
+      return values;
+    }
+
+    return { 0.0f, 1.0f };
+  }
+
+  std::vector<vec2> Segment::turning_angles() const {
+    std::vector<float> inflections;
+
+    const vec2 A = p0();
+    const vec2 B = p1();
+    const vec2 C = p2();
+    const vec2 D = p3();
+
+    const vec2 a = 3.0f * (-A + 3.0f * B - 3.0f * C + D);
+    const vec2 b = 6.0f * (A - 2.0f * B + C);
+    const vec2 c = -3.0f * (A - B);
+
+    const vec2 a_prime = 2.0f * a;
+    const vec2 b_prime = b;
+
+    if (A == B || C == D) {
+      // TODO: test if necessary
+      inflections = { 0.0f, 1.0f };
+    } else {
+      // TODO: cache inflections
+      inflections = this->inflections();
+    }
+
+    size_t inflections_num = inflections.size();
+
+    std::vector<vec2> turning_angles(inflections_num);
+
+    for (size_t i = 0; i < inflections_num; i++) {
+      float t = inflections[i];
+      vec2 gradient = a * t * t + b * t + c;
+
+      if (Math::is_almost_zero(gradient, GEOMETRY_CURVE_ERROR)) {
+        vec2 curvature = (1.0f - t * 2.0f) * a * t + b;
+        turning_angles[i] = { t, std::atan2f(curvature.y, curvature.x) };
+      } else {
+        turning_angles[i] = { t, std::atan2f(gradient.y, gradient.x) };
+      }
+    }
+
+    return turning_angles;
+  }
 }

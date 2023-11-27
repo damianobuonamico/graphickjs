@@ -100,7 +100,7 @@ namespace Graphick::Renderer::Geometry {
     void remove_p1();
     void remove_p2();
 
-    const std::vector<float>& parameterize(const double zoom) const;
+    const std::vector<float>& parameterize(const float zoom) const;
 
     bool is_masquerading_linear() const;
     bool is_masquerading_quadratic(vec2& new_p1) const;
@@ -141,6 +141,9 @@ namespace Graphick::Renderer::Geometry {
     std::vector<float> quadratic_line_intersections(const rect& line, const mat2x3& transform) const;
     std::vector<float> cubic_line_intersections(const rect& line) const;
     std::vector<float> cubic_line_intersections(const rect& line, const mat2x3& transform) const;
+
+    std::vector<float> inflections() const;
+    std::vector<vec2> turning_angles() const;
   private:
     // The type of segment: linear, quadratic, or cubic bezier.
     Kind m_kind;
@@ -155,7 +158,7 @@ namespace Graphick::Renderer::Geometry {
     mutable int m_hash = 0;
 
     mutable std::optional<Math::rect> m_bounding_rect_cache = std::nullopt;
-    mutable std::optional<std::vector<float>> m_parameterization = std::nullopt;
+    mutable std::optional<std::pair<float, std::vector<float>>> m_parameterization = std::nullopt;
   private:
     // TEMP: remove
     friend class Path;

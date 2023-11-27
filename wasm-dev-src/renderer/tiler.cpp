@@ -505,6 +505,8 @@ namespace Graphick::Renderer {
     m_masked_batches = std::vector<MaskedTilesBatch>(1);
   }
 
+  static constexpr float tolerance = 0.25f;
+
   void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {
     GK_TOTAL("Tiler::process_stroke");
 
@@ -545,39 +547,77 @@ namespace Graphick::Renderer {
       for (size_t i = 0; i < segments.size(); i++) {
         auto& raw_segment = segments[i];
 
-        next = transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom);
+        if (raw_segment.is_linear()) {
+          next = transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom);
 
-        //vec2 normal = { Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) };
-        //float magnitude = std::sqrtf(fnormal.x * fnormal.x + fnormal.y * fnormal.y);
-        vec2 normal = Math::normalize({ Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) }) * radius;
-        //vec2 fn = { raw_radius * fnormal.x / fmagnitude, raw_radius * fnormal.y / fmagnitude };
-        f24x8x2 n = { Math::float_to_f24x8(normal.x), Math::float_to_f24x8(normal.y) };
+          vec2 normal = Math::normalize({ Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) }) * radius;
+          f24x8x2 n = { Math::float_to_f24x8(normal.x), Math::float_to_f24x8(normal.y) };
 
-        //f24x8x2 normal = { last.y - next.y, next.x - last.x };
-        //f24x8 magnitude = std::sqrt(normal.x * normal.x + normal.y * normal.y);
+          forward.points.emplace_back(last.x - n.x, last.y - n.y);
+          forward.points.emplace_back(next.x - n.x, next.y - n.y);
 
-        //if (magnitude <= 0) {
-          //magnitude = 1;
-        //}
-        // f24x8 length = magnitude > 0 ? radius * FRACUNIT / magnitude : 1;
-        //f24x8x2 n = { radius * normal.x / magnitude, radius * normal.y / magnitude };
+          backward.points.emplace_back(last.x + n.x, last.y + n.y);
+          backward.points.emplace_back(next.x + n.x, next.y + n.y);
 
-        forward.points.emplace_back(last.x - n.x, last.y - n.y);
-        forward.points.emplace_back(next.x - n.x, next.y - n.y);
+          last = next;
+        } else {
+          const vec2 A = raw_segment.p0();
+          const vec2 B = raw_segment.p1();
+          const vec2 C = raw_segment.p2();
+          const vec2 D = raw_segment.p3();
 
-        backward.points.emplace_back(last.x + n.x, last.y + n.y);
-        backward.points.emplace_back(next.x + n.x, next.y + n.y);
+          // const std::vector<float>& parameterization = raw_segment.parameterize(m_zoom);
 
-        // if (raw_segment.is_linear()) {
+          vec2 a = -A + 3.0f * B - 3.0f * C + D;
+          vec2 b = 3.0f * A - 6.0f * B + 3.0f * C;
+          vec2 c = -3.0f * A + 3.0f * B;
+          vec2 p;
 
-        // } else {
-        //   const std::vector<float>& parameterization = raw_segment.parameterize(m_zoom);
+          float conc = std::max(Math::length(b), Math::length(a + b));
+          float dt = std::sqrtf((std::sqrtf(8.0f) * tolerance / m_zoom) / conc);
+          float t = dt;
 
-        // }
+          forward.points.reserve(static_cast<int>(1.0f / dt) + 1);
+          backward.points.reserve(static_cast<int>(1.0f / dt) + 1);
 
-        last = next;
+          while (t <= 1.0f) {
+            float t_sq = t * t;
+
+            p = a * t_sq * t + b * t_sq + c * t + A;
+            next = transform_point(transform, p, subpixel_offset, m_zoom);
+
+            vec2 normal = Math::normalize({ Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) }) * radius;
+            f24x8x2 n = { Math::float_to_f24x8(normal.x), Math::float_to_f24x8(normal.y) };
+
+            forward.points.emplace_back(last.x - n.x, last.y - n.y);
+            forward.points.emplace_back(next.x - n.x, next.y - n.y);
+
+            backward.points.emplace_back(last.x + n.x, last.y + n.y);
+            backward.points.emplace_back(next.x + n.x, next.y + n.y);
+
+            last = next;
+
+            t += dt;
+          }
+
+
+          // for (const float t : parameterization) {
+          //   // TODO: transform upfront
+          //   next = transform_point(transform, Math::bezier(A, B, C, D, t), subpixel_offset, m_zoom);
+
+          //   vec2 normal = Math::normalize({ Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) }) * radius;
+          //   f24x8x2 n = { Math::float_to_f24x8(normal.x), Math::float_to_f24x8(normal.y) };
+
+          //   forward.points.emplace_back(last.x - n.x, last.y - n.y);
+          //   forward.points.emplace_back(next.x - n.x, next.y - n.y);
+
+          //   backward.points.emplace_back(last.x + n.x, last.y + n.y);
+          //   backward.points.emplace_back(next.x + n.x, next.y + n.y);
+
+          //   last = next;
+          // }
+        }
       }
-
 
       if (path.closed()) {
         backward.reverse();
@@ -1169,7 +1209,7 @@ namespace Graphick::Renderer {
     contour.close();
 
     process_drawable(drawable, m_visible, m_visible.min * m_zoom, overlap < 0.7f);
-}
+  }
 #endif
 
-  }
+}

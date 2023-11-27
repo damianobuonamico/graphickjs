@@ -18,6 +18,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Contour::push_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3) {
+    // TODO: avoid unnecessary casts
     vec2 fp0 = { Math::f24x8_to_float(m_p0.x), Math::f24x8_to_float(m_p0.y) };
     vec2 fp1 = { Math::f24x8_to_float(p1.x), Math::f24x8_to_float(p1.y) };
     vec2 fp2 = { Math::f24x8_to_float(p2.x), Math::f24x8_to_float(p2.y) };
