@@ -78,6 +78,8 @@ namespace Graphick::Renderer::Geometry {
     inline uuid p0_id() const { return m_p0->id; }
     inline uuid p3_id() const { return m_p3->id; }
 
+    bool is_point() const;
+
     vec2 get(const float t) const;
 
     rect bounding_rect() const;

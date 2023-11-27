@@ -94,7 +94,7 @@ namespace Graphick::Renderer {
    * @param zoom The zoom to apply to the point.
    * @return The transformed point.
    */
-  inline static f24x8x2 transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const double zoom) {
+  inline static f24x8x2 f_transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const double zoom) {
     double x = (
       static_cast<double>(transform[0][0]) * static_cast<double>(point.x) +
       static_cast<double>(transform[0][1]) * static_cast<double>(point.y) +
@@ -107,6 +107,21 @@ namespace Graphick::Renderer {
       ) * zoom;
 
     return Math::double_to_f24x8x2(x, y);
+  }
+
+  inline static dvec2 d_transform_point(const mat2x3& transform, const vec2 point, const dvec2 offset, const double zoom) {
+    double x = (
+      static_cast<double>(transform[0][0]) * static_cast<double>(point.x) +
+      static_cast<double>(transform[0][1]) * static_cast<double>(point.y) +
+      static_cast<double>(transform[0][2]) - offset.x
+      ) * zoom;
+    double y = (
+      static_cast<double>(transform[1][0]) * static_cast<double>(point.x) +
+      static_cast<double>(transform[1][1]) * static_cast<double>(point.y) +
+      static_cast<double>(transform[1][2]) - offset.y
+      ) * zoom;
+
+    return { x, y };
   }
 
   static void clip_drawable(Drawable& drawable, const f24x8x4 clip) {
@@ -510,8 +525,10 @@ namespace Graphick::Renderer {
   void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {
     GK_TOTAL("Tiler::process_stroke");
 
-    const float radius = 0.5f * stroke.width * m_zoom;
-    const float radius_safe = 0.55f * stroke.width * (stroke.join == LineJoin::Miter ? stroke.miter_limit : 1.0f);
+    const float sw = 10.0f * stroke.width;
+
+    const float radius_safe = 0.55f * sw * (stroke.join == LineJoin::Miter ? stroke.miter_limit : 1.0f);
+    const double radius = 0.5f * sw * m_zoom;
 
     /* Expand path rect to include the width of the stroke */
     const rect path_rect = transform * path.bounding_rect() + rect{ vec2{ -radius_safe }, vec2{ radius_safe } };
@@ -524,7 +541,7 @@ namespace Graphick::Renderer {
     const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
-    const bool clip_drawable = stroke.width > std::min(m_visible.width(), m_visible.height());
+    const bool clip_drawable = sw > std::min(m_visible.width(), m_visible.height());
 
     f24x8x4 bound = {
       Math::double_to_f24x8((path_rect.min.x - offset.x) * m_zoom - m_subpixel.x),
@@ -533,13 +550,42 @@ namespace Graphick::Renderer {
       Math::double_to_f24x8((path_rect.max.y - offset.y) * m_zoom - m_subpixel.y)
     };
 
+#if 1
     const auto& segments = path.segments();
+    const size_t len = segments.size();
+
+    if (len == 0) return;
+
+    Drawable drawable(1, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, bound);
+    Geometry::Contour& contour = drawable.contours.front();
+
+    LineCap cap = LineCap::Round;
+
+    if (len == 1 && segments.front().is_point() && cap != LineCap::Butt) {
+      auto& segment = segments.front();
+
+      dvec2 from = d_transform_point(transform, segment.p0(), subpixel_offset, m_zoom);
+      dvec2 n = { 0.0, 1.0 };
+      dvec2 nr = n * radius;
+      dvec2 start = from + nr;
+      dvec2 rstart = from - nr;
+
+      contour.move_to(start);
+
+      contour.add_cap(start, rstart, n, radius, cap);
+      contour.add_cap(rstart, start, -n, radius, cap);
+    }
+
+    process_drawable(drawable, drawable_offset, clip_drawable);
+#else
+    const auto& segments = path.segments();
+
     if (true || overlap > OVERLAP_CLIP_THRESHOLD) {
       Drawable drawable(2, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, bound);
       Geometry::Contour& forward = drawable.contours.front();
       Geometry::Contour& backward = drawable.contours.back();
 
-      f24x8x2 last = transform_point(transform, segments.front().p0(), subpixel_offset, m_zoom);
+      f24x8x2 last = f_transform_point(transform, segments.front().p0(), subpixel_offset, m_zoom);
       f24x8x2 next = last;
 
       forward.begin(next, false);
@@ -548,7 +594,7 @@ namespace Graphick::Renderer {
         auto& raw_segment = segments[i];
 
         if (raw_segment.is_linear()) {
-          next = transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom);
+          next = f_transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom);
 
           vec2 normal = Math::normalize({ Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) }) * radius;
           f24x8x2 n = { Math::float_to_f24x8(normal.x), Math::float_to_f24x8(normal.y) };
@@ -584,7 +630,7 @@ namespace Graphick::Renderer {
             float t_sq = t * t;
 
             p = a * t_sq * t + b * t_sq + c * t + A;
-            next = transform_point(transform, p, subpixel_offset, m_zoom);
+            next = f_transform_point(transform, p, subpixel_offset, m_zoom);
 
             vec2 normal = Math::normalize({ Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) }) * radius;
             f24x8x2 n = { Math::float_to_f24x8(normal.x), Math::float_to_f24x8(normal.y) };
@@ -603,7 +649,7 @@ namespace Graphick::Renderer {
 
           // for (const float t : parameterization) {
           //   // TODO: transform upfront
-          //   next = transform_point(transform, Math::bezier(A, B, C, D, t), subpixel_offset, m_zoom);
+          //   next = f_transform_point(transform, Math::bezier(A, B, C, D, t), subpixel_offset, m_zoom);
 
           //   vec2 normal = Math::normalize({ Math::f24x8_to_float(last.y - next.y), Math::f24x8_to_float(next.x - last.x) }) * radius;
           //   f24x8x2 n = { Math::float_to_f24x8(normal.x), Math::float_to_f24x8(normal.y) };
@@ -632,6 +678,7 @@ namespace Graphick::Renderer {
 
       process_drawable(drawable, drawable_offset, clip_drawable);
     }
+#endif
   }
 
   void Tiler::process_fill(const Geometry::Path& path, const mat2x3& transform, const Fill& fill) {
@@ -658,20 +705,20 @@ namespace Graphick::Renderer {
     Geometry::Contour& contour = drawable.contours.front();
 
     const auto& segments = path.segments();
-    const f24x8x2 first = transform_point(transform, segments.front().p0(), subpixel_offset, m_zoom);
+    const f24x8x2 first = f_transform_point(transform, segments.front().p0(), subpixel_offset, m_zoom);
 
-    contour.begin(first);
+    contour.move_to(first);
 
     for (size_t i = 0; i < segments.size(); i++) {
       auto& raw_segment = segments[i];
 
       if (raw_segment.is_linear()) {
-        contour.push_segment(transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom));
+        contour.line_to(f_transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom));
       } else {
-        contour.push_segment(
-          transform_point(transform, raw_segment.p1(), subpixel_offset, m_zoom),
-          transform_point(transform, raw_segment.p2(), subpixel_offset, m_zoom),
-          transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom)
+        contour.cubic_to(
+          f_transform_point(transform, raw_segment.p1(), subpixel_offset, m_zoom),
+          f_transform_point(transform, raw_segment.p2(), subpixel_offset, m_zoom),
+          f_transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom)
         );
       }
     }

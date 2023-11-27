@@ -117,8 +117,8 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event((int)(width / dpr), (int)(height / dpr), dpr, 0, 0);
 
-#define TIGER
-  // #define OBJECTS
+  // #define TIGER
+#define OBJECTS
 
 #ifdef TIGER
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
@@ -146,9 +146,10 @@ int main() {
   // path.line_to({ 250.0f, 200.0f });
   // path.close();
 
-  path.move_to({ 0.0f, 0.0f });
+  path.move_to({ 100.0f, 100.0f });
   // path.line_to({ 100.0f, 100.0f });
-  path.cubic_to({ 100.0f, 0.0f }, { -47.0f, -36.0f }, { -50.0f, -40.0f });
+  // path.line_to({ 100.0f, 100.0f });
+  path.cubic_to({ 200.0f, 100.0f }, { 147.0f, 136.0f }, { 150.0f, 140.0f });
 
   // path.move_to({ 0.0f, 0.0f });
   // path.cubic_to({ -2.0f, 10.0f }, { -2.0f, 90.0f }, { 0.0f, 100.0f });

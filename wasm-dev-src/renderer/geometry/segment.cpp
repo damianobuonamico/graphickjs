@@ -335,6 +335,15 @@ namespace Graphick::Renderer::Geometry {
     return mag * 4096 <= edges;
   }
 
+  bool Segment::is_point() const {
+    vec2 p0 = this->p0();
+    vec2 p1 = this->p1();
+    vec2 p2 = this->p2();
+    vec2 p3 = this->p3();
+
+    return Math::is_almost_equal(p0, p3) && Math::is_almost_equal(p0, p1) && Math::is_almost_equal(p0, p2);
+  }
+
   vec2 Segment::get(const float t) const {
     return SEGMENT_CALL(get, t);
   }
