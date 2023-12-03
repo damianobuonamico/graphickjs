@@ -23,14 +23,18 @@ namespace Graphick::Renderer::Geometry {
     void cubic_to(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3);
     void cubic_to(const dvec2 p1, const dvec2 p2, const dvec2 p3);
 
+    void offset_cubic(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const dvec2 end_normal, const double radius);
+
     void add_cap(const dvec2 from, const dvec2 to, const dvec2 n, const double radius, const LineCap cap);
+    void add_join(const dvec2 from, const dvec2 to, const dvec2 pivot, const dvec2 from_normal, const dvec2 to_normal, const double radius, const double inv_miter_limit, LineJoin join);
     // void offset_segment(const f24x8x2 p3, const f24x8 radius);
     // void offset_segment(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3, const f24x8 radius);
 
     void close();
     void reverse();
   private:
-    void arc(const dvec2 from, const double radius, const dvec2 to);
+    void arc(const dvec2 center, const dvec2 from, const double radius, const dvec2 to);
+    void recursive_cubic(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, unsigned int level, const double distance_tolerance, const double angle_tolerance, const double cusp_limit);
   private:
     f24x8x2 m_p0 = { 0, 0 };
     dvec2 m_d_p0 = { 0, 0 };

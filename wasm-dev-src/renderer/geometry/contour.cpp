@@ -8,18 +8,12 @@
 namespace Graphick::Renderer::Geometry {
 
 #ifdef USE_F8x8
-  static constexpr float tolerance = 0.25f;
+  static constexpr unsigned int curve_recursion_limit = 8;
 
-  static double vec_angle(const double ux, const double uy, const double vx, const double vy) {
-    double dot = ux * vx + uy * vy;
-
-    if (dot > 1.0) dot = 1.0;
-    if (dot < -1.0) dot = -1.0;
-
-    const double sign = (ux * vy - uy * vx) < 0.0 ? -1.0 : 1.0;
-
-    return sign * std::acos(dot);
-  }
+  static constexpr double curve_angle_tolerance_epsilon = 0.01;
+  static constexpr double curve_collinearity_epsilon = 1e-30;
+  static constexpr double curve_distance_epsilon = 1e-30;
+  static constexpr double tolerance = 0.25;
 
   void Contour::move_to(const f24x8x2 p0) {
     m_p0 = p0;
@@ -46,6 +40,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Contour::cubic_to(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3) {
+    GK_TOTAL("non_recursive");
+
     // TODO: avoid unnecessary casts
     vec2 fp0 = { Math::f24x8_to_float(m_p0.x), Math::f24x8_to_float(m_p0.y) };
     vec2 fp1 = { Math::f24x8_to_float(p1.x), Math::f24x8_to_float(p1.y) };
@@ -80,6 +76,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Contour::cubic_to(const dvec2 p1, const dvec2 p2, const dvec2 p3) {
+    GK_TOTAL("non_recursive");
+
     dvec2 a = -m_d_p0 + 3.0f * p1 - 3.0f * p2 + p3;
     dvec2 b = 3.0f * m_d_p0 - 6.0f * p1 + 3.0f * p2;
     dvec2 c = -3.0f * m_d_p0 + 3.0f * p1;
@@ -106,10 +104,19 @@ namespace Graphick::Renderer::Geometry {
     points.push_back(m_p0);
   }
 
+  void Contour::offset_cubic(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const dvec2 end_normal, const double radius) {
+    recursive_cubic(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, 0, curve_distance_epsilon, curve_angle_tolerance_epsilon, 0.0);
+    line_to(p3 + end_normal * radius);
+  }
+
   void Contour::add_cap(const dvec2 from, const dvec2 to, const dvec2 n, const double radius, const LineCap cap) {
     switch (cap) {
     case LineCap::Butt: {
       line_to(to);
+      break;
+    }
+    case LineCap::Round: {
+      arc(from + (to - from) / 2.0, from, radius, to);
       break;
     }
     case LineCap::Square: {
@@ -121,9 +128,47 @@ namespace Graphick::Renderer::Geometry {
 
       break;
     }
-    case LineCap::Round: {
-      arc(from, radius, to);
+    }
+  }
+
+  void Contour::add_join(const dvec2 from, const dvec2 to, const dvec2 pivot, const dvec2 from_normal, const dvec2 to_normal, const double radius, const double inv_miter_limit, LineJoin join) {
+    const dvec2 center = from - from_normal * radius;
+    const dvec2 a = from - center;
+    const dvec2 b = to - center;
+
+    const double dot = a.x * b.x + a.y * b.y;
+    const double cross = a.x * b.y - a.y * b.x;
+
+    double ang = std::atan2(cross, dot);
+
+    if (ang < 0.0) ang += MATH_TWO_PI;
+    if (ang >= MATH_PI) join = LineJoin::Bevel;
+
+    switch (join) {
+    case LineJoin::Bevel: {
+      line_to(to);
       break;
+    }
+    case LineJoin::Round: {
+      arc(center, from, radius, to);
+      break;
+    }
+    case LineJoin::Miter: {
+      double dot = from_normal.x * to_normal.x + from_normal.y * to_normal.y;
+      double sin_half = std::sqrt((1.0 + dot) * 0.5);
+
+      if (sin_half < inv_miter_limit) {
+        line_to(to);
+        break;
+      } else {
+        dvec2 mid = from_normal + to_normal;
+        double l = radius / (sin_half * std::hypot(mid.x, mid.y));
+        dvec2 p = pivot + mid * l;
+
+        line_to(p);
+        line_to(to);
+        break;
+      }
     }
     }
   }
@@ -142,100 +187,185 @@ namespace Graphick::Renderer::Geometry {
     std::reverse(points.begin(), points.end());
   }
 
-  void Contour::arc(const dvec2 from, const double radius, const dvec2 to) {
-#if 1
-    const dvec2 c = from + (to - from) / 2.0;
-
-    const double ang1 = std::atan2(from.y - c.y, from.x - c.x);
-    const double ang2 = std::atan2(to.y - c.y, to.x - c.x);
-    const double diff = std::abs(ang2 - ang1);
+  void Contour::arc(const dvec2 center, const dvec2 from, const double radius, const dvec2 to) {
+    const double ang1 = std::atan2(from.y - center.y, from.x - center.x);
+    const double ang2 = std::atan2(to.y - center.y, to.x - center.x);
     const double dt = std::sqrtf(0.5 * tolerance / radius);
 
-    const int segments = std::max(static_cast<int>(std::ceil(diff / MATH_PI / dt)), diff >= MATH_PI - 0.1 ? (diff >= MATH_TWO_PI - 0.1 ? 3 : 2) : 1);
+    double diff = std::abs(ang2 - ang1);
+    if (diff > MATH_PI) diff = MATH_TWO_PI - diff;
+
+    const int segments = std::max(static_cast<int>(std::ceil(diff / (MATH_PI * dt))), diff >= MATH_PI - 0.1 ? (diff >= MATH_TWO_PI - 0.1 ? 3 : 2) : 1);
     const double inc = diff / segments;
 
     for (int i = 0; i <= segments; ++i) {
       const double angle = ang1 + i * inc;
-      const dvec2 point = c + dvec2(radius * std::cos(angle), radius * std::sin(angle));
+      const dvec2 point = center + dvec2(radius * std::cos(angle), radius * std::sin(angle));
 
       line_to(point);
     }
 
     console::log("segs", segments);
-#else
-    const double px = from.x;
-    const double py = from.y;
+  }
 
-    const double pxp = (px - to.x) / 2.0;
-    const double pyp = (py - to.y) / 2.0;
+  void Contour::recursive_cubic(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, unsigned int level, const double distance_tolerance, const double angle_tolerance, const double cusp_limit) {
+    if (level > curve_recursion_limit) return;
 
-    if (pxp == 0.0 && pyp == 0.0) return;
+    /* Calculate all the mid-points of the line segments */
 
-    double r = radius;
+    double x12 = (x1 + x2) / 2.0;
+    double y12 = (y1 + y2) / 2.0;
+    double x23 = (x2 + x3) / 2.0;
+    double y23 = (y2 + y3) / 2.0;
+    double x34 = (x3 + x4) / 2.0;
+    double y34 = (y3 + y4) / 2.0;
+    double x123 = (x12 + x23) / 2.0;
+    double y123 = (y12 + y23) / 2.0;
+    double x234 = (x23 + x34) / 2.0;
+    double y234 = (y23 + y34) / 2.0;
+    double x1234 = (x123 + x234) / 2.0;
+    double y1234 = (y123 + y234) / 2.0;
 
-    const double lambda = (pxp * pxp + pyp * pyp) / (r * r);
+    /* Enforce subdivision first time */
 
-    if (lambda > 1.0) {
-      const double s = std::sqrt(lambda);
-      r *= s;
+    if (level > 0) {
+      /* Try to approximate the full cubic curve by a single straight line */
+
+      double dx = x4 - x1;
+      double dy = y4 - y1;
+
+      double d2 = std::fabs(((x2 - x4) * dy - (y2 - y4) * dx));
+      double d3 = std::fabs(((x3 - x4) * dy - (y3 - y4) * dx));
+
+      double da1, da2;
+
+      if (d2 > curve_collinearity_epsilon && d3 > curve_collinearity_epsilon) {
+        /* Regular care */
+
+        if ((d2 + d3) * (d2 + d3) <= distance_tolerance * (dx * dx + dy * dy)) {
+          /* If the curvature doesn't exceed the distance_tolerance value we tend to finish subdivisions. */
+
+          if (angle_tolerance < curve_angle_tolerance_epsilon) {
+            line_to(dvec2{ x1234, y1234 });
+            // m_points.add(point_type(x1234, y1234));
+            return;
+          }
+
+          /* Angle & Cusp Condition */
+
+          double a23 = atan2(y3 - y2, x3 - x2);
+
+          da1 = fabs(a23 - atan2(y2 - y1, x2 - x1));
+          da2 = fabs(atan2(y4 - y3, x4 - x3) - a23);
+
+          if (da1 >= MATH_PI) da1 = MATH_TWO_PI - da1;
+          if (da2 >= MATH_PI) da2 = MATH_TWO_PI - da2;
+
+          if (da1 + da2 < angle_tolerance) {
+            /* Finally we can stop the recursion */
+
+            line_to(dvec2{ x1234, y1234 });
+            // m_points.add(point_type(x1234, y1234));
+            return;
+          }
+
+          if (cusp_limit != 0.0) {
+            if (da1 > cusp_limit) {
+              line_to(dvec2{ x2, y2 });
+              // m_points.add(point_type(x2, y2));
+              return;
+            }
+
+            if (da2 > cusp_limit) {
+              line_to(dvec2{ x3, y3 });
+              // m_points.add(point_type(x3, y3));
+              return;
+            }
+          }
+        }
+      } else if (d2 > curve_collinearity_epsilon) {
+        /* p1,p3,p4 are collinear, p2 is considerable */
+
+        if (d2 * d2 <= distance_tolerance * (dx * dx + dy * dy)) {
+          if (angle_tolerance < curve_angle_tolerance_epsilon) {
+            line_to(dvec2{ x1234, y1234 });
+            // m_points.add(point_type(x1234, y1234));
+            return;
+          }
+
+          /* Angle Condition */
+
+          da1 = fabs(atan2(y3 - y2, x3 - x2) - atan2(y2 - y1, x2 - x1));
+          if (da1 >= MATH_PI) da1 = MATH_TWO_PI - da1;
+
+          if (da1 < angle_tolerance)
+          {
+            line_to(dvec2{ x2, y2 });
+            line_to(dvec2{ x3, y3 });
+            // m_points.add(point_type(x2, y2));
+            // m_points.add(point_type(x3, y3));
+            return;
+          }
+
+          if (cusp_limit != 0.0)
+          {
+            if (da1 > cusp_limit)
+            {
+              line_to(dvec2{ x2, y2 });
+              // m_points.add(point_type(x2, y2));
+              return;
+            }
+          }
+        } else if (d3 > curve_collinearity_epsilon) {
+          /* p1,p2,p4 are collinear, p3 is considerable */
+
+          if (d3 * d3 <= distance_tolerance * (dx * dx + dy * dy)) {
+            if (angle_tolerance < curve_angle_tolerance_epsilon) {
+              line_to(dvec2{ x1234, y1234 });
+              // m_points.add(point_type(x1234, y1234));
+              return;
+            }
+
+            // Angle Condition
+            //----------------------
+            da1 = std::fabs(std::atan2(y4 - y3, x4 - x3) - std::atan2(y3 - y2, x3 - x2));
+            if (da1 >= MATH_PI) da1 = MATH_TWO_PI - da1;
+
+            if (da1 < angle_tolerance) {
+              // m_points.add(point_type(x2, y2));
+              // m_points.add(point_type(x3, y3));
+              line_to(dvec2{ x2, y2 });
+              line_to(dvec2{ x3, y3 });
+              return;
+            }
+
+            if (cusp_limit != 0.0) {
+              if (da1 > cusp_limit) {
+                // m_points.add(point_type(x3, y3));
+                line_to(dvec2{ x3, y3 });
+                return;
+              }
+            }
+          }
+        } else {
+          /* Collinear case */
+
+          dx = x1234 - (x1 + x4) / 2;
+          dy = y1234 - (y1 + y4) / 2;
+
+          if (dx * dx + dy * dy <= distance_tolerance) {
+            line_to(dvec2{ x1234, y1234 });
+            // m_points.add(point_type(x1234, y1234));
+            return;
+          }
+        }
+      }
     }
 
-    /* Arc size is always small and arc sweep is always positive */
+    /* Continue subdivision */
 
-    const double rsq = r * r;
-    const double pxpsq = pxp * pxp;
-    const double pypsq = pyp * pyp;
-
-    double radicant = rsq - pypsq - pxpsq;
-
-    if (radicant < 0.0) radicant = 0.0;
-
-    radicant /= pxpsq + pypsq;
-    radicant = std::sqrt(radicant);
-
-    const double cxp = radicant * pyp;
-    const double cyp = -radicant * pxp;
-    const double cx = cxp + (px + to.x) / 2.0;
-    const double cy = cyp + (py + to.y) / 2.0;
-    const double vx1 = (pxp - cxp) / r;
-    const double vy1 = (pyp - cyp) / r;
-    const double vx2 = (-pxp - cxp) / r;
-    const double vy2 = (-pyp - cyp) / r;
-
-    double ang1 = vec_angle(1.0, 0.0, vx1, vy1);
-    double ang2 = vec_angle(vx1, vy1, vx2, vy2);
-
-    if (ang2 < 0.0) ang2 += 2.0 * MATH_PI;
-
-    double ratio = 2.0 * std::abs(ang2) / MATH_PI;
-
-    if (std::abs(1.0 - ratio) < 1e-7) ratio = 1.0;
-
-    const int segments = std::max(static_cast<int>(std::ceil(ratio)), 1);
-
-    ang2 /= segments;
-
-    double a;
-
-    if (ang2 == 1.5707963267948966) a = 0.551915024494;
-    else if (ang2 == -1.5707963267948966)a = -0.551915024494;
-    else a = 4.0 / 3.0 * std::tan(ang2 / 4.0);
-
-    for (int i = 0; i < segments; i++) {
-      const double x1 = std::cos(ang1);
-      const double y1 = std::sin(ang1);
-      const double x2 = std::cos(ang1 + ang2);
-      const double y2 = std::sin(ang1 + ang2);
-
-      const dvec2 c1 = { cx + (x1 - y1 * a) * r, cy + (y1 + x1 * a) * r };
-      const dvec2 c2 = { cx + (x2 + y2 * a) * r, cy + (y2 - x2 * a) * r };
-      const dvec2 p = { x2 * r, y2 * r };
-
-      cubic_to(c1, c2, p);
-
-      ang1 += ang2;
-    }
-#endif
+    recursive_cubic(x1, y1, x12, y12, x123, y123, x1234, y1234, level + 1, distance_tolerance, angle_tolerance, cusp_limit);
+    recursive_cubic(x1234, y1234, x234, y234, x34, y34, x4, y4, level + 1, distance_tolerance, angle_tolerance, cusp_limit);
   }
 
 #else
@@ -330,6 +460,6 @@ namespace Graphick::Renderer::Geometry {
   void Contour::close() {
     if (points.empty() || points[0] == points[points.size() - 1]) return;
     points.push_back(points[0]);
-  }
+}
 #endif
 }

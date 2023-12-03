@@ -131,7 +131,10 @@ abstract class InputManager {
       this.addListener("touchcancel", this.onTouchEnd.bind(this));
     } else {
       this.addListener("pointerdown", this.onPointerDown.bind(this));
-      this.addListener("pointermove", this.onPointerMove.bind(this));
+      this.addListener("pointermove", this.onPointerMove.bind(this), window, {
+        passive: true,
+        capture: true,
+      });
       this.addListener("pointerup", this.onPointerUp.bind(this));
       this.addListener("pointercancel", this.onPointerUp.bind(this));
       this.addListener(

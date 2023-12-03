@@ -23,6 +23,9 @@
 #include "../math/matrix.h"
 #include "../math/math.h"
 
+ // TEMP
+#include "renderer.h"
+#include "geometry/internal.h"
 #include "../utils/console.h"
 
 #define SEGMENTS_MEMORY_POOL_SIZE 30
@@ -520,7 +523,129 @@ namespace Graphick::Renderer {
     m_masked_batches = std::vector<MaskedTilesBatch>(1);
   }
 
-  static constexpr float tolerance = 0.25f;
+  static constexpr float tolerance = 0.25;
+
+  static dvec2 normal(const dvec2 v1, const dvec2 v2) {
+    dvec2 n = { v2.y - v1.y, v1.x - v2.x };
+    double l = std::hypot(n.x, n.y);
+
+    return { n.x / l, n.y / l };
+  }
+
+  static dvec2 normalize(const dvec2 v) {
+    double l = std::hypot(v.x, v.y);
+
+    return { v.x / l, v.y / l };
+  }
+
+  struct OffsetSegment {
+    bool is_linear;
+
+    dvec2 start;
+    dvec2 control1;
+    dvec2 control2;
+    dvec2 end;
+
+    dvec2 start_normal;
+    dvec2 end_normal;
+    dvec2 end_pivot;
+  };
+
+  static OffsetSegment offset_segment(const dvec2 a, const dvec2 b, const double radius) {
+    const dvec2 n = normal(a, b);
+    const dvec2 nr = n * radius;
+    const dvec2 start = a + nr;
+    const dvec2 end = b + nr;
+
+    return {
+      true,
+      start,
+      start,
+      end,
+      end,
+      n,
+      n,
+      b
+    };
+  }
+
+  static constexpr double EPS = 0.5;
+
+  static bool is_almost_equal(const dvec2 a, const dvec2 b, const double eps) {
+    return std::abs(a.x - b.x) < eps && std::abs(a.y - b.y) < eps;
+  }
+
+  static OffsetSegment offset_segment(const dvec2 a, const dvec2 b, const dvec2 c, const dvec2 d, const double radius) {
+    dvec2 normal_ab;
+    dvec2 normal_bc;
+    dvec2 normal_cd;
+
+    double dot;
+
+    if (is_almost_equal(a, b, EPS)) {
+      if (is_almost_equal(a, c, EPS)) normal_ab = normal(a, d);
+      else normal_ab = normal(a, c);
+    } else normal_ab = normal(a, b);
+
+    if (is_almost_equal(b, c, EPS)) {
+      if (is_almost_equal(b, d, EPS)) normal_bc = normal(a, d);
+      else normal_bc = normal(b, d);
+    } else normal_bc = normal(b, c);
+
+    if (is_almost_equal(c, d, EPS)) {
+      if (is_almost_equal(b, d, EPS)) normal_cd = normal(a, d);
+      else normal_cd = normal(b, d);
+    } else normal_cd = normal(c, d);
+
+    dvec2 normal_b = normal_ab + normal_bc;
+    dvec2 normal_c = normal_bc + normal_cd;
+
+    dot = normal_ab.x * normal_bc.x + normal_ab.y * normal_bc.y;
+    normal_b = normalize(normal_b) * (radius / std::sqrt((1.0 + dot) * 0.5));
+
+    dot = normal_bc.x * normal_cd.x + normal_bc.y * normal_cd.y;
+    normal_c = normalize(normal_c) * (radius / std::sqrt((1.0 + dot) * 0.5));
+
+    const dvec2 start = a + normal_ab * radius;
+    const dvec2 end = d + normal_cd * radius;
+
+    return {
+      false,
+      start,
+      // b + normal_b,
+      // c + normal_c,
+      b,
+      c,
+      end,
+      normal_ab,
+      normal_cd,
+      d
+    };
+  }
+
+  static dvec2 bezier(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const double t) {
+    const double u = 1.0 - t;
+    const double tt = t * t;
+    const double uu = u * u;
+    const double uuu = uu * u;
+    const double ttt = tt * t;
+
+    return uuu * p0 + 3.0 * uu * t * p1 + 3.0 * u * tt * p2 + ttt * p3;
+  }
+
+  static dvec2 bezier_derivative(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const double t) {
+    const double u = 1.0 - t;
+    const double tt = t * t;
+    const double uu = u * u;
+
+    return 3.0 * uu * (p1 - p0) + 6.0 * u * t * (p2 - p1) + 3.0 * tt * (p3 - p2);
+  }
+
+  static dvec2 bezier_second_derivative(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const double t) {
+    const double u = 1.0 - t;
+
+    return 6.0 * u * (p2 - 2.0 * p1 + p0) + 6.0 * t * (p3 - 2.0 * p2 + p1);
+  }
 
   void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {
     GK_TOTAL("Tiler::process_stroke");
@@ -559,7 +684,11 @@ namespace Graphick::Renderer {
     Drawable drawable(1, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, bound);
     Geometry::Contour& contour = drawable.contours.front();
 
-    LineCap cap = LineCap::Round;
+    std::vector<dvec2> points;
+    Geometry::Internal::PathInternal lines;
+
+    LineCap cap = LineCap::Square;
+    LineJoin join = LineJoin::Miter;
 
     if (len == 1 && segments.front().is_point() && cap != LineCap::Butt) {
       auto& segment = segments.front();
@@ -574,9 +703,508 @@ namespace Graphick::Renderer {
 
       contour.add_cap(start, rstart, n, radius, cap);
       contour.add_cap(rstart, start, -n, radius, cap);
+
+      return process_drawable(drawable, drawable_offset, clip_drawable);
     }
 
+    dvec2 last_dir = { 0.0, 0.0 };
+    dvec2 first_point = { 0.0, 0.0 };
+    dvec2 last_point = { 0.0, 0.0 };
+    dvec2 pivot = { 0.0, 0.0 };
+
+    if (path.closed()) {
+      const auto& raw = segments.back();
+      const auto segment = raw.is_linear() ?
+        offset_segment(
+          d_transform_point(transform, raw.p0(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p3(), subpixel_offset, m_zoom),
+          radius
+        ) :
+        offset_segment(
+          d_transform_point(transform, raw.p0(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p1(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p2(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p3(), subpixel_offset, m_zoom),
+          radius
+        );
+
+      const dvec2 end_point = segment.end;
+      const dvec2 out_dir = segment.end_normal;
+
+      pivot = segment.end_pivot;
+      last_dir = out_dir;
+      last_point = end_point;
+      first_point = end_point;
+
+      contour.move_to(last_point);
+    }
+
+    /* Forward for the outer stroke. */
+
+    bool is_first = !path.closed();
+    double inv_miter_limit = 1.0 / stroke.miter_limit;
+
+    for (const auto& raw : segments) {
+      const dvec2 p0 = d_transform_point(transform, raw->p0(), subpixel_offset, m_zoom);
+      const auto segment = raw->is_linear() ?
+        offset_segment(
+          p0,
+          d_transform_point(transform, raw->p3(), subpixel_offset, m_zoom),
+          radius
+        ) :
+        offset_segment(
+          p0,
+          d_transform_point(transform, raw->p1(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw->p2(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw->p3(), subpixel_offset, m_zoom),
+          radius
+        );
+
+      /**
+       * PARAMETERIZATION TEST
+       */
+
+#if 1
+      std::vector<double> t_values;
+
+      auto recursive = [&](double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, unsigned int level, auto&& recursive) mutable {
+        GK_TOTAL("recursive");
+
+        const unsigned int curve_recursion_limit = 32;
+
+        const double curve_angle_tolerance_epsilon = 0.01;
+        const double curve_collinearity_epsilon = 1e-30;
+        const double curve_distance_epsilon = 1e-30;
+        const double angle_tolerance = 0.4;
+        const double tolerance = 0.25;
+        // const double approximation_scale = 1.0;
+        const double distance_tolerance_square = tolerance * tolerance;
+        const double cusp_limit = 0.0;
+
+        auto calc_sq_distance = [](double x1, double y1, double x2, double y2) {
+          double dx = x2 - x1;
+          double dy = y2 - y1;
+
+          return dx * dx + dy * dy;
+          };
+
+
+        if (level > curve_recursion_limit) return;
+
+        /* Calculate all the mid-points of the line segments */
+
+        double x12 = (x1 + x2) / 2.0;
+        double y12 = (y1 + y2) / 2.0;
+        double x23 = (x2 + x3) / 2.0;
+        double y23 = (y2 + y3) / 2.0;
+        double x34 = (x3 + x4) / 2.0;
+        double y34 = (y3 + y4) / 2.0;
+        double x123 = (x12 + x23) / 2.0;
+        double y123 = (y12 + y23) / 2.0;
+        double x234 = (x23 + x34) / 2.0;
+        double y234 = (y23 + y34) / 2.0;
+        double x1234 = (x123 + x234) / 2.0;
+        double y1234 = (y123 + y234) / 2.0;
+
+        /* Try to approximate the full cubic curve by a single straight line */
+
+        double dx = x4 - x1;
+        double dy = y4 - y1;
+
+        double d2 = fabs(((x2 - x4) * dy - (y2 - y4) * dx));
+        double d3 = fabs(((x3 - x4) * dy - (y3 - y4) * dx));
+        double da1, da2, k;
+
+        switch ((int(d2 > curve_collinearity_epsilon) << 1) +
+          int(d3 > curve_collinearity_epsilon))
+        {
+        case 0:
+          /*All collinear OR p1==p4 */
+
+          k = dx * dx + dy * dy;
+          if (k == 0)
+          {
+            d2 = calc_sq_distance(x1, y1, x2, y2);
+            d3 = calc_sq_distance(x4, y4, x3, y3);
+          } else
+          {
+            k = 1 / k;
+            da1 = x2 - x1;
+            da2 = y2 - y1;
+            d2 = k * (da1 * dx + da2 * dy);
+            da1 = x3 - x1;
+            da2 = y3 - y1;
+            d3 = k * (da1 * dx + da2 * dy);
+            if (d2 > 0 && d2 < 1 && d3 > 0 && d3 < 1)
+            {
+              // Simple collinear case, 1---2---3---4
+              // We can leave just two endpoints
+              return;
+            }
+            if (d2 <= 0) d2 = calc_sq_distance(x2, y2, x1, y1);
+            else if (d2 >= 1) d2 = calc_sq_distance(x2, y2, x4, y4);
+            else             d2 = calc_sq_distance(x2, y2, x1 + d2 * dx, y1 + d2 * dy);
+
+            if (d3 <= 0) d3 = calc_sq_distance(x3, y3, x1, y1);
+            else if (d3 >= 1) d3 = calc_sq_distance(x3, y3, x4, y4);
+            else             d3 = calc_sq_distance(x3, y3, x1 + d3 * dx, y1 + d3 * dy);
+          }
+          if (d2 > d3)
+          {
+            if (d2 < distance_tolerance_square)
+            {
+              points.push_back({ x2, y2 });
+              return;
+            }
+          } else
+          {
+            if (d3 < distance_tolerance_square)
+            {
+              points.push_back({ x3, y3 });
+              return;
+            }
+          }
+          break;
+        case 1:
+          /* p1, p2, p4 are collinear, p3 is significant */
+
+          if (d3 * d3 <= distance_tolerance_square * (dx * dx + dy * dy))
+          {
+            if (angle_tolerance < curve_angle_tolerance_epsilon)
+            {
+              points.push_back({ x23, y23 });
+              return;
+            }
+
+            // Angle Condition
+            //----------------------
+            da1 = fabs(atan2(y4 - y3, x4 - x3) - atan2(y3 - y2, x3 - x2));
+            if (da1 >= MATH_PI) da1 = MATH_TWO_PI - da1;
+
+            if (da1 < angle_tolerance)
+            {
+              points.push_back({ x2, y2 });
+              points.push_back({ x3, y3 });
+              return;
+            }
+
+            if (cusp_limit != 0.0)
+            {
+              if (da1 > cusp_limit)
+              {
+                points.push_back({ x3, y3 });
+                return;
+              }
+            }
+          }
+          break;
+        case 2:
+          /* p1, p3, p4 are collinear, p2 is significant */
+
+          if (d2 * d2 <= distance_tolerance_square * (dx * dx + dy * dy))
+          {
+            if (angle_tolerance < curve_angle_tolerance_epsilon)
+            {
+              points.push_back({ x23, y23 });
+              return;
+            }
+
+            // Angle Condition
+            //----------------------
+            da1 = fabs(atan2(y3 - y2, x3 - x2) - atan2(y2 - y1, x2 - x1));
+            if (da1 >= MATH_PI) da1 = MATH_TWO_PI - da1;
+
+            if (da1 < angle_tolerance)
+            {
+              points.push_back({ x2, y2 });
+              points.push_back({ x3, y3 });
+              return;
+            }
+
+            if (cusp_limit != 0.0)
+            {
+              if (da1 > cusp_limit)
+              {
+                points.push_back({ x2, y2 });
+                return;
+              }
+            }
+          }
+          break;
+        case 3:
+          /* Regular case */
+
+          if ((d2 + d3) * (d2 + d3) <= distance_tolerance_square * (dx * dx + dy * dy))
+          {
+            // If the curvature doesn't exceed the distance_tolerance value
+            // we tend to finish subdivisions.
+            //----------------------
+            if (angle_tolerance < curve_angle_tolerance_epsilon)
+            {
+              points.push_back({ x23, y23 });
+              // dvec2 n = normal({ x2, y2 }, { x3, y3 });
+              // points.push_back(dvec2{ x23, y23 } + n * radius);
+              return;
+            }
+
+            // Angle & Cusp Condition
+            //----------------------
+            k = atan2(y3 - y2, x3 - x2);
+            da1 = fabs(k - atan2(y2 - y1, x2 - x1));
+            da2 = fabs(atan2(y4 - y3, x4 - x3) - k);
+            if (da1 >= MATH_PI) da1 = MATH_TWO_PI - da1;
+            if (da2 >= MATH_PI) da2 = MATH_TWO_PI - da2;
+
+            if (da1 + da2 < angle_tolerance)
+            {
+              // Finally we can stop the recursion
+              //----------------------
+              points.push_back({ x23, y23 });
+              // dvec2 n = normal({ x2, y2 }, { x3, y3 });
+              // points.push_back(dvec2{ x23, y23 } + n * radius);
+              return;
+            }
+
+            if (cusp_limit != 0.0)
+            {
+              if (da1 > cusp_limit)
+              {
+                points.push_back({ x2, y2 });
+                return;
+              }
+
+              if (da2 > cusp_limit)
+              {
+                points.push_back({ x3, y3 });
+                return;
+              }
+            }
+          }
+          break;
+        }
+
+        recursive(x1, y1, x12, y12, x123, y123, x1234, y1234, level + 1, recursive);
+        recursive(x1234, y1234, x234, y234, x34, y34, x4, y4, level + 1, recursive);
+        };
+
+      recursive(
+        p0.x, p0.y,
+        segment.control1.x, segment.control1.y,
+        segment.control2.x, segment.control2.y,
+        segment.end_pivot.x, segment.end_pivot.y,
+        0, recursive
+      );
+
+      // points.clear();
+
+      // for (double t : t_values) {
+      //   dvec2 p = bezier(p0, segment.control1, segment.control2, segment.end_pivot, t);
+      //   dvec2 p_prime = bezier_derivative(p0, segment.control1, segment.control2, segment.end_pivot, t);
+      //   dvec2 normal = normalize({ p_prime.y, -p_prime.x });
+
+      //   points.push_back(p + normal * radius);
+      // }
+#else
+       // double t = 0.0;
+
+       // while (t < 1.0) {
+       //   const dvec2 p = bezier(p0, segment.control1, segment.control2, segment.end_pivot, t);
+       //   const dvec2 p_prime = bezier_derivative(p0, segment.control1, segment.control2, segment.end_pivot, t);
+       //   const dvec2 p_second = bezier_second_derivative(p0, segment.control1, segment.control2, segment.end_pivot, t);
+
+       //   const double num = p_prime.x * p_second.y - p_prime.y * p_second.x;
+       //   const double den = std::pow(p_prime.x * p_prime.x + p_prime.y * p_prime.y, 1.5);
+       //   const double k = std::abs(num / den);
+
+       //   double dt = std::min(std::max(std::sqrt(0.0001 * tolerance / k), 0.01), 0.1);
+
+       //   //dt = 0.001 * MATH_PI * dt / k;
+       //   // console::log("k", k);
+       //   // console::log("dt", dt);
+
+       //   points.push_back(p);
+
+       //   t += dt;
+       // }
+
+       // console::log("points", points.size());
+
+       // for (int i = 0; i < 10; i++) {
+       //   double t = i / 10.0;
+
+       //   const dvec2 p = bezier(p0, segment.control1, segment.control2, segment.end_pivot, t);
+       //   const dvec2 p_prime = bezier_derivative(p0, segment.control1, segment.control2, segment.end_pivot, t);
+       //   const dvec2 p_second = bezier_second_derivative(p0, segment.control1, segment.control2, segment.end_pivot, t);
+
+       //   const double num = p_prime.x * p_second.y - p_prime.y * p_second.x;
+       //   const double den = std::pow(p_prime.x * p_prime.x + p_prime.y * p_prime.y, 1.5);
+
+       //   const double k = num / den;
+
+       //   const dvec2 norm = normalize({ p_prime.y, -p_prime.x });
+       //   const dvec2 rad = p + norm / k;
+
+       //   // double dt = std::max(std::sqrt(0.5 * tolerance * std::abs(k)), 0.001);
+       //   // console::log("k", k);
+       //   // console::log("dt", dt);
+
+       //   // points.push_back(p);
+       //   // lines.rect(DVEC2_TO_VEC2(p) / m_zoom + DVEC2_TO_VEC2(subpixel_offset), vec2{ 1.0f / (float)m_zoom });
+       //   lines.move_to(DVEC2_TO_VEC2(p) / m_zoom + DVEC2_TO_VEC2(subpixel_offset));
+       //   lines.line_to(DVEC2_TO_VEC2(rad) / m_zoom + DVEC2_TO_VEC2(subpixel_offset));
+       //   // points.push_back(rad);
+
+       //   // while (true) {
+       //   //   t += dt;
+       //   //   if (t >= (i + 1) / 10.0) break;
+
+       //   //   const dvec2 p = bezier(p0, segment.control1, segment.control2, segment.end_pivot, t);
+       //   //   const dvec2 p_prime = bezier_derivative(p0, segment.control1, segment.control2, segment.end_pivot, t);
+       //   //   const dvec2 p_second = bezier_second_derivative(p0, segment.control1, segment.control2, segment.end_pivot, t);
+
+       //   //   const double num = p_prime.x * p_second.y - p_prime.y * p_second.x;
+       //   //   const double den = std::pow(p_prime.x * p_prime.x + p_prime.y * p_prime.y, 1.5);
+
+       //   //   const double k = num / den;
+
+       //   //   const dvec2 norm = normalize({ p_prime.y, -p_prime.x });
+       //   //   const dvec2 rad = p + norm / k;
+
+       //   //   // dt = std::sqrt(0.5 * tolerance * std::abs(k));
+       //   //   double dt = std::max(std::sqrt(0.5 * tolerance * std::abs(k)), 0.001);
+
+       //   //   // points.push_back(p);
+       //   //   points.push_back(p);
+       //   //   // lines.move_to(DVEC2_TO_VEC2(p) / m_zoom + DVEC2_TO_VEC2(subpixel_offset));
+       //   //   // lines.line_to(DVEC2_TO_VEC2(rad) / m_zoom + DVEC2_TO_VEC2(subpixel_offset));
+       //   //   // points.push_back(rad);
+       //   // }
+       // }
+#endif
+
+      const dvec2 start = segment.start;
+
+      if (is_first) {
+        contour.move_to(start);
+        first_point = start;
+        is_first = false;
+      } else {
+        contour.add_join(last_point, start, pivot, last_dir, segment.start_normal, radius, inv_miter_limit, join);
+      }
+
+      last_dir = segment.end_normal;
+      pivot = segment.end_pivot;
+      last_point = segment.end;
+
+      if (segment.is_linear) contour.line_to(last_point);
+      // else contour.line_to(last_point);
+      // else contour.cubic_to(segment.control1, segment.control2, last_point);
+      else contour.offset_cubic(p0, segment.control1, segment.control2, pivot, last_dir, radius);
+    }
+
+    /* Backward for the inner stroke. */
+
+    is_first = true;
+
+    for (auto it = segments.rbegin(); it != segments.rend(); it++) {
+      const dvec2 p0 = d_transform_point(transform, (*it)->p0(), subpixel_offset, m_zoom);
+      const auto segment = (*it)->is_linear() ?
+        offset_segment(
+          d_transform_point(transform, (*it)->p3(), subpixel_offset, m_zoom),
+          p0,
+          radius
+        ) :
+        offset_segment(
+          d_transform_point(transform, (*it)->p3(), subpixel_offset, m_zoom),
+          d_transform_point(transform, (*it)->p2(), subpixel_offset, m_zoom),
+          d_transform_point(transform, (*it)->p1(), subpixel_offset, m_zoom),
+          p0,
+          radius
+        );
+
+      const dvec2 start = segment.start;
+
+      if (is_first) {
+        if (path.closed()) {
+          const auto raw = segments.front();
+          const auto init = raw.is_linear() ?
+            offset_segment(
+              d_transform_point(transform, raw.p3(), subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p0(), subpixel_offset, m_zoom),
+              radius
+            ) :
+            offset_segment(
+              d_transform_point(transform, raw.p3(), subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p2(), subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p1(), subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p0(), subpixel_offset, m_zoom),
+              radius
+            );
+
+          last_point = init.end;
+          last_dir = init.end_normal;
+          pivot = init.end_pivot;
+
+          contour.line_to(last_point);
+          contour.add_join(last_point, start, pivot, last_dir, segment.start_normal, radius, inv_miter_limit, join);
+        } else {
+          contour.add_cap(last_point, start, last_dir, radius, cap);
+        }
+
+        is_first = false;
+      } else {
+        contour.add_join(last_point, start, pivot, last_dir, segment.start_normal, radius, inv_miter_limit, join);
+        // if (id != last_id) {
+        //   contour.add_join(last_point, start, pivot, last_dir, segment.start_normal);
+        // } else {
+        //   contour.add_split_join(last_point, start, pivot, last_dir, segment.start_normal);
+        // }
+      }
+
+      last_dir = segment.end_normal;
+      pivot = segment.end_pivot;
+      last_point = segment.end;
+
+      if (segment.is_linear) contour.line_to(last_point);
+      // else contour.line_to(last_point);
+      // else contour.cubic_to(segment.control1, segment.control2, last_point);
+      else contour.offset_cubic(p0, segment.control1, segment.control2, pivot, last_dir, radius);
+    }
+
+    if (!path.closed()) {
+      contour.add_cap(last_point, first_point, last_dir, radius, cap);
+    }
+
+    contour.close();
+
     process_drawable(drawable, drawable_offset, clip_drawable);
+
+    Geometry::Internal::PathInternal p;
+
+    p.move_to(vec2{ Math::f24x8_to_float(contour.points.front().x) / (float)m_zoom, Math::f24x8_to_float(contour.points.front().y) / (float)m_zoom } + DVEC2_TO_VEC2(subpixel_offset));
+
+    for (f24x8x2 point : contour.points) {
+      p.line_to(vec2{ Math::f24x8_to_float(point.x) / (float)m_zoom, Math::f24x8_to_float(point.y) / (float)m_zoom } + DVEC2_TO_VEC2(subpixel_offset));
+    }
+
+    Renderer::draw_outline(p);
+
+    console::log("recursive", points.size());
+
+    for (dvec2 point : points) {
+      Geometry::Internal::PathInternal points_geo;
+
+      vec2 P = vec2{ (float)(point.x / m_zoom), (float)(point.y / m_zoom) } + DVEC2_TO_VEC2(subpixel_offset);
+
+      points_geo.move_to(P - vec2{ 3.0f, 3.0f } / m_zoom);
+      points_geo.line_to(P + vec2{ 3.0f, 3.0f } / m_zoom);
+      points_geo.move_to(P - vec2{ 3.0f, -3.0f } / m_zoom);
+      points_geo.line_to(P + vec2{ 3.0f, -3.0f } / m_zoom);
+
+      Renderer::draw_outline(points_geo);
+    }
+
+    Renderer::draw_outline(lines);
 #else
     const auto& segments = path.segments();
 
