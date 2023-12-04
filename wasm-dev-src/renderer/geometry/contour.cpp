@@ -104,10 +104,10 @@ namespace Graphick::Renderer::Geometry {
     points.push_back(m_p0);
   }
 
-  void Contour::offset_cubic(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const dvec2 end_normal, const double radius) {
+  std::unique_ptr<Contour::Parameterization> Contour::offset_cubic(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const dvec2 end_normal, const double radius) {
     GK_TOTAL("Contour::offset_cubic");
 
-    std::vector<std::pair<dvec2, dvec2>> parameterization;
+    std::unique_ptr<Parameterization> parameterization = std::make_unique<Parameterization>();
 
     const double angular_tolerance = radius > 0.5 ? std::max(2.0 * std::acos(std::max(radius - tolerance, 0.0) / radius), min_angle_tolerance) : 0.0;
 
@@ -129,17 +129,27 @@ namespace Graphick::Renderer::Geometry {
       const dvec2 p0123a = Math::lerp(p012, p123, t_cusp - curve_cusp_limit_t);
       const dvec2 p0123b = Math::lerp(p012, p123, t_cusp + curve_cusp_limit_t);
 
-      recursive_cubic_offset(p0, p01, p012, p0123a, 1, angular_tolerance, parameterization);
-      recursive_cubic_offset(p0123b, p123, p23, p3, 1, angular_tolerance, parameterization);
+      recursive_cubic_offset(p0, p01, p012, p0123a, 1, angular_tolerance, *parameterization);
+      recursive_cubic_offset(p0123b, p123, p23, p3, 1, angular_tolerance, *parameterization);
     } else {
-      recursive_cubic_offset(p0, p1, p2, p3, 0, angular_tolerance, parameterization);
+      recursive_cubic_offset(p0, p1, p2, p3, 0, angular_tolerance, *parameterization);
     }
 
-    for (auto& [p, n] : parameterization) {
+    for (auto& [p, n] : *parameterization) {
       line_to(p + n * radius);
     }
 
     line_to(p3 + end_normal * radius);
+
+    return std::move(parameterization);
+  }
+
+  void Contour::offset_cubic(const Parameterization& parameterization, const dvec2 end_point, const double radius) {
+    for (auto it = parameterization.rbegin(); it != parameterization.rend(); ++it) {
+      line_to(it->first - it->second * radius);
+    }
+
+    line_to(end_point);
   }
 
   void Contour::add_cap(const dvec2 from, const dvec2 to, const dvec2 n, const double radius, const LineCap cap) {
@@ -235,7 +245,7 @@ namespace Graphick::Renderer::Geometry {
     }
   }
 
-  void Contour::recursive_cubic_offset(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const unsigned int level, const double angular_tolerance, std::vector<std::pair<dvec2, dvec2>>& parameterization) {
+  void Contour::recursive_cubic_offset(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const unsigned int level, const double angular_tolerance, Parameterization& parameterization) {
     if (level > curve_recursion_limit) return;
 
     /* Calculate all the mid-points of the line segments */

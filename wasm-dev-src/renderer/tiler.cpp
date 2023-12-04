@@ -637,7 +637,7 @@ namespace Graphick::Renderer {
   void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {
     GK_TOTAL("Tiler::process_stroke");
 
-    const float sw = 25.0f * stroke.width;
+    const float sw = stroke.width;
 
     const float radius_safe = 0.55f * sw * (stroke.join == LineJoin::Miter ? stroke.miter_limit : 1.0f);
     const double radius = 0.5f * sw * m_zoom;
@@ -653,7 +653,8 @@ namespace Graphick::Renderer {
     const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
-    const bool clip_drawable = sw > std::min(m_visible.width(), m_visible.height());
+    const bool clip_drawable = overlap < OVERLAP_CLIP_THRESHOLD;
+    // const bool clip_drawable = sw > std::min(m_visible.width(), m_visible.height());
 
     f24x8x4 bound = {
       Math::double_to_f24x8((path_rect.min.x - offset.x) * m_zoom - m_subpixel.x),
@@ -669,9 +670,6 @@ namespace Graphick::Renderer {
 
     Drawable drawable(1, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, bound);
     Geometry::Contour& contour = drawable.contours.front();
-
-    std::vector<dvec2> points;
-    Geometry::Internal::PathInternal lines;
 
     LineCap cap = LineCap::Butt;
     LineJoin join = LineJoin::Bevel;
@@ -692,6 +690,8 @@ namespace Graphick::Renderer {
 
       return process_drawable(drawable, drawable_offset, clip_drawable);
     }
+
+    std::vector<std::unique_ptr<Geometry::Contour::Parameterization>> parameterizations;
 
     dvec2 last_dir = { 0.0, 0.0 };
     dvec2 first_point = { 0.0, 0.0 };
@@ -763,7 +763,11 @@ namespace Graphick::Renderer {
       last_point = segment.end;
 
       if (segment.is_linear) contour.line_to(last_point);
-      else contour.offset_cubic(p0, segment.control1, segment.control2, pivot, last_dir, radius);
+      else {
+        parameterizations.push_back(std::move(
+          contour.offset_cubic(p0, segment.control1, segment.control2, pivot, last_dir, radius)
+        ));
+      }
     }
 
     /* Backward for the inner stroke. */
@@ -825,7 +829,12 @@ namespace Graphick::Renderer {
       last_point = segment.end;
 
       if (segment.is_linear) contour.line_to(last_point);
-      else contour.offset_cubic(p3, segment.control1, segment.control2, pivot, last_dir, radius);
+      else {
+        std::unique_ptr<Geometry::Contour::Parameterization> parameterization = std::move(parameterizations.back());
+
+        contour.offset_cubic(*parameterization, last_point, radius);
+        parameterizations.pop_back();
+      }
     }
 
     if (!closed) {
