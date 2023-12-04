@@ -571,8 +571,8 @@ namespace Graphick::Renderer::Geometry {
     Segment& last_segment = m_segments.back();
 
     if (Math::is_almost_equal(last_segment.p3(), first_segment.p0(), GK_POINT_EPSILON)) {
-      std::shared_ptr<Segment> new_first_segment = std::make_shared<Segment>(last_segment.m_p3, first_segment.p1(), first_segment.p2(), first_segment.m_p3);
-      std::shared_ptr<Segment> new_second_segment = std::make_shared<Segment>(last_segment.m_p0, last_segment.p1(), last_segment.p2(), last_segment.m_p3);
+      std::shared_ptr<Segment> new_first_segment = std::make_shared<Segment>(last_segment.m_p3, first_segment.has_p1() ? std::optional{ first_segment.p1() } : std::nullopt, first_segment.has_p2() ? std::optional{ first_segment.p2() } : std::nullopt, first_segment.m_p3);
+      std::shared_ptr<Segment> new_second_segment = std::make_shared<Segment>(last_segment.m_p0, last_segment.has_p1() ? std::optional{ last_segment.p1() } : std::nullopt, last_segment.has_p2() ? std::optional{ last_segment.p2() } : std::nullopt, last_segment.m_p3);
 
       m_segments.pop_back();
       m_segments.erase(0);

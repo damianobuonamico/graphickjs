@@ -251,7 +251,7 @@ namespace Graphick::Math {
    * @return The length of the vector.
    */
   inline float length(const vec4& v) {
-    return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+    return std::sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
   }
 
   /* -- dot -- */
@@ -264,6 +264,17 @@ namespace Graphick::Math {
    * @return The dot product of the two vectors.
    */
   constexpr float dot(const vec2 v1, const vec2 v2) {
+    return v1.x * v2.x + v1.y * v2.y;
+  }
+
+  /**
+   * @brief Computes the dot product of two dvec2s.
+   *
+   * @param v1 The first vector.
+   * @param v2 The second vector.
+   * @return The dot product of the two vectors.
+   */
+  constexpr double dot(const dvec2 v1, const dvec2 v2) {
     return v1.x * v2.x + v1.y * v2.y;
   }
 
@@ -399,6 +410,18 @@ namespace Graphick::Math {
   }
 
   /**
+   * @brief Calculates the squared distance between two dvec2.
+   *
+   * @param v1 The first vector.
+   * @param v2 The second vector.
+   * @return The squared distance between the two vectors.
+   */
+  constexpr double squared_distance(const dvec2 v1, const dvec2 v2) {
+    dvec2 v = v2 - v1;
+    return dot(v, v);
+  }
+
+  /**
    * @brief Calculates the squared distance between two vec3.
    *
    * @param v1 The first vector.
@@ -434,6 +457,21 @@ namespace Graphick::Math {
    */
   constexpr vec2 lerp(const vec2 v1, const vec2 v2, float t) {
     return vec2{
+      v1.x + t * (v2.x - v1.x),
+      v1.y + t * (v2.y - v1.y)
+    };
+  }
+
+  /**
+   * @brief Linearly interpolates between two dvec2.
+   *
+   * @param v1 The first vector.
+   * @param v2 The second vector.
+   * @param t The interpolation factor.
+   * @return The interpolated vector.
+   */
+  constexpr dvec2 lerp(const dvec2 v1, const dvec2 v2, double t) {
+    return dvec2{
       v1.x + t * (v2.x - v1.x),
       v1.y + t * (v2.y - v1.y)
     };
@@ -624,9 +662,25 @@ namespace Graphick::Math {
    */
   constexpr vec2 normalize(const vec2 v) {
     float len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     return vec2{
+      v.x * len,
+      v.y * len,
+    };
+  }
+
+  /**
+   * @brief Normalizes a dvec2 to have a length of 1.
+   *
+   * @param v The vector to normalize.
+   * @return The normalized dvec2.
+   */
+  constexpr dvec2 normalize(const dvec2 v) {
+    double len = v.x * v.x + v.y * v.y;
+    if (len > 0) len = 1 / std::sqrt(len);
+
+    return dvec2{
       v.x * len,
       v.y * len,
     };
@@ -640,7 +694,7 @@ namespace Graphick::Math {
    */
   constexpr vec3 normalize(const vec3& v) {
     float len = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     return vec3{
       v.x * len,
@@ -657,7 +711,7 @@ namespace Graphick::Math {
    */
   constexpr vec4 normalize(const vec4& v) {
     float len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     return vec4{
       v.x * len,
@@ -676,7 +730,7 @@ namespace Graphick::Math {
    */
   constexpr vec2& normalize(const vec2 v, vec2& out) {
     float len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len;
     out.y = v.y * len;
@@ -693,7 +747,7 @@ namespace Graphick::Math {
    */
   constexpr vec3& normalize(const vec3& v, vec3& out) {
     float len = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len;
     out.y = v.y * len;
@@ -711,7 +765,7 @@ namespace Graphick::Math {
    */
   constexpr vec4& normalize(const vec4& v, vec4& out) {
     float len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len;
     out.y = v.y * len;
@@ -732,7 +786,7 @@ namespace Graphick::Math {
    */
   constexpr vec2 normalize_length(const vec2 v, float t) {
     float len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     return vec2{
       v.x * len * t,
@@ -749,7 +803,7 @@ namespace Graphick::Math {
    */
   constexpr vec3 normalize_length(const vec3& v, float t) {
     float len = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     return vec3{
       v.x * len * t,
@@ -767,7 +821,7 @@ namespace Graphick::Math {
    */
   constexpr vec4 normalize_length(const vec4& v, float t) {
     float len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     return vec4{
       v.x * len * t,
@@ -787,7 +841,7 @@ namespace Graphick::Math {
    */
   constexpr vec2& normalize_length(const vec2 v, float t, vec2& out) {
     float len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len * t;
     out.y = v.y * len * t;
@@ -805,7 +859,7 @@ namespace Graphick::Math {
    */
   constexpr vec3& normalize_length(const vec3& v, float t, vec3& out) {
     float len = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len * t;
     out.y = v.y * len * t;
@@ -824,7 +878,7 @@ namespace Graphick::Math {
    */
   constexpr vec4& normalize_length(const vec4& v, float t, vec4& out) {
     float len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-    if (len > 0) len = 1 / std::sqrt(len);
+    if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len * t;
     out.y = v.y * len * t;
@@ -1424,7 +1478,17 @@ namespace Graphick::Math {
    * @return The normal vector.
    */
   constexpr vec2 normal(const vec2 v1, const vec2 v2) {
-    return normalize({ v2.y - v1.y, v1.x - v2.x });
+    return normalize(vec2{ v2.y - v1.y, v1.x - v2.x });
+  }
+
+  /**
+   * @brief Calculates the normal vector of a dvec2.
+   *
+   * @param v The vector to calculate the normal vector for.
+   * @return The normal vector.
+   */
+  constexpr dvec2 normal(const dvec2 v1, const dvec2 v2) {
+    return normalize(dvec2{ v2.y - v1.y, v1.x - v2.x });
   }
 
   /* -- swap_coordinates -- */

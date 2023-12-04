@@ -34,7 +34,7 @@ namespace Graphick::Renderer::Geometry {
     void reverse();
   private:
     void arc(const dvec2 center, const dvec2 from, const double radius, const dvec2 to);
-    void recursive_cubic(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, unsigned int level, const double distance_tolerance, const double angle_tolerance, const double cusp_limit);
+    void recursive_cubic_offset(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const unsigned int level, const double angular_tolerance, std::vector<std::pair<dvec2, dvec2>>& parameterization);
   private:
     f24x8x2 m_p0 = { 0, 0 };
     dvec2 m_d_p0 = { 0, 0 };

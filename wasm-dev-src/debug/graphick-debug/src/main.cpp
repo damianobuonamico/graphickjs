@@ -146,10 +146,55 @@ int main() {
   // path.line_to({ 250.0f, 200.0f });
   // path.close();
 
-  path.move_to({ 100.0f, 100.0f });
-  // path.line_to({ 100.0f, 100.0f });
-  // path.line_to({ 100.0f, 100.0f });
-  path.cubic_to({ 200.0f, 100.0f }, { 147.0f, 136.0f }, { 150.0f, 140.0f });
+  /* Stroking Robustness */
+
+  // path.move_to({ 230.0f, 324.0f });
+  // path.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Handled
+
+  // path.move_to({ 221.0f, 718.0f });
+  // path.cubic_to({ 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f }); // Handled
+
+  // path.move_to({ 295.0f, 343.0f });
+  // path.cubic_to({ 436.0f, 203.0f }, { 307.0f, 221.0f }, { 540.0f, 323.0f }); // Handled
+
+  // path.move_to({ 50.0f, 200.0f });
+  // path.cubic_to({ -150.0f, 100.0f }, { -50.0f, 100.0f }, { -50.0f, 200.0f }); // Handled
+
+  // path.move_to({ 50.0f, 200.0f });
+  // path.cubic_to({ -150.0f, 100.0f }, { -37.0f, 112.0f }, { -50.0f, 200.0f }); // Handled
+
+  // path.move_to({ 0.0f, 0.0f });
+  // path.cubic_to({ 110.0f, 100.0f }, { -10.0f, 100.0f }, { 100.0f, 0.0f }); // Handled
+
+  // path.move_to({ 0.0f, 0.0f });
+  // path.cubic_to({ 101.0f, 100.0f }, { -1.0f, 100.0f }, { 100.0f, 0.0f }); // Handled
+
+  // path.move_to({ 0.0f, 0.0f });
+  // path.cubic_to({ 100.0f, 100.0f }, { 0.0f, 100.0f }, { 100.0f, 0.0f }); // Handled
+
+  path.move_to({ 0.0f, 0.0f });
+  path.cubic_to({ 10.0f, 60.0f }, { 0.0f, 60.0f }, { 10.0f, 50.0f }); // High Curvature Endpoint (naive)
+
+  // path.move_to({ 357.188f, 170.417f });
+  // path.cubic_to({ 360.313f, 175.417f }, { 1304.06f, -507.917f }, { 0.0f, 0.0f }); // High Curvature Endpoint (naive)
+
+  // path.move_to({ 75.8624f, 74.2385f });
+  // path.cubic_to({ 272.016f, 272.517f }, { 39.1216f, 36.2832f }, { 200.0f, 200.0f }); // Handled
+
+  // path.move_to({ 129.012f, 295.262f });
+  // path.cubic_to({ 129.113f, 295.551f }, { 116.507f, 268.718f }, { 117.396f, 270.102f }); // High Curvature Endpoint (naive)
+
+  // path.move_to({ 0.0f, 150.0f });
+  // path.cubic_to({ -60.0f, 250.0f }, { -10.0f, 350.0f }, { 150.0f, 450.0f }); // Handled
+
+  // path.move_to({ 0.0f, 0.0f });
+  // path.cubic_to({ 33.0f, 66.0f }, { 66.0f, 66.0f }, { 100.0f, 0.0f }); // Handled
+
+  // path.move_to({ 100.0f, 100.0f });
+  // path.cubic_to({ 203.243f, 170.858f }, { 100.0f, 100.0f }, { 200.0f, 200.0f }); // Handled
+
+  // path.move_to({ 100.0f, 100.0f });
+  // path.cubic_to({ 200.0f, 200.0f }, { 529.0f, 160.0f }, { 400.0f, 400.0f }); // Handled
 
   // path.move_to({ 0.0f, 0.0f });
   // path.cubic_to({ -2.0f, 10.0f }, { -2.0f, 90.0f }, { 0.0f, 100.0f });
@@ -175,8 +220,8 @@ int main() {
 
   // path1.close();
 
-  test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
-  test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
+  // test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
+  test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
   // test_entity1.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });
   // test_entity1.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
 #endif
