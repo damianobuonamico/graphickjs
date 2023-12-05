@@ -1,11 +1,17 @@
-import { createSignal, For, Component, onMount, createEffect } from 'solid-js';
-import { onCleanup } from 'solid-js';
-import Button from '@inputs/Button';
-import { calculateAltLabel, MenuItem, MenuItems, menuNext, menuPrev } from './ControlledMenu';
-import Menu from './Menu';
-import { KEYS } from '@utils/keys';
-import MenuKeyCallback from './menuKeyCallback';
-import InputManager from '@editor/input';
+import { createSignal, For, Component, onMount, createEffect } from "solid-js";
+import { onCleanup } from "solid-js";
+import Button from "@inputs/Button";
+import {
+  calculateAltLabel,
+  MenuItem,
+  MenuItems,
+  menuNext,
+  menuPrev,
+} from "./ControlledMenu";
+import Menu from "./Menu";
+import { KEYS } from "@utils/keys";
+import MenuKeyCallback from "./menuKeyCallback";
+import InputManager from "@editor/input";
 
 const FileMenu: Component<{ items: MenuItems }> = (props) => {
   const [focus, setFocus] = createSignal(false);
@@ -28,7 +34,10 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
         break;
       }
       case KEYS.ENTER: {
-        if (!props.items[active()].submenu || !props.items[active()].submenu!.length) {
+        if (
+          !props.items[active()].submenu ||
+          !props.items[active()].submenu!.length
+        ) {
           onClick(props.items[active()]);
           break;
         }
@@ -62,7 +71,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (InputManager.down) return;
+    // if (InputManager.down) return;
     if (e.key === KEYS.ALT) {
       e.preventDefault();
       const last = alt();
@@ -86,23 +95,24 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
   };
 
   const onMouseDown = (e: MouseEvent) => {
-    if (menuRef && !menuRef.contains(e.target as Node) && !expanded()) onClose();
+    if (menuRef && !menuRef.contains(e.target as Node) && !expanded())
+      onClose();
   };
 
   createEffect(() => {
     if (alt() === true) {
-      window.addEventListener('click', onMouseDown);
+      window.addEventListener("click", onMouseDown);
     } else {
-      window.removeEventListener('click', onMouseDown);
+      window.removeEventListener("click", onMouseDown);
     }
   });
 
   onMount(() => {
-    window.addEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
   });
 
   onCleanup(() => {
-    window.removeEventListener('keydown', onKey);
+    window.removeEventListener("keydown", onKey);
   });
 
   const onClose = () => {
@@ -126,9 +136,9 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
               <Menu
                 menuButton={{
                   label: item.label,
-                  variant: 'file-menu',
+                  variant: "file-menu",
                   icon: item.icon,
-                  key: item.key
+                  key: item.key,
                 }}
                 disabled={item.disabled}
                 items={item.submenu}
@@ -161,7 +171,7 @@ const FileMenu: Component<{ items: MenuItems }> = (props) => {
                 active={focus() && active() === index()}
                 leftIcon={item.icon}
               >
-                {(alt() && item.key && typeof item.label === 'string'
+                {(alt() && item.key && typeof item.label === "string"
                   ? calculateAltLabel(item.label, item.key)
                   : false) || item.label}
               </Button>

@@ -1,6 +1,5 @@
 import { Component, createEffect, Match, onMount, Switch } from "solid-js";
 import { createStore } from "solid-js/store";
-import SceneManager from "./scene";
 import InputManager from "./input";
 import Whiteboard from "@/ui/workspaces/Whiteboard";
 import Designer from "@/ui/workspaces/Designer";
@@ -11,22 +10,16 @@ const Editor: Component = () => {
     name: "Untitled",
     workspace: "designer",
     tool: "select",
-    loading: true,
+    loading: false,
     timeline: false,
     timelineHeight: 500,
   });
 
-  InputManager.init({}, (tool: Tool) => {
+  InputManager.init((tool: Tool) => {
     setState({ tool });
   });
-  SceneManager.init(
-    state,
-    (loading) => setState({ loading }),
-    (workspace) => setState({ workspace: workspace })
-  );
 
   createEffect(() => {
-    SceneManager.onWorkspaceChange(state.workspace);
     document.documentElement.style.setProperty(
       "--primary-color",
       getWorkspacePrimaryColor(state.workspace)
@@ -35,10 +28,9 @@ const Editor: Component = () => {
 
   onMount(() =>
     setTimeout(() => {
-      InputManager.init({}, (tool: Tool) => {
+      InputManager.init((tool: Tool) => {
         setState({ tool });
       });
-      SceneManager.render();
     }, 25)
   );
 

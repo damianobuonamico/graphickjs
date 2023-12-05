@@ -1,29 +1,28 @@
-import { Component, createEffect } from 'solid-js';
-import { Button } from '../inputs';
-import AnimationManager from '@/editor/animation/animation';
-import { PauseIcon, PlayIcon, PlusIcon, StopIcon } from '../icons';
-import SelectionManager from '@/editor/selection';
+import { Component, createEffect } from "solid-js";
+import { Button } from "../inputs";
+import { PauseIcon, PlayIcon, PlusIcon, StopIcon } from "../icons";
 
-const Timeline: Component<{ onResize: (movement: number) => void }> = (props) => {
+const Timeline: Component<{ onResize: (movement: number) => void }> = (
+  props
+) => {
   let canvas: HTMLCanvasElement | undefined;
 
   createEffect(() => {
     if (canvas) {
-      AnimationManager.resize();
-      canvas.style.opacity = '1';
+      canvas.style.opacity = "1";
     }
   });
 
   const onPointerDown = () => {
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
   };
 
   const onPointerMove = (e: PointerEvent) => props.onResize(e.clientY);
 
   const onPointerUp = () => {
-    window.removeEventListener('pointermove', onPointerMove);
-    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
   };
 
   return (
@@ -38,14 +37,13 @@ const Timeline: Component<{ onResize: (movement: number) => void }> = (props) =>
         <canvas
           class="absolute"
           ref={(ref) => {
-            if (ref !== null) AnimationManager.canvas = ref;
-            ref.style.opacity = '0';
+            ref.style.opacity = "0";
             canvas = ref;
           }}
         />
 
         <div class="z-50 flex h-fit">
-          <Button onClick={() => AnimationManager.stop()}>
+          {/* <Button onClick={() => AnimationManager.stop()}>
             <StopIcon />
           </Button>
           <Button onClick={() => AnimationManager.pause()}>
@@ -62,7 +60,7 @@ const Timeline: Component<{ onResize: (movement: number) => void }> = (props) =>
             }}
           >
             <PlusIcon />
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>
