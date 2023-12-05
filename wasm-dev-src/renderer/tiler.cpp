@@ -477,6 +477,16 @@ namespace Graphick::Renderer {
     }
   }
 
+  /* -- Batches -- */
+
+  bool Tiler::MaskedTilesBatch::can_batch(const DrawableTiler::Mask& mask) const {
+    bool segments_available = segments_ptr + 4 + 8 * mask.segments_size < segments + SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE * 4;
+    bool cover_available = cover_table_ptr + TILE_SIZE < cover_table + SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE;
+    
+    return segments_available && cover_available;
+  }
+
+
   /* -- Tiler -- */
 
   void Tiler::reset(const Viewport& viewport) {
@@ -608,30 +618,6 @@ namespace Graphick::Renderer {
       normal_cd,
       d
     };
-  }
-
-  static dvec2 bezier(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const double t) {
-    const double u = 1.0 - t;
-    const double tt = t * t;
-    const double uu = u * u;
-    const double uuu = uu * u;
-    const double ttt = tt * t;
-
-    return uuu * p0 + 3.0 * uu * t * p1 + 3.0 * u * tt * p2 + ttt * p3;
-  }
-
-  static dvec2 bezier_derivative(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const double t) {
-    const double u = 1.0 - t;
-    const double tt = t * t;
-    const double uu = u * u;
-
-    return 3.0 * uu * (p1 - p0) + 6.0 * u * t * (p2 - p1) + 3.0 * tt * (p3 - p2);
-  }
-
-  static dvec2 bezier_second_derivative(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const double t) {
-    const double u = 1.0 - t;
-
-    return 6.0 * u * (p2 - 2.0 * p1 + p0) + 6.0 * t * (p3 - 2.0 * p2 + p1);
   }
 
   void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {
@@ -931,8 +917,8 @@ namespace Graphick::Renderer {
     const ivec2 tiler_offset = tiler.offset();
     const ivec2 size = tiler.size();
 
-    FilledTilesBatch& fills_batch = m_filled_batches.front();
-    MaskedTilesBatch& masks_batch = m_masked_batches.front();
+    FilledTilesBatch* fills_batch = &m_filled_batches.back();
+    MaskedTilesBatch* masks_batch = &m_masked_batches.back();
 
     for (const auto& mask : masks) {
       ivec2 coords = {
@@ -945,33 +931,39 @@ namespace Graphick::Renderer {
       int absolute_index = tile_index(coords, m_size);
       if (m_culled_tiles[absolute_index]) continue;
 
-      int offset = (int)(masks_batch.segments_ptr - masks_batch.segments) / 4;
-      int cover_offset = (int)(masks_batch.cover_table_ptr - masks_batch.cover_table);
+      if (!masks_batch->can_batch(mask)) {
+        masks_batch->can_batch(mask);
+        m_masked_batches.emplace_back();
+        masks_batch = &(m_masked_batches.back());
+      }
 
-      masks_batch.segments_ptr[0] = (uint8_t)mask.segments_size;
-      masks_batch.segments_ptr[1] = (uint8_t)(mask.segments_size >> 8);
-      masks_batch.segments_ptr[2] = (uint8_t)(mask.segments_size >> 16);
-      masks_batch.segments_ptr[3] = (uint8_t)(mask.segments_size >> 24);
-      masks_batch.segments_ptr += 4;
+      int offset = (int)(masks_batch->segments_ptr - masks_batch->segments) / 4;
+      int cover_offset = (int)(masks_batch->cover_table_ptr - masks_batch->cover_table);
+
+      masks_batch->segments_ptr[0] = (uint8_t)mask.segments_size;
+      masks_batch->segments_ptr[1] = (uint8_t)(mask.segments_size >> 8);
+      masks_batch->segments_ptr[2] = (uint8_t)(mask.segments_size >> 16);
+      masks_batch->segments_ptr[3] = (uint8_t)(mask.segments_size >> 24);
+      masks_batch->segments_ptr += 4;
 
       for (size_t i = 0; i < mask.segments_size; i++) {
-        masks_batch.segments_ptr[0] = static_cast<uint8_t>(mask.segments[i].x0 >> FRACBITS);
-        masks_batch.segments_ptr[1] = static_cast<uint8_t>(mask.segments[i].x0);
-        masks_batch.segments_ptr[2] = static_cast<uint8_t>(mask.segments[i].y0 >> FRACBITS);
-        masks_batch.segments_ptr[3] = static_cast<uint8_t>(mask.segments[i].y0);
-        masks_batch.segments_ptr[4] = static_cast<uint8_t>(mask.segments[i].x1 >> FRACBITS);
-        masks_batch.segments_ptr[5] = static_cast<uint8_t>(mask.segments[i].x1);
-        masks_batch.segments_ptr[6] = static_cast<uint8_t>(mask.segments[i].y1 >> FRACBITS);
-        masks_batch.segments_ptr[7] = static_cast<uint8_t>(mask.segments[i].y1);
+        masks_batch->segments_ptr[0] = static_cast<uint8_t>(mask.segments[i].x0 >> FRACBITS);
+        masks_batch->segments_ptr[1] = static_cast<uint8_t>(mask.segments[i].x0);
+        masks_batch->segments_ptr[2] = static_cast<uint8_t>(mask.segments[i].y0 >> FRACBITS);
+        masks_batch->segments_ptr[3] = static_cast<uint8_t>(mask.segments[i].y0);
+        masks_batch->segments_ptr[4] = static_cast<uint8_t>(mask.segments[i].x1 >> FRACBITS);
+        masks_batch->segments_ptr[5] = static_cast<uint8_t>(mask.segments[i].x1);
+        masks_batch->segments_ptr[6] = static_cast<uint8_t>(mask.segments[i].y1 >> FRACBITS);
+        masks_batch->segments_ptr[7] = static_cast<uint8_t>(mask.segments[i].y1);
 
-        masks_batch.segments_ptr += 8;
+        masks_batch->segments_ptr += 8;
       }
 
       // TODO: bounds check
-      memcpy(masks_batch.cover_table_ptr, &mask.cover_table, TILE_SIZE * sizeof(float));
-      masks_batch.cover_table_ptr += TILE_SIZE;
+      memcpy(masks_batch->cover_table_ptr, &mask.cover_table, TILE_SIZE * sizeof(float));
+      masks_batch->cover_table_ptr += TILE_SIZE;
 
-      masks_batch.tiles.push_back(MaskedTile{
+      masks_batch->tiles.push_back(MaskedTile{
         drawable.paint.color,
         absolute_index,
         { (uint16_t)(offset % SEGMENTS_TEXTURE_SIZE), (uint16_t)(offset / SEGMENTS_TEXTURE_SIZE) },
@@ -993,7 +985,7 @@ namespace Graphick::Renderer {
         size_t index = tile_index({ coords.x + i, coords.y }, m_size);
         if (!m_culled_tiles[index]/*&& color.a == 1.0f*/) {
           // TODO: abstract and avoid size_t to int conversion
-          fills_batch.tiles.push_back({ drawable.paint.color, (int)index, drawable.paint.z_index });
+          fills_batch->tiles.push_back({ drawable.paint.color, (int)index, drawable.paint.z_index });
           m_culled_tiles[index] = true;
         }
       }

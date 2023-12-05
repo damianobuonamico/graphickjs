@@ -235,7 +235,7 @@ int main() {
     Graphick::Editor::Editor::render(true);
 
     glfwSwapBuffers(window);
-  }
+}
 
   Graphick::Editor::Editor::shutdown();
 

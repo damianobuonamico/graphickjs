@@ -243,10 +243,25 @@ namespace Graphick::Renderer {
         cover_table_ptr = cover_table;
       }
 
+      MaskedTilesBatch(MaskedTilesBatch&& other) {
+        tiles = std::move(other.tiles);
+        segments = std::move(other.segments);
+        segments_ptr = other.segments_ptr;
+        cover_table = std::move(other.cover_table);
+        cover_table_ptr = other.cover_table_ptr;
+
+        other.segments = nullptr;
+        other.segments_ptr = nullptr;
+        other.cover_table = nullptr;
+        other.cover_table_ptr = nullptr;
+      }
+
       ~MaskedTilesBatch() {
         delete[] segments;
         delete[] cover_table;
       }
+
+      bool can_batch(const DrawableTiler::Mask& mask) const;
     };
   public:
     /**

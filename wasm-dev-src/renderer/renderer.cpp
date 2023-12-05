@@ -429,97 +429,101 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::draw_masked_tiles() {
+    console::log("batches", m_tiler.masked_tiles_batches().size());
+
+    for (auto it = m_tiler.masked_tiles_batches().rbegin(); it != m_tiler.masked_tiles_batches().rend(); it++) {
 #ifdef USE_F8x8
-    const Tiler::MaskedTilesBatch& batch = m_tiler.masked_tiles_batches().front();
-    const uint8_t* segments = batch.segments;
-    const float* cover_table = batch.cover_table;
+      const Tiler::MaskedTilesBatch& batch = *it;
+      const uint8_t* segments = batch.segments;
+      const float* cover_table = batch.cover_table;
 
-    const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(batch.tiles.rbegin(), batch.tiles.rend());
+      const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(batch.tiles.rbegin(), batch.tiles.rend());
 #else
-    const auto& reversed_tiles = m_tiler.masked_tiles();
-    const uint8_t* segments = m_tiler.segments();
-    const float* cover_table = m_tiler.cover_table();
+      const auto& reversed_tiles = m_tiler.masked_tiles();
+      const uint8_t* segments = m_tiler.segments();
+      const float* cover_table = m_tiler.cover_table();
 
-    const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reversed_tiles.rbegin(), reversed_tiles.rend());
+      const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reversed_tiles.rbegin(), reversed_tiles.rend());
 #endif
 
-    uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<MaskedTile>(tiles.size(), "MaskedTiles");
+      uuid tiles_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<MaskedTile>(tiles.size(), "MaskedTiles");
 
-    const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
-    const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
-    const GPU::Buffer& tiles_buffer = GPU::Memory::Allocator::get_general_buffer(tiles_buffer_id);
-    const GPU::Texture& segments_texture = GPU::Memory::Allocator::get_texture(m_masks_texture_id);
-    const GPU::Texture& cover_table_texture = GPU::Memory::Allocator::get_texture(m_cover_table_id);
+      const GPU::Buffer& quad_vertex_positions_buffer = GPU::Memory::Allocator::get_general_buffer(m_quad_vertex_positions_buffer_id);
+      const GPU::Buffer& quad_vertex_indices_buffer = GPU::Memory::Allocator::get_index_buffer(m_quad_vertex_indices_buffer_id);
+      const GPU::Buffer& tiles_buffer = GPU::Memory::Allocator::get_general_buffer(tiles_buffer_id);
+      const GPU::Texture& segments_texture = GPU::Memory::Allocator::get_texture(m_masks_texture_id);
+      const GPU::Texture& cover_table_texture = GPU::Memory::Allocator::get_texture(m_cover_table_id);
 
-    GPU::Device::upload_to_buffer(tiles_buffer, 0, tiles, GPU::BufferTarget::Vertex);
-    GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, segments);
-    GPU::Device::upload_to_texture(cover_table_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, cover_table);
+      GPU::Device::upload_to_buffer(tiles_buffer, 0, tiles, GPU::BufferTarget::Vertex);
+      GPU::Device::upload_to_texture(segments_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, segments);
+      GPU::Device::upload_to_texture(cover_table_texture, { { 0.0f, 0.0f }, { (float)SEGMENTS_TEXTURE_SIZE, (float)SEGMENTS_TEXTURE_SIZE } }, cover_table);
 
-    GPU::MaskedTileVertexArray tile_vertex_array(
-      m_programs.masked_tile_program,
-      tiles_buffer,
-      quad_vertex_positions_buffer,
-      quad_vertex_indices_buffer
-    );
+      GPU::MaskedTileVertexArray tile_vertex_array(
+        m_programs.masked_tile_program,
+        tiles_buffer,
+        quad_vertex_positions_buffer,
+        quad_vertex_indices_buffer
+      );
 
-    GPU::RenderState state = {
-      nullptr,
-      m_programs.masked_tile_program.program,
-      *tile_vertex_array.vertex_array,
-      GPU::Primitive::Triangles,
-      {
-        { m_programs.masked_tile_program.masks_texture, segments_texture },
-        { m_programs.masked_tile_program.cover_table_texture, cover_table_texture }
-      },
-      {},
-      {
-        { m_programs.masked_tile_program.offset_uniform, (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE },
-        { m_programs.masked_tile_program.tile_size_uniform, (int)TILE_SIZE },
-        { m_programs.masked_tile_program.framebuffer_size_uniform, m_viewport.size },
-        { m_programs.masked_tile_program.masks_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE },
-        { m_programs.masked_tile_program.cover_table_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE },
-      },
-      {
-        { 0.0f, 0.0f },
-        m_viewport.size,
-      },
-      {
-        GPU::BlendState{
-          GPU::BlendFactor::SrcAlpha,
-          GPU::BlendFactor::OneMinusSrcAlpha,
-          GPU::BlendFactor::SrcAlpha,
-          GPU::BlendFactor::OneMinusSrcAlpha,
-          GPU::BlendOp::Add,
-        },
-        GPU::DepthState{
-          GPU::DepthFunc::Lequal,
-          false
-        },
-        std::nullopt,
+      GPU::RenderState state = {
+        nullptr,
+        m_programs.masked_tile_program.program,
+        *tile_vertex_array.vertex_array,
+        GPU::Primitive::Triangles,
         {
-        std::nullopt,
-        std::nullopt,
-        std::nullopt
-      },
-      true
+          { m_programs.masked_tile_program.masks_texture, segments_texture },
+          { m_programs.masked_tile_program.cover_table_texture, cover_table_texture }
+        },
+        {},
+        {
+          { m_programs.masked_tile_program.offset_uniform, (m_viewport.position * m_viewport.zoom) % TILE_SIZE - TILE_SIZE },
+          { m_programs.masked_tile_program.tile_size_uniform, (int)TILE_SIZE },
+          { m_programs.masked_tile_program.framebuffer_size_uniform, m_viewport.size },
+          { m_programs.masked_tile_program.masks_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE },
+          { m_programs.masked_tile_program.cover_table_texture_size_uniform, (int)SEGMENTS_TEXTURE_SIZE },
+        },
+        {
+          { 0.0f, 0.0f },
+          m_viewport.size,
+        },
+        {
+          GPU::BlendState{
+            GPU::BlendFactor::SrcAlpha,
+            GPU::BlendFactor::OneMinusSrcAlpha,
+            GPU::BlendFactor::SrcAlpha,
+            GPU::BlendFactor::OneMinusSrcAlpha,
+            GPU::BlendOp::Add,
+          },
+          GPU::DepthState{
+            GPU::DepthFunc::Lequal,
+            false
+          },
+          std::nullopt,
+          {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+      };
+
+      GPU::Device::draw_elements_instanced(6, tiles.size(), state);
+
+      GPU::Memory::Allocator::free_general_buffer(tiles_buffer_id);
+
+      // const std::vector<MaskedTile>& reverse_tiles = m_tiler.masked_tiles();
+      // const std::vector<uint8_t*> reverse_textures = m_tiler.masks_textures_data();
+
+      // if (reverse_tiles.empty() || reverse_textures.empty()) return;
+
+      // const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reverse_tiles.rbegin(), reverse_tiles.rend());
+      // const std::vector<uint8_t*> textures = std::vector<uint8_t*>(reverse_textures.rbegin(), reverse_textures.rend());
+
+      // for (size_t i = 0; i < textures.size(); i++) {
+      //   draw_masked_tiles_batch(tiles, i, textures);
+      // }
     }
-    };
-
-    GPU::Device::draw_elements_instanced(6, tiles.size(), state);
-
-    GPU::Memory::Allocator::free_general_buffer(tiles_buffer_id);
-
-    // const std::vector<MaskedTile>& reverse_tiles = m_tiler.masked_tiles();
-    // const std::vector<uint8_t*> reverse_textures = m_tiler.masks_textures_data();
-
-    // if (reverse_tiles.empty() || reverse_textures.empty()) return;
-
-    // const std::vector<MaskedTile> tiles = std::vector<MaskedTile>(reverse_tiles.rbegin(), reverse_tiles.rend());
-    // const std::vector<uint8_t*> textures = std::vector<uint8_t*>(reverse_textures.rbegin(), reverse_textures.rend());
-
-    // for (size_t i = 0; i < textures.size(); i++) {
-    //   draw_masked_tiles_batch(tiles, i, textures);
-    // }
   }
 
   void Renderer::draw_masked_tiles_batch(const std::vector<MaskedTile> tiles, const size_t i, const std::vector<uint8_t*> textures) {
