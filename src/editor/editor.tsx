@@ -1,75 +1,45 @@
-import { Component, createEffect, onMount } from 'solid-js';
-import { createStore } from 'solid-js/store';
-import { ToolBar, TitleBar } from '@navigation';
-import { CanvasDOM } from '@multimedia';
-import Renderer from './renderer/renderer';
-import SceneManager from './scene';
-import InputManager from './input';
-
-function getModePrimaryColor(mode: Mode) {
-  switch (mode) {
-    case 'photo':
-      return '#c867e6';
-    case 'publisher':
-      return '#ffa666';
-    default:
-      return '#38c3f2';
-  }
-}
+import { Component, createEffect, Match, onMount, Switch } from "solid-js";
+import { createStore } from "solid-js/store";
+import InputManager from "./input";
+import Whiteboard from "@/ui/workspaces/Whiteboard";
+import Designer from "@/ui/workspaces/Designer";
+import { getWorkspacePrimaryColor } from "@/utils/color";
 
 const Editor: Component = () => {
   const [state, setState] = createStore<State>({
-    mode: 'designer',
-    tool: 'select',
-    loading: true
+    name: "Untitled",
+    workspace: "designer",
+    tool: "select",
+    loading: false,
+    timeline: false,
+    timelineHeight: 500,
   });
-  Renderer.init();
-  SceneManager.init((loading) => {
-    setState({ loading });
+
+  InputManager.init((tool: Tool) => {
+    setState({ tool });
   });
 
   createEffect(() => {
-    document.documentElement.style.setProperty('--primary-color', getModePrimaryColor(state.mode));
+    document.documentElement.style.setProperty(
+      "--primary-color",
+      getWorkspacePrimaryColor(state.workspace)
+    );
   });
 
   onMount(() =>
     setTimeout(() => {
-      InputManager.init({}, (tool: Tool) => {
+      InputManager.init((tool: Tool) => {
         setState({ tool });
       });
-      SceneManager.render();
     }, 25)
   );
 
   return (
-    <div class="w-screen h-screen bg-primary-700 grid grid-rows-title-bar">
-      <TitleBar
-        mode={state.mode}
-        setMode={(mode: Mode) => setState({ mode })}
-        loading={state.loading}
-      />
-      <div class="grid grid-cols-tool-bar">
-        <ToolBar
-          tools={[
-            'select',
-            'vselect',
-            'separator',
-            'pen',
-            'separator',
-            ['rectangle', 'ellipse'],
-            'separator',
-            'pan',
-            'zoom'
-          ]}
-          tool={state.tool}
-          setTool={(tool: Tool) => {
-            setState({ tool });
-            InputManager.tool.current = tool;
-          }}
-        />
-        <CanvasDOM />
-      </div>
-    </div>
+    <Switch fallback={<Designer state={state} setState={setState} />}>
+      <Match when={state.workspace === "whiteboard"}>
+        <Whiteboard state={state} setState={setState} />
+      </Match>
+    </Switch>
   );
 };
 

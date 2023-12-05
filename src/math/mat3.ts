@@ -4,8 +4,6 @@
  * @module mat3
  */
 
-import { vec2 } from '.';
-
 /**
  * Creates a new identity mat3
  *
@@ -159,28 +157,27 @@ export function identity(out: mat3 = create()): mat3 {
  * @returns {mat3} out
  */
 export function transpose(a: ReadonlyMat3, out: mat3 = create()): mat3 {
-  // TODO: Implement
-  // if (out === a) {
-  //   let a01 = a[1],
-  //     a02 = a[2],
-  //     a12 = a[5];
-  //   out[1] = a[3];
-  //   out[2] = a[6];
-  //   out[3] = a01;
-  //   out[5] = a[7];
-  //   out[6] = a02;
-  //   out[7] = a12;
-  // } else {
-  //   out[0] = a[0];
-  //   out[1] = a[3];
-  //   out[2] = a[6];
-  //   out[3] = a[1];
-  //   out[4] = a[4];
-  //   out[5] = a[7];
-  //   out[6] = a[2];
-  //   out[7] = a[5];
-  //   out[8] = a[8];
-  // }
+  if (out === a) {
+    let a01 = a[1],
+      a02 = a[2],
+      a12 = a[5];
+    out[1] = a[3];
+    out[2] = a[6];
+    out[3] = a01;
+    out[5] = a[7];
+    out[6] = a02;
+    out[7] = a12;
+  } else {
+    out[0] = a[0];
+    out[1] = a[3];
+    out[2] = a[6];
+    out[3] = a[1];
+    out[4] = a[4];
+    out[5] = a[7];
+    out[6] = a[2];
+    out[7] = a[5];
+    out[8] = a[8];
+  }
   return out;
 }
 
@@ -380,6 +377,30 @@ export function fromTranslationRotationScale(
   out[7] = 0;
   out[8] = 1;
 
+  return out;
+}
+
+/**
+ * Creates a matrix from a vector scaling
+ * This is equivalent to (but much faster than):
+ *
+ *     mat3.identity(dest);
+ *     mat3.scale(dest, dest, vec);
+ *
+ * @param {mat3} out mat3 receiving operation result
+ * @param {ReadonlyVec2} v Scaling vector
+ * @returns {mat3} out
+ */
+export function fromScaling(v: ReadonlyVec2, out: mat3 = create()): mat3 {
+  out[0] = v[0];
+  out[1] = 0;
+  out[2] = 0;
+  out[3] = 0;
+  out[4] = v[1];
+  out[5] = 0;
+  out[6] = 0;
+  out[7] = 0;
+  out[8] = 1;
   return out;
 }
 

@@ -1,5 +1,7 @@
 import { MATH_EPSILON } from '@/utils/constants';
-import { round as nRound } from './math';
+import { round as nRound, clamp as nClamp } from './math';
+
+// TODO: check methods where out = a
 
 /**
  * 2 Dimensional Vector
@@ -230,6 +232,26 @@ export function max(a: ReadonlyVec2, b: ReadonlyVec2, out: vec2 = [0, 0]): vec2 
 }
 
 /**
+ * Clamps a vec2's between two values
+ *
+ * @param {ReadonlyVec2} a the first operand
+ * @param {ReadonlyVec2} min the minimum value
+ * @param {ReadonlyVec2} max the maximum value
+ * @param {vec2} out the receiving vector
+ * @returns {vec2} out
+ */
+export function clamp(
+  a: ReadonlyVec2,
+  min: ReadonlyVec2,
+  max: ReadonlyVec2,
+  out: vec2 = [0, 0]
+): vec2 {
+  out[0] = nClamp(a[0], min[0], max[0]);
+  out[1] = nClamp(a[1], min[1], max[1]);
+  return out;
+}
+
+/**
  * Round the components of a vec2
  *
  * @param {ReadonlyVec2} a vector to round
@@ -301,16 +323,30 @@ export function negate(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
 }
 
 /**
- * Returns the unit vector of a vec2
+ * Perpendicular rotation of a vector
  *
- * @param {ReadonlyVec2} a vector to negate
+ * @param {ReadonlyVec2} a vector to rotate
  * @param {vec2} out the receiving vector
  * @returns {vec2} out
  */
-export function unit(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
-  const l = Math.hypot(a[0], a[1]);
-  out[0] = a[0] / l;
-  out[1] = a[1] / l;
+export function perpendicular(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
+  out[0] = -a[1];
+  out[1] = a[0];
+  return out;
+}
+
+/**
+ * Projects a vector in the direction of another vector by a scalar
+ *
+ * @param {ReadonlyVec2} a vector to project
+ * @param {ReadonlyVec2} b direction vector
+ * @param {Number} t projection amount
+ * @param {vec2} out the receiving vector
+ * @returns {vec2} out
+ */
+export function project(a: ReadonlyVec2, b: ReadonlyVec2, t: number, out: vec2 = [0, 0]): vec2 {
+  out[0] = a[0] + b[0] * t;
+  out[1] = a[1] + b[1] * t;
   return out;
 }
 
@@ -339,6 +375,14 @@ export function normalize(a: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
   if (len > 0) len = 1 / Math.sqrt(len);
   out[0] = a[0] * len;
   out[1] = a[1] * len;
+  return out;
+}
+
+export function normalizeLength(a: ReadonlyVec2, t: number, out: vec2 = [0, 0]): vec2 {
+  let len = a[0] * a[0] + a[1] * a[1];
+  if (len > 0) len = 1 / Math.sqrt(len);
+  out[0] = a[0] * len * t;
+  out[1] = a[1] * len * t;
   return out;
 }
 
@@ -401,10 +445,8 @@ export function dot(a: ReadonlyVec2, b: ReadonlyVec2): number {
  * @param {vec3} out the receiving vector
  * @returns {vec3} out
  */
-export function cross(a: ReadonlyVec2, b: ReadonlyVec2, out: vec3 = [0, 0, 0]): vec3 {
-  out[0] = out[1] = 0;
-  out[2] = a[0] * b[1] - a[1] * b[0];
-  return out;
+export function cross(a: ReadonlyVec2, b: ReadonlyVec2): number {
+  return a[0] * b[1] - a[1] * b[0];
 }
 
 /**
@@ -419,6 +461,36 @@ export function cross(a: ReadonlyVec2, b: ReadonlyVec2, out: vec3 = [0, 0, 0]): 
 export function lerp(a: ReadonlyVec2, b: ReadonlyVec2, t: number, out: vec2 = [0, 0]): vec2 {
   out[0] = a[0] + t * (b[0] - a[0]);
   out[1] = a[1] + t * (b[1] - a[1]);
+  return out;
+}
+
+/**
+ * Performs a cubic bezier interpolation between four vec2's
+ *
+ * @param {ReadonlyVec2} p0 the start point
+ * @param {ReadonlyVec2} p1 the first control point
+ * @param {ReadonlyVec2} p2 the second control point
+ * @param {ReadonlyVec2} p3 the end point
+ * @param {Number} t interpolation amount, in the range [0-1], between the two inputs
+ * @param {vec2} out the receiving vector
+ * @returns {vec2} out
+ */
+export function bezier(
+  p0: ReadonlyVec2,
+  p1: ReadonlyVec2,
+  p2: ReadonlyVec2,
+  p3: ReadonlyVec2,
+  t: number,
+  out: vec2 = [0, 0]
+): vec2 {
+  const c0 = Math.pow(1 - t, 3),
+    c1 = 3 * t * Math.pow(1 - t, 2),
+    c2 = 3 * Math.pow(t, 2) * (1 - t),
+    c3 = Math.pow(t, 3);
+
+  out[0] = p0[0] * c0 + p1[0] * c1 + p2[0] * c2 + p3[0] * c3;
+  out[1] = p0[1] * c0 + p1[1] * c1 + p2[1] * c2 + p3[1] * c3;
+
   return out;
 }
 
@@ -489,8 +561,11 @@ export function scale(a: vec2, b: vec2, t: vec2, out: vec2 = [0, 0]): vec2 {
  * @returns {vec2} out
  */
 export function transformMat3(a: ReadonlyVec2, m: ReadonlyMat3, out: vec2 = [0, 0]): vec2 {
-  out[0] = m[0] * a[0] + m[1] * a[1] + m[2];
-  out[1] = m[3] * a[0] + m[4] * a[1] + m[5];
+  const x = a[0],
+    y = a[1];
+
+  out[0] = m[0] * x + m[1] * y + m[2];
+  out[1] = m[3] * x + m[4] * y + m[5];
   return out;
 }
 
@@ -527,6 +602,16 @@ export function rotate(a: ReadonlyVec2, b: ReadonlyVec2, rad: number, out: vec2 
 
   out[0] = b[0] + c0 * cos - c1 * sin;
   out[1] = b[1] + c0 * sin + c1 * cos;
+
+  return out;
+}
+
+export function rotateOrigin(a: ReadonlyVec2, rad: number, out: vec2 = [0, 0]): vec2 {
+  const sin = Math.sin(rad);
+  const cos = Math.cos(rad);
+
+  out[0] = cos * a[0] - sin * a[1];
+  out[1] = sin * a[0] + cos * a[1];
 
   return out;
 }
@@ -582,6 +667,10 @@ export function zero(out: vec2): vec2 {
   return out;
 }
 
+export function isZero(a: vec2): boolean {
+  return a[0] === 0 && a[1] === 0;
+}
+
 /**
  * Returns a string representation of a vector
  *
@@ -610,11 +699,24 @@ export function exactEquals(a: ReadonlyVec2, b: ReadonlyVec2): boolean {
  * @param {ReadonlyVec2} b The second vector.
  * @returns {Boolean} True if the vectors are equal, false otherwise.
  */
-export function equals(a: ReadonlyVec2, b: ReadonlyVec2): boolean {
+export function equals(a: ReadonlyVec2, b: ReadonlyVec2, epsilon: number = MATH_EPSILON): boolean {
   return (
-    Math.abs(a[0] - b[0]) <= MATH_EPSILON * Math.max(1, Math.abs(a[0]), Math.abs(b[0])) &&
-    Math.abs(a[1] - b[1]) <= MATH_EPSILON * Math.max(1, Math.abs(a[1]), Math.abs(b[1]))
+    Math.abs(a[0] - b[0]) <= epsilon * Math.max(1, Math.abs(a[0]), Math.abs(b[0])) &&
+    Math.abs(a[1] - b[1]) <= epsilon * Math.max(1, Math.abs(a[1]), Math.abs(b[1]))
   );
+}
+
+export function direction(a: ReadonlyVec2, b: ReadonlyVec2, out: vec2 = [0, 0]): vec2 {
+  out[0] = b[0] - a[0];
+  out[1] = b[1] - a[1];
+
+  let len = out[0] * out[0] + out[1] * out[1];
+  if (len > 0) len = 1 / Math.sqrt(len);
+
+  out[0] *= len;
+  out[1] *= len;
+
+  return out;
 }
 
 /**
@@ -690,7 +792,25 @@ export const sqrLen = squaredLength;
 export const neg = negate;
 
 /**
+ * Alias for {@link vec2.perpendicular}
+ * @function
+ */
+export const perp = perpendicular;
+
+/**
+ * Alias for {@link vec2.project}
+ * @function
+ */
+export const proj = project;
+
+/**
  * Alias for {@link vec2.midpoint}
  * @function
  */
 export const mid = midpoint;
+
+/**
+ * Alias for {@link vec2.direction}
+ * @function
+ */
+export const dir = direction;

@@ -88,3 +88,21 @@ dist/
 
 # Build files
 build/
+
+# VSCode files
+.vscode/
+
+# VisualStudio files
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+enc_temp_folder/
+
+# Binaries
+bin/
+bin-int/
+
+# ImGui files
+imgui.ini

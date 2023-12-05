@@ -3,6 +3,8 @@ import { JSX, Component, Show } from 'solid-js';
 import getIcon from '../icons';
 
 export type ButtonVariant =
+  | 'button'
+  | 'select-button'
   | 'file-menu'
   | 'file-menu-icon'
   | 'menu'
@@ -26,10 +28,11 @@ const Button: Component<{
   disabled?: boolean;
   style?: JSX.CSSProperties;
 }> = (props) => {
-  const variant = props.variant || 'file-menu';
+  const variant = props.variant || 'button';
   const isIcon = variant.includes('icon');
   const isFile = variant.includes('file');
   const isMenu = variant.includes('menu');
+  const isButton = variant.includes('button');
   let longPressTimer: number;
 
   const onMouseDown = (e: MouseEvent) => {
@@ -54,7 +57,7 @@ const Button: Component<{
       onMouseLeave={props.onLeave}
       style={props.style}
       class={classNames(
-        'select-none flex items-center outline-none',
+        'flex items-center outline-none',
         {
           'cursor-default': props.disabled,
           'bg-primary-700': props.active && !props.disabled,
@@ -74,7 +77,7 @@ const Button: Component<{
               'border-primary-600': props.active && !props.disabled,
               'border-transparent': !props.active || props.disabled
             },
-            { 'px-2': !isIcon },
+            { 'px-2 py-0.5': !isIcon },
             { 'w-[24px] h-[24px] items-center justify-center': isIcon },
             isFile
           ],
@@ -82,25 +85,25 @@ const Button: Component<{
         ],
         [
           'flex items-center justify-center w-8 h-8 m-1 rounded',
-          { 'hover:text-primary': !props.active },
-          { 'bg-primary-700 text-primary': props.active },
+          ['hover:text-primary', !props.active, 'bg-primary-700 text-primary'],
           variant === 'tool'
+        ],
+        [
+          'aspect-square w-8 h-8 rounded flex items-center justify-center hover:bg-primary-600',
+          { 'text-primary': props.active && props.variant !== 'select-button' },
+          isButton
         ]
       )}
     >
       <Show when={variant === 'menu' || props.leftIcon}>
         <div class="flex items-center justify-center h-full w-full">
-          {typeof props.leftIcon === 'string'
-            ? getIcon(props.leftIcon)
-            : props.leftIcon}
+          {typeof props.leftIcon === 'string' ? getIcon(props.leftIcon) : props.leftIcon}
         </div>
       </Show>
       {props.children}
       <Show when={variant === 'menu' || props.rightIcon}>
         <div class="flex items-center justify-center h-full w-full">
-          {typeof props.rightIcon === 'string'
-            ? getIcon(props.rightIcon)
-            : props.rightIcon}
+          {typeof props.rightIcon === 'string' ? getIcon(props.rightIcon) : props.rightIcon}
         </div>
       </Show>
     </button>

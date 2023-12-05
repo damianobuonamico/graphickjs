@@ -2,18 +2,20 @@ import { Component, createEffect, For, JSX } from 'solid-js';
 import { Button } from '@inputs';
 import {
   CircleIcon,
+  EraserIcon,
   HandIcon,
+  PencilIcon,
   PenIcon,
   PointerIcon,
   PointerVertexIcon,
   RectangleIcon,
   ZoomIcon
 } from '@icons';
-import Select from '../inputs/Select';
+import MenuSelect from '../menu/MenuSelect';
 
 export function getToolIcon(tool: Tool): JSX.Element {
   switch (tool) {
-    case 'vselect':
+    case 'directSelect':
       return <PointerVertexIcon />;
     case 'pen':
       return <PenIcon />;
@@ -25,6 +27,10 @@ export function getToolIcon(tool: Tool): JSX.Element {
       return <HandIcon />;
     case 'zoom':
       return <ZoomIcon />;
+    case 'pencil':
+      return <PencilIcon />;
+    case 'eraser':
+      return <EraserIcon />;
     default:
       return <PointerIcon />;
   }
@@ -42,7 +48,7 @@ const ToolBar: Component<{
           tool === 'separator' ? (
             <div class="w-6 h-[1px] bg-primary-600" />
           ) : Array.isArray(tool) ? (
-            <Select
+            <MenuSelect
               menuButton={{ variant: 'tool', arrow: true }}
               options={tool.map((tool) => {
                 return { id: tool, label: getToolIcon(tool) };

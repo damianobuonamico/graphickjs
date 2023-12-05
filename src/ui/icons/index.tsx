@@ -6,26 +6,54 @@ import AffinityPublisherLogoIcon from './AffinityPublisherLogoIcon';
 import CheckIcon from './CheckIcon';
 import ChevronRightIcon from './ChevronRightIcon';
 import CircleIcon from './CircleIcon';
+import EyeDropperIcon from './EyeDropperIcon';
 import HandIcon from './HandIcon';
 import LoadingIcon from './LoadingIcon';
+import PencilIcon from './PencilIcon';
 import PenIcon from './PenIcon';
 import PointerIcon from './PointerIcon';
 import PointerVertexIcon from './PointerVertexIcon';
 import RectangleIcon from './RectangleIcon';
 import ZoomIcon from './ZoomIcon';
+import PlusIcon from './PlusIcon';
+import MinusIcon from './MinusIcon';
+import EyeClosedIcon from './EyeClosedIcon';
+import EyeOpenIcon from './EyeOpenIcon';
+import BorderWidthIcon from './BorderWidthIcon';
+import CornerBevelIcon from './CornerBevelIcon';
+import CornerMiterIcon from './CornerMiterIcon';
+import CornerRoundIcon from './CornerRoundIcon';
+import PauseIcon from './PauseIcon';
+import PlayIcon from './PlayIcon';
+import StopIcon from './StopIcon';
+import EraserIcon from './EraserIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
 export { AffinityPublisherLogoIcon };
+export { BorderWidthIcon };
 export { CheckIcon };
 export { ChevronRightIcon };
 export { CircleIcon };
+export { CornerBevelIcon };
+export { CornerMiterIcon };
+export { CornerRoundIcon };
+export { EraserIcon };
+export { EyeClosedIcon };
+export { EyeDropperIcon };
+export { EyeOpenIcon };
 export { HandIcon };
 export { LoadingIcon };
+export { MinusIcon };
+export { PauseIcon };
+export { PencilIcon };
 export { PenIcon };
+export { PlayIcon };
+export { PlusIcon };
 export { PointerIcon };
 export { PointerVertexIcon };
 export { RectangleIcon };
+export { StopIcon };
 export { ZoomIcon };
 
 const getIcon = (name: string, props?: IconProps) => {
@@ -36,24 +64,52 @@ const getIcon = (name: string, props?: IconProps) => {
       return <AffinityPhotoLogoIcon {...props} />;
     case 'affinityPublisherLogo':
       return <AffinityPublisherLogoIcon {...props} />;
+    case 'borderWidth':
+      return <BorderWidthIcon {...props} />;
     case 'check':
       return <CheckIcon {...props} />;
     case 'chevronRight':
       return <ChevronRightIcon {...props} />;
     case 'circle':
       return <CircleIcon {...props} />;
+    case 'cornerBevel':
+      return <CornerBevelIcon {...props} />;
+    case 'cornerMiter':
+      return <CornerMiterIcon {...props} />;
+    case 'cornerRound':
+      return <CornerRoundIcon {...props} />;
+    case 'eraser':
+      return <EraserIcon {...props} />;
+    case 'eyeClosed':
+      return <EyeClosedIcon {...props} />;
+    case 'eyeDropper':
+      return <EyeDropperIcon {...props} />;
+    case 'eyeOpen':
+      return <EyeOpenIcon {...props} />;
     case 'hand':
       return <HandIcon {...props} />;
     case 'loading':
       return <LoadingIcon {...props} />;
+    case 'minus':
+      return <MinusIcon {...props} />;
+    case 'pause':
+      return <PauseIcon {...props} />;
+    case 'pencil':
+      return <PencilIcon {...props} />;
     case 'pen':
       return <PenIcon {...props} />;
+    case 'play':
+      return <PlayIcon {...props} />;
+    case 'plus':
+      return <PlusIcon {...props} />;
     case 'pointer':
       return <PointerIcon {...props} />;
     case 'pointerVertex':
       return <PointerVertexIcon {...props} />;
     case 'rectangle':
       return <RectangleIcon {...props} />;
+    case 'stop':
+      return <StopIcon {...props} />;
     case 'zoom':
       return <ZoomIcon {...props} />;
     default:

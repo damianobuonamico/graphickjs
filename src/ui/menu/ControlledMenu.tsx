@@ -1,10 +1,16 @@
-import { Component, createSignal, For, onCleanup, onMount, JSX } from 'solid-js';
-import { Button } from '@inputs';
-import { CheckIcon } from '@icons';
-import Menu from './Menu';
-import { KEYS, getShortcutString } from '@utils/keys';
-import MenuKeyCallback from './menuKeyCallback';
-import SceneManager from '@/editor/scene';
+import {
+  Component,
+  createSignal,
+  For,
+  onCleanup,
+  onMount,
+  JSX,
+} from "solid-js";
+import { Button } from "@inputs";
+import { CheckIcon } from "@icons";
+import Menu from "./Menu";
+import { KEYS, getShortcutString } from "@utils/keys";
+import MenuKeyCallback from "./menuKeyCallback";
 
 export interface MenuItem {
   label: string;
@@ -22,7 +28,7 @@ export type MenuItems = MenuItem[];
 
 export function calculateAltLabel(label: string, key: string) {
   var indices = [];
-  for (var i = 0; i < label.length; i++) {
+  for (var i = 0, n = label.length; i < n; ++i) {
     if (label[i].toLowerCase() == key[0]) indices.push(i);
   }
 
@@ -68,7 +74,7 @@ const ControlledMenu: Component<{
     if (!item || item.disabled) return;
     if (item.callback) {
       item.callback();
-      SceneManager.render();
+      // SceneManager.render();
     }
     props.onClose(true);
   };
@@ -94,13 +100,16 @@ const ControlledMenu: Component<{
     }
 
     if (props.alt) {
-      for (let i = 0; i < props.items.length; i++) {
+      for (let i = 0, n = props.items.length; i < n; ++i) {
         if (props.items[i].key === e.key) {
           if (props.items[i].submenu && props.items[i].submenu!.length) {
             if (!props.items[i].disabled) {
               setActive(i);
               setTimeout(
-                () => window.dispatchEvent(new KeyboardEvent('keydown', { key: KEYS.ARROW_RIGHT })),
+                () =>
+                  window.dispatchEvent(
+                    new KeyboardEvent("keydown", { key: KEYS.ARROW_RIGHT })
+                  ),
                 25
               );
             }
@@ -114,23 +123,24 @@ const ControlledMenu: Component<{
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (props.keyCallback) props.keyCallback.register(() => processKey(e), props.level || 0);
+    if (props.keyCallback)
+      props.keyCallback.register(() => processKey(e), props.level || 0);
   };
 
   onMount(() => {
     mounted = true;
-    if (props.keyCallback) window.addEventListener('keydown', onKey);
+    if (props.keyCallback) window.addEventListener("keydown", onKey);
     setTimeout(() => {
       if (mounted) {
-        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener("mousedown", onMouseDown);
       }
     }, 100);
   });
 
   onCleanup(() => {
     mounted = false;
-    window.removeEventListener('mousedown', onMouseDown);
-    if (props.keyCallback) window.removeEventListener('keydown', onKey);
+    window.removeEventListener("mousedown", onMouseDown);
+    if (props.keyCallback) window.removeEventListener("keydown", onKey);
   });
 
   return (
@@ -143,24 +153,28 @@ const ControlledMenu: Component<{
         <For each={props.items}>
           {(item, index) => (
             <li class="flex">
-              {item.label === 'separator' ? (
+              {item.label === "separator" ? (
                 <div
                   class="w-full h-[1px] my-1 bg-primary-600"
-                  onMouseOver={props.setActiveOnHover ? () => setActive(index()) : () => {}}
+                  onMouseOver={
+                    props.setActiveOnHover ? () => setActive(index()) : () => {}
+                  }
                 />
               ) : item.submenu && item.submenu.length ? (
                 <Menu
                   menuButton={{
                     label: item.label,
-                    variant: 'menu',
+                    variant: "menu",
                     icon: item.icon,
-                    key: item.key
+                    key: item.key,
                   }}
                   disabled={item.disabled}
                   items={item.submenu}
                   isSubMenu={true}
                   active={active() === index()}
-                  onHover={props.setActiveOnHover ? () => setActive(index()) : () => {}}
+                  onHover={
+                    props.setActiveOnHover ? () => setActive(index()) : () => {}
+                  }
                   onClose={(propagate: boolean) => {
                     setActive(-1);
                     if (propagate) {
@@ -173,22 +187,26 @@ const ControlledMenu: Component<{
                 />
               ) : (
                 <Button
-                  variant={typeof item.label === 'string' ? 'menu' : 'tool'}
+                  variant={typeof item.label === "string" ? "menu" : "tool"}
                   onClick={() => onClick(item)}
-                  onHover={props.setActiveOnHover ? () => setActive(index()) : () => {}}
+                  onHover={
+                    props.setActiveOnHover ? () => setActive(index()) : () => {}
+                  }
                   leftIcon={item.checked ? <CheckIcon /> : item.icon}
                   active={active() === index() || item.active}
                   disabled={item.disabled}
                 >
                   {item.shortcut ? (
                     <div class="justify-between w-full flex">
-                      {(props.alt && item.key && typeof item.label === 'string'
+                      {(props.alt && item.key && typeof item.label === "string"
                         ? calculateAltLabel(item.label, item.key)
                         : false) || item.label}
-                      <span class="text-primary-500 ml-6">{getShortcutString(item.shortcut)}</span>
+                      <span class="text-primary-500 ml-6">
+                        {getShortcutString(item.shortcut)}
+                      </span>
                     </div>
                   ) : (
-                    (props.alt && item.key && typeof item.label === 'string'
+                    (props.alt && item.key && typeof item.label === "string"
                       ? calculateAltLabel(item.label, item.key)
                       : false) || item.label
                   )}

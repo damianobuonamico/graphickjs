@@ -1,12 +1,4 @@
-import {
-  Component,
-  createSignal,
-  Show,
-  createEffect,
-  onMount,
-  onCleanup,
-  JSX
-} from 'solid-js';
+import { Component, createSignal, Show, createEffect, onMount, onCleanup, JSX } from 'solid-js';
 import { vec2 } from '@math';
 import { ChevronRightIcon } from '@icons';
 import { Button } from '@inputs';
@@ -59,8 +51,7 @@ const Menu: Component<{
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (props.keyCallback)
-      props.keyCallback.register(() => processKey(e), props.level);
+    if (props.keyCallback) props.keyCallback.register(() => processKey(e), props.level);
   };
 
   onMount(() => {
@@ -102,8 +93,7 @@ const Menu: Component<{
         rightIcon={props.isSubMenu ? <ChevronRightIcon /> : undefined}
         active={props.active}
         style={
-          props.menuButton.variant === 'file-menu' &&
-          props.menuButton.label === ''
+          props.menuButton.variant === 'file-menu' && props.menuButton.label === ''
             ? {
                 width: '2rem',
                 height: '2rem',
@@ -114,20 +104,11 @@ const Menu: Component<{
             : undefined
         }
       >
-        {(props.alt &&
-        props.menuButton.key &&
-        typeof props.menuButton.label === 'string'
+        {(props.alt && props.menuButton.key && typeof props.menuButton.label === 'string'
           ? calculateAltLabel(props.menuButton.label, props.menuButton.key)
           : false) || props.menuButton.label}
       </Button>
-      <Show
-        when={
-          props.active &&
-          !locked() &&
-          props.expanded !== false &&
-          !props.disabled
-        }
-      >
+      <Show when={props.active && !locked() && props.expanded !== false && !props.disabled}>
         <ControlledMenu
           items={props.items}
           anchor={anchor()}

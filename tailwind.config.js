@@ -1,8 +1,5 @@
 module.exports = {
-  content: [
-    './index.html',
-    './src/**/*.{js,ts,jsx,tsx,css,md,mdx,html,json,scss}'
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx,css,md,mdx,html,json,scss}'],
   darkMode: 'class',
   theme: {
     extend: {
@@ -39,10 +36,13 @@ module.exports = {
       },
       gridTemplateColumns: {
         'menu-item': '30px 1fr 30px',
-        'tool-bar': '2.5rem 1fr'
+        designer: '2.5rem 1fr 15rem',
+        whiteboard: '2.5rem 1fr'
       },
       gridTemplateRows: {
-        'title-bar': '2rem 1fr'
+        'title-bar': '2rem 1fr',
+        'timeline-visible': '1fr 40rem',
+        'timeline-hidden': '1fr'
       }
     }
   },

@@ -12,9 +12,15 @@
     @apply m-0;
     @apply p-0;
     @apply bg-primary-700;
-    @apply text-sm;
+    @apply text-xs;
+    @apply font-semibold;
     @apply text-primary-200;
     @apply overflow-hidden;
+    @apply select-none;
+  }
+
+  canvas {
+    transition: opacity 0.3s ease-in;
   }
 
   ::-webkit-scrollbar {
@@ -37,4 +43,16 @@
   ::-webkit-scrollbar-corner {
     @apply bg-primary-800;
   }
+}
+
+.property-value:hover .separator {
+  @apply border-primary-500;
+}
+
+.property-value:focus-within {
+  @apply border-primary !important;
+}
+
+.property-value:focus-within .separator {
+  @apply border-primary;
 }

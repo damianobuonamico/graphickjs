@@ -9,8 +9,9 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@types/classnames": "^2.3.1",
-    "@types/colornames": "^1.1.2",
+    "@types/color-name": "^1.1.1",
+    "@types/debounce": "^1.2.1",
+    "@types/nanoid": "^3.0.0",
     "@types/node": "^18.0.6",
     "autoprefixer": "^10.4.7",
     "postcss": "^8.4.14",
@@ -18,12 +19,16 @@
     "typescript": "^4.7.4",
     "vite": "^3.0.0",
     "vite-plugin-solid": "^2.3.0",
-    "vite-plugin-string": "^1.1.2"
+    "vite-plugin-string": "^1.1.2",
+    "vite-plugin-top-level-await": "^1.2.2",
+    "vite-plugin-wasm": "^3.1.0"
   },
   "dependencies": {
-    "colornames": "^1.1.1",
+    "color-name": "^1.1.4",
+    "debounce": "^1.2.1",
     "nanoid": "^4.0.0",
-    "solid-js": "^1.4.7"
+    "solid-js": "^1.4.7",
+    "zipson": "^0.2.12"
   },
   "browserslist": {
     "production": [

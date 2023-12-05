@@ -1,94 +1,62 @@
-import Element from '../ecs/entities/element';
-import ImageMedia from '../ecs/entities/image';
-import Canvas2D from './2D/canvas2d';
+import { vec2 } from "@/math";
+import API from "@/wasm/loader";
 
 abstract class Renderer {
-  private static m_canvas: Canvas;
+  private static m_canvas: HTMLCanvasElement;
+  private static m_container: HTMLDivElement;
+  private static m_offset: vec2 = [0, 0];
+  private static m_dpr: number = 1;
 
-  public static debugging: boolean = true;
-  public static debug: DebugState = {
-    box: true
-  };
+  static setup(canvas: HTMLCanvasElement) {
+    this.m_container = <HTMLDivElement>canvas.parentElement;
+    this.m_canvas = canvas;
 
-  public static get canvas() {
-    return this.m_canvas.DOM;
+    setTimeout(() => {
+      canvas.style.opacity = "1";
+    }, 50);
+
+    setTimeout(() => {
+      this.resize();
+    }, 100);
+
+    setTimeout(() => {
+      this.resize();
+    }, 1000);
   }
 
-  public static get canvasOffset() {
-    return this.m_canvas.offset;
+  static get canvas() {
+    return this.m_canvas;
   }
 
-  public static get size() {
-    return this.m_canvas.size;
+  static get offset(): vec2 {
+    return vec2.clone(this.m_offset);
   }
 
-  public static set container(div: HTMLDivElement) {
-    this.m_canvas.container = div;
+  static get size(): vec2 {
+    return [
+      this.m_canvas.width * this.m_dpr,
+      this.m_canvas.height * this.m_dpr,
+    ];
   }
 
-  public static init() {
-    this.m_canvas = new Canvas2D();
-  }
+  static resize() {
+    this.m_dpr = window.devicePixelRatio;
+    this.m_offset = [this.m_canvas.offsetLeft, this.m_canvas.offsetTop];
 
-  public static setup(canvas: HTMLCanvasElement) {
-    this.m_canvas.setup(canvas);
-  }
+    const size: vec2 = [
+      this.m_container.offsetWidth,
+      this.m_container.offsetHeight,
+    ];
 
-  public static resize() {
-    this.m_canvas.resize();
-  }
+    this.m_canvas.style.width = size[0] + "px";
+    this.m_canvas.style.height = size[1] + "px";
 
-  public static beginFrame() {
-    this.m_canvas.beginFrame();
-  }
+    const dprSize = vec2.mulS(size, this.m_dpr);
 
-  public static endFrame() {
-    this.m_canvas.endFrame();
-    if (this.debugging) this.m_canvas.debugging();
-  }
+    this.m_canvas.width = dprSize[0];
+    this.m_canvas.height = dprSize[1];
 
-  public static rect({
-    pos,
-    size,
-    color,
-    centered = false,
-    transform
-  }: {
-    pos: vec2;
-    size: vec2;
-    color: vec4;
-    centered?: boolean;
-    transform?: mat4;
-  }) {
-    this.m_canvas.rect({ pos, size, centered, color, transform });
-  }
-
-  public static entity(entity: Entity) {
-    this.m_canvas.entity(entity);
-  }
-
-  public static element(element: Element) {
-    this.m_canvas.element(element);
-  }
-
-  public static beginOutline() {
-    this.m_canvas.beginOutline();
-  }
-
-  public static outline(entity: Entity, skipVertices: boolean = false) {
-    this.m_canvas.outline(entity, skipVertices);
-  }
-
-  public static endOutline() {
-    this.m_canvas.endOutline();
-  }
-
-  public static draw(drawable: Drawable) {
-    this.m_canvas.draw(drawable);
-  }
-
-  public static image(image: ImageMedia) {
-    this.m_canvas.image(image);
+    API._on_resize_event(...size, this.m_dpr, ...this.m_offset);
   }
 }
 

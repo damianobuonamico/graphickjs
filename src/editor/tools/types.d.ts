@@ -1,22 +1,6 @@
-type PenState = 'new' | 'join' | 'close' | 'sub' | 'add' | 'angle' | 'start';
-
-interface PenToolData {
-  element?: Entity;
-  vertex?: VertexEntity;
-  overlay?: Entity;
-  overlayLastVertex?: VertexEntity;
-  overlayVertex?: VertexEntity;
-}
-
-interface SelectToolData {
-  element?: Entity;
-}
-
-type ToolData = PenToolData | SelectToolData;
-
 interface ToolMap<T> {
   select: T;
-  vselect: T;
+  directSelect: T;
   pen: T;
   rectangle: T;
   ellipse: T;
@@ -24,6 +8,8 @@ interface ToolMap<T> {
   zoom: T;
   scale: T;
   rotate: T;
+  pencil: T;
+  eraser: T;
 }
 
 type Tool = keyof ToolMap<any>;
