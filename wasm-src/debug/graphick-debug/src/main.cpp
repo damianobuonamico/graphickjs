@@ -1,10 +1,10 @@
-#include "wasm-dev-src/editor/editor.h"
-#include "wasm-dev-src/editor/scene/entity.h"
-#include "wasm-dev-src/editor/input/input_manager.h"
+#include "wasm-src/editor/editor.h"
+#include "wasm-src/editor/scene/entity.h"
+#include "wasm-src/editor/input/input_manager.h"
 
-#include "wasm-dev-src/io/svg/svg.h"
+#include "wasm-src/io/svg/svg.h"
 
-#include "wasm-dev-src/utils/console.h"
+#include "wasm-src/utils/console.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
