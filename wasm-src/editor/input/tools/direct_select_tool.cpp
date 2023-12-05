@@ -370,8 +370,8 @@ namespace Graphick::Editor::Input {
 
     // BezierEntity::BezierABC ideal_abc = m_bezier->abc(ideal_t, position);
 
-    // float angle = std::fmodf(std::atan2f(p3.y - p0.y, p3.x - p0.x) - std::atan2f(position.y - p0.y, position.x - p0.x) + MATH_TWO_PI, MATH_TWO_PI);
-    // float bc = (angle < 0.0f || angle > MATH_PI ? -1.0f : 1.0f) * distance(p0, p3) / 3.0f;
+    // float angle = std::fmodf(std::atan2f(p3.y - p0.y, p3.x - p0.x) - std::atan2f(position.y - p0.y, position.x - p0.x) + MATH_F_TWO_PI, MATH_F_TWO_PI);
+    // float bc = (angle < 0.0f || angle > MATH_F_PI ? -1.0f : 1.0f) * distance(p0, p3) / 3.0f;
     // float de1 = ideal_t * bc;
     // float de2 = (1.0f - ideal_t) * bc;
 

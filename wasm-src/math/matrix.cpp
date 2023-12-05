@@ -329,7 +329,7 @@ namespace Graphick::Math {
 
     decomposed.rotation = std::atan2f(m[1][0], m[0][0]);
 
-    decomposed.shear = std::atan2f(m[1][1], m[0][1]) - MATH_PI / 2.0f - decomposed.rotation;
+    decomposed.shear = std::atan2f(m[1][1], m[0][1]) - MATH_F_PI / 2.0f - decomposed.rotation;
 
     decomposed.translation.x = m[0][2];
     decomposed.translation.y = m[1][2];

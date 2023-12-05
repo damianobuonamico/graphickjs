@@ -66,11 +66,11 @@ namespace Graphick::Math {
   }
 
   inline float degrees_to_radians(float a) {
-    return a * MATH_PI / 180.0f;
+    return a * MATH_F_PI / 180.0f;
   }
 
   inline float radians_to_degrees(float a) {
-    return a * 180.0f / MATH_PI;
+    return a * 180.0f / MATH_F_PI;
   }
 
   inline size_t next_power_of_two(size_t n) {

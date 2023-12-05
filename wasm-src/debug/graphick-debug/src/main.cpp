@@ -6,6 +6,8 @@
 
 #include "wasm-src/utils/console.h"
 
+#include "wasm-src/renderer/geometry/path_dev.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -117,8 +119,17 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event((int)(width / dpr), (int)(height / dpr), dpr, 0, 0);
 
-#define TIGER
-  // #define OBJECTS
+  Graphick::Renderer::Geometry::PathDev path_dev{};
+
+  path_dev.move_to({ 0.0f, 0.0f });
+  path_dev.line_to({ 1.0f, 0.0f });
+  path_dev.quadratic_to({ 1.0f, 0.0f }, { 2.0f, 0.0f });
+  path_dev.cubic_to({ 1.0f, 0.0f }, { 1.0f, 0.0f }, { 3.0f, 0.0f });
+  path_dev.line_to({ 4.0f, 0.0f });
+  path_dev.line_to({ 5.0f, 0.0f });
+
+  // #define TIGER
+#define OBJECTS
 
 #ifdef TIGER
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
@@ -235,7 +246,7 @@ int main() {
     Graphick::Editor::Editor::render(true);
 
     glfwSwapBuffers(window);
-}
+  }
 
   Graphick::Editor::Editor::shutdown();
 

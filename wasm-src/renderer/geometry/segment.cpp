@@ -222,10 +222,10 @@ namespace Graphick::Renderer::Geometry {
       float difference = angles[i + 1].y - angles[i].y;
 
       float k1 = (checkpoint_angle - angles[i].y) / difference;
-      float k2 = (checkpoint_angle + MATH_TWO_PI - angles[i].y) / difference;
+      float k2 = (checkpoint_angle + MATH_F_TWO_PI - angles[i].y) / difference;
 
       if (!(Math::is_normalized(k1) || Math::is_normalized(k2))) {
-        difference += -Math::sign(difference) * MATH_TWO_PI;
+        difference += -Math::sign(difference) * MATH_F_TWO_PI;
       }
 
       int increments = std::max(std::abs((int)std::ceilf(difference / facet_angle)), 1);
@@ -1063,8 +1063,8 @@ namespace Graphick::Renderer::Geometry {
         float t1 = 2 * cbrtr;
 
         x1 = t1 * std::cosf(phi / 3) - a / 3;
-        x2 = t1 * std::cosf((phi + MATH_TWO_PI) / 3) - a / 3;
-        x3 = t1 * std::cosf((phi + 2 * MATH_TWO_PI) / 3) - a / 3;
+        x2 = t1 * std::cosf((phi + MATH_F_TWO_PI) / 3) - a / 3;
+        x3 = t1 * std::cosf((phi + 2 * MATH_F_TWO_PI) / 3) - a / 3;
 
         roots.insert(roots.end(), { x1, x2, x3 });
       } else if (Math::is_almost_zero(discriminant)) {
@@ -1153,8 +1153,8 @@ namespace Graphick::Renderer::Geometry {
         float t1 = 2 * cbrtr;
 
         x1 = t1 * std::cosf(phi / 3) - a / 3;
-        x2 = t1 * std::cosf((phi + MATH_TWO_PI) / 3) - a / 3;
-        x3 = t1 * std::cosf((phi + 2 * MATH_TWO_PI) / 3) - a / 3;
+        x2 = t1 * std::cosf((phi + MATH_F_TWO_PI) / 3) - a / 3;
+        x3 = t1 * std::cosf((phi + 2 * MATH_F_TWO_PI) / 3) - a / 3;
 
         roots.insert(roots.end(), { x1, x2, x3 });
       } else if (Math::is_almost_zero(discriminant)) {

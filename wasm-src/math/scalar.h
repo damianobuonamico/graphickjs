@@ -6,8 +6,10 @@
 #include <cfloat>
 #include <cmath>
 
-#define MATH_PI 3.14159265358979323846f
-#define MATH_TWO_PI MATH_PI * 2.0f
+#define MATH_F_PI 3.14159265358979323846f
+#define MATH_F_TWO_PI (MATH_F_PI * 2.0f)
+#define MATH_PI 3.14159265358979323846
+#define MATH_TWO_PI MATH_PI * 2.0
 
 namespace Graphick::Math {
 

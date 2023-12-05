@@ -165,8 +165,8 @@ namespace Graphick::Math {
 
       /* Three distinct real roots */
       double root1 = xi * std::cos(phi / 3) + b1;
-      double root2 = xi * std::cos((phi + 2 * MATH_PI) / 3) + b1;
-      double root3 = xi * std::cos((phi + 4 * MATH_PI) / 3) + b1;
+      double root2 = xi * std::cos((phi + 2 * MATH_F_PI) / 3) + b1;
+      double root3 = xi * std::cos((phi + 4 * MATH_F_PI) / 3) + b1;
 
       return { root1, root2, root3 };
     }

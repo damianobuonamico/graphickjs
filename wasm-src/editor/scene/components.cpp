@@ -18,7 +18,7 @@ namespace Graphick::Editor {
     mat2x3 matrix = get();
     float angle = Math::rotation(matrix);
 
-    if (Math::is_almost_zero(std::fmodf(angle, MATH_TWO_PI))) {
+    if (Math::is_almost_zero(std::fmodf(angle, MATH_F_TWO_PI))) {
       return matrix * m_path_ptr->path.bounding_rect();
     } else {
       return m_path_ptr->path.bounding_rect(matrix);

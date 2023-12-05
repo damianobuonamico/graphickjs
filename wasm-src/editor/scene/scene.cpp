@@ -285,7 +285,7 @@ namespace Graphick::Editor {
 
       float angle = Math::rotation(transform);
 
-      if (Math::is_almost_zero(std::fmodf(angle, MATH_TWO_PI))) {
+      if (Math::is_almost_zero(std::fmodf(angle, MATH_F_TWO_PI))) {
         Math::rect selection_rect = transform / rect;
 
         if (deep_search) {

@@ -460,12 +460,12 @@ namespace Graphick::Renderer::Geometry {
     float th_arc = th1 - th0;
 
     if (th_arc < 0.0f && sweep_flag) {
-      th_arc += MATH_TWO_PI;
+      th_arc += MATH_F_TWO_PI;
     } else if (th_arc > 0.0f && !sweep_flag) {
-      th_arc -= MATH_TWO_PI;
+      th_arc -= MATH_F_TWO_PI;
     }
 
-    int n_segs = static_cast<int>(std::ceil(std::fabs(th_arc / (MATH_PI * 0.5f + 0.001f))));
+    int n_segs = static_cast<int>(std::ceil(std::fabs(th_arc / (MATH_F_PI * 0.5f + 0.001f))));
     for (int i = 0; i < n_segs; i++) {
       float th2 = th0 + i * th_arc / n_segs;
       float th3 = th0 + (i + 1) * th_arc / n_segs;
