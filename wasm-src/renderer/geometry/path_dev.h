@@ -5,10 +5,15 @@
 
 #pragma once
 
-#include "../../utils/uuid.h"
 #include "../../math/vec2.h"
+#include "../../math/rect.h"
 
 #include <vector>
+#include <tuple>
+
+namespace Graphick::Math {
+  struct mat2x3;
+}
 
 namespace Graphick::Renderer::Geometry {
 
@@ -32,11 +37,42 @@ namespace Graphick::Renderer::Geometry {
     };
   public:
     /**
+     * @brief This struct represents an iterator over the segments of the path.
+     *
+     * @struct Iterator
+     */
+    struct Iterator {
+    public:
+      // using iterator_category = std::forward_iterator_tag;
+      // using difference_type = std::ptrdiff_t;
+      // using value_type = std::tuple<Command, vec2, vec2, vec2>;
+      // using pointer = value_type*;
+      // using reference = value_type&;
+
+      Iterator(const PathDev& path, const size_t index);
+
+      inline bool operator==(const Iterator& other) const { return m_index == other.m_index; }
+
+      inline bool operator!=(const Iterator& other) const { return m_index != other.m_index; }
+
+      inline Iterator& operator++();
+
+      inline Iterator operator++(int);
+
+      std::tuple<Command, vec2, vec2, vec2> operator*() const;
+    private:
+      size_t m_index;           /* The current index of the iterator. */
+      size_t m_point_index;     /* The index of the last point iterated over. */
+
+      const PathDev& m_path;    /* The path to iterate over. */
+    };
+  public:
+    /**
      * @brief Constructors, copy constructor and move constructor.
      */
     PathDev();
     PathDev(const PathDev& other);
-    PathDev(PathDev&& other);
+    PathDev(PathDev&& other) noexcept;
 
     /**
      * @brief Default destructor.
@@ -47,7 +83,7 @@ namespace Graphick::Renderer::Geometry {
      * @brief Copy and move assignment operators.
      */
     PathDev& operator=(const PathDev& other);
-    PathDev& operator=(PathDev&& other);
+    PathDev& operator=(PathDev&& other) noexcept;
 
     /**
      * @brief Whether the path is empty or not.
@@ -167,6 +203,28 @@ namespace Graphick::Renderer::Geometry {
      * @brief Closes the path.
      */
     void close();
+
+    /**
+     * @brief Calculates the bounding rectangle of the path.
+     *
+     * @return The bounding rectangle of the path.
+     */
+    Math::rect bounding_rect() const;
+
+    /**
+     * @brief Calculates the bounding rectangle of the path in the fixed reference system.
+     *
+     * @param transform The transformation matrix to apply to the path.
+     * @return The bounding rectangle of the path.
+     */
+    Math::rect bounding_rect(const Math::mat2x3& transform) const;
+
+    /**
+     * @brief Calculates the approximate bounding rectangle of the path considering all control points as vertices.
+     *
+     * @return The approximate bounding rectangle of the path.
+     */
+    Math::rect approx_bounding_rect() const;
   private:
     /**
      * @brief Returns the ith command of the path.

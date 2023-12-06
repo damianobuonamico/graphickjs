@@ -1,8 +1,15 @@
+/**
+ * @file components.h
+ * @brief Components to be added to entities.
+ *
+ * @todo doc
+ */
+
 #pragma once
 
 #include "../../history/values.h"
 
-#include "../../renderer/geometry/path.h"
+#include "../../renderer/geometry/path_dev.h"
 #include "../../renderer/properties.h"
 
 #include "../../math/vec4.h"
@@ -37,12 +44,26 @@ namespace Graphick::Editor {
   };
 
   struct PathComponent {
-    // TODO: make shared_ptr
-    Renderer::Geometry::Path path;
+    Renderer::Geometry::PathDev data;    /* The path data. */
 
-    PathComponent(const uuid id) : path(id) {}
-    PathComponent(const uuid id, const Renderer::Geometry::Path& path) : path(id, path) {}
-    PathComponent(const PathComponent& other) = default;
+    /**
+     * @brief Constructors, copy constructor and move constructor.
+     */
+    PathComponent();
+    PathComponent(const Renderer::Geometry::PathDev& data);
+    PathComponent(const PathComponent& other);
+    PathComponent(PathComponent&& other) noexcept;
+
+    /**
+     * @brief Default destructor.
+     */
+    ~PathComponent() = default;
+
+    /**
+     * @brief Copy and move assignment operators.
+     */
+    PathComponent& operator=(const PathComponent& other);
+    PathComponent& operator=(PathComponent&& other) noexcept;
   };
 
   struct TransformComponent {
@@ -57,7 +78,7 @@ namespace Graphick::Editor {
     inline History::Mat2x3Value* _value() { return &m_matrix; }
 
     rect bounding_rect() const;
-    rect large_bounding_rect() const;
+    rect approx_bounding_rect() const;
 
     inline vec2 transform(vec2 point) const { return m_matrix.get() * point; }
     inline vec2 revert(vec2 point) const { return m_matrix.get() / point; }

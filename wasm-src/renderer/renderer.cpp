@@ -1,6 +1,6 @@
 #include "renderer.h"
 
-#include "geometry/path.h"
+#include "geometry/path_dev.h"
 #include "geometry/internal.h"
 #include "gpu/allocator.h"
 
@@ -168,28 +168,35 @@ namespace Graphick::Renderer {
   //   get()->m_tiler.process_path(path, transform, color, z_index);
   // }
 
-  void Renderer::draw(const Geometry::Path& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform) {
+  void Renderer::draw(const Geometry::PathDev& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform) {
     if (path.empty()) return;
+#if 0
     get()->m_tiler.process_stroke(path, transform, stroke);
     get()->m_tiler.process_fill(path, transform, fill);
+#endif
   }
 
-  void Renderer::draw(const Geometry::Path& path, const Stroke& stroke, const mat2x3& transform) {
+  void Renderer::draw(const Geometry::PathDev& path, const Stroke& stroke, const mat2x3& transform) {
     if (path.empty()) return;
 
+#if 0
     get()->m_tiler.process_stroke(path, transform, stroke);
+#endif
   }
 
-  void Renderer::draw(const Geometry::Path& path, const Fill& fill, const mat2x3& transform) {
+  void Renderer::draw(const Geometry::PathDev& path, const Fill& fill, const mat2x3& transform) {
     if (path.empty()) return;
+#if 0
     get()->m_tiler.process_fill(path, transform, fill);
+#endif
   }
 
-  void Renderer::draw_outline(const uuid id, const Geometry::Path& path, const mat2x3& transform, bool draw_vertices) {
+  void Renderer::draw_outline(const uuid id, const Geometry::PathDev& path, const mat2x3& transform, bool draw_vertices) {
     if (path.vacant()) return;
-
+#if 0
     get()->add_line_instances(path, transform);
     if (draw_vertices) get()->add_vertex_instances(id, path, transform);
+#endif
   }
 
   void Renderer::draw_outline(const Geometry::Internal::PathInternal& path, const mat2x3& transform) {
@@ -666,7 +673,8 @@ namespace Graphick::Renderer {
     m_circle_data.instances.clear();
   }
 
-  void Renderer::add_line_instances(const Geometry::Path& path, const mat2x3& transform) {
+  void Renderer::add_line_instances(const Geometry::PathDev& path, const mat2x3& transform) {
+#if 0
     if (path.empty()) return;
 
     OPTICK_EVENT();
@@ -683,6 +691,7 @@ namespace Graphick::Renderer {
         add_linear_segment_instance(p0, p3);
       }
     }
+#endif
   }
 
   void Renderer::add_line_instances(const Geometry::Internal::PathInternal& path, const mat2x3& transform) {
@@ -736,7 +745,8 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Renderer::add_vertex_instances(const uuid id, const Geometry::Path& path, const mat2x3& transform) {
+  void Renderer::add_vertex_instances(const uuid id, const Geometry::PathDev& path, const mat2x3& transform) {
+#if 0
     Editor::Scene& scene = Editor::Editor::scene();
 
     vec2 first_pos, last_pos;
@@ -812,6 +822,7 @@ namespace Graphick::Renderer {
         add_white_square_instance(last_pos);
       }
     }
+#endif
   }
 
   void Renderer::add_square_instance(const vec2 position) {

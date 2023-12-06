@@ -590,6 +590,70 @@ namespace Graphick::Math {
     return sum >= 0.0f;
   }
 
+  rect quadratic_bounding_rect(const vec2 p0, const vec2 p1, const vec2 p2) {
+    rect bounds = { min(p0, p2), max(p0, p2) };
+
+    const vec2 a = p0 - 2.0f * p1 + p2;
+    const vec2 b = 2.0f * (p1 - p0);
+
+    for (int i = 0; i < 2; i++) {
+      if (a[i] == 0.0f) continue;
+
+      const float t = static_cast<float>(solve_linear(2 * a[i], b[i]));
+
+      if (is_normalized(t, false)) {
+        const vec2 p = a * t * t + b * t + p0;
+
+        min(bounds.min, p, bounds.min);
+        max(bounds.max, p, bounds.max);
+      }
+    }
+
+    return bounds;
+  }
+
+  rect cubic_bounding_rect(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+    rect bounds = { min(p0, p3), max(p0, p3) };
+
+    const vec2 a = -p0 + 3.0f * p1 - 3.0f * p2 + p3;
+    const vec2 b = 3.0f * p0 - 6.0f * p1 + 3.0f * p2;
+    const vec2 c = -3.0f * p0 + 3.0f * p1;
+
+    for (int i = 0; i < 2; i++) {
+      if (a[i] == 0.0f) {
+        if (b[i] == 0.0f) continue;
+
+        const float t = static_cast<float>(Math::solve_linear(b[i], c[i]));
+
+        if (Math::is_normalized(t, false)) {
+          const float t_sq = t * t;
+          const vec2 p = a * t_sq * t + b * t_sq + c * t + p0;
+
+          Math::min(bounds.min, p, bounds.min);
+          Math::max(bounds.max, p, bounds.max);
+        }
+
+        continue;
+      }
+
+      const Math::QuadraticSolutions ts = Math::solve_quadratic(3.0f * a[i], 2.0f * b[i], c[i]);
+
+      for (int j = 0; j < ts.count; j++) {
+        const float t = static_cast<float>(ts.solutions[j]);
+
+        if (Math::is_normalized(t, false)) {
+          const float t_sq = t * t;
+          const vec2 p = a * t_sq * t + b * t_sq + c * t + p0;
+
+          Math::min(bounds.min, p, bounds.min);
+          Math::max(bounds.max, p, bounds.max);
+        }
+      }
+    }
+
+    return bounds;
+  }
+
   std::tuple<vec2, vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t) {
     vec2 p = bezier(p0, p1, p2, p3, t);
 

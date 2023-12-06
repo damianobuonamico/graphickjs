@@ -6,6 +6,7 @@
 #include "../input/tools/pen_tool.h"
 
 #include "../../renderer/renderer.h"
+#include "../../renderer/geometry/path_dev.h"
 
 #include "../../history/command_history.h"
 #include "../../history/commands.h"
@@ -235,6 +236,7 @@ namespace Graphick::Editor {
   }
 
   uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold) {
+#if 0
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
         const auto& path = m_registry.get<PathComponent>(*it).path;
@@ -248,6 +250,7 @@ namespace Graphick::Editor {
         }
       }
     }
+#endif
 
     return { 0 };
   }
@@ -258,6 +261,7 @@ namespace Graphick::Editor {
     std::unordered_map<uuid, Selection::SelectionEntry> entities;
     std::unordered_set<uuid> vertices;
 
+#if 0
     auto view = get_all_entities_with<IDComponent, PathComponent, TransformComponent>();
 
     for (entt::entity entity : view) {
@@ -329,6 +333,7 @@ namespace Graphick::Editor {
 
     }
 
+#endif
     return entities;
   }
 
@@ -336,17 +341,17 @@ namespace Graphick::Editor {
     Entity entity = create_entity(tag);
 
     entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    PathComponent& path_component = entity.add_component<PathComponent>(entity.id());
+    PathComponent& path_component = entity.add_component<PathComponent>();
     entity.add_component<TransformComponent>(&path_component);
 
     return entity;
   }
 
-  Entity Scene::create_element(Renderer::Geometry::Path& path, const std::string& tag) {
+  Entity Scene::create_element(Renderer::Geometry::PathDev& path, const std::string& tag) {
     Entity entity = create_entity(tag);
 
     entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    PathComponent& path_component = entity.add_component<PathComponent>(entity.id(), path);
+    PathComponent& path_component = entity.add_component<PathComponent>(path);
     entity.add_component<TransformComponent>(&path_component);
 
     return entity;
@@ -386,19 +391,19 @@ namespace Graphick::Editor {
         auto components = m_registry.get<IDComponent, PathComponent, TransformComponent>(*it);
 
         const uuid id = std::get<0>(components).id;
-        const Renderer::Geometry::Path& path = std::get<1>(components).path;
+        const Renderer::Geometry::PathDev& path = std::get<1>(components).data;
         const TransformComponent& transform = std::get<2>(components);
 
         if (!has_entity(id)) return;
 
         if (should_rehydrate) {
-          path.rehydrate_cache();
+          // path.rehydrate_cache();
         }
 
         bool has_stroke = m_registry.all_of<StrokeComponent>(*it);
         std::optional<StrokeComponent> stroke = has_stroke ? std::optional<StrokeComponent>(m_registry.get<StrokeComponent>(*it)) : std::nullopt;
 
-        rect entity_rect = transform.large_bounding_rect();
+        rect entity_rect = transform.approx_bounding_rect();
 
         if (has_stroke) {
           entity_rect.min -= vec2{ stroke->width.get() };

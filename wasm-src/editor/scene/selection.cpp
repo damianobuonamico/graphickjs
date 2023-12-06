@@ -95,10 +95,12 @@ namespace Graphick::Editor {
       Entity element = m_scene->get_entity(element_id);
       entry.vertices.clear();
 
+#if 0
       for (uuid vertex_id : element.get_component<PathComponent>().path.vertices_ids()) {
         if (vertex_id == id) continue;
         entry.vertices.insert(vertex_id);
       }
+#endif
     } else {
       entry.vertices.erase(id);
     }

@@ -139,7 +139,7 @@ int main() {
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Entity");
   // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_element("Test Entity 1");
 
-  Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().path;
+  Graphick::Renderer::Geometry::PathDev& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.get_component<Graphick::Editor::PathComponent>().path;
 
   // path.move_to({ 360.0f, 20.0f });
@@ -159,8 +159,8 @@ int main() {
 
   /* Stroking Robustness */
 
-  // path.move_to({ 230.0f, 324.0f });
-  // path.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Handled
+  path.move_to({ 230.0f, 324.0f });
+  path.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Handled
 
   // path.move_to({ 221.0f, 718.0f });
   // path.cubic_to({ 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f }); // Handled
@@ -183,8 +183,8 @@ int main() {
   // path.move_to({ 0.0f, 0.0f });
   // path.cubic_to({ 100.0f, 100.0f }, { 0.0f, 100.0f }, { 100.0f, 0.0f }); // Handled
 
-  path.move_to({ 0.0f, 0.0f });
-  path.cubic_to({ 10.0f, 60.0f }, { 0.0f, 60.0f }, { 10.0f, 50.0f }); // High Curvature Endpoint (naive)
+  // path.move_to({ 0.0f, 0.0f });
+  // path.cubic_to({ 10.0f, 60.0f }, { 0.0f, 60.0f }, { 10.0f, 50.0f }); // High Curvature Endpoint (naive)
 
   // path.move_to({ 357.188f, 170.417f });
   // path.cubic_to({ 360.313f, 175.417f }, { 1304.06f, -507.917f }, { 0.0f, 0.0f }); // High Curvature Endpoint (naive)

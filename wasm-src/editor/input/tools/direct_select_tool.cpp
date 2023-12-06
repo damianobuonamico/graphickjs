@@ -132,6 +132,7 @@ namespace Graphick::Editor::Input {
       History::Mat2x3Value* transform = entity.get_component<TransformComponent>()._value();
 
       if (entry.type == Selection::SelectionEntry::Type::Element && entity.is_element() && !((Selection::SelectionElementEntry&)(entry)).full()) {
+#if 0
         Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
 
         m_transform_cache.emplace_back(transform, vec2{ 0.0f });
@@ -146,6 +147,7 @@ namespace Graphick::Editor::Input {
           if (handles.in_handle) m_vector_cache.emplace_back(handles.in_handle, i);
           if (handles.out_handle) m_vector_cache.emplace_back(handles.out_handle, i);
         }
+#endif
       } else if (entity.has_component<TransformComponent>()) {
         m_matrix_cache.push_back(transform);
       }
@@ -405,6 +407,7 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_handle_pointer_move() {
+#if 0
     Entity entity = Editor::scene().get_entity(m_entity);
     Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
     mat2x3 transform = entity.get_component<TransformComponent>().get();
@@ -441,6 +444,7 @@ namespace Graphick::Editor::Input {
     float length = Math::length(other_handle->get() - other_handle->delta() - vertex->get() + vertex->delta());
 
     other_handle->move_to(dir * length + vertex->get());
+#endif
   }
 
   /* -- on_pointer_up -- */
@@ -526,6 +530,7 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_handle_pointer_up() {
+#if 0
     if (!m_dragging_occurred || !m_handle.has_value()) return;
 
     auto vertex = m_vertex->lock();
@@ -540,6 +545,7 @@ namespace Graphick::Editor::Input {
 
       vertex->apply();
     }
+#endif
   }
 
 }

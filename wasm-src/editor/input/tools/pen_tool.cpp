@@ -46,6 +46,7 @@ namespace Graphick::Editor::Input {
     Scene& scene = Editor::scene();
     auto hovered_vertex = InputManager::hover.vertex();
 
+#if 0
     m_path = &entity->get_component<PathComponent>().path;
     m_transform = entity->get_component<TransformComponent>()._value();
 
@@ -83,6 +84,7 @@ namespace Graphick::Editor::Input {
     }
 
     on_new_pointer_down();
+#endif
   }
 
   void PenTool::on_pointer_move() {
@@ -179,6 +181,7 @@ namespace Graphick::Editor::Input {
     Entity entity = Editor::scene().get_entity(m_element);
     if (!entity.is_element()) return;
 
+#if 0
     auto& path = entity.get_component<PathComponent>().path;
     if (path.vacant() || path.closed()) return;
 
@@ -203,6 +206,7 @@ namespace Graphick::Editor::Input {
     }
 
     Renderer::Renderer::draw_outline(segment);
+#endif
   }
 
   void PenTool::set_pen_element(const uuid id) {
@@ -232,6 +236,7 @@ namespace Graphick::Editor::Input {
       }
     }
 
+#if 0
     m_path = &entity->get_component<PathComponent>().path;
     vec2 pointer_position = m_transform->get() / InputManager::pointer.scene.position;
 
@@ -262,6 +267,7 @@ namespace Graphick::Editor::Input {
 
     m_vertex = m_path->last().lock().get();
     m_mode = Mode::New;
+#endif
   }
 
   void PenTool::on_join_pointer_down() {
@@ -288,6 +294,7 @@ namespace Graphick::Editor::Input {
     Entity second_entity = Editor::scene().get_entity(m_path->id);
     Entity new_entity = Editor::scene().create_element();
 
+#if 0
     auto& first_path = first_entity.get_component<PathComponent>().path;
     auto& second_path = *m_path;
     auto& new_path = new_entity.get_component<PathComponent>().path;
@@ -399,6 +406,7 @@ namespace Graphick::Editor::Input {
 
     m_path = &new_path;
     m_mode = Mode::Join;
+#endif
   }
 
   void PenTool::on_close_pointer_down() {

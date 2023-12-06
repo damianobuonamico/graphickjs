@@ -11,7 +11,7 @@
 
 #include "../../history/command_history.h"
 
-#include "../../renderer/geometry/path.h"
+#include "../../renderer/geometry/path_dev.h"
 
 #include <iostream>
 
@@ -334,11 +334,11 @@ namespace Graphick::io::svg {
     return true;
   }
 
-  static Renderer::Geometry::Path parse_path(const std::string& string) {
+  static Renderer::Geometry::PathDev parse_path(const std::string& string) {
     const char* ptr = string.data();
     const char* end = ptr + string.size();
 
-    Renderer::Geometry::Path path{ 0 };
+    Renderer::Geometry::PathDev path{};
 
     if (ptr >= end || !(*ptr == 'M' || *ptr == 'm')) return path;
 
@@ -739,13 +739,15 @@ namespace Graphick::io::svg {
           decode_text(start, rtrim(start, ptr), value);
           // TODO: optimize copy
           History::CommandHistory::disable();
-          Renderer::Geometry::Path path = parse_path(value);
+          Renderer::Geometry::PathDev path = parse_path(value);
           History::CommandHistory::enable();
 
           if (!path.empty()) {
+#if 0
             if (!path.closed() && Math::is_almost_equal(path.segments().front().p0(), path.segments().back().p3(), GK_POINT_EPSILON)) {
               path.close();
             }
+#endif
 
             // TODO: reimplement svg creation, element creation, path optimization
             Editor::Entity element = Editor::Editor::scene().create_element(path);

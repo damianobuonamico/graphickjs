@@ -362,6 +362,27 @@ namespace Graphick::Math {
   bool clockwise(const std::vector<vec2>& points);
 
   /**
+   * @brief Calculates the bounding rectangle of a quadratic bezier curve.
+   *
+   * @param p0 The first control point.
+   * @param p1 The second control point.
+   * @param p2 The third control point.
+   * @return The bounding rectangle.
+   */
+  rect quadratic_bounding_rect(const vec2 p0, const vec2 p1, const vec2 p2);
+
+  /**
+   * @brief Calculates the bounding rectangle of a cubic bezier curve.
+   *
+   * @param p0 The first control point.
+   * @param p1 The second control point.
+   * @param p2 The third control point.
+   * @param p3 The fourth control point.
+   * @return The bounding rectangle.
+   */
+  rect cubic_bounding_rect(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
+
+  /**
    * @brief Splits a bezier curve into two at a given point.
    *
    * @param p0 The first control point.

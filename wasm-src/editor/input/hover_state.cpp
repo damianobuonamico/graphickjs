@@ -58,6 +58,7 @@ namespace Graphick::Editor::Input {
       return;
     }
 
+#if 0
     const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
     const mat2x3 transform = entity.get_component<TransformComponent>().get();
     const vec2 transformed_pos = transform / position;
@@ -154,6 +155,7 @@ namespace Graphick::Editor::Input {
     }
 
     m_type = HoverType::Element;
+#endif
   }
 
   void HoverState::reset() {

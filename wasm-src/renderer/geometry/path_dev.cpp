@@ -10,17 +10,88 @@
 
 #include "../../math/vector.h"
 #include "../../math/scalar.h"
+#include "../../math/mat2x3.h"
 #include "../../math/mat2.h"
+#include "../../math/math.h"
 
 #include "../../utils/assert.h"
 
 namespace Graphick::Renderer::Geometry {
 
+  PathDev::Iterator::Iterator(const PathDev& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
+    GK_ASSERT(index <= path.m_commands_size, "Index out of range.");
+
+    for (int i = 0; i < m_index; i++) {
+      switch (path.get_command(i)) {
+      case Command::Move:
+        break;
+      case Command::Line:
+        m_point_index += 1;
+        break;
+      case Command::Quadratic:
+        m_point_index += 2;
+        break;
+      case Command::Cubic:
+        m_point_index += 3;
+        break;
+      }
+    }
+  }
+
+  PathDev::Iterator& PathDev::Iterator::operator++() {
+    m_index += 1;
+
+    switch (m_path.get_command(m_index)) {
+    case Command::Move:
+      break;
+    case Command::Line:
+      m_point_index += 1;
+      break;
+    case Command::Quadratic:
+      m_point_index += 2;
+      break;
+    case Command::Cubic:
+      m_point_index += 3;
+      break;
+    }
+
+    return *this;
+  }
+
+  PathDev::Iterator PathDev::Iterator::operator++(int) {
+    Iterator tmp = *this;
+    ++(*this);
+
+    return tmp;
+  }
+
+  std::tuple<PathDev::Command, vec2, vec2, vec2> PathDev::Iterator::operator*() const {
+    const Command command = m_path.get_command(m_index);
+
+    switch (command) {
+    case Command::Move:
+      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return std::make_tuple(command, m_path.m_points[m_point_index], vec2{}, vec2{});
+    case Command::Line: {
+      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return std::make_tuple(command, m_path.m_points[m_point_index], vec2{}, vec2{});
+    }
+    case Command::Quadratic: {
+      GK_ASSERT(m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
+      return std::make_tuple(command, m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], vec2{});
+    }
+    case Command::Cubic: {
+      GK_ASSERT(m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
+      return std::make_tuple(command, m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2]);
+    }
+    }
+  }
+
   PathDev::PathDev() : m_points(), m_commands() {}
 
   PathDev::PathDev(const PathDev& other) : m_points(other.m_points), m_commands(other.m_commands) {}
 
-  PathDev::PathDev(PathDev&& other) : m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)) {}
+  PathDev::PathDev(PathDev&& other) noexcept : m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)) {}
 
   PathDev& PathDev::operator=(const PathDev& other) {
     m_points = other.m_points;
@@ -29,7 +100,7 @@ namespace Graphick::Renderer::Geometry {
     return *this;
   }
 
-  PathDev& PathDev::operator=(PathDev&& other) {
+  PathDev& PathDev::operator=(PathDev&& other) noexcept {
     m_points = std::move(other.m_points);
     m_commands = std::move(other.m_commands);
 
@@ -239,6 +310,172 @@ namespace Graphick::Renderer::Geometry {
 
     m_points.push_back(m_points.front());
     push_command(Command::Line);
+  }
+
+  Math::rect PathDev::bounding_rect() const {
+    if (empty()) {
+      if (vacant()) return {};
+      return { m_points[0], m_points[0] };
+    }
+
+    Math::rect rect{};
+
+    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+
+        const vec2 p0 = m_points[j - 1];
+        const vec2 p1 = m_points[j];
+        const vec2 p2 = m_points[j + 1];
+        const vec2 p3 = m_points[j + 2];
+
+        Math::rect r = Math::cubic_bounding_rect(p0, p1, p2, p3);
+
+        Math::min(rect.min, r.min, rect.min);
+        Math::max(rect.max, r.max, rect.max);
+
+        j += 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+
+        const vec2 p0 = m_points[j - 1];
+        const vec2 p1 = m_points[j];
+        const vec2 p2 = m_points[j + 1];
+
+        Math::rect r = Math::quadratic_bounding_rect(p0, p1, p2);
+
+        Math::min(rect.min, r.min, rect.min);
+        Math::max(rect.max, r.max, rect.max);
+
+        j += 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+
+        Math::min(rect.min, m_points[j], rect.min);
+        Math::max(rect.max, m_points[j], rect.max);
+
+        j += 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+
+        Math::min(rect.min, m_points[j], rect.min);
+        Math::max(rect.max, m_points[j], rect.max);
+
+        j += 1;
+
+        break;
+      }
+      }
+    }
+
+    return rect;
+  }
+
+  Math::rect PathDev::bounding_rect(const mat2x3& transform) const {
+    if (empty()) {
+      if (vacant()) return {};
+
+      const vec2 p = transform * m_points[0];
+      return { p, p };
+    }
+
+    Math::rect rect{};
+
+    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+
+        const vec2 p0 = transform * m_points[j - 1];
+        const vec2 p1 = transform * m_points[j];
+        const vec2 p2 = transform * m_points[j + 1];
+        const vec2 p3 = transform * m_points[j + 2];
+
+        Math::rect r = Math::cubic_bounding_rect(p0, p1, p2, p3);
+
+        Math::min(rect.min, r.min, rect.min);
+        Math::max(rect.max, r.max, rect.max);
+
+        j += 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+
+        const vec2 p0 = transform * m_points[j - 1];
+        const vec2 p1 = transform * m_points[j];
+        const vec2 p2 = transform * m_points[j + 1];
+
+        Math::rect r = Math::quadratic_bounding_rect(p0, p1, p2);
+
+        Math::min(rect.min, r.min, rect.min);
+        Math::max(rect.max, r.max, rect.max);
+
+        j += 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+
+        const vec2 p1 = transform * m_points[j];
+
+        Math::min(rect.min, p1, rect.min);
+        Math::max(rect.max, p1, rect.max);
+
+        j += 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+
+        const vec2 p0 = transform * m_points[j];
+
+        Math::min(rect.min, p0, rect.min);
+        Math::max(rect.max, p0, rect.max);
+
+        j += 1;
+
+        break;
+      }
+      }
+    }
+
+    return rect;
+  }
+
+  Math::rect PathDev::approx_bounding_rect() const {
+    if (empty()) {
+      if (vacant()) return {};
+      return { m_points[0], m_points[0] };
+    }
+
+    Math::rect rect{};
+
+    for (vec2 p : m_points) {
+      Math::min(rect.min, p, rect.min);
+      Math::max(rect.max, p, rect.max);
+    }
+
+    return rect;
   }
 
   PathDev::Command PathDev::get_command(const size_t index) const {
