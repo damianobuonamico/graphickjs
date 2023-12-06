@@ -41,6 +41,8 @@ namespace Graphick::Renderer::Geometry {
   PathDev::Iterator& PathDev::Iterator::operator++() {
     m_index += 1;
 
+    if (m_index == m_path.m_commands_size) return *this;
+
     switch (m_path.get_command(m_index)) {
     case Command::Move:
       break;
@@ -65,25 +67,26 @@ namespace Graphick::Renderer::Geometry {
     return tmp;
   }
 
-  std::tuple<PathDev::Command, vec2, vec2, vec2> PathDev::Iterator::operator*() const {
+  PathDev::Iterator::value_type PathDev::Iterator::operator*() const {
     const Command command = m_path.get_command(m_index);
 
     switch (command) {
-    case Command::Move:
-      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-      return std::make_tuple(command, m_path.m_points[m_point_index], vec2{}, vec2{});
-    case Command::Line: {
-      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-      return std::make_tuple(command, m_path.m_points[m_point_index], vec2{}, vec2{});
+    case Command::Cubic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
+      return std::make_tuple(command, m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2]);
     }
     case Command::Quadratic: {
-      GK_ASSERT(m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
-      return std::make_tuple(command, m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], vec2{});
+      GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
+      return std::make_tuple(command, m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], vec2{});
     }
-    case Command::Cubic: {
-      GK_ASSERT(m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
-      return std::make_tuple(command, m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2]);
+    case Command::Line: {
+      GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return std::make_tuple(command, m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], vec2{}, vec2{});
     }
+    default:
+    case Command::Move:
+      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return std::make_tuple(command, m_path.m_points[m_point_index], vec2{}, vec2{}, vec2{});
     }
   }
 
@@ -105,6 +108,62 @@ namespace Graphick::Renderer::Geometry {
     m_commands = std::move(other.m_commands);
 
     return *this;
+  }
+
+  void PathDev::for_each(
+    std::function<void(const vec2)> move_callback,
+    std::function<void(const vec2, const vec2)> line_callback,
+    std::function<void(const vec2, const vec2, const vec2)> quadratic_callback,
+    std::function<void(const vec2, const vec2, const vec2, const vec2)> cubic_callback
+  ) const {
+    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j > 0 && j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+
+        if (cubic_callback) {
+          cubic_callback(m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]);
+        }
+
+        j += 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0 && j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+
+        if (quadratic_callback) {
+          quadratic_callback(m_points[j - 1], m_points[j], m_points[j + 1]);
+        }
+
+        j += 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0 && j < m_points.size(), "Not enough points for a line.");
+
+        if (line_callback) {
+          line_callback(m_points[j - 1], m_points[j]);
+        }
+
+        j += 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+
+        if (move_callback) {
+          move_callback(m_points[j]);
+        }
+
+        j += 1;
+
+        break;
+      }
+      }
+    }
   }
 
   void PathDev::move_to(const vec2 point) {

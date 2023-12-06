@@ -8,6 +8,7 @@
 #include "../../math/vec2.h"
 #include "../../math/rect.h"
 
+#include <functional>
 #include <vector>
 #include <tuple>
 
@@ -37,29 +38,48 @@ namespace Graphick::Renderer::Geometry {
     };
   public:
     /**
-     * @brief This struct represents an iterator over the segments of the path.
+     * @brief This struct represents a forward iterator over the segments of the path.
+     *
+     * The iterator's value type is a tuple containing the command and the points of the segment (always 4 points, even if not used).
      *
      * @struct Iterator
      */
     struct Iterator {
     public:
-      // using iterator_category = std::forward_iterator_tag;
-      // using difference_type = std::ptrdiff_t;
-      // using value_type = std::tuple<Command, vec2, vec2, vec2>;
-      // using pointer = value_type*;
-      // using reference = value_type&;
+      using iterator_category = std::forward_iterator_tag;
+      using difference_type = size_t;
+      using value_type = std::tuple<Command, vec2, vec2, vec2, vec2>;
+      using pointer = value_type*;
+      using reference = value_type&;
 
+      /**
+       * @brief Constructs an iterator over the given path at the given index.
+       *
+       * @param path The path to iterate over.
+       * @param index The start index of the iterator.
+       */
       Iterator(const PathDev& path, const size_t index);
 
+      /**
+       * @brief Equality and inequality operators.
+       *
+       * @param other The iterator to compare to.
+       */
       inline bool operator==(const Iterator& other) const { return m_index == other.m_index; }
-
       inline bool operator!=(const Iterator& other) const { return m_index != other.m_index; }
 
-      inline Iterator& operator++();
+      /**
+       * @brief Pre and post increment operators.
+       */
+      Iterator& operator++();
+      Iterator operator++(int);
 
-      inline Iterator operator++(int);
-
-      std::tuple<Command, vec2, vec2, vec2> operator*() const;
+      /**
+       * @brief Dereference operator.
+       *
+       * @return A tuple containing the type and the points of the segment.
+       */
+      value_type operator*() const;
     private:
       size_t m_index;           /* The current index of the iterator. */
       size_t m_point_index;     /* The index of the last point iterated over. */
@@ -84,6 +104,35 @@ namespace Graphick::Renderer::Geometry {
      */
     PathDev& operator=(const PathDev& other);
     PathDev& operator=(PathDev&& other) noexcept;
+
+    /**
+     * @brief Returns an iterator to the beginning of the path.
+     *
+     * @return An iterator to the beginning of the path.
+     */
+    Iterator begin() const { return Iterator(*this, 0); }
+
+    /**
+     * @brief Returns an iterator to the end of the path.
+     *
+     * @return An iterator to the end of the path.
+     */
+    Iterator end() const { return Iterator(*this, m_commands_size); }
+
+    /**
+     * @brief Iterates over the segments of the path, calling the given callbacks for each segment.
+     *
+     * @param move_callback The callback to call for each move command.
+     * @param line_callback The callback to call for each line segment.
+     * @param quadratic_callback The callback to call for each quadratic segment.
+     * @param cubic_callback The callback to call for each cubic segment.
+     */
+    void for_each(
+      std::function<void(const vec2)> move_callback = nullptr,
+      std::function<void(const vec2, const vec2)> line_callback = nullptr,
+      std::function<void(const vec2, const vec2, const vec2)> quadratic_callback = nullptr,
+      std::function<void(const vec2, const vec2, const vec2, const vec2)> cubic_callback = nullptr
+    ) const;
 
     /**
      * @brief Whether the path is empty or not.

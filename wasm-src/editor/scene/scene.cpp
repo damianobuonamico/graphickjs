@@ -447,9 +447,9 @@ namespace Graphick::Editor {
           z_index += 1;
         }
 
-        if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
-          Renderer::Renderer::draw_outline(id, path, transform_matrix, draw_vertices);
-        }
+        // if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
+        Renderer::Renderer::draw_outline(id, path, transform_matrix, draw_vertices);
+        // }
 
         // Math::rect bounding_rect = path.bounding_rect();
         // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);

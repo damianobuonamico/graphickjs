@@ -193,10 +193,8 @@ namespace Graphick::Renderer {
 
   void Renderer::draw_outline(const uuid id, const Geometry::PathDev& path, const mat2x3& transform, bool draw_vertices) {
     if (path.vacant()) return;
-#if 0
     get()->add_line_instances(path, transform);
     if (draw_vertices) get()->add_vertex_instances(id, path, transform);
-#endif
   }
 
   void Renderer::draw_outline(const Geometry::Internal::PathInternal& path, const mat2x3& transform) {
@@ -674,24 +672,18 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::add_line_instances(const Geometry::PathDev& path, const mat2x3& transform) {
-#if 0
     if (path.empty()) return;
 
-    OPTICK_EVENT();
-
-    for (const auto& segment : path.segments()) {
-      vec2 p0 = transform * segment->p0();
-      vec2 p3 = transform * segment->p3();
-      // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
-      // auto p3 = transform.Map(segment.p3().x, segment.p3().y);
-
-      if (segment->is_cubic()) {
-        add_cubic_segment_instance(p0, transform * segment->p1(), transform * segment->p2(), p3);
-      } else {
-        add_linear_segment_instance(p0, p3);
+    path.for_each(
+      nullptr,
+      [this, transform](const vec2 p0, const vec2 p1) {
+        this->add_linear_segment_instance(transform * p0, transform * p1);
+      },
+      nullptr,
+      [this, transform](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+        this->add_cubic_segment_instance(transform * p0, transform * p1, transform * p2, transform * p3);
       }
-    }
-#endif
+    );
   }
 
   void Renderer::add_line_instances(const Geometry::Internal::PathInternal& path, const mat2x3& transform) {

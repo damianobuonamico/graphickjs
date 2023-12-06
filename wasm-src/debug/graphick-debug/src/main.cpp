@@ -77,6 +77,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   );
 }
 
+static void line_fn(const Graphick::vec2 p0, const Graphick::vec2 p1) {
+  Graphick::console::log("line_to", p1.x);
+}
+
 int main() {
   GLFWwindow* window;
 
@@ -127,6 +131,14 @@ int main() {
   path_dev.cubic_to({ 1.0f, 0.0f }, { 1.0f, 0.0f }, { 3.0f, 0.0f });
   path_dev.line_to({ 4.0f, 0.0f });
   path_dev.line_to({ 5.0f, 0.0f });
+
+  path_dev.for_each(nullptr, &line_fn, [](const Graphick::vec2 p0, const Graphick::vec2 p1, const Graphick::vec2 p2) {
+    Graphick::console::log("quadratic_to", p2.x);
+    });
+
+  for (const auto& [command, p0, p1, p2, p3] : path_dev) {
+    Graphick::console::log((int)command);
+  }
 
   // #define TIGER
 #define OBJECTS
