@@ -170,25 +170,21 @@ namespace Graphick::Renderer {
 
   void Renderer::draw(const Geometry::PathDev& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform) {
     if (path.empty()) return;
-#if 0
+
     get()->m_tiler.process_stroke(path, transform, stroke);
     get()->m_tiler.process_fill(path, transform, fill);
-#endif
   }
 
   void Renderer::draw(const Geometry::PathDev& path, const Stroke& stroke, const mat2x3& transform) {
     if (path.empty()) return;
 
-#if 0
     get()->m_tiler.process_stroke(path, transform, stroke);
-#endif
   }
 
   void Renderer::draw(const Geometry::PathDev& path, const Fill& fill, const mat2x3& transform) {
     if (path.empty()) return;
-#if 0
+
     get()->m_tiler.process_fill(path, transform, fill);
-#endif
   }
 
   void Renderer::draw_outline(const uuid id, const Geometry::PathDev& path, const mat2x3& transform, bool draw_vertices) {

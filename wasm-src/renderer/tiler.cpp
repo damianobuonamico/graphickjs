@@ -16,7 +16,7 @@
 
 #include "tiler.h"
 
-#include "geometry/path.h"
+#include "geometry/path_dev.h"
 #include "geometry/contour.h"
 
 #include "../math/mat2x3.h"
@@ -482,7 +482,7 @@ namespace Graphick::Renderer {
   bool Tiler::MaskedTilesBatch::can_batch(const DrawableTiler::Mask& mask) const {
     bool segments_available = segments_ptr + 4 + 8 * mask.segments_size < segments + SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE * 4;
     bool cover_available = cover_table_ptr + TILE_SIZE < cover_table + SEGMENTS_TEXTURE_SIZE * SEGMENTS_TEXTURE_SIZE;
-    
+
     return segments_available && cover_available;
   }
 
@@ -620,7 +620,8 @@ namespace Graphick::Renderer {
     };
   }
 
-  void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {
+  void Tiler::process_stroke(const Geometry::PathDev& path, const mat2x3& transform, const Stroke& stroke) {
+    GK_ASSERT(!path.empty(), "Path cannot be empty.");
     GK_TOTAL("Tiler::process_stroke");
 
     const float sw = stroke.width;
@@ -649,10 +650,7 @@ namespace Graphick::Renderer {
       Math::double_to_f24x8((path_rect.max.y - offset.y) * m_zoom - m_subpixel.y)
     };
 
-    const auto& segments = path.segments();
-    const size_t len = segments.size();
-
-    if (len == 0) return;
+    const size_t len = path.size();
 
     Drawable drawable(1, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, bound);
     Geometry::Contour& contour = drawable.contours.front();
@@ -660,6 +658,7 @@ namespace Graphick::Renderer {
     LineCap cap = LineCap::Butt;
     LineJoin join = LineJoin::Bevel;
 
+#if 0
     if (len == 1 && segments.front().is_point() && cap != LineCap::Butt) {
       auto& segment = segments.front();
 
@@ -676,6 +675,7 @@ namespace Graphick::Renderer {
 
       return process_drawable(drawable, drawable_offset, clip_drawable);
     }
+#endif
 
     std::vector<std::unique_ptr<Geometry::Contour::Parameterization>> parameterizations;
 
@@ -684,21 +684,22 @@ namespace Graphick::Renderer {
     dvec2 last_point = { 0.0, 0.0 };
     dvec2 pivot = { 0.0, 0.0 };
 
-    bool closed = path.closed();
+    bool closed = false;
+    // bool closed = path.closed();
 
     if (closed) {
-      const auto& raw = segments.back();
-      const auto segment = raw.is_linear() ?
+      const auto raw = path.back();
+      const auto segment = raw.is_line() ?
         offset_segment(
-          d_transform_point(transform, raw.p0(), subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p3(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p0, subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
           radius
         ) :
         offset_segment(
-          d_transform_point(transform, raw.p0(), subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p1(), subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p2(), subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p3(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p0, subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p2, subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p3, subpixel_offset, m_zoom),
           radius
         );
 
@@ -718,19 +719,19 @@ namespace Graphick::Renderer {
     bool is_first = !closed;
     double inv_miter_limit = 1.0 / stroke.miter_limit;
 
-    for (const auto& raw : segments) {
-      const dvec2 p0 = d_transform_point(transform, raw->p0(), subpixel_offset, m_zoom);
-      const auto segment = raw->is_linear() ?
+    for (const auto& raw : path) {
+      const dvec2 p0 = d_transform_point(transform, raw.p0, subpixel_offset, m_zoom);
+      const auto segment = raw.is_line() ?
         offset_segment(
           p0,
-          d_transform_point(transform, raw->p3(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
           radius
         ) :
         offset_segment(
           p0,
-          d_transform_point(transform, raw->p1(), subpixel_offset, m_zoom),
-          d_transform_point(transform, raw->p2(), subpixel_offset, m_zoom),
-          d_transform_point(transform, raw->p3(), subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p2, subpixel_offset, m_zoom),
+          d_transform_point(transform, raw.p3, subpixel_offset, m_zoom),
           radius
         );
 
@@ -760,19 +761,18 @@ namespace Graphick::Renderer {
 
     is_first = true;
 
-    for (auto it = segments.rbegin(); it != segments.rend(); it++) {
-      const dvec2 p3 = d_transform_point(transform, (*it)->p3(), subpixel_offset, m_zoom);
-      const auto segment = (*it)->is_linear() ?
+    for (auto it = path.rbegin(), rend_it = path.rend(); it != rend_it; ++it) {
+      const auto segment = (*it).is_line() ?
         offset_segment(
-          p3,
-          d_transform_point(transform, (*it)->p0(), subpixel_offset, m_zoom),
+          d_transform_point(transform, (*it).p1, subpixel_offset, m_zoom),
+          d_transform_point(transform, (*it).p0, subpixel_offset, m_zoom),
           radius
         ) :
         offset_segment(
-          p3,
-          d_transform_point(transform, (*it)->p2(), subpixel_offset, m_zoom),
-          d_transform_point(transform, (*it)->p1(), subpixel_offset, m_zoom),
-          d_transform_point(transform, (*it)->p0(), subpixel_offset, m_zoom),
+          d_transform_point(transform, (*it).p3, subpixel_offset, m_zoom),
+          d_transform_point(transform, (*it).p2, subpixel_offset, m_zoom),
+          d_transform_point(transform, (*it).p1, subpixel_offset, m_zoom),
+          d_transform_point(transform, (*it).p0, subpixel_offset, m_zoom),
           radius
         );
 
@@ -780,18 +780,18 @@ namespace Graphick::Renderer {
 
       if (is_first) {
         if (closed) {
-          const auto& raw = segments.front();
-          const auto init = raw.is_linear() ?
+          const auto raw = path.front();
+          const auto init = raw.is_line() ?
             offset_segment(
-              d_transform_point(transform, raw.p3(), subpixel_offset, m_zoom),
-              d_transform_point(transform, raw.p0(), subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p0, subpixel_offset, m_zoom),
               radius
             ) :
             offset_segment(
-              d_transform_point(transform, raw.p3(), subpixel_offset, m_zoom),
-              d_transform_point(transform, raw.p2(), subpixel_offset, m_zoom),
-              d_transform_point(transform, raw.p1(), subpixel_offset, m_zoom),
-              d_transform_point(transform, raw.p0(), subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p3, subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p2, subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
+              d_transform_point(transform, raw.p0, subpixel_offset, m_zoom),
               radius
             );
 
@@ -842,7 +842,7 @@ namespace Graphick::Renderer {
     // Renderer::draw_outline(p);
   }
 
-  void Tiler::process_fill(const Geometry::Path& path, const mat2x3& transform, const Fill& fill) {
+  void Tiler::process_fill(const Geometry::PathDev& path, const mat2x3& transform, const Fill& fill) {
     GK_TOTAL("Tiler::process_fill");
 
     const rect path_rect = transform * path.bounding_rect();
@@ -865,21 +865,18 @@ namespace Graphick::Renderer {
     Drawable drawable(1, fill, bound);
     Geometry::Contour& contour = drawable.contours.front();
 
-    const auto& segments = path.segments();
-    const f24x8x2 first = f_transform_point(transform, segments.front().p0(), subpixel_offset, m_zoom);
+    const f24x8x2 first = f_transform_point(transform, path.front().p0, subpixel_offset, m_zoom);
 
     contour.move_to(first);
 
-    for (size_t i = 0; i < segments.size(); i++) {
-      auto& raw_segment = segments[i];
-
-      if (raw_segment.is_linear()) {
-        contour.line_to(f_transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom));
+    for (const auto& raw : path) {
+      if (raw.is_line()) {
+        contour.line_to(f_transform_point(transform, raw.p1, subpixel_offset, m_zoom));
       } else {
         contour.cubic_to(
-          f_transform_point(transform, raw_segment.p1(), subpixel_offset, m_zoom),
-          f_transform_point(transform, raw_segment.p2(), subpixel_offset, m_zoom),
-          f_transform_point(transform, raw_segment.p3(), subpixel_offset, m_zoom)
+          f_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
+          f_transform_point(transform, raw.p2, subpixel_offset, m_zoom),
+          f_transform_point(transform, raw.p3, subpixel_offset, m_zoom)
         );
       }
     }
@@ -1426,4 +1423,4 @@ namespace Graphick::Renderer {
   }
 #endif
 
-}
+  }

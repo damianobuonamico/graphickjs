@@ -38,6 +38,38 @@ namespace Graphick::Renderer::Geometry {
     };
   public:
     /**
+     * @brief This struct represents a segment of the path.
+     *
+     * The segment is represented by a type and 4 points, even if not used.
+     *
+     * @struct Segment
+     */
+    struct Segment {
+      Command type;    /* The type of the segment. */
+
+      vec2 p0;         /* The first point of the segment or move command destination. */
+      vec2 p1;         /* The second point of the segment (line, quadratic, cubic). */
+      vec2 p2;         /* The third point of the segment (quadratic, cubic). */
+      vec2 p3;         /* The fourth point of the segment (cubic). */
+
+      /**
+       * @brief Constructors.
+       */
+      Segment(const vec2 p0) : type(Command::Move), p0(p0), p1(0.0f), p2(0.0f), p3(0.0f) {}
+      Segment(const vec2 p0, const vec2 p1) : type(Command::Line), p0(p0), p1(p1), p2(0.0f), p3(0.0f) {}
+      Segment(const vec2 p0, const vec2 p1, const vec2 p2) : type(Command::Quadratic), p0(p0), p1(p1), p2(p2), p3(0.0f) {}
+      Segment(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) : type(Command::Cubic), p0(p0), p1(p1), p2(p2), p3(p3) {}
+
+      /**
+       * @brief Type checking methods.
+       */
+      inline bool is_move() const { return type == Command::Move; }
+      inline bool is_line() const { return type == Command::Line; }
+      inline bool is_quadratic() const { return type == Command::Quadratic; }
+      inline bool is_cubic() const { return type == Command::Cubic; }
+    };
+
+    /**
      * @brief This struct represents a forward iterator over the segments of the path.
      *
      * The iterator's value type is a tuple containing the command and the points of the segment (always 4 points, even if not used).
@@ -48,7 +80,7 @@ namespace Graphick::Renderer::Geometry {
     public:
       using iterator_category = std::forward_iterator_tag;
       using difference_type = size_t;
-      using value_type = std::tuple<Command, vec2, vec2, vec2, vec2>;
+      using value_type = Segment;
       using pointer = value_type*;
       using reference = value_type&;
 
@@ -61,12 +93,16 @@ namespace Graphick::Renderer::Geometry {
       Iterator(const PathDev& path, const size_t index);
 
       /**
-       * @brief Equality and inequality operators.
+       * @brief Equality, inequality and comparison operators.
        *
        * @param other The iterator to compare to.
        */
       inline bool operator==(const Iterator& other) const { return m_index == other.m_index; }
       inline bool operator!=(const Iterator& other) const { return m_index != other.m_index; }
+      inline bool operator<(const Iterator& other) const { return m_index < other.m_index; }
+      inline bool operator<=(const Iterator& other) const { return m_index <= other.m_index; }
+      inline bool operator>(const Iterator& other) const { return m_index > other.m_index; }
+      inline bool operator>=(const Iterator& other) const { return m_index >= other.m_index; }
 
       /**
        * @brief Pre and post increment operators.
@@ -75,9 +111,75 @@ namespace Graphick::Renderer::Geometry {
       Iterator operator++(int);
 
       /**
+       * @brief Pre and post decrement operators.
+       */
+      Iterator& operator--();
+      Iterator operator--(int);
+
+      /**
        * @brief Dereference operator.
        *
-       * @return A tuple containing the type and the points of the segment.
+       * @return The current segment.
+       */
+      value_type operator*() const;
+    private:
+      size_t m_index;           /* The current index of the iterator. */
+      size_t m_point_index;     /* The index of the last point iterated over. */
+
+      const PathDev& m_path;    /* The path to iterate over. */
+    };
+
+    /**
+     * @brief This struct represents a reverse iterator over the segments of the path.
+     *
+     * The iterator's value type is a tuple containing the command and the points of the segment (always 4 points, even if not used).
+     *
+     * @struct ReverseIterator
+     */
+    struct ReverseIterator {
+    public:
+      using iterator_category = std::forward_iterator_tag;
+      using difference_type = size_t;
+      using value_type = Segment;
+      using pointer = value_type*;
+      using reference = value_type&;
+
+      /**
+       * @brief Constructs an iterator over the given path at the given index.
+       *
+       * @param path The path to iterate over.
+       * @param index The start index of the iterator.
+       */
+      ReverseIterator(const PathDev& path, const size_t index);
+
+      /**
+       * @brief Equality, inequality and comparison operators.
+       *
+       * @param other The iterator to compare to.
+       */
+      inline bool operator==(const ReverseIterator& other) const { return m_index == other.m_index; }
+      inline bool operator!=(const ReverseIterator& other) const { return m_index != other.m_index; }
+      inline bool operator<(const ReverseIterator& other) const { return m_index < other.m_index; }
+      inline bool operator<=(const ReverseIterator& other) const { return m_index <= other.m_index; }
+      inline bool operator>(const ReverseIterator& other) const { return m_index > other.m_index; }
+      inline bool operator>=(const ReverseIterator& other) const { return m_index >= other.m_index; }
+
+      /**
+       * @brief Pre and post increment operators.
+       */
+      ReverseIterator& operator++();
+      ReverseIterator operator++(int);
+
+      /**
+       * @brief Pre and post decrement operators.
+       */
+      ReverseIterator& operator--();
+      ReverseIterator operator--(int);
+
+      /**
+       * @brief Dereference operator.
+       *
+       * @return The current segment.
        */
       value_type operator*() const;
     private:
@@ -110,7 +212,7 @@ namespace Graphick::Renderer::Geometry {
      *
      * @return An iterator to the beginning of the path.
      */
-    Iterator begin() const { return Iterator(*this, 0); }
+    Iterator begin() const { return Iterator(*this, 1); }
 
     /**
      * @brief Returns an iterator to the end of the path.
@@ -118,6 +220,34 @@ namespace Graphick::Renderer::Geometry {
      * @return An iterator to the end of the path.
      */
     Iterator end() const { return Iterator(*this, m_commands_size); }
+
+    /**
+     * @brief Returns a reverse iterator to the end of the path.
+     *
+     * @return A reverse iterator to the end of the path.
+     */
+    ReverseIterator rbegin() const { return ReverseIterator(*this, m_commands_size - 1); }
+
+    /**
+     * @brief Returns a reverse iterator to the beginning of the path.
+     *
+     * @return A reverse iterator to the beginning of the path.
+     */
+    ReverseIterator rend() const { return ReverseIterator(*this, 0); }
+
+    /**
+     * @brief Returns the first segment of the path.
+     *
+     * @return The first segment of the path.
+     */
+    inline Segment front() const { return *begin(); }
+
+    /**
+     * @brief Returns the last segment of the path.
+     *
+     * @return The last segment of the path.
+     */
+    inline Segment back() const { return *rbegin(); }
 
     /**
      * @brief Iterates over the segments of the path, calling the given callbacks for each segment.
@@ -160,6 +290,13 @@ namespace Graphick::Renderer::Geometry {
      * @return The number of segments in the path.
      */
     inline size_t size() const { return (m_commands_size > 0 ? m_commands_size : 1) - 1; }
+
+    /**
+     * @brief Checks whether the path is closed or not.
+     *
+     * @return true if the path is closed, false otherwise.
+     */
+    inline bool closed() const { return m_points.front() == m_points.back(); }
 
     /**
      * @brief Moves the path cursor to the given point.
@@ -281,7 +418,7 @@ namespace Graphick::Renderer::Geometry {
      * @param index The index of the command to return.
      * @return The ith command of the path.
      */
-    Command get_command(const size_t index) const;
+    inline Command get_command(const size_t index) const { return static_cast<Command>((m_commands[index / 4] >> (6 - (index % 4) * 2)) & 0b00000011); }
 
     /**
      * @brief Pushes a command to the path, handling the packing logic.

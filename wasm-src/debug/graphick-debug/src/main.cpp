@@ -136,12 +136,25 @@ int main() {
     Graphick::console::log("quadratic_to", p2.x);
     });
 
-  for (const auto& [command, p0, p1, p2, p3] : path_dev) {
-    Graphick::console::log((int)command);
+  Graphick::console::log("----------for_each----------");
+  for (const auto& [type, p0, p1, p2, p3] : path_dev) {
+    Graphick::console::log((int)type);
   }
 
-  // #define TIGER
-#define OBJECTS
+  Graphick::console::log("----------iterator----------");
+  for (auto it = path_dev.begin(), end_it = path_dev.end(); it != end_it; ++it) {
+    Graphick::console::log((int)(*it).type);
+  }
+
+  Graphick::console::log("----------reverse_iterator----------");
+  for (auto it = path_dev.rbegin(), rend_it = path_dev.rend(); it != rend_it; ++it) {
+    Graphick::console::log((int)(*it).type);
+  }
+
+  Graphick::console::log("back", (int)path_dev.back().type);
+
+#define TIGER
+  // #define OBJECTS
 
 #ifdef TIGER
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
@@ -154,15 +167,15 @@ int main() {
   Graphick::Renderer::Geometry::PathDev& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.get_component<Graphick::Editor::PathComponent>().path;
 
-  // path.move_to({ 360.0f, 20.0f });
-  // path.line_to({ 0.0f, 0.0f });
-  // path.line_to({ 20.0f, -20.0f });
-  // path.line_to({ 50.0f, -40.0f });
-  // path.line_to({ 200.0f, -50.0f });
-  // path.line_to({ 300.0f, -20.0f });
-  // path.line_to({ 350.0f, -20.0f });
-  // path.line_to({ 380.0f, -40.0f });
-  // path.close();
+  path.move_to({ 360.0f, 20.0f });
+  path.line_to({ 0.0f, 0.0f });
+  path.line_to({ 20.0f, -20.0f });
+  path.line_to({ 50.0f, -40.0f });
+  path.line_to({ 200.0f, -50.0f });
+  path.line_to({ 300.0f, -20.0f });
+  path.line_to({ 350.0f, -20.0f });
+  path.line_to({ 380.0f, -40.0f });
+  path.close();
 
   // path.move_to({ 300.0f, 100.0f });
   // path.line_to({ 350.0f, 200.0f });
@@ -171,8 +184,8 @@ int main() {
 
   /* Stroking Robustness */
 
-  path.move_to({ 230.0f, 324.0f });
-  path.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Handled
+  // path.move_to({ 230.0f, 324.0f });
+  // path.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Handled
 
   // path.move_to({ 221.0f, 718.0f });
   // path.cubic_to({ 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f }); // Handled
@@ -243,7 +256,7 @@ int main() {
 
   // path1.close();
 
-  // test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
+  test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
   test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
   // test_entity1.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });
   // test_entity1.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });

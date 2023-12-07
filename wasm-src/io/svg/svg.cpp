@@ -743,11 +743,9 @@ namespace Graphick::io::svg {
           History::CommandHistory::enable();
 
           if (!path.empty()) {
-#if 0
-            if (!path.closed() && Math::is_almost_equal(path.segments().front().p0(), path.segments().back().p3(), GK_POINT_EPSILON)) {
+            if (!path.closed() && Math::is_almost_equal(path.front().p0, path.back().p3, GK_POINT_EPSILON)) {
               path.close();
             }
-#endif
 
             // TODO: reimplement svg creation, element creation, path optimization
             Editor::Entity element = Editor::Editor::scene().create_element(path);

@@ -18,8 +18,7 @@
 namespace Graphick::Renderer {
 
   namespace Geometry {
-    class Path;
-    class Segment;
+    class PathDev;
   }
 
   /**
@@ -300,7 +299,7 @@ namespace Graphick::Renderer {
      * @param transform The transform of the path.
      * @param stroke The stroke to use.
      */
-    void process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke);
+    void process_stroke(const Geometry::PathDev& path, const mat2x3& transform, const Stroke& stroke);
 
     /**
      * @brief Processes a fill.
@@ -309,7 +308,7 @@ namespace Graphick::Renderer {
      * @param transform The transform of the path.
      * @param fill The fill to use.
      */
-    void process_fill(const Geometry::Path& path, const mat2x3& transform, const Fill& fill);
+    void process_fill(const Geometry::PathDev& path, const mat2x3& transform, const Fill& fill);
   private:
     /**
      * @brief Processes a drawable.

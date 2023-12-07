@@ -4,6 +4,7 @@
  *
  * @todo Implement history.
  * @todo Implement in and out handles.
+ * @todo Better closing algorithm.
  */
 
 #include "path_dev.h"
@@ -18,34 +19,51 @@
 
 namespace Graphick::Renderer::Geometry {
 
-  PathDev::Iterator::Iterator(const PathDev& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
-    GK_ASSERT(index <= path.m_commands_size, "Index out of range.");
+  /* -- Iterator -- */
 
-    for (int i = 0; i < m_index; i++) {
-      switch (path.get_command(i)) {
-      case Command::Move:
-        break;
-      case Command::Line:
-        m_point_index += 1;
-        break;
-      case Command::Quadratic:
-        m_point_index += 2;
-        break;
-      case Command::Cubic:
-        m_point_index += 3;
-        break;
+  PathDev::Iterator::Iterator(const PathDev& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
+    GK_ASSERT(index > 0 && index <= path.m_commands_size, "Index out of range.");
+
+    if (index < path.m_commands_size / 2) {
+      for (size_t i = 0; i < m_index; i++) {
+        switch (path.get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          m_point_index += 1;
+          break;
+        case Command::Quadratic:
+          m_point_index += 2;
+          break;
+        case Command::Cubic:
+          m_point_index += 3;
+          break;
+        }
+      }
+    } else {
+      m_point_index = path.m_points.size();
+
+      for (size_t i = path.m_commands_size - 1; i >= m_index; i--) {
+        switch (path.get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          m_point_index -= 1;
+          break;
+        case Command::Quadratic:
+          m_point_index -= 2;
+          break;
+        case Command::Cubic:
+          m_point_index -= 3;
+          break;
+        }
       }
     }
   }
 
   PathDev::Iterator& PathDev::Iterator::operator++() {
-    m_index += 1;
-
-    if (m_index == m_path.m_commands_size) return *this;
+    GK_ASSERT(m_index < m_path.m_commands_size, "Cannot increment the end iterator.");
 
     switch (m_path.get_command(m_index)) {
     case Command::Move:
-      break;
     case Command::Line:
       m_point_index += 1;
       break;
@@ -57,6 +75,8 @@ namespace Graphick::Renderer::Geometry {
       break;
     }
 
+    m_index += 1;
+
     return *this;
   }
 
@@ -67,34 +87,181 @@ namespace Graphick::Renderer::Geometry {
     return tmp;
   }
 
+  PathDev::Iterator& PathDev::Iterator::operator--() {
+    GK_ASSERT(m_index > 0, "Cannot decrement the begin iterator.");
+
+    m_index -= 1;
+
+    switch (m_path.get_command(m_index)) {
+    case Command::Move:
+    case Command::Line:
+      m_point_index -= 1;
+      break;
+    case Command::Quadratic:
+      m_point_index -= 2;
+      break;
+    case Command::Cubic:
+      m_point_index -= 3;
+      break;
+    }
+
+    return *this;
+  }
+
+  PathDev::Iterator PathDev::Iterator::operator--(int) {
+    Iterator tmp = *this;
+    --(*this);
+
+    return tmp;
+  }
+
   PathDev::Iterator::value_type PathDev::Iterator::operator*() const {
     const Command command = m_path.get_command(m_index);
 
     switch (command) {
     case Command::Cubic: {
       GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
-      return std::make_tuple(command, m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2]);
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2] };
     }
     case Command::Quadratic: {
       GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
-      return std::make_tuple(command, m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], vec2{});
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1] };
     }
     case Command::Line: {
       GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-      return std::make_tuple(command, m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], vec2{}, vec2{});
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index] };
     }
     default:
     case Command::Move:
       GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-      return std::make_tuple(command, m_path.m_points[m_point_index], vec2{}, vec2{}, vec2{});
+      return { m_path.m_points[m_point_index] };
     }
   }
 
+  /* -- ReverseIterator -- */
+
+  PathDev::ReverseIterator::ReverseIterator(const PathDev& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
+    GK_ASSERT(index >= 0 && index < path.m_commands_size, "Index out of range.");
+
+    if (index < path.m_commands_size / 2) {
+      for (size_t i = 0; i < m_index; i++) {
+        switch (path.get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          m_point_index += 1;
+          break;
+        case Command::Quadratic:
+          m_point_index += 2;
+          break;
+        case Command::Cubic:
+          m_point_index += 3;
+          break;
+        }
+      }
+    } else {
+      m_point_index = path.m_points.size();
+
+      for (size_t i = path.m_commands_size - 1; i >= m_index; i--) {
+        switch (path.get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          m_point_index -= 1;
+          break;
+        case Command::Quadratic:
+          m_point_index -= 2;
+          break;
+        case Command::Cubic:
+          m_point_index -= 3;
+          break;
+        }
+      }
+    }
+  }
+
+  PathDev::ReverseIterator& PathDev::ReverseIterator::operator++() {
+    GK_ASSERT(m_index > 0, "Cannot increment the end iterator.");
+
+    m_index -= 1;
+
+    switch (m_path.get_command(m_index)) {
+    case Command::Move:
+    case Command::Line:
+      m_point_index -= 1;
+      break;
+    case Command::Quadratic:
+      m_point_index -= 2;
+      break;
+    case Command::Cubic:
+      m_point_index -= 3;
+      break;
+    }
+
+    return *this;
+  }
+
+  PathDev::ReverseIterator PathDev::ReverseIterator::operator++(int) {
+    ReverseIterator tmp = *this;
+    ++(*this);
+
+    return tmp;
+  }
+
+  PathDev::ReverseIterator& PathDev::ReverseIterator::operator--() {
+    switch (m_path.get_command(m_index)) {
+    case Command::Move:
+    case Command::Line:
+      m_point_index += 1;
+      break;
+    case Command::Quadratic:
+      m_point_index += 2;
+      break;
+    case Command::Cubic:
+      m_point_index += 3;
+      break;
+    }
+
+    m_index += 1;
+
+    return *this;
+  }
+
+  PathDev::ReverseIterator PathDev::ReverseIterator::operator--(int) {
+    ReverseIterator tmp = *this;
+    --(*this);
+
+    return tmp;
+  }
+
+  PathDev::ReverseIterator::value_type PathDev::ReverseIterator::operator*() const {
+    const Command command = m_path.get_command(m_index);
+
+    switch (command) {
+    case Command::Cubic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2] };
+    }
+    case Command::Quadratic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1] };
+    }
+    case Command::Line: {
+      GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index] };
+    }
+    default:
+    case Command::Move:
+      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return { m_path.m_points[m_point_index] };
+    }
+  }
+
+  /* -- Path -- */
+
   PathDev::PathDev() : m_points(), m_commands() {}
 
-  PathDev::PathDev(const PathDev& other) : m_points(other.m_points), m_commands(other.m_commands) {}
+  PathDev::PathDev(const PathDev& other) : m_points(other.m_points), m_commands(other.m_commands), m_commands_size(other.m_commands_size) {}
 
-  PathDev::PathDev(PathDev&& other) noexcept : m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)) {}
+  PathDev::PathDev(PathDev&& other) noexcept : m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)), m_commands_size(other.m_commands_size) {}
 
   PathDev& PathDev::operator=(const PathDev& other) {
     m_points = other.m_points;
@@ -365,7 +532,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void PathDev::close() {
-    if (empty() || m_commands.empty() || (size() == 1 && get_command(1) == Command::Line)) {}
+    if (empty() || m_commands.empty() || (size() == 1 && get_command(1) == Command::Line)) return;
 
     m_points.push_back(m_points.front());
     push_command(Command::Line);
@@ -535,14 +702,6 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return rect;
-  }
-
-  PathDev::Command PathDev::get_command(const size_t index) const {
-    GK_ASSERT(index < m_commands_size, "Commands vector subscript out of range.");
-
-    size_t rem = index % 4;
-
-    return static_cast<Command>((m_commands[index / 4] >> (6 - rem * 2)) & 0b00000011);
   }
 
   void PathDev::push_command(const Command command) {
