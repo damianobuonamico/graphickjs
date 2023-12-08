@@ -9,12 +9,18 @@
 #include "../../math/rect.h"
 
 #include <functional>
+#include <optional>
 #include <vector>
 #include <tuple>
 
 namespace Graphick::Math {
   struct mat2x3;
 }
+
+namespace Graphick::Renderer {
+  struct Fill;
+  struct Stroke;
+};
 
 namespace Graphick::Renderer::Geometry {
 
@@ -208,28 +214,28 @@ namespace Graphick::Renderer::Geometry {
     PathDev& operator=(PathDev&& other) noexcept;
 
     /**
-     * @brief Returns an iterator to the beginning of the path.
+     * @brief Returns a segment iterator to the beginning of the path.
      *
      * @return An iterator to the beginning of the path.
      */
     Iterator begin() const { return Iterator(*this, 1); }
 
     /**
-     * @brief Returns an iterator to the end of the path.
+     * @brief Returns a segment iterator to the end of the path.
      *
      * @return An iterator to the end of the path.
      */
     Iterator end() const { return Iterator(*this, m_commands_size); }
 
     /**
-     * @brief Returns a reverse iterator to the end of the path.
+     * @brief Returns a reverse segment iterator to the end of the path.
      *
      * @return A reverse iterator to the end of the path.
      */
     ReverseIterator rbegin() const { return ReverseIterator(*this, m_commands_size - 1); }
 
     /**
-     * @brief Returns a reverse iterator to the beginning of the path.
+     * @brief Returns a reverse segment iterator to the beginning of the path.
      *
      * @return A reverse iterator to the beginning of the path.
      */
@@ -250,18 +256,18 @@ namespace Graphick::Renderer::Geometry {
     inline Segment back() const { return *rbegin(); }
 
     /**
-     * @brief Iterates over the segments of the path, calling the given callbacks for each segment.
+     * @brief Iterates over the commands of the path, calling the given callbacks for each command.
      *
      * @param move_callback The callback to call for each move command.
-     * @param line_callback The callback to call for each line segment.
-     * @param quadratic_callback The callback to call for each quadratic segment.
-     * @param cubic_callback The callback to call for each cubic segment.
+     * @param line_callback The callback to call for each line command.
+     * @param quadratic_callback The callback to call for each quadratic command.
+     * @param cubic_callback The callback to call for each cubic command.
      */
     void for_each(
       std::function<void(const vec2)> move_callback = nullptr,
-      std::function<void(const vec2, const vec2)> line_callback = nullptr,
-      std::function<void(const vec2, const vec2, const vec2)> quadratic_callback = nullptr,
-      std::function<void(const vec2, const vec2, const vec2, const vec2)> cubic_callback = nullptr
+      std::function<void(const vec2)> line_callback = nullptr,
+      std::function<void(const vec2, const vec2)> quadratic_callback = nullptr,
+      std::function<void(const vec2, const vec2, const vec2)> cubic_callback = nullptr
     ) const;
 
     /**
@@ -411,6 +417,19 @@ namespace Graphick::Renderer::Geometry {
      * @return The approximate bounding rectangle of the path.
      */
     Math::rect approx_bounding_rect() const;
+
+    /**
+     * @brief Checks whether the given point is inside the path or not.
+     *
+     * @param point The point to check.
+     * @param fill The fill of the path, can be nullptr.
+     * @param stroke The stroke of the path, can be nullptr.
+     * @param transform The transformation matrix to apply to the path, can be nullptr.
+     * @param threshold The threshold to use for the check.
+     * @return true if the point is inside the path, false otherwise.
+     */
+    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3* transform, const float threshold) const;
+    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3& transform, const float threshold) const;
   private:
     /**
      * @brief Returns the ith command of the path.

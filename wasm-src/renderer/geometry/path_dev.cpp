@@ -9,6 +9,9 @@
 
 #include "path_dev.h"
 
+#include "../properties.h"
+
+#include "../../math/matrix.h"
 #include "../../math/vector.h"
 #include "../../math/scalar.h"
 #include "../../math/mat2x3.h"
@@ -22,9 +25,11 @@ namespace Graphick::Renderer::Geometry {
   /* -- Iterator -- */
 
   PathDev::Iterator::Iterator(const PathDev& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
-    GK_ASSERT(index > 0 && index <= path.m_commands_size, "Index out of range.");
+    if (m_index < path.m_commands_size && path.get_command(m_index) == Command::Move) m_index++;
 
-    if (index < path.m_commands_size / 2) {
+    GK_ASSERT(m_index > 0 && m_index <= path.m_commands_size, "Index out of range.");
+
+    if (m_index < path.m_commands_size / 2) {
       for (size_t i = 0; i < m_index; i++) {
         switch (path.get_command(i)) {
         case Command::Move:
@@ -77,6 +82,8 @@ namespace Graphick::Renderer::Geometry {
 
     m_index += 1;
 
+    if (m_index < m_path.m_commands_size && m_path.get_command(m_index) == Command::Move) operator++();
+
     return *this;
   }
 
@@ -94,6 +101,7 @@ namespace Graphick::Renderer::Geometry {
 
     switch (m_path.get_command(m_index)) {
     case Command::Move:
+      operator--();
     case Command::Line:
       m_point_index -= 1;
       break;
@@ -141,9 +149,11 @@ namespace Graphick::Renderer::Geometry {
   /* -- ReverseIterator -- */
 
   PathDev::ReverseIterator::ReverseIterator(const PathDev& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
-    GK_ASSERT(index >= 0 && index < path.m_commands_size, "Index out of range.");
+    if (m_index != 0 && path.get_command(m_index) == Command::Move) m_index--;
 
-    if (index < path.m_commands_size / 2) {
+    GK_ASSERT(m_index >= 0 && m_index < path.m_commands_size, "Index out of range.");
+
+    if (m_index < path.m_commands_size / 2) {
       for (size_t i = 0; i < m_index; i++) {
         switch (path.get_command(i)) {
         case Command::Move:
@@ -179,12 +189,13 @@ namespace Graphick::Renderer::Geometry {
   }
 
   PathDev::ReverseIterator& PathDev::ReverseIterator::operator++() {
-    GK_ASSERT(m_index > 0, "Cannot increment the end iterator.");
+    GK_ASSERT(m_index > 0, "Cannot increment the rend iterator.");
 
     m_index -= 1;
 
     switch (m_path.get_command(m_index)) {
     case Command::Move:
+      if (m_index > 0) operator++();
     case Command::Line:
       m_point_index -= 1;
       break;
@@ -207,6 +218,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   PathDev::ReverseIterator& PathDev::ReverseIterator::operator--() {
+    GK_ASSERT(m_index < m_path.m_commands_size, "Cannot decrement the rbegin iterator.");
+
     switch (m_path.get_command(m_index)) {
     case Command::Move:
     case Command::Line:
@@ -221,6 +234,8 @@ namespace Graphick::Renderer::Geometry {
     }
 
     m_index += 1;
+
+    if (m_index < m_path.m_commands_size && m_path.get_command(m_index) == Command::Move) operator++();
 
     return *this;
   }
@@ -279,17 +294,17 @@ namespace Graphick::Renderer::Geometry {
 
   void PathDev::for_each(
     std::function<void(const vec2)> move_callback,
-    std::function<void(const vec2, const vec2)> line_callback,
-    std::function<void(const vec2, const vec2, const vec2)> quadratic_callback,
-    std::function<void(const vec2, const vec2, const vec2, const vec2)> cubic_callback
+    std::function<void(const vec2)> line_callback,
+    std::function<void(const vec2, const vec2)> quadratic_callback,
+    std::function<void(const vec2, const vec2, const vec2)> cubic_callback
   ) const {
     for (size_t i = 0, j = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
       case Command::Cubic: {
-        GK_ASSERT(j > 0 && j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
 
         if (cubic_callback) {
-          cubic_callback(m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]);
+          cubic_callback(m_points[j], m_points[j + 1], m_points[j + 2]);
         }
 
         j += 3;
@@ -297,10 +312,10 @@ namespace Graphick::Renderer::Geometry {
         break;
       }
       case Command::Quadratic: {
-        GK_ASSERT(j > 0 && j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
 
         if (quadratic_callback) {
-          quadratic_callback(m_points[j - 1], m_points[j], m_points[j + 1]);
+          quadratic_callback(m_points[j], m_points[j + 1]);
         }
 
         j += 2;
@@ -308,10 +323,10 @@ namespace Graphick::Renderer::Geometry {
         break;
       }
       case Command::Line: {
-        GK_ASSERT(j > 0 && j < m_points.size(), "Not enough points for a line.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
 
         if (line_callback) {
-          line_callback(m_points[j - 1], m_points[j]);
+          line_callback(m_points[j]);
         }
 
         j += 1;
@@ -334,7 +349,10 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void PathDev::move_to(const vec2 point) {
-    GK_ASSERT(vacant(), "Cannot move to a point when the path is not vacant.");
+    if (!vacant() && get_command(m_commands_size - 1) == Command::Move) {
+      m_points[m_points.size() - 1] = point;
+      return;
+    }
 
     m_points.push_back(point);
     push_command(Command::Move);
@@ -534,7 +552,28 @@ namespace Graphick::Renderer::Geometry {
   void PathDev::close() {
     if (empty() || m_commands.empty() || (size() == 1 && get_command(1) == Command::Line)) return;
 
-    m_points.push_back(m_points.front());
+    vec2 p = m_points.front();
+
+    for (size_t i = m_commands_size - 1, point_index = m_points.size(); i > 0; i--) {
+      switch (get_command(i)) {
+      case Command::Move:
+        p = m_points[point_index - 1];
+        goto exit_loop;
+      case Command::Line:
+        point_index -= 1;
+        break;
+      case Command::Quadratic:
+        point_index -= 2;
+        break;
+      case Command::Cubic:
+        point_index -= 3;
+        break;
+      }
+    }
+
+  exit_loop:;
+
+    m_points.push_back(p);
     push_command(Command::Line);
   }
 
@@ -702,6 +741,34 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return rect;
+  }
+
+  bool PathDev::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3* transform, const float threshold) const {
+    if (transform) return is_point_inside_path(point, fill, stroke, *transform, threshold);
+
+    const Math::rect bounds = approx_bounding_rect();
+    if (!Math::is_point_in_rect(point, bounds, threshold)) return false;
+
+    if (fill) {
+
+    }
+
+    Stroke s = stroke ? *stroke : Stroke{ vec4{}, LineCap::Round, LineJoin::Round, 0.0f, 0.0f, 0.0f };
+    s.width += threshold;
+
+    return false;
+  }
+
+  bool PathDev::is_point_inside_path(const vec2 global_point, const Fill* fill, const Stroke* stroke, const Math::mat2x3& transform, const float global_threshold) const {
+    const vec2 threshold = vec2{ global_threshold } / Math::decompose(transform).scale;
+    const vec2 point = transform / global_point;
+
+    const float max_threshold = std::max(threshold.x, threshold.y);
+
+    const Math::rect bounds = bounding_rect();
+    if (!Math::is_point_in_rect(point, bounds, max_threshold)) return false;
+
+    return false;
   }
 
   void PathDev::push_command(const Command command) {

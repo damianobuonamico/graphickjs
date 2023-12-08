@@ -236,21 +236,20 @@ namespace Graphick::Editor {
   }
 
   uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold) {
-#if 0
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
-        const auto& path = m_registry.get<PathComponent>(*it).path;
+        const auto& path = m_registry.get<PathComponent>(*it).data;
         const TransformComponent& transform = m_registry.get<TransformComponent>(*it);
-        const vec2 transformed_pos = transform.revert(position);
-        const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform.get()).scale;
+        // const vec2 transformed_pos = transform.revert(position);
+        // const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform.get()).scale;
         const uuid id = m_registry.get<IDComponent>(*it).id;
 
-        if (path.is_inside(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {
+        // if (path.is_point_inside_path(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {
+        if (path.is_point_inside_path(position, nullptr, nullptr, nullptr, threshold)) {
           return id;
         }
       }
     }
-#endif
 
     return { 0 };
   }

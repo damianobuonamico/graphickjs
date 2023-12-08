@@ -430,9 +430,9 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::draw_masked_tiles() {
-    console::log("batches", m_tiler.masked_tiles_batches().size());
+    // console::log("batches", m_tiler.masked_tiles_batches().size());
 
-    for (auto it = m_tiler.masked_tiles_batches().rbegin(); it != m_tiler.masked_tiles_batches().rend(); it++) {
+    for (auto it = m_tiler.masked_tiles_batches().rbegin(), rend_it = m_tiler.masked_tiles_batches().rend(); it != rend_it; ++it) {
 #ifdef USE_F8x8
       const Tiler::MaskedTilesBatch& batch = *it;
       const uint8_t* segments = batch.segments;
@@ -670,16 +670,16 @@ namespace Graphick::Renderer {
   void Renderer::add_line_instances(const Geometry::PathDev& path, const mat2x3& transform) {
     if (path.empty()) return;
 
-    path.for_each(
-      nullptr,
-      [this, transform](const vec2 p0, const vec2 p1) {
-        this->add_linear_segment_instance(transform * p0, transform * p1);
-      },
-      nullptr,
-      [this, transform](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
-        this->add_cubic_segment_instance(transform * p0, transform * p1, transform * p2, transform * p3);
-      }
-    );
+    // path.for_each(
+    //   nullptr,
+    //   [this, transform](const vec2 p0, const vec2 p1) {
+    //     this->add_linear_segment_instance(transform * p0, transform * p1);
+    //   },
+    //   nullptr,
+    //   [this, transform](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+    //     this->add_cubic_segment_instance(transform * p0, transform * p1, transform * p2, transform * p3);
+    //   }
+    // );
   }
 
   void Renderer::add_line_instances(const Geometry::Internal::PathInternal& path, const mat2x3& transform) {

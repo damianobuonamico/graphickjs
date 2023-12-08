@@ -658,11 +658,13 @@ namespace Graphick::Renderer {
     LineCap cap = LineCap::Butt;
     LineJoin join = LineJoin::Bevel;
 
-#if 0
-    if (len == 1 && segments.front().is_point() && cap != LineCap::Butt) {
-      auto& segment = segments.front();
+    const auto first_segment = path.front();
+    bool is_first_point = first_segment.p0 == first_segment.p1;
 
-      dvec2 from = d_transform_point(transform, segment.p0(), subpixel_offset, m_zoom);
+    if (is_first_point && first_segment.is_cubic()) is_first_point = first_segment.p0 == first_segment.p2 && first_segment.p0 == first_segment.p3;
+
+    if (len == 1 && is_first_point && cap != LineCap::Butt) {
+      dvec2 from = d_transform_point(transform, first_segment.p0, subpixel_offset, m_zoom);
       dvec2 n = { 0.0, 1.0 };
       dvec2 nr = n * radius;
       dvec2 start = from + nr;
@@ -675,7 +677,6 @@ namespace Graphick::Renderer {
 
       return process_drawable(drawable, drawable_offset, clip_drawable);
     }
-#endif
 
     std::vector<std::unique_ptr<Geometry::Contour::Parameterization>> parameterizations;
 
@@ -855,33 +856,29 @@ namespace Graphick::Renderer {
     const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
-    f24x8x4 bound = {
-      Math::double_to_f24x8((path_rect.min.x - offset.x) * m_zoom - m_subpixel.x),
-      Math::double_to_f24x8((path_rect.min.y - offset.y) * m_zoom - m_subpixel.y),
-      Math::double_to_f24x8((path_rect.max.x - offset.x) * m_zoom - m_subpixel.x),
-      Math::double_to_f24x8((path_rect.max.y - offset.y) * m_zoom - m_subpixel.y)
-    };
+    Drawable drawable(0, fill, (path_rect - DVEC2_TO_VEC2(offset)) * m_zoom - m_subpixel);
+    Geometry::Contour* contour = nullptr;
 
-    Drawable drawable(1, fill, bound);
-    Geometry::Contour& contour = drawable.contours.front();
-
-    const f24x8x2 first = f_transform_point(transform, path.front().p0, subpixel_offset, m_zoom);
-
-    contour.move_to(first);
-
-    for (const auto& raw : path) {
-      if (raw.is_line()) {
-        contour.line_to(f_transform_point(transform, raw.p1, subpixel_offset, m_zoom));
-      } else {
-        contour.cubic_to(
-          f_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
-          f_transform_point(transform, raw.p2, subpixel_offset, m_zoom),
-          f_transform_point(transform, raw.p3, subpixel_offset, m_zoom)
+    path.for_each(
+      [&](const vec2 p0) {
+        if (contour) contour->close();
+        contour = &drawable.contours.emplace_back();
+        contour->move_to(d_transform_point(transform, p0, subpixel_offset, m_zoom));
+      },
+      [&](const vec2 p1) {
+        contour->line_to(d_transform_point(transform, p1, subpixel_offset, m_zoom));
+      },
+      nullptr,
+      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+        contour->cubic_to(
+          d_transform_point(transform, p1, subpixel_offset, m_zoom),
+          d_transform_point(transform, p2, subpixel_offset, m_zoom),
+          d_transform_point(transform, p3, subpixel_offset, m_zoom)
         );
       }
-    }
+    );
 
-    contour.close();
+    contour->close();
 
     process_drawable(drawable, drawable_offset, overlap < OVERLAP_CLIP_THRESHOLD);
   }
@@ -1423,4 +1420,4 @@ namespace Graphick::Renderer {
   }
 #endif
 
-  }
+}
