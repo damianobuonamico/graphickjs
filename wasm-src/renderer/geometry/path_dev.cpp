@@ -9,6 +9,8 @@
 
 #include "path_dev.h"
 
+#include "path_builder.h"
+
 #include "../properties.h"
 
 #include "../../math/matrix.h"
@@ -18,6 +20,7 @@
 #include "../../math/mat2.h"
 #include "../../math/math.h"
 
+#include "../../utils/console.h"
 #include "../../utils/assert.h"
 
 namespace Graphick::Renderer::Geometry {
@@ -749,13 +752,58 @@ namespace Graphick::Renderer::Geometry {
     const Math::rect bounds = approx_bounding_rect();
     if (!Math::is_point_in_rect(point, bounds, threshold)) return false;
 
-    if (fill) {
+    const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON, point + threshold + GK_POINT_EPSILON };
 
+    if (fill) {
+      PathBuilder builder{ threshold_box };
+      Drawable drawable = builder.fill(*this, *fill);
+
+      const f24x8x2 p = { Math::float_to_f24x8(point.x - threshold_box.min.x), Math::float_to_f24x8(point.y - threshold_box.min.y) };
+
+      for (Contour& contour : drawable.contours) {
+        f24x8 y0 = contour.points.front().x;
+        f24x8 x0 = contour.points.front().y;
+
+        int winding = 0;
+
+        for (f24x8x2 to : contour.points) {
+          f24x8 x1 = to.x;
+          f24x8 y1 = to.y;
+          f24x8 min_y = std::min(y0, y1);
+          f24x8 max_y = std::max(y0, y1);
+
+          if (min_y > p.y || max_y <= p.y || std::min(x0, x1) > p.x || y0 == y1) {
+            x0 = x1;
+            y0 = y1;
+            continue;
+          }
+
+          f24x8 d = y1 - y0;
+          f24x8 t = (p.y - y0) * FRACUNIT / d;
+          f24x8 x = x0 + t * (x1 - x0) / FRACUNIT;
+
+          if (x <= p.x) {
+            winding += d > 0 ? 1 : -1;
+          }
+
+          x0 = x1;
+          y0 = y1;
+        }
+
+        if (
+          (fill->rule == FillRule::NonZero && winding != 0) ||
+          (fill->rule == FillRule::EvenOdd && winding % 2 != 0)
+          ) {
+          console::log("inside");
+          return true;
+        }
+      }
     }
 
-    Stroke s = stroke ? *stroke : Stroke{ vec4{}, LineCap::Round, LineJoin::Round, 0.0f, 0.0f, 0.0f };
-    s.width += threshold;
+    // Stroke s = stroke ? *stroke : Stroke{ vec4{}, LineCap::Round, LineJoin::Round, 0.0f, 0.0f, 0.0f };
+    // s.width += threshold;
 
+    console::log("outside");
     return false;
   }
 

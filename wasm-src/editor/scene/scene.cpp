@@ -244,8 +244,10 @@ namespace Graphick::Editor {
         // const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform.get()).scale;
         const uuid id = m_registry.get<IDComponent>(*it).id;
 
+        Renderer::Fill fill = {};
+
         // if (path.is_point_inside_path(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {
-        if (path.is_point_inside_path(position, nullptr, nullptr, nullptr, threshold)) {
+        if (path.is_point_inside_path(position, &fill, nullptr, nullptr, threshold)) {
           return id;
         }
       }
