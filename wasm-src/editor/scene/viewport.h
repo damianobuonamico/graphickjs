@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../math/ivec2.h"
 #include "../../math/vec2.h"
 #include "../../math/rect.h"
 

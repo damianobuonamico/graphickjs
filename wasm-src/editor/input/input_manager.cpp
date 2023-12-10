@@ -4,7 +4,7 @@
 #include "../editor.h"
 #include "../scene/entity.h"
 
-#include "../../math/ivec2.h"
+#include "../../math/vec2.h"
 #include "../../math/math.h"
 #include "../../math/scalar.h"
 

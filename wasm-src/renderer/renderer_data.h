@@ -2,7 +2,6 @@
 
 #include "buffer.h"
 
-#include "../math/ivec2.h"
 #include "../math/vec2.h"
 #include "../math/vec4.h"
 

@@ -9,26 +9,23 @@
 #include "vec3.h"
 #include "vec4.h"
 
-#include "dvec2.h"
-#include "ivec2.h"
-
 #include "../utils/defines.h"
 
 #include <vector>
 
-#define XY(v) Graphick::Math::vec2{ v.x, v.y }
-#define RG(v) Graphick::Math::vec2{ v.r, v.g }
-#define ST(v) Graphick::Math::vec2{ v.s, v.t }
+#define XY(v) Graphick::vec2{ v.x, v.y }
+#define RG(v) Graphick::vec2{ v.r, v.g }
+#define ST(v) Graphick::vec2{ v.s, v.t }
 
 #define XYZ(v) Graphick::Math::vec3{ v.x, v.y, v.z }
 #define RGB(v) Graphick::Math::vec3{ v.r, v.g, v.b }
 #define STP(v) Graphick::Math::vec3{ v.s, v.t, v.p }
 
-#define IVEC2_TO_VEC2(v) Graphick::Math::vec2{ static_cast<float>(v.x), static_cast<float>(v.y) }
-#define DVEC2_TO_VEC2(v) Graphick::Math::vec2{ static_cast<float>(v.x), static_cast<float>(v.y) }
+#define IVEC2_TO_VEC2(v) Graphick::vec2{ static_cast<float>(v.x), static_cast<float>(v.y) }
+#define DVEC2_TO_VEC2(v) Graphick::vec2{ static_cast<float>(v.x), static_cast<float>(v.y) }
 
-#define VEC2_TO_IVEC2(v) Graphick::Math::ivec2{ static_cast<int>(v.x), static_cast<int>(v.y) }
-#define VEC2_TO_DVEC2(v) Graphick::Math::dvec2{ static_cast<double>(v.x), static_cast<double>(v.y) }
+#define VEC2_TO_IVEC2(v) Graphick::ivec2{ static_cast<int>(v.x), static_cast<int>(v.y) }
+#define VEC2_TO_DVEC2(v) Graphick::dvec2{ static_cast<double>(v.x), static_cast<double>(v.y) }
 
 namespace Graphick::Math {
 
@@ -44,7 +41,7 @@ namespace Graphick::Math {
   constexpr vec2 min(const vec2 v1, const vec2 v2) {
     return vec2{
       std::min(v1.x, v2.x),
-      std::min(v1.y, v2.y)
+        std::min(v1.y, v2.y)
     };
   }
 
@@ -139,7 +136,7 @@ namespace Graphick::Math {
   constexpr vec2 max(const vec2 v1, const vec2 v2) {
     return vec2{
       std::max(v1.x, v2.x),
-      std::max(v1.y, v2.y)
+        std::max(v1.y, v2.y)
     };
   }
 
@@ -458,7 +455,7 @@ namespace Graphick::Math {
   constexpr vec2 lerp(const vec2 v1, const vec2 v2, float t) {
     return vec2{
       v1.x + t * (v2.x - v1.x),
-      v1.y + t * (v2.y - v1.y)
+        v1.y + t * (v2.y - v1.y)
     };
   }
 
@@ -473,7 +470,7 @@ namespace Graphick::Math {
   constexpr dvec2 lerp(const dvec2 v1, const dvec2 v2, double t) {
     return dvec2{
       v1.x + t * (v2.x - v1.x),
-      v1.y + t * (v2.y - v1.y)
+        v1.y + t * (v2.y - v1.y)
     };
   }
 
@@ -617,7 +614,7 @@ namespace Graphick::Math {
   constexpr vec2 midpoint(const vec2 v1, const vec2 v2) {
     return vec2{
       (v1.x + v2.x) * 0.5f,
-      (v1.y + v2.y) * 0.5f
+        (v1.y + v2.y) * 0.5f
     };
   }
 
@@ -666,7 +663,7 @@ namespace Graphick::Math {
 
     return vec2{
       v.x * len,
-      v.y * len,
+        v.y * len,
     };
   }
 
@@ -682,7 +679,7 @@ namespace Graphick::Math {
 
     return dvec2{
       v.x * len,
-      v.y * len,
+        v.y * len,
     };
   }
 
@@ -790,7 +787,7 @@ namespace Graphick::Math {
 
     return vec2{
       v.x * len * t,
-      v.y * len * t,
+        v.y * len * t,
     };
   }
 
@@ -899,7 +896,7 @@ namespace Graphick::Math {
   constexpr vec2 negate(const vec2 v) {
     return vec2{
       -v.x,
-      -v.y
+        -v.y
     };
   }
 
@@ -988,7 +985,7 @@ namespace Graphick::Math {
   inline vec2 abs(const vec2 v) {
     return vec2{
       std::fabsf(v.x),
-      std::fabsf(v.y)
+        std::fabsf(v.y)
     };
   }
 
@@ -1252,7 +1249,7 @@ namespace Graphick::Math {
   constexpr vec2 floor(const vec2 v) {
     return vec2{
       std::floor(v.x),
-      std::floor(v.y),
+        std::floor(v.y),
     };
   }
 
@@ -1296,7 +1293,7 @@ namespace Graphick::Math {
   constexpr vec2 ceil(const vec2 v) {
     return vec2{
       std::ceil(v.x),
-      std::ceil(v.y),
+        std::ceil(v.y),
     };
   }
 
@@ -1340,7 +1337,7 @@ namespace Graphick::Math {
   constexpr vec2 round(const vec2 v) {
     return vec2{
       std::round(v.x),
-      std::round(v.y)
+        std::round(v.y)
     };
   }
 
@@ -1353,7 +1350,7 @@ namespace Graphick::Math {
   constexpr dvec2 round(const dvec2 v) {
     return dvec2{
       std::round(v.x),
-      std::round(v.y)
+        std::round(v.y)
     };
   }
 
@@ -1426,7 +1423,7 @@ namespace Graphick::Math {
 
     return vec2{
       cx * cos_t - cy * sin_t + c.x,
-      cx * sin_t + cy * cos_t + c.y
+        cx * sin_t + cy * cos_t + c.y
     };
   }
 
@@ -1445,7 +1442,7 @@ namespace Graphick::Math {
 
     return vec2{
       cx * cos_t - cy * sin_t + c.x,
-      cx * sin_t + cy * cos_t + c.y
+        cx * sin_t + cy * cos_t + c.y
     };
   }
 
@@ -1462,7 +1459,7 @@ namespace Graphick::Math {
   constexpr vec2 scale(const vec2 v, const vec2 c, const vec2 s) {
     return vec2{
       (v.x - c.x) * s.x + c.x,
-      (v.y - c.y) * s.y + c.y
+        (v.y - c.y) * s.y + c.y
     };
   }
 

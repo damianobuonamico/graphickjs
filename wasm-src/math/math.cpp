@@ -7,8 +7,6 @@
 
 #include "math.h"
 
-#include "dvec2.h"
-
 #include <algorithm>
 
 namespace Graphick::Math {

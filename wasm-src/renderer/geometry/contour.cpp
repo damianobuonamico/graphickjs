@@ -76,9 +76,9 @@ namespace Graphick::Renderer::Geometry {
   void Contour::cubic_to(const dvec2 p1, const dvec2 p2, const dvec2 p3) {
     GK_TOTAL("Contour::cubic_to");
 
-    dvec2 a = -m_d_p0 + 3.0f * p1 - 3.0f * p2 + p3;
-    dvec2 b = 3.0f * m_d_p0 - 6.0f * p1 + 3.0f * p2;
-    dvec2 c = -3.0f * m_d_p0 + 3.0f * p1;
+    dvec2 a = -m_d_p0 + 3.0 * p1 - 3.0 * p2 + p3;
+    dvec2 b = 3.0 * m_d_p0 - 6.0 * p1 + 3.0 * p2;
+    dvec2 c = -3.0 * m_d_p0 + 3.0 * p1;
     dvec2 p;
 
     double conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
@@ -278,12 +278,12 @@ namespace Graphick::Renderer::Geometry {
 
     /* Calculate all the mid-points of the line segments */
 
-    dvec2 p01 = (p0 + p1) / 2;
-    dvec2 p12 = (p1 + p2) / 2;
-    dvec2 p23 = (p2 + p3) / 2;
-    dvec2 p012 = (p01 + p12) / 2;
-    dvec2 p123 = (p12 + p23) / 2;
-    dvec2 p0123 = (p012 + p123) / 2;
+    dvec2 p01 = (p0 + p1) / 2.0;
+    dvec2 p12 = (p1 + p2) / 2.0;
+    dvec2 p23 = (p2 + p3) / 2.0;
+    dvec2 p012 = (p01 + p12) / 2.0;
+    dvec2 p123 = (p12 + p23) / 2.0;
+    dvec2 p0123 = (p012 + p123) / 2.0;
 
     /* Try to approximate the full cubic curve by a single straight line */
 

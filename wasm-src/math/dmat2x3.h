@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "dvec2.h"
+#include "vec2.h"
 #include "dvec3.h"
 
 namespace Graphick::Math {

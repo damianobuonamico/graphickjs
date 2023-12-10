@@ -2,7 +2,7 @@
 
 #include "../../math/f8x8.h"
 #include "../../math/f24x8.h"
-#include "../../math/dvec2.h"
+#include "../../math/vec2.h"
 
 #include "../../utils/defines.h"
 

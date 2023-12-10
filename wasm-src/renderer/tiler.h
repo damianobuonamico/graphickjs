@@ -9,7 +9,7 @@
 #include "drawable.h"
 
 #include "../math/mat2x3.h"
-#include "../math/dvec2.h"
+#include "../math/vec2.h"
 #include "../math/f8x8.h"
 #include "../math/rect.h"
 

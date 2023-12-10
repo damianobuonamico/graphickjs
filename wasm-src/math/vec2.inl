@@ -11,7 +11,8 @@ namespace Graphick::Math {
 
   /* -- Component accesses -- */
 
-  constexpr float& vec2::operator[](uint8_t i) {
+  template<typename T>
+  constexpr float& vec2<T>::operator[](uint8_t i) {
     switch (i) {
     default:
     case 0:

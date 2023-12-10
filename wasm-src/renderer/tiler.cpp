@@ -651,7 +651,7 @@ namespace Graphick::Renderer {
     const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
-    // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2<float>, dvec2 = Math::vec2<double>
+    // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2, dvec2 = Math::vec2<double>
     dmat2x3 mv_matrix = MAT2x3_TO_DMAT2x3(transform);
 
     mv_matrix = Math::translate(mv_matrix, -subpixel_offset);
@@ -701,7 +701,7 @@ namespace Graphick::Renderer {
     const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
-    // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2<float>, dvec2 = Math::vec2<double>
+    // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2, dvec2 = Math::vec2<double>
     dmat2x3 mv_matrix = MAT2x3_TO_DMAT2x3(transform);
 
     mv_matrix = Math::translate(mv_matrix, -subpixel_offset);

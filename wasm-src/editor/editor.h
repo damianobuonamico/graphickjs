@@ -2,7 +2,7 @@
 
 #include "scene/scene.h"
 
-#include "../math/ivec2.h"
+#include "../math/vec2.h"
 
 #include <vector>
 
