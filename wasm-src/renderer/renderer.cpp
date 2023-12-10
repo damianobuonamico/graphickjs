@@ -152,6 +152,9 @@ namespace Graphick::Renderer {
     get()->draw_opaque_tiles();
     get()->draw_masked_tiles();
     get()->flush_line_instances();
+    get()->m_lines_data.instance_buffer_ptr = get()->m_lines_data.instance_buffer;
+
+    get()->m_lines_data.instances = 0;
     get()->flush_square_instances();
     get()->flush_white_square_instances();
     get()->flush_circle_instances();
@@ -197,6 +200,17 @@ namespace Graphick::Renderer {
     if (path.empty()) return;
 
     get()->add_line_instances(path, transform);
+  }
+
+  void Renderer::draw_outline(const Geometry::Contour& contour, const mat2x3& transform, const vec4& color) {
+    if (contour.points.empty()) return;
+
+    for (size_t i = 0; i < contour.points.size() - 1; i++) {
+      vec2 p0 = transform * vec2{ Math::f24x8_to_float(contour.points[i].x), Math::f24x8_to_float(contour.points[i].y) };
+      vec2 p1 = transform * vec2{ Math::f24x8_to_float(contour.points[i + 1].x), Math::f24x8_to_float(contour.points[i + 1].y) };
+
+      get()->add_linear_segment_instance(p0, p1);
+    }
   }
 
   void Renderer::draw_square(const vec2 position, const float radius, const mat2x3& transform) {
@@ -659,9 +673,9 @@ namespace Graphick::Renderer {
   }
 
   void Renderer::begin_instanced_renderers() {
-    m_lines_data.instance_buffer_ptr = m_lines_data.instance_buffer;
+    // m_lines_data.instance_buffer_ptr = m_lines_data.instance_buffer;
 
-    m_lines_data.instances = 0;
+    // m_lines_data.instances = 0;
     m_square_data.instances.clear();
     m_white_square_data.instances.clear();
     m_circle_data.instances.clear();

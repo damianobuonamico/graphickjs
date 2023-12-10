@@ -5,6 +5,7 @@
  * @todo Implement history.
  * @todo Implement in and out handles.
  * @todo Better closing algorithm.
+ * @todo is_point_in_path() should have a stroke of std::max(stroke_width, threshold).
  */
 
 #include "path_dev.h"
@@ -12,6 +13,9 @@
 #include "path_builder.h"
 
 #include "../properties.h"
+ // TEMP
+#include "../renderer.h"
+#include "internal.h"
 
 #include "../../math/matrix.h"
 #include "../../math/vector.h"
@@ -24,6 +28,19 @@
 #include "../../utils/assert.h"
 
 namespace Graphick::Renderer::Geometry {
+
+  /* -- Segment -- */
+
+  bool PathDev::Segment::is_point() const {
+    bool point = p0 == p1;
+
+    if (point) {
+      if (is_quadratic()) return p1 == p2;
+      if (is_cubic()) return p1 == p2 && p2 == p3;
+    }
+
+    return point;
+  }
 
   /* -- Iterator -- */
 
@@ -295,6 +312,38 @@ namespace Graphick::Renderer::Geometry {
     return *this;
   }
 
+  PathDev::Segment PathDev::front(const size_t move_index) const {
+    size_t move_i = 0;
+
+    for (size_t i = 0; i < m_commands_size; i++) {
+      if (get_command(i) == Command::Move) {
+        if (move_i == move_index) {
+          return *Iterator(*this, i + 0);
+        }
+
+        move_i += 1;
+      }
+    }
+
+    return front();
+  }
+
+  PathDev::Segment PathDev::back(const size_t move_index) const {
+    size_t move_i = 0;
+
+    for (size_t i = 0; i < m_commands_size; i++) {
+      if (get_command(i) == Command::Move) {
+        if (move_i == move_index + 1) {
+          return *Iterator(*this, i - 1);
+        }
+
+        move_i += 1;
+      }
+    }
+
+    return back();
+  }
+
   void PathDev::for_each(
     std::function<void(const vec2)> move_callback,
     std::function<void(const vec2)> line_callback,
@@ -349,6 +398,91 @@ namespace Graphick::Renderer::Geometry {
       }
       }
     }
+  }
+
+  void PathDev::for_each_reversed(
+    std::function<void(const vec2)> move_callback,
+    std::function<void(const vec2, const vec2)> line_callback,
+    std::function<void(const vec2, const vec2, const vec2)> quadratic_callback,
+    std::function<void(const vec2, const vec2, const vec2, const vec2)> cubic_callback
+  ) const {
+    for (int i = static_cast<int>(m_commands_size) - 1, j = static_cast<int>(m_points.size()); i >= 0; i--) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j - 4 >= 0, "Not enough points for a cubic bezier.");
+
+        if (cubic_callback) {
+          cubic_callback(m_points[j - 4], m_points[j - 3], m_points[j - 2], m_points[j - 1]);
+        }
+
+        j -= 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j - 3 >= 0, "Not enough points for a quadratic bezier.");
+
+        if (quadratic_callback) {
+          quadratic_callback(m_points[j - 3], m_points[j - 2], m_points[j - 1]);
+        }
+
+        j -= 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j - 2 >= 0, "Not enough points for a line.");
+
+        if (line_callback) {
+          line_callback(m_points[j - 2], m_points[j - 1]);
+        }
+
+        j -= 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j - 1 >= 0, "Points vector subscript out of range.");
+
+        if (move_callback) {
+          move_callback(m_points[j - 1]);
+        }
+
+        j -= 1;
+
+        break;
+      }
+      }
+    }
+  }
+
+  bool PathDev::closed(const size_t move_index) const {
+    size_t last_point = 0;
+    size_t move_i = 0;
+
+    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        if (move_i == move_index) {
+          last_point = point_i;
+        } else if (move_i == move_index + 1) {
+          return m_points[point_i - 1] == m_points[last_point];
+        }
+
+        move_i += 1;
+      case Command::Line:
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        point_i += 3;
+        break;
+      }
+    }
+
+    return m_points.back() == m_points[last_point];
   }
 
   void PathDev::move_to(const vec2 point) {
@@ -746,75 +880,54 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  bool PathDev::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3* transform, const float threshold) const {
-    if (transform) return is_point_inside_path(point, fill, stroke, *transform, threshold);
+  bool PathDev::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3& transform, const float threshold, const double zoom) const {
+    GK_TOTAL("PathDev::is_point_inside_path");
 
     const Math::rect bounds = approx_bounding_rect();
-    if (!Math::is_point_in_rect(point, bounds, threshold)) return false;
+    const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) && (stroke->width > threshold) : false;
 
-    const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON, point + threshold + GK_POINT_EPSILON };
+    if (!Math::is_point_in_rect(transform / point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
+
+    const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
+    const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
+
+    PathBuilder builder{ threshold_box, MAT2x3_TO_DMAT2x3(transform), GK_PATH_TOLERANCE / zoom };
 
     if (fill) {
-      PathBuilder builder{ threshold_box };
       Drawable drawable = builder.fill(*this, *fill);
 
-      const f24x8x2 p = { Math::float_to_f24x8(point.x - threshold_box.min.x), Math::float_to_f24x8(point.y - threshold_box.min.y) };
+      GK_DEBUGGER_DRAW(drawable);
 
       for (Contour& contour : drawable.contours) {
-        f24x8 y0 = contour.points.front().x;
-        f24x8 x0 = contour.points.front().y;
-
-        int winding = 0;
-
-        for (f24x8x2 to : contour.points) {
-          f24x8 x1 = to.x;
-          f24x8 y1 = to.y;
-          f24x8 min_y = std::min(y0, y1);
-          f24x8 max_y = std::max(y0, y1);
-
-          if (min_y > p.y || max_y <= p.y || std::min(x0, x1) > p.x || y0 == y1) {
-            x0 = x1;
-            y0 = y1;
-            continue;
-          }
-
-          f24x8 d = y1 - y0;
-          f24x8 t = (p.y - y0) * FRACUNIT / d;
-          f24x8 x = x0 + t * (x1 - x0) / FRACUNIT;
-
-          if (x <= p.x) {
-            winding += d > 0 ? 1 : -1;
-          }
-
-          x0 = x1;
-          y0 = y1;
-        }
+        const int winding = contour.winding_of(p);
 
         if (
           (fill->rule == FillRule::NonZero && winding != 0) ||
           (fill->rule == FillRule::EvenOdd && winding % 2 != 0)
           ) {
-          console::log("inside");
           return true;
         }
       }
     }
 
-    // Stroke s = stroke ? *stroke : Stroke{ vec4{}, LineCap::Round, LineJoin::Round, 0.0f, 0.0f, 0.0f };
-    // s.width += threshold;
+    Stroke s = stroke ? *stroke : Stroke{ vec4{}, LineCap::Round, LineJoin::Round, 0.0f, 0.0f, 0.0f };
+    s.width += threshold;
 
-    console::log("outside");
-    return false;
-  }
+    if (!consider_miters) {
+      s.miter_limit = 0.0f;
+    }
 
-  bool PathDev::is_point_inside_path(const vec2 global_point, const Fill* fill, const Stroke* stroke, const Math::mat2x3& transform, const float global_threshold) const {
-    const vec2 threshold = vec2{ global_threshold } / Math::decompose(transform).scale;
-    const vec2 point = transform / global_point;
+    Drawable drawable = builder.stroke(*this, s);
 
-    const float max_threshold = std::max(threshold.x, threshold.y);
+    GK_DEBUGGER_DRAW(drawable);
 
-    const Math::rect bounds = bounding_rect();
-    if (!Math::is_point_in_rect(point, bounds, max_threshold)) return false;
+    for (Contour& contour : drawable.contours) {
+      const int winding = contour.winding_of(p);
+
+      if (winding != 0) {
+        return true;
+      }
+    }
 
     return false;
   }

@@ -12,6 +12,9 @@
 #include "rect.h"
 
 #include "mat2x3.h"
+#include "dmat2x3.h"
+
+#define MAT2x3_TO_DMAT2x3(m) Graphick::Math::dmat2x3{ m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2] }
 
 namespace Graphick::Math {
 
@@ -124,6 +127,17 @@ namespace Graphick::Math {
   float determinant(const mat2x3& m);
 
   /**
+   * @brief Calculates the determinant of a 2x3 matrix.
+   *
+   * Although the inverse of a 2x3 matrix is not defined, this function treats
+   * the matrix as a 3x3 matrix with the last row being [0, 0, 1].
+   *
+   * @param m The matrix to calculate the determinant of.
+   * @return The determinant of the matrix.
+   */
+  double determinant(const dmat2x3& m);
+
+  /**
    * @brief Calculates the inverse of a 2x2 matrix.
    *
    * @param m The matrix to calculate the inverse of.
@@ -159,6 +173,17 @@ namespace Graphick::Math {
   mat2x3 inverse(const mat2x3& m);
 
   /**
+   * @brief Calculates the inverse of a 2x3 matrix.
+   *
+   * Although the inverse of a 2x3 matrix is not defined, this function treats
+   * the matrix as a 3x3 matrix with the last row being [0, 0, 1].
+   *
+   * @param m The matrix to calculate the inverse of.
+   * @return The inverse of the matrix.
+   */
+  dmat2x3 inverse(const dmat2x3& m);
+
+  /**
    * @brief Performs a 2D translation to a 2x3 matrix.
    *
    * @param m The matrix to translate.
@@ -168,6 +193,15 @@ namespace Graphick::Math {
   mat2x3 translate(const mat2x3& m, const vec2 v);
 
   /**
+   * @brief Performs a 2D translation to a 2x3 matrix.
+   *
+   * @param m The matrix to translate.
+   * @param v The vector to translate by.
+   * @return The translated matrix.
+   */
+  dmat2x3 translate(const dmat2x3& m, const dvec2 v);
+
+  /**
    * @brief Performs a 2D scale to a 2x3 matrix.
    *
    * @param m The matrix to scale.
@@ -175,6 +209,15 @@ namespace Graphick::Math {
    * @return The scaled matrix.
    */
   mat2x3 scale(const mat2x3& m, const vec2 v);
+
+  /**
+   * @brief Performs a 2D scale to a 2x3 matrix.
+   *
+   * @param m The matrix to scale.
+   * @param v The vector to scale by.
+   * @return The scaled matrix.
+   */
+  dmat2x3 scale(const dmat2x3& m, const dvec2 v);
 
   /**
    * @brief Performs a 2D scale from an origin point to a 2x3 matrix.

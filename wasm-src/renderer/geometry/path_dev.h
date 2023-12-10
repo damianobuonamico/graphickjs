@@ -73,6 +73,15 @@ namespace Graphick::Renderer::Geometry {
       inline bool is_line() const { return type == Command::Line; }
       inline bool is_quadratic() const { return type == Command::Quadratic; }
       inline bool is_cubic() const { return type == Command::Cubic; }
+
+      /**
+       * @brief Whether the segment is a point or not.
+       *
+       * A segment is considered a point if all control points are equal.
+       *
+       * @return true if the segment is a point, false otherwise.
+       */
+      bool is_point() const;
     };
 
     /**
@@ -256,6 +265,22 @@ namespace Graphick::Renderer::Geometry {
     inline Segment back() const { return *rbegin(); }
 
     /**
+     * @brief Returns the first segment of the sub-path corresponding to the given move command index.
+     *
+     * @param move_index The index of the move command corresponding to the sub-path to check.
+     * @return The first segment of the sub-path corresponding to the given move command index.
+     */
+    Segment front(const size_t move_index) const;
+
+    /**
+     * @brief Returns the last segment of the sub-path corresponding to the given move command index.
+     *
+     * @param move_index The index of the move command corresponding to the sub-path to check.
+     * @return The last segment of the sub-path corresponding to the given move command index.
+     */
+    Segment back(const size_t move_index) const;
+
+    /**
      * @brief Iterates over the commands of the path, calling the given callbacks for each command.
      *
      * @param move_callback The callback to call for each move command.
@@ -268,6 +293,21 @@ namespace Graphick::Renderer::Geometry {
       std::function<void(const vec2)> line_callback = nullptr,
       std::function<void(const vec2, const vec2)> quadratic_callback = nullptr,
       std::function<void(const vec2, const vec2, const vec2)> cubic_callback = nullptr
+    ) const;
+
+    /**
+     * @brief Reverse iterates over the commands of the path, calling the given callbacks for each command.
+     *
+     * @param move_callback The callback to call for each move command.
+     * @param line_callback The callback to call for each line command.
+     * @param quadratic_callback The callback to call for each quadratic command.
+     * @param cubic_callback The callback to call for each cubic command.
+     */
+    void for_each_reversed(
+      std::function<void(const vec2)> move_callback = nullptr,
+      std::function<void(const vec2, const vec2)> line_callback = nullptr,
+      std::function<void(const vec2, const vec2, const vec2)> quadratic_callback = nullptr,
+      std::function<void(const vec2, const vec2, const vec2, const vec2)> cubic_callback = nullptr
     ) const;
 
     /**
@@ -300,9 +340,10 @@ namespace Graphick::Renderer::Geometry {
     /**
      * @brief Checks whether the path is closed or not.
      *
+     * @param move_index The index of the move command corresponding to the sub-path to check.
      * @return true if the path is closed, false otherwise.
      */
-    inline bool closed() const { return m_points.front() == m_points.back(); }
+    bool closed(const size_t move_index) const;
 
     /**
      * @brief Moves the path cursor to the given point.
@@ -424,12 +465,12 @@ namespace Graphick::Renderer::Geometry {
      * @param point The point to check.
      * @param fill The fill of the path, can be nullptr.
      * @param stroke The stroke of the path, can be nullptr.
-     * @param transform The transformation matrix to apply to the path, can be nullptr.
+     * @param transform The transformation matrix to apply to the path.
      * @param threshold The threshold to use for the check.
+     * @param zoom The zoom level to use for the check.
      * @return true if the point is inside the path, false otherwise.
      */
-    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3* transform, const float threshold) const;
-    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3& transform, const float threshold) const;
+    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
   private:
     /**
      * @brief Returns the ith command of the path.

@@ -1206,6 +1206,18 @@ namespace Graphick::Math {
   }
 
   /**
+   * @brief Checks if all components of a dvec2 are nearly equal to another vector within a given epsilon.
+   *
+   * @param v1 The first vector for comparison.
+   * @param v2 The second vector for comparison.
+   * @param eps The epsilon value for comparison (default is GK_EPSILON).
+   * @return True if all components are within epsilon of each other, false otherwise.
+   */
+  inline bool is_almost_equal(const dvec2 v1, const dvec2 v2, const double eps = GK_EPSILON) {
+    return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps);
+  }
+
+  /**
    * @brief Checks if all components of a vec3 are nearly equal to another vector within a given epsilon.
    *
    * @param v1 The first vector for comparison.
@@ -1327,6 +1339,19 @@ namespace Graphick::Math {
    */
   constexpr vec2 round(const vec2 v) {
     return vec2{
+      std::round(v.x),
+      std::round(v.y)
+    };
+  }
+
+  /**
+   * @brief Rounds each component of a dvec2 to the nearest integer.
+   *
+   * @param v The vector to be rounded.
+   * @return The dvec2 with rounded components.
+   */
+  constexpr dvec2 round(const dvec2 v) {
+    return dvec2{
       std::round(v.x),
       std::round(v.y)
     };

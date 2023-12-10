@@ -4,6 +4,8 @@
 #include "../../math/f24x8.h"
 #include "../../math/dvec2.h"
 
+#include "../../utils/defines.h"
+
 #include "../properties.h"
 
 #include <vector>
@@ -11,9 +13,11 @@
 
 namespace Graphick::Renderer::Geometry {
 
-  struct Contour {
+  class Contour {
   public:
     using Parameterization = std::vector<std::pair<dvec2, dvec2>>;
+  public:
+    Contour(const double tolerance = GK_PATH_TOLERANCE) : m_tolerance(tolerance) {}
 
     std::vector<f24x8x2> points;
 
@@ -37,12 +41,15 @@ namespace Graphick::Renderer::Geometry {
 
     void close();
     void reverse();
+
+    int winding_of(const f24x8x2 point);
   private:
     void arc(const dvec2 center, const dvec2 from, const double radius, const dvec2 to);
     void recursive_cubic_offset(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const unsigned int level, const double angular_tolerance, Parameterization& parameterization);
   private:
     f24x8x2 m_p0 = { 0, 0 };
     dvec2 m_d_p0 = { 0, 0 };
+    double m_tolerance;
   };
 
 }

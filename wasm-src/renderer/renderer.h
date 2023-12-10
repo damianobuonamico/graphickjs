@@ -32,6 +32,7 @@ namespace Graphick::Renderer {
     static void draw(const Geometry::PathDev& path, const Fill& fill, const mat2x3& transform);
     static void draw_outline(const uuid id, const Geometry::PathDev& path, const mat2x3& transform = {}, bool draw_vertices = false);
     static void draw_outline(const Geometry::Internal::PathInternal& path, const mat2x3& transform = {});
+    static void draw_outline(const Geometry::Contour& contour, const mat2x3& transform = {}, const vec4& color = vec4{ 0.17f, 0.71f, 0.90f, 1.0f });
 
     static void draw_square(const vec2 position, const float radius, const mat2x3& transform = {});
 

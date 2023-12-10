@@ -3,7 +3,9 @@
 #if GK_USE_DEBUGGER
 
 #include "../renderer/renderer.h"
+#include "../renderer/drawable.h"
 
+#include "../math/mat2x3.h"
 #include "../math/math.h"
 
 #include <fstream>
@@ -36,6 +38,48 @@ namespace Graphick::Utils {
 
   void Debugger::log(const std::string& text) {
     get()->m_messages.push_back(text);
+  }
+
+  void Debugger::draw(const Renderer::Geometry::Contour& contour, const Math::mat2x3& transform, const vec4& color) {
+    Renderer::Renderer::draw_outline(contour, transform, color);
+  }
+
+  void Debugger::draw(const Renderer::Geometry::Contour& contour, const Math::mat2x3& transform) {
+    Renderer::Renderer::draw_outline(contour, transform);
+  }
+
+  void Debugger::draw(const Renderer::Geometry::Contour& contour) {
+    Renderer::Renderer::draw_outline(contour);
+  }
+
+  void Debugger::draw(const Renderer::Drawable& drawable, const Math::mat2x3& transform, const vec4& color) {
+    for (auto& contour : drawable.contours) {
+      draw(contour, transform, color);
+    }
+  }
+
+  void Debugger::draw(const Renderer::Drawable& drawable, const Math::mat2x3& transform) {
+    for (auto& contour : drawable.contours) {
+      draw(contour, transform);
+    }
+  }
+
+  void Debugger::draw(const Renderer::Drawable& drawable) {
+    for (auto& contour : drawable.contours) {
+      draw(contour);
+    }
+  }
+
+  void Debugger::draw(const rect& rect) {
+    Renderer::Geometry::Contour contour;
+
+    contour.move_to(VEC2_TO_DVEC2(rect.min));
+    contour.line_to(dvec2{ rect.max.x, rect.min.y });
+    contour.line_to(VEC2_TO_DVEC2(rect.max));
+    contour.line_to(dvec2{ rect.min.x, rect.max.y });
+    contour.close();
+
+    draw(contour);
   }
 
   void Debugger::render(const vec2 viewport_size) {

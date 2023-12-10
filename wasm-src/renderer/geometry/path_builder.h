@@ -14,6 +14,7 @@
 
 #include "../properties.h"
 
+#include "../../math/dmat2x3.h"
 #include "../../math/rect.h"
 
 namespace Graphick::Renderer::Geometry {
@@ -25,17 +26,17 @@ namespace Graphick::Renderer::Geometry {
   class PathBuilder {
   public:
     /**
-     * @brief Constructor and destructor
+     * @brief Constructor and destructor.
      */
-    PathBuilder(const rect& clip);
+    PathBuilder(const rect& clip, const dmat2x3& transform, const double tolerance);
     ~PathBuilder() = default;
 
     Drawable fill(const PathDev& path, const Fill& fill);
+    Drawable stroke(const PathDev& path, const Stroke& stroke);
   private:
-    rect m_clip;        /* The clipping rect. */
-
-    Fill m_fill;        /* The fill properties. */
-    Stroke m_stroke;    /* The stroke properties. */
+    double m_tolerance;            /* The tessellation tolerance. */
+    rect m_clip;                   /* The clipping rect. */
+    const dmat2x3 m_transform;     /* The transformation matrix. */
   };
 
 }

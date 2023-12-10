@@ -158,7 +158,7 @@ namespace Graphick::Editor::Input {
     Scene& scene = Editor::scene();
 
     if (!scene.tool_state.active().is_in_category(Tool::CategoryImmediate)) {
-      float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 5.0f / scene.viewport.zoom();
+      float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 5.0f;
 
       hover.set_hovered(scene.entity_at(
         pointer.scene.position,

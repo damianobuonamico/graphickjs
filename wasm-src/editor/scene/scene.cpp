@@ -236,6 +236,11 @@ namespace Graphick::Editor {
   }
 
   uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold) {
+    const double zoom = viewport.zoom();
+    threshold /= zoom;
+
+    GK_DEBUGGER_DRAW(rect{ position - threshold - GK_POINT_EPSILON / zoom, position + threshold + GK_POINT_EPSILON / zoom });
+
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
         const auto& path = m_registry.get<PathComponent>(*it).data;
@@ -244,10 +249,28 @@ namespace Graphick::Editor {
         // const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform.get()).scale;
         const uuid id = m_registry.get<IDComponent>(*it).id;
 
-        Renderer::Fill fill = {};
+        bool has_fill = false;
+        bool has_stroke = false;
+
+        Renderer::Fill fill;
+        Renderer::Stroke stroke;
+
+        if (m_registry.all_of<FillComponent>(*it)) {
+          has_fill = true;
+          auto& fill_component = m_registry.get<FillComponent>(*it);
+
+          fill = Renderer::Fill{ fill_component.color.get(), fill_component.rule, 0.0f };
+        }
+
+        if (m_registry.all_of<StrokeComponent>(*it)) {
+          has_stroke = true;
+          auto& stroke_component = m_registry.get<StrokeComponent>(*it);
+
+          stroke = Renderer::Stroke{ stroke_component.color.get(), stroke_component.cap, stroke_component.join, stroke_component.width.get(), stroke_component.miter_limit.get(), 0.0f };
+        }
 
         // if (path.is_point_inside_path(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {
-        if (path.is_point_inside_path(position, &fill, nullptr, nullptr, threshold)) {
+        if (path.is_point_inside_path(position, has_fill ? &fill : nullptr, has_stroke ? &stroke : nullptr, transform.get(), threshold, zoom)) {
           return id;
         }
       }

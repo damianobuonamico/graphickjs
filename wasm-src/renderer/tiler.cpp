@@ -17,7 +17,7 @@
 #include "tiler.h"
 
 #include "geometry/path_dev.h"
-#include "geometry/contour.h"
+#include "geometry/path_builder.h"
 
 #include "../math/mat2x3.h"
 #include "../math/matrix.h"
@@ -568,10 +568,6 @@ namespace Graphick::Renderer {
 
   static constexpr double EPS = 0.5;
 
-  static bool is_almost_equal(const dvec2 a, const dvec2 b, const double eps) {
-    return std::abs(a.x - b.x) < eps && std::abs(a.y - b.y) < eps;
-  }
-
   static OffsetSegment offset_segment(const dvec2 a, const dvec2 b, const dvec2 c, const dvec2 d, const double radius) {
     dvec2 normal_ab;
     dvec2 normal_bc;
@@ -635,202 +631,51 @@ namespace Graphick::Renderer {
 
     if (overlap <= 0.0f) return;
 
-    const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
-    const dvec2 offset = TILE_SIZE / m_zoom * dvec2{ std::round(tile_offset.x), std::round(tile_offset.y) };
-    const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
-    const dvec2 drawable_offset = offset * m_zoom;
+    // const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
+    // const dvec2 offset = TILE_SIZE / m_zoom * dvec2{ std::round(tile_offset.x), std::round(tile_offset.y) };
+    // const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+    // const dvec2 drawable_offset = offset * m_zoom;
 
     const bool clip_drawable = overlap < OVERLAP_CLIP_THRESHOLD;
     // const bool clip_drawable = sw > std::min(m_visible.width(), m_visible.height());
 
+    // f24x8x4 bound = {
+    //   Math::double_to_f24x8((path_rect.min.x - offset.x) * m_zoom - m_subpixel.x),
+    //   Math::double_to_f24x8((path_rect.min.y - offset.y) * m_zoom - m_subpixel.y),
+    //   Math::double_to_f24x8((path_rect.max.x - offset.x) * m_zoom - m_subpixel.x),
+    //   Math::double_to_f24x8((path_rect.max.y - offset.y) * m_zoom - m_subpixel.y)
+    // };
+
+    const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
+    const dvec2 offset = Math::round(tile_offset) * TILE_SIZE / m_zoom;
+    const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+    const dvec2 drawable_offset = offset * m_zoom;
+
+    // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2<float>, dvec2 = Math::vec2<double>
+    dmat2x3 mv_matrix = MAT2x3_TO_DMAT2x3(transform);
+
+    mv_matrix = Math::translate(mv_matrix, -subpixel_offset);
+    mv_matrix = Math::scale(mv_matrix, { m_zoom, m_zoom });
+
+    Stroke s = stroke;
+
+    s.width = sw * m_zoom;
+
+    Geometry::PathBuilder builder{ m_visible, mv_matrix, GK_PATH_TOLERANCE };
+    Drawable drawable1 = builder.stroke(path, s);
+
+    rect fbounds = (path_rect - DVEC2_TO_VEC2(offset)) * m_zoom - m_subpixel;
+
     f24x8x4 bound = {
-      Math::double_to_f24x8((path_rect.min.x - offset.x) * m_zoom - m_subpixel.x),
-      Math::double_to_f24x8((path_rect.min.y - offset.y) * m_zoom - m_subpixel.y),
-      Math::double_to_f24x8((path_rect.max.x - offset.x) * m_zoom - m_subpixel.x),
-      Math::double_to_f24x8((path_rect.max.y - offset.y) * m_zoom - m_subpixel.y)
+      Math::float_to_f24x8(fbounds.min.x),
+      Math::float_to_f24x8(fbounds.min.y),
+      Math::float_to_f24x8(fbounds.max.x),
+      Math::float_to_f24x8(fbounds.max.y)
     };
 
-    const size_t len = path.size();
+    drawable1.bounds = bound;
 
-    Drawable drawable(1, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, bound);
-    Geometry::Contour& contour = drawable.contours.front();
-
-    LineCap cap = LineCap::Butt;
-    LineJoin join = LineJoin::Bevel;
-
-    const auto first_segment = path.front();
-    bool is_first_point = first_segment.p0 == first_segment.p1;
-
-    if (is_first_point && first_segment.is_cubic()) is_first_point = first_segment.p0 == first_segment.p2 && first_segment.p0 == first_segment.p3;
-
-    if (len == 1 && is_first_point && cap != LineCap::Butt) {
-      dvec2 from = d_transform_point(transform, first_segment.p0, subpixel_offset, m_zoom);
-      dvec2 n = { 0.0, 1.0 };
-      dvec2 nr = n * radius;
-      dvec2 start = from + nr;
-      dvec2 rstart = from - nr;
-
-      contour.move_to(start);
-
-      contour.add_cap(start, rstart, n, radius, cap);
-      contour.add_cap(rstart, start, -n, radius, cap);
-
-      return process_drawable(drawable, drawable_offset, clip_drawable);
-    }
-
-    std::vector<std::unique_ptr<Geometry::Contour::Parameterization>> parameterizations;
-
-    dvec2 last_dir = { 0.0, 0.0 };
-    dvec2 first_point = { 0.0, 0.0 };
-    dvec2 last_point = { 0.0, 0.0 };
-    dvec2 pivot = { 0.0, 0.0 };
-
-    bool closed = false;
-    // bool closed = path.closed();
-
-    if (closed) {
-      const auto raw = path.back();
-      const auto segment = raw.is_line() ?
-        offset_segment(
-          d_transform_point(transform, raw.p0, subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
-          radius
-        ) :
-        offset_segment(
-          d_transform_point(transform, raw.p0, subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p2, subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p3, subpixel_offset, m_zoom),
-          radius
-        );
-
-      const dvec2 end_point = segment.end;
-      const dvec2 out_dir = segment.end_normal;
-
-      pivot = segment.end_pivot;
-      last_dir = out_dir;
-      last_point = end_point;
-      first_point = end_point;
-
-      contour.move_to(last_point);
-    }
-
-    /* Forward for the outer stroke. */
-
-    bool is_first = !closed;
-    double inv_miter_limit = 1.0 / stroke.miter_limit;
-
-    for (const auto& raw : path) {
-      const dvec2 p0 = d_transform_point(transform, raw.p0, subpixel_offset, m_zoom);
-      const auto segment = raw.is_line() ?
-        offset_segment(
-          p0,
-          d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
-          radius
-        ) :
-        offset_segment(
-          p0,
-          d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p2, subpixel_offset, m_zoom),
-          d_transform_point(transform, raw.p3, subpixel_offset, m_zoom),
-          radius
-        );
-
-      const dvec2 start = segment.start;
-
-      if (is_first) {
-        contour.move_to(start);
-        first_point = start;
-        is_first = false;
-      } else {
-        contour.add_join(last_point, start, pivot, last_dir, segment.start_normal, radius, inv_miter_limit, join);
-      }
-
-      last_dir = segment.end_normal;
-      pivot = segment.end_pivot;
-      last_point = segment.end;
-
-      if (segment.is_linear) contour.line_to(last_point);
-      else {
-        parameterizations.push_back(std::move(
-          contour.offset_cubic(p0, segment.control1, segment.control2, pivot, last_dir, radius)
-        ));
-      }
-    }
-
-    /* Backward for the inner stroke. */
-
-    is_first = true;
-
-    for (auto it = path.rbegin(), rend_it = path.rend(); it != rend_it; ++it) {
-      const auto segment = (*it).is_line() ?
-        offset_segment(
-          d_transform_point(transform, (*it).p1, subpixel_offset, m_zoom),
-          d_transform_point(transform, (*it).p0, subpixel_offset, m_zoom),
-          radius
-        ) :
-        offset_segment(
-          d_transform_point(transform, (*it).p3, subpixel_offset, m_zoom),
-          d_transform_point(transform, (*it).p2, subpixel_offset, m_zoom),
-          d_transform_point(transform, (*it).p1, subpixel_offset, m_zoom),
-          d_transform_point(transform, (*it).p0, subpixel_offset, m_zoom),
-          radius
-        );
-
-      const dvec2 start = segment.start;
-
-      if (is_first) {
-        if (closed) {
-          const auto raw = path.front();
-          const auto init = raw.is_line() ?
-            offset_segment(
-              d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
-              d_transform_point(transform, raw.p0, subpixel_offset, m_zoom),
-              radius
-            ) :
-            offset_segment(
-              d_transform_point(transform, raw.p3, subpixel_offset, m_zoom),
-              d_transform_point(transform, raw.p2, subpixel_offset, m_zoom),
-              d_transform_point(transform, raw.p1, subpixel_offset, m_zoom),
-              d_transform_point(transform, raw.p0, subpixel_offset, m_zoom),
-              radius
-            );
-
-          last_point = init.end;
-          last_dir = init.end_normal;
-          pivot = init.end_pivot;
-
-          contour.line_to(last_point);
-          contour.add_join(last_point, start, pivot, last_dir, segment.start_normal, radius, inv_miter_limit, join);
-        } else {
-          contour.add_cap(last_point, start, last_dir, radius, cap);
-        }
-
-        is_first = false;
-      } else {
-        contour.add_join(last_point, start, pivot, last_dir, segment.start_normal, radius, inv_miter_limit, join);
-      }
-
-      last_dir = segment.end_normal;
-      pivot = segment.end_pivot;
-      last_point = segment.end;
-
-      if (segment.is_linear) contour.line_to(last_point);
-      else {
-        std::unique_ptr<Geometry::Contour::Parameterization> parameterization = std::move(parameterizations.back());
-
-        contour.offset_cubic(*parameterization, last_point, radius);
-        parameterizations.pop_back();
-      }
-    }
-
-    if (!closed) {
-      contour.add_cap(last_point, first_point, last_dir, radius, cap);
-    }
-
-    contour.close();
-
-    process_drawable(drawable, drawable_offset, clip_drawable);
+    process_drawable(drawable1, drawable_offset, clip_drawable);
 
     // Geometry::Internal::PathInternal p;
 
@@ -852,33 +697,27 @@ namespace Graphick::Renderer {
     if (overlap <= 0.0f) return;
 
     const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
-    const dvec2 offset = TILE_SIZE / m_zoom * dvec2{ std::round(tile_offset.x), std::round(tile_offset.y) };
+    const dvec2 offset = Math::round(tile_offset) * TILE_SIZE / m_zoom;
     const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
-    Drawable drawable(0, fill, (path_rect - DVEC2_TO_VEC2(offset)) * m_zoom - m_subpixel);
-    Geometry::Contour* contour = nullptr;
+    // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2<float>, dvec2 = Math::vec2<double>
+    dmat2x3 mv_matrix = MAT2x3_TO_DMAT2x3(transform);
 
-    path.for_each(
-      [&](const vec2 p0) {
-        if (contour) contour->close();
-        contour = &drawable.contours.emplace_back();
-        contour->move_to(d_transform_point(transform, p0, subpixel_offset, m_zoom));
-      },
-      [&](const vec2 p1) {
-        contour->line_to(d_transform_point(transform, p1, subpixel_offset, m_zoom));
-      },
-      nullptr,
-      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
-        contour->cubic_to(
-          d_transform_point(transform, p1, subpixel_offset, m_zoom),
-          d_transform_point(transform, p2, subpixel_offset, m_zoom),
-          d_transform_point(transform, p3, subpixel_offset, m_zoom)
-        );
-      }
-    );
+    mv_matrix = Math::translate(mv_matrix, -subpixel_offset);
+    mv_matrix = Math::scale(mv_matrix, { m_zoom, m_zoom });
 
-    contour->close();
+    Geometry::PathBuilder builder{ m_visible, mv_matrix, GK_PATH_TOLERANCE };
+    Drawable drawable = builder.fill(path, fill);
+
+    rect bounds = (path_rect - DVEC2_TO_VEC2(offset)) * m_zoom - m_subpixel;
+
+    drawable.bounds = {
+      Math::float_to_f24x8(bounds.min.x),
+      Math::float_to_f24x8(bounds.min.y),
+      Math::float_to_f24x8(bounds.max.x),
+      Math::float_to_f24x8(bounds.max.y)
+    };
 
     process_drawable(drawable, drawable_offset, overlap < OVERLAP_CLIP_THRESHOLD);
   }

@@ -14,8 +14,6 @@ namespace Graphick::Renderer::Geometry {
   static constexpr double curve_cusp_limit_t = 1e-5;
   static constexpr double curve_cusp_limit = 1e-3;
   static constexpr double min_angle_tolerance = 0.1;
-  static constexpr double tolerance = 0.25;
-  static constexpr double tolerance_sq = tolerance * tolerance;
 
   void Contour::move_to(const f24x8x2 p0) {
     m_p0 = p0;
@@ -56,7 +54,7 @@ namespace Graphick::Renderer::Geometry {
     vec2 p;
 
     float conc = std::max(Math::length(b), Math::length(a + b));
-    float dt = std::sqrtf((std::sqrtf(8.0f) * tolerance) / conc);
+    float dt = std::sqrtf((std::sqrtf(8.0f) * m_tolerance) / conc);
     float t = dt;
 
     points.reserve(static_cast<int>(1.0 / dt) + 1);
@@ -84,7 +82,7 @@ namespace Graphick::Renderer::Geometry {
     dvec2 p;
 
     double conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
-    double dt = std::sqrtf((std::sqrt(8.0) * tolerance) / conc);
+    double dt = std::sqrtf((std::sqrt(8.0) * m_tolerance) / conc);
     double t = dt;
 
     points.reserve(static_cast<int>(1.0f / dt) + 1);
@@ -109,7 +107,7 @@ namespace Graphick::Renderer::Geometry {
 
     std::unique_ptr<Parameterization> parameterization = std::make_unique<Parameterization>();
 
-    const double angular_tolerance = radius > 0.5 ? std::max(2.0 * std::acos(std::max(radius - tolerance, 0.0) / radius), min_angle_tolerance) : 0.0;
+    const double angular_tolerance = radius > 0.5 ? std::max(2.0 * std::acos(std::max(radius - m_tolerance, 0.0) / radius), min_angle_tolerance) : 0.0;
 
     const dvec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
     const dvec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
@@ -226,10 +224,40 @@ namespace Graphick::Renderer::Geometry {
     std::reverse(points.begin(), points.end());
   }
 
+  int Contour::winding_of(const f24x8x2 point) {
+    if (points.size() < 3) return 0;
+
+    int winding = 0;
+
+    f24x8x2 p0 = points[0];
+
+    for (f24x8x2 p1 : points) {
+      f24x8 min_y = std::min(p0.y, p1.y);
+      f24x8 max_y = std::max(p0.y, p1.y);
+
+      if (min_y > point.y || max_y <= point.y || std::min(p0.x, p1.x) > point.x || p0.y == p1.y) {
+        p0 = p1;
+        continue;
+      }
+
+      f24x8 d = p1.y - p0.y;
+      f24x8 t = (point.y - p0.y) * FRACUNIT / d;
+      f24x8 x = p0.x + t * (p1.x - p0.x) / FRACUNIT;
+
+      if (x <= point.x) {
+        winding += d > 0 ? 1 : -1;
+      }
+
+      p0 = p1;
+    }
+
+    return winding;
+  }
+
   void Contour::arc(const dvec2 center, const dvec2 from, const double radius, const dvec2 to) {
     const double ang1 = std::atan2(from.y - center.y, from.x - center.x);
     const double ang2 = std::atan2(to.y - center.y, to.x - center.x);
-    const double dt = std::sqrtf(0.5 * tolerance / radius);
+    const double dt = std::sqrtf(0.5 * m_tolerance / radius);
 
     double diff = std::abs(ang2 - ang1);
     if (diff > MATH_PI) diff = MATH_TWO_PI - diff;
@@ -261,6 +289,7 @@ namespace Graphick::Renderer::Geometry {
 
     dvec2 d = p3 - p0;
 
+    double tolerance_sq = m_tolerance * m_tolerance;
     double d2 = std::fabs(((p1.x - p3.x) * d.y - (p1.y - p3.y) * d.x));
     double d3 = std::fabs(((p2.x - p3.x) * d.y - (p2.y - p3.y) * d.x));
     double da1, da2, k;
@@ -314,7 +343,7 @@ namespace Graphick::Renderer::Geometry {
       /* p0, p1, p3 are collinear, p2 is significant */
 
       if (d3 * d3 <= tolerance_sq * (d.x * d.x + d.y * d.y)) {
-        if (tolerance < curve_angle_tolerance_epsilon) {
+        if (m_tolerance < curve_angle_tolerance_epsilon) {
           parameterization.push_back(std::make_pair(p12, Math::normal(p1, p2)));
           return;
         }

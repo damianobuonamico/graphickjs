@@ -117,6 +117,13 @@ namespace Graphick::Math {
       );
   }
 
+  double determinant(const dmat2x3& m) {
+    return (
+      +m[0][0] * m[1][1]
+      - m[1][0] * m[0][1]
+      );
+  }
+
   /* -- inverse -- */
 
   mat2 inverse(const mat2& m) {
@@ -250,6 +257,21 @@ namespace Graphick::Math {
     return inverse;
   }
 
+  dmat2x3 inverse(const dmat2x3& m) {
+    double one_over_determinant = 1.0f / determinant(m);
+
+    dmat2x3 inverse;
+    inverse[0][0] = +(m[1][1]) * one_over_determinant;
+    inverse[1][0] = -(m[1][0]) * one_over_determinant;
+    inverse[0][1] = -(m[0][1]) * one_over_determinant;
+    inverse[1][1] = +(m[0][0]) * one_over_determinant;
+    inverse[0][2] = +(m[0][1] * m[1][2] - m[1][1] * m[0][2]) * one_over_determinant;
+    inverse[1][2] = -(m[0][0] * m[1][2] - m[1][0] * m[0][2]) * one_over_determinant;
+
+    return inverse;
+  }
+
+
   /* -- transform -- */
 
   mat2x3 translate(const mat2x3& m, const vec2 v) {
@@ -270,6 +292,24 @@ namespace Graphick::Math {
     return result;
   }
 
+  dmat2x3 translate(const dmat2x3& m, const dvec2 v) {
+    const double src_b00 = m[0][0];
+    const double src_b01 = m[0][1];
+    const double src_b02 = m[0][2];
+    const double src_b10 = m[1][0];
+    const double src_b11 = m[1][1];
+    const double src_b12 = m[1][2];
+
+    dmat2x3 result;
+    result[0][0] = src_b00;
+    result[0][1] = src_b01;
+    result[0][2] = src_b02 + v.x;
+    result[1][0] = src_b10;
+    result[1][1] = src_b11;
+    result[1][2] = src_b12 + v.y;
+    return result;
+  }
+
   mat2x3 scale(const mat2x3& m, const vec2 v) {
     const float src_b00 = m[0][0];
     const float src_b01 = m[0][1];
@@ -279,6 +319,24 @@ namespace Graphick::Math {
     const float src_b12 = m[1][2];
 
     mat2x3 result;
+    result[0][0] = v.x * src_b00;
+    result[0][1] = v.x * src_b01;
+    result[0][2] = v.x * src_b02;
+    result[1][0] = v.y * src_b10;
+    result[1][1] = v.y * src_b11;
+    result[1][2] = v.y * src_b12;
+    return result;
+  }
+
+  dmat2x3 scale(const dmat2x3& m, const dvec2 v) {
+    const double src_b00 = m[0][0];
+    const double src_b01 = m[0][1];
+    const double src_b02 = m[0][2];
+    const double src_b10 = m[1][0];
+    const double src_b11 = m[1][1];
+    const double src_b12 = m[1][2];
+
+    dmat2x3 result;
     result[0][0] = v.x * src_b00;
     result[0][1] = v.x * src_b01;
     result[0][2] = v.x * src_b02;
