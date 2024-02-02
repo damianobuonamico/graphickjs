@@ -12,6 +12,7 @@
 #include "../utils/defines.h"
 
 #include <vector>
+#include <cmath>
 
 #define XY(v) Graphick::vec2{ v.x, v.y }
 #define RG(v) Graphick::vec2{ v.r, v.g }
@@ -1556,37 +1557,5 @@ namespace Graphick::Math {
    * @return True if the three vectors are collinear, false otherwise.
    */
   bool collinear(const vec2 v1, const vec2 v2, const vec2 v3, const float eps = GK_EPSILON);
-
-  /* -- stringify -- */
-
-  /**
-   * @brief Converts a vec2 to a string.
-   *
-   * Returns a string in the format "(x, y)".
-   *
-   * @param v The vector to convert.
-   * @return The string representation of the vector.
-   */
-  std::string stringify(const vec2 v);
-
-  /**
-   * @brief Converts a vec3 to a string.
-   *
-   * Returns a string in the format "(x, y, z)".
-   *
-   * @param v The vector to convert.
-   * @return The string representation of the vector.
-   */
-  std::string stringify(const vec3& v);
-
-  /**
-   * @brief Converts a vec4 to a string.
-   *
-   * Returns a string in the format "(x, y, x, w)".
-   *
-   * @param v The vector to convert.
-   * @return The string representation of the vector.
-   */
-  std::string stringify(const vec4& v);
 
 }

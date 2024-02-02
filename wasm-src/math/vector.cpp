@@ -68,24 +68,4 @@ namespace Graphick::Math {
     return is_almost_zero(t, eps);
   }
 
-  /* -- stringify -- */
-
-  std::string stringify(const vec2 v) {
-    std::stringstream ss;
-    ss << "(" << v.x << ',' << v.y << ")";
-    return ss.str();
-  }
-
-  std::string stringify(const vec3& v) {
-    std::stringstream ss;
-    ss << "(" << v.x << ',' << v.y << ',' << v.z << ")";
-    return ss.str();
-  }
-
-  std::string stringify(const vec4& v) {
-    std::stringstream ss;
-    ss << "(" << v.x << ',' << v.y << ',' << v.z << ',' << v.w << ")";
-    return ss.str();
-  }
-
 }

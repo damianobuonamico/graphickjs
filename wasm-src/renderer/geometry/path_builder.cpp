@@ -10,7 +10,7 @@
 
 #include "path_dev.h"
 
-#include "../../math/dmat2x3.h"
+#include "../../math/mat2x3.h"
 #include "../../math/vector.h"
 #include "../../math/math.h"
 

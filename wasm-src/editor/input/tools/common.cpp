@@ -208,7 +208,7 @@ namespace Graphick::Editor::Input {
       return false;
     }
 
-    vec2 transformed_position = transform() / InputManager::pointer.scene.position;
+    vec2 transformed_position = inverse(transform()) * InputManager::pointer.scene.position;
     vec2 handle_size = vec2{ threshold } / m_size;
 
     for (int i = 0; i < HandleNone; i++) {
@@ -340,7 +340,7 @@ namespace Graphick::Editor::Input {
     vec2 local_center = InputManager::keys.alt ? vec2{ 0.0f } : m_center;
 
     vec2 old_delta = m_handle - local_center;
-    vec2 delta = m_start_transform / InputManager::pointer.scene.position - local_center;
+    vec2 delta = inverse(m_start_transform) * InputManager::pointer.scene.position - local_center;
 
     vec2 magnitude = delta / old_delta;
     uint8_t axial = 0;    /* 0 = none, 1 = x, 2 = y */
@@ -383,7 +383,7 @@ namespace Graphick::Editor::Input {
   }
 
   void Manipulator::on_rotate_pointer_move() {
-    float angle = Math::angle(m_handle - m_center, m_start_transform / InputManager::pointer.scene.position - m_center);
+    float angle = Math::angle(m_handle - m_center, inverse(m_start_transform) * InputManager::pointer.scene.position - m_center);
     float sin_angle = std::sinf(angle);
     float cos_angle = std::cosf(angle);
 

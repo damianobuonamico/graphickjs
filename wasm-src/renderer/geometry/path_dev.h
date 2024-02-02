@@ -7,15 +7,12 @@
 
 #include "../../math/vec2.h"
 #include "../../math/rect.h"
+#include "../../math/mat2x3.h"
 
 #include <functional>
 #include <optional>
 #include <vector>
 #include <tuple>
-
-namespace Graphick::Math {
-  struct mat2x3;
-}
 
 namespace Graphick::Renderer {
   struct Fill;
@@ -450,7 +447,7 @@ namespace Graphick::Renderer::Geometry {
      * @param transform The transformation matrix to apply to the path.
      * @return The bounding rectangle of the path.
      */
-    Math::rect bounding_rect(const Math::mat2x3& transform) const;
+    Math::rect bounding_rect(const mat2x3& transform) const;
 
     /**
      * @brief Calculates the approximate bounding rectangle of the path considering all control points as vertices.
@@ -470,7 +467,7 @@ namespace Graphick::Renderer::Geometry {
      * @param zoom The zoom level to use for the check.
      * @return true if the point is inside the path, false otherwise.
      */
-    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
+    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
   private:
     /**
      * @brief Returns the ith command of the path.

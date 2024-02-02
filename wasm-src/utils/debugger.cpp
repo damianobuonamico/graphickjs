@@ -40,11 +40,11 @@ namespace Graphick::Utils {
     get()->m_messages.push_back(text);
   }
 
-  void Debugger::draw(const Renderer::Geometry::Contour& contour, const Math::mat2x3& transform, const vec4& color) {
+  void Debugger::draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform, const vec4& color) {
     Renderer::Renderer::draw_outline(contour, transform, color);
   }
 
-  void Debugger::draw(const Renderer::Geometry::Contour& contour, const Math::mat2x3& transform) {
+  void Debugger::draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform) {
     Renderer::Renderer::draw_outline(contour, transform);
   }
 
@@ -52,13 +52,13 @@ namespace Graphick::Utils {
     Renderer::Renderer::draw_outline(contour);
   }
 
-  void Debugger::draw(const Renderer::Drawable& drawable, const Math::mat2x3& transform, const vec4& color) {
+  void Debugger::draw(const Renderer::Drawable& drawable, const mat2x3& transform, const vec4& color) {
     for (auto& contour : drawable.contours) {
       draw(contour, transform, color);
     }
   }
 
-  void Debugger::draw(const Renderer::Drawable& drawable, const Math::mat2x3& transform) {
+  void Debugger::draw(const Renderer::Drawable& drawable, const mat2x3& transform) {
     for (auto& contour : drawable.contours) {
       draw(contour, transform);
     }

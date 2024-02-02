@@ -14,7 +14,7 @@
 
 #include "../properties.h"
 
-#include "../../math/dmat2x3.h"
+#include "../../math/mat2x3.h"
 #include "../../math/rect.h"
 
 namespace Graphick::Renderer::Geometry {

@@ -1,6 +1,6 @@
 /**
- * @file Vec2.h
- * @brief This file contains the definition of the Vec2 struct, a 2D single precision vector.
+ * @file vec2.h
+ * @brief This file contains the Vec2 struct, a templated 2D vector.
  */
 
 #pragma once
@@ -17,12 +17,14 @@ namespace Graphick::Math {
    */
   template<typename T>
   struct Vec2 {
-    union { T x, r, s; };   /* The 0 component of the vector. */
-    union { T y, g, t; };   /* The 1 component of the vector. */
+    union { T x, r, s; };    /* The 0 component of the vector. */
+    union { T y, g, t; };    /* The 1 component of the vector. */
 
     /* -- Component accesses -- */
 
-    static constexpr uint8_t length() { return 2; }
+    static constexpr uint8_t length() {
+      return 2;
+    }
 
     constexpr T& operator[](uint8_t i) {
       switch (i) {
@@ -50,12 +52,18 @@ namespace Graphick::Math {
 
     constexpr Vec2(const Vec2<T>& v) = default;
 
-    constexpr explicit Vec2(T scalar) : x(scalar), y(scalar) {}
+    constexpr explicit Vec2(T scalar) :
+      x(scalar),
+      y(scalar) {}
 
-    constexpr Vec2(T x, T y) : x(x), y(y) {}
+    constexpr Vec2(T x, T y) :
+      x(x),
+      y(y) {}
 
     template<typename U>
-    constexpr explicit Vec2(const Vec2<U>& v) : x(static_cast<T>(v.x)), y(static_cast<T>(v.y)) {}
+    constexpr explicit Vec2(const Vec2<U>& v) :
+      x(static_cast<T>(v.x)),
+      y(static_cast<T>(v.y)) {}
 
     /* -- Assign operator -- */
 
@@ -143,69 +151,108 @@ namespace Graphick::Math {
 
   template<typename T>
   constexpr Vec2<T> operator-(const Vec2<T> v) {
-    return Vec2<T>(-v.x, -v.y);
+    return Vec2<T>(
+      -v.x,
+      -v.y
+    );
   }
 
   /* -- Binary operators -- */
 
   template<typename T, typename U>
   constexpr Vec2<T> operator+(const Vec2<T> v, U scalar) {
-    return Vec2<T>(v.x + static_cast<T>(scalar), v.y + static_cast<T>(scalar));
+    return Vec2<T>(
+      v.x + static_cast<T>(scalar),
+      v.y + static_cast<T>(scalar)
+    );
   }
 
   template<typename T, typename U>
   constexpr Vec2<T> operator+(U scalar, const Vec2<T> v) {
-    return Vec2<T>(static_cast<T>(scalar) + v.x, static_cast<T>(scalar) + v.y);
+    return Vec2<T>(
+      static_cast<T>(scalar) + v.x,
+      static_cast<T>(scalar) + v.y
+    );
   }
 
   template<typename T>
   constexpr Vec2<T> operator+(const Vec2<T> v1, const Vec2<T> v2) {
-    return Vec2<T>(v1.x + v2.x, v1.y + v2.y);
+    return Vec2<T>(
+      v1.x + v2.x,
+      v1.y + v2.y
+    );
   }
 
   template<typename T, typename U>
   constexpr Vec2<T> operator-(const Vec2<T> v, U scalar) {
-    return Vec2<T>(v.x - static_cast<T>(scalar), v.y - static_cast<T>(scalar));
+    return Vec2<T>(
+      v.x - static_cast<T>(scalar),
+      v.y - static_cast<T>(scalar)
+    );
   }
 
   template<typename T, typename U>
   constexpr Vec2<T> operator-(U scalar, const Vec2<T> v) {
-    return Vec2<T>(static_cast<T>(scalar) - v.x, static_cast<T>(scalar) - v.y);
+    return Vec2<T>(
+      static_cast<T>(scalar) - v.x,
+      static_cast<T>(scalar) - v.y
+    );
   }
 
   template<typename T>
   constexpr Vec2<T> operator-(const Vec2<T> v1, const Vec2<T> v2) {
-    return Vec2<T>(v1.x - v2.x, v1.y - v2.y);
+    return Vec2<T>(
+      v1.x - v2.x,
+      v1.y - v2.y
+    );
   }
 
   template<typename T, typename U>
   constexpr Vec2<T> operator*(const Vec2<T> v, U scalar) {
-    return Vec2<T>(v.x * static_cast<T>(scalar), v.y * static_cast<T>(scalar));
+    return Vec2<T>(
+      v.x * static_cast<T>(scalar),
+      v.y * static_cast<T>(scalar)
+    );
   }
 
   template<typename T, typename U>
   constexpr Vec2<T> operator*(U scalar, const Vec2<T> v) {
-    return Vec2<T>(static_cast<T>(scalar) * v.x, static_cast<T>(scalar) * v.y);
+    return Vec2<T>(
+      static_cast<T>(scalar) * v.x,
+      static_cast<T>(scalar) * v.y
+    );
   }
 
   template<typename T>
   constexpr Vec2<T> operator*(const Vec2<T> v1, const Vec2<T> v2) {
-    return Vec2<T>(v1.x * v2.x, v1.y * v2.y);
+    return Vec2<T>(
+      v1.x * v2.x,
+      v1.y * v2.y
+    );
   }
 
   template<typename T, typename U>
   constexpr Vec2<T> operator/(const Vec2<T> v, U scalar) {
-    return Vec2<T>(v.x / static_cast<T>(scalar), v.y / static_cast<T>(scalar));
+    return Vec2<T>(
+      v.x / static_cast<T>(scalar),
+      v.y / static_cast<T>(scalar)
+    );
   }
 
   template<typename T, typename U>
   constexpr Vec2<T> operator/(U scalar, const Vec2<T> v) {
-    return Vec2<T>(static_cast<T>(scalar) / v.x, static_cast<T>(scalar) / v.y);
+    return Vec2<T>(
+      static_cast<T>(scalar) / v.x,
+      static_cast<T>(scalar) / v.y
+    );
   }
 
   template<typename T>
   constexpr Vec2<T> operator/(const Vec2<T> v1, const Vec2<T> v2) {
-    return Vec2<T>(v1.x / v2.x, v1.y / v2.y);
+    return Vec2<T>(
+      v1.x / v2.x,
+      v1.y / v2.y
+    );
   }
 
   template<typename T, typename U>
@@ -257,7 +304,9 @@ namespace Graphick::Math {
   /* -- Address operator -- */
 
   template<typename T>
-  constexpr const T* operator&(const Vec2<T>& v) { return &(v.x); }
+  constexpr const T* operator&(const Vec2<T>& v) {
+    return &(v.x);
+  }
 
 }
 

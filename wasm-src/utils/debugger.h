@@ -31,16 +31,13 @@
 
 #include "../math/vec4.h"
 #include "../math/vec2.h"
+#include "../math/mat2x3.h"
 #include "../math/rect.h"
 
 #include "../lib/stb/stb_truetype.h"
 
 #include <vector>
 #include <string>
-
-namespace Graphick::Math {
-  struct mat2x3;
-}
 
 namespace Graphick::Renderer {
   struct Drawable;
@@ -59,12 +56,12 @@ namespace Graphick::Utils {
     static void clear();
     static void log(const std::string& text);
 
-    static void draw(const Renderer::Geometry::Contour& contour, const Math::mat2x3& transform, const vec4& color);
-    static void draw(const Renderer::Geometry::Contour& contour, const Math::mat2x3& transform);
+    static void draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform, const vec4& color);
+    static void draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform);
     static void draw(const Renderer::Geometry::Contour& contour);
 
-    static void draw(const Renderer::Drawable& drawable, const Math::mat2x3& transform, const vec4& color);
-    static void draw(const Renderer::Drawable& drawable, const Math::mat2x3& transform);
+    static void draw(const Renderer::Drawable& drawable, const mat2x3& transform, const vec4& color);
+    static void draw(const Renderer::Drawable& drawable, const mat2x3& transform);
     static void draw(const Renderer::Drawable& drawable);
 
     static void draw(const rect& rect);

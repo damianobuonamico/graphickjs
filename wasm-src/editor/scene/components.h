@@ -16,6 +16,8 @@
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
 
+#include <string>
+
 namespace Graphick::Editor {
 
   struct IDComponent {
@@ -81,7 +83,7 @@ namespace Graphick::Editor {
     rect approx_bounding_rect() const;
 
     inline vec2 transform(vec2 point) const { return m_matrix.get() * point; }
-    inline vec2 revert(vec2 point) const { return m_matrix.get() / point; }
+    inline vec2 revert(vec2 point) const { return inverse() * point; }
 
     inline void translate(vec2 delta) { m_matrix.translate(delta); }
     inline void scale(vec2 delta) { m_matrix.scale(delta); }

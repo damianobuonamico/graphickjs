@@ -4,6 +4,8 @@
 #include "debugger.h"
 
 #include "../math/vec2.h"
+#include "../math/vec3.h"
+#include "../math/vec4.h"
 
 #include <stdio.h>
 #include <sstream>
@@ -192,8 +194,20 @@ namespace Graphick::Utils {
 namespace std {
 
   template<typename T>
-  inline ostream& operator<<(ostream& os, const Graphick::Math::Vec2<T>& v) {
+  inline ostream& operator<<(ostream& os, const Graphick::Math::Vec2<T> v) {
     os << "(" << v.x << ", " << v.y << ")";
+    return os;
+  }
+
+  template<typename T>
+  inline ostream& operator<<(ostream& os, const Graphick::Math::Vec3<T>& v) {
+    os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << ")";
+    return os;
+  }
+
+  template<typename T>
+  inline ostream& operator<<(ostream& os, const Graphick::Math::Vec4<T>& v) {
+    os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
     return os;
   }
 

@@ -1,98 +1,355 @@
 /**
  * @file vec3.h
- * @brief This file contains the definition of the vec3 struct.
+ * @brief This file contains the Vec3 struct, a templated 3D vector.
  */
 
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 namespace Graphick::Math {
 
   /**
    * @brief A 3D vector struct with x, y and z components.
    *
-   * @struct vec3
+   * @struct Vec3<T>
    */
-  struct vec3 {
-    union { float x, r, s; };
-    union { float y, g, t; };
-    union { float z, b, p; };
+  template<typename T>
+  struct Vec3 {
+    union { T x, r, s; };    /* The 0 component of the vector. */
+    union { T y, g, t; };    /* The 1 component of the vector. */
+    union { T z, b, p; };    /* The 2 component of the vector. */
 
     /* -- Component accesses -- */
 
-    static constexpr uint8_t length() { return 3; }
-    constexpr float& operator[](uint8_t i);
-    constexpr const float& operator[](uint8_t i) const;
+    static constexpr uint8_t length() {
+      return 3;
+    }
+
+    constexpr T& operator[](uint8_t i) {
+      switch (i) {
+      default:
+      case 0:
+        return x;
+      case 1:
+        return y;
+      case 2:
+        return z;
+      }
+    }
+
+    constexpr T const& operator[](uint8_t i)  const {
+      switch (i) {
+      default:
+      case 0:
+        return x;
+      case 1:
+        return y;
+      case 2:
+        return z;
+      }
+    }
 
     /* -- Constructors -- */
 
-    vec3() = default;
-    constexpr vec3(const vec3& v) = default;
-    constexpr explicit vec3(float scalar);
-    constexpr vec3(float x, float y, float z);
+    Vec3() = default;
+
+    constexpr Vec3(const Vec3<T>& v) = default;
+
+    constexpr explicit Vec3(T scalar) :
+      x(scalar),
+      y(scalar),
+      z(scalar) {}
+
+    constexpr Vec3(T x, T y, T z) :
+      x(x),
+      y(y),
+      z(z) {}
+
+    template<typename U>
+    constexpr explicit Vec3(const Vec3<U>& v) :
+      x(static_cast<T>(v.x)),
+      y(static_cast<T>(v.y)),
+      z(static_cast<T>(v.z)) {}
 
     /* -- Assign operator -- */
 
-    constexpr vec3& operator=(const vec3& v);
+    constexpr Vec3<T>& operator=(const Vec3<T>& v) {
+      this->x = v.x;
+      this->y = v.y;
+      this->z = v.z;
+      return *this;
+    }
 
     /* -- Unary arithmetic operators -- */
 
-    constexpr vec3& operator+=(float scalar);
-    constexpr vec3& operator+=(const vec3& v);
-    constexpr vec3& operator-=(float scalar);
-    constexpr vec3& operator-=(const vec3& v);
-    constexpr vec3& operator*=(float scalar);
-    constexpr vec3& operator*=(const vec3& v);
-    constexpr vec3& operator/=(float scalar);
-    constexpr vec3& operator/=(const vec3& v);
+    template <typename U>
+    constexpr Vec3<T>& operator+=(U scalar) {
+      this->x += static_cast<T>(scalar);
+      this->y += static_cast<T>(scalar);
+      this->z += static_cast<T>(scalar);
+      return *this;
+    }
+
+    constexpr Vec3<T>& operator+=(const Vec3<T>& v) {
+      this->x += v.x;
+      this->y += v.y;
+      this->z += v.z;
+      return *this;
+    }
+
+    template <typename U>
+    constexpr Vec3<T>& operator-=(U scalar) {
+      this->x -= static_cast<T>(scalar);
+      this->y -= static_cast<T>(scalar);
+      this->z -= static_cast<T>(scalar);
+      return *this;
+    }
+
+    constexpr Vec3<T>& operator-=(const Vec3<T>& v) {
+      this->x -= v.x;
+      this->y -= v.y;
+      this->z -= v.z;
+      return *this;
+    }
+
+    template <typename U>
+    constexpr Vec3<T>& operator*=(U scalar) {
+      this->x *= static_cast<T>(scalar);
+      this->y *= static_cast<T>(scalar);
+      this->z *= static_cast<T>(scalar);
+      return *this;
+    }
+
+    constexpr Vec3<T>& operator*=(const Vec3<T>& v) {
+      this->x *= v.x;
+      this->y *= v.y;
+      this->z *= v.z;
+      return *this;
+    }
+
+    template <typename U>
+    constexpr Vec3<T>& operator/=(U scalar) {
+      this->x /= static_cast<T>(scalar);
+      this->y /= static_cast<T>(scalar);
+      this->z /= static_cast<T>(scalar);
+      return *this;
+    }
+
+    constexpr Vec3<T>& operator/=(const Vec3<T>& v) {
+      this->x /= v.x;
+      this->y /= v.y;
+      this->z /= v.z;
+      return *this;
+    }
 
     /* -- Increment/Decrement operators -- */
 
-    constexpr vec3& operator++();
-    constexpr vec3& operator--();
+    constexpr Vec3<T>& operator++() {
+      ++this->x;
+      ++this->y;
+      ++this->z;
+      return *this;
+    }
+
+    constexpr Vec3<T>& operator--() {
+      --this->x;
+      --this->y;
+      --this->z;
+      return *this;
+    }
   };
 
   /* -- Unary operators */
 
-  constexpr vec3 operator+(const vec3& v);
-  constexpr vec3 operator-(const vec3& v);
+  template<typename T>
+  constexpr Vec3<T> operator+(const Vec3<T>& v) {
+    return v;
+  }
+
+  template<typename T>
+  constexpr Vec3<T> operator-(const Vec3<T>& v) {
+    return Vec3<T>(
+      -v.x,
+      -v.y,
+      -v.z
+    );
+  }
 
   /* -- Binary operators -- */
 
-  constexpr vec3 operator+(const vec3& v, float scalar);
-  constexpr vec3 operator+(float scalar, const vec3& v);
-  constexpr vec3 operator+(const vec3& v1, const vec3& v2);
-  constexpr vec3 operator-(const vec3& v, float scalar);
-  constexpr vec3 operator-(float scalar, const vec3& v);
-  constexpr vec3 operator-(const vec3& v1, const vec3& v2);
-  constexpr vec3 operator*(const vec3& v, float scalar);
-  constexpr vec3 operator*(float scalar, const vec3& v);
-  constexpr vec3 operator*(const vec3& v1, const vec3& v2);
-  constexpr vec3 operator/(const vec3& v, float scalar);
-  constexpr vec3 operator/(float scalar, const vec3& v);
-  constexpr vec3 operator/(const vec3& v1, const vec3& v2);
-  constexpr vec3 operator%(const vec3& v, float scalar);
-  constexpr vec3 operator%(float scalar, const vec3& v);
-  constexpr vec3 operator%(const vec3& v1, const vec3& v2);
+  template<typename T, typename U>
+  constexpr Vec3<T> operator+(const Vec3<T>& v, U scalar) {
+    return Vec3<T>(
+      v.x + static_cast<T>(scalar),
+      v.y + static_cast<T>(scalar),
+      v.z + static_cast<T>(scalar)
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator+(U scalar, const Vec3<T>& v) {
+    return Vec3<T>(
+      static_cast<T>(scalar) + v.x,
+      static_cast<T>(scalar) + v.y,
+      static_cast<T>(scalar) + v.z
+    );
+  }
+
+  template<typename T>
+  constexpr Vec3<T> operator+(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>(
+      v1.x + v2.x,
+      v1.y + v2.y,
+      v1.z + v2.z
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator-(const Vec3<T>& v, U scalar) {
+    return Vec3<T>(
+      v.x - static_cast<T>(scalar),
+      v.y - static_cast<T>(scalar),
+      v.z - static_cast<T>(scalar)
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator-(U scalar, const Vec3<T>& v) {
+    return Vec3<T>(
+      static_cast<T>(scalar) - v.x,
+      static_cast<T>(scalar) - v.y,
+      static_cast<T>(scalar) - v.z
+    );
+  }
+
+  template<typename T>
+  constexpr Vec3<T> operator-(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>(
+      v1.x - v2.x,
+      v1.y - v2.y,
+      v1.z - v2.z
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator*(const Vec3<T>& v, U scalar) {
+    return Vec3<T>(
+      v.x * static_cast<T>(scalar),
+      v.y * static_cast<T>(scalar),
+      v.z * static_cast<T>(scalar)
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator*(U scalar, const Vec3<T>& v) {
+    return Vec3<T>(
+      static_cast<T>(scalar) * v.x,
+      static_cast<T>(scalar) * v.y,
+      static_cast<T>(scalar) * v.z
+    );
+  }
+
+  template<typename T>
+  constexpr Vec3<T> operator*(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>(
+      v1.x * v2.x,
+      v1.y * v2.y,
+      v1.z * v2.z
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator/(const Vec3<T>& v, U scalar) {
+    return Vec3<T>(
+      v.x / static_cast<T>(scalar),
+      v.y / static_cast<T>(scalar),
+      v.z / static_cast<T>(scalar)
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator/(U scalar, const Vec3<T>& v) {
+    return Vec3<T>(
+      static_cast<T>(scalar) / v.x,
+      static_cast<T>(scalar) / v.y,
+      static_cast<T>(scalar) / v.z
+    );
+  }
+
+  template<typename T>
+  constexpr Vec3<T> operator/(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>(
+      v1.x / v2.x,
+      v1.y / v2.y,
+      v1.z / v2.z
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator%(const Vec3<T>& v, U scalar) {
+    return Vec3<T>(
+      static_cast<T>(static_cast<int>(v.x) % static_cast<int>(scalar)),
+      static_cast<T>(static_cast<int>(v.y) % static_cast<int>(scalar)),
+      static_cast<T>(static_cast<int>(v.z) % static_cast<int>(scalar))
+    );
+  }
+
+  template<typename T, typename U>
+  constexpr Vec3<T> operator%(U scalar, const Vec3<T>& v) {
+    return Vec3<T>(
+      static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.x)),
+      static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.y)),
+      static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.z))
+    );
+  }
+
+  template<typename T>
+  constexpr Vec3<T> operator%(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>(
+      static_cast<T>(static_cast<int>(v1.x) % static_cast<int>(v2.x)),
+      static_cast<T>(static_cast<int>(v1.y) % static_cast<int>(v2.y)),
+      static_cast<T>(static_cast<int>(v1.z) % static_cast<int>(v2.z))
+    );
+  }
 
   /* -- Boolean operators -- */
 
-  constexpr bool operator==(const vec3& v1, const vec3& v2);
-  constexpr bool operator!=(const vec3& v1, const vec3& v2);
-  constexpr vec3 operator&&(const vec3& v1, const vec3& v2);
-  constexpr vec3 operator||(const vec3& v1, const vec3& v2);
+  template<typename T>
+  constexpr bool operator==(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
+  }
+
+  template<typename T>
+  constexpr bool operator!=(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return !(v1 == v2);
+  }
+
+  template<typename T>
+  constexpr Vec3<T> operator&&(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>(v1.x && v2.x, v1.y && v2.y, v1.z && v2.z);
+  }
+
+  template<typename T>
+  constexpr Vec3<T> operator||(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>(v1.x || v2.x, v1.y || v2.y, v1.z || v2.z);
+  }
 
   /* -- Address operator -- */
 
-  constexpr const float* operator&(const vec3& v);
+  template<typename T>
+  constexpr const T* operator&(const Vec3<T>& v) {
+    return &(v.x);
+  }
 
 }
 
 namespace Graphick {
 
-  using vec3 = Math::vec3;
+  using vec3 = Math::Vec3<float>;
+  using dvec3 = Math::Vec3<double>;
+  using ivec3 = Math::Vec3<int32_t>;
+  using uvec3 = Math::Vec3<uint32_t>;
 
 }
-
-#include "vec3.inl"

@@ -880,18 +880,18 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  bool PathDev::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const Math::mat2x3& transform, const float threshold, const double zoom) const {
+  bool PathDev::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom) const {
     GK_TOTAL("PathDev::is_point_inside_path");
 
     const Math::rect bounds = approx_bounding_rect();
     const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) && (stroke->width > threshold) : false;
 
-    if (!Math::is_point_in_rect(transform / point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
+    if (!Math::is_point_in_rect(inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
 
     const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
     const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
 
-    PathBuilder builder{ threshold_box, MAT2x3_TO_DMAT2x3(transform), GK_PATH_TOLERANCE / zoom };
+    PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
 
     if (fill) {
       Drawable drawable = builder.fill(*this, *fill);

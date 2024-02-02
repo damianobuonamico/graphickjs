@@ -1,90 +1,385 @@
+/**
+ * @file vec4.h
+ * @brief This file contains the Vec4 struct, a templated 4D vector.
+ */
+
 #pragma once
 
-#include <stdint.h>
-#include <ostream>
+#include <cstdint>
+#include <limits>
 
 namespace Graphick::Math {
 
-  struct vec4 {
-    union { float x, r, s; };
-    union { float y, g, t; };
-    union { float z, b, p; };
-    union { float w, a, q; };
+  /**
+   * @brief A 4D vector struct with x, y, z and w components.
+   *
+   * @struct Vec4
+   */
+  template<typename T>
+  struct Vec4 {
+    union { T x, r, s; };    /* The 0 component of the vector. */
+    union { T y, g, t; };    /* The 1 component of the vector. */
+    union { T z, b, p; };    /* The 2 component of the vector. */
+    union { T w, a, q; };    /* The 3 component of the vector. */
 
     /* -- Component accesses -- */
 
-    static constexpr uint8_t length() { return 4; }
-    constexpr float& operator[](uint8_t i);
-    constexpr const float& operator[](uint8_t i) const;
+    static constexpr uint8_t length() {
+      return 4;
+    }
+
+    constexpr T& operator[](uint8_t i) {
+      switch (i) {
+      default:
+      case 0:
+        return x;
+      case 1:
+        return y;
+      case 2:
+        return z;
+      case 3:
+        return w;
+      }
+    }
+
+    constexpr T const& operator[](uint8_t i) const {
+      switch (i) {
+      default:
+      case 0:
+        return x;
+      case 1:
+        return y;
+      case 2:
+        return z;
+      case 3:
+        return w;
+      }
+    }
 
     /* -- Constructors -- */
 
-    vec4() = default;
-    constexpr vec4(const vec4& v) = default;
-    constexpr explicit vec4(float scalar);
-    constexpr vec4(float x, float y, float z, float w);
+    Vec4() = default;
+
+    constexpr Vec4(const Vec4<T>& v) = default;
+
+    constexpr explicit Vec4(T scalar) :
+      x(scalar),
+      y(scalar),
+      z(scalar),
+      w(scalar) {}
+
+    constexpr Vec4(T x, T y, T z, T w) :
+      x(x),
+      y(y),
+      z(z),
+      w(w) {}
+
+    template<typename U>
+    constexpr explicit Vec4(const Vec4<U>& v) :
+      x(static_cast<T>(v.x)),
+      y(static_cast<T>(v.y)),
+      z(static_cast<T>(v.z)),
+      w(static_cast<T>(v.w)) {}
 
     /* -- Assign operator -- */
 
-    constexpr vec4& operator=(const vec4& v);
+    constexpr Vec4<T>& operator=(const Vec4<T>& v) {
+      this->x = v.x;
+      this->y = v.y;
+      this->z = v.z;
+      this->w = v.w;
+      return *this;
+    }
 
     /* -- Unary arithmetic operators -- */
 
-    constexpr vec4& operator+=(float scalar);
-    constexpr vec4& operator+=(const vec4& v);
-    constexpr vec4& operator-=(float scalar);
-    constexpr vec4& operator-=(const vec4& v);
-    constexpr vec4& operator*=(float scalar);
-    constexpr vec4& operator*=(const vec4& v);
-    constexpr vec4& operator/=(float scalar);
-    constexpr vec4& operator/=(const vec4& v);
+    template <typename U>
+    constexpr Vec4<T>& operator+=(U scalar) {
+      this->x += static_cast<T>(scalar);
+      this->y += static_cast<T>(scalar);
+      this->z += static_cast<T>(scalar);
+      this->w += static_cast<T>(scalar);
+      return *this;
+    }
+
+    constexpr Vec4<T>& operator+=(const Vec4<T>& v) {
+      this->x += v.x;
+      this->y += v.y;
+      this->z += v.z;
+      this->w += v.w;
+      return *this;
+    }
+
+    template <typename U>
+    constexpr Vec4<T>& operator-=(U scalar) {
+      this->x -= static_cast<T>(scalar);
+      this->y -= static_cast<T>(scalar);
+      this->z -= static_cast<T>(scalar);
+      this->w -= static_cast<T>(scalar);
+      return *this;
+    }
+
+    constexpr Vec4<T>& operator-=(const Vec4<T>& v) {
+      this->x -= v.x;
+      this->y -= v.y;
+      this->z -= v.z;
+      this->w -= v.w;
+      return *this;
+    }
+
+    template <typename U>
+    constexpr Vec4<T>& operator*=(U scalar) {
+      this->x *= static_cast<T>(scalar);
+      this->y *= static_cast<T>(scalar);
+      this->z *= static_cast<T>(scalar);
+      this->w *= static_cast<T>(scalar);
+      return *this;
+    }
+
+    constexpr Vec4<T>& operator*=(const Vec4<T>& v) {
+      this->x *= v.x;
+      this->y *= v.y;
+      this->z *= v.z;
+      this->w *= v.w;
+      return *this;
+    }
+
+    template <typename U>
+    constexpr Vec4<T>& operator/=(U scalar) {
+      this->x /= static_cast<T>(scalar);
+      this->y /= static_cast<T>(scalar);
+      this->z /= static_cast<T>(scalar);
+      this->w /= static_cast<T>(scalar);
+      return *this;
+    }
+
+    constexpr Vec4<T>& operator/=(const Vec4<T>& v) {
+      this->x /= v.x;
+      this->y /= v.y;
+      this->z /= v.z;
+      this->w /= v.w;
+      return *this;
+    }
 
     /* -- Increment/Decrement operators -- */
 
-    constexpr vec4& operator++();
-    constexpr vec4& operator--();
+    constexpr Vec4<T>& operator++() {
+      ++this->x;
+      ++this->y;
+      ++this->z;
+      ++this->w;
+      return *this;
+    }
+
+    constexpr Vec4<T>& operator--() {
+      --this->x;
+      --this->y;
+      --this->z;
+      --this->w;
+      return *this;
+    }
   };
 
   /* -- Unary operators */
 
-  constexpr vec4 operator+(const vec4& v);
-  constexpr vec4 operator-(const vec4& v);
+  template <typename T>
+  constexpr Vec4<T> operator+(const Vec4<T>& v) {
+    return v;
+  }
+
+  template <typename T>
+  constexpr Vec4<T> operator-(const Vec4<T>& v) {
+    return Vec4<T>(-v.x, -v.y, -v.z, -v.w);
+  }
 
   /* -- Binary operators -- */
 
-  constexpr vec4 operator+(const vec4& v, float scalar);
-  constexpr vec4 operator+(float scalar, const vec4& v);
-  constexpr vec4 operator+(const vec4& v1, const vec4& v2);
-  constexpr vec4 operator-(const vec4& v, float scalar);
-  constexpr vec4 operator-(float scalar, const vec4& v);
-  constexpr vec4 operator-(const vec4& v1, const vec4& v2);
-  constexpr vec4 operator*(const vec4& v, float scalar);
-  constexpr vec4 operator*(float scalar, const vec4& v);
-  constexpr vec4 operator*(const vec4& v1, const vec4& v2);
-  constexpr vec4 operator/(const vec4& v, float scalar);
-  constexpr vec4 operator/(float scalar, const vec4& v);
-  constexpr vec4 operator/(const vec4& v1, const vec4& v2);
-  constexpr vec4 operator%(const vec4& v, float scalar);
-  constexpr vec4 operator%(float scalar, const vec4& v);
-  constexpr vec4 operator%(const vec4& v1, const vec4& v2);
+  template <typename T, typename U>
+  constexpr Vec4<T> operator+(const Vec4<T>& v, U scalar) {
+    return Vec4<T>(
+      v.x + static_cast<T>(scalar),
+      v.y + static_cast<T>(scalar),
+      v.z + static_cast<T>(scalar),
+      v.w + static_cast<T>(scalar)
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator+(U scalar, const Vec4<T>& v) {
+    return Vec4<T>(
+      static_cast<T>(scalar) + v.x,
+      static_cast<T>(scalar) + v.y,
+      static_cast<T>(scalar) + v.z,
+      static_cast<T>(scalar) + v.w
+    );
+  }
+
+  template <typename T>
+  constexpr Vec4<T> operator+(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>(
+      v1.x + v2.x,
+      v1.y + v2.y,
+      v1.z + v2.z,
+      v1.w + v2.w
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator-(const Vec4<T>& v, U scalar) {
+    return Vec4<T>(
+      v.x - static_cast<T>(scalar),
+      v.y - static_cast<T>(scalar),
+      v.z - static_cast<T>(scalar),
+      v.w - static_cast<T>(scalar)
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator-(U scalar, const Vec4<T>& v) {
+    return Vec4<T>(
+      static_cast<T>(scalar) - v.x,
+      static_cast<T>(scalar) - v.y,
+      static_cast<T>(scalar) - v.z,
+      static_cast<T>(scalar) - v.w
+    );
+  }
+
+  template <typename T>
+  constexpr Vec4<T> operator-(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>(
+      v1.x - v2.x,
+      v1.y - v2.y,
+      v1.z - v2.z,
+      v1.w - v2.w
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator*(const Vec4<T>& v, U scalar) {
+    return Vec4<T>(
+      v.x * static_cast<T>(scalar),
+      v.y * static_cast<T>(scalar),
+      v.z * static_cast<T>(scalar),
+      v.w * static_cast<T>(scalar)
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator*(U scalar, const Vec4<T>& v) {
+    return Vec4<T>(
+      static_cast<T>(scalar) * v.x,
+      static_cast<T>(scalar) * v.y,
+      static_cast<T>(scalar) * v.z,
+      static_cast<T>(scalar) * v.w
+    );
+  }
+
+  template <typename T>
+  constexpr Vec4<T> operator*(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>(
+      v1.x * v2.x,
+      v1.y * v2.y,
+      v1.z * v2.z,
+      v1.w * v2.w
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator/(const Vec4<T>& v, U scalar) {
+    return Vec4<T>(
+      v.x / static_cast<T>(scalar),
+      v.y / static_cast<T>(scalar),
+      v.z / static_cast<T>(scalar),
+      v.w / static_cast<T>(scalar)
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator/(U scalar, const Vec4<T>& v) {
+    return Vec4<T>(
+      static_cast<T>(scalar) / v.x,
+      static_cast<T>(scalar) / v.y,
+      static_cast<T>(scalar) / v.z,
+      static_cast<T>(scalar) / v.w
+    );
+  }
+
+  template <typename T>
+  constexpr Vec4<T> operator/(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>(
+      v1.x / v2.x,
+      v1.y / v2.y,
+      v1.z / v2.z,
+      v1.w / v2.w
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator%(const Vec4<T>& v, U scalar) {
+    return Vec4<T>(
+      static_cast<T>(static_cast<int>(v.x) % static_cast<int>(scalar)),
+      static_cast<T>(static_cast<int>(v.y) % static_cast<int>(scalar)),
+      static_cast<T>(static_cast<int>(v.z) % static_cast<int>(scalar)),
+      static_cast<T>(static_cast<int>(v.w) % static_cast<int>(scalar))
+    );
+  }
+
+  template <typename T, typename U>
+  constexpr Vec4<T> operator%(U scalar, const Vec4<T>& v) {
+    return Vec4<T>(
+      static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.x)),
+      static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.y)),
+      static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.z)),
+      static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.w))
+    );
+  }
+
+  template <typename T>
+  constexpr Vec4<T> operator%(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>(
+      static_cast<T>(static_cast<int>(v1.x) % static_cast<int>(v2.x)),
+      static_cast<T>(static_cast<int>(v1.y) % static_cast<int>(v2.y)),
+      static_cast<T>(static_cast<int>(v1.z) % static_cast<int>(v2.z)),
+      static_cast<T>(static_cast<int>(v1.w) % static_cast<int>(v2.w))
+    );
+  }
 
   /* -- Boolean operators -- */
 
-  constexpr bool operator==(const vec4& v1, const vec4& v2);
-  constexpr bool operator!=(const vec4& v1, const vec4& v2);
-  constexpr vec4 operator&&(const vec4& v1, const vec4& v2);
-  constexpr vec4 operator||(const vec4& v1, const vec4& v2);
+  template <typename T>
+  constexpr bool operator==(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z && v1.w == v2.w;
+  }
+
+  template <typename T>
+  constexpr bool operator!=(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return !(v1 == v2);
+  }
+
+  template <typename T>
+  constexpr Vec4<T> operator&&(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>(v1.x && v2.x, v1.y && v2.y, v1.z && v2.z, v1.w && v2.w);
+  }
+
+  template <typename T>
+  constexpr Vec4<T> operator||(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>(v1.x || v2.x, v1.y || v2.y, v1.z || v2.z, v1.w || v2.w);
+  }
 
   /* -- Address operator -- */
 
-  constexpr const float* operator&(const vec4& v);
+  template <typename T>
+  constexpr const T* operator&(const Vec4<T>& v) {
+    return &(v.x);
+  }
 
 }
 
 namespace Graphick {
 
-  using vec4 = Math::vec4;
+  using vec4 = Math::Vec4<float>;
+  using dvec4 = Math::Vec4<double>;
+  using ivec4 = Math::Vec4<int32_t>;
+  using uvec4 = Math::Vec4<uint32_t>;
 
 }
-
-#include "vec4.inl"
