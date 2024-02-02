@@ -1,6 +1,6 @@
 /**
  * @file vector.h
- * @brief Contains mathods for vector manipulation. Supports vec2, vec3, vec4, ivec2.
+ * @brief Contains methods for vector manipulation.
  */
 
 #pragma once
@@ -14,78 +14,76 @@
 #include <vector>
 #include <cmath>
 
-#define XY(v) Graphick::vec2{ v.x, v.y }
-#define RG(v) Graphick::vec2{ v.r, v.g }
-#define ST(v) Graphick::vec2{ v.s, v.t }
+#define XY(v) Graphick::Vec2{ v.x, v.y }
+#define RG(v) Graphick::Vec2{ v.r, v.g }
+#define ST(v) Graphick::Vec2{ v.s, v.t }
 
-#define XYZ(v) Graphick::Math::vec3{ v.x, v.y, v.z }
-#define RGB(v) Graphick::Math::vec3{ v.r, v.g, v.b }
-#define STP(v) Graphick::Math::vec3{ v.s, v.t, v.p }
-
-#define IVEC2_TO_VEC2(v) Graphick::vec2{ static_cast<float>(v.x), static_cast<float>(v.y) }
-#define DVEC2_TO_VEC2(v) Graphick::vec2{ static_cast<float>(v.x), static_cast<float>(v.y) }
-
-#define VEC2_TO_IVEC2(v) Graphick::ivec2{ static_cast<int>(v.x), static_cast<int>(v.y) }
-#define VEC2_TO_DVEC2(v) Graphick::dvec2{ static_cast<double>(v.x), static_cast<double>(v.y) }
+#define XYZ(v) Graphick::Math::Vec3<T>{ v.x, v.y, v.z }
+#define RGB(v) Graphick::Math::Vec3<T>{ v.r, v.g, v.b }
+#define STP(v) Graphick::Math::Vec3<T>{ v.s, v.t, v.p }
 
 namespace Graphick::Math {
 
   /* -- min -- */
 
   /**
-   * @brief Calculates the minimum of two vec2.
+   * @brief Calculates the minimum of two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The minimum of the two vectors.
    */
-  constexpr vec2 min(const vec2 v1, const vec2 v2) {
-    return vec2{
+  template<typename T>
+  constexpr Vec2<T> min(const Vec2<T> v1, const Vec2<T> v2) {
+    return Vec2<T>{
       std::min(v1.x, v2.x),
         std::min(v1.y, v2.y)
     };
   }
 
   /**
-   * @brief Calculates the minimum of two vec3.
+   * @brief Calculates the minimum of two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The minimum of the two vectors.
    */
-  constexpr vec3 min(const vec3& v1, const vec3& v2) {
-    return vec3{
+  template<typename T>
+  constexpr Vec3<T> min(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>{
       std::min(v1.x, v2.x),
-      std::min(v1.y, v2.y),
-      std::min(v1.z, v2.z)
+        std::min(v1.y, v2.y),
+        std::min(v1.z, v2.z)
     };
   }
 
   /**
-   * @brief Calculates the minimum of two vec4.
+   * @brief Calculates the minimum of two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The minimum of the two vectors.
    */
-  constexpr vec4 min(const vec4& v1, const vec4& v2) {
-    return vec4{
+  template<typename T>
+  constexpr Vec4<T> min(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>{
       std::min(v1.x, v2.x),
-      std::min(v1.y, v2.y),
-      std::min(v1.z, v2.z),
-      std::min(v1.w, v2.w),
+        std::min(v1.y, v2.y),
+        std::min(v1.z, v2.z),
+        std::min(v1.w, v2.w),
     };
   }
 
   /**
-   * @brief Calculates the minimum of two vec2.
+   * @brief Calculates the minimum of two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  constexpr vec2& min(const vec2 v1, const vec2 v2, vec2& out) {
+  template<typename T>
+  constexpr Vec2<T>& min(const Vec2<T> v1, const Vec2<T> v2, Vec2<T>& out) {
     out.x = std::min(v1.x, v2.x);
     out.y = std::min(v1.y, v2.y);
 
@@ -93,14 +91,15 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Calculates the minimum of two vec3.
+   * @brief Calculates the minimum of two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  constexpr vec3& min(const vec3& v1, const vec3& v2, vec3& out) {
+  template<typename T>
+  constexpr Vec3<T>& min(const Vec3<T>& v1, const Vec3<T>& v2, Vec3<T>& out) {
     out.x = std::min(v1.x, v2.x);
     out.y = std::min(v1.y, v2.y);
     out.z = std::min(v1.z, v2.z);
@@ -109,14 +108,15 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Calculates the minimum of two vec4.
+   * @brief Calculates the minimum of two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  constexpr vec4& min(const vec4& v1, const vec4& v2, vec4& out) {
+  template<typename T>
+  constexpr Vec4<T>& min(const Vec4<T>& v1, const Vec4<T>& v2, Vec4<T>& out) {
     out.x = std::min(v1.x, v2.x);
     out.y = std::min(v1.y, v2.y);
     out.z = std::min(v1.z, v2.z);
@@ -128,59 +128,63 @@ namespace Graphick::Math {
   /* -- max -- */
 
   /**
-   * @brief Calculates the maximum of two vec2.
+   * @brief Calculates the maximum of two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The maximum of the two vectors.
    */
-  constexpr vec2 max(const vec2 v1, const vec2 v2) {
-    return vec2{
+  template<typename T>
+  constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2) {
+    return Vec2<T>{
       std::max(v1.x, v2.x),
         std::max(v1.y, v2.y)
     };
   }
 
   /**
-   * @brief Calculates the maximum of two vec3.
+   * @brief Calculates the maximum of two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The maximum of the two vectors.
    */
-  constexpr vec3 max(const vec3& v1, const vec3& v2) {
-    return vec3{
+  template<typename T>
+  constexpr Vec3<T> max(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>{
       std::max(v1.x, v2.x),
-      std::max(v1.y, v2.y),
-      std::max(v1.z, v2.z)
+        std::max(v1.y, v2.y),
+        std::max(v1.z, v2.z)
     };
   }
 
   /**
-   * @brief Calculates the maximum of two vec4.
+   * @brief Calculates the maximum of two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The maximum of the two vectors.
    */
-  constexpr vec4 max(const vec4& v1, const vec4& v2) {
-    return vec4{
+  template<typename T>
+  constexpr Vec4<T> max(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>{
       std::max(v1.x, v2.x),
-      std::max(v1.y, v2.y),
-      std::max(v1.z, v2.z),
-      std::max(v1.w, v2.w)
+        std::max(v1.y, v2.y),
+        std::max(v1.z, v2.z),
+        std::max(v1.w, v2.w)
     };
   }
 
   /**
-   * @brief Calculates the maximum of two vec2.
+   * @brief Calculates the maximum of two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  constexpr vec2 max(const vec2 v1, const vec2 v2, vec2& out) {
+  template<typename T>
+  constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2, Vec2<T>& out) {
     out.x = std::max(v1.x, v2.x);
     out.y = std::max(v1.y, v2.y);
 
@@ -188,14 +192,15 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Calculates the maximum of two vec3.
+   * @brief Calculates the maximum of two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  constexpr vec3 max(const vec3& v1, const vec3& v2, vec3& out) {
+  template<typename T>
+  constexpr Vec3<T> max(const Vec3<T>& v1, const Vec3<T>& v2, Vec3<T>& out) {
     out.x = std::max(v1.x, v2.x);
     out.y = std::max(v1.y, v2.y);
     out.z = std::max(v1.z, v2.z);
@@ -204,14 +209,15 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Calculates the maximum of two vec4.
+   * @brief Calculates the maximum of two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  constexpr vec4 max(const vec4& v1, const vec4& v2, vec4& out) {
+  template<typename T>
+  constexpr Vec4<T> max(const Vec4<T>& v1, const Vec4<T>& v2, Vec4<T>& out) {
     out.x = std::max(v1.x, v2.x);
     out.y = std::max(v1.y, v2.y);
     out.z = std::max(v1.z, v2.z);
@@ -223,102 +229,99 @@ namespace Graphick::Math {
   /* -- length -- */
 
   /**
-   * @brief Calculates the length or magnitude of a vec2.
+   * @brief Calculates the length or magnitude of a Vec2.
    *
    * @param v The vector.
    * @return The length of the vector.
    */
-  inline float length(const vec2 v) {
+  template<typename T>
+  inline T length(const Vec2<T> v) {
     return std::hypot(v.x, v.y);
   }
 
   /**
-   * @brief Calculates the length or magnitude of a vec3.
+   * @brief Calculates the length or magnitude of a Vec3.
    *
    * @param v The vector.
    * @return The length of the vector.
    */
-  inline float length(const vec3& v) {
+  template<typename T>
+  inline T length(const Vec3<T>& v) {
     return std::hypot(v.x, v.y, v.z);
   }
 
   /**
-   * @brief Calculates the length or magnitude of a vec4.
+   * @brief Calculates the length or magnitude of a Vec4.
    *
    * @param v The vector.
    * @return The length of the vector.
    */
-  inline float length(const vec4& v) {
+  template<typename T>
+  inline T length(const Vec4<T>& v) {
     return std::sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
   }
 
   /* -- dot -- */
 
   /**
-   * @brief Computes the dot product of two vec2s.
+   * @brief Computes the dot product of two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The dot product of the two vectors.
    */
-  constexpr float dot(const vec2 v1, const vec2 v2) {
+  template<typename T>
+  constexpr T dot(const Vec2<T> v1, const Vec2<T> v2) {
     return v1.x * v2.x + v1.y * v2.y;
   }
 
   /**
-   * @brief Computes the dot product of two dvec2s.
+   * @brief Computes the dot product of two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The dot product of the two vectors.
    */
-  constexpr double dot(const dvec2 v1, const dvec2 v2) {
-    return v1.x * v2.x + v1.y * v2.y;
-  }
-
-  /**
-   * @brief Computes the dot product of two vec3s.
-   *
-   * @param v1 The first vector.
-   * @param v2 The second vector.
-   * @return The dot product of the two vectors.
-   */
-  constexpr float dot(const vec3& v1, const vec3& v2) {
+  template<typename T>
+  constexpr T dot(const Vec3<T>& v1, const Vec3<T>& v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
   }
 
   /**
-   * @brief Computes the dot product of two vec4s.
+   * @brief Computes the dot product of two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The dot product of the two vectors.
    */
-  constexpr float dot(const vec4& v1, const vec4& v2) {
+  template<typename T>
+  constexpr T dot(const Vec4<T>& v1, const Vec4<T>& v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
   }
 
   /* -- cross -- */
 
   /**
-   * @brief Computes the cross product of two vec2s.
+   * @brief Computes the cross product of two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The cross product as a scalar value.
    */
-  constexpr float cross(const vec2 v1, const vec2 v2) {
+  template<typename T>
+  constexpr T cross(const Vec2<T> v1, const Vec2<T> v2) {
     return v1.x * v2.y - v2.x * v1.y;
   }
 
   /**
-   * @brief Computes the cross product of two vec3s.
+   * @brief Computes the cross product of two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
-   * @return The cross product as a vec3.
+   * @return The cross product as a Vec3.
    */
-  constexpr vec3 cross(const vec3& v1, const vec3& v2) {
+  template<typename T>
+  constexpr Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2) {
     return {
       v1.y * v2.z - v1.z * v2.y,
       -(v1.x * v2.z - v1.z * v2.x),
@@ -329,199 +332,185 @@ namespace Graphick::Math {
   /* -- squared_length -- */
 
   /**
-   * @brief Calculates the squared length or magnitude of a vec2.
+   * @brief Calculates the squared length or magnitude of a Vec2.
    *
    * @param v The vector.
    * @return The squared length of the vector.
    */
-  constexpr float squared_length(const vec2 v) {
+  template<typename T>
+  constexpr T squared_length(const Vec2<T> v) {
     return v.x * v.x + v.y * v.y;
   }
 
   /**
-   * @brief Calculates the squared length or magnitude of a vec3.
+   * @brief Calculates the squared length or magnitude of a Vec3.
    *
    * @param v The vector.
    * @return The squared length of the vector.
    */
-  constexpr float squared_length(const vec3& v) {
+  template<typename T>
+  constexpr T squared_length(const Vec3<T>& v) {
     return v.x * v.x + v.y * v.y + v.z * v.z;
   }
 
   /**
-   * @brief Calculates the squared length or magnitude of a vec4.
+   * @brief Calculates the squared length or magnitude of a Vec4.
    *
    * @param v The vector.
    * @return The squared length of the vector.
    */
-  constexpr float squared_length(const vec4& v) {
+  template<typename T>
+  constexpr T squared_length(const Vec4<T>& v) {
     return v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
   }
 
   /* -- distance -- */
 
   /**
-   * @brief Calculates the distance between two vec2.
+   * @brief Calculates the distance between two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The distance between the two vectors.
    */
-  inline float distance(const vec2 v1, const vec2 v2) {
+  template<typename T>
+  inline T distance(const Vec2<T> v1, const Vec2<T> v2) {
     return std::hypot(v2.x - v1.x, v2.y - v1.y);
   }
 
   /**
-   * @brief Calculates the distance between two vec3.
+   * @brief Calculates the distance between two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The distance between the two vectors.
    */
-  inline float distance(const vec3& v1, const vec3& v2) {
+  template<typename T>
+  inline T distance(const Vec3<T>& v1, const Vec3<T>& v2) {
     return std::hypot(v2.x - v1.x, v2.y - v1.y, v2.z - v1.z);
   }
 
   /**
-   * @brief Calculates the distance between two vec4.
+   * @brief Calculates the distance between two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The distance between the two vectors.
    */
-  inline float distance(const vec4& v1, const vec4& v2) {
+  template<typename T>
+  inline T distance(const Vec4<T>& v1, const Vec4<T>& v2) {
     return length(v2 - v1);
   }
 
   /* -- squared_distance -- */
 
   /**
-   * @brief Calculates the squared distance between two vec2.
+   * @brief Calculates the squared distance between two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The squared distance between the two vectors.
    */
-  constexpr float squared_distance(const vec2 v1, const vec2 v2) {
-    vec2 v = v2 - v1;
+  template<typename T>
+  constexpr T squared_distance(const Vec2<T> v1, const Vec2<T> v2) {
+    Vec2<T> v = v2 - v1;
     return dot(v, v);
   }
 
   /**
-   * @brief Calculates the squared distance between two dvec2.
+   * @brief Calculates the squared distance between two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The squared distance between the two vectors.
    */
-  constexpr double squared_distance(const dvec2 v1, const dvec2 v2) {
-    dvec2 v = v2 - v1;
+  template<typename T>
+  constexpr T squared_distance(const Vec3<T>& v1, const Vec3<T>& v2) {
+    Vec3<T> v = v2 - v1;
     return dot(v, v);
   }
 
   /**
-   * @brief Calculates the squared distance between two vec3.
+   * @brief Calculates the squared distance between two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The squared distance between the two vectors.
    */
-  constexpr float squared_distance(const vec3& v1, const vec3& v2) {
-    vec3 v = v2 - v1;
-    return dot(v, v);
-  }
-
-  /**
-   * @brief Calculates the squared distance between two vec4.
-   *
-   * @param v1 The first vector.
-   * @param v2 The second vector.
-   * @return The squared distance between the two vectors.
-   */
-  constexpr float squared_distance(const vec4& v1, const vec4& v2) {
-    vec4 v = v2 - v1;
+  template<typename T>
+  constexpr T squared_distance(const Vec4<T>& v1, const Vec4<T>& v2) {
+    Vec4<T> v = v2 - v1;
     return dot(v, v);
   }
 
   /* -- lerp -- */
 
   /**
-   * @brief Linearly interpolates between two vec2.
+   * @brief Linearly interpolates between two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param t The interpolation factor.
    * @return The interpolated vector.
    */
-  constexpr vec2 lerp(const vec2 v1, const vec2 v2, float t) {
-    return vec2{
+  template<typename T>
+  constexpr Vec2<T> lerp(const Vec2<T> v1, const Vec2<T> v2, T t) {
+    return Vec2<T>{
       v1.x + t * (v2.x - v1.x),
         v1.y + t * (v2.y - v1.y)
     };
   }
 
   /**
-   * @brief Linearly interpolates between two dvec2.
+   * @brief Linearly interpolates between two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param t The interpolation factor.
    * @return The interpolated vector.
    */
-  constexpr dvec2 lerp(const dvec2 v1, const dvec2 v2, double t) {
-    return dvec2{
+  template<typename T>
+  constexpr Vec3<T> lerp(const Vec3<T>& v1, const Vec3<T>& v2, T t) {
+    return Vec3<T>{
       v1.x + t * (v2.x - v1.x),
-        v1.y + t * (v2.y - v1.y)
+        v1.y + t * (v2.y - v1.y),
+        v1.z + t * (v2.z - v1.z)
     };
   }
 
   /**
-   * @brief Linearly interpolates between two vec3.
+   * @brief Linearly interpolates between two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param t The interpolation factor.
    * @return The interpolated vector.
    */
-  constexpr vec3 lerp(const vec3& v1, const vec3& v2, float t) {
-    return vec3{
+  template<typename T>
+  constexpr Vec4<T> lerp(const Vec4<T>& v1, const Vec4<T>& v2, T t) {
+    return Vec4<T>{
       v1.x + t * (v2.x - v1.x),
-      v1.y + t * (v2.y - v1.y),
-      v1.z + t * (v2.z - v1.z)
-    };
-  }
-
-  /**
-   * @brief Linearly interpolates between two vec4.
-   *
-   * @param v1 The first vector.
-   * @param v2 The second vector.
-   * @param t The interpolation factor.
-   * @return The interpolated vector.
-   */
-  constexpr vec4 lerp(const vec4& v1, const vec4& v2, float t) {
-    return vec4{
-      v1.x + t * (v2.x - v1.x),
-      v1.y + t * (v2.y - v1.y),
-      v1.z + t * (v2.z - v1.z),
-      v1.w + t * (v2.w - v1.w)
+        v1.y + t * (v2.y - v1.y),
+        v1.z + t * (v2.z - v1.z),
+        v1.w + t * (v2.w - v1.w)
     };
   }
 
   /* -- quadratic -- */
 
   /**
-   * @brief Quadratic bezier interpolation between three vec2.
+   * @brief Quadratic bezier interpolation between three Vec2s.
    *
    * @param v1 p0.
    * @param v2 p1.
    * @param v3 p3.
    * @param t The interpolation factor.
    */
-  constexpr vec2 quadratic(const vec2 v1, const vec2 v2, const vec2 v3, float t) {
-    vec2 a = v1 - 2.0f * v2 + v3;
-    vec2 b = 2.0f * (v2 - v1);
-    vec2 c = v1;
+  template<typename T>
+  constexpr Vec2<T> quadratic(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, T t) {
+    Vec2<T> a = v1 - 2 * v2 + v3;
+    Vec2<T> b = 2 * (v2 - v1);
+    Vec2<T> c = v1;
 
     return a * t * t + b * t + c;
   }
@@ -534,14 +523,15 @@ namespace Graphick::Math {
    * @param v3 p3.
    * @param t The interpolation factor.
   */
-  constexpr vec2 quadratic_derivative(const vec2 v1, const vec2 v2, const vec2 v3, float t) {
-    return 2.0f * (v1 - 2.0f * v2 + v3) * t + 2.0f * (v2 - v1);
+  template<typename T>
+  constexpr Vec2<T> quadratic_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, T t) {
+    return 2 * (v1 - 2 * v2 + v3) * t + 2 * (v2 - v1);
   }
 
   /* -- bezier -- */
 
   /**
-   * @brief Cubic bezier interpolation between four vec2.
+   * @brief Cubic bezier interpolation between four Vec2s.
    *
    * @param v1 p0.
    * @param v2 p1.
@@ -549,12 +539,13 @@ namespace Graphick::Math {
    * @param v4 p3.
    * @param t The interpolation factor.
    */
-  constexpr vec2 bezier(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4, float t) {
-    vec2 a = -v1 + 3.0f * v2 - 3.0f * v3 + v4;
-    vec2 b = 3.0f * v1 - 6.0f * v2 + 3.0f * v3;
-    vec2 c = -3.0f * v1 + 3.0f * v2;
+  template<typename T>
+  constexpr Vec2<T> bezier(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
+    Vec2<T> a = -v1 + 3 * v2 - 3 * v3 + v4;
+    Vec2<T> b = 3 * v1 - 6 * v2 + 3 * v3;
+    Vec2<T> c = -3 * v1 + 3 * v2;
 
-    float t_sq = t * t;
+    T t_sq = t * t;
 
     return a * t_sq * t + b * t_sq + c * t + v1;
   }
@@ -568,10 +559,11 @@ namespace Graphick::Math {
    * @param v4 p3.
    * @param t The interpolation factor.
    */
-  constexpr vec2 bezier_derivative(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4, float t) {
-    vec2 a = 3.0f * (-v1 + 3.0f * v2 - 3.0f * v3 + v4);
-    vec2 b = 6.0f * (v1 - 2.0f * v2 + v3);
-    vec2 c = -3.0f * (v1 - v2);
+  template<typename T>
+  constexpr Vec2<T> bezier_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
+    Vec2<T> a = 3 * (-v1 + 3 * v2 - 3 * v3 + v4);
+    Vec2<T> b = 6 * (v1 - 2 * v2 + v3);
+    Vec2<T> c = -3 * (v1 - v2);
 
     return a * t * t + b * t + c;
   }
@@ -585,9 +577,10 @@ namespace Graphick::Math {
    * @param v4 p3.
    * @param t The interpolation factor.
   */
-  constexpr vec2 bezier_second_derivative(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4, float t) {
-    vec2 a = 6.0f * (-v1 + 3.0f * v2 - 3.0f * v3 + v4);
-    vec2 b = 6.0f * (v1 - 2.0f * v2 + v3);
+  template<typename T>
+  constexpr Vec2<T> bezier_second_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
+    Vec2<T> a = 6 * (-v1 + 3 * v2 - 3 * v3 + v4);
+    Vec2<T> b = 6 * (v1 - 2 * v2 + v3);
 
     return a * t + b;
   }
@@ -606,128 +599,119 @@ namespace Graphick::Math {
   /* -- midpoint -- */
 
   /**
-   * @brief Calculates the midpoint between two vec2s.
+   * @brief Calculates the midpoint between two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The midpoint between v1 and v2.
    */
-  constexpr vec2 midpoint(const vec2 v1, const vec2 v2) {
-    return vec2{
+  template<typename T>
+  constexpr Vec2<T> midpoint(const Vec2<T> v1, const Vec2<T> v2) {
+    return Vec2<T>{
       (v1.x + v2.x) * 0.5f,
         (v1.y + v2.y) * 0.5f
     };
   }
 
   /**
-   * @brief Calculates the midpoint between two vec3s.
+   * @brief Calculates the midpoint between two Vec3s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The midpoint between v1 and v2.
    */
-  constexpr vec3 midpoint(const vec3& v1, const vec3& v2) {
-    return vec3{
+  template<typename T>
+  constexpr Vec3<T> midpoint(const Vec3<T>& v1, const Vec3<T>& v2) {
+    return Vec3<T>{
       (v1.x + v2.x) * 0.5f,
-      (v1.y + v2.y) * 0.5f,
-      (v1.z + v2.z) * 0.5f
+        (v1.y + v2.y) * 0.5f,
+        (v1.z + v2.z) * 0.5f
     };
   }
 
   /**
-   * @brief Calculates the midpoint between two vec4s.
+   * @brief Calculates the midpoint between two Vec4s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The midpoint between v1 and v2.
    */
-  constexpr vec4 midpoint(const vec4& v1, const vec4& v2) {
-    return vec4{
+  template<typename T>
+  constexpr Vec4<T> midpoint(const Vec4<T>& v1, const Vec4<T>& v2) {
+    return Vec4<T>{
       (v1.x + v2.x) * 0.5f,
-      (v1.y + v2.y) * 0.5f,
-      (v1.z + v2.z) * 0.5f,
-      (v1.w + v2.w) * 0.5f
+        (v1.y + v2.y) * 0.5f,
+        (v1.z + v2.z) * 0.5f,
+        (v1.w + v2.w) * 0.5f
     };
   }
 
   /* -- normalize -- */
 
   /**
-   * @brief Normalizes a vec2 to have a length of 1.
+   * @brief Normalizes a Vec2 to have a length of 1.
    *
    * @param v The vector to normalize.
-   * @return The normalized vec2.
+   * @return The normalized Vec2.
    */
-  constexpr vec2 normalize(const vec2 v) {
-    float len = v.x * v.x + v.y * v.y;
+  template<typename T>
+  constexpr Vec2<T> normalize(const Vec2<T> v) {
+    T len = v.x * v.x + v.y * v.y;
     if (len > 0) len = 1 / std::sqrtf(len);
 
-    return vec2{
-      v.x * len,
-        v.y * len,
+    return Vec2<T>{
+      v.x* len,
+        v.y* len,
     };
   }
 
   /**
-   * @brief Normalizes a dvec2 to have a length of 1.
+   * @brief Normalizes a Vec3<T> to have a length of 1.
    *
    * @param v The vector to normalize.
-   * @return The normalized dvec2.
+   * @return The normalized Vec3.
    */
-  constexpr dvec2 normalize(const dvec2 v) {
-    double len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrt(len);
-
-    return dvec2{
-      v.x * len,
-        v.y * len,
-    };
-  }
-
-  /**
-   * @brief Normalizes a vec3 to have a length of 1.
-   *
-   * @param v The vector to normalize.
-   * @return The normalized vec3.
-   */
-  constexpr vec3 normalize(const vec3& v) {
-    float len = v.x * v.x + v.y * v.y + v.z * v.z;
+  template<typename T>
+  constexpr Vec3<T> normalize(const Vec3<T>& v) {
+    T len = v.x * v.x + v.y * v.y + v.z * v.z;
     if (len > 0) len = 1 / std::sqrtf(len);
 
-    return vec3{
-      v.x * len,
-      v.y * len,
-      v.z * len,
+    return Vec3<T>{
+      v.x* len,
+        v.y* len,
+        v.z* len,
     };
   }
 
   /**
-   * @brief Normalizes a vec4 to have a length of 1.
+   * @brief Normalizes a Vec4<T> to have a length of 1.
    *
    * @param v The vector to normalize.
-   * @return The normalized vec4.
+   * @return The normalized Vec4.
    */
-  constexpr vec4 normalize(const vec4& v) {
-    float len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+  template<typename T>
+  constexpr Vec4<T> normalize(const Vec4<T>& v) {
+    T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
     if (len > 0) len = 1 / std::sqrtf(len);
 
-    return vec4{
-      v.x * len,
-      v.y * len,
-      v.z * len,
-      v.w * len,
+    return Vec4<T>{
+      v.x* len,
+        v.y* len,
+        v.z* len,
+        v.w* len,
     };
   }
 
   /**
-   * @brief Normalizes a vec2 to have a length of 1.
+   * @brief Normalizes a Vec2 to have a length of 1.
    *
    * @param v The vector to normalize.
    * @param out The normalized vector (output).
-   * @return The normalized vec2.
+   * @return The normalized Vec2.
    */
-  constexpr vec2& normalize(const vec2 v, vec2& out) {
-    float len = v.x * v.x + v.y * v.y;
+  template<typename T>
+  constexpr Vec2<T>& normalize(const Vec2<T> v, Vec2<T>& out) {
+    T len = v.x * v.x + v.y * v.y;
     if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len;
@@ -737,14 +721,15 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Normalizes a vec3 to have a length of 1.
+   * @brief Normalizes a Vec3<T> to have a length of 1.
    *
    * @param v The vector to normalize.
    * @param out The normalized vector (output).
-   * @return The normalized vec3.
+   * @return The normalized Vec3.
    */
-  constexpr vec3& normalize(const vec3& v, vec3& out) {
-    float len = v.x * v.x + v.y * v.y + v.z * v.z;
+  template<typename T>
+  constexpr Vec3<T>& normalize(const Vec3<T>& v, Vec3<T>& out) {
+    T len = v.x * v.x + v.y * v.y + v.z * v.z;
     if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len;
@@ -755,14 +740,15 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Normalizes a vec4 to have a length of 1.
+   * @brief Normalizes a Vec4<T> to have a length of 1.
    *
    * @param v The vector to normalize.
    * @param out The normalized vector (output).
-   * @return The normalized vec4.
+   * @return The normalized Vec4.
    */
-  constexpr vec4& normalize(const vec4& v, vec4& out) {
-    float len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+  template<typename T>
+  constexpr Vec4<T>& normalize(const Vec4<T>& v, Vec4<T>& out) {
+    T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
     if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len;
@@ -776,69 +762,73 @@ namespace Graphick::Math {
   /* -- normalize_length -- */
 
   /**
-   * @brief Normalizes a vec2 and scales it by a given length.
+   * @brief Normalizes a Vec2 and scales it by a given length.
    *
    * @param v The vector to normalize and scale.
    * @param t The scaling factor.
-   * @return The normalized and scaled vec2.
+   * @return The normalized and scaled Vec2.
    */
-  constexpr vec2 normalize_length(const vec2 v, float t) {
-    float len = v.x * v.x + v.y * v.y;
+  template<typename T>
+  constexpr Vec2<T> normalize_length(const Vec2<T> v, T t) {
+    T len = v.x * v.x + v.y * v.y;
     if (len > 0) len = 1 / std::sqrtf(len);
 
-    return vec2{
-      v.x * len * t,
-        v.y * len * t,
+    return Vec2<T>{
+      v.x* len* t,
+        v.y* len* t,
     };
   }
 
   /**
-   * @brief Normalizes a vec3 and scales it by a given length.
+   * @brief Normalizes a Vec3<T> and scales it by a given length.
    *
    * @param v The vector to normalize and scale.
    * @param t The scaling factor.
-   * @return The normalized and scaled vec3.
+   * @return The normalized and scaled Vec3.
    */
-  constexpr vec3 normalize_length(const vec3& v, float t) {
-    float len = v.x * v.x + v.y * v.y + v.z * v.z;
+  template<typename T>
+  constexpr Vec3<T> normalize_length(const Vec3<T>& v, T t) {
+    T len = v.x * v.x + v.y * v.y + v.z * v.z;
     if (len > 0) len = 1 / std::sqrtf(len);
 
-    return vec3{
-      v.x * len * t,
-      v.y * len * t,
-      v.z * len * t,
+    return Vec3<T>{
+      v.x* len* t,
+        v.y* len* t,
+        v.z* len* t,
     };
   }
 
   /**
-   * @brief Normalizes a vec4 and scales it by a given length.
+   * @brief Normalizes a Vec4<T> and scales it by a given length.
    *
    * @param v The vector to normalize and scale.
    * @param t The scaling factor.
-   * @return The normalized and scaled vec4.
+   * @return The normalized and scaled Vec4.
    */
-  constexpr vec4 normalize_length(const vec4& v, float t) {
-    float len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+  template<typename T>
+  constexpr Vec4<T> normalize_length(const Vec4<T>& v, T t) {
+    T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
     if (len > 0) len = 1 / std::sqrtf(len);
 
-    return vec4{
-      v.x * len * t,
-      v.y * len * t,
-      v.z * len * t,
-      v.w * len * t,
+    return Vec4<T>{
+      v.x* len* t,
+        v.y* len* t,
+        v.z* len* t,
+        v.w* len* t,
     };
   }
 
   /**
-   * @brief Normalizes a vec2 and scales it by a given length.
+   * @brief Normalizes a Vec2 and scales it by a given length.
    *
    * @param v The vector to normalize and scale.
    * @param t The scaling factor.
    * @param out The normalized and scaled vector (output).
-   * @return The normalized and scaled vec2.
+   * @return The normalized and scaled Vec2.
    */
-  constexpr vec2& normalize_length(const vec2 v, float t, vec2& out) {
-    float len = v.x * v.x + v.y * v.y;
+  template<typename T>
+  constexpr Vec2<T>& normalize_length(const Vec2<T> v, T t, Vec2<T>& out) {
+    T len = v.x * v.x + v.y * v.y;
     if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len * t;
@@ -848,15 +838,16 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Normalizes a vec3 and scales it by a given length.
+   * @brief Normalizes a Vec3<T> and scales it by a given length.
    *
    * @param v The vector to normalize and scale.
    * @param t The scaling factor.
    * @param out The normalized and scaled vector (output).
-   * @return The normalized and scaled vec3.
+   * @return The normalized and scaled Vec3.
    */
-  constexpr vec3& normalize_length(const vec3& v, float t, vec3& out) {
-    float len = v.x * v.x + v.y * v.y + v.z * v.z;
+  template<typename T>
+  constexpr Vec3<T>& normalize_length(const Vec3<T>& v, T t, Vec3<T>& out) {
+    T len = v.x * v.x + v.y * v.y + v.z * v.z;
     if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len * t;
@@ -867,15 +858,16 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Normalizes a vec4 and scales it by a given length.
+   * @brief Normalizes a Vec4<T> and scales it by a given length.
    *
    * @param v The vector to normalize and scale.
    * @param t The scaling factor.
    * @param out The normalized and scaled vector (output).
-   * @return The normalized and scaled vec4.
+   * @return The normalized and scaled Vec4.
    */
-  constexpr vec4& normalize_length(const vec4& v, float t, vec4& out) {
-    float len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+  template<typename T>
+  constexpr Vec4<T>& normalize_length(const Vec4<T>& v, T t, Vec4<T>& out) {
+    T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
     if (len > 0) len = 1 / std::sqrtf(len);
 
     out.x = v.x * len * t;
@@ -889,55 +881,59 @@ namespace Graphick::Math {
   /* -- negate -- */
 
   /**
-   * @brief Negates a vec2.
+   * @brief Negates a Vec2.
    *
    * @param v The vector to negate.
-   * @return The negated vec2.
+   * @return The negated Vec2.
    */
-  constexpr vec2 negate(const vec2 v) {
-    return vec2{
+  template<typename T>
+  constexpr Vec2<T> negate(const Vec2<T> v) {
+    return Vec2<T>{
       -v.x,
         -v.y
     };
   }
 
   /**
-   * @brief Negates a vec3.
+   * @brief Negates a Vec3.
    *
    * @param v The vector to negate.
-   * @return The negated vec3.
+   * @return The negated Vec3.
    */
-  constexpr vec3 negate(const vec3& v) {
-    return vec3{
+  template<typename T>
+  constexpr Vec3<T> negate(const Vec3<T>& v) {
+    return Vec3<T>{
       -v.x,
-      -v.y,
-      -v.z
+        -v.y,
+        -v.z
     };
   }
 
   /**
-   * @brief Negates a vec4.
+   * @brief Negates a Vec4.
    *
    * @param v The vector to negate.
-   * @return The negated vec4.
+   * @return The negated Vec4.
    */
-  constexpr vec4 negate(const vec4& v) {
-    return vec4{
+  template<typename T>
+  constexpr Vec4<T> negate(const Vec4<T>& v) {
+    return Vec4<T>{
       -v.x,
-      -v.y,
-      -v.z,
-      -v.w
+        -v.y,
+        -v.z,
+        -v.w
     };
   }
 
   /**
-   * @brief Negates a vec2.
+   * @brief Negates a Vec2.
    *
    * @param v The vector to negate.
    * @param out The negated vector (output).
-   * @return The negated vec2.
+   * @return The negated Vec2.
    */
-  constexpr vec2& negate(const vec2 v, vec2& out) {
+  template<typename T>
+  constexpr Vec2<T>& negate(const Vec2<T> v, Vec2<T>& out) {
     out.x = -v.x;
     out.y = -v.y;
 
@@ -945,13 +941,14 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Negates a vec3.
+   * @brief Negates a Vec3.
    *
    * @param v The vector to negate.
    * @param out The negated vector (output).
-   * @return The negated vec3.
+   * @return The negated Vec3.
    */
-  constexpr vec3& negate(const vec3& v, vec3& out) {
+  template<typename T>
+  constexpr Vec3<T>& negate(const Vec3<T>& v, Vec3<T>& out) {
     out.x = -v.x;
     out.y = -v.y;
     out.z = -v.z;
@@ -960,13 +957,14 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Negates a vec4.
+   * @brief Negates a Vec4.
    *
    * @param v The vector to negate.
    * @param out The negated vector (output).
-   * @return The negated vec4.
+   * @return The negated Vec4.
    */
-  constexpr vec4& negate(const vec4& v, vec4& out) {
+  template<typename T>
+  constexpr Vec4<T>& negate(const Vec4<T>& v, Vec4<T>& out) {
     out.x = -v.x;
     out.y = -v.y;
     out.z = -v.z;
@@ -978,68 +976,73 @@ namespace Graphick::Math {
   /* -- abs -- */
 
   /**
-   * @brief Calculates the absolute value of each component of a vec2.
+   * @brief Calculates the absolute value of each component of a Vec2.
    *
    * @param v The vector to calculate absolute values for.
-   * @return The vec2 with absolute values of its components.
+   * @return The Vec2<T> with absolute values of its components.
    */
-  inline vec2 abs(const vec2 v) {
-    return vec2{
+  template<typename T>
+  inline Vec2<T> abs(const Vec2<T> v) {
+    return Vec2<T>{
       std::fabsf(v.x),
         std::fabsf(v.y)
     };
   }
 
   /**
-   * @brief Calculates the absolute value of each component of a vec3.
+   * @brief Calculates the absolute value of each component of a Vec3.
    *
    * @param v The vector to calculate absolute values for.
-   * @return The vec3 with absolute values of its components.
+   * @return The Vec3<T> with absolute values of its components.
    */
-  inline vec3 abs(const vec3& v) {
-    return vec3{
+  template<typename T>
+  inline Vec3<T> abs(const Vec3<T>& v) {
+    return Vec3<T>{
       std::fabsf(v.x),
-      std::fabsf(v.y),
-      std::fabsf(v.z)
+        std::fabsf(v.y),
+        std::fabsf(v.z)
     };
   }
 
   /**
-   * @brief Calculates the absolute value of each component of a vec4.
+   * @brief Calculates the absolute value of each component of a Vec4.
    *
    * @param v The vector to calculate absolute values for.
-   * @return The vec4 with absolute values of its components.
+   * @return The Vec4<T> with absolute values of its components.
    */
-  inline vec4 abs(const vec4& v) {
-    return vec4{
+  template<typename T>
+  inline Vec4<T> abs(const Vec4<T>& v) {
+    return Vec4<T>{
       std::fabsf(v.x),
-      std::fabsf(v.y),
-      std::fabsf(v.z),
-      std::fabsf(v.w)
+        std::fabsf(v.y),
+        std::fabsf(v.z),
+        std::fabsf(v.w)
     };
   }
 
   /**
-   * @brief Calculates the absolute value of each component of a vec2.
+   * @brief Calculates the absolute value of each component of a Vec2.
    *
    * @param v The vector to calculate absolute values for.
    * @param out The vector with absolute values of its components (output).
-   * @return The vec2 with absolute values of its components.
+   * @return The Vec2<T> with absolute values of its components.
    */
-  inline vec2& abs(const vec2 v, vec2& out) {
+  template<typename T>
+  inline Vec2<T>& abs(const Vec2<T> v, Vec2<T>& out) {
     out.x = std::fabsf(v.x);
     out.y = std::fabsf(v.y);
 
     return out;
   }
   /**
-   * @brief Calculates the absolute value of each component of a vec3.
+   * @brief Calculates the absolute value of each component of a Vec3.
    *
    * @param v The vector to calculate absolute values for.
    * @param out The vector with absolute values of its components (output).
-   * @return The vec3 with absolute values of its components.
+   * @return The Vec3<T> with absolute values of its components.
    */
-  inline vec3& abs(const vec3& v, vec3& out) {
+  template<typename T>
+  inline Vec3<T>& abs(const Vec3<T>& v, Vec3<T>& out) {
     out.x = std::fabsf(v.x);
     out.y = std::fabsf(v.y);
     out.z = std::fabsf(v.z);
@@ -1047,13 +1050,14 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Calculates the absolute value of each component of a vec4.
+   * @brief Calculates the absolute value of each component of a Vec4.
    *
    * @param v The vector to calculate absolute values for.
    * @param out The vector with absolute values of its components (output).
-   * @return The vec4 with absolute values of its components.
+   * @return The Vec4<T> with absolute values of its components.
    */
-  inline vec4& abs(const vec4& v, vec4& out) {
+  template<typename T>
+  inline Vec4<T>& abs(const Vec4<T>& v, Vec4<T>& out) {
     out.x = std::fabsf(v.x);
     out.y = std::fabsf(v.y);
     out.z = std::fabsf(v.z);
@@ -1064,323 +1068,322 @@ namespace Graphick::Math {
   /* -- zero -- */
 
   /**
-   * @brief Sets all components of a vec2 to zero.
+   * @brief Sets all components of a Vec2 to zero.
    *
    * @param v The vector to be zeroed.
    */
-  constexpr void zero(vec2& v) {
-    v.x = v.y = 0.0f;
+  template<typename T>
+  constexpr void zero(Vec2<T>& v) {
+    v.x = v.y = 0;
   }
 
   /**
-   * @brief Sets all components of a vec3 to zero.
+   * @brief Sets all components of a Vec3<T> to zero.
    *
    * @param v The vector to be zeroed.
    */
-  constexpr void zero(vec3& v) {
-    v.x = v.y = v.z = 0.0f;
+  template<typename T>
+  constexpr void zero(Vec3<T>& v) {
+    v.x = v.y = v.z = 0;
   }
 
   /**
-   * @brief Sets all components of a vec4 to zero.
+   * @brief Sets all components of a Vec4<T> to zero.
    *
    * @param v The vector to be zeroed.
    */
-  constexpr void zero(vec4& v) {
-    v.x = v.y = v.z = v.w = 0.0f;
+  template<typename T>
+  constexpr void zero(Vec4<T>& v) {
+    v.x = v.y = v.z = v.w = 0;
   }
 
   /* -- is_zero -- */
 
   /**
-   * @brief Checks if all components of a vec2 are zero.
+   * @brief Checks if all components of a Vec2 are zero.
    *
    * @param v The vector to be checked.
    * @return True if all components are zero, false otherwise.
    */
-  constexpr bool is_zero(const vec2 v) {
+  template<typename T>
+  constexpr bool is_zero(const Vec2<T> v) {
     return v.x == 0 && v.y == 0;
   }
 
   /**
-   * @brief Checks if all components of a vec3 are zero.
+   * @brief Checks if all components of a Vec3<T> are zero.
    *
    * @param v The vector to be checked.
    * @return True if all components are zero, false otherwise.
    */
-  constexpr bool is_zero(const vec3& v) {
+  template<typename T>
+  constexpr bool is_zero(const Vec3<T>& v) {
     return v.x == 0 && v.y == 0 && v.z == 0;
   }
 
   /**
-   * @brief Checks if all components of a vec4 are zero.
+   * @brief Checks if all components of a Vec4<T> are zero.
    *
    * @param v The vector to be checked.
    * @return True if all components are zero, false otherwise.
    */
-  constexpr bool is_zero(const vec4& v) {
+  template<typename T>
+  constexpr bool is_zero(const Vec4<T>& v) {
     return v.x == 0 && v.y == 0 && v.z == 0 && v.w == 0;
   }
 
   /* -- not_zero -- */
 
   /**
-   * @brief Checks if any component of a vec2 is non-zero.
+   * @brief Checks if any component of a Vec2 is non-zero.
    *
    * @param v The vector to be checked.
    * @return True if any component is non-zero, false if all are zero.
    */
-  constexpr bool not_zero(const vec2 v) {
+  template<typename T>
+  constexpr bool not_zero(const Vec2<T> v) {
     return v.x != 0 || v.y != 0;
   }
 
   /**
-   * @brief Checks if any component of a vec3 is non-zero.
+   * @brief Checks if any component of a Vec3<T> is non-zero.
    *
    * @param v The vector to be checked.
    * @return True if any component is non-zero, false if all are zero.
    */
-  constexpr bool not_zero(const vec3& v) {
+  template<typename T>
+  constexpr bool not_zero(const Vec3<T>& v) {
     return v.x != 0 || v.y != 0 || v.z != 0;
   }
 
   /**
-   * @brief Checks if any component of a vec4 is non-zero.
+   * @brief Checks if any component of a Vec4<T> is non-zero.
    *
    * @param v The vector to be checked.
    * @return True if any component is non-zero, false if all are zero.
    */
-  constexpr bool not_zero(const vec4& v) {
+  template<typename T>
+  constexpr bool not_zero(const Vec4<T>& v) {
     return v.x != 0 || v.y != 0 || v.z != 0 || v.w != 0;
   }
 
   /* -- is_almost_zero -- */
 
   /**
-   * @brief Checks if all components of a vec2 are nearly zero within a given epsilon.
+   * @brief Checks if all components of a Vec2 are nearly zero within a given epsilon.
    *
    * @param v The vector to be checked.
    * @param eps The epsilon value for comparison (default is GK_EPSILON).
    * @return True if all components are within epsilon of zero, false otherwise.
    */
-  inline bool is_almost_zero(const vec2 v, const float eps = GK_EPSILON) {
+  template<typename T>
+  inline bool is_almost_zero(const Vec2<T> v, const T eps = GK_EPSILON) {
     return !(std::abs(v.x) > eps || std::abs(v.y) > eps);
   }
 
   /**
-   * @brief Checks if all components of a vec3 are nearly zero within a given epsilon.
+   * @brief Checks if all components of a Vec3<T> are nearly zero within a given epsilon.
    *
    * @param v The vector to be checked.
    * @param eps The epsilon value for comparison (default is GK_EPSILON).
    * @return True if all components are within epsilon of zero, false otherwise.
    */
-  inline bool is_almost_zero(const vec3& v, const float eps = GK_EPSILON) {
+  template<typename T>
+  inline bool is_almost_zero(const Vec3<T>& v, const T eps = GK_EPSILON) {
     return !(std::abs(v.x) > eps || std::abs(v.y) > eps || std::abs(v.z) > eps);
   }
 
   /**
-   * @brief Checks if all components of a vec4 are nearly zero within a given epsilon.
+   * @brief Checks if all components of a Vec4<T> are nearly zero within a given epsilon.
    *
    * @param v The vector to be checked.
    * @param eps The epsilon value for comparison (default is GK_EPSILON).
    * @return True if all components are within epsilon of zero, false otherwise.
    */
-  inline bool is_almost_zero(const vec4& v, const float eps = GK_EPSILON) {
+  template<typename T>
+  inline bool is_almost_zero(const Vec4<T>& v, const T eps = GK_EPSILON) {
     return !(std::abs(v.x) > eps || std::abs(v.y) > eps || std::abs(v.z) > eps || std::abs(v.w) > eps);
   }
 
   /* -- is_almost_equal -- */
 
   /**
-   * @brief Checks if all components of a vec2 are nearly equal to another vector within a given epsilon.
+   * @brief Checks if all components of a Vec2 are nearly equal to another vector within a given epsilon.
    *
    * @param v1 The first vector for comparison.
    * @param v2 The second vector for comparison.
    * @param eps The epsilon value for comparison (default is GK_EPSILON).
    * @return True if all components are within epsilon of each other, false otherwise.
    */
-  inline bool is_almost_equal(const vec2 v1, const vec2 v2, const float eps = GK_EPSILON) {
+  template<typename T>
+  inline bool is_almost_equal(const Vec2<T> v1, const Vec2<T> v2, const T eps = GK_EPSILON) {
     return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps);
   }
 
   /**
-   * @brief Checks if all components of a dvec2 are nearly equal to another vector within a given epsilon.
+   * @brief Checks if all components of a Vec3<T> are nearly equal to another vector within a given epsilon.
    *
    * @param v1 The first vector for comparison.
    * @param v2 The second vector for comparison.
    * @param eps The epsilon value for comparison (default is GK_EPSILON).
    * @return True if all components are within epsilon of each other, false otherwise.
    */
-  inline bool is_almost_equal(const dvec2 v1, const dvec2 v2, const double eps = GK_EPSILON) {
-    return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps);
-  }
-
-  /**
-   * @brief Checks if all components of a vec3 are nearly equal to another vector within a given epsilon.
-   *
-   * @param v1 The first vector for comparison.
-   * @param v2 The second vector for comparison.
-   * @param eps The epsilon value for comparison (default is GK_EPSILON).
-   * @return True if all components are within epsilon of each other, false otherwise.
-   */
-  inline bool is_almost_equal(const vec3& v1, const vec3& v2, const float eps = GK_EPSILON) {
+  template<typename T>
+  inline bool is_almost_equal(const Vec3<T>& v1, const Vec3<T>& v2, const T eps = GK_EPSILON) {
     return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps || std::abs(v1.z - v2.z) > eps);
   }
 
   /**
-   * @brief Checks if all components of a vec4 are nearly equal to another vector within a given epsilon.
+   * @brief Checks if all components of a Vec4<T> are nearly equal to another vector within a given epsilon.
    *
    * @param v1 The first vector for comparison.
    * @param v2 The second vector for comparison.
    * @param eps The epsilon value for comparison (default is GK_EPSILON).
    * @return True if all components are within epsilon of each other, false otherwise.
    */
-  inline bool is_almost_equal(const vec4& v1, const vec4& v2, const float eps = GK_EPSILON) {
+  template<typename T>
+  inline bool is_almost_equal(const Vec4<T>& v1, const Vec4<T>& v2, const T eps = GK_EPSILON) {
     return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps || std::abs(v1.z - v2.z) > eps || std::abs(v1.w - v2.w) > eps);
   }
 
   /* -- floor -- */
 
   /**
-   * @brief Rounds each component of a vec2 down to the nearest integer.
+   * @brief Rounds each component of a Vec2 down to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The vec2 with rounded components.
+   * @return The Vec2<T> with rounded components.
    */
-  constexpr vec2 floor(const vec2 v) {
-    return vec2{
+  template<typename T>
+  constexpr Vec2<T> floor(const Vec2<T> v) {
+    return Vec2<T>{
       std::floor(v.x),
         std::floor(v.y),
     };
   }
 
   /**
-   * @brief Rounds each component of a vec3 down to the nearest integer.
+   * @brief Rounds each component of a Vec3<T> down to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The vec3 with rounded components.
+   * @return The Vec3<T> with rounded components.
    */
-  constexpr vec3 floor(const vec3& v) {
-    return vec3{
-     std::floor(v.x),
-     std::floor(v.y),
-     std::floor(v.z),
+  template<typename T>
+  constexpr Vec3<T> floor(const Vec3<T>& v) {
+    return Vec3<T>{
+      std::floor(v.x),
+        std::floor(v.y),
+        std::floor(v.z),
     };
   }
 
   /**
-   * @brief Rounds each component of a vec4 down to the nearest integer.
+   * @brief Rounds each component of a Vec4<T> down to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The vec4 with rounded components.
+   * @return The Vec4<T> with rounded components.
    */
-  constexpr vec4 floor(const vec4& v) {
-    return vec4{
+  template<typename T>
+  constexpr Vec4<T> floor(const Vec4<T>& v) {
+    return Vec4<T>{
       std::floor(v.x),
-      std::floor(v.y),
-      std::floor(v.z),
-      std::floor(v.w),
+        std::floor(v.y),
+        std::floor(v.z),
+        std::floor(v.w),
     };
   }
 
   /* -- ceil -- */
 
   /**
-   * @brief Rounds each component of a vec2 up to the nearest integer.
+   * @brief Rounds each component of a Vec2 up to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The vec2 with rounded components.
+   * @return The Vec2<T> with rounded components.
    */
-  constexpr vec2 ceil(const vec2 v) {
-    return vec2{
+  template<typename T>
+  constexpr Vec2<T> ceil(const Vec2<T> v) {
+    return Vec2<T>{
       std::ceil(v.x),
         std::ceil(v.y),
     };
   }
 
   /**
-   * @brief Rounds each component of a vec3 up to the nearest integer.
+   * @brief Rounds each component of a Vec3<T> up to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The vec3 with rounded components.
+   * @return The Vec3<T> with rounded components.
    */
-  constexpr vec3 ceil(const vec3& v) {
-    return vec3{
+  template<typename T>
+  constexpr Vec3<T> ceil(const Vec3<T>& v) {
+    return Vec3<T>{
       std::ceil(v.x),
-      std::ceil(v.y),
-      std::ceil(v.z),
+        std::ceil(v.y),
+        std::ceil(v.z),
     };
   }
 
   /**
-   * @brief Rounds each component of a vec4 up to the nearest integer.
+   * @brief Rounds each component of a Vec4<T> up to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The vec4 with rounded components.
+   * @return The Vec4<T> with rounded components.
    */
-  constexpr vec4 ceil(const vec4& v) {
-    return vec4{
+  template<typename T>
+  constexpr Vec4<T> ceil(const Vec4<T>& v) {
+    return Vec4<T>{
       std::ceil(v.x),
-      std::ceil(v.y),
-      std::ceil(v.z),
-      std::ceil(v.w),
+        std::ceil(v.y),
+        std::ceil(v.z),
+        std::ceil(v.w),
     };
   }
 
   /* -- round -- */
 
   /**
-   * @brief Rounds each component of a vec2 to the nearest integer.
+   * @brief Rounds each component of a Vec2 to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The vec2 with rounded components.
+   * @return The Vec2<T> with rounded components.
    */
-  constexpr vec2 round(const vec2 v) {
-    return vec2{
+  template<typename T>
+  constexpr Vec2<T> round(const Vec2<T> v) {
+    return Vec2<T>{
       std::round(v.x),
         std::round(v.y)
     };
   }
 
   /**
-   * @brief Rounds each component of a dvec2 to the nearest integer.
+   * @brief Rounds each component of a Vec3<T> to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The dvec2 with rounded components.
+   * @return The Vec3<T> with rounded components.
    */
-  constexpr dvec2 round(const dvec2 v) {
-    return dvec2{
+  template<typename T>
+  constexpr Vec3<T> round(const Vec3<T>& v) {
+    return Vec3<T>{
       std::round(v.x),
-        std::round(v.y)
+        std::round(v.y),
+        std::round(v.z)
     };
   }
 
   /**
-   * @brief Rounds each component of a vec3 to the nearest integer.
+   * @brief Rounds each component of a Vec4<T> to the nearest integer.
    *
    * @param v The vector to be rounded.
-   * @return The vec3 with rounded components.
+   * @return The Vec4<T> with rounded components.
    */
-  constexpr vec3 round(const vec3& v) {
-    return vec3{
+  template<typename T>
+  constexpr Vec4<T> round(const Vec4<T>& v) {
+    return Vec4<T>{
       std::round(v.x),
-      std::round(v.y),
-      std::round(v.z)
-    };
-  }
-
-  /**
-   * @brief Rounds each component of a vec4 to the nearest integer.
-   *
-   * @param v The vector to be rounded.
-   * @return The vec4 with rounded components.
-   */
-  constexpr vec4 round(const vec4& v) {
-    return vec4{
-      std::round(v.x),
-      std::round(v.y),
-      std::round(v.z),
-      std::round(v.w)
+        std::round(v.y),
+        std::round(v.z),
+        std::round(v.w)
     };
   }
 
@@ -1396,95 +1399,101 @@ namespace Graphick::Math {
   float angle(const vec2 v1, const vec2 v2);
 
   /**
-   * @brief Computes the arctangent of the angle between two vec2s.
+   * @brief Computes the arctangent of the angle between two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The arctangent of the angle between the two vectors.
    */
-  inline float atan2(const vec2 v1, const vec2 v2) {
+  template<typename T>
+  inline T atan2(const Vec2<T> v1, const Vec2<T> v2) {
     return std::atan2(v2.y - v1.y, v2.x - v1.x);
   }
 
   /* -- rotate -- */
 
   /**
-   * @brief Rotates a vec2 around a center point by a specified angle in radians.
+   * @brief Rotates a Vec2 around a center point by a specified angle in radians.
    *
    * @param v The vector to be rotated.
    * @param c The center of rotation.
    * @param t The angle in radians by which to rotate the vector.
-   * @return The rotated vec2.
+   * @return The rotated Vec2.
    */
-  inline vec2 rotate(const vec2 v, const vec2 c, float t) {
-    float cx = v.x - c.x;
-    float cy = v.y - c.y;
-    float sin_t = std::sin(t);
-    float cos_t = std::cos(t);
+  template<typename T>
+  inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T t) {
+    T cx = v.x - c.x;
+    T cy = v.y - c.y;
+    T sin_t = std::sin(t);
+    T cos_t = std::cos(t);
 
-    return vec2{
-      cx * cos_t - cy * sin_t + c.x,
-        cx * sin_t + cy * cos_t + c.y
+    return Vec2<T>{
+      cx* cos_t - cy * sin_t + c.x,
+        cx* sin_t + cy * cos_t + c.y
     };
   }
 
   /**
-   * @brief Rotates a vec2 around a center point by a specified angle using precomputed sin and cos values.
+   * @brief Rotates a Vec2 around a center point by a specified angle using precomputed sin and cos values.
    *
    * @param v The vector to be rotated.
    * @param c The center of rotation.
    * @param sin_t The sine of the rotation angle.
    * @param cos_t The cosine of the rotation angle.
-   * @return The rotated vec2.
+   * @return The rotated Vec2.
    */
-  inline vec2 rotate(const vec2 v, const vec2 c, float sin_t, float cos_t) {
-    float cx = v.x - c.x;
-    float cy = v.y - c.y;
+  template<typename T>
+  inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T sin_t, T cos_t) {
+    T cx = v.x - c.x;
+    T cy = v.y - c.y;
 
-    return vec2{
-      cx * cos_t - cy * sin_t + c.x,
-        cx * sin_t + cy * cos_t + c.y
+    return Vec2<T>{
+      cx* cos_t - cy * sin_t + c.x,
+        cx* sin_t + cy * cos_t + c.y
     };
   }
 
   /* -- scale -- */
 
   /**
-   * @brief Scales a vec2 by a given factor.
+   * @brief Scales a Vec2 by a given factor.
    *
    * @param v The vector to be scaled.
    * @param c The center of scaling.
    * @param t The scaling factor.
-   * @return The scaled vec2.
+   * @return The scaled Vec2.
    */
-  constexpr vec2 scale(const vec2 v, const vec2 c, const vec2 s) {
-    return vec2{
-      (v.x - c.x) * s.x + c.x,
-        (v.y - c.y) * s.y + c.y
+  template<typename T>
+  constexpr Vec2<T> scale(const Vec2<T> v, const Vec2<T> c, const Vec2<T> s) {
+    return Vec2<T>{
+      (v.x - c.x)* s.x + c.x,
+        (v.y - c.y)* s.y + c.y
     };
   }
 
   /* -- orthogonal -- */
 
   /**
-   * @brief Calculates the orthogonal vector of a vec2.
+   * @brief Calculates the orthogonal vector of a Vec2.
    *
    * @param v The vector to calculate the orthogonal vector for.
    * @return The orthogonal vector.
    */
-  constexpr vec2 orthogonal(const vec2 v) {
-    return vec2{ -v.y, v.x };
+  template<typename T>
+  constexpr Vec2<T> orthogonal(const Vec2<T> v) {
+    return Vec2<T>{ -v.y, v.x };
   }
 
   /**
-   * @brief Calculates the orthogonal vector of a vec2.
+   * @brief Calculates the orthogonal vector of a Vec2.
    *
    * @param v The vector to calculate the orthogonal vector for.
    * @param out The orthogonal output vector.
    * @return A reference to the output vector.
    */
-  constexpr vec2& orthogonal(const vec2 v, vec2& out) {
-    float temp = v.x;
+  template<typename T>
+  constexpr Vec2<T>& orthogonal(const Vec2<T> v, Vec2<T>& out) {
+    T temp = v.x;
 
     out.x = -v.y;
     out.y = temp;
@@ -1495,34 +1504,26 @@ namespace Graphick::Math {
   /* -- normal -- */
 
   /**
-   * @brief Calculates the normal vector of a vec2.
+   * @brief Calculates the normal vector of a Vec2.
    *
    * @param v The vector to calculate the normal vector for.
    * @return The normal vector.
    */
-  constexpr vec2 normal(const vec2 v1, const vec2 v2) {
-    return normalize(vec2{ v2.y - v1.y, v1.x - v2.x });
-  }
-
-  /**
-   * @brief Calculates the normal vector of a dvec2.
-   *
-   * @param v The vector to calculate the normal vector for.
-   * @return The normal vector.
-   */
-  constexpr dvec2 normal(const dvec2 v1, const dvec2 v2) {
-    return normalize(dvec2{ v2.y - v1.y, v1.x - v2.x });
+  template<typename T>
+  constexpr Vec2<T> normal(const Vec2<T> v1, const Vec2<T> v2) {
+    return normalize(Vec2<T>{ v2.y - v1.y, v1.x - v2.x });
   }
 
   /* -- swap_coordinates -- */
 
   /**
-   * @brief Swaps the x and y coordinates of a vec2.
+   * @brief Swaps the x and y coordinates of a Vec2.
    *
    * @param v The vector to swap coordinates for.
    * @return The vector with swapped coordinates.
    */
-  constexpr vec2 swap_coordinates(const vec2 v) {
+  template<typename T>
+  constexpr Vec2<T> swap_coordinates(const Vec2<T> v) {
     return {
       v.y,
       v.x
@@ -1530,14 +1531,15 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Swaps the x and y coordinates of a vec2.
+   * @brief Swaps the x and y coordinates of a Vec2.
    *
    * @param v The vector to swap coordinates for.
    * @param out The output vector with swapped coordinates.
    * @return A reference to the output vector.
    */
-  constexpr vec2& swap_coordinates(const vec2 v, vec2& out) {
-    float temp = v.x;
+  template<typename T>
+  constexpr Vec2<T>& swap_coordinates(const Vec2<T> v, Vec2<T>& out) {
+    T temp = v.x;
 
     out.x = v.y;
     out.y = temp;

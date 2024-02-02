@@ -67,7 +67,7 @@ namespace Graphick::Math {
     } {}
 
     template<typename U>
-    constexpr explicit Mat3(const Mat3<U>& m) : value{
+    constexpr Mat3(const Mat3<U>& m) : value{
       Vec3<T>(m[0]),
       Vec3<T>(m[1]),
       Vec3<T>(m[2]) } {}
@@ -313,11 +313,20 @@ namespace Graphick::Math {
 
 }
 
-namespace Graphick {
+namespace Graphick::Math {
 
   using mat3 = Math::Mat3<float>;
   using dmat3 = Math::Mat3<double>;
   using imat3 = Math::Mat3<int32_t>;
   using umat3 = Math::Mat3<uint32_t>;
+
+}
+
+namespace Graphick {
+
+  using mat3 = Math::mat3;
+  using dmat3 = Math::dmat3;
+  using imat3 = Math::imat3;
+  using umat3 = Math::umat3;
 
 }

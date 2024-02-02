@@ -61,7 +61,7 @@ namespace Graphick::Math {
     } {}
 
     template<typename U>
-    constexpr explicit Mat2(const Mat2<U>& m) : value{
+    constexpr Mat2(const Mat2<U>& m) : value{
       Vec2<T>(m[0]),
       Vec2<T>(m[1])
     } {}
@@ -288,11 +288,20 @@ namespace Graphick::Math {
 
 }
 
-namespace Graphick {
+namespace Graphick::Math {
 
   using mat2 = Math::Mat2<float>;
   using dmat2 = Math::Mat2<double>;
   using imat2 = Math::Mat2<int32_t>;
   using umat2 = Math::Mat2<uint32_t>;
+
+}
+
+namespace Graphick {
+
+  using mat2 = Math::mat2;
+  using dmat2 = Math::dmat2;
+  using imat2 = Math::imat2;
+  using umat2 = Math::umat2;
 
 }

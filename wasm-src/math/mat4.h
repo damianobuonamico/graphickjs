@@ -72,7 +72,7 @@ namespace Graphick::Math {
     } {}
 
     template<typename U>
-    constexpr explicit Mat4(const Mat4<U>& m) : value{
+    constexpr Mat4(const Mat4<U>& m) : value{
       Vec4<T>(m[0]),
       Vec4<T>(m[1]),
       Vec4<T>(m[2]),
@@ -346,11 +346,20 @@ namespace Graphick::Math {
 
 }
 
-namespace Graphick {
+namespace Graphick::Math {
 
   using mat4 = Math::Mat4<float>;
   using dmat4 = Math::Mat4<double>;
   using imat4 = Math::Mat4<int32_t>;
   using umat4 = Math::Mat4<uint32_t>;
+
+}
+
+namespace Graphick {
+
+  using mat4 = Math::mat4;
+  using dmat4 = Math::dmat4;
+  using imat4 = Math::imat4;
+  using umat4 = Math::umat4;
 
 }

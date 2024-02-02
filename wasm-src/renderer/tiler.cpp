@@ -633,7 +633,7 @@ namespace Graphick::Renderer {
 
     // const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
     // const dvec2 offset = TILE_SIZE / m_zoom * dvec2{ std::round(tile_offset.x), std::round(tile_offset.y) };
-    // const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+    // const dvec2 subpixel_offset = offset + dvec2(m_subpixel) / m_zoom;
     // const dvec2 drawable_offset = offset * m_zoom;
 
     const bool clip_drawable = overlap < OVERLAP_CLIP_THRESHOLD;
@@ -648,7 +648,7 @@ namespace Graphick::Renderer {
 
     const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
     const dvec2 offset = Math::round(tile_offset) * TILE_SIZE / m_zoom;
-    const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+    const dvec2 subpixel_offset = offset + dvec2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
     // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2, dvec2 = Math::vec2<double>
@@ -664,7 +664,7 @@ namespace Graphick::Renderer {
     Geometry::PathBuilder builder{ m_visible, mv_matrix, GK_PATH_TOLERANCE };
     Drawable drawable1 = builder.stroke(path, s);
 
-    rect fbounds = (path_rect - DVEC2_TO_VEC2(offset)) * m_zoom - m_subpixel;
+    rect fbounds = (path_rect - vec2(offset)) * m_zoom - m_subpixel;
 
     f24x8x4 bound = {
       Math::float_to_f24x8(fbounds.min.x),
@@ -679,10 +679,10 @@ namespace Graphick::Renderer {
 
     // Geometry::Internal::PathInternal p;
 
-    // p.move_to(vec2{ Math::f24x8_to_float(contour.points.front().x) / (float)m_zoom, Math::f24x8_to_float(contour.points.front().y) / (float)m_zoom } + DVEC2_TO_VEC2(subpixel_offset));
+    // p.move_to(vec2{ Math::f24x8_to_float(contour.points.front().x) / (float)m_zoom, Math::f24x8_to_float(contour.points.front().y) / (float)m_zoom } + vec2(subpixel_offset));
 
     // for (f24x8x2 point : contour.points) {
-    //   p.line_to(vec2{ Math::f24x8_to_float(point.x) / (float)m_zoom, Math::f24x8_to_float(point.y) / (float)m_zoom } + DVEC2_TO_VEC2(subpixel_offset));
+    //   p.line_to(vec2{ Math::f24x8_to_float(point.x) / (float)m_zoom, Math::f24x8_to_float(point.y) / (float)m_zoom } + vec2(subpixel_offset));
     // }
 
     // Renderer::draw_outline(p);
@@ -698,7 +698,7 @@ namespace Graphick::Renderer {
 
     const dvec2 tile_offset = (m_visible_min * m_zoom) / TILE_SIZE;
     const dvec2 offset = Math::round(tile_offset) * TILE_SIZE / m_zoom;
-    const dvec2 subpixel_offset = offset + VEC2_TO_DVEC2(m_subpixel) / m_zoom;
+    const dvec2 subpixel_offset = offset + dvec2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
     // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2, dvec2 = Math::vec2<double>
@@ -710,7 +710,7 @@ namespace Graphick::Renderer {
     Geometry::PathBuilder builder{ m_visible, mv_matrix, GK_PATH_TOLERANCE };
     Drawable drawable = builder.fill(path, fill);
 
-    rect bounds = (path_rect - DVEC2_TO_VEC2(offset)) * m_zoom - m_subpixel;
+    rect bounds = (path_rect - vec2(offset)) * m_zoom - m_subpixel;
 
     drawable.bounds = {
       Math::float_to_f24x8(bounds.min.x),

@@ -38,7 +38,7 @@ namespace Graphick::Renderer {
 
     static void draw_square(const vec2 position, const float radius, const mat2x3& transform = {});
 
-    static void debug_rect(const Math::rect rect, const vec4& color = { 0.0f, 0.0f, 0.0f, 0.5f });
+    static void debug_rect(const Graphick::rect rect, const vec4& color = { 0.0f, 0.0f, 0.0f, 0.5f });
     static void debug_text(const std::string& text, const vec2 position, const vec4& color = { 1.0f, 1.0f, 1.0f, 1.0f });
   private:
     Renderer() = default;

@@ -332,11 +332,20 @@ namespace std {
 
 }
 
-namespace Graphick {
+namespace Graphick::Math {
 
   using vec2 = Math::Vec2<float>;
   using dvec2 = Math::Vec2<double>;
   using ivec2 = Math::Vec2<int32_t>;
   using uvec2 = Math::Vec2<uint32_t>;
+
+}
+
+namespace Graphick {
+
+  using vec2 = Math::vec2;
+  using dvec2 = Math::dvec2;
+  using ivec2 = Math::ivec2;
+  using uvec2 = Math::uvec2;
 
 }

@@ -286,11 +286,20 @@ namespace Graphick::Math {
 
 }
 
-namespace Graphick {
+namespace Graphick::Math {
 
   using mat2x3 = Math::Mat2x3<float>;
   using dmat2x3 = Math::Mat2x3<double>;
   using imat2x3 = Math::Mat2x3<int32_t>;
   using umat2x3 = Math::Mat2x3<uint32_t>;
+
+}
+
+namespace Graphick {
+
+  using mat2x3 = Math::mat2x3;
+  using dmat2x3 = Math::dmat2x3;
+  using imat2x3 = Math::imat2x3;
+  using umat2x3 = Math::umat2x3;
 
 }

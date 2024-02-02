@@ -61,7 +61,7 @@ namespace Graphick::Renderer::Geometry {
 
     path.for_each(
       [&](const vec2 p0) {
-        dvec2 a = m_transform * VEC2_TO_DVEC2(p0);
+        dvec2 a = m_transform * dvec2(p0);
 
         if (contour) contour->close();
 
@@ -72,7 +72,7 @@ namespace Graphick::Renderer::Geometry {
         last_raw = p0;
       },
       [&](const vec2 p1) {
-        dvec2 b = m_transform * VEC2_TO_DVEC2(p1);
+        dvec2 b = m_transform * dvec2(p1);
 
         contour->line_to(b);
 
@@ -91,11 +91,11 @@ namespace Graphick::Renderer::Geometry {
         Math::max(bounds.max, p2, bounds.max);
         Math::max(bounds.max, p3, bounds.max);
 
-        dvec2 d = m_transform * VEC2_TO_DVEC2(p3);
+        dvec2 d = m_transform * dvec2(p3);
 
         if (Math::does_rect_intersect_rect(bounds, m_clip)) {
-          dvec2 b = m_transform * VEC2_TO_DVEC2(p1);
-          dvec2 c = m_transform * VEC2_TO_DVEC2(p2);
+          dvec2 b = m_transform * dvec2(p1);
+          dvec2 c = m_transform * dvec2(p2);
 
           contour->cubic_to(b, c, d);
         } else {
@@ -123,7 +123,7 @@ namespace Graphick::Renderer::Geometry {
     if (path.size() == 1 && first_segment.is_point() && stroke.cap != LineCap::Butt) {
       contour = &drawable.contours.emplace_back(m_tolerance);
 
-      dvec2 from = m_transform * VEC2_TO_DVEC2(first_segment.p0);
+      dvec2 from = m_transform * dvec2(first_segment.p0);
       dvec2 n = { 0.0, 1.0 };
       dvec2 nr = n * radius;
       dvec2 start = from + nr;
@@ -168,8 +168,8 @@ namespace Graphick::Renderer::Geometry {
 
           switch (segment.type) {
           case PathDev::Command::Line: {
-            const dvec2 a = m_transform * VEC2_TO_DVEC2(segment.p0);
-            const dvec2 b = m_transform * VEC2_TO_DVEC2(segment.p1);
+            const dvec2 a = m_transform * dvec2(segment.p0);
+            const dvec2 b = m_transform * dvec2(segment.p1);
 
             const dvec2 n = Math::normal(a, b);
 
@@ -182,10 +182,10 @@ namespace Graphick::Renderer::Geometry {
           case PathDev::Command::Quadratic:
             break;
           case PathDev::Command::Cubic: {
-            const dvec2 a = m_transform * VEC2_TO_DVEC2(segment.p0);
-            const dvec2 b = m_transform * VEC2_TO_DVEC2(segment.p1);
-            const dvec2 c = m_transform * VEC2_TO_DVEC2(segment.p2);
-            const dvec2 d = m_transform * VEC2_TO_DVEC2(segment.p3);
+            const dvec2 a = m_transform * dvec2(segment.p0);
+            const dvec2 b = m_transform * dvec2(segment.p1);
+            const dvec2 c = m_transform * dvec2(segment.p2);
+            const dvec2 d = m_transform * dvec2(segment.p3);
 
             const auto [_, n] = cubic_normals(a, b, c, d);
 
@@ -201,16 +201,16 @@ namespace Graphick::Renderer::Geometry {
 
           contour->move_to(last_point);
         } else {
-          pivot = m_transform * VEC2_TO_DVEC2(p0);
+          pivot = m_transform * dvec2(p0);
         }
 
         move_index += 1;
       },
       [&](const vec2 p1) {
         const dvec2 a = pivot;
-        const dvec2 b = m_transform * VEC2_TO_DVEC2(p1);
+        const dvec2 b = m_transform * dvec2(p1);
 
-        if (Math::is_almost_equal(a, b, GK_POINT_EPSILON)) return;
+        if (Math::is_almost_equal(a, b, (double)GK_POINT_EPSILON)) return;
 
         const dvec2 n = Math::normal(a, b);
         const dvec2 nr = n * radius;
@@ -234,14 +234,14 @@ namespace Graphick::Renderer::Geometry {
       nullptr,
       [&](const vec2 p1, const vec2 p2, const vec2 p3) {
         const dvec2 a = pivot;
-        const dvec2 b = m_transform * VEC2_TO_DVEC2(p1);
-        const dvec2 c = m_transform * VEC2_TO_DVEC2(p2);
-        const dvec2 d = m_transform * VEC2_TO_DVEC2(p3);
+        const dvec2 b = m_transform * dvec2(p1);
+        const dvec2 c = m_transform * dvec2(p2);
+        const dvec2 d = m_transform * dvec2(p3);
 
         if (
-          Math::is_almost_equal(a, b, GK_POINT_EPSILON) &&
-          Math::is_almost_equal(a, c, GK_POINT_EPSILON) &&
-          Math::is_almost_equal(a, d, GK_POINT_EPSILON)
+          Math::is_almost_equal(a, b, (double)GK_POINT_EPSILON) &&
+          Math::is_almost_equal(a, c, (double)GK_POINT_EPSILON) &&
+          Math::is_almost_equal(a, d, (double)GK_POINT_EPSILON)
           ) return;
 
         const auto [start_n, end_n] = cubic_normals(a, b, c, d);
@@ -283,8 +283,8 @@ namespace Graphick::Renderer::Geometry {
 
         switch (segment.type) {
         case PathDev::Command::Line: {
-          const dvec2 a1 = m_transform * VEC2_TO_DVEC2(segment.p1);
-          const dvec2 b1 = m_transform * VEC2_TO_DVEC2(segment.p0);
+          const dvec2 a1 = m_transform * dvec2(segment.p1);
+          const dvec2 b1 = m_transform * dvec2(segment.p0);
 
           n1 = Math::normal(a1, b1);
           end1 = b1;
@@ -294,10 +294,10 @@ namespace Graphick::Renderer::Geometry {
         case PathDev::Command::Quadratic:
           break;
         case PathDev::Command::Cubic: {
-          const dvec2 a1 = m_transform * VEC2_TO_DVEC2(segment.p3);
-          const dvec2 b1 = m_transform * VEC2_TO_DVEC2(segment.p2);
-          const dvec2 c1 = m_transform * VEC2_TO_DVEC2(segment.p1);
-          const dvec2 d1 = m_transform * VEC2_TO_DVEC2(segment.p0);
+          const dvec2 a1 = m_transform * dvec2(segment.p3);
+          const dvec2 b1 = m_transform * dvec2(segment.p2);
+          const dvec2 c1 = m_transform * dvec2(segment.p1);
+          const dvec2 d1 = m_transform * dvec2(segment.p0);
 
           n1 = cubic_normals(a1, b1, c1, d1).second;
           end1 = d1;
@@ -345,8 +345,8 @@ namespace Graphick::Renderer::Geometry {
       [&](const vec2 p0, const vec2 p1) {
         if (Math::is_almost_equal(p0, p1, GK_POINT_EPSILON)) return;
 
-        const dvec2 a = m_transform * VEC2_TO_DVEC2(p1);
-        const dvec2 b = m_transform * VEC2_TO_DVEC2(p0);
+        const dvec2 a = m_transform * dvec2(p1);
+        const dvec2 b = m_transform * dvec2(p0);
 
         const dvec2 n = Math::normal(a, b);
         const dvec2 nr = n * radius;
@@ -373,10 +373,10 @@ namespace Graphick::Renderer::Geometry {
           Math::is_almost_equal(p0, p3, GK_POINT_EPSILON)
           ) return;
 
-        const dvec2 a = m_transform * VEC2_TO_DVEC2(p3);
-        const dvec2 b = m_transform * VEC2_TO_DVEC2(p2);
-        const dvec2 c = m_transform * VEC2_TO_DVEC2(p1);
-        const dvec2 d = m_transform * VEC2_TO_DVEC2(p0);
+        const dvec2 a = m_transform * dvec2(p3);
+        const dvec2 b = m_transform * dvec2(p2);
+        const dvec2 c = m_transform * dvec2(p1);
+        const dvec2 d = m_transform * dvec2(p0);
 
         const auto [start_n, end_n] = cubic_normals(a, b, c, d);
 

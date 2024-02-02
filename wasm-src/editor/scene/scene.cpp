@@ -388,7 +388,7 @@ namespace Graphick::Editor {
     const Math::rect visible_rect = viewport.visible();
 
     Renderer::Renderer::begin_frame({
-      Math::round(IVEC2_TO_VEC2(viewport.size()) * viewport.dpr()),
+      Math::round(vec2(viewport.size()) * viewport.dpr()),
       viewport.position(),
       viewport.zoom() * viewport.dpr(),
       viewport.dpr(),
@@ -508,7 +508,7 @@ namespace Graphick::Editor {
 
     Renderer::Renderer::end_frame();
 
-    GK_DEBUGGER_RENDER(IVEC2_TO_VEC2(viewport.size()) * viewport.dpr());
+    GK_DEBUGGER_RENDER(vec2(viewport.size()) * viewport.dpr());
   }
 
 }

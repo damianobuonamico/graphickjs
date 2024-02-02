@@ -7,8 +7,6 @@
 
 #include "scalar.h"
 
-#include <sstream>
-
 namespace Graphick::Math {
 
   /* -- bezier -- */

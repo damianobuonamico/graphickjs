@@ -345,11 +345,20 @@ namespace Graphick::Math {
 
 }
 
-namespace Graphick {
+namespace Graphick::Math {
 
   using vec3 = Math::Vec3<float>;
   using dvec3 = Math::Vec3<double>;
   using ivec3 = Math::Vec3<int32_t>;
   using uvec3 = Math::Vec3<uint32_t>;
+
+}
+
+namespace Graphick {
+
+  using vec3 = Math::vec3;
+  using dvec3 = Math::dvec3;
+  using ivec3 = Math::ivec3;
+  using uvec3 = Math::uvec3;
 
 }

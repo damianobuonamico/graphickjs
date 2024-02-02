@@ -73,9 +73,9 @@ namespace Graphick::Utils {
   void Debugger::draw(const rect& rect) {
     Renderer::Geometry::Contour contour;
 
-    contour.move_to(VEC2_TO_DVEC2(rect.min));
+    contour.move_to(dvec2(rect.min));
     contour.line_to(dvec2{ rect.max.x, rect.min.y });
-    contour.line_to(VEC2_TO_DVEC2(rect.max));
+    contour.line_to(dvec2(rect.max));
     contour.line_to(dvec2{ rect.min.x, rect.max.y });
     contour.close();
 

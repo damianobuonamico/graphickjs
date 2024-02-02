@@ -34,7 +34,7 @@ namespace Graphick::Editor {
       return;
     }
 
-    vec2 min_position = (IVEC2_TO_VEC2(m_size) - m_max_position * m_zoom) / m_zoom;
+    vec2 min_position = (vec2(m_size) - m_max_position * m_zoom) / m_zoom;
     vec2 max_position = m_min_position;
 
     if (m_max_position.x * m_zoom < m_size.x) {
@@ -104,19 +104,19 @@ namespace Graphick::Editor {
   // }
 
   vec2 Viewport::client_to_scene(const vec2 position) {
-    return (position - IVEC2_TO_VEC2(m_offset)) / m_zoom - m_position;
+    return (position - vec2(m_offset)) / m_zoom - m_position;
   }
 
   vec2 Viewport::scene_to_client(const vec2 position) {
-    return (position + m_position) * m_zoom + IVEC2_TO_VEC2(m_offset);
+    return (position + m_position) * m_zoom + vec2(m_offset);
   }
 
   vec2 Viewport::client_to_scene(const vec2 position, float zoom_override) {
-    return (position - IVEC2_TO_VEC2(m_offset)) / zoom_override - m_position;
+    return (position - vec2(m_offset)) / zoom_override - m_position;
   }
 
   vec2 Viewport::scene_to_client(const vec2 position, float zoom_override) {
-    return (position + m_position) * zoom_override + IVEC2_TO_VEC2(m_offset);
+    return (position + m_position) * zoom_override + vec2(m_offset);
   }
 
 }
