@@ -46,7 +46,7 @@ namespace Graphick::Editor::Input {
   void SelectTool::on_pointer_move() {
     if ((m_entity != uuid{ 0 } && Editor::scene().selection.has(m_entity)) || InputManager::keys.alt) {
       if (!Editor::scene().selection.empty()) {
-        vec2 delta = InputManager::pointer.scene.delta;
+        vec2 movement = InputManager::pointer.scene.movement;
         // TODO: Snapping
 
         m_dragging_occurred = true;
@@ -55,7 +55,7 @@ namespace Graphick::Editor::Input {
           // TODO: all entities should have transform component
           if (!entity.has_component<TransformComponent>()) continue;
 
-          entity.get_component<TransformComponent>().translate(delta);
+          entity.get_component<TransformComponent>().translate(movement);
           // entity.get_component<TransformComponent>().position.set_delta(delta);
         }
         //     for (auto& [id, entity] : Editor::scene().selection) {

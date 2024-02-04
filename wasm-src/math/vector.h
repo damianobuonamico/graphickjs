@@ -258,7 +258,7 @@ namespace Graphick::Math {
    */
   template<typename T>
   inline T length(const Vec4<T>& v) {
-    return std::sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+    return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
   }
 
   /* -- dot -- */
@@ -657,7 +657,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec2<T> normalize(const Vec2<T> v) {
     T len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     return Vec2<T>{
       v.x* len,
@@ -674,7 +674,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec3<T> normalize(const Vec3<T>& v) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     return Vec3<T>{
       v.x* len,
@@ -692,7 +692,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec4<T> normalize(const Vec4<T>& v) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     return Vec4<T>{
       v.x* len,
@@ -712,7 +712,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec2<T>& normalize(const Vec2<T> v, Vec2<T>& out) {
     T len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     out.x = v.x * len;
     out.y = v.y * len;
@@ -730,7 +730,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec3<T>& normalize(const Vec3<T>& v, Vec3<T>& out) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     out.x = v.x * len;
     out.y = v.y * len;
@@ -749,7 +749,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec4<T>& normalize(const Vec4<T>& v, Vec4<T>& out) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     out.x = v.x * len;
     out.y = v.y * len;
@@ -771,7 +771,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec2<T> normalize_length(const Vec2<T> v, T t) {
     T len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     return Vec2<T>{
       v.x* len* t,
@@ -789,7 +789,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec3<T> normalize_length(const Vec3<T>& v, T t) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     return Vec3<T>{
       v.x* len* t,
@@ -808,7 +808,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec4<T> normalize_length(const Vec4<T>& v, T t) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     return Vec4<T>{
       v.x* len* t,
@@ -829,7 +829,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec2<T>& normalize_length(const Vec2<T> v, T t, Vec2<T>& out) {
     T len = v.x * v.x + v.y * v.y;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     out.x = v.x * len * t;
     out.y = v.y * len * t;
@@ -848,7 +848,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec3<T>& normalize_length(const Vec3<T>& v, T t, Vec3<T>& out) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     out.x = v.x * len * t;
     out.y = v.y * len * t;
@@ -868,7 +868,7 @@ namespace Graphick::Math {
   template<typename T>
   constexpr Vec4<T>& normalize_length(const Vec4<T>& v, T t, Vec4<T>& out) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-    if (len > 0) len = 1 / std::sqrtf(len);
+    if (len > 0) len = 1 / std::sqrt(len);
 
     out.x = v.x * len * t;
     out.y = v.y * len * t;

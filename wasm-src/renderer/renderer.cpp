@@ -1,6 +1,6 @@
 #include "renderer.h"
 
-#include "geometry/path_dev.h"
+#include "geometry/path.h"
 #include "geometry/internal.h"
 #include "gpu/allocator.h"
 
@@ -171,26 +171,26 @@ namespace Graphick::Renderer {
   //   get()->m_tiler.process_path(path, transform, color, z_index);
   // }
 
-  void Renderer::draw(const Geometry::PathDev& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform) {
+  void Renderer::draw(const Geometry::Path& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform) {
     if (path.empty()) return;
 
     get()->m_tiler.process_stroke(path, transform, stroke);
     get()->m_tiler.process_fill(path, transform, fill);
   }
 
-  void Renderer::draw(const Geometry::PathDev& path, const Stroke& stroke, const mat2x3& transform) {
+  void Renderer::draw(const Geometry::Path& path, const Stroke& stroke, const mat2x3& transform) {
     if (path.empty()) return;
 
     get()->m_tiler.process_stroke(path, transform, stroke);
   }
 
-  void Renderer::draw(const Geometry::PathDev& path, const Fill& fill, const mat2x3& transform) {
+  void Renderer::draw(const Geometry::Path& path, const Fill& fill, const mat2x3& transform) {
     if (path.empty()) return;
 
     get()->m_tiler.process_fill(path, transform, fill);
   }
 
-  void Renderer::draw_outline(const uuid id, const Geometry::PathDev& path, const mat2x3& transform, bool draw_vertices) {
+  void Renderer::draw_outline(const uuid id, const Geometry::Path& path, const mat2x3& transform, bool draw_vertices) {
     if (path.vacant()) return;
     get()->add_line_instances(path, transform);
     if (draw_vertices) get()->add_vertex_instances(id, path, transform);
@@ -681,7 +681,7 @@ namespace Graphick::Renderer {
     m_circle_data.instances.clear();
   }
 
-  void Renderer::add_line_instances(const Geometry::PathDev& path, const mat2x3& transform) {
+  void Renderer::add_line_instances(const Geometry::Path& path, const mat2x3& transform) {
     if (path.empty()) return;
 
     // path.for_each(
@@ -747,7 +747,7 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Renderer::add_vertex_instances(const uuid id, const Geometry::PathDev& path, const mat2x3& transform) {
+  void Renderer::add_vertex_instances(const uuid id, const Geometry::Path& path, const mat2x3& transform) {
 #if 0
     Editor::Scene& scene = Editor::Editor::scene();
 

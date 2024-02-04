@@ -18,7 +18,7 @@
 #include "../../math/rect.h"
 
 namespace Graphick::Renderer::Geometry {
-  class PathDev;
+  class Path;
 }
 
 namespace Graphick::Renderer::Geometry {
@@ -31,8 +31,8 @@ namespace Graphick::Renderer::Geometry {
     PathBuilder(const rect& clip, const dmat2x3& transform, const double tolerance);
     ~PathBuilder() = default;
 
-    Drawable fill(const PathDev& path, const Fill& fill);
-    Drawable stroke(const PathDev& path, const Stroke& stroke);
+    Drawable fill(const Path& path, const Fill& fill);
+    Drawable stroke(const Path& path, const Stroke& stroke);
   private:
     double m_tolerance;            /* The tessellation tolerance. */
     rect m_clip;                   /* The clipping rect. */

@@ -9,7 +9,7 @@
 
 #include "../../history/values.h"
 
-#include "../../renderer/geometry/path_dev.h"
+#include "../../renderer/geometry/path.h"
 #include "../../renderer/properties.h"
 
 #include "../../math/vec4.h"
@@ -46,13 +46,13 @@ namespace Graphick::Editor {
   };
 
   struct PathComponent {
-    Renderer::Geometry::PathDev data;    /* The path data. */
+    Renderer::Geometry::Path data;    /* The path data. */
 
     /**
      * @brief Constructors, copy constructor and move constructor.
      */
     PathComponent();
-    PathComponent(const Renderer::Geometry::PathDev& data);
+    PathComponent(const Renderer::Geometry::Path& data);
     PathComponent(const PathComponent& other);
     PathComponent(PathComponent&& other) noexcept;
 
@@ -68,32 +68,97 @@ namespace Graphick::Editor {
     PathComponent& operator=(PathComponent&& other) noexcept;
   };
 
+  /**
+   * @brief Transform component used to store the transformation matrix of an entity and all its related operations.
+   *
+   * @struct TransformComponent
+  */
   struct TransformComponent {
-    History::Vec2Value position = { 0.0f, 0.0f };
-    // vec2 scale = { 1.0f, 1.0f };
-    // float rotation = 0.0f;
+    TransformComponent(const uuid entity_id, const PathComponent* path_ptr = nullptr);
 
-    TransformComponent(const PathComponent* path_ptr = nullptr);
+    /**
+     * @brief Returns the transformation matrix.
+     *
+     * @return The transformation matrix.
+     */
+    inline mat2x3 get() const { return m_matrix; }
 
-    inline mat2x3 get() const { return m_matrix.get(); }
-    inline mat2x3 inverse() const { return m_matrix.inverse(); }
-    inline History::Mat2x3Value* _value() { return &m_matrix; }
+    /**
+     * @brief Returns the inverse of the transformation matrix.
+     *
+     * @return The inverse of the transformation matrix.
+     */
+    mat2x3 inverse() const;
 
+    /**
+     * @brief Returns a pointer to the underlying data of the transformation matrix.
+     *
+     * @return A pointer to the transformation matrix data.
+     */
+    inline mat2x3* _value() { return &m_matrix; }
+
+    /**
+     * @brief Calculates the bounding rectangle of the entity.
+     *
+     * @return The bounding rectangle of the entity.
+     */
     rect bounding_rect() const;
+
+    /**
+     * @brief Calculates the approximate bounding rectangle of the entity.
+     *
+     * This function is faster than the bounding_rect function, but the result is not as accurate.
+     *
+     * @return The approximate bounding rectangle of the entity.
+     */
     rect approx_bounding_rect() const;
 
-    inline vec2 transform(vec2 point) const { return m_matrix.get() * point; }
-    inline vec2 revert(vec2 point) const { return inverse() * point; }
+    /**
+     * @brief Transforms a point using the transformation matrix.
+     *
+     * @param point The point to transform.
+     * @return The transformed point.
+     */
+    inline vec2 transform(vec2 point) const { return m_matrix * point; }
 
-    inline void translate(vec2 delta) { m_matrix.translate(delta); }
-    inline void scale(vec2 delta) { m_matrix.scale(delta); }
-    inline void rotate(float delta) { m_matrix.rotate(delta); }
+    /**
+     * @brief Reverts a point using the inverse of the transformation matrix.
+     *
+     * @param point The point to revert.
+     * @return The reverted point.
+     */
+    vec2 revert(vec2 point) const;
 
-    inline void apply() { m_matrix.apply(); }
+    /**
+     * @brief Translates the entity by a given delta.
+     *
+     * @param delta The translation delta.
+     */
+    void translate(vec2 delta);
+
+    /**
+     * @brief Scales the entity by a given delta.
+     *
+     * @param delta The scale delta.
+     */
+    inline void scale(vec2 delta);
+
+    /**
+     * @brief Rotates the entity by a given delta.
+     *
+     * @param delta The rotation delta.
+     */
+    inline void rotate(float delta);
+
+    /**
+     * @todo decide if necessary
+     */
+    inline void apply() { /*m_matrix.apply();*/ }
   private:
-    History::Mat2x3Value m_matrix;
+    mat2x3 m_matrix;
 
     const PathComponent* m_path_ptr;    /* A pointer to the path component of the entity, can be nullptr if the entity is not an element. */
+    const uuid m_entity_id;             /* The id of the entity this component belongs to, it is used for history tracking. */
   };
 
   struct StrokeComponent {

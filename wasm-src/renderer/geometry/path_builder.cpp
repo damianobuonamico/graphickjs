@@ -8,7 +8,7 @@
 
 #include "path_builder.h"
 
-#include "path_dev.h"
+#include "path.h"
 
 #include "../../math/mat2x3.h"
 #include "../../math/vector.h"
@@ -53,7 +53,7 @@ namespace Graphick::Renderer::Geometry {
   PathBuilder::PathBuilder(const rect& clip, const dmat2x3& transform, const double tolerance) :
     m_clip(clip), m_transform(transform), m_tolerance(tolerance) {}
 
-  Drawable PathBuilder::fill(const PathDev& path, const Fill& fill) {
+  Drawable PathBuilder::fill(const Path& path, const Fill& fill) {
     Drawable drawable{ 0, fill, m_clip };
     Contour* contour = nullptr;
     dvec2 last;
@@ -112,7 +112,7 @@ namespace Graphick::Renderer::Geometry {
     return drawable;
   }
 
-  Drawable PathBuilder::stroke(const PathDev& path, const Stroke& stroke) {
+  Drawable PathBuilder::stroke(const Path& path, const Stroke& stroke) {
     Drawable drawable(0, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, m_clip);
     Contour* contour = nullptr;
 
@@ -167,7 +167,7 @@ namespace Graphick::Renderer::Geometry {
           const auto segment = path.back(move_index);
 
           switch (segment.type) {
-          case PathDev::Command::Line: {
+          case Path::Command::Line: {
             const dvec2 a = m_transform * dvec2(segment.p0);
             const dvec2 b = m_transform * dvec2(segment.p1);
 
@@ -179,9 +179,9 @@ namespace Graphick::Renderer::Geometry {
 
             break;
           }
-          case PathDev::Command::Quadratic:
+          case Path::Command::Quadratic:
             break;
-          case PathDev::Command::Cubic: {
+          case Path::Command::Cubic: {
             const dvec2 a = m_transform * dvec2(segment.p0);
             const dvec2 b = m_transform * dvec2(segment.p1);
             const dvec2 c = m_transform * dvec2(segment.p2);
@@ -282,7 +282,7 @@ namespace Graphick::Renderer::Geometry {
         dvec2 end1;
 
         switch (segment.type) {
-        case PathDev::Command::Line: {
+        case Path::Command::Line: {
           const dvec2 a1 = m_transform * dvec2(segment.p1);
           const dvec2 b1 = m_transform * dvec2(segment.p0);
 
@@ -291,9 +291,9 @@ namespace Graphick::Renderer::Geometry {
 
           break;
         }
-        case PathDev::Command::Quadratic:
+        case Path::Command::Quadratic:
           break;
-        case PathDev::Command::Cubic: {
+        case Path::Command::Cubic: {
           const dvec2 a1 = m_transform * dvec2(segment.p3);
           const dvec2 b1 = m_transform * dvec2(segment.p2);
           const dvec2 c1 = m_transform * dvec2(segment.p1);
@@ -304,7 +304,7 @@ namespace Graphick::Renderer::Geometry {
 
           break;
         }
-        case PathDev::Command::Move: {
+        case Path::Command::Move: {
           n1 = last_dirs.back();
           end1 = last_points.back();
           break;

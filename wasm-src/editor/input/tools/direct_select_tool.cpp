@@ -129,7 +129,7 @@ namespace Graphick::Editor::Input {
       if (!scene.has_entity(id)) continue;
 
       Entity entity = scene.get_entity(id);
-      History::Mat2x3Value* transform = entity.get_component<TransformComponent>()._value();
+      // History::Mat2x3Value* transform = entity.get_component<TransformComponent>()._value();
 
       if (entry.type == Selection::SelectionEntry::Type::Element && entity.is_element() && !((Selection::SelectionElementEntry&)(entry)).full()) {
 #if 0
@@ -149,7 +149,7 @@ namespace Graphick::Editor::Input {
         }
 #endif
       } else if (entity.has_component<TransformComponent>()) {
-        m_matrix_cache.push_back(transform);
+        // m_matrix_cache.push_back(transform);
       }
     }
   }

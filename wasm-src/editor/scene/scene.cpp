@@ -6,7 +6,7 @@
 #include "../input/tools/pen_tool.h"
 
 #include "../../renderer/renderer.h"
-#include "../../renderer/geometry/path_dev.h"
+#include "../../renderer/geometry/path.h"
 
 #include "../../history/command_history.h"
 #include "../../history/commands.h"
@@ -366,17 +366,17 @@ namespace Graphick::Editor {
 
     entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
     PathComponent& path_component = entity.add_component<PathComponent>();
-    entity.add_component<TransformComponent>(&path_component);
+    entity.add_component<TransformComponent>(entity.id(), &path_component);
 
     return entity;
   }
 
-  Entity Scene::create_element(Renderer::Geometry::PathDev& path, const std::string& tag) {
+  Entity Scene::create_element(Renderer::Geometry::Path& path, const std::string& tag) {
     Entity entity = create_entity(tag);
 
     entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
     PathComponent& path_component = entity.add_component<PathComponent>(path);
-    entity.add_component<TransformComponent>(&path_component);
+    entity.add_component<TransformComponent>(entity.id(), &path_component);
 
     return entity;
   }
@@ -415,7 +415,7 @@ namespace Graphick::Editor {
         auto components = m_registry.get<IDComponent, PathComponent, TransformComponent>(*it);
 
         const uuid id = std::get<0>(components).id;
-        const Renderer::Geometry::PathDev& path = std::get<1>(components).data;
+        const Renderer::Geometry::Path& path = std::get<1>(components).data;
         const TransformComponent& transform = std::get<2>(components);
 
         if (!has_entity(id)) return;

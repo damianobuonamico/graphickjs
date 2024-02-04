@@ -6,7 +6,7 @@
 
 #include "wasm-src/utils/console.h"
 
-#include "wasm-src/renderer/geometry/path_dev.h"
+#include "wasm-src/renderer/geometry/path.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -123,34 +123,34 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event((int)(width / dpr), (int)(height / dpr), dpr, 0, 0);
 
-  Graphick::Renderer::Geometry::PathDev path_dev{};
+  Graphick::Renderer::Geometry::Path path{};
 
-  path_dev.move_to({ 0.0f, 0.0f });
-  path_dev.move_to({ 0.0f, 0.0f });
-  path_dev.move_to({ 0.0f, 0.0f });
-  path_dev.line_to({ 20.0f, -20.0f });
-  path_dev.quadratic_to({ 1.0f, 0.0f }, { 2.0f, 0.0f });
-  path_dev.line_to({ 50.0f, -40.0f });
-  path_dev.close();
+  path.move_to({ 0.0f, 0.0f });
+  path.move_to({ 0.0f, 0.0f });
+  path.move_to({ 0.0f, 0.0f });
+  path.line_to({ 20.0f, -20.0f });
+  path.quadratic_to({ 1.0f, 0.0f }, { 2.0f, 0.0f });
+  path.line_to({ 50.0f, -40.0f });
+  path.close();
 
-  path_dev.move_to({ 300.0f, 100.0f });
-  path_dev.move_to({ 400.0f, 100.0f });
-  path_dev.move_to({ 500.0f, 100.0f });
-  path_dev.move_to({ 600.0f, 100.0f });
-  path_dev.move_to({ 700.0f, 100.0f });
-  path_dev.move_to({ 800.0f, 100.0f });
-  path_dev.quadratic_to({ 1.0f, 0.0f }, { 2.0f, 0.0f });
-  path_dev.cubic_to({ 1.0f, 0.0f }, { 1.0f, 0.0f }, { 3.0f, 0.0f });
-  path_dev.cubic_to({ 1.0f, 0.0f }, { 1.0f, 0.0f }, { 3.0f, 0.0f });
-  path_dev.line_to({ 350.0f, 200.0f });
-  path_dev.line_to({ 250.0f, 200.0f });
-  path_dev.close();
-  path_dev.move_to({ 0.0f, 0.0f });
+  path.move_to({ 300.0f, 100.0f });
+  path.move_to({ 400.0f, 100.0f });
+  path.move_to({ 500.0f, 100.0f });
+  path.move_to({ 600.0f, 100.0f });
+  path.move_to({ 700.0f, 100.0f });
+  path.move_to({ 800.0f, 100.0f });
+  path.quadratic_to({ 1.0f, 0.0f }, { 2.0f, 0.0f });
+  path.cubic_to({ 1.0f, 0.0f }, { 1.0f, 0.0f }, { 3.0f, 0.0f });
+  path.cubic_to({ 1.0f, 0.0f }, { 1.0f, 0.0f }, { 3.0f, 0.0f });
+  path.line_to({ 350.0f, 200.0f });
+  path.line_to({ 250.0f, 200.0f });
+  path.close();
+  path.move_to({ 0.0f, 0.0f });
 
-  Graphick::console::log(path_dev.closed(0));
-  Graphick::console::log(path_dev.closed(1));
+  Graphick::console::log(path.closed(0));
+  Graphick::console::log(path.closed(1));
 
-  path_dev.for_each([](const Graphick::vec2 p0) {
+  path.for_each([](const Graphick::vec2 p0) {
     Graphick::console::log("move_to", p0);
     }, &line_fn, [](const Graphick::vec2 p1, const Graphick::vec2 p2) {
       Graphick::console::log("quadratic_to", p2);
@@ -158,28 +158,28 @@ int main() {
 
 
   Graphick::console::log("----------for_each----------");
-  path_dev.for_each_reversed([](const Graphick::vec2 p0) {
+  path.for_each_reversed([](const Graphick::vec2 p0) {
     Graphick::console::log("move_to", p0);
     }, nullptr, [](const Graphick::vec2 p0, const Graphick::vec2 p1, const Graphick::vec2 p2) {
       Graphick::console::log("quadratic_to", p2);
       });
 
   // Graphick::console::log("----------for_each----------");
-  // for (const auto& [type, p0, p1, p2, p3] : path_dev) {
+  // for (const auto& [type, p0, p1, p2, p3] : path) {
   //   Graphick::console::log((int)type);
   // }
 
   // Graphick::console::log("----------iterator----------");
-  // for (auto it = path_dev.begin(), end_it = path_dev.end(); it != end_it; ++it) {
+  // for (auto it = path.begin(), end_it = path.end(); it != end_it; ++it) {
   //   Graphick::console::log((int)(*it).type);
   // }
 
   // Graphick::console::log("----------reverse_iterator----------");
-  // for (auto it = path_dev.rbegin(), rend_it = path_dev.rend(); it != rend_it; ++it) {
+  // for (auto it = path.rbegin(), rend_it = path.rend(); it != rend_it; ++it) {
   //   Graphick::console::log((int)(*it).type);
   // }
 
-  // Graphick::console::log("back", (int)path_dev.back().type);
+  // Graphick::console::log("back", (int)path.back().type);
 
 #define TIGER
 // #define OBJECTS
@@ -192,7 +192,7 @@ int main() {
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Entity");
   // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_element("Test Entity 1");
 
-  Graphick::Renderer::Geometry::PathDev& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
+  Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.get_component<Graphick::Editor::PathComponent>().path;
 
   // path.move_to({ 360.0f, 20.0f });

@@ -8,7 +8,7 @@
 #include "../../math/math.h"
 #include "../../math/scalar.h"
 
-#include "../../history/command_history.h"
+#include "../../history/history.h"
 
 #include "../../utils/console.h"
 
@@ -198,7 +198,7 @@ namespace Graphick::Editor::Input {
       scene.tool_state.set_active(keys.ctrl_state_changed ? Tool::ToolType::Zoom : Tool::ToolType::Pan);
     }
 
-    History::CommandHistory::end_batch();
+    // History::CommandHistory::end_batch();
 
     scene.tool_state.on_pointer_down(scene.viewport.zoom());
 
@@ -260,7 +260,7 @@ namespace Graphick::Editor::Input {
 
     scene.tool_state.on_pointer_up();
 
-    History::CommandHistory::end_batch();
+    // History::CommandHistory::end_batch();
 
     if (pointer.button == PointerButton::Middle) {
       scene.tool_state.set_active(scene.tool_state.current().type());
@@ -286,9 +286,9 @@ namespace Graphick::Editor::Input {
   bool InputManager::on_key_down(KeyboardKey key) {
     if ((key == KeyboardKey::Z || (int)key == 90 /* TEMP: GLFW */) && keys.ctrl) {
       if (keys.shift) {
-        History::CommandHistory::redo();
+        History::History::redo();
       } else {
-        History::CommandHistory::undo();
+        History::History::undo();
       }
 
       Editor::render();

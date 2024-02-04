@@ -1,511 +1,626 @@
+/**
+ * @file path.cpp
+ * @brief Implementation of the Path class.
+ *
+ * @todo Implement history.
+ * @todo Implement in and out handles.
+ * @todo Better closing algorithm.
+ * @todo is_point_in_path() should have a stroke of std::max(stroke_width, threshold).
+ */
+
 #include "path.h"
 
-#include "../../math/math.h"
-#include "../../math/mat2.h"
+#include "path_builder.h"
+
+#include "../properties.h"
+
 #include "../../math/matrix.h"
 #include "../../math/vector.h"
-#include "../../math/algorithms/fit.h"
+#include "../../math/scalar.h"
+#include "../../math/mat2x3.h"
+#include "../../math/mat2.h"
+#include "../../math/math.h"
 
-#include "../../editor/editor.h"
-#include "../../editor/input/tools/pen_tool.h"
-
-#include "../../history/command_history.h"
-#include "../../history/commands.h"
-
-#include "../../utils/defines.h"
 #include "../../utils/console.h"
-
-namespace Graphick::History {
-
-  class InsertInSegmentsVectorCommand : public InsertInVectorCommand<std::shared_ptr<Renderer::Geometry::Segment>> {
-  public:
-    InsertInSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, const std::shared_ptr<Renderer::Geometry::Segment>& value)
-      : InsertInVectorCommand(vector, value), m_path(path) {
-      Editor::Input::PenTool* pen = Editor::Editor::scene().tool_state.pen();
-      if (!pen) return;
-
-      m_pen = pen->pen_element() == m_path->id;
-    }
-
-    InsertInSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, const std::shared_ptr<Renderer::Geometry::Segment>& value, int index)
-      : InsertInVectorCommand(vector, value, index), m_path(path) {
-      Editor::Input::PenTool* pen = Editor::Editor::scene().tool_state.pen();
-      if (!pen) return;
-
-      m_pen = pen->pen_element() == m_path->id;
-    }
-
-    virtual void execute() override {
-      InsertInVectorCommand::execute();
-      recalculate();
-
-      Editor::Scene& scene = Editor::Editor::scene();
-
-      scene.selection.clear();
-      if (!m_vector->empty()) {
-        if (m_path->m_reversed) {
-          scene.selection.select_vertex(m_values.back()->m_p0->id, m_path->id);
-        } else {
-          scene.selection.select_vertex(m_values.back()->m_p3->id, m_path->id);
-        }
-      } else if (m_path->m_last_point) {
-        scene.selection.select_vertex(m_path->m_last_point->id, m_path->id);
-      }
-    }
-
-    virtual void undo() override {
-      if (m_vector->size() == 1) {
-        if (m_path->m_reversed) {
-          m_path->m_last_point = m_vector->back()->m_p3;
-        } else {
-          m_path->m_last_point = m_vector->front()->m_p0;
-        }
-      }
-
-      InsertInVectorCommand::undo();
-      recalculate();
-
-      Editor::Scene& scene = Editor::Editor::scene();
-
-      scene.selection.clear();
-      if (!m_vector->empty()) {
-        if (m_path->m_reversed) {
-          scene.selection.select_vertex(m_vector->front()->m_p0->id, m_path->id);
-        } else {
-          scene.selection.select_vertex(m_vector->back()->m_p3->id, m_path->id);
-        }
-      } else if (m_path->m_last_point) {
-        scene.selection.select_vertex(m_path->m_last_point->id, m_path->id);
-      }
-    }
-
-    virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      if (command->type != Type::InsertInVector) return false;
-
-      InsertInSegmentsVectorCommand* casted_command = static_cast<InsertInSegmentsVectorCommand*>(command.get());
-
-      if (casted_command->m_path != this->m_path || casted_command->m_vector != this->m_vector) return false;
-      casted_command->m_values.insert(casted_command->m_values.end(), m_values.begin(), m_values.end());
-      casted_command->m_indices.insert(casted_command->m_indices.end(), m_indices.begin(), m_indices.end());
-
-      return true;
-    }
-  private:
-    void recalculate() {
-      if (!m_vector->empty()) {
-        if (m_path->m_reversed) {
-          m_path->m_last_point = m_vector->front()->m_p0;
-        } else {
-          m_path->m_last_point = m_vector->back()->m_p3;
-        }
-
-        m_path->m_closed = m_vector->front()->p0_id() == m_vector->back()->p3_id();
-      } else {
-        m_path->m_closed = false;
-      }
-
-      Editor::Input::PenTool* pen = Editor::Editor::scene().tool_state.pen();
-      if (!pen) return;
-
-      if (m_path->vacant() || m_path->closed()) {
-        pen->set_pen_element(0);
-      } else if (m_pen) {
-        pen->set_pen_element(m_path->id);
-      }
-    }
-  private:
-    Renderer::Geometry::Path* m_path;
-    bool m_pen;
-  };
-
-  class EraseFromSegmentsVectorCommand : public EraseFromVectorCommand<std::shared_ptr<Renderer::Geometry::Segment>> {
-  public:
-    EraseFromSegmentsVectorCommand(Renderer::Geometry::Path* path, std::vector<std::shared_ptr<Renderer::Geometry::Segment>>* vector, int index)
-      : EraseFromVectorCommand(vector, vector->at(index), index), m_path(path) {
-      Editor::Input::PenTool* pen = Editor::Editor::scene().tool_state.pen();
-      if (!pen) return;
-
-      m_pen = pen->pen_element() == m_path->id;
-    }
-
-    virtual void execute() override {
-      if (m_vector->size() == 1) {
-        if (m_path->m_reversed) {
-          m_path->m_last_point = m_vector->back()->m_p3;
-        } else {
-          m_path->m_last_point = m_vector->front()->m_p0;
-        }
-      }
-
-      EraseFromVectorCommand::execute();
-      recalculate();
-    }
-
-    virtual void undo() override {
-      EraseFromVectorCommand::undo();
-      recalculate();
-    }
-
-    virtual bool merge_with(std::unique_ptr<Command>& command) override {
-      if (command->type != Type::EraseFromVector) return false;
-
-      EraseFromSegmentsVectorCommand* casted_command = static_cast<EraseFromSegmentsVectorCommand*>(command.get());
-
-      if (casted_command->m_path != this->m_path || casted_command->m_vector != this->m_vector) return false;
-      casted_command->m_values.insert(casted_command->m_values.end(), m_values.begin(), m_values.end());
-      casted_command->m_indices.insert(casted_command->m_indices.end(), m_indices.begin(), m_indices.end());
-
-      return true;
-    }
-  private:
-    void recalculate() {
-      if (!m_vector->empty()) {
-        if (m_path->m_reversed) {
-          m_path->m_last_point = m_vector->front()->m_p0;
-        } else {
-          m_path->m_last_point = m_vector->back()->m_p3;
-        }
-
-        m_path->m_closed = m_vector->front()->p0_id() == m_vector->back()->p3_id();
-      } else {
-        m_path->m_closed = false;
-      }
-
-      Editor::Scene& scene = Editor::Editor::scene();
-
-      scene.selection.clear();
-      if (!m_vector->empty()) {
-        if (m_path->m_reversed) {
-          scene.selection.select_vertex(m_vector->front()->m_p0->id, m_path->id);
-        } else {
-          scene.selection.select_vertex(m_vector->back()->m_p3->id, m_path->id);
-        }
-      } else if (m_path->m_last_point) {
-        scene.selection.select_vertex(m_path->m_last_point->id, m_path->id);
-      }
-
-      Editor::Input::PenTool* pen = scene.tool_state.pen();
-      if (!pen) return;
-
-      if (m_path->vacant() || m_path->closed()) {
-        pen->set_pen_element(0);
-      } else if (m_pen) {
-        pen->set_pen_element(m_path->id);
-      }
-    }
-  private:
-    Renderer::Geometry::Path* m_path;
-    bool m_pen;
-  };
-
-}
+#include "../../utils/assert.h"
 
 namespace Graphick::Renderer::Geometry {
 
-  Path::Path(const uuid id) :
-    id(id),
-    m_in_handle(std::make_shared<History::Vec2Value>(std::numeric_limits<vec2>::lowest())),
-    m_out_handle(std::make_shared<History::Vec2Value>(std::numeric_limits<vec2>::lowest())),
-    m_segments(this) {}
+  /* -- Segment -- */
 
-  Path::Path(const uuid id, const Path& path) :
-    id(id),
-    m_closed(path.m_closed),
-    m_reversed(path.m_reversed),
-    m_in_handle(path.m_in_handle),
-    m_out_handle(path.m_out_handle),
-    m_segments(this, path.m_segments) {}
+  bool Path::Segment::is_point() const {
+    bool point = p0 == p1;
 
-  Path::Path(const Path& path) :
-    id(path.id),
-    m_closed(path.m_closed),
-    m_reversed(path.m_reversed),
-    m_in_handle(path.m_in_handle),
-    m_out_handle(path.m_out_handle),
-    m_segments(this, path.m_segments) {}
+    if (point) {
+      if (is_quadratic()) return p1 == p2;
+      if (is_cubic()) return p1 == p2 && p2 == p3;
+    }
 
-  Path::Path(Path&& path) noexcept :
-    id(path.id),
-    m_closed(path.m_closed),
-    m_reversed(path.m_reversed),
-    m_in_handle(std::move(path.m_in_handle)),
-    m_out_handle(std::move(path.m_out_handle)),
-    m_segments(this, std::move(path.m_segments)) {}
+    return point;
+  }
 
+  /* -- Iterator -- */
 
-  const std::vector<ControlPoint*> Path::vertices() const {
-    if (m_segments.empty()) {
-      if (m_last_point) {
-        return { m_last_point.get() };
+  Path::Iterator::Iterator(const Path& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
+    if (m_index < path.m_commands_size && path.get_command(m_index) == Command::Move) m_index++;
+
+    GK_ASSERT(m_index > 0 && m_index <= path.m_commands_size, "Index out of range.");
+
+    if (m_index < path.m_commands_size / 2) {
+      for (size_t i = 0; i < m_index; i++) {
+        switch (path.get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          m_point_index += 1;
+          break;
+        case Command::Quadratic:
+          m_point_index += 2;
+          break;
+        case Command::Cubic:
+          m_point_index += 3;
+          break;
+        }
       }
-      return {};
-    }
+    } else {
+      m_point_index = path.m_points.size();
 
-    std::vector<ControlPoint*> vertices;
-
-    for (const auto& segment : m_segments) {
-      vertices.push_back(segment->m_p0.get());
-    }
-
-    if (!m_closed) {
-      vertices.push_back(m_segments.back().m_p3.get());
-    }
-
-    return vertices;
-  }
-
-  const std::vector<uuid> Path::vertices_ids() const {
-    if (m_segments.empty()) {
-      if (m_last_point) {
-        return { m_last_point->id };
+      for (size_t i = path.m_commands_size - 1; i >= m_index; i--) {
+        switch (path.get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          m_point_index -= 1;
+          break;
+        case Command::Quadratic:
+          m_point_index -= 2;
+          break;
+        case Command::Cubic:
+          m_point_index -= 3;
+          break;
+        }
       }
-      return {};
     }
-
-    std::vector<uuid> vertices;
-
-    for (const auto& segment : m_segments) {
-      vertices.push_back(segment->m_p0->id);
-    }
-
-    if (!m_closed) {
-      vertices.push_back(m_segments.back().m_p3->id);
-    }
-
-    return vertices;
   }
 
-  std::optional<Segment::ControlPointHandle> Path::in_handle_ptr() const {
-    if (!m_in_handle || m_in_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
-    return m_in_handle;
-  }
+  Path::Iterator& Path::Iterator::operator++() {
+    GK_ASSERT(m_index < m_path.m_commands_size, "Cannot increment the end iterator.");
 
-  std::optional<Segment::ControlPointHandle> Path::out_handle_ptr() const {
-    if (!m_out_handle || m_out_handle->get() == std::numeric_limits<vec2>::lowest()) return std::nullopt;
-    return m_out_handle;
-  }
-
-  Path::RelativeHandles Path::relative_handles(const uuid id) {
-    GK_TOTAL("Path::relative_handles");
-
-    RelativeHandles handles;
-
-    if (vacant()) return handles;
-
-    auto in_handle = in_handle_ptr();
-    auto out_handle = out_handle_ptr();
-
-    size_t i = 0;
-
-    if (m_segments.empty()) {
-      if (in_handle) handles.in_handle = in_handle->get();
-      if (out_handle) handles.out_handle = out_handle->get();
-
-      return handles;
+    switch (m_path.get_command(m_index)) {
+    case Command::Move:
+    case Command::Line:
+      m_point_index += 1;
+      break;
+    case Command::Quadratic:
+      m_point_index += 2;
+      break;
+    case Command::Cubic:
+      m_point_index += 3;
+      break;
     }
 
-    for (auto& segment : m_segments) {
-      if (segment->p0_id() == id) {
-        handles.out_segment = segment.get();
-        if (segment->has_p1()) handles.out_handle = segment->m_p1.get();
+    m_index += 1;
+
+    if (m_index < m_path.m_commands_size && m_path.get_command(m_index) == Command::Move) operator++();
+
+    return *this;
+  }
+
+  Path::Iterator Path::Iterator::operator++(int) {
+    Iterator tmp = *this;
+    ++(*this);
+
+    return tmp;
+  }
+
+  Path::Iterator& Path::Iterator::operator--() {
+    GK_ASSERT(m_index > 0, "Cannot decrement the begin iterator.");
+
+    m_index -= 1;
+
+    switch (m_path.get_command(m_index)) {
+    case Command::Move:
+      operator--();
+    case Command::Line:
+      m_point_index -= 1;
+      break;
+    case Command::Quadratic:
+      m_point_index -= 2;
+      break;
+    case Command::Cubic:
+      m_point_index -= 3;
+      break;
+    }
+
+    return *this;
+  }
+
+  Path::Iterator Path::Iterator::operator--(int) {
+    Iterator tmp = *this;
+    --(*this);
+
+    return tmp;
+  }
+
+  Path::Iterator::value_type Path::Iterator::operator*() const {
+    const Command command = m_path.get_command(m_index);
+
+    switch (command) {
+    case Command::Cubic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2] };
+    }
+    case Command::Quadratic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1] };
+    }
+    case Command::Line: {
+      GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index] };
+    }
+    default:
+    case Command::Move:
+      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return { m_path.m_points[m_point_index] };
+    }
+  }
+
+  /* -- ReverseIterator -- */
+
+  Path::ReverseIterator::ReverseIterator(const Path& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
+    if (m_index != 0 && path.get_command(m_index) == Command::Move) m_index--;
+
+    GK_ASSERT(m_index >= 0 && m_index < path.m_commands_size, "Index out of range.");
+
+    if (m_index < path.m_commands_size / 2) {
+      for (size_t i = 0; i < m_index; i++) {
+        switch (path.get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          m_point_index += 1;
+          break;
+        case Command::Quadratic:
+          m_point_index += 2;
+          break;
+        case Command::Cubic:
+          m_point_index += 3;
+          break;
+        }
+      }
+    } else {
+      m_point_index = path.m_points.size();
+
+      for (size_t i = path.m_commands_size - 1; i >= m_index; i--) {
+        switch (path.get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          m_point_index -= 1;
+          break;
+        case Command::Quadratic:
+          m_point_index -= 2;
+          break;
+        case Command::Cubic:
+          m_point_index -= 3;
+          break;
+        }
+      }
+    }
+  }
+
+  Path::ReverseIterator& Path::ReverseIterator::operator++() {
+    GK_ASSERT(m_index > 0, "Cannot increment the rend iterator.");
+
+    m_index -= 1;
+
+    switch (m_path.get_command(m_index)) {
+    case Command::Move:
+      if (m_index > 0) operator++();
+    case Command::Line:
+      m_point_index -= 1;
+      break;
+    case Command::Quadratic:
+      m_point_index -= 2;
+      break;
+    case Command::Cubic:
+      m_point_index -= 3;
+      break;
+    }
+
+    return *this;
+  }
+
+  Path::ReverseIterator Path::ReverseIterator::operator++(int) {
+    ReverseIterator tmp = *this;
+    ++(*this);
+
+    return tmp;
+  }
+
+  Path::ReverseIterator& Path::ReverseIterator::operator--() {
+    GK_ASSERT(m_index < m_path.m_commands_size, "Cannot decrement the rbegin iterator.");
+
+    switch (m_path.get_command(m_index)) {
+    case Command::Move:
+    case Command::Line:
+      m_point_index += 1;
+      break;
+    case Command::Quadratic:
+      m_point_index += 2;
+      break;
+    case Command::Cubic:
+      m_point_index += 3;
+      break;
+    }
+
+    m_index += 1;
+
+    if (m_index < m_path.m_commands_size && m_path.get_command(m_index) == Command::Move) operator++();
+
+    return *this;
+  }
+
+  Path::ReverseIterator Path::ReverseIterator::operator--(int) {
+    ReverseIterator tmp = *this;
+    --(*this);
+
+    return tmp;
+  }
+
+  Path::ReverseIterator::value_type Path::ReverseIterator::operator*() const {
+    const Command command = m_path.get_command(m_index);
+
+    switch (command) {
+    case Command::Cubic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2] };
+    }
+    case Command::Quadratic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1] };
+    }
+    case Command::Line: {
+      GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index] };
+    }
+    default:
+    case Command::Move:
+      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
+      return { m_path.m_points[m_point_index] };
+    }
+  }
+
+  /* -- Path -- */
+
+  Path::Path() : m_points(), m_commands() {}
+
+  Path::Path(const Path& other) : m_points(other.m_points), m_commands(other.m_commands), m_commands_size(other.m_commands_size) {}
+
+  Path::Path(Path&& other) noexcept : m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)), m_commands_size(other.m_commands_size) {}
+
+  Path& Path::operator=(const Path& other) {
+    m_points = other.m_points;
+    m_commands = other.m_commands;
+
+    return *this;
+  }
+
+  Path& Path::operator=(Path&& other) noexcept {
+    m_points = std::move(other.m_points);
+    m_commands = std::move(other.m_commands);
+
+    return *this;
+  }
+
+  Path::Segment Path::front(const size_t move_index) const {
+    size_t move_i = 0;
+
+    for (size_t i = 0; i < m_commands_size; i++) {
+      if (get_command(i) == Command::Move) {
+        if (move_i == move_index) {
+          return *Iterator(*this, i + 0);
+        }
+
+        move_i += 1;
+      }
+    }
+
+    return front();
+  }
+
+  Path::Segment Path::back(const size_t move_index) const {
+    size_t move_i = 0;
+
+    for (size_t i = 0; i < m_commands_size; i++) {
+      if (get_command(i) == Command::Move) {
+        if (move_i == move_index + 1) {
+          return *Iterator(*this, i - 1);
+        }
+
+        move_i += 1;
+      }
+    }
+
+    return back();
+  }
+
+  void Path::for_each(
+    std::function<void(const vec2)> move_callback,
+    std::function<void(const vec2)> line_callback,
+    std::function<void(const vec2, const vec2)> quadratic_callback,
+    std::function<void(const vec2, const vec2, const vec2)> cubic_callback
+  ) const {
+    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+
+        if (cubic_callback) {
+          cubic_callback(m_points[j], m_points[j + 1], m_points[j + 2]);
+        }
+
+        j += 3;
 
         break;
       }
+      case Command::Quadratic: {
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
 
-      i++;
-    }
-
-    if (i == 0) {
-      if (m_closed) {
-        handles.in_segment = &m_segments.back();
-        if (handles.in_segment->has_p2()) {
-          handles.in_handle = m_segments.back().m_p2.get();
+        if (quadratic_callback) {
+          quadratic_callback(m_points[j], m_points[j + 1]);
         }
-      } else if (in_handle) {
-        handles.in_handle = in_handle->get();
-      }
-    } else if (i >= m_segments.size()) {
-      if (m_segments.back().p3_id() == id) {
-        handles.in_segment = &m_segments.back();
-        if (m_segments.back().has_p2()) handles.in_handle = m_segments.back().m_p2.get();
 
-        if (m_closed) {
-          handles.out_segment = &m_segments.front();
-          if (handles.out_segment->has_p1()) handles.out_handle = handles.out_segment->m_p1.get();
-        } else if (out_handle) {
-          handles.out_handle = out_handle->get();
+        j += 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+
+        if (line_callback) {
+          line_callback(m_points[j]);
         }
+
+        j += 1;
+
+        break;
       }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+
+        if (move_callback) {
+          move_callback(m_points[j]);
+        }
+
+        j += 1;
+
+        break;
+      }
+      }
+    }
+  }
+
+  void Path::for_each_reversed(
+    std::function<void(const vec2)> move_callback,
+    std::function<void(const vec2, const vec2)> line_callback,
+    std::function<void(const vec2, const vec2, const vec2)> quadratic_callback,
+    std::function<void(const vec2, const vec2, const vec2, const vec2)> cubic_callback
+  ) const {
+    for (int i = static_cast<int>(m_commands_size) - 1, j = static_cast<int>(m_points.size()); i >= 0; i--) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j - 4 >= 0, "Not enough points for a cubic bezier.");
+
+        if (cubic_callback) {
+          cubic_callback(m_points[j - 4], m_points[j - 3], m_points[j - 2], m_points[j - 1]);
+        }
+
+        j -= 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j - 3 >= 0, "Not enough points for a quadratic bezier.");
+
+        if (quadratic_callback) {
+          quadratic_callback(m_points[j - 3], m_points[j - 2], m_points[j - 1]);
+        }
+
+        j -= 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j - 2 >= 0, "Not enough points for a line.");
+
+        if (line_callback) {
+          line_callback(m_points[j - 2], m_points[j - 1]);
+        }
+
+        j -= 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j - 1 >= 0, "Points vector subscript out of range.");
+
+        if (move_callback) {
+          move_callback(m_points[j - 1]);
+        }
+
+        j -= 1;
+
+        break;
+      }
+      }
+    }
+  }
+
+  bool Path::closed(const size_t move_index) const {
+    size_t last_point = 0;
+    size_t move_i = 0;
+
+    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        if (move_i == move_index) {
+          last_point = point_i;
+        } else if (move_i == move_index + 1) {
+          return m_points[point_i - 1] == m_points[last_point];
+        }
+
+        move_i += 1;
+      case Command::Line:
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        point_i += 3;
+        break;
+      }
+    }
+
+    return m_points.back() == m_points[last_point];
+  }
+
+  void Path::move_to(const vec2 point) {
+    if (!vacant() && get_command(m_commands_size - 1) == Command::Move) {
+      m_points[m_points.size() - 1] = point;
+      return;
+    }
+
+    m_points.push_back(point);
+    push_command(Command::Move);
+  }
+
+  void Path::line_to(const vec2 point) {
+    GK_ASSERT(!vacant(), "Cannot add a line to a vacant path.");
+
+    m_points.push_back(point);
+    push_command(Command::Line);
+  }
+
+  void Path::quadratic_to(const vec2 control, const vec2 point) {
+    GK_ASSERT(!vacant(), "Cannot add a quadratic bezier to a vacant path.");
+
+    m_points.insert(m_points.end(), { control, point });
+    push_command(Command::Quadratic);
+  }
+
+  void Path::cubic_to(const vec2 control1, const vec2 control2, const vec2 point) {
+    GK_ASSERT(!vacant(), "Cannot add a cubic bezier to a vacant path.");
+
+    m_points.insert(m_points.end(), { control1, control2, point });
+    push_command(Command::Cubic);
+  }
+
+  void Path::cubic_to(const vec2 control, const vec2 point, const bool is_control_1) {
+    GK_ASSERT(!vacant(), "Cannot add a cubic bezier to a vacant path.");
+
+    if (is_control_1) {
+      m_points.insert(m_points.end(), { control, point, point });
     } else {
-      handles.in_segment = &m_segments[i - 1];
-      if (handles.in_segment->has_p2()) handles.in_handle = handles.in_segment->m_p2.get();
+      m_points.insert(m_points.end(), { m_points.back(), control, point });
     }
 
-    if (m_reversed) {
-      std::swap(handles.in_segment, handles.out_segment);
-      std::swap(handles.in_handle, handles.out_handle);
-    }
-
-    return handles;
+    push_command(Command::Cubic);
   }
 
-  bool Path::is_open_end(const uuid id) const {
-    if (m_closed) return false;
+  void Path::arc_to(const vec2 center, const vec2 radius, const float x_axis_rotation, const bool large_arc_flag, const bool sweep_flag, const vec2 point) {
+    GK_ASSERT(!vacant(), "Cannot add an arc to a vacant path.");
 
-    if (m_segments.empty()) {
-      if (m_last_point == nullptr) return false;
-      return m_last_point->id == id;
-    }
+    vec2 r = radius;
 
-    return m_segments.front().p0_id() == id || m_segments.back().p3_id() == id;
-  }
+    const float sin_th = std::sinf(Math::degrees_to_radians(x_axis_rotation));
+    const float cos_th = std::cosf(Math::degrees_to_radians(x_axis_rotation));
 
-  void Path::move_to(vec2 p) {
-    m_last_point = std::make_shared<ControlPoint>(p);
-  }
-
-  void Path::line_to(vec2 p) {
-    if (Math::is_almost_equal(p, m_last_point->get(), GK_POINT_EPSILON)) return;
-
-    Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p);
-
-    if (m_reversed) {
-      m_segments.insert(std::make_shared<Segment>(point, m_last_point), 0);
-    } else {
-      m_segments.push_back(std::make_shared<Segment>(m_last_point, point));
-    }
-  }
-
-  void Path::quadratic_to(vec2 p1, vec2 p2) {
-    if (Math::is_almost_equal(p2, m_last_point->get(), GK_POINT_EPSILON) && Math::is_almost_equal(p1, m_last_point->get(), GK_POINT_EPSILON)) return;
-
-    Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p2);
-
-    if (m_reversed) {
-      m_segments.insert(std::make_shared<Segment>(point, p1, m_last_point, false), 0);
-    } else {
-      m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, point, true));
-    }
-  }
-
-  void Path::cubic_to(vec2 p1, vec2 p2, vec2 p3) {
-    if (Math::is_almost_equal(p3, m_last_point->get(), GK_POINT_EPSILON) && Math::is_almost_equal(p2, m_last_point->get(), GK_POINT_EPSILON) && Math::is_almost_equal(p1, m_last_point->get(), GK_POINT_EPSILON)) return;
-
-    Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
-
-    if (m_reversed) {
-      m_segments.insert(std::make_shared<Segment>(point, p2, p1, m_last_point), 0);
-    } else {
-      m_segments.push_back(std::make_shared<Segment>(m_last_point, p1, p2, point));
-    }
-  }
-
-  void Path::cubic_to(vec2 p, vec2 p3, bool is_p1) {
-    if (Math::is_almost_equal(p3, m_last_point->get(), GK_POINT_EPSILON) && Math::is_almost_equal(p, m_last_point->get(), GK_POINT_EPSILON)) return;
-
-    Segment::ControlPointVertex point = std::make_shared<ControlPoint>(p3);
-
-    if (m_reversed) {
-      m_segments.insert(std::make_shared<Segment>(point, p, m_last_point, false, !is_p1), 0);
-    } else {
-      m_segments.push_back(std::make_shared<Segment>(m_last_point, p, point, false, is_p1));
-    }
-  }
-
-  void Path::arc_to(vec2 c, vec2 radius, float x_axis_rotation, bool large_arc_flag, bool sweep_flag, vec2 p) {
-    float sin_th = std::sinf(Math::degrees_to_radians(x_axis_rotation));
-    float cos_th = std::cosf(Math::degrees_to_radians(x_axis_rotation));
-
-    vec2 d0 = (c - p) / 2.0f;
-    vec2 d1 = {
+    const vec2 d0 = (center - point) / 2.0f;
+    const vec2 d1 = {
       cos_th * d0.x + sin_th * d0.y,
       -sin_th * d0.x + cos_th * d0.y
     };
 
-    vec2 sq_r = radius * radius;
-    vec2 sq_p = d1 * d1;
+    const vec2 sq_r = r * r;
+    const vec2 sq_p = d1 * d1;
 
-    float check = sq_p.x / sq_r.x + sq_p.y / sq_r.y;
-    if (check > 1.0f) {
-      radius *= std::sqrtf(check);
-    }
+    const float check = sq_p.x / sq_r.x + sq_p.y / sq_r.y;
+    if (check > 1.0f) r *= std::sqrtf(check);
 
     mat2 a = {
-      cos_th / radius.x, sin_th / radius.x,
-      -sin_th / radius.y, cos_th / radius.y
-    };
-    vec2 p0 = {
-      Math::dot(a[0], c),
-      Math::dot(a[1], c)
+      cos_th / r.x, sin_th / r.x,
+      -sin_th / r.y, cos_th / r.y
     };
     vec2 p1 = {
-      Math::dot(a[0], p),
-      Math::dot(a[1], p)
+      Math::dot(a[0], point),
+      Math::dot(a[1], point)
     };
 
-    float d = Math::squared_length(p1 - p0);
+    const vec2 p0 = {
+      Math::dot(a[0], center),
+      Math::dot(a[1], center)
+    };
+
+    const float d = Math::squared_length(p1 - p0);
+
     float sfactor_sq = 1.0f / d - 0.25f;
     if (sfactor_sq < 0.0f) sfactor_sq = 0.0f;
 
-    float sfactor = std::sqrt(sfactor_sq);
+    float sfactor = std::sqrtf(sfactor_sq);
     if (sweep_flag == large_arc_flag) sfactor = -sfactor;
 
-    vec2 c1 = {
+    const vec2 c1 = {
       0.5f * (p0.x + p1.x) - sfactor * (p1.y - p0.y),
       0.5f * (p0.y + p1.y) + sfactor * (p1.x - p0.x)
     };
 
-    float th0 = std::atan2f(p0.y - c1.y, p0.x - c1.x);
-    float th1 = std::atan2f(p1.y - c1.y, p1.x - c1.x);
+    const float th0 = std::atan2f(p0.y - c1.y, p0.x - c1.x);
+    const float th1 = std::atan2f(p1.y - c1.y, p1.x - c1.x);
+
     float th_arc = th1 - th0;
+    if (th_arc < 0.0f && sweep_flag) th_arc += MATH_F_TWO_PI;
+    else if (th_arc > 0.0f && !sweep_flag) th_arc -= MATH_F_TWO_PI;
 
-    if (th_arc < 0.0f && sweep_flag) {
-      th_arc += MATH_F_TWO_PI;
-    } else if (th_arc > 0.0f && !sweep_flag) {
-      th_arc -= MATH_F_TWO_PI;
-    }
-
-    int n_segs = static_cast<int>(std::ceil(std::fabs(th_arc / (MATH_F_PI * 0.5f + 0.001f))));
+    int n_segs = static_cast<int>(std::ceilf(std::fabsf(th_arc / (MATH_F_PI * 0.5f + 0.001f))));
     for (int i = 0; i < n_segs; i++) {
-      float th2 = th0 + i * th_arc / n_segs;
-      float th3 = th0 + (i + 1) * th_arc / n_segs;
+      const float th2 = th0 + i * th_arc / n_segs;
+      const float th3 = th0 + (i + 1) * th_arc / n_segs;
 
       a = {
-        cos_th * radius.x, -sin_th * radius.x,
-        sin_th * radius.y, cos_th * radius.y
+        cos_th * r.x, -sin_th * r.x,
+        sin_th * r.y, cos_th * r.y
       };
 
-      float th_half = 0.5f * (th3 - th2);
-      float sin_half_th_half = std::sinf(th_half * 0.5f);
-      float t = (8.0f / 3.0f) * sin_half_th_half * sin_half_th_half / std::sin(th_half);
+      const float th_half = 0.5f * (th3 - th2);
+      const float sin_half_th_half = std::sinf(th_half * 0.5f);
+      const float t = (8.0f / 3.0f) * sin_half_th_half * sin_half_th_half / std::sin(th_half);
 
-      float sin_th2 = std::sinf(th2);
-      float cos_th2 = std::cosf(th2);
-      float sin_th3 = std::sinf(th3);
-      float cos_th3 = std::cosf(th3);
+      const float sin_th2 = std::sinf(th2);
+      const float cos_th2 = std::cosf(th2);
+      const float sin_th3 = std::sinf(th3);
+      const float cos_th3 = std::cosf(th3);
 
       p1 = {
         c1.x + cos_th2 - t * sin_th2,
         c1.y + sin_th2 + t * cos_th2
       };
-      vec2 p3 = {
+
+      const vec2 p3 = {
         c1.x + cos_th3,
         c1.y + sin_th3
       };
-      vec2 p2 = {
+      const vec2 p2 = {
         p3.x + t * sin_th3,
         p3.y - t * cos_th3
       };
 
-      vec2 bez1 = {
+      const vec2 bez1 = {
         Math::dot(a[0], p1),
         Math::dot(a[1], p1)
       };
-      vec2 bez2 = {
+      const vec2 bez2 = {
         Math::dot(a[0], p2),
         Math::dot(a[1], p2)
       };
-      vec2 bez3 = {
+      const vec2 bez3 = {
         Math::dot(a[0], p3),
         Math::dot(a[1], p3)
       };
@@ -514,25 +629,26 @@ namespace Graphick::Renderer::Geometry {
     }
   }
 
-  void Path::ellipse(vec2 c, vec2 radius) {
-    vec2 top_left = c - radius;
-    vec2 bottom_right = c + radius;
-
-    vec2 cp = radius * GEOMETRY_CIRCLE_RATIO;
+  void Path::ellipse(const vec2 center, const vec2 radius) {
+    const vec2 top_left = center - radius;
+    const vec2 bottom_right = center + radius;
+    const vec2 cp = radius * GEOMETRY_CIRCLE_RATIO;
 
     move_to({ cp.x, top_left.y });
-    cubic_to({ c.x + cp.x, top_left.y }, { bottom_right.x, c.y - cp.y }, { bottom_right.x, c.y });
-    cubic_to({ bottom_right.x, c.y + cp.y }, { c.x + cp.x, bottom_right.y }, { c.x, bottom_right.y });
-    cubic_to({ c.x - cp.x, bottom_right.y }, { top_left.x, c.y + cp.y }, { top_left.x, c.y });
-    cubic_to({ top_left.x, c.y - cp.y }, { c.x - cp.x, top_left.y }, { c.x, top_left.y });
+    cubic_to({ center.x + cp.x, top_left.y }, { bottom_right.x, center.y - cp.y }, { bottom_right.x, center.y });
+    cubic_to({ bottom_right.x, center.y + cp.y }, { center.x + cp.x, bottom_right.y }, { center.x, bottom_right.y });
+    cubic_to({ center.x - cp.x, bottom_right.y }, { top_left.x, center.y + cp.y }, { top_left.x, center.y });
+    cubic_to({ top_left.x, center.y - cp.y }, { center.x - cp.x, top_left.y }, { center.x, top_left.y });
     close();
   }
 
-  void Path::circle(vec2 c, float radius) {
-    ellipse(c, { radius, radius });
+  void Path::circle(const vec2 center, const float radius) {
+    ellipse(center, { radius, radius });
   }
 
-  void Path::rect(vec2 p, vec2 size, bool centered) {
+  void Path::rect(const vec2 point, const vec2 size, const bool centered) {
+    vec2 p = point;
+
     if (centered) {
       p -= size * 0.5f;
     }
@@ -544,453 +660,268 @@ namespace Graphick::Renderer::Geometry {
     close();
   }
 
-  void Path::round_rect(vec2 p, vec2 size, float radius, bool centered) {
+  void Path::round_rect(const vec2 point, const vec2 size, const float radius, const bool centered) {
+    float r = radius;
+    vec2 p = point;
+
     if (centered) {
       p -= size * 0.5f;
     }
 
-    if (radius > size.x * 0.5f) radius = size.x * 0.5f;
-    if (radius > size.y * 0.5f) radius = size.y * 0.5f;
+    if (r > size.x * 0.5f) r = size.x * 0.5f;
+    if (r > size.y * 0.5f) r = size.y * 0.5f;
 
-    move_to({ p.x + radius, p.y });
-    line_to({ p.x + size.x - radius, p.y });
-    cubic_to({ p.x + size.x - radius * GEOMETRY_CIRCLE_RATIO, p.y }, { p.x + size.x, p.y + radius * GEOMETRY_CIRCLE_RATIO }, { p.x + size.x, p.y + radius });
-    line_to({ p.x + size.x, p.y + size.y - radius });
-    cubic_to({ p.x + size.x, p.y + size.y - radius * GEOMETRY_CIRCLE_RATIO }, { p.x + size.x - radius * GEOMETRY_CIRCLE_RATIO, p.y + size.y }, { p.x + size.x - radius, p.y + size.y });
-    line_to({ p.x + radius, p.y + size.y });
-    cubic_to({ p.x + radius * GEOMETRY_CIRCLE_RATIO, p.y + size.y }, { p.x, p.y + size.y - radius * GEOMETRY_CIRCLE_RATIO }, { p.x, p.y + size.y - radius });
-    line_to({ p.x, p.y + radius });
-    cubic_to({ p.x, p.y + radius * GEOMETRY_CIRCLE_RATIO }, { p.x + radius * GEOMETRY_CIRCLE_RATIO, p.y }, { p.x + radius, p.y });
+    move_to({ p.x + r, p.y });
+    line_to({ p.x + size.x - r, p.y });
+    cubic_to({ p.x + size.x - r * GEOMETRY_CIRCLE_RATIO, p.y }, { p.x + size.x, p.y + r * GEOMETRY_CIRCLE_RATIO }, { p.x + size.x, p.y + r });
+    line_to({ p.x + size.x, p.y + size.y - r });
+    cubic_to({ p.x + size.x, p.y + size.y - r * GEOMETRY_CIRCLE_RATIO }, { p.x + size.x - r * GEOMETRY_CIRCLE_RATIO, p.y + size.y }, { p.x + size.x - r, p.y + size.y });
+    line_to({ p.x + r, p.y + size.y });
+    cubic_to({ p.x + r * GEOMETRY_CIRCLE_RATIO, p.y + size.y }, { p.x, p.y + size.y - r * GEOMETRY_CIRCLE_RATIO }, { p.x, p.y + size.y - r });
+    line_to({ p.x, p.y + r });
+    cubic_to({ p.x, p.y + r * GEOMETRY_CIRCLE_RATIO }, { p.x + r * GEOMETRY_CIRCLE_RATIO, p.y }, { p.x + r, p.y });
     close();
   }
 
   void Path::close() {
-    if (m_segments.size() < 1 || (m_segments.size() == 1 && m_segments.front().kind() == Segment::Kind::Linear)) return;
+    if (empty() || m_commands.empty() || (size() == 1 && get_command(1) == Command::Line)) return;
 
-    Segment& first_segment = m_segments.front();
-    Segment& last_segment = m_segments.back();
+    vec2 p = m_points.front();
 
-    if (Math::is_almost_equal(last_segment.p3(), first_segment.p0(), GK_POINT_EPSILON)) {
-      std::shared_ptr<Segment> new_first_segment = std::make_shared<Segment>(last_segment.m_p3, first_segment.has_p1() ? std::optional{ first_segment.p1() } : std::nullopt, first_segment.has_p2() ? std::optional{ first_segment.p2() } : std::nullopt, first_segment.m_p3);
-      std::shared_ptr<Segment> new_second_segment = std::make_shared<Segment>(last_segment.m_p0, last_segment.has_p1() ? std::optional{ last_segment.p1() } : std::nullopt, last_segment.has_p2() ? std::optional{ last_segment.p2() } : std::nullopt, last_segment.m_p3);
-
-      m_segments.pop_back();
-      m_segments.erase(0);
-
-      m_segments.insert(new_first_segment, 0);
-      m_segments.push_back(new_second_segment);
-    } else {
-      History::Vec2Value* in_handle = nullptr;
-      History::Vec2Value* out_handle = nullptr;
-
-      auto in_ptr = in_handle_ptr();
-      auto out_ptr = out_handle_ptr();
-
-      if (in_ptr.has_value()) in_handle = in_ptr->get();
-      if (out_ptr.has_value()) out_handle = out_ptr->get();
-
-      if (m_reversed) {
-        if (in_handle && out_handle) {
-          m_segments.insert(std::make_shared<Segment>(last_segment.m_p3, out_handle->get(), in_handle->get(), m_last_point), 0);
-        } else if (in_handle) {
-          m_segments.insert(std::make_shared<Segment>(last_segment.m_p3, in_handle->get(), m_last_point, false, false), 0);
-        } else if (out_handle) {
-          m_segments.insert(std::make_shared<Segment>(last_segment.m_p3, out_handle->get(), m_last_point, false, true), 0);
-        } else {
-          m_segments.insert(std::make_shared<Segment>(last_segment.m_p3, m_last_point), 0);
-        }
-      } else {
-        if (in_handle && out_handle) {
-          m_segments.push_back(std::make_shared<Segment>(m_last_point, out_handle->get(), in_handle->get(), first_segment.m_p0));
-        } else if (in_handle) {
-          m_segments.push_back(std::make_shared<Segment>(m_last_point, in_handle->get(), first_segment.m_p0, false, false));
-        } else if (out_handle) {
-          m_segments.push_back(std::make_shared<Segment>(m_last_point, out_handle->get(), first_segment.m_p0, false, true));
-        } else {
-          m_segments.push_back(std::make_shared<Segment>(m_last_point, first_segment.m_p0));
-        }
-      }
-    }
-
-    m_closed = true;
-  }
-
-  void Path::reverse(bool reversed) {
-    if (m_segments.empty() || m_reversed == reversed) return;
-
-    m_reversed = reversed;
-
-    if (reversed) {
-      History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
-        [this]() {
-          Editor::Scene& scene = Editor::Editor::scene();
-          m_last_point = m_segments.front().m_p0;
-
-          scene.selection.clear();
-          scene.selection.select_vertex(m_segments.front().m_p0->id, id);
-        },
-        [this]() {
-          Editor::Scene& scene = Editor::Editor::scene();
-          m_last_point = m_segments.back().m_p3;
-
-          scene.selection.clear();
-          scene.selection.select_vertex(m_segments.back().m_p3->id, id);
-        }
-      ));
-    } else {
-      History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
-        [this]() {
-          Editor::Scene& scene = Editor::Editor::scene();
-          m_last_point = m_segments.back().m_p3;
-
-          scene.selection.clear();
-          scene.selection.select_vertex(m_segments.back().m_p3->id, id);
-        },
-        [this]() {
-          Editor::Scene& scene = Editor::Editor::scene();
-          m_last_point = m_segments.front().m_p0;
-
-          scene.selection.clear();
-          scene.selection.select_vertex(m_segments.front().m_p0->id, id);
-        }
-      ));
-    }
-  }
-
-  void Path::remove(const uuid id, bool fit_shape) {
-    if (m_segments.empty()) return;
-
-    // TODO: implement object/vertex deletion
-    if (m_segments.size() == 1 || (m_closed && m_segments.size() == 2)) {
-      std::shared_ptr<ControlPoint> p = nullptr;
-      std::optional<vec2> in_handle = std::nullopt;
-      std::optional<vec2> out_handle = std::nullopt;
-
-      if (m_segments.front().p0_id() == id) {
-        p = m_segments.front().m_p3;
-
-        if (m_segments.front().has_p2()) {
-          in_handle = m_segments.front().p2();
-        }
-
-        if (m_closed) {
-          if (m_segments.back().has_p1()) {
-            out_handle = m_segments.back().p1();
-          }
-        }
-      } else if (m_segments.front().p3_id() == id) {
-        p = m_segments.front().m_p0;
-
-        if (m_segments.front().has_p1()) {
-          out_handle = m_segments.front().p1();
-        }
-
-        if (m_closed) {
-          if (m_segments.back().has_p2()) {
-            in_handle = m_segments.back().p2();
-          }
-        }
-      } else {
-        return;
-      }
-
-      m_segments.clear();
-
-      if (p == nullptr) return;
-
-      if (in_handle.has_value()) {
-        create_in_handle(in_handle.value());
-      } else {
-        clear_in_handle();
-      }
-      if (out_handle.has_value()) {
-        create_out_handle(out_handle.value());
-      } else {
-        clear_out_handle();
-      }
-
-      History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
-        [this, p]() {
-          Editor::Editor::scene().selection.select_vertex(p->id, this->id);
-          m_last_point = p;
-        },
-        []() {}
-      ));
-
-      return;
-    }
-
-    int index = 0;
-
-    for (; index < m_segments.size(); index++) {
-      if (m_segments.at(index).p0_id() == id) break;
-    }
-
-    int first_segment_index = 0;
-    int second_segment_index = 0;
-
-    if (m_closed && (index == 0 || index == m_segments.size())) {
-      first_segment_index = (int)m_segments.size() - 1;
-      second_segment_index = 0;
-    } else if (index == 0) {
-      if (m_segments.front().has_p2()) {
-        create_in_handle(m_segments.front().p2());
-      } else {
-        clear_in_handle();
-      }
-
-      m_segments.erase(index);
-
-      return;
-    } else if (index >= m_segments.size()) {
-      if (m_segments.back().has_p1()) {
-        create_out_handle(m_segments.back().p1());
-      } else {
-        clear_out_handle();
-      }
-
-      m_segments.pop_back();
-
-      return;
-    } else {
-      first_segment_index = index - 1;
-      second_segment_index = index;
-    }
-
-    Segment& first_segment = m_segments[first_segment_index];
-    Segment& second_segment = m_segments[second_segment_index];
-
-    std::shared_ptr<Segment> new_segment = nullptr;
-
-    if (fit_shape) {
-      const int n_points = 25;
-      std::vector<vec2> points(n_points * 2 + 1);
-
-      for (int i = 0; i < n_points; i++) {
-        float t = (float)i / (float)n_points;
-
-        points[i] = first_segment.get(t);
-        points[n_points + i] = second_segment.get(t);
-      }
-
-      points.back() = second_segment.get(1.0f);
-
-      auto cubic = Math::Algorithms::fit_points_to_cubic(points, 0.01f);
-
-      new_segment = std::make_shared<Segment>(first_segment.m_p0, cubic.p1, cubic.p2, second_segment.m_p3);
-    } else {
-      new_segment = std::make_shared<Segment>(
-        first_segment.m_p0,
-        first_segment.has_p1() ? std::optional{ first_segment.p1() } : std::nullopt,
-        second_segment.has_p2() ? std::optional{ second_segment.p2() } : std::nullopt,
-        second_segment.m_p3
-      );
-    }
-
-    int min_index = std::min(first_segment_index, second_segment_index);
-    int max_index = std::max(first_segment_index, second_segment_index);
-
-    m_segments.erase(max_index);
-    m_segments.erase(min_index);
-
-    m_segments.insert(new_segment, min_index);
-  }
-
-  std::optional<std::weak_ptr<ControlPoint>> Path::split(Segment& segment, float t) {
-    if (m_segments.empty()) return std::nullopt;
-
-    int index = 0;
-
-    for (int i = 0; i < m_segments.size(); i++) {
-      if (&m_segments[i] == &segment) {
-        index = i;
+    for (size_t i = m_commands_size - 1, point_index = m_points.size(); i > 0; i--) {
+      switch (get_command(i)) {
+      case Command::Move:
+        p = m_points[point_index - 1];
+        goto exit_loop;
+      case Command::Line:
+        point_index -= 1;
+        break;
+      case Command::Quadratic:
+        point_index -= 2;
+        break;
+      case Command::Cubic:
+        point_index -= 3;
         break;
       }
     }
 
-    std::optional<std::shared_ptr<ControlPoint>> new_vertex = std::nullopt;
-    std::shared_ptr<ControlPoint> first_vertex = segment.m_p0;
-    std::shared_ptr<ControlPoint> last_vertex = segment.m_p3;
+  exit_loop:;
 
-    if (segment.is_linear()) {
-      new_vertex = std::make_shared<ControlPoint>(segment.get(t));
-      m_segments.erase(index);
-
-      if (m_reversed) {
-        m_segments.insert(std::make_shared<Segment>(first_vertex, new_vertex.value()), index);
-        m_segments.insert(std::make_shared<Segment>(new_vertex.value(), last_vertex), index + 1);
-      } else {
-        m_segments.insert(std::make_shared<Segment>(new_vertex.value(), last_vertex), index);
-        m_segments.insert(std::make_shared<Segment>(first_vertex, new_vertex.value()), index);
-      }
-    } else {
-      auto [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(segment.p0(), segment.p1(), segment.p2(), segment.p3(), t);
-
-      new_vertex = std::make_shared<ControlPoint>(p);
-      m_segments.erase(index);
-
-      if (m_reversed) {
-        m_segments.insert(std::make_shared<Segment>(first_vertex, in_p1, in_p2, new_vertex.value()), index);
-        m_segments.insert(std::make_shared<Segment>(new_vertex.value(), out_p1, out_p2, last_vertex), index + 1);
-      } else {
-        m_segments.insert(std::make_shared<Segment>(new_vertex.value(), out_p1, out_p2, last_vertex), index);
-        m_segments.insert(std::make_shared<Segment>(first_vertex, in_p1, in_p2, new_vertex.value()), index);
-      }
-    }
-
-    uuid new_vertex_id = new_vertex.value()->id;
-    uuid element_id = id;
-
-    return new_vertex;
+    m_points.push_back(p);
+    push_command(Command::Line);
   }
 
   Math::rect Path::bounding_rect() const {
-    GK_TOTAL("Path::bounding_rect");
-    // base ~ 3.0ms
-    // stress ~ 2.7s
-    // cache ~ 0.006ms
-    if (m_bounding_rect_cache.has_value()) return m_bounding_rect_cache.value();
-
-    if (m_segments.empty()) {
-      if (m_last_point == nullptr) return { };
-
-      vec2 p = m_last_point->get();
-      return { p, p };
+    if (empty()) {
+      if (vacant()) return {};
+      return { m_points[0], m_points[0] };
     }
 
     Math::rect rect{};
 
-    for (const auto& segment : m_segments) {
-      Math::rect segment_rect = segment->bounding_rect();
+    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
 
-      min(rect.min, segment_rect.min, rect.min);
-      max(rect.max, segment_rect.max, rect.max);
+        const vec2 p0 = m_points[j - 1];
+        const vec2 p1 = m_points[j];
+        const vec2 p2 = m_points[j + 1];
+        const vec2 p3 = m_points[j + 2];
+
+        Math::rect r = Math::cubic_bounding_rect(p0, p1, p2, p3);
+
+        Math::min(rect.min, r.min, rect.min);
+        Math::max(rect.max, r.max, rect.max);
+
+        j += 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+
+        const vec2 p0 = m_points[j - 1];
+        const vec2 p1 = m_points[j];
+        const vec2 p2 = m_points[j + 1];
+
+        Math::rect r = Math::quadratic_bounding_rect(p0, p1, p2);
+
+        Math::min(rect.min, r.min, rect.min);
+        Math::max(rect.max, r.max, rect.max);
+
+        j += 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+
+        Math::min(rect.min, m_points[j], rect.min);
+        Math::max(rect.max, m_points[j], rect.max);
+
+        j += 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+
+        Math::min(rect.min, m_points[j], rect.min);
+        Math::max(rect.max, m_points[j], rect.max);
+
+        j += 1;
+
+        break;
+      }
+      }
     }
-
-    m_bounding_rect_cache = rect;
 
     return rect;
   }
 
   Math::rect Path::bounding_rect(const mat2x3& transform) const {
-    GK_TOTAL("Path::bounding_rect(mat2x3)");
-    // TODO: cache
-    // if (m_bounding_rect_cache.has_value()) return m_bounding_rect_cache.value();
+    if (empty()) {
+      if (vacant()) return {};
 
-    if (m_segments.empty()) {
-      if (m_last_point == nullptr) return { };
-
-      vec2 p = transform * m_last_point->get();
+      const vec2 p = transform * m_points[0];
       return { p, p };
     }
 
     Math::rect rect{};
 
-    for (const auto& segment : m_segments) {
-      Math::rect segment_rect = segment->bounding_rect(transform);
+    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
 
-      min(rect.min, segment_rect.min, rect.min);
-      max(rect.max, segment_rect.max, rect.max);
+        const vec2 p0 = transform * m_points[j - 1];
+        const vec2 p1 = transform * m_points[j];
+        const vec2 p2 = transform * m_points[j + 1];
+        const vec2 p3 = transform * m_points[j + 2];
+
+        Math::rect r = Math::cubic_bounding_rect(p0, p1, p2, p3);
+
+        Math::min(rect.min, r.min, rect.min);
+        Math::max(rect.max, r.max, rect.max);
+
+        j += 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+
+        const vec2 p0 = transform * m_points[j - 1];
+        const vec2 p1 = transform * m_points[j];
+        const vec2 p2 = transform * m_points[j + 1];
+
+        Math::rect r = Math::quadratic_bounding_rect(p0, p1, p2);
+
+        Math::min(rect.min, r.min, rect.min);
+        Math::max(rect.max, r.max, rect.max);
+
+        j += 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+
+        const vec2 p1 = transform * m_points[j];
+
+        Math::min(rect.min, p1, rect.min);
+        Math::max(rect.max, p1, rect.max);
+
+        j += 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+
+        const vec2 p0 = transform * m_points[j];
+
+        Math::min(rect.min, p0, rect.min);
+        Math::max(rect.max, p0, rect.max);
+
+        j += 1;
+
+        break;
+      }
+      }
     }
-
-    // m_bounding_rect_cache = rect;
 
     return rect;
   }
 
   Math::rect Path::approx_bounding_rect() const {
-    GK_TOTAL("Path::approx_bounding_rect");
-    // base ~ 0.36ms
-    // stress ~ 0.67ms
-    // cache ~ 0.006ms
-    if (m_approx_bounding_rect_cache.has_value()) return m_approx_bounding_rect_cache.value();
-
-    if (m_segments.empty()) {
-      if (m_last_point == nullptr) return { };
-
-      vec2 p = m_last_point->get();
-      return { p, p };
+    if (empty()) {
+      if (vacant()) return {};
+      return { m_points[0], m_points[0] };
     }
 
     Math::rect rect{};
 
-    for (const auto& segment : m_segments) {
-      Math::rect segment_rect = segment->approx_bounding_rect();
-
-      min(rect.min, segment_rect.min, rect.min);
-      max(rect.max, segment_rect.max, rect.max);
+    for (vec2 p : m_points) {
+      Math::min(rect.min, p, rect.min);
+      Math::max(rect.max, p, rect.max);
     }
-
-    m_approx_bounding_rect_cache = rect;
 
     return rect;
   }
 
-  Math::rect Path::large_bounding_rect() const {
-    GK_TOTAL("Path::large_bounding_rect");
-    if (m_large_bounding_rect_cache.has_value()) return m_large_bounding_rect_cache.value();
+  bool Path::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom) const {
+    GK_TOTAL("Path::is_point_inside_path");
 
-    Math::rect rect = approx_bounding_rect();
+    const Math::rect bounds = approx_bounding_rect();
+    const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) && (stroke->width > threshold) : false;
 
-    auto in_handle = in_handle_ptr();
-    auto out_handle = out_handle_ptr();
+    if (!Math::is_point_in_rect(inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
 
-    if (in_handle) {
-      min(rect.min, in_handle.value()->get(), rect.min);
-      max(rect.max, in_handle.value()->get(), rect.max);
-    }
-    if (out_handle) {
-      min(rect.min, out_handle.value()->get(), rect.min);
-      max(rect.max, out_handle.value()->get(), rect.max);
-    }
+    const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
+    const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
 
-    m_large_bounding_rect_cache = rect;
+    PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
 
-    return rect;
-  }
+    if (fill) {
+      Drawable drawable = builder.fill(*this, *fill);
 
-  bool Path::is_inside(const vec2 position, bool filled_search, bool deep_search, vec2 threshold) const {
-    GK_TOTAL("Path::is_inside");
+      GK_DEBUGGER_DRAW(drawable);
 
-    if (m_segments.empty()) {
-      if (m_last_point && Math::is_point_in_ellipse(position, m_last_point->get(), threshold)) {
-        return true;
-      }
-    } else {
-      if (!Math::is_point_in_rect(position, deep_search ? large_bounding_rect() : approx_bounding_rect(), threshold)) {
-        return false;
-      }
+      for (Contour& contour : drawable.contours) {
+        const int winding = contour.winding_of(p);
 
-      if (true/*filled_search*/) {
-        // TODO: implement non-zero winding rule
-
-        Math::rect line = { position, { std::numeric_limits<float>::max(), position.y } };
-        int intersections = 0;
-
-        for (const auto& segment : m_segments) {
-          auto points = segment->line_intersection_points(line);
-          if (points) intersections += (int)points->size();
-        }
-
-        if (!m_closed && Math::line_line_intersection_point({ m_segments.back().p3(), m_segments.front().p0() }, line).has_value()) {
-          intersections += 1;
-        }
-
-        if (intersections % 2 != 0) return true;
-      }
-
-      for (const auto& segment : m_segments) {
-        if (segment->is_inside(position, deep_search, threshold)) {
+        if (
+          (fill->rule == FillRule::NonZero && winding != 0) ||
+          (fill->rule == FillRule::EvenOdd && winding % 2 != 0)
+          ) {
           return true;
         }
       }
     }
 
-    if (deep_search) {
-      if (m_in_handle && Math::is_point_in_ellipse(position, m_in_handle->get(), threshold)) {
-        return true;
-      }
-      if (m_out_handle && Math::is_point_in_ellipse(position, m_out_handle->get(), threshold)) {
+    Stroke s = stroke ? *stroke : Stroke{ vec4{}, LineCap::Round, LineJoin::Round, 0.0f, 0.0f, 0.0f };
+    s.width += threshold;
+
+    if (!consider_miters) {
+      s.miter_limit = 0.0f;
+    }
+
+    Drawable drawable = builder.stroke(*this, s);
+
+    GK_DEBUGGER_DRAW(drawable);
+
+    for (Contour& contour : drawable.contours) {
+      const int winding = contour.winding_of(p);
+
+      if (winding != 0) {
         return true;
       }
     }
@@ -998,161 +929,16 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
-  // TODO: check if path is vacant or empty
-  bool Path::intersects(const Math::rect& rect) const {
-    GK_TOTAL("Path::intersects");
+  void Path::push_command(const Command command) {
+    size_t rem = m_commands_size % 4;
 
-    if (m_segments.empty()) {
-      if (m_last_point && Math::is_point_in_rect(m_last_point->get(), rect)) {
-        return true;
-      }
-      return false;
+    if (rem == 0) {
+      m_commands.push_back(command << 6);
+    } else {
+      m_commands[m_commands_size / 4] |= command << (6 - rem * 2);
     }
 
-    Math::rect bounding_rect = this->approx_bounding_rect();
-
-    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
-
-    for (const auto& segment : m_segments) {
-      if (segment->intersects(rect)) return true;
-    }
-
-    return false;
-  }
-
-  bool Path::intersects(const Math::rect& rect, const mat2x3& transform) const {
-    GK_TOTAL("Path::intersects(mat2x3)");
-
-    if (m_segments.empty()) {
-      if (m_last_point && Math::is_point_in_rect(transform * m_last_point->get(), rect)) {
-        return true;
-      }
-      return false;
-    }
-
-    Math::rect bounding_rect = transform * approx_bounding_rect();
-
-    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
-
-    for (const auto& segment : m_segments) {
-      if (segment->intersects(rect, transform)) return true;
-    }
-
-    return false;
-  }
-
-  bool Path::intersects(const Math::rect& rect, std::unordered_set<uuid>& vertices) const {
-    GK_TOTAL("Path::intersects(deep)");
-
-    if (m_segments.empty()) {
-      if (m_last_point == nullptr) return false;
-
-      if (Math::is_point_in_rect(m_last_point->get(), rect)) {
-        vertices.insert(m_last_point->id);
-        return true;
-      }
-    }
-
-    Math::rect bounding_rect = this->approx_bounding_rect();
-
-    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
-
-    bool found = false;
-    for (const auto& segment : m_segments) {
-      if (segment->intersects(rect, found, vertices)) found = true;
-    }
-
-    return found;
-  }
-
-
-  bool Path::intersects(const Math::rect& rect, const mat2x3& transform, std::unordered_set<uuid>& vertices) const {
-    GK_TOTAL("Path::intersects(deep, mat2x3)");
-
-    if (m_segments.empty()) {
-      if (m_last_point == nullptr) return false;
-
-      if (Math::is_point_in_rect(transform * m_last_point->get(), rect)) {
-        vertices.insert(m_last_point->id);
-        return true;
-      }
-    }
-
-    Math::rect bounding_rect = transform * approx_bounding_rect();
-
-    if (!Math::does_rect_intersect_rect(rect, bounding_rect)) return false;
-
-    bool found = false;
-    for (const auto& segment : m_segments) {
-      if (segment->intersects(rect, found, transform, vertices)) found = true;
-    }
-
-    return found;
-  }
-
-  void Path::create_in_handle(const vec2 position) {
-    if (m_closed || vacant()) return;
-
-    m_in_handle->set(position);
-  }
-
-  void Path::create_out_handle(const vec2 position) {
-    if (m_closed || vacant()) return;
-
-    m_out_handle->set(position);
-  }
-
-  void Path::clear_in_handle() {
-    m_in_handle->set(std::numeric_limits<vec2>::lowest());
-  }
-
-  void Path::clear_out_handle() {
-    m_out_handle->set(std::numeric_limits<vec2>::lowest());
-  }
-
-  void Path::rehydrate_cache() const {
-    GK_TOTAL("Path::rehydrate");
-
-    int hash = (int)m_segments.size();
-    bool rehydrate = m_hash != hash;
-
-    m_hash = hash;
-
-    for (const auto& segment : m_segments) {
-      if (segment->rehydrate_cache()) rehydrate = true;
-    }
-
-    if (rehydrate) {
-      m_bounding_rect_cache.reset();
-      m_approx_bounding_rect_cache.reset();
-      m_large_bounding_rect_cache.reset();
-    }
-  }
-
-  void Path::SegmentsVector::push_back(const std::shared_ptr<Segment>& value) {
-    History::CommandHistory::add(std::make_unique<History::InsertInSegmentsVectorCommand>(m_path, &m_value, value));
-  }
-
-  void Path::SegmentsVector::insert(const std::shared_ptr<Segment>& value, int index) {
-    if (m_value.size() < index || index < 0) return;
-    History::CommandHistory::add(std::make_unique<History::InsertInSegmentsVectorCommand>(m_path, &m_value, value, index));
-  }
-
-  void Path::SegmentsVector::pop_back() {
-    erase((int)m_value.size() - 1);
-  }
-
-  void Path::SegmentsVector::erase(int index) {
-    if (m_value.size() <= index || index < 0) return;
-    History::CommandHistory::add(std::make_unique<History::EraseFromSegmentsVectorCommand>(m_path, &m_value, index));
-  }
-
-  void Path::SegmentsVector::clear() {
-    if (m_value.empty()) return;
-
-    for (int i = (int)m_value.size() - 1; i >= 0; i--) {
-      History::CommandHistory::add(std::make_unique<History::EraseFromSegmentsVectorCommand>(m_path, &m_value, i));
-    }
+    m_commands_size += 1;
   }
 
 }

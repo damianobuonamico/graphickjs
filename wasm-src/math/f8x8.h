@@ -4,6 +4,7 @@
  *
  * The f8x8 type is a 16 bit fixed point number with 8 bits for the integer part and 8 bits for the fractional part.
  * The f8x8x2 type is a 32 bit 2D vector of f8x8 numbers.
+ * The f8x8x4 type is a 64 bit 4D vector of f8x8 numbers.
  */
 
 #pragma once
@@ -18,21 +19,38 @@ namespace Graphick::Math {
 
   using f8x8 = int16_t;
 
+  /**
+   * @brief A 2D vector of f8.8 fixed point numbers.
+   *
+   * @struct f8x8x2
+   */
   struct f8x8x2 {
     f8x8 x;
     f8x8 y;
 
-    f8x8x2(const f8x8 x, const f8x8 y) : x(x), y(y) {}
+    f8x8x2(const f8x8 x, const f8x8 y) :
+      x(x),
+      y(y) {}
   };
 
+  /**
+   * @brief A 4D vector of f8.8 fixed point numbers.
+   *
+   * @struct f8x8x4
+   */
   struct f8x8x4 {
     f8x8 x0;
     f8x8 y0;
     f8x8 x1;
     f8x8 y1;
 
-    f8x8x4() : x0(0), y0(0), x1(0), y1(0) {}
-    f8x8x4(const f8x8 x0, const f8x8 y0, const f8x8 x1, const f8x8 y1) : x0(x0), y0(y0), x1(x1), y1(y1) {}
+    f8x8x4() :
+      x0(0), y0(0),
+      x1(0), y1(0) {}
+
+    f8x8x4(const f8x8 x0, const f8x8 y0, const f8x8 x1, const f8x8 y1) :
+      x0(x0), y0(y0),
+      x1(x1), y1(y1) {}
   };
 
   /**
@@ -55,10 +73,22 @@ namespace Graphick::Math {
     return static_cast<float>(x) / FRACUNIT;
   }
 
+  /**
+   * @brief Returns the integer part of a f8.8 fixed point number.
+   *
+   * @param x The f8.8 fixed point number.
+   * @return The integer part of the f8.8 fixed point number.
+   */
   inline f8x8 int_bits(const f8x8 x) {
     return (x >> FRACBITS) << FRACBITS;
   }
 
+  /**
+   * @brief Returns the fractional part of a f8.8 fixed point number.
+   *
+   * @param x The f8.8 fixed point number.
+   * @return The fractional part of the f8.8 fixed point number.
+   */
   inline f8x8 frac_bits(const f8x8 x) {
     return (x << FRACBITS) >> FRACBITS;
   }

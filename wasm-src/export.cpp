@@ -82,7 +82,7 @@ extern "C" {
     Graphick::Editor::Editor::init();
 
     Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Element");
-    Graphick::Renderer::Geometry::PathDev& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
+    Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
 
     path.move_to({ 0.0f, 0.0f });
     path.line_to({ 20.0f, -20.0f });

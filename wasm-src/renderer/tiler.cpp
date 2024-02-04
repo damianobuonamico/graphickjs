@@ -16,7 +16,7 @@
 
 #include "tiler.h"
 
-#include "geometry/path_dev.h"
+#include "geometry/path.h"
 #include "geometry/path_builder.h"
 
 #include "../math/mat2x3.h"
@@ -616,7 +616,7 @@ namespace Graphick::Renderer {
     };
   }
 
-  void Tiler::process_stroke(const Geometry::PathDev& path, const mat2x3& transform, const Stroke& stroke) {
+  void Tiler::process_stroke(const Geometry::Path& path, const mat2x3& transform, const Stroke& stroke) {
     GK_ASSERT(!path.empty(), "Path cannot be empty.");
     GK_TOTAL("Tiler::process_stroke");
 
@@ -688,7 +688,7 @@ namespace Graphick::Renderer {
     // Renderer::draw_outline(p);
   }
 
-  void Tiler::process_fill(const Geometry::PathDev& path, const mat2x3& transform, const Fill& fill) {
+  void Tiler::process_fill(const Geometry::Path& path, const mat2x3& transform, const Fill& fill) {
     GK_TOTAL("Tiler::process_fill");
 
     const rect path_rect = transform * path.bounding_rect();

@@ -6,6 +6,7 @@
 #include "../renderer/renderer.h"
 
 #include "../history/command_history.h"
+#include "../history/history.h"
 
 #include "../utils/resource_manager.h"
 #include "../utils/debugger.h"
@@ -38,6 +39,7 @@ namespace Graphick::Editor {
     Utils::ResourceManager::init();
     Renderer::Renderer::init();
     History::CommandHistory::init();
+    History::History::init();
     // FontManager::init();
 
     GK_DEBUGGER_INIT();
@@ -64,6 +66,7 @@ namespace Graphick::Editor {
     GK_DEBUGGER_SHUTDOWN();
 
     // FontManager::shutdown();
+    History::History::shutdown();
     History::CommandHistory::shutdown();
     Renderer::Renderer::shutdown();
     Utils::ResourceManager::shutdown();
