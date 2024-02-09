@@ -46,7 +46,7 @@ namespace Graphick::Editor::Input {
     std::optional<Entity> entity() const;
     std::optional<std::pair<std::weak_ptr<Renderer::Geometry::Segment>, float>> segment() const;
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> vertex() const;
-    std::optional<std::weak_ptr<History::Vec2Value>> handle() const;
+    std::optional<std::weak_ptr<Graphick::History::Vec2Value>> handle() const;
   private:
     void set_hovered(const uuid entity, const vec2 position, bool deep_search, float threshold);
     void reset();
@@ -56,7 +56,7 @@ namespace Graphick::Editor::Input {
     uuid m_entity = uuid::null;
     std::optional<std::pair<std::weak_ptr<Renderer::Geometry::Segment>, float>> m_segment = std::nullopt;
     std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
-    std::optional<std::weak_ptr<History::Vec2Value>> m_handle = std::nullopt;
+    std::optional<std::weak_ptr<Graphick::History::Vec2Value>> m_handle = std::nullopt;
   private:
     friend class InputManager;
   };

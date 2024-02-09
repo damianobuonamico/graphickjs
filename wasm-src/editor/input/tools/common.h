@@ -34,7 +34,7 @@ namespace Graphick::Editor::Input {
    * @param direction A pointer to an integer that will be set to the direction of the move (1 for forward, -1 for backward), default is nullptr.
    * @param in_use_handle A pointer to a History::Vec2Value object that will be set to the handle that is currently in use (out handle), default is nullptr.
    */
-  void handle_pointer_move(Renderer::Geometry::Path& path, Renderer::Geometry::ControlPoint& vertex, const mat2x3& transform, bool create_handles = false, bool keep_in_handle_length = true, bool swap_in_out = false, int* direction = nullptr, History::Vec2Value* in_use_handle = nullptr);
+  void handle_pointer_move(Renderer::Geometry::Path& path, Renderer::Geometry::ControlPoint& vertex, const mat2x3& transform, bool create_handles = false, bool keep_in_handle_length = true, bool swap_in_out = false, int* direction = nullptr, Graphick::History::Vec2Value* in_use_handle = nullptr);
 
   /**
    * @brief A class representing a selection rectangle.
@@ -253,7 +253,7 @@ namespace Graphick::Editor::Input {
      */
     void on_rotate_pointer_move();
   private:
-    std::vector<History::Mat2x3Value*> m_cache;   /* The cache of the transform matrices. */
+    std::vector<Graphick::History::Mat2x3Value*> m_cache;   /* The cache of the transform matrices. */
     vec2 m_handles[HandleNone];                   /* The positions of the handles. */
     float m_threshold = 0.0f;                     /* The virtual size of the handles. */
 

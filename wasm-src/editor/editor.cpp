@@ -38,8 +38,8 @@ namespace Graphick::Editor {
     Input::InputManager::init();
     Utils::ResourceManager::init();
     Renderer::Renderer::init();
-    History::CommandHistory::init();
-    History::History::init();
+    Graphick::History::CommandHistory::init();
+    Graphick::History::History::init();
     // FontManager::init();
 
     GK_DEBUGGER_INIT();
@@ -66,8 +66,8 @@ namespace Graphick::Editor {
     GK_DEBUGGER_SHUTDOWN();
 
     // FontManager::shutdown();
-    History::History::shutdown();
-    History::CommandHistory::shutdown();
+    Graphick::History::History::shutdown();
+    Graphick::History::CommandHistory::shutdown();
     Renderer::Renderer::shutdown();
     Utils::ResourceManager::shutdown();
     Input::InputManager::shutdown();

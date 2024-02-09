@@ -16,36 +16,55 @@
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
 
+#include <vector>
 #include <string>
 
 namespace Graphick::Editor {
 
   struct IDComponent {
+    inline static uint16_t component_id = 0;
+
     uuid id;
 
     IDComponent() = default;
     IDComponent(const IDComponent& other) = default;
     IDComponent(const uuid id) : id(id) {}
+
+    // std::array<uint8_t, 4> encode();
   };
 
   struct TagComponent {
+    inline static uint16_t component_id = 1;
+
     std::string tag;
 
     TagComponent() = default;
     TagComponent(const TagComponent& other) = default;
     TagComponent(const std::string& tag) : tag(tag) {}
+
+    // std::vector<uint8_t> encode();
   };
 
   struct CategoryComponent {
+    inline static uint16_t component_id = 2;
+
     enum Category {
       None = 0,
       Selectable = 1 << 0,
     };
 
     int category = None;
+
+    CategoryComponent() = default;
+    CategoryComponent(const CategoryComponent& other) = default;
+    CategoryComponent(const int category) : category(category) {}
+
+    // std::array<uint8_t, 1> encode();
   };
 
   struct PathComponent {
+    inline static uint16_t component_id = 3;
+
     Renderer::Geometry::Path data;    /* The path data. */
 
     /**
@@ -55,6 +74,7 @@ namespace Graphick::Editor {
     PathComponent(const Renderer::Geometry::Path& data);
     PathComponent(const PathComponent& other);
     PathComponent(PathComponent&& other) noexcept;
+    PathComponent(const std::vector<uint8_t>& encoded_data);
 
     /**
      * @brief Default destructor.
@@ -66,6 +86,8 @@ namespace Graphick::Editor {
      */
     PathComponent& operator=(const PathComponent& other);
     PathComponent& operator=(PathComponent&& other) noexcept;
+
+    std::vector<uint8_t> encode();
   };
 
   /**
@@ -162,12 +184,12 @@ namespace Graphick::Editor {
   };
 
   struct StrokeComponent {
-    History::Vec4Value color = { 0.0f, 0.0f, 0.0f, 1.0f };
-    History::FloatValue width = 1.0f;
-    History::EnumValue<Renderer::LineCap> cap = Renderer::LineCap::Butt;
-    History::EnumValue<Renderer::LineJoin> join = Renderer::LineJoin::Miter;
-    History::FloatValue miter_limit = 10.0f;
-    History::BoolValue visible = true;
+    Graphick::History::Vec4Value color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    Graphick::History::FloatValue width = 1.0f;
+    Graphick::History::EnumValue<Renderer::LineCap> cap = Renderer::LineCap::Butt;
+    Graphick::History::EnumValue<Renderer::LineJoin> join = Renderer::LineJoin::Miter;
+    Graphick::History::FloatValue miter_limit = 10.0f;
+    Graphick::History::BoolValue visible = true;
 
     StrokeComponent() = default;
     StrokeComponent(const StrokeComponent& other) = default;
@@ -175,9 +197,9 @@ namespace Graphick::Editor {
   };
 
   struct FillComponent {
-    History::Vec4Value color = { 0.0f, 0.0f, 0.0f, 1.0f };
-    History::EnumValue<Renderer::FillRule> rule = Renderer::FillRule::NonZero;
-    History::BoolValue visible = true;
+    Graphick::History::Vec4Value color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    Graphick::History::EnumValue<Renderer::FillRule> rule = Renderer::FillRule::NonZero;
+    Graphick::History::BoolValue visible = true;
 
     FillComponent() = default;
     FillComponent(const FillComponent& other) = default;

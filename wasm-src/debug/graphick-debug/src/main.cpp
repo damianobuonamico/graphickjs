@@ -181,8 +181,8 @@ int main() {
 
   // Graphick::console::log("back", (int)path.back().type);
 
-#define TIGER
-// #define OBJECTS
+// #define TIGER
+#define OBJECTS
 
 #ifdef TIGER
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
@@ -192,28 +192,30 @@ int main() {
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Entity");
   // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_element("Test Entity 1");
 
-  Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
+  auto& path_component = test_entity.get_component<Graphick::Editor::PathComponent>();
+  // auto& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
+  // Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.get_component<Graphick::Editor::PathComponent>().path;
 
   // path.move_to({ 360.0f, 20.0f });
-  path.move_to({ 0.0f, 0.0f });
-  path.line_to({ 0.0f, -50.0f });
-  path.line_to({ 50.0f, -40.0f });
+  path_component.data.move_to({ 0.0f, 0.0f });
+  path_component.data.line_to({ 0.0f, -50.0f });
+  path_component.data.line_to({ 50.0f, -40.0f });
   // path.line_to({ 200.0f, -50.0f });
   // path.line_to({ 300.0f, -20.0f });
   // path.line_to({ 350.0f, -20.0f });
   // path.line_to({ 380.0f, -40.0f });
-  path.close();
+  path_component.data.close();
 
-  path.move_to({ 300.0f, 100.0f });
-  path.line_to({ 350.0f, 200.0f });
-  path.line_to({ 250.0f, 200.0f });
-  path.close();
+  path_component.data.move_to({ 300.0f, 100.0f });
+  path_component.data.line_to({ 350.0f, 200.0f });
+  path_component.data.line_to({ 250.0f, 200.0f });
+  path_component.data.close();
 
-  path.move_to({ 500.0f, 100.0f });
-  path.line_to({ 550.0f, 200.0f });
-  path.line_to({ 450.0f, 200.0f });
-  path.close();
+  path_component.data.move_to({ 500.0f, 100.0f });
+  path_component.data.line_to({ 550.0f, 200.0f });
+  path_component.data.line_to({ 450.0f, 200.0f });
+  path_component.data.close();
 
 
   /* Stroking Robustness */

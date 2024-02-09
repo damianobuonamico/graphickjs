@@ -208,6 +208,8 @@ namespace Graphick::Renderer::Geometry {
     Path(const Path& other);
     Path(Path&& other) noexcept;
 
+    Path(const std::vector<uint8_t>& encoded_data);
+
     /**
      * @brief Default destructor.
      */
@@ -468,6 +470,13 @@ namespace Graphick::Renderer::Geometry {
      * @return true if the point is inside the path, false otherwise.
      */
     bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
+
+    /**
+     * @brief Encodes the path to a list of bytes.
+     *
+     * @return The encoded path.
+     */
+    std::vector<uint8_t> encode() const;
   private:
     /**
      * @brief Returns the ith command of the path.

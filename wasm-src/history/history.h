@@ -1,6 +1,8 @@
 /**
  * @file history.h
  * @brief This file contains the history manager of the editor.
+ *
+ * @todo make history scene specific
  */
 
 #pragma once
@@ -44,7 +46,7 @@ namespace Graphick::History {
      * @param data The data of the action.
      */
     template<typename T>
-    static void add(Action::Type type, uuid entity_id, Action::Property property, const T& data, T* value) {
+    static void add(Action::Type type, uuid entity_id, Action::Property property, const T& data, T* value = nullptr) {
       get()->add({ type, entity_id, property, data, value });
     }
 

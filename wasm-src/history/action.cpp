@@ -5,6 +5,8 @@
 
 #include "action.h"
 
+#include "../editor/editor.h"
+
 namespace Graphick::History {
 
   Action::Action(const Action& other) :
@@ -17,10 +19,12 @@ namespace Graphick::History {
     size(other.size)
   {
     data = new char[size];
-    backup = new char[size];
-
     std::memcpy(data, other.data, size);
-    std::memcpy(backup, other.backup, size);
+
+    if (type == Type::Modify) {
+      backup = new char[size];
+      std::memcpy(backup, other.backup, size);
+    }
   }
 
   Action::Action(Action&& other) noexcept :
@@ -32,8 +36,9 @@ namespace Graphick::History {
     backup(other.backup),
     size(other.size)
   {
-    other.data = nullptr;
+    other.type = Type::Invalid;
     other.backup = nullptr;
+    other.data = nullptr;
   }
 
   Action::~Action() {
@@ -51,12 +56,17 @@ namespace Graphick::History {
     entity_id = other.entity_id;
     property = other.property;
     value = other.value;
-    data = new char[size];
-    backup = new char[size];
+    data = nullptr;
+    backup = nullptr;
     size = other.size;
 
+    data = new char[size];
     std::memcpy(data, other.data, size);
-    std::memcpy(backup, other.backup, size);
+
+    if (type == Type::Modify) {
+      backup = new char[size];
+      std::memcpy(backup, other.backup, size);
+    }
 
     return *this;
   }
@@ -75,8 +85,9 @@ namespace Graphick::History {
     backup = other.backup;
     size = other.size;
 
-    other.data = nullptr;
+    other.type = Type::Invalid;
     other.backup = nullptr;
+    other.data = nullptr;
 
     return *this;
   }
@@ -86,6 +97,7 @@ namespace Graphick::History {
     case Type::Add:
       break;
     case Type::Remove:
+      // Editor::Editor::scene().remove(entity_id);
       break;
     case Type::Modify:
       std::memcpy(value, data, size);
@@ -98,6 +110,7 @@ namespace Graphick::History {
     case Type::Add:
       break;
     case Type::Remove:
+      // Editor::Editor::scene().add(entity_id, *(static_cast<const std::vector<uint8_t>*>(data)));
       break;
     case Type::Modify:
       std::memcpy(value, backup, size);

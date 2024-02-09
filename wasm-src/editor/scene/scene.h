@@ -2,6 +2,7 @@
 
 #include "viewport.h"
 #include "selection.h"
+#include "history/history.h"
 
 #include "../input/tool_state.h"
 
@@ -16,6 +17,7 @@ namespace Graphick::Renderer::Geometry {
 namespace Graphick::History {
   class InsertInRegistryCommand;
   class EraseFromRegistryCommand;
+  struct Action;
 }
 
 namespace Graphick::Editor {
@@ -28,6 +30,7 @@ namespace Graphick::Editor {
 
     Viewport viewport;
     Selection selection;
+    History history;
 
     Input::ToolState tool_state;
   public:
@@ -58,16 +61,21 @@ namespace Graphick::Editor {
     Entity create_element(Renderer::Geometry::Path& path, const std::string& tag = "");
   private:
     void render() const;
+
+    void remove(const uuid id);
+    void add(const uuid id, const std::vector<uint8_t>& encoded_data);
   private:
     entt::registry m_registry;
 
     std::unordered_map<uuid, entt::entity> m_entities;
-    History::VectorValue<entt::entity> m_order;
+    Graphick::History::VectorValue<entt::entity> m_order;
   private:
     friend class Editor;
     friend class Entity;
-    friend class History::InsertInRegistryCommand;
-    friend class History::EraseFromRegistryCommand;
+    friend class Graphick::History::InsertInRegistryCommand;
+    friend class Graphick::History::EraseFromRegistryCommand;
+    friend struct AddOrRemoveAction;
+    friend struct ModifyAction;
   };
 
 }

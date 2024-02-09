@@ -284,14 +284,20 @@ namespace Graphick::Editor::Input {
   }
 
   bool InputManager::on_key_down(KeyboardKey key) {
+    Scene& scene = Editor::scene();
+
     if ((key == KeyboardKey::Z || (int)key == 90 /* TEMP: GLFW */) && keys.ctrl) {
       if (keys.shift) {
-        History::History::redo();
+        scene.history.redo();
       } else {
-        History::History::undo();
+        scene.history.undo();
       }
 
       Editor::render();
+    } else if ((int)key == 259 /* TEMP: GLFW */) {
+      if (!scene.selection.empty()) {
+        scene.delete_entity(scene.selection.selected().begin()->first);
+      }
     }
 
     return false;

@@ -10,6 +10,7 @@
 
 #include "../../history/command_history.h"
 #include "../../history/commands.h"
+#include "../../history/history.h"
 
 // TEMP
 #include "../../math/matrix.h"
@@ -185,16 +186,17 @@ namespace Graphick::History {
 
 namespace Graphick::Editor {
 
-  Scene::Scene() : selection(this) {}
+  Scene::Scene() : selection(this), history(this) {}
 
-  Scene::Scene(const Scene& other) : m_entities(other.m_entities), m_order(other.m_order), selection(this), viewport(other.viewport) {
+  Scene::Scene(const Scene& other) : m_entities(other.m_entities), m_order(other.m_order), selection(this), history(this), viewport(other.viewport) {
     m_registry.assign(other.m_registry.data(), other.m_registry.data() + other.m_registry.size(), other.m_registry.released());
   }
 
   Scene::Scene(Scene&& other) noexcept :
     m_registry(std::move(other.m_registry)),
     m_entities(std::move(other.m_entities)),
-    selection(this) {}
+    selection(this),
+    history(this) {}
 
   Scene::~Scene() {}
 
@@ -211,20 +213,43 @@ namespace Graphick::Editor {
     m_entities[id] = entity;
     m_order.push_back(entity);
 
-    History::CommandHistory::add(std::make_unique<History::InsertInRegistryCommand>(this, &m_entities, id));
+    Graphick::History::CommandHistory::add(std::make_unique<Graphick::History::InsertInRegistryCommand>(this, &m_entities, id));
 
     return entity;
   }
 
   void Scene::delete_entity(Entity entity) {
     // TODO: implement z-ordering
-    History::CommandHistory::add(std::make_unique<History::EraseFromRegistryCommand>(this, &m_entities, entity.id()));
-    m_order.erase((entt::entity)entity);
+
+    history.remove(
+      entity.id(),
+      Action::Property::Entity,
+      entity.get_component<PathComponent>().encode()
+    );
+
+    // Graphick::History::History::add(
+    //   Graphick::History::Action::Type::Remove,
+    //   entity.id(),
+    //   Graphick::History::Action::Property::Entity,
+    //   entity.get_component<PathComponent>().encode()
+    // );
+
+    // std::vector<uint8_t> path_data = entity.get_component<PathComponent>().encode();
+
+    // Entity new_entity = create_entity("new entity");
+
+    // new_entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
+    // PathComponent& path_component = new_entity.add_component<PathComponent>(path_data);
+    // new_entity.add_component<TransformComponent>(new_entity.id(), &path_component);
+
+    // History::CommandHistory::add(std::make_unique<History::EraseFromRegistryCommand>(this, &m_entities, entity.id()));
+    // m_order.erase((entt::entity)entity);
   }
 
   void Scene::delete_entity(uuid id) {
-    History::CommandHistory::add(std::make_unique<History::EraseFromRegistryCommand>(this, &m_entities, id));
-    m_order.erase((entt::entity)get_entity(id));
+    delete_entity(get_entity(id));
+    // History::CommandHistory::add(std::make_unique<History::EraseFromRegistryCommand>(this, &m_entities, id));
+    // m_order.erase((entt::entity)get_entity(id));
   }
 
   bool Scene::has_entity(const uuid id) const {
@@ -509,6 +534,28 @@ namespace Graphick::Editor {
     Renderer::Renderer::end_frame();
 
     GK_DEBUGGER_RENDER(vec2(viewport.size()) * viewport.dpr());
+  }
+
+
+  void Scene::remove(const uuid id) {
+    auto it = m_entities.find(id);
+    if (it == m_entities.end()) return;
+
+    entt::entity entity = it->second;
+
+    selection.deselect(id);
+    m_registry.destroy(entity);
+    m_entities.erase(it);
+    m_order.erase((entt::entity)entity);
+  }
+
+  void Scene::add(const uuid id, const std::vector<uint8_t>& encoded_data) {
+    Entity new_entity = create_entity(id, "new entity");
+
+    new_entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
+    PathComponent& path_component = new_entity.add_component<PathComponent>(encoded_data);
+    new_entity.add_component<TransformComponent>(new_entity.id(), &path_component);
+    new_entity.add_component<StrokeComponent>(vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
   }
 
 }

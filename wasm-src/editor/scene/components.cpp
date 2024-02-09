@@ -1,5 +1,7 @@
 #include "components.h"
 
+#include "../editor.h"
+
 #include "../../renderer/geometry/path.h"
 
 #include "../../math/matrix.h"
@@ -21,6 +23,8 @@ namespace Graphick::Editor {
 
   PathComponent::PathComponent(PathComponent&& other) noexcept : data(std::move(other.data)) {}
 
+  PathComponent::PathComponent(const std::vector<uint8_t>& encoded_data) : data(encoded_data) {}
+
   PathComponent& PathComponent::operator=(const PathComponent& other) {
     data = other.data;
     return *this;
@@ -29,6 +33,10 @@ namespace Graphick::Editor {
   PathComponent& PathComponent::operator=(PathComponent&& other) noexcept {
     data = std::move(other.data);
     return *this;
+  }
+
+  std::vector<uint8_t> PathComponent::encode() {
+    return data.encode();
   }
 
   /* -- TransformComponent -- */
@@ -70,33 +78,39 @@ namespace Graphick::Editor {
   }
 
   void TransformComponent::translate(const vec2 delta) {
-    History::History::add(
-      History::Action::Type::Modify,
+    // History::History::add(
+    //   History::Action::Type::Modify,
+    //   m_entity_id,
+    //   History::Action::Property::Transform,
+    //   Math::translate(m_matrix, delta),
+    //   _value()
+    // );
+    Editor::scene().history.modify(
       m_entity_id,
-      History::Action::Property::Transform,
+      Action::Property::Transform,
       Math::translate(m_matrix, delta),
       _value()
     );
   }
 
   void TransformComponent::scale(const vec2 delta) {
-    History::History::add(
-      History::Action::Type::Modify,
-      m_entity_id,
-      History::Action::Property::Transform,
-      Math::scale(m_matrix, delta),
-      _value()
-    );
+    // History::History::add(
+    //   History::Action::Type::Modify,
+    //   m_entity_id,
+    //   History::Action::Property::Transform,
+    //   Math::scale(m_matrix, delta),
+    //   _value()
+    // );
   }
 
   void TransformComponent::rotate(const float angle) {
-    History::History::add(
-      History::Action::Type::Modify,
-      m_entity_id,
-      History::Action::Property::Transform,
-      Math::rotate(m_matrix, angle),
-      _value()
-    );
+    // History::History::add(
+    //   History::Action::Type::Modify,
+    //   m_entity_id,
+    //   History::Action::Property::Transform,
+    //   Math::rotate(m_matrix, angle),
+    //   _value()
+    // );
   }
 
 }

@@ -23,7 +23,7 @@ namespace Graphick::Editor::Input {
     Renderer::Geometry::ControlPoint& vertex,
     const mat2x3& transform,
     bool create_handles, bool keep_in_handle_length, bool swap_in_out,
-    int* direction, History::Vec2Value* in_use_handle
+    int* direction, Graphick::History::Vec2Value* in_use_handle
   ) {
     // mat2x3 inverse_transform = Math::inverse(transform);
 
@@ -290,7 +290,7 @@ namespace Graphick::Editor::Input {
     m_active_handle = HandleNone;
     m_in_use = false;
 
-    for (History::Mat2x3Value* matrix : m_cache) {
+    for (Graphick::History::Mat2x3Value* matrix : m_cache) {
       matrix->apply();
     }
 
@@ -376,7 +376,7 @@ namespace Graphick::Editor::Input {
 
     update_positions(new_bounding_rect);
 
-    for (History::Mat2x3Value* matrix : m_cache) {
+    for (Graphick::History::Mat2x3Value* matrix : m_cache) {
       matrix->set_delta(mat2x3{ 0.0f });
       matrix->scale(center, magnitude);
     }
@@ -396,7 +396,7 @@ namespace Graphick::Editor::Input {
 
     update_positions(new_bounding_rect);
 
-    for (History::Mat2x3Value* matrix : m_cache) {
+    for (Graphick::History::Mat2x3Value* matrix : m_cache) {
       matrix->set_delta(mat2x3{ 0.0f });
       matrix->rotate(center, sin_angle, cos_angle);
     }

@@ -295,6 +295,21 @@ namespace Graphick::Renderer::Geometry {
 
   Path::Path(Path&& other) noexcept : m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)), m_commands_size(other.m_commands_size) {}
 
+  Path::Path(const std::vector<uint8_t>& encoded_data) {
+    if (encoded_data.empty()) return;
+
+    const size_t commands_size = (encoded_data[0] << 24) | (encoded_data[1] << 16) | (encoded_data[2] << 8) | encoded_data[3];
+    const size_t commands_buffer_size = std::ceil(commands_size / 4);
+
+    m_commands = std::vector<uint8_t>(encoded_data.begin() + 4, encoded_data.begin() + 4 + commands_buffer_size);
+    m_commands_size = commands_size;
+
+    const size_t points_size = (encoded_data[commands_buffer_size + 4] << 24) | (encoded_data[commands_buffer_size + 5] << 16) | (encoded_data[commands_buffer_size + 6] << 8) | encoded_data[commands_buffer_size + 7];
+    const size_t points_buffer_size = points_size * sizeof(vec2);
+
+    m_points = std::vector<vec2>(reinterpret_cast<const vec2*>(encoded_data.data() + commands_buffer_size + 8), reinterpret_cast<const vec2*>(encoded_data.data() + commands_buffer_size + 8 + points_buffer_size));
+  }
+
   Path& Path::operator=(const Path& other) {
     m_points = other.m_points;
     m_commands = other.m_commands;
@@ -927,6 +942,36 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return false;
+  }
+
+  std::vector<uint8_t> Path::encode() const {
+    if (vacant()) return {};
+
+    std::vector<uint8_t> buffer(4 + m_commands.size() + 4 + m_points.size() * sizeof(vec2));
+
+    buffer[0] = static_cast<uint8_t>(m_commands_size >> 24);
+    buffer[1] = static_cast<uint8_t>(m_commands_size >> 16);
+    buffer[2] = static_cast<uint8_t>(m_commands_size >> 8);
+    buffer[3] = static_cast<uint8_t>(m_commands_size);
+
+    for (size_t i = 0; i < m_commands.size(); i++) {
+      buffer[i + 4] = m_commands[i];
+    }
+
+    buffer[m_commands.size() + 4] = static_cast<uint8_t>(m_points.size() >> 24);
+    buffer[m_commands.size() + 5] = static_cast<uint8_t>(m_points.size() >> 16);
+    buffer[m_commands.size() + 6] = static_cast<uint8_t>(m_points.size() >> 8);
+    buffer[m_commands.size() + 7] = static_cast<uint8_t>(m_points.size());
+
+    for (size_t i = 0; i < m_points.size(); i++) {
+      const uint8_t* p = reinterpret_cast<const uint8_t*>(&m_points[i]);
+
+      for (size_t j = 0; j < sizeof(vec2); j++) {
+        buffer[m_commands.size() + 8 + i * sizeof(vec2) + j] = p[j];
+      }
+    }
+
+    return buffer;
   }
 
   void Path::push_command(const Command command) {

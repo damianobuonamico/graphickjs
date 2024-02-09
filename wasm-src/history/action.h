@@ -56,13 +56,22 @@ namespace Graphick::History {
       entity_id(entity_id),
       property(property),
       value(value),
+      data(nullptr),
+      backup(nullptr),
       size(sizeof(T))
     {
-      this->data = new char[size];
-      this->backup = new char[size];
-
+      this->data = new uint8_t[size];
       std::memcpy(this->data, &data, size);
-      std::memcpy(this->backup, value, size);
+
+      switch (type) {
+      case Type::Add:
+      case Type::Remove:
+        break;
+      case Type::Modify:
+        this->backup = new uint8_t[size];
+        std::memcpy(this->backup, value, size);
+        break;
+      }
     }
 
     /**
@@ -74,7 +83,7 @@ namespace Graphick::History {
 
     /**
      * @brief Copy and move assignment operators.
-    */
+     */
     Action& operator=(const Action& other);
     Action& operator=(Action&& other) noexcept;
 

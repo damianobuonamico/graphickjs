@@ -30,7 +30,7 @@ namespace Graphick::Editor::Input {
     return m_vertex;
   }
 
-  std::optional<std::weak_ptr<History::Vec2Value>> HoverState::handle() const {
+  std::optional<std::weak_ptr<Graphick::History::Vec2Value>> HoverState::handle() const {
     if (m_entity == 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;
     return m_handle;
   }

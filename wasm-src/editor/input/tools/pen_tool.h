@@ -111,7 +111,7 @@ namespace Graphick::Editor::Input {
   private:
     Mode m_mode = Mode::New;                                /* The current mode of the pen tool. */
     uuid m_element = uuid::null;                            /* The UUID of the pen element. */
-    History::Mat2x3Value* m_transform = nullptr;            /* The transform of the pen element. */
+    Graphick::History::Mat2x3Value* m_transform = nullptr;            /* The transform of the pen element. */
 
     Renderer::Geometry::ControlPoint* m_vertex = nullptr;   /* The active vertex. */
     Renderer::Geometry::Path* m_path = nullptr;             /* The active path. */
