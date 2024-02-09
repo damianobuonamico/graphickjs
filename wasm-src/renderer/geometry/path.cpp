@@ -295,19 +295,23 @@ namespace Graphick::Renderer::Geometry {
 
   Path::Path(Path&& other) noexcept : m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)), m_commands_size(other.m_commands_size) {}
 
-  Path::Path(const std::vector<uint8_t>& encoded_data) {
+  Path::Path(const std::vector<uint8_t>& encoded_data, size_t& index) {
     if (encoded_data.empty()) return;
 
-    const size_t commands_size = (encoded_data[0] << 24) | (encoded_data[1] << 16) | (encoded_data[2] << 8) | encoded_data[3];
-    const size_t commands_buffer_size = std::ceil(commands_size / 4);
+    const size_t commands_size = (encoded_data[index] << 24) | (encoded_data[index + 1] << 16) | (encoded_data[index + 2] << 8) | encoded_data[index + 3];
+    const size_t commands_buffer_size = static_cast<size_t>(std::ceil(static_cast<float>(commands_size) / 4));
 
-    m_commands = std::vector<uint8_t>(encoded_data.begin() + 4, encoded_data.begin() + 4 + commands_buffer_size);
+    m_commands = std::vector<uint8_t>(encoded_data.begin() + index + 4, encoded_data.begin() + index + 4 + commands_buffer_size);
     m_commands_size = commands_size;
 
-    const size_t points_size = (encoded_data[commands_buffer_size + 4] << 24) | (encoded_data[commands_buffer_size + 5] << 16) | (encoded_data[commands_buffer_size + 6] << 8) | encoded_data[commands_buffer_size + 7];
+    index += 4 + commands_buffer_size;
+
+    const size_t points_size = (encoded_data[index + 0] << 24) | (encoded_data[index + 1] << 16) | (encoded_data[index + 2] << 8) | encoded_data[index + 3];
     const size_t points_buffer_size = points_size * sizeof(vec2);
 
-    m_points = std::vector<vec2>(reinterpret_cast<const vec2*>(encoded_data.data() + commands_buffer_size + 8), reinterpret_cast<const vec2*>(encoded_data.data() + commands_buffer_size + 8 + points_buffer_size));
+    m_points = std::vector<vec2>(reinterpret_cast<const vec2*>(encoded_data.data() + index + 4), reinterpret_cast<const vec2*>(encoded_data.data() + index + 4 + points_buffer_size));
+
+    index += 4 + points_buffer_size;
   }
 
   Path& Path::operator=(const Path& other) {

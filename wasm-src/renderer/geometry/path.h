@@ -208,7 +208,7 @@ namespace Graphick::Renderer::Geometry {
     Path(const Path& other);
     Path(Path&& other) noexcept;
 
-    Path(const std::vector<uint8_t>& encoded_data);
+    Path(const std::vector<uint8_t>& encoded_data, size_t& index);
 
     /**
      * @brief Default destructor.

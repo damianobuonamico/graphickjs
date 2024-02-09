@@ -8,8 +8,6 @@
 #include "../../math/math.h"
 #include "../../math/scalar.h"
 
-#include "../../history/history.h"
-
 #include "../../utils/console.h"
 
 // TOOD: fix events clogging animation frame queue

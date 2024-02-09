@@ -5,12 +5,15 @@
 
 #include "../../utils/assert.h"
 
+#include <vector>
+
 namespace Graphick::Editor {
 
   class Entity {
   public:
     Entity() = default;
     Entity(entt::entity handle, Scene* scene) : m_handle(handle), m_scene(scene) {}
+    Entity(entt::entity handle, Scene* scene, const std::vector<uint8_t>& encoded_data);
     Entity(const Entity& other) = default;
 
     template <typename T, typename... Args>
@@ -75,6 +78,8 @@ namespace Graphick::Editor {
     bool is_element() const {
       return has_components<PathComponent, TransformComponent>();
     }
+
+    std::vector<uint8_t> encode() const;
   private:
     entt::entity m_handle;
     Scene* m_scene;

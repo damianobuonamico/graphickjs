@@ -749,7 +749,7 @@ namespace Graphick::io::svg {
             }*/
 
             // TODO: reimplement svg creation, element creation, path optimization
-            Editor::Entity element = Editor::Editor::scene().create_element(path);
+            Editor::Entity element = Editor::Editor::scene().create_element(std::move(path));
 
             if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {
               element.add_component<Editor::FillComponent>(fill_colors.back());

@@ -189,7 +189,7 @@ int main() {
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   Graphick::io::svg::parse_svg(content);
 #elif defined(OBJECTS)
-  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Entity");
+  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element();
   // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_element("Test Entity 1");
 
   auto& path_component = test_entity.get_component<Graphick::Editor::PathComponent>();
