@@ -5,7 +5,7 @@
 
 #include "action.h"
 
-#include "../scene.h"
+#include "../entity.h"
 
 #include "../../../utils/console.h"
 #include "../../../utils/assert.h"
@@ -56,6 +56,10 @@ namespace Graphick::Editor {
       scene->add(entity_id, m_data);
       console::log("add entity");
       break;
+    case Property::Component:
+      scene->get_entity(entity_id).add(m_data);
+      console::log("add component");
+      break;
     default:
       break;
     }
@@ -66,6 +70,10 @@ namespace Graphick::Editor {
     case Property::Entity:
       scene->remove(entity_id);
       console::log("remove entity");
+      break;
+    case Property::Component:
+      scene->get_entity(entity_id).remove(m_data);
+      console::log("remove component");
       break;
     default:
       break;
@@ -78,6 +86,10 @@ namespace Graphick::Editor {
       scene->remove(entity_id);
       console::log("revert add entity");
       break;
+    case Property::Component:
+      scene->get_entity(entity_id).remove(m_data);
+      console::log("revert add component");
+      break;
     default:
       break;
     }
@@ -88,6 +100,10 @@ namespace Graphick::Editor {
     case Property::Entity:
       scene->add(entity_id, m_data);
       console::log("revert remove entity");
+      break;
+    case Property::Component:
+      scene->get_entity(entity_id).add(m_data);
+      console::log("revert remove component");
       break;
     default:
       break;

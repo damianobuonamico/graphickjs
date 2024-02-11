@@ -14,8 +14,6 @@ namespace Graphick::Editor {
   /* -- IDComponent -- */
 
   IDComponent::IDComponent(io::DataDecoder& decoder) {
-    // if (!decoder.has_bytes(sizeof(uuid))) return;
-
     id = decoder.uuid();
   }
 
@@ -39,6 +37,21 @@ namespace Graphick::Editor {
 
     data.component_id(component_id)
       .string(tag);
+
+    return data;
+  }
+
+  /* -- CategoryComponent -- */
+
+  CategoryComponent::CategoryComponent(io::DataDecoder& decoder) {
+    category = static_cast<Category>(decoder.uint8());
+  }
+
+  io::EncodedData& CategoryComponent::encode(io::EncodedData& data) const {
+    if (category == Category::None) return data;
+
+    data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(category));
 
     return data;
   }

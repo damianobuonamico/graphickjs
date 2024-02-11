@@ -60,8 +60,9 @@ namespace Graphick::Editor {
     CategoryComponent() = default;
     CategoryComponent(const CategoryComponent& other) = default;
     CategoryComponent(const int category) : category(category) {}
+    CategoryComponent(io::DataDecoder& decoder);
 
-    // std::array<uint8_t, 1> encode();
+    io::EncodedData& encode(io::EncodedData& data) const;
   };
 
   struct PathComponent {

@@ -61,6 +61,9 @@ namespace Graphick::Editor {
         .string(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number) : tag);
     }
 
+    data.component_id(CategoryComponent::component_id)
+      .uint8(static_cast<uint8_t>(CategoryComponent::None));
+
     history.add(
       id,
       Action::Property::Entity,
@@ -93,6 +96,9 @@ namespace Graphick::Editor {
 
     data.component_id(TagComponent::component_id)
       .string("Element " + std::to_string(m_entity_tag_number));
+
+    data.component_id(CategoryComponent::component_id)
+      .uint8(static_cast<uint8_t>(CategoryComponent::Selectable));
 
     data.component_id(PathComponent::component_id)
       .uint32(0);
@@ -127,6 +133,9 @@ namespace Graphick::Editor {
 
     data.component_id(TagComponent::component_id)
       .string("Element " + std::to_string(m_entity_tag_number));
+
+    data.component_id(CategoryComponent::component_id)
+      .uint8(static_cast<uint8_t>(CategoryComponent::Selectable));
 
     data.component_id(PathComponent::component_id);
     path.encode(data);
@@ -423,9 +432,6 @@ namespace Graphick::Editor {
 
     m_entities[id] = entity;
     m_order.push_back(entity);
-
-    // TODO: move in entity decode
-    entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
   }
 
   void Scene::remove(const uuid id) {

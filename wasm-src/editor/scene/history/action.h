@@ -41,6 +41,7 @@ namespace Graphick::Editor {
      */
     enum class Property {
       Entity,     /* The entire entity. */
+      Component,  /* A component. */
       Transform   /* The transform component. */
     };
   public:

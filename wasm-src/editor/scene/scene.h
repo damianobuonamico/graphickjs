@@ -153,14 +153,14 @@ namespace Graphick::Editor {
      *
      * @param id The unique identifier of the entity.
      * @param encoded_data The encoded data of the entity.
-    */
+     */
     void add(const uuid id, const io::EncodedData& encoded_data);
 
     /**
      * @brief Removes an entity from the scene.
      *
      * This method should only be called by the history manager.
-    */
+     */
     void remove(const uuid id);
   private:
     entt::registry m_registry;                            /* The main entt registry of the scene. */

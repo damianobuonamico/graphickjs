@@ -1,3 +1,8 @@
+/**
+ * @file entity.cpp
+ * @brief Entity class implementation
+ */
+
 #include "entity.h"
 
 #include "../../utils/console.h"
@@ -5,115 +10,26 @@
 namespace Graphick::Editor {
 
 #define DECODE_COMPONENT(component_type) if (component_id == component_type::component_id) { \
-  add_component<component_type>(decoder); \
+  add<component_type>(decoder); \
   if (decoder.end_of_data()) return; \
   component_id = decoder.component_id(); }
 
 #define DECODE_COMPONENT_WITH_DATA(component_type, ...) if (component_id == component_type::component_id) { \
-  add_component<component_type>(__VA_ARGS__); \
+  add<component_type>(__VA_ARGS__); \
   if (decoder.end_of_data()) return; \
   component_id = decoder.component_id(); }
 
 #define ENCODE_COMPONENT(component_type) if (auto handle = m_scene->m_registry.try_get<component_type>(m_handle); handle) { \
   handle->encode(data); }
 
+#define REMOVE_COMPONENT(component_type) if (component_id == component_type::component_id) { \
+  remove<component_type>(); }
 
   Entity::Entity(entt::entity handle, Scene* scene, const io::EncodedData& encoded_data) :
     m_handle(handle),
     m_scene(scene)
   {
-    io::DataDecoder decoder(&encoded_data);
-
-    if (decoder.end_of_data()) return;
-
-    uint8_t component_id = decoder.component_id();
-
-    DECODE_COMPONENT(IDComponent);
-    DECODE_COMPONENT(TagComponent);
-    DECODE_COMPONENT(PathComponent);
-    DECODE_COMPONENT_WITH_DATA(TransformComponent, id(), decoder, has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
-    DECODE_COMPONENT(StrokeComponent);
-    DECODE_COMPONENT(FillComponent);
-
-    // if (component_id == IDComponent::component_id) {
-    //   add_component<IDComponent>(decoder);
-    //   if (decoder.end_of_data()) return;
-    // }
-
-    // if (component_id == TagComponent::component_id) {
-    //   add_component<TagComponent>(decoder);
-    //   if (decoder.end_of_data()) return;
-    // }
-
-    // if (component_id == PathComponent::component_id) {
-    //   add_component<PathComponent>(decoder);
-    //   if (decoder.end_of_data()) return;
-    // }
-
-    // if (component_id == TransformComponent::component_id) {
-    //   add_component<TransformComponent>(decoder);
-    //   if (decoder.end_of_data()) return;
-    // }
-
-    // if (component_id == StrokeComponent::component_id) {
-    //   add_component<StrokeComponent>(decoder);
-    //   if (decoder.end_of_data()) return;
-    // }
-
-    // if (component_id == FillComponent::component_id) {
-    //   add_component<FillComponent>(decoder);
-    //   if (decoder.end_of_data()) return;
-    // }
-
-    // while (!decoder.end_of_data()) {
-    // }
-
-    // decoder.next_component();
-
-    // size_t index = 0;
-    // while (index < encoded_data.size()) {
-    //   uint8_t component_id = encoded_data[index];
-    //   index++;
-
-    //   switch (component_id) {
-    //   case IDComponent::component_id: {
-    //     IDComponent id_component(encoded_data, index);
-    //     m_scene->m_registry.emplace<IDComponent>(m_handle, id_component);
-    //     break;
-    //   }
-    //   case TagComponent::component_id: {
-    //     TagComponent tag_component(encoded_data, index);
-    //     m_scene->m_registry.emplace<TagComponent>(m_handle, tag_component);
-    //     break;
-    //   }
-    //   case PathComponent::component_id: {
-    //     PathComponent path_component(encoded_data, index);
-    //     m_scene->m_registry.emplace<PathComponent>(m_handle, path_component);
-    //     break;
-    //   }
-    //   case TransformComponent::component_id: {
-    //     TransformComponent transform_component(id(), encoded_data, index,
-    //       has_component<PathComponent>() ? &m_scene->m_registry.get<PathComponent>(m_handle) : nullptr
-    //     );
-    //     m_scene->m_registry.emplace<TransformComponent>(m_handle, transform_component);
-    //     break;
-    //   }
-    //   case StrokeComponent::component_id: {
-    //     StrokeComponent stroke_component(encoded_data, index);
-    //     m_scene->m_registry.emplace<StrokeComponent>(m_handle, stroke_component);
-    //     break;
-    //   }
-    //   case FillComponent::component_id: {
-    //     FillComponent fill_component(encoded_data, index);
-    //     m_scene->m_registry.emplace<FillComponent>(m_handle, fill_component);
-    //     break;
-    //   }
-    //   default: {
-    //     console::log("Unknown component ID: ", component_id);
-    //     break;
-    //   }
-    //   }
-    // }
+    add(encoded_data);
   }
 
   io::EncodedData Entity::encode() const {
@@ -121,6 +37,7 @@ namespace Graphick::Editor {
 
     ENCODE_COMPONENT(IDComponent);
     ENCODE_COMPONENT(TagComponent);
+    ENCODE_COMPONENT(CategoryComponent);
     ENCODE_COMPONENT(PathComponent);
     ENCODE_COMPONENT(TransformComponent);
     ENCODE_COMPONENT(StrokeComponent);
@@ -129,109 +46,36 @@ namespace Graphick::Editor {
     return data;
   }
 
-  // std::vector<uint8_t> Entity::encode() const {
-  //   std::vector<uint8_t> data;
+  void Entity::add(const io::EncodedData& encoded_data) {
+    io::DataDecoder decoder(&encoded_data);
 
-  //   auto id_handle = m_scene->m_registry.try_get<IDComponent>(m_handle);
-  //   auto tag_handle = m_scene->m_registry.try_get<TagComponent>(m_handle);
-  //   auto path_handle = m_scene->m_registry.try_get<PathComponent>(m_handle);
-  //   auto transform_handle = m_scene->m_registry.try_get<TransformComponent>(m_handle);
-  //   auto stroke_handle = m_scene->m_registry.try_get<StrokeComponent>(m_handle);
-  //   auto fill_handle = m_scene->m_registry.try_get<FillComponent>(m_handle);
+    if (decoder.end_of_data()) return;
 
-  //   if (id_handle) {
-  //     auto id_data = id_handle->encode();
+    uint8_t component_id = decoder.component_id();
 
-  //     if (!id_data.empty()) {
-  //       data.push_back(IDComponent::component_id);
-  //       data.insert(data.end(), id_data.begin(), id_data.end());
-  //     }
-  //   }
+    DECODE_COMPONENT(IDComponent);
+    DECODE_COMPONENT(TagComponent);
+    DECODE_COMPONENT(CategoryComponent);
+    DECODE_COMPONENT(PathComponent);
+    DECODE_COMPONENT_WITH_DATA(TransformComponent, id(), decoder, has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
+    DECODE_COMPONENT(StrokeComponent);
+    DECODE_COMPONENT(FillComponent);
+  }
 
-  //   if (tag_handle) {
-  //     auto tag_data = tag_handle->encode();
+  void Entity::remove(const io::EncodedData& encoded_data) {
+    io::DataDecoder decoder(&encoded_data);
 
-  //     if (!tag_data.empty()) {
-  //       data.push_back(TagComponent::component_id);
-  //       data.insert(data.end(), tag_data.begin(), tag_data.end());
-  //     }
-  //   }
+    if (decoder.end_of_data()) return;
 
-  //   if (path_handle) {
-  //     auto path_data = path_handle->encode();
+    uint8_t component_id = decoder.component_id();
 
-  //     if (!path_data.empty()) {
-  //       data.push_back(PathComponent::component_id);
-  //       data.insert(data.end(), path_data.begin(), path_data.end());
-  //     }
-  //   }
-
-  //   if (transform_handle) {
-  //     auto transform_data = transform_handle->encode();
-
-  //     if (!transform_data.empty()) {
-  //       data.push_back(TransformComponent::component_id);
-  //       data.insert(data.end(), transform_data.begin(), transform_data.end());
-  //     }
-  //   }
-
-  //   if (stroke_handle) {
-  //     auto stroke_data = stroke_handle->encode();
-
-  //     if (!stroke_data.empty()) {
-  //       data.push_back(StrokeComponent::component_id);
-  //       data.insert(data.end(), stroke_data.begin(), stroke_data.end());
-  //     }
-  //   }
-
-  //   if (fill_handle) {
-  //     auto fill_data = fill_handle->encode();
-
-  //     if (!fill_data.empty()) {
-  //       data.push_back(FillComponent::component_id);
-  //       data.insert(data.end(), fill_data.begin(), fill_data.end());
-  //     }
-  //   }
-
-  //   // for (auto&& curr : m_scene->m_registry.storage()) {
-  //   //   if (auto& storage = curr.second; storage.contains(m_handle)) {
-  //   //     entt::id_type component_id = curr.first;
-  //   //     console::log("Component ID: ", storage.get(m_handle)->encode());
-  //   //     // data.push_back(curr.first);
-  //   //     // std::vector<uint8_t> component_data = storage.get(m_handle).encode();
-  //   //     // data.insert(data.end(), component_data.begin(), component_data.end());
-  //   //   }
-  //   // }
-
-  //   // entt::meta_range<entt::
-
-  //   // // IDComponent
-  //   // data.push_back(IDComponent::component_id);
-  //   // std::vector<uint8_t> id_data = m_scene->m_registry.get<IDComponent>(m_handle).encode();
-  //   // data.insert(data.end(), id_data.begin(), id_data.end());
-
-  //   // // TagComponent
-  //   // if (m_scene->m_registry.all_of<TagComponent>(m_handle)) {
-  //   //   data.push_back(TagComponent::component_id);
-  //   //   std::vector<uint8_t> tag_data = m_scene->m_registry.get<TagComponent>(m_handle).encode();
-  //   //   data.insert(data.end(), tag_data.begin(), tag_data.end());
-  //   // }
-
-  //   // // CategoryComponent
-  //   // if (m_scene->m_registry.all_of<CategoryComponent>(m_handle)) {
-  //   //   data.push_back(CategoryComponent::component_id);
-  //   //   std::vector<uint8_t> category_data = m_scene->m_registry.get<CategoryComponent>(m_handle).encode();
-  //   //   data.insert(data.end(), category_data.begin(), category_data.end());
-  //   // }
-
-  //   // // PathComponent
-  //   // if (m_scene->m_registry.all_of<PathComponent>(m_handle)) {
-  //   //   data.push_back(PathComponent::component_id);
-  //   //   std::vector<uint8_t> path_data = m_scene->m_registry.get<PathComponent>(m_handle).encode();
-  //   //   data.insert(data.end(), path_data.begin(), path_data.end());
-  //   // }
-
-  //   return data;
-  // }
+    REMOVE_COMPONENT(IDComponent);
+    REMOVE_COMPONENT(TagComponent);
+    REMOVE_COMPONENT(CategoryComponent);
+    REMOVE_COMPONENT(PathComponent);
+    REMOVE_COMPONENT(TransformComponent);
+    REMOVE_COMPONENT(StrokeComponent);
+    REMOVE_COMPONENT(FillComponent);
+  }
 
 }

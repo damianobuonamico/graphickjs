@@ -130,12 +130,14 @@ namespace Graphick::io {
 
     inline int8_t int8() {
       GK_ASSERT(has_bytes(sizeof(int8_t)), "Not enough bytes to decode int8_t!");
+      if (!has_bytes(sizeof(int8_t))) return 0;
 
       return static_cast<int8_t>(m_data->data[m_index++]);
     }
 
     inline int16_t int16() {
       GK_ASSERT(has_bytes(sizeof(int16_t)), "Not enough bytes to decode int16_t!");
+      if (!has_bytes(sizeof(int16_t))) return 0;
 
       int16_t t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(int16_t));
@@ -146,6 +148,7 @@ namespace Graphick::io {
 
     inline int32_t int32() {
       GK_ASSERT(has_bytes(sizeof(int32_t)), "Not enough bytes to decode int32_t!");
+      if (!has_bytes(sizeof(int32_t))) return 0;
 
       int32_t t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(int32_t));
@@ -156,6 +159,7 @@ namespace Graphick::io {
 
     inline int64_t int64() {
       GK_ASSERT(has_bytes(sizeof(int64_t)), "Not enough bytes to decode int64_t!");
+      if (!has_bytes(sizeof(int64_t))) return 0;
 
       int64_t t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(int64_t));
@@ -166,12 +170,14 @@ namespace Graphick::io {
 
     inline uint8_t uint8() {
       GK_ASSERT(has_bytes(sizeof(uint8_t)), "Not enough bytes to decode uint8_t!");
+      if (!has_bytes(sizeof(uint8_t))) return 0;
 
       return m_data->data[m_index++];
     }
 
     inline uint16_t uint16() {
       GK_ASSERT(has_bytes(sizeof(uint16_t)), "Not enough bytes to decode uint16_t!");
+      if (!has_bytes(sizeof(uint16_t))) return 0;
 
       uint16_t t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(uint16_t));
@@ -182,6 +188,7 @@ namespace Graphick::io {
 
     inline uint32_t uint32() {
       GK_ASSERT(has_bytes(sizeof(uint32_t)), "Not enough bytes to decode uint32_t!");
+      if (!has_bytes(sizeof(uint32_t))) return 0;
 
       uint32_t t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(uint32_t));
@@ -192,6 +199,7 @@ namespace Graphick::io {
 
     inline uint64_t uint64() {
       GK_ASSERT(has_bytes(sizeof(uint64_t)), "Not enough bytes to decode uint64_t!");
+      if (!has_bytes(sizeof(uint64_t))) return 0;
 
       uint64_t t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(uint64_t));
@@ -202,6 +210,7 @@ namespace Graphick::io {
 
     inline float float32() {
       GK_ASSERT(has_bytes(sizeof(float)), "Not enough bytes to decode float!");
+      if (!has_bytes(sizeof(float))) return 0;
 
       float t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(float));
@@ -212,6 +221,7 @@ namespace Graphick::io {
 
     inline double float64() {
       GK_ASSERT(has_bytes(sizeof(double)), "Not enough bytes to decode double!");
+      if (!has_bytes(sizeof(double))) return 0;
 
       double t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(double));
@@ -232,6 +242,7 @@ namespace Graphick::io {
       uint16_t size = uint16();
 
       GK_ASSERT(has_bytes(size), "Not enough bytes to decode string!");
+      if (!has_bytes(size)) return "";
 
       std::string t(m_data->data.begin() + m_index, m_data->data.begin() + m_index + size);
       m_index += size;
@@ -244,6 +255,7 @@ namespace Graphick::io {
       uint32_t size = uint32();
 
       GK_ASSERT(has_bytes(size * sizeof(T)), "Not enough bytes to decode vector!");
+      if (!has_bytes(size * sizeof(T))) return std::vector<T>();
 
       std::vector<T> t(size);
       std::memcpy(t.data(), m_data->data.data() + m_index, size * sizeof(T));
@@ -254,6 +266,7 @@ namespace Graphick::io {
 
     inline Math::vec2 vec2() {
       GK_ASSERT(has_bytes(sizeof(Math::vec2)), "Not enough bytes to decode vec2!");
+      if (!has_bytes(sizeof(Math::vec2))) return Math::vec2();
 
       Math::vec2 t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(Math::vec2));
@@ -264,6 +277,7 @@ namespace Graphick::io {
 
     inline Math::mat2x3 mat2x3() {
       GK_ASSERT(has_bytes(sizeof(Math::mat2x3)), "Not enough bytes to decode mat2x3!");
+      if (!has_bytes(sizeof(Math::mat2x3))) return Math::mat2x3();
 
       Math::mat2x3 t;
       std::memcpy(&t, m_data->data.data() + m_index, sizeof(Math::mat2x3));
@@ -274,6 +288,7 @@ namespace Graphick::io {
 
     inline Math::vec4 color() {
       GK_ASSERT(has_bytes(4 * sizeof(uint8_t)), "Not enough bytes to decode color!");
+      if (!has_bytes(4 * sizeof(uint8_t))) return Math::vec4();
 
       Math::vec4 t;
       t.r = uint8() / 255.0f;
