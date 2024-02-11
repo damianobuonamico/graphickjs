@@ -13,30 +13,33 @@ namespace Graphick::Editor {
 
   /* -- IDComponent -- */
 
-  IDComponent::IDComponent(const std::vector<uint8_t>& encoded_data, size_t& index) {
-    std::memcpy(&id, encoded_data.data() + index, sizeof(uuid));
-    index += sizeof(uuid);
+  IDComponent::IDComponent(io::DataDecoder& decoder) {
+    // if (!decoder.has_bytes(sizeof(uuid))) return;
+
+    id = decoder.uuid();
   }
 
-  std::array<uint8_t, sizeof(uuid)> IDComponent::encode() {
-    std::array<uint8_t, sizeof(uuid)> data;
-    std::memcpy(data.data(), &id, sizeof(uuid));
+  io::EncodedData& IDComponent::encode(io::EncodedData& data) const {
+    if (id == uuid::null) return data;
+
+    data.component_id(component_id)
+      .uuid(id);
+
     return data;
   }
 
   /* -- TagComponent -- */
 
-  TagComponent::TagComponent(const std::vector<uint8_t>& encoded_data, size_t& index) {
-    size_t tag_length = encoded_data[index];
-    index++;
-    tag = std::string(encoded_data.begin() + index, encoded_data.begin() + index + tag_length);
-    index += tag_length;
+  TagComponent::TagComponent(io::DataDecoder& decoder) {
+    tag = decoder.string();
   }
 
-  std::vector<uint8_t> TagComponent::encode() {
-    std::vector<uint8_t> data;
-    data.push_back(static_cast<uint8_t>(tag.size()));
-    data.insert(data.end(), tag.begin(), tag.end());
+  io::EncodedData& TagComponent::encode(io::EncodedData& data) const {
+    if (tag.empty()) return data;
+
+    data.component_id(component_id)
+      .string(tag);
+
     return data;
   }
 
@@ -50,7 +53,7 @@ namespace Graphick::Editor {
 
   PathComponent::PathComponent(PathComponent&& other) noexcept : data(std::move(other.data)) {}
 
-  PathComponent::PathComponent(const std::vector<uint8_t>& encoded_data, size_t& index) : data(encoded_data, index) {}
+  PathComponent::PathComponent(io::DataDecoder& decoder) : data(decoder) {}
 
   PathComponent& PathComponent::operator=(const PathComponent& other) {
     data = other.data;
@@ -62,8 +65,10 @@ namespace Graphick::Editor {
     return *this;
   }
 
-  std::vector<uint8_t> PathComponent::encode() {
-    return data.encode();
+  io::EncodedData& PathComponent::encode(io::EncodedData& data) const {
+    data.component_id(component_id);
+
+    return this->data.encode(data);
   }
 
   /* -- TransformComponent -- */
@@ -72,12 +77,11 @@ namespace Graphick::Editor {
     m_entity_id(entity_id),
     m_path_ptr(path_ptr) {}
 
-  TransformComponent::TransformComponent(const uuid entity_id, const std::vector<uint8_t>& encoded_data, size_t& index, const PathComponent* path_ptr) :
+  TransformComponent::TransformComponent(const uuid entity_id, io::DataDecoder& decoder, const PathComponent* path_ptr) :
     m_entity_id(entity_id),
     m_path_ptr(path_ptr)
   {
-    std::memcpy(&m_matrix, encoded_data.data() + index, sizeof(mat2x3));
-    index += sizeof(mat2x3);
+    m_matrix = decoder.mat2x3();
   }
 
   mat2x3 TransformComponent::inverse() const {
@@ -148,52 +152,41 @@ namespace Graphick::Editor {
     // );
   }
 
-  std::array<uint8_t, sizeof(mat2x3)> TransformComponent::encode() {
-    std::array<uint8_t, sizeof(mat2x3)> data;
-    std::memcpy(data.data(), &m_matrix, sizeof(mat2x3));
+  io::EncodedData& TransformComponent::encode(io::EncodedData& data) const {
+    if (m_matrix == mat2x3(1.0f)) return data;
+
+    data.component_id(component_id)
+      .mat2x3(m_matrix);
+
     return data;
   }
 
   /* -- StrokeComponent -- */
 
-  StrokeComponent::StrokeComponent(const std::vector<uint8_t>& encoded_data, size_t& index) {
-    color = vec4(
-      encoded_data[index] / 255.0f,
-      encoded_data[index + 1] / 255.0f,
-      encoded_data[index + 2] / 255.0f,
-      encoded_data[index + 3] / 255.0f
-    );
+  StrokeComponent::StrokeComponent(io::DataDecoder& decoder) {
+    color = decoder.color();
   }
 
-  std::vector<uint8_t> StrokeComponent::encode() {
-    std::vector<uint8_t> data;
+  io::EncodedData& StrokeComponent::encode(io::EncodedData& data) const {
+    if (color.get() == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
 
-    data.push_back(static_cast<uint8_t>(color.get().r * 255.0f));
-    data.push_back(static_cast<uint8_t>(color.get().g * 255.0f));
-    data.push_back(static_cast<uint8_t>(color.get().b * 255.0f));
-    data.push_back(static_cast<uint8_t>(color.get().a * 255.0f));
+    data.component_id(component_id)
+      .color(color.get());
 
     return data;
   }
 
   /* -- FillComponent -- */
 
-  FillComponent::FillComponent(const std::vector<uint8_t>& encoded_data, size_t& index) {
-    color = vec4(
-      encoded_data[index] / 255.0f,
-      encoded_data[index + 1] / 255.0f,
-      encoded_data[index + 2] / 255.0f,
-      encoded_data[index + 3] / 255.0f
-    );
+  FillComponent::FillComponent(io::DataDecoder& decoder) {
+    color = decoder.color();
   }
 
-  std::vector<uint8_t> FillComponent::encode() {
-    std::vector<uint8_t> data;
+  io::EncodedData& FillComponent::encode(io::EncodedData& data) const {
+    if (color.get() == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
 
-    data.push_back(static_cast<uint8_t>(color.get().r * 255.0f));
-    data.push_back(static_cast<uint8_t>(color.get().g * 255.0f));
-    data.push_back(static_cast<uint8_t>(color.get().b * 255.0f));
-    data.push_back(static_cast<uint8_t>(color.get().a * 255.0f));
+    data.component_id(component_id)
+      .color(color.get());
 
     return data;
   }

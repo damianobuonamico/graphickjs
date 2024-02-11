@@ -11,6 +11,8 @@
 
 #include "../input/tool_state.h"
 
+#include "../../io/encode/encode.h"
+
 #include "../../lib/entt/entt.hpp"
 
 namespace Graphick::Renderer::Geometry {
@@ -102,7 +104,7 @@ namespace Graphick::Editor {
      * @param path The underlying path of the element.
      * @return The new element.
      */
-    Entity create_element(Renderer::Geometry::Path&& path);
+    Entity create_element(const Renderer::Geometry::Path& path);
 
     /**
      * @brief Deletes an entity.
@@ -152,7 +154,7 @@ namespace Graphick::Editor {
      * @param id The unique identifier of the entity.
      * @param encoded_data The encoded data of the entity.
     */
-    void add(const uuid id, const std::vector<uint8_t>& encoded_data);
+    void add(const uuid id, const io::EncodedData& encoded_data);
 
     /**
      * @brief Removes an entity from the scene.

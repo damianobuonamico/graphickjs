@@ -189,34 +189,36 @@ int main() {
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   Graphick::io::svg::parse_svg(content);
 #elif defined(OBJECTS)
-  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element();
+  Graphick::Renderer::Geometry::Path path1;
+
   // Graphick::Editor::Entity test_entity1 = Graphick::Editor::Editor::scene().create_element("Test Entity 1");
 
-  auto& path_component = test_entity.get_component<Graphick::Editor::PathComponent>();
+  // auto& path_component = test_entity.get_component<Graphick::Editor::PathComponent>();
   // auto& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
   // Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.get_component<Graphick::Editor::PathComponent>().path;
 
   // path.move_to({ 360.0f, 20.0f });
-  path_component.data.move_to({ 0.0f, 0.0f });
-  path_component.data.line_to({ 0.0f, -50.0f });
-  path_component.data.line_to({ 50.0f, -40.0f });
+  path1.move_to({ 0.0f, 0.0f });
+  path1.line_to({ 0.0f, -50.0f });
+  path1.line_to({ 50.0f, -40.0f });
   // path.line_to({ 200.0f, -50.0f });
   // path.line_to({ 300.0f, -20.0f });
   // path.line_to({ 350.0f, -20.0f });
   // path.line_to({ 380.0f, -40.0f });
-  path_component.data.close();
+  path1.close();
 
-  path_component.data.move_to({ 300.0f, 100.0f });
-  path_component.data.line_to({ 350.0f, 200.0f });
-  path_component.data.line_to({ 250.0f, 200.0f });
-  path_component.data.close();
+  path1.move_to({ 300.0f, 100.0f });
+  path1.line_to({ 350.0f, 200.0f });
+  path1.line_to({ 250.0f, 200.0f });
+  path1.close();
 
-  path_component.data.move_to({ 500.0f, 100.0f });
-  path_component.data.line_to({ 550.0f, 200.0f });
-  path_component.data.line_to({ 450.0f, 200.0f });
-  path_component.data.close();
+  path1.move_to({ 500.0f, 100.0f });
+  path1.line_to({ 550.0f, 200.0f });
+  path1.line_to({ 450.0f, 200.0f });
+  path1.close();
 
+  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element(path1);
 
   /* Stroking Robustness */
 

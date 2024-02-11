@@ -50,45 +50,104 @@ namespace Graphick::Editor {
   }
 
   Entity Scene::create_entity(const std::string& tag, const bool generate_tag) {
-    Entity entity = { m_registry.create(), this };
-
+    io::EncodedData data;
     uuid id = uuid();
 
-    entity.add_component<IDComponent>(id);
+    data.component_id(IDComponent::component_id)
+      .uuid(id);
 
     if (generate_tag) {
-      entity.add_component<TagComponent>(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number) : tag);
-      m_entity_tag_number++;
+      data.component_id(TagComponent::component_id)
+        .string(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number) : tag);
     }
 
-    m_entities[id] = entity;
-    m_order.push_back(entity);
+    history.add(
+      id,
+      Action::Property::Entity,
+      data
+    );
 
-    return entity;
+    // Entity entity = { m_registry.create(), this };
+
+    // uuid id = uuid();
+
+    // entity.add_component<IDComponent>(id);
+
+    // if (generate_tag) {
+    //   entity.add_component<TagComponent>(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number) : tag);
+    //   m_entity_tag_number++;
+    // }
+
+    // m_entities[id] = entity;
+    // m_order.push_back(entity);
+
+    return get_entity(id);
   }
 
   Entity Scene::create_element() {
-    Entity entity = create_entity("Element" + std::to_string(m_entity_tag_number));
+    io::EncodedData data;
+    uuid id = uuid();
 
-    PathComponent& path_component = entity.add_component<PathComponent>();
+    data.component_id(IDComponent::component_id)
+      .uuid(id);
 
-    entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    entity.add_component<TransformComponent>(entity.id(), &path_component);
+    data.component_id(TagComponent::component_id)
+      .string("Element " + std::to_string(m_entity_tag_number));
 
-    entity.encode();
+    data.component_id(PathComponent::component_id)
+      .uint32(0);
 
-    return entity;
+    data.component_id(TransformComponent::component_id)
+      .mat2x3(mat2x3(1.0f));
+
+    history.add(
+      id,
+      Action::Property::Entity,
+      data
+    );
+
+    // Entity entity = create_entity("Element" + std::to_string(m_entity_tag_number));
+
+    // PathComponent& path_component = entity.add_component<PathComponent>();
+
+    // entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
+    // entity.add_component<TransformComponent>(entity.id(), &path_component);
+
+    // entity.encode();
+
+    return get_entity(id);
   }
 
-  Entity Scene::create_element(Renderer::Geometry::Path&& path) {
-    Entity entity = create_entity("Element" + std::to_string(m_entity_tag_number));
+  Entity Scene::create_element(const Renderer::Geometry::Path& path) {
+    io::EncodedData data;
+    uuid id = uuid();
 
-    PathComponent& path_component = entity.add_component<PathComponent>(std::move(path));
+    data.component_id(IDComponent::component_id)
+      .uuid(id);
 
-    entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    entity.add_component<TransformComponent>(entity.id(), &path_component);
+    data.component_id(TagComponent::component_id)
+      .string("Element " + std::to_string(m_entity_tag_number));
 
-    return entity;
+    data.component_id(PathComponent::component_id);
+    path.encode(data);
+
+    data.component_id(TransformComponent::component_id)
+      .mat2x3(mat2x3(1.0f));
+
+    history.add(
+      id,
+      Action::Property::Entity,
+      data
+    );
+
+    // Entity entity = create_entity("Element" + std::to_string(m_entity_tag_number));
+
+    // PathComponent& path_component = entity.add_component<PathComponent>(std::move(path));
+
+    // entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
+    // entity.add_component<TransformComponent>(entity.id(), &path_component);
+
+    return get_entity(id);
   }
 
   void Scene::delete_entity(Entity entity) {
@@ -359,12 +418,13 @@ namespace Graphick::Editor {
     GK_DEBUGGER_RENDER(vec2(viewport.size()) * viewport.dpr());
   }
 
-  void Scene::add(const uuid id, const std::vector<uint8_t>& encoded_data) {
+  void Scene::add(const uuid id, const io::EncodedData& encoded_data) {
     Entity entity = { m_registry.create(), this, encoded_data };
 
     m_entities[id] = entity;
     m_order.push_back(entity);
 
+    // TODO: move in entity decode
     entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
   }
 

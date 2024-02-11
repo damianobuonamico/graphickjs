@@ -295,23 +295,55 @@ namespace Graphick::Renderer::Geometry {
 
   Path::Path(Path&& other) noexcept : m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)), m_commands_size(other.m_commands_size) {}
 
-  Path::Path(const std::vector<uint8_t>& encoded_data, size_t& index) {
-    if (encoded_data.empty()) return;
+  Path::Path(io::DataDecoder& decoder) {
+    m_commands = decoder.vector<uint8_t>();
+    
+    if (m_commands.empty()) {
+      m_commands_size = 0;
+      return;
+    }
 
-    const size_t commands_size = (encoded_data[index] << 24) | (encoded_data[index + 1] << 16) | (encoded_data[index + 2] << 8) | encoded_data[index + 3];
-    const size_t commands_buffer_size = static_cast<size_t>(std::ceil(static_cast<float>(commands_size) / 4));
+    m_points = decoder.vector<vec2>();
 
-    m_commands = std::vector<uint8_t>(encoded_data.begin() + index + 4, encoded_data.begin() + index + 4 + commands_buffer_size);
-    m_commands_size = commands_size;
+    size_t point_index = 0;
+    size_t last_non_move_index = 0;
+    size_t last_non_move_point_index = 0;
 
-    index += 4 + commands_buffer_size;
+    for (size_t i = 0; i < m_commands.size() * 4; i++) {
+      Command command = get_command(i);
 
-    const size_t points_size = (encoded_data[index + 0] << 24) | (encoded_data[index + 1] << 16) | (encoded_data[index + 2] << 8) | encoded_data[index + 3];
-    const size_t points_buffer_size = points_size * sizeof(vec2);
+      switch (command) {
+      case Command::Move:
+      case Command::Line:
+        point_index += 1;
+        break;
+      case Command::Quadratic:
+        point_index += 2;
+        break;
+      case Command::Cubic:
+        point_index += 3;
+        break;
+      }
 
-    m_points = std::vector<vec2>(reinterpret_cast<const vec2*>(encoded_data.data() + index + 4), reinterpret_cast<const vec2*>(encoded_data.data() + index + 4 + points_buffer_size));
+      if (command != Command::Move) {
+        last_non_move_index = i;
+        last_non_move_point_index = point_index;
+      }
+    }
 
-    index += 4 + points_buffer_size;
+    if (last_non_move_index == 0) {
+      m_commands_size = 0;
+
+      m_commands.resize(1);
+      m_points.resize(1);
+
+      return;
+    }
+
+    m_commands_size = last_non_move_index + 1;
+
+    m_commands.resize(m_commands_size / 4 + 1);
+    m_points.resize(last_non_move_point_index);
   }
 
   Path& Path::operator=(const Path& other) {
@@ -976,6 +1008,13 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return buffer;
+  }
+
+  io::EncodedData& Path::encode(io::EncodedData& data) const {
+    if (vacant()) return data.uint32(0);
+
+    data.vector(m_commands);
+    data.vector(m_points);
   }
 
   void Path::push_command(const Command command) {

@@ -13,7 +13,7 @@ namespace Graphick::Editor {
     m_scene(scene),
     m_index(-1) {}
 
-  void History::add(uuid entity_id, Action::Property property, const std::vector<uint8_t>& encoded_data) {
+  void History::add(uuid entity_id, Action::Property property, const io::EncodedData& encoded_data) {
     push(AddOrRemoveAction{
       entity_id,
       property,
@@ -22,7 +22,7 @@ namespace Graphick::Editor {
     });
   }
 
-  void History::add(uuid entity_id, Action::Property property, std::vector<uint8_t>&& encoded_data) {
+  void History::add(uuid entity_id, Action::Property property, io::EncodedData&& encoded_data) {
     push(AddOrRemoveAction{
       entity_id,
       property,
@@ -31,7 +31,7 @@ namespace Graphick::Editor {
     });
   }
 
-  void History::remove(uuid entity_id, Action::Property property, const std::vector<uint8_t>& encoded_data) {
+  void History::remove(uuid entity_id, Action::Property property, const io::EncodedData& encoded_data) {
     push(AddOrRemoveAction{
       entity_id,
       property,
@@ -40,7 +40,7 @@ namespace Graphick::Editor {
     });
   }
 
-  void History::remove(uuid entity_id, Action::Property property, std::vector<uint8_t>&& encoded_data) {
+  void History::remove(uuid entity_id, Action::Property property, io::EncodedData&& encoded_data) {
     push(AddOrRemoveAction{
       entity_id,
       property,

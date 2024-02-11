@@ -8,6 +8,8 @@
 
 #include "../../../utils/uuid.h"
 
+#include "../../../io/encode/encode.h"
+
 #include <vector>
 
 namespace Graphick::Editor {
@@ -96,8 +98,8 @@ namespace Graphick::Editor {
      * @param type The type of action, either Type::Add or Type::Remove.
      * @param data The encoded data of the property.
      */
-    AddOrRemoveAction(uuid entity_id, Property property, Type type, const std::vector<uint8_t>& data);
-    AddOrRemoveAction(uuid entity_id, Property property, Type type, std::vector<uint8_t>&& data);
+    AddOrRemoveAction(uuid entity_id, Property property, Type type, const io::EncodedData& data);
+    AddOrRemoveAction(uuid entity_id, Property property, Type type, io::EncodedData&& data);
 
     /**
      * @brief Executes the action.
@@ -140,7 +142,7 @@ namespace Graphick::Editor {
      */
     void revert_remove(Scene* scene) const;
   private:
-    std::vector<uint8_t> m_data;    /* The encoded data of the property. */
+    io::EncodedData m_data;    /* The encoded data of the property. */
   };
 
   /**

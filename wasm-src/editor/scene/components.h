@@ -29,9 +29,9 @@ namespace Graphick::Editor {
     IDComponent() = default;
     IDComponent(const IDComponent& other) = default;
     IDComponent(const uuid id) : id(id) {}
-    IDComponent(const std::vector<uint8_t>& encoded_data, size_t& index);
+    IDComponent(io::DataDecoder& decoder);
 
-    std::array<uint8_t, sizeof(uuid)> encode();
+    io::EncodedData& encode(io::EncodedData& data) const;
   };
 
   struct TagComponent {
@@ -42,9 +42,9 @@ namespace Graphick::Editor {
     TagComponent() = default;
     TagComponent(const TagComponent& other) = default;
     TagComponent(const std::string& tag) : tag(tag) {}
-    TagComponent(const std::vector<uint8_t>& encoded_data, size_t& index);
+    TagComponent(io::DataDecoder& decoder);
 
-    std::vector<uint8_t> encode();
+    io::EncodedData& encode(io::EncodedData& data) const;
   };
 
   struct CategoryComponent {
@@ -76,7 +76,7 @@ namespace Graphick::Editor {
     PathComponent(const Renderer::Geometry::Path& data);
     PathComponent(const PathComponent& other);
     PathComponent(PathComponent&& other) noexcept;
-    PathComponent(const std::vector<uint8_t>& encoded_data, size_t& index);
+    PathComponent(io::DataDecoder& decoder);
 
     /**
      * @brief Default destructor.
@@ -89,7 +89,7 @@ namespace Graphick::Editor {
     PathComponent& operator=(const PathComponent& other);
     PathComponent& operator=(PathComponent&& other) noexcept;
 
-    std::vector<uint8_t> encode();
+    io::EncodedData& encode(io::EncodedData& data) const;
   };
 
   /**
@@ -101,7 +101,7 @@ namespace Graphick::Editor {
     static constexpr uint8_t component_id = 4;
 
     TransformComponent(const uuid entity_id, const PathComponent* path_ptr = nullptr);
-    TransformComponent(const uuid entity_id, const std::vector<uint8_t>& encoded_data, size_t& index, const PathComponent* path_ptr = nullptr);
+    TransformComponent(const uuid entity_id, io::DataDecoder& decoder, const PathComponent* path_ptr = nullptr);
 
     /**
      * @brief Returns the transformation matrix.
@@ -182,7 +182,7 @@ namespace Graphick::Editor {
      */
     inline void apply() { /*m_matrix.apply();*/ }
 
-    std::array<uint8_t, sizeof(mat2x3)> encode();
+    io::EncodedData& encode(io::EncodedData& data) const;
   private:
     mat2x3 m_matrix;
 
@@ -203,9 +203,9 @@ namespace Graphick::Editor {
     StrokeComponent() = default;
     StrokeComponent(const StrokeComponent& other) = default;
     StrokeComponent(const vec4& color) : color(color) {}
-    StrokeComponent(const std::vector<uint8_t>& encoded_data, size_t& index);
+    StrokeComponent(io::DataDecoder& decoder);
 
-    std::vector<uint8_t> encode();
+    io::EncodedData& encode(io::EncodedData& data) const;
   };
 
   struct FillComponent {
@@ -218,9 +218,9 @@ namespace Graphick::Editor {
     FillComponent() = default;
     FillComponent(const FillComponent& other) = default;
     FillComponent(const vec4& color) : color(color) {}
-    FillComponent(const std::vector<uint8_t>& encoded_data, size_t& index);
+    FillComponent(io::DataDecoder& decoder);
 
-    std::vector<uint8_t> encode();
+    io::EncodedData& encode(io::EncodedData& data) const;
   };
 
 }

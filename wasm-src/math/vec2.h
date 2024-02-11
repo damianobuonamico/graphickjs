@@ -300,14 +300,6 @@ namespace Graphick::Math {
   constexpr Vec2<T> operator||(const Vec2<T> v1, const Vec2<T> v2) {
     return Vec2<T>(v1.x || v2.x, v1.y || v2.y);
   }
-
-  /* -- Address operator -- */
-
-  template<typename T>
-  constexpr const T* operator&(const Vec2<T>& v) {
-    return &(v.x);
-  }
-
 }
 
 namespace std {

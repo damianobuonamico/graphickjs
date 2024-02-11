@@ -538,7 +538,7 @@ namespace Graphick::Renderer::GPU::GL {
       glCall(glUniform4f(uniform.location, vec.x, vec.y, vec.z, vec.w));
     } else if (std::holds_alternative<mat4>(data)) {
       mat4 mat = std::get<mat4>(data);
-      glCall(glUniformMatrix4fv(uniform.location, 1, GL_TRUE, &mat));
+      glCall(glUniformMatrix4fv(uniform.location, 1, GL_TRUE, &mat[0].x));
     }
   }
 

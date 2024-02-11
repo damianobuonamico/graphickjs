@@ -29,8 +29,8 @@ namespace Graphick::Editor {
      * @param property The property of the entity the action is related to.
      * @param data The encoded data of the property.
      */
-    void add(uuid entity_id, Action::Property property, const std::vector<uint8_t>& encoded_data);
-    void add(uuid entity_id, Action::Property property, std::vector<uint8_t>&& encoded_data);
+    void add(uuid entity_id, Action::Property property, const io::EncodedData& encoded_data);
+    void add(uuid entity_id, Action::Property property, io::EncodedData&& encoded_data);
 
     /**
      * @brief Push a remove action to the history.
@@ -39,8 +39,8 @@ namespace Graphick::Editor {
      * @param property The property of the entity the action is related to.
      * @param data The encoded data of the property.
      */
-    void remove(uuid entity_id, Action::Property property, const std::vector<uint8_t>& encoded_data);
-    void remove(uuid entity_id, Action::Property property, std::vector<uint8_t>&& encoded_data);
+    void remove(uuid entity_id, Action::Property property, const io::EncodedData& encoded_data);
+    void remove(uuid entity_id, Action::Property property, io::EncodedData&& encoded_data);
 
     /**
      * @brief Push a modify action to the history.

@@ -16,7 +16,7 @@ namespace Graphick::Editor {
     uuid entity_id,
     Property property,
     Type type,
-    const std::vector<uint8_t>& data
+    const io::EncodedData& data
   ) :
     Action(entity_id, property, type),
     m_data(data)
@@ -28,7 +28,7 @@ namespace Graphick::Editor {
     uuid entity_id,
     Property property,
     Type type,
-    std::vector<uint8_t>&& data
+    io::EncodedData&& data
   ) :
     Action(entity_id, property, type),
     m_data(std::move(data))
@@ -51,7 +51,14 @@ namespace Graphick::Editor {
   }
 
   void AddOrRemoveAction::execute_add(Scene* scene) const {
-
+    switch (property) {
+    case Property::Entity:
+      scene->add(entity_id, m_data);
+      console::log("add entity");
+      break;
+    default:
+      break;
+    }
   }
 
   void AddOrRemoveAction::execute_remove(Scene* scene) const {
@@ -66,7 +73,14 @@ namespace Graphick::Editor {
   }
 
   void AddOrRemoveAction::revert_add(Scene* scene) const {
-
+    switch (property) {
+    case Property::Entity:
+      scene->remove(entity_id);
+      console::log("revert add entity");
+      break;
+    default:
+      break;
+    }
   }
 
   void AddOrRemoveAction::revert_remove(Scene* scene) const {

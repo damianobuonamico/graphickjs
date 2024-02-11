@@ -9,6 +9,8 @@
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
 
+#include "../../io/encode/encode.h"
+
 #include <functional>
 #include <optional>
 #include <vector>
@@ -208,7 +210,7 @@ namespace Graphick::Renderer::Geometry {
     Path(const Path& other);
     Path(Path&& other) noexcept;
 
-    Path(const std::vector<uint8_t>& encoded_data, size_t& index);
+    Path(io::DataDecoder& decoder);
 
     /**
      * @brief Default destructor.
@@ -477,6 +479,7 @@ namespace Graphick::Renderer::Geometry {
      * @return The encoded path.
      */
     std::vector<uint8_t> encode() const;
+    io::EncodedData& encode(io::EncodedData& data) const;
   private:
     /**
      * @brief Returns the ith command of the path.
@@ -497,6 +500,8 @@ namespace Graphick::Renderer::Geometry {
     std::vector<uint8_t> m_commands;    /* The commands used to traverse the path. */
 
     size_t m_commands_size = 0;         /* The effective number of commands in the path. */
+  private:
+    friend struct EncodedData;
   };
 
 }

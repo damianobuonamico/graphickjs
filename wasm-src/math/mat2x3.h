@@ -276,21 +276,6 @@ namespace Graphick::Math {
   constexpr bool operator!=(const Mat2x3<T>& m1, const Mat2x3<T>& m2) {
     return !(m1 == m2);
   }
-
-  /* -- Address operator -- */
-
-  /*
-  template<typename T>
-  constexpr const T* operator&(const Mat2x3<T>& m) {
-    return &(m[0].x);
-  }
-
-  template<typename T>
-  constexpr Mat2x3<T>* operator&(Mat2x3<T>& m) {
-    return static_cast<Mat2x3<T>*>(&(m[0].x));
-  }
-
-  */
 }
 
 namespace Graphick::Math {

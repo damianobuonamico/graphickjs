@@ -13,7 +13,7 @@ namespace Graphick::Editor {
   public:
     Entity() = default;
     Entity(entt::entity handle, Scene* scene) : m_handle(handle), m_scene(scene) {}
-    Entity(entt::entity handle, Scene* scene, const std::vector<uint8_t>& encoded_data);
+    Entity(entt::entity handle, Scene* scene, const io::EncodedData& encoded_data);
     Entity(const Entity& other) = default;
 
     template <typename T, typename... Args>
@@ -79,7 +79,7 @@ namespace Graphick::Editor {
       return has_components<PathComponent, TransformComponent>();
     }
 
-    std::vector<uint8_t> encode() const;
+    io::EncodedData encode() const;
   private:
     entt::entity m_handle;
     Scene* m_scene;
