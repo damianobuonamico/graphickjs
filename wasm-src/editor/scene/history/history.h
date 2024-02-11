@@ -102,8 +102,9 @@ namespace Graphick::Editor {
     void clear();
   private:
     std::vector<ActionVariant> m_actions;    /* The list of actions. */
+    std::vector<size_t> m_batch_indices;     /* The indices of the start of each batch. */
 
-    int64_t m_index = -1;                    /* The index of the last action. */
+    int64_t m_batch_index = 0;               /* The index of the last batch. */
 
     Scene* m_scene;                          /* The scene the history is related to. */
   };

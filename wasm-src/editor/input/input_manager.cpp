@@ -196,7 +196,7 @@ namespace Graphick::Editor::Input {
       scene.tool_state.set_active(keys.ctrl_state_changed ? Tool::ToolType::Zoom : Tool::ToolType::Pan);
     }
 
-    // History::CommandHistory::end_batch();
+    Editor::scene().history.end_batch();
 
     scene.tool_state.on_pointer_down(scene.viewport.zoom());
 
@@ -257,8 +257,7 @@ namespace Graphick::Editor::Input {
     m_moving = false;
 
     scene.tool_state.on_pointer_up();
-
-    // History::CommandHistory::end_batch();
+    scene.history.end_batch();
 
     if (pointer.button == PointerButton::Middle) {
       scene.tool_state.set_active(scene.tool_state.current().type());
