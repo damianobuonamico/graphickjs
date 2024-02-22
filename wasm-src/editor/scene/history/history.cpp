@@ -5,6 +5,8 @@
 
 #include "history.h"
 
+#include "../../../utils/console.h"
+
 namespace Graphick::Editor {
 
   History::History(Scene* scene) :
@@ -58,6 +60,8 @@ namespace Graphick::Editor {
   }
 
   void History::modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data) {
+    // console::log("history_size", m_actions.size());
+
     push(Action{
       entity_id,
       Action::Target::Component,

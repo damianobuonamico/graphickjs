@@ -130,6 +130,8 @@ namespace Graphick::Editor {
   }
 
   void TransformComponent::translate(const vec2 delta) {
+    GK_TOTAL("TransformComponent::translate");
+
     // History::History::add(
     //   History::Action::Type::Modify,
     //   m_entity_id,
@@ -138,12 +140,19 @@ namespace Graphick::Editor {
     //   _value()
     // );
 
-    // Editor::scene().history.modify(
-    //   m_entity_id,
-    //   Action::Property::Transform,
-    //   Math::translate(m_matrix, delta),
-    //   _value()
-    // );
+    io::EncodedData new_data;
+    io::EncodedData backup_data;
+
+    encode(backup_data);
+
+    new_data.component_id(TransformComponent::component_id)
+      .mat2x3(Math::translate(m_matrix, delta));
+
+    Editor::scene().history.modify(
+      m_entity_id,
+      std::move(new_data),
+      std::move(backup_data)
+    );
   }
 
   void TransformComponent::scale(const vec2 delta) {
@@ -167,12 +176,16 @@ namespace Graphick::Editor {
   }
 
   io::EncodedData& TransformComponent::encode(io::EncodedData& data) const {
-    if (m_matrix == mat2x3(1.0f)) return data;
+    // if (m_matrix == mat2x3(1.0f)) return data;
 
     data.component_id(component_id)
       .mat2x3(m_matrix);
 
     return data;
+  }
+
+  void TransformComponent::modify(io::DataDecoder& decoder) {
+    m_matrix = decoder.mat2x3();
   }
 
   /* -- StrokeComponent -- */

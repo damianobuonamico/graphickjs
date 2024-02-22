@@ -68,7 +68,7 @@ namespace Graphick::Editor {
       m_scene->history.add(
         id(),
         Action::Target::Component,
-        T(std::forward<Args>(args)...).encode(io::EncodedData())
+        std::move(T(std::forward<Args>(args)...).encode(io::EncodedData()))
       );
 
       return get_component<T>();

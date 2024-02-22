@@ -25,6 +25,10 @@ namespace Graphick::Editor {
 #define REMOVE_COMPONENT(component_type) if (component_id == component_type::component_id) { \
   remove<component_type>(); }
 
+#define MODIFY_COMPONENT(component_type) case (component_type::component_id): { \
+  get_component<component_type>().modify(decoder); \
+  break; }
+
   Entity::Entity(entt::entity handle, Scene* scene, const io::EncodedData& encoded_data) :
     m_handle(handle),
     m_scene(scene)
@@ -89,7 +93,20 @@ namespace Graphick::Editor {
   }
 
   void Entity::modify(const io::EncodedData& encoded_data) {
+    io::DataDecoder decoder(&encoded_data);
+    if (decoder.end_of_data()) return;
 
+    uint8_t component_id = decoder.component_id();
+    if (decoder.end_of_data()) return;
+
+    switch (component_id) {
+      // MODIFY_COMPONENT(TagComponent);
+      // MODIFY_COMPONENT(CategoryComponent);
+      // MODIFY_COMPONENT(PathComponent);
+      MODIFY_COMPONENT(TransformComponent);
+      // MODIFY_COMPONENT(StrokeComponent);
+      // MODIFY_COMPONENT(FillComponent);
+    }
   }
 
 }

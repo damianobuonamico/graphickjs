@@ -1,6 +1,8 @@
 /**
  * @file action.cpp
  * @brief This file contains the implementation of the action struct of the history.
+ *
+ * @todo merging algorithm
  */
 
 #include "action.h"
@@ -124,13 +126,17 @@ namespace Graphick::Editor {
   }
 
   bool Action::merge(const Action& other) {
-    if (type != Type::Modify || other.type != Type::Modify) {
+    if (
+      entity_id != other.entity_id ||
+      type != Type::Modify || other.type != Type::Modify ||
+      target != other.target
+    ) {
       return false;
     }
 
-    // TODO: merge modify actions
+    m_data = std::move(other.m_data);
 
-    return false;
+    return true;
   }
 
   void Action::execute_add(Scene* scene) const {

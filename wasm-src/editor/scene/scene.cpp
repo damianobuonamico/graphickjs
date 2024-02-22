@@ -67,7 +67,7 @@ namespace Graphick::Editor {
     history.add(
       id,
       Action::Target::Entity,
-      data
+      std::move(data)
     );
 
     // Entity entity = { m_registry.create(), this };
@@ -109,7 +109,7 @@ namespace Graphick::Editor {
     history.add(
       id,
       Action::Target::Entity,
-      data
+      std::move(data)
     );
 
     // Entity entity = create_entity("Element" + std::to_string(m_entity_tag_number));
@@ -146,7 +146,7 @@ namespace Graphick::Editor {
     history.add(
       id,
       Action::Target::Entity,
-      data
+      std::move(data)
     );
 
     // Entity entity = create_entity("Element" + std::to_string(m_entity_tag_number));

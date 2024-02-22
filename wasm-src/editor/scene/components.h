@@ -21,6 +21,8 @@
 
 namespace Graphick::Editor {
 
+  class Entity;
+
   struct IDComponent {
     static constexpr uint8_t component_id = 0;
 
@@ -185,10 +187,21 @@ namespace Graphick::Editor {
 
     io::EncodedData& encode(io::EncodedData& data) const;
   private:
+    /**
+     * @brief Modifies the transformation matrix using the given data.
+     *
+     * This method should only be called through the history manager.
+     *
+     * @param decoder The data to modify the transformation matrix with.
+     */
+    void modify(io::DataDecoder& decoder);
+  private:
     mat2x3 m_matrix;
 
     const PathComponent* m_path_ptr;    /* A pointer to the path component of the entity, can be nullptr if the entity is not an element. */
     const uuid m_entity_id;             /* The id of the entity this component belongs to, it is used for history tracking. */
+  private:
+    friend class Entity;
   };
 
   struct StrokeComponent {
