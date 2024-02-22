@@ -14,8 +14,6 @@ namespace Graphick::Editor {
 
   class History {
   public:
-    using ActionVariant = std::variant<AddOrRemoveAction, ModifyAction>;
-  public:
     History(Scene* scene);
     History(const History&) = delete;
     History(History&&) = delete;
@@ -23,42 +21,34 @@ namespace Graphick::Editor {
     ~History() = default;
 
     /**
-     * @brief Push an add action to the history.
+     * @brief Push an Add action to the history.
      *
      * @param entity_id The id of the entity the action is related to.
-     * @param property The property of the entity the action is related to.
-     * @param data The encoded data of the property.
+     * @param target The target of the entity the action is related to.
+     * @param encoded_data The encoded data of the target.
      */
-    void add(uuid entity_id, Action::Property property, const io::EncodedData& encoded_data);
-    void add(uuid entity_id, Action::Property property, io::EncodedData&& encoded_data);
+    void add(uuid entity_id, Action::Target target, const io::EncodedData& encoded_data);
+    void add(uuid entity_id, Action::Target target, io::EncodedData&& encoded_data);
 
     /**
-     * @brief Push a remove action to the history.
+     * @brief Push a Remove action to the history.
      *
      * @param entity_id The id of the entity the action is related to.
-     * @param property The property of the entity the action is related to.
-     * @param data The encoded data of the property.
+     * @param target The target of the entity the action is related to.
+     * @param encoded_data The encoded data of the target.
      */
-    void remove(uuid entity_id, Action::Property property, const io::EncodedData& encoded_data);
-    void remove(uuid entity_id, Action::Property property, io::EncodedData&& encoded_data);
+    void remove(uuid entity_id, Action::Target target, const io::EncodedData& encoded_data);
+    void remove(uuid entity_id, Action::Target target, io::EncodedData&& encoded_data);
 
     /**
-     * @brief Push a modify action to the history.
+     * @brief Push a Modify action to the history.
      *
-     * @param type The type of the action.
      * @param entity_id The id of the entity the action is related to.
-     * @param property The property of the entity the action is related to.
-     * @param data The data of the action.
+     * @param encoded_data The encoded data of the target.
+     * @param backup_data The encoded backup data of the target.
      */
-    template<typename T>
-    void modify(uuid entity_id, Action::Property property, const T& data, T* value) {
-      push(ModifyAction{
-        entity_id,
-        property,
-        data,
-        value
-      });
-    }
+    void modify(uuid entity_id, const io::EncodedData& encoded_data, const io::EncodedData& backup_data);
+    void modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data);
 
     /**
      * @brief Undo the last action.
@@ -87,7 +77,7 @@ namespace Graphick::Editor {
      *
      * @param action The action to add.
      */
-    void push(ActionVariant&& action);
+    void push(Action&& action);
 
     /**
      * @brief Seal the history.
@@ -101,12 +91,12 @@ namespace Graphick::Editor {
      */
     void clear();
   private:
-    std::vector<ActionVariant> m_actions;    /* The list of actions. */
-    std::vector<size_t> m_batch_indices;     /* The indices of the start of each batch. */
+    std::vector<Action> m_actions;          /* The list of actions. */
+    std::vector<size_t> m_batch_indices;    /* The indices of the start of each batch. */
 
-    int64_t m_batch_index = 0;               /* The index of the last batch. */
+    int64_t m_batch_index = 0;              /* The index of the last batch. */
 
-    Scene* m_scene;                          /* The scene the history is related to. */
+    Scene* m_scene;                         /* The scene the history is related to. */
   };
 
 }

@@ -294,6 +294,7 @@ namespace Graphick::Editor::Input {
     } else if ((int)key == 259 /* TEMP: GLFW */) {
       if (!scene.selection.empty()) {
         scene.delete_entity(scene.selection.selected().begin()->first);
+        scene.history.end_batch();
       }
     }
 

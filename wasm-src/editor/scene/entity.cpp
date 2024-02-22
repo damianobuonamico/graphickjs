@@ -29,7 +29,7 @@ namespace Graphick::Editor {
     m_handle(handle),
     m_scene(scene)
   {
-    add(encoded_data);
+    add(encoded_data, true);
   }
 
   io::EncodedData Entity::encode() const {
@@ -46,7 +46,7 @@ namespace Graphick::Editor {
     return data;
   }
 
-  void Entity::add(const io::EncodedData& encoded_data) {
+  void Entity::add(const io::EncodedData& encoded_data, const bool full_entity) {
     io::DataDecoder decoder(&encoded_data);
 
     if (decoder.end_of_data()) return;
@@ -57,7 +57,17 @@ namespace Graphick::Editor {
     DECODE_COMPONENT(TagComponent);
     DECODE_COMPONENT(CategoryComponent);
     DECODE_COMPONENT(PathComponent);
-    DECODE_COMPONENT_WITH_DATA(TransformComponent, id(), decoder, has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
+
+    if (component_id == TransformComponent::component_id) {
+      add<TransformComponent>(id(), decoder, has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
+
+      if (decoder.end_of_data()) return;
+      component_id = decoder.component_id();
+    } else if (full_entity) {
+      add<TransformComponent>(id(), has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
+    }
+
+    //DECODE_COMPONENT_WITH_DATA(TransformComponent, id(), decoder, has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
     DECODE_COMPONENT(StrokeComponent);
     DECODE_COMPONENT(FillComponent);
   }
@@ -76,6 +86,10 @@ namespace Graphick::Editor {
     REMOVE_COMPONENT(TransformComponent);
     REMOVE_COMPONENT(StrokeComponent);
     REMOVE_COMPONENT(FillComponent);
+  }
+
+  void Entity::modify(const io::EncodedData& encoded_data) {
+
   }
 
 }

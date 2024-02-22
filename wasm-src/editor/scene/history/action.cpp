@@ -12,192 +12,173 @@
 
 namespace Graphick::Editor {
 
-  AddOrRemoveAction::AddOrRemoveAction(
-    uuid entity_id,
-    Property property,
-    Type type,
-    const io::EncodedData& data
-  ) :
-    Action(entity_id, property, type),
+  Action::Action(uuid entity_id, Target target, Type type, const io::EncodedData& data) :
+    type(type),
+    target(target),
+    entity_id(entity_id),
     m_data(data)
   {
-    GK_ASSERT(type == Type::Add || type == Type::Remove, "In an AddOrRemoveAction, type can only be either Add or Remove!");
+    GK_ASSERT(type != Type::Modify, "No backup data provided for Modify action!");
   }
 
-  AddOrRemoveAction::AddOrRemoveAction(
-    uuid entity_id,
-    Property property,
-    Type type,
-    io::EncodedData&& data
-  ) :
-    Action(entity_id, property, type),
+  Action::Action(uuid entity_id, Target target, Type type, io::EncodedData&& data) :
+    type(type),
+    target(target),
+    entity_id(entity_id),
     m_data(std::move(data))
   {
-    GK_ASSERT(type == Type::Add || type == Type::Remove, "In an AddOrRemoveAction, type can only be either Add or Remove!");
+    GK_ASSERT(type != Type::Modify, "No backup data provided for Modify action!");
   }
 
-  void AddOrRemoveAction::execute(Scene* scene) const {
-    if (type == Type::Add) execute_add(scene);
-    else if (type == Type::Remove) execute_remove(scene);
-  }
-
-  void AddOrRemoveAction::revert(Scene* scene) const {
-    if (type == Type::Add) revert_add(scene);
-    else if (type == Type::Remove) revert_remove(scene);
-  }
-
-  bool AddOrRemoveAction::merge(const Action& other) {
-    return false;
-  }
-
-  void AddOrRemoveAction::execute_add(Scene* scene) const {
-    switch (property) {
-    case Property::Entity:
-      scene->add(entity_id, m_data);
-      console::log("add entity");
-      break;
-    case Property::Component:
-      scene->get_entity(entity_id).add(m_data);
-      console::log("add component");
-      break;
-    default:
-      break;
-    }
-  }
-
-  void AddOrRemoveAction::execute_remove(Scene* scene) const {
-    switch (property) {
-    case Property::Entity:
-      scene->remove(entity_id);
-      console::log("remove entity");
-      break;
-    case Property::Component:
-      scene->get_entity(entity_id).remove(m_data);
-      console::log("remove component");
-      break;
-    default:
-      break;
-    }
-  }
-
-  void AddOrRemoveAction::revert_add(Scene* scene) const {
-    switch (property) {
-    case Property::Entity:
-      scene->remove(entity_id);
-      console::log("revert add entity");
-      break;
-    case Property::Component:
-      scene->get_entity(entity_id).remove(m_data);
-      console::log("revert add component");
-      break;
-    default:
-      break;
-    }
-  }
-
-  void AddOrRemoveAction::revert_remove(Scene* scene) const {
-    switch (property) {
-    case Property::Entity:
-      scene->add(entity_id, m_data);
-      console::log("revert remove entity");
-      break;
-    case Property::Component:
-      scene->get_entity(entity_id).add(m_data);
-      console::log("revert remove component");
-      break;
-    default:
-      break;
-    }
-  }
-
-  ModifyAction::ModifyAction(const ModifyAction& other) :
-    Action(other.entity_id, other.property, Type::Modify),
-    m_value(other.m_value),
-    m_size(other.m_size)
+  Action::Action(uuid entity_id, Target target, Type type, const io::EncodedData& data, const io::EncodedData& backup) :
+    type(type),
+    target(target),
+    entity_id(entity_id),
+    m_data(data),
+    m_backup(backup)
   {
-    m_data = new uint8_t[other.m_size];
-    m_backup = new uint8_t[other.m_size];
-
-    std::memcpy(m_data, other.m_data, other.m_size);
-    std::memcpy(m_backup, other.m_backup, other.m_size);
+    GK_ASSERT(type == Type::Modify, "Add or Remove actions cannot have backup data!");
+    GK_ASSERT(target == Target::Component, "Modify actions can only target components!");
   }
 
-  ModifyAction::ModifyAction(ModifyAction&& other) noexcept :
-    Action(other.entity_id, other.property, Type::Modify),
-    m_value(other.m_value),
+  Action::Action(uuid entity_id, Target target, Type type, io::EncodedData&& data, io::EncodedData&& backup) :
+    type(type),
+    target(target),
+    entity_id(entity_id),
+    m_data(std::move(data)),
+    m_backup(std::move(backup))
+  {
+    GK_ASSERT(type == Type::Modify, "Add or Remove actions cannot have backup data!");
+    GK_ASSERT(target == Target::Component, "Modify actions can only target components!");
+  }
+
+  Action::Action(const Action& other) :
+    type(other.type),
+    target(other.target),
+    entity_id(other.entity_id),
     m_data(other.m_data),
-    m_backup(other.m_backup),
-    m_size(other.m_size)
+    m_backup(other.type == Type::Modify ? other.m_backup : io::EncodedData()) {}
+
+  Action::Action(Action&& other) noexcept :
+    type(other.type),
+    target(other.target),
+    entity_id(other.entity_id),
+    m_data(std::move(other.m_data)),
+    m_backup(other.type == Type::Modify ? std::move(other.m_backup) : io::EncodedData())
   {
     other.type = Type::Invalid;
-    other.m_backup = nullptr;
-    other.m_data = nullptr;
   }
 
-  ModifyAction::~ModifyAction() {
-    delete[] m_data;
-    delete[] m_backup;
-  }
-
-  ModifyAction& ModifyAction::operator=(const ModifyAction& other) {
+  Action& Action::operator=(const Action& other) {
     if (this == &other) return *this;
 
-    delete[] m_data;
-    delete[] m_backup;
-
-    type = Type::Modify;
+    type = other.type;
+    target = other.target;
     entity_id = other.entity_id;
-    property = other.property;
-
-    m_value = other.m_value;
-    m_data = new uint8_t[other.m_size];
-    m_backup = new uint8_t[other.m_size];
-    m_size = other.m_size;
-
-    std::memcpy(m_data, other.m_data, other.m_size);
-    std::memcpy(m_backup, other.m_backup, other.m_size);
+    m_data = other.m_data;
+    m_backup = other.type == Type::Modify ? other.m_backup : io::EncodedData();
 
     return *this;
   }
 
-  ModifyAction& ModifyAction::operator=(ModifyAction&& other) noexcept {
+  Action& Action::operator=(Action&& other) noexcept {
     if (this == &other) return *this;
 
-    delete[] m_data;
-    delete[] m_backup;
-
-    type = Type::Modify;
+    type = other.type;
+    target = other.target;
     entity_id = other.entity_id;
-    property = other.property;
-
-    m_value = other.m_value;
-    m_data = other.m_data;
-    m_backup = other.m_backup;
-    m_size = other.m_size;
+    m_data = std::move(other.m_data);
+    m_backup = other.type == Type::Modify ? std::move(other.m_backup) : io::EncodedData();
 
     other.type = Type::Invalid;
-    other.m_backup = nullptr;
-    other.m_data = nullptr;
 
     return *this;
   }
 
-  void ModifyAction::execute(Scene* scene) const {
-    std::memcpy(m_value, m_data, m_size);
+  void Action::execute(Scene* scene) const {
+    switch (type) {
+    case Type::Add:
+      execute_add(scene);
+      break;
+    case Type::Remove:
+      execute_remove(scene);
+      break;
+    case Type::Modify:
+      execute_modify(scene);
+      break;
+    }
   }
 
-  void ModifyAction::revert(Scene* scene) const {
-    std::memcpy(m_value, m_backup, m_size);
+  void Action::revert(Scene* scene) const {
+    switch (type) {
+    case Type::Add:
+      revert_add(scene);
+      break;
+    case Type::Remove:
+      revert_remove(scene);
+      break;
+    case Type::Modify:
+      revert_modify(scene);
+      break;
+    }
   }
 
-  bool ModifyAction::merge(const Action& other) {
-    if (other.type != Type::Modify || entity_id != other.entity_id || property != other.property) {
+  bool Action::merge(const Action& other) {
+    if (type != Type::Modify || other.type != Type::Modify) {
       return false;
     }
 
-    std::memcpy(m_data, static_cast<const ModifyAction&>(other).m_data, m_size);
+    // TODO: merge modify actions
 
-    return true;
+    return false;
+  }
+
+  void Action::execute_add(Scene* scene) const {
+    if (target == Target::Entity) {
+      scene->add(entity_id, m_data);
+      console::log("add entity");
+    } else {
+      scene->get_entity(entity_id).add(m_data);
+      console::log("add component");
+    }
+  }
+
+  void Action::execute_remove(Scene* scene) const {
+    if (target == Target::Entity) {
+      scene->remove(entity_id);
+      console::log("remove entity");
+    } else {
+      scene->get_entity(entity_id).remove(m_data);
+      console::log("remove component");
+    }
+  }
+
+  void Action::execute_modify(Scene* scene) const {
+    scene->get_entity(entity_id).modify(m_data);
+  }
+
+  void Action::revert_add(Scene* scene) const {
+    if (target == Target::Entity) {
+      scene->remove(entity_id);
+      console::log("revert add entity");
+    } else {
+      scene->get_entity(entity_id).remove(m_data);
+      console::log("revert add component");
+    }
+  }
+
+  void Action::revert_remove(Scene* scene) const {
+    if (target == Target::Entity) {
+      scene->add(entity_id, m_data);
+      console::log("revert remove entity");
+    } else {
+      scene->get_entity(entity_id).add(m_data);
+      console::log("revert remove component");
+    }
+  }
+
+  void Action::revert_modify(Scene* scene) const {
+    scene->get_entity(entity_id).modify(m_backup);
   }
 
 }

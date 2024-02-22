@@ -67,7 +67,7 @@ namespace Graphick::Editor {
 
       m_scene->history.add(
         id(),
-        Action::Property::Component,
+        Action::Target::Component,
         T(std::forward<Args>(args)...).encode(io::EncodedData())
       );
 
@@ -125,7 +125,7 @@ namespace Graphick::Editor {
 
       m_scene->history.remove(
         id(),
-        Action::Property::Component,
+        Action::Target::Component,
         get_component<T>().encode(io::EncodedData())
       );
     }
@@ -227,8 +227,9 @@ namespace Graphick::Editor {
      * This method should only be called by the history manager.
      *
      * @param encoded_data The encoded data of the component.
+     * @param full_entity If true, default components will be added if they are missing.
      */
-    void add(const io::EncodedData& encoded_data);
+    void add(const io::EncodedData& encoded_data, const bool full_entity = false);
 
     /**
      * @brief Removes a component from the entity.
@@ -248,11 +249,20 @@ namespace Graphick::Editor {
      * @param encoded_data The encoded data of the component.
      */
     void remove(const io::EncodedData& encoded_data);
+
+    /**
+     * @brief Modifies a component of the entity.
+     *
+     * This method should only be called internally.
+     *
+     * @param encoded_data A diff of the modified component's data.
+     */
+    void modify(const io::EncodedData& encoded_data);
   private:
     entt::entity m_handle;    /* The entt entity handle. */
     Scene* m_scene;           /* A pointer to the scene this entity belongs to. */
   private:
-    friend struct AddOrRemoveAction;
+    friend struct Action;
   };
 
 }

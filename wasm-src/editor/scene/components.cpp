@@ -137,12 +137,13 @@ namespace Graphick::Editor {
     //   Math::translate(m_matrix, delta),
     //   _value()
     // );
-    Editor::scene().history.modify(
-      m_entity_id,
-      Action::Property::Transform,
-      Math::translate(m_matrix, delta),
-      _value()
-    );
+
+    // Editor::scene().history.modify(
+    //   m_entity_id,
+    //   Action::Property::Transform,
+    //   Math::translate(m_matrix, delta),
+    //   _value()
+    // );
   }
 
   void TransformComponent::scale(const vec2 delta) {
@@ -181,7 +182,7 @@ namespace Graphick::Editor {
   }
 
   io::EncodedData& StrokeComponent::encode(io::EncodedData& data) const {
-    if (color.get() == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
+    // if (color.get() == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
 
     data.component_id(component_id)
       .color(color.get());
@@ -196,7 +197,7 @@ namespace Graphick::Editor {
   }
 
   io::EncodedData& FillComponent::encode(io::EncodedData& data) const {
-    if (color.get() == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
+    // if (color.get() == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
 
     data.component_id(component_id)
       .color(color.get());

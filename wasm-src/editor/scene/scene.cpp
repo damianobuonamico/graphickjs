@@ -66,7 +66,7 @@ namespace Graphick::Editor {
 
     history.add(
       id,
-      Action::Property::Entity,
+      Action::Target::Entity,
       data
     );
 
@@ -108,7 +108,7 @@ namespace Graphick::Editor {
 
     history.add(
       id,
-      Action::Property::Entity,
+      Action::Target::Entity,
       data
     );
 
@@ -145,7 +145,7 @@ namespace Graphick::Editor {
 
     history.add(
       id,
-      Action::Property::Entity,
+      Action::Target::Entity,
       data
     );
 
@@ -162,7 +162,7 @@ namespace Graphick::Editor {
   void Scene::delete_entity(Entity entity) {
     history.remove(
       entity.id(),
-      Action::Property::Entity,
+      Action::Target::Entity,
       entity.encode()
     );
   }
@@ -326,6 +326,9 @@ namespace Graphick::Editor {
       bool draw_vertices = tool_state.active().is_in_category(Input::Tool::CategoryDirect);
 
       for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+        bool has_id = m_registry.all_of<IDComponent>(*it);
+        bool has_path = m_registry.all_of<PathComponent>(*it);
+        bool has_transform = m_registry.all_of<TransformComponent>(*it);
         if (!m_registry.all_of<IDComponent, PathComponent, TransformComponent>(*it)) continue;
 
         auto components = m_registry.get<IDComponent, PathComponent, TransformComponent>(*it);

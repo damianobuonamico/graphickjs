@@ -172,8 +172,7 @@ namespace Graphick::Editor {
   private:
     friend class Editor;
     friend class Entity;
-    friend struct AddOrRemoveAction;
-    friend struct ModifyAction;
+    friend struct Action;
   };
 
 }
