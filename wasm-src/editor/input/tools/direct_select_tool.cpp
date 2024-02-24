@@ -49,7 +49,7 @@ namespace Graphick::Editor::Input {
       on_handle_pointer_down();
     } else if (hover_type == HoverState::HoverType::Segment) {
       on_bezier_pointer_down();
-    } else if (hover_type == HoverState::HoverType::Entity && entity->is_in_category(CategoryComponent::Selectable)) {
+    } else if (hover_type == HoverState::HoverType::Entity && entity->is_in_category(CategoryComponent::Category::Selectable)) {
       on_entity_pointer_down();
     } else {
       on_none_pointer_down();

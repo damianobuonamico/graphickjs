@@ -1,3 +1,10 @@
+/**
+ * @file components.cpp
+ * @brief This file includes the implementations of all of the components.
+ *
+ * @todo implement encoding optimizations
+ */
+
 #include "components.h"
 
 #include "../editor.h"
@@ -7,111 +14,91 @@
 #include "../../math/matrix.h"
 #include "../../math/math.h"
 
-#include "../../utils/console.h"
+#include "../../utils/console.h"  
 
 namespace Graphick::Editor {
 
   /* -- IDComponent -- */
 
-  IDComponent::IDComponent(io::DataDecoder& decoder) {
-    id = decoder.uuid();
-  }
+  IDComponentData::IDComponentData() : id({}) {}
 
-  io::EncodedData& IDComponent::encode(io::EncodedData& data) const {
-    if (id == uuid::null) return data;
+  IDComponentData::IDComponentData(const uuid id) : id(id) {}
+
+  IDComponentData::IDComponentData(io::DataDecoder& decoder) : id(decoder.uuid()) {}
+
+  io::EncodedData& IDComponent::encode(io::EncodedData& data, const bool optimize) const {
+    if (optimize && id() == uuid::null) return data;
 
     data.component_id(component_id)
-      .uuid(id);
+      .uuid(id());
 
     return data;
   }
 
   /* -- TagComponent -- */
 
-  TagComponent::TagComponent(io::DataDecoder& decoder) {
-    tag = decoder.string();
-  }
+  TagComponentData::TagComponentData(const std::string& tag) : tag(tag) {}
 
-  io::EncodedData& TagComponent::encode(io::EncodedData& data) const {
-    if (tag.empty()) return data;
+  TagComponentData::TagComponentData(io::DataDecoder& decoder) : tag(decoder.string()) {}
+
+  io::EncodedData& TagComponent::encode(io::EncodedData& data, const bool optimize) const {
+    if (optimize && tag().empty()) return data;
 
     data.component_id(component_id)
-      .string(tag);
+      .string(tag());
 
     return data;
   }
 
   /* -- CategoryComponent -- */
 
-  CategoryComponent::CategoryComponent(io::DataDecoder& decoder) {
-    category = static_cast<Category>(decoder.uint8());
-  }
+  CategoryComponentData::CategoryComponentData(const int category) : category(category) {}
 
-  io::EncodedData& CategoryComponent::encode(io::EncodedData& data) const {
-    if (category == Category::None) return data;
+  CategoryComponentData::CategoryComponentData(io::DataDecoder& decoder) : category(static_cast<Category>(decoder.uint8())) {}
+
+  io::EncodedData& CategoryComponent::encode(io::EncodedData& data, const bool optimize) const {
+    if (optimize && category() == Category::None) return data;
 
     data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(category));
+      .uint8(static_cast<uint8_t>(category()));
 
     return data;
   }
 
   /* -- PathComponent -- */
 
-  PathComponent::PathComponent() : data() {}
+  PathComponentData::PathComponentData() : path() {}
 
-  PathComponent::PathComponent(const Renderer::Geometry::Path& data) : data(data) {}
+  PathComponentData::PathComponentData(const Renderer::Geometry::Path& path) : path(path) {}
 
-  PathComponent::PathComponent(const PathComponent& other) : data(other.data) {}
+  PathComponentData::PathComponentData(io::DataDecoder& decoder) : path(decoder) {}
 
-  PathComponent::PathComponent(PathComponent&& other) noexcept : data(std::move(other.data)) {}
-
-  PathComponent::PathComponent(io::DataDecoder& decoder) : data(decoder) {}
-
-  PathComponent& PathComponent::operator=(const PathComponent& other) {
-    data = other.data;
-    return *this;
-  }
-
-  PathComponent& PathComponent::operator=(PathComponent&& other) noexcept {
-    data = std::move(other.data);
-    return *this;
-  }
-
-  io::EncodedData& PathComponent::encode(io::EncodedData& data) const {
+  io::EncodedData& PathComponent::encode(io::EncodedData& data, const bool optimize) const {
     data.component_id(component_id);
 
-    return this->data.encode(data);
+    return m_data->path.encode(data);
   }
 
   /* -- TransformComponent -- */
 
-  TransformComponent::TransformComponent(const uuid entity_id, const PathComponent* path_ptr) :
-    m_entity_id(entity_id),
-    m_path_ptr(path_ptr) {}
+  TransformComponentData::TransformComponentData(const mat2x3& matrix) : matrix(matrix) {}
 
-  TransformComponent::TransformComponent(const uuid entity_id, io::DataDecoder& decoder, const PathComponent* path_ptr) :
-    m_entity_id(entity_id),
-    m_path_ptr(path_ptr)
-  {
-    m_matrix = decoder.mat2x3();
-  }
+  TransformComponentData::TransformComponentData(io::DataDecoder& decoder) : matrix(decoder.mat2x3()) {}
 
   mat2x3 TransformComponent::inverse() const {
-    return Math::inverse(m_matrix);
+    return Math::inverse(m_data->matrix);
   }
 
   rect TransformComponent::bounding_rect() const {
     if (!m_path_ptr) return { };
     // if (!m_path_ptr) return { position.get(), position.get() };
 
-    mat2x3 matrix = get();
-    float angle = Math::rotation(matrix);
+    float angle = Math::rotation(m_data->matrix);
 
     if (Math::is_almost_zero(std::fmodf(angle, MATH_F_TWO_PI))) {
-      return matrix * m_path_ptr->data.bounding_rect();
+      return m_data->matrix * m_path_ptr->path.bounding_rect();
     } else {
-      return m_path_ptr->data.bounding_rect(matrix);
+      return m_path_ptr->path.bounding_rect(m_data->matrix);
     }
   }
 
@@ -119,10 +106,9 @@ namespace Graphick::Editor {
     if (!m_path_ptr) return { };
     // if (!m_path_ptr) return { position.get(), position.get() };
 
-    rect path_rect = m_path_ptr->data.approx_bounding_rect();
-    mat2x3 matrix = get();
+    rect path_rect = m_path_ptr->path.approx_bounding_rect();
 
-    return matrix * path_rect;
+    return m_data->matrix * path_rect;
   }
 
   vec2 TransformComponent::revert(const vec2 point) const {
@@ -145,14 +131,14 @@ namespace Graphick::Editor {
 
     encode(backup_data);
 
-    new_data.component_id(TransformComponent::component_id)
-      .mat2x3(Math::translate(m_matrix, delta));
+    // new_data.component_id(TransformComponent::component_id)
+    //   .mat2x3(Math::translate(m_matrix, delta));
 
-    Editor::scene().history.modify(
-      m_entity_id,
-      std::move(new_data),
-      std::move(backup_data)
-    );
+    // Editor::scene().history.modify(
+    //   m_entity_id,
+    //   std::move(new_data),
+    //   std::move(backup_data)
+    // );
   }
 
   void TransformComponent::scale(const vec2 delta) {
@@ -175,45 +161,41 @@ namespace Graphick::Editor {
     // );
   }
 
-  io::EncodedData& TransformComponent::encode(io::EncodedData& data) const {
-    // if (m_matrix == mat2x3(1.0f)) return data;
+  io::EncodedData& TransformComponent::encode(io::EncodedData& data, const bool optimize) const {
+    if (optimize && m_data->matrix == mat2x3(1.0f)) return data;
 
     data.component_id(component_id)
-      .mat2x3(m_matrix);
+      .mat2x3(m_data->matrix);
 
     return data;
   }
 
-  void TransformComponent::modify(io::DataDecoder& decoder) {
-    m_matrix = decoder.mat2x3();
-  }
-
   /* -- StrokeComponent -- */
 
-  StrokeComponent::StrokeComponent(io::DataDecoder& decoder) {
-    color = decoder.color();
-  }
+  StrokeComponentData::StrokeComponentData(const vec4& color) : color(color) {}
 
-  io::EncodedData& StrokeComponent::encode(io::EncodedData& data) const {
-    // if (color.get() == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
+  StrokeComponentData::StrokeComponentData(io::DataDecoder& decoder) : color(decoder.color()) {}
+
+  io::EncodedData& StrokeComponent::encode(io::EncodedData& data, const bool optimize) const {
+    if (optimize && m_data->color == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
 
     data.component_id(component_id)
-      .color(color.get());
+      .color(m_data->color);
 
     return data;
   }
 
   /* -- FillComponent -- */
 
-  FillComponent::FillComponent(io::DataDecoder& decoder) {
-    color = decoder.color();
-  }
+  FillComponentData::FillComponentData(const vec4& color) : color(color) {}
 
-  io::EncodedData& FillComponent::encode(io::EncodedData& data) const {
-    // if (color.get() == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
+  FillComponentData::FillComponentData(io::DataDecoder& decoder) : color(decoder.color()) {}
+
+  io::EncodedData& FillComponent::encode(io::EncodedData& data, const bool optimize) const {
+    if (optimize && m_data->color == vec4(0.0f, 0.0f, 0.0f, 1.0f)) return data;
 
     data.component_id(component_id)
-      .color(color.get());
+      .color(m_data->color);
 
     return data;
   }

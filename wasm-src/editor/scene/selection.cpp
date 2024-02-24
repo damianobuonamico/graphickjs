@@ -57,7 +57,7 @@ namespace Graphick::Editor {
     if (!m_scene->has_entity(id)) return;
 
     Entity entity = m_scene->get_entity(id);
-    if (!entity.is_in_category(CategoryComponent::Selectable)) return;
+    if (!entity.is_in_category(CategoryComponent::Category::Selectable)) return;
 
     if (entity.is_element()) {
       m_selected[id] = SelectionElementEntry{ { 0 } };

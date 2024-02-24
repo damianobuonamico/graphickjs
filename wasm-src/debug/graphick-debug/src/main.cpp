@@ -296,6 +296,7 @@ int main() {
 
   test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
   test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
+
   // test_entity1.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });
   // test_entity1.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
 #endif

@@ -61,14 +61,16 @@ namespace Graphick::Editor {
      * @param args The component constructor arguments.
      * @return The added component.
      */
-    template <typename T, typename... Args>
-    T& add_component(Args&&... args) {
+    template<typename T, typename... Args>
+    inline T add_component(Args&&... args) {
       if (has_component<T>()) remove_component<T>();
+
+      auto component_data = T::Data(std::forward<Args>(args)...);
 
       m_scene->history.add(
         id(),
         Action::Target::Component,
-        std::move(T(std::forward<Args>(args)...).encode(io::EncodedData()))
+        std::move(T(this, &component_data).encode(io::EncodedData(), false))
       );
 
       return get_component<T>();
@@ -80,9 +82,19 @@ namespace Graphick::Editor {
      * @return The component.
      */
     template<typename T>
-    T& get_component() {
+    inline T get_component() {
       GK_ASSERT(has_component<T>(), "Entity does not have component!");
-      return m_scene->m_registry.get<T>(m_handle);
+      return T{ this, &m_scene->m_registry.get<T::Data>(m_handle) };
+    }
+    template<>
+    inline TransformComponent get_component() {
+      GK_ASSERT(has_component<TransformComponent>(), "Entity does not have component!");
+
+      if (has_component<PathComponent>()) {
+        return TransformComponent{ this, &m_scene->m_registry.get<TransformComponent::Data>(m_handle), &m_scene->m_registry.get<PathComponent::Data>(m_handle) };
+      } else {
+        return TransformComponent{ this, &m_scene->m_registry.get<TransformComponent::Data>(m_handle) };
+      }
     }
 
     /**
@@ -91,9 +103,19 @@ namespace Graphick::Editor {
      * @return The component.
      */
     template<typename T>
-    const T& get_component() const {
+    inline const T get_component() const {
       GK_ASSERT(has_component<T>(), "Entity does not have component!");
-      return m_scene->m_registry.get<T>(m_handle);
+      return T{ this, &m_scene->m_registry.get<T::Data>(m_handle) };
+    }
+    template<>
+    inline const TransformComponent get_component() const {
+      GK_ASSERT(has_component<TransformComponent>(), "Entity does not have component!");
+
+      if (has_component<PathComponent>()) {
+        return TransformComponent{ this, &m_scene->m_registry.get<TransformComponent::Data>(m_handle), &m_scene->m_registry.get<PathComponent::Data>(m_handle) };
+      } else {
+        return TransformComponent{ this, &m_scene->m_registry.get<TransformComponent::Data>(m_handle) };
+      }
     }
 
     /**
@@ -102,8 +124,8 @@ namespace Graphick::Editor {
      * @return true if the entity has the component, false otherwise.
      */
     template<typename T>
-    bool has_component() const {
-      return m_scene->m_registry.all_of<T>(m_handle);
+    inline bool has_component() const {
+      return m_scene->m_registry.all_of<T::Data>(m_handle);
     }
 
     /**
@@ -112,7 +134,7 @@ namespace Graphick::Editor {
      * @return true if the entity has all of the specified components, false otherwise.
      */
     template<typename... T>
-    bool has_components() const {
+    inline bool has_components() const {
       return (has_component<T>() && ...);
     }
 
@@ -120,13 +142,13 @@ namespace Graphick::Editor {
      * @brief Removes a component from the entity.
      */
     template<typename T>
-    void remove_component() {
+    inline void remove_component() {
       if (!has_component<T>()) return;
 
       m_scene->history.remove(
         id(),
         Action::Target::Component,
-        get_component<T>().encode(io::EncodedData())
+        get_component<T>().encode(io::EncodedData(), false)
       );
     }
 
@@ -135,47 +157,53 @@ namespace Graphick::Editor {
      *
      * @return true if the entity is valid, false otherwise.
      */
-    operator bool() const { return m_handle != entt::null; }
+    inline operator bool() const { return m_handle != entt::null; }
 
     /**
      * @brief Entity handle conversion operator.
      *
      * @return The entity handle.
      */
-    operator entt::entity() const { return m_handle; }
+    inline operator entt::entity() const { return m_handle; }
 
     /**
      * @brief uint32_t conversion operator.
      *
      * @return The entity handle as a uint32_t.
      */
-    operator uint32_t() const { return (uint32_t)m_handle; }
+    inline operator uint32_t() const { return static_cast<uint32_t>(m_handle); }
 
     /**
      * @brief Gets the entity's ID.
      *
      * @return The entity's ID.
      */
-    uuid id() const { return get_component<IDComponent>().id; }
+    inline uuid id() const { return m_scene->m_registry.get<IDComponent::Data>(m_handle).id; }
 
     /**
      * @brief Gets the entity's tag.
      *
      * @return The entity's tag.
      */
-    const std::string& tag() const { return get_component<TagComponent>().tag; }
+    inline const std::string& tag() const {
+      if (has_component<TagComponent>()) {
+        return m_scene->m_registry.get<TagComponent::Data>(m_handle).tag;
+      } else {
+        return "Entity " + std::to_string(static_cast<uint32_t>(m_handle));
+      }
+    }
 
     /**
      * @brief Equality operator.
      */
-    bool operator==(const Entity& other) const {
+    inline bool operator==(const Entity& other) const {
       return m_handle == other.m_handle && m_scene == other.m_scene;
     }
 
     /**
      * @brief Inequality operator.
      */
-    bool operator!=(const Entity& other) const {
+    inline bool operator!=(const Entity& other) const {
       return !(*this == other);
     }
 
@@ -185,9 +213,9 @@ namespace Graphick::Editor {
      * @param category The category to check.
      * @return true if the entity is in the category, false otherwise.
      */
-    bool is_in_category(CategoryComponent::Category category) const {
+    inline bool is_in_category(CategoryComponent::Category category) const {
       if (!has_component<CategoryComponent>()) return false;
-      return get_component<CategoryComponent>().category & category;
+      return get_component<CategoryComponent>().is_in_category(category);
     }
 
     /**
@@ -197,7 +225,7 @@ namespace Graphick::Editor {
      *
      * @return true if the entity is an element, false otherwise.
      */
-    bool is_element() const {
+    inline bool is_element() const {
       return has_components<PathComponent, TransformComponent>();
     }
 
@@ -217,8 +245,8 @@ namespace Graphick::Editor {
      * @return The added component.
      */
     template<typename T, typename... Args>
-    T& add(Args&&... args) {
-      return m_scene->m_registry.emplace<T>(m_handle, std::forward<Args>(args)...);
+    inline T add(Args&&... args) {
+      return T{ this, &m_scene->m_registry.emplace<T::Data>(m_handle, std::forward<Args>(args)...) };
     }
 
     /**
@@ -238,7 +266,7 @@ namespace Graphick::Editor {
      */
     template<typename T>
     void remove() {
-      m_scene->m_registry.remove<T>(m_handle);
+      m_scene->m_registry.remove<T::Data>(m_handle);
     }
 
     /**

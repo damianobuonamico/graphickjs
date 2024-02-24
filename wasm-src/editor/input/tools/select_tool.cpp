@@ -82,7 +82,7 @@ namespace Graphick::Editor::Input {
         Entity entity = Editor::scene().get_entity(id);
         if (!entity.has_component<TransformComponent>()) continue;
 
-        entity.get_component<TransformComponent>().apply();
+        // entity.get_component<TransformComponent>().apply();
       }
       // for (auto& [id, entity] : Editor::scene().selection) {
       //   entity->transform()->position().apply();

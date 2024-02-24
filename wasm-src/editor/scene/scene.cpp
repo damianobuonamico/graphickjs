@@ -62,7 +62,7 @@ namespace Graphick::Editor {
     }
 
     data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::None));
+      .uint8(static_cast<uint8_t>(CategoryComponent::Category::None));
 
     history.add(
       id,
@@ -98,7 +98,7 @@ namespace Graphick::Editor {
       .string("Element " + std::to_string(m_entity_tag_number));
 
     data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Selectable));
+      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
 
     data.component_id(PathComponent::component_id)
       .uint32(0);
@@ -135,7 +135,7 @@ namespace Graphick::Editor {
       .string("Element " + std::to_string(m_entity_tag_number));
 
     data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Selectable));
+      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
 
     data.component_id(PathComponent::component_id);
     path.encode(data);
@@ -179,11 +179,11 @@ namespace Graphick::Editor {
 
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
-        const auto& path = m_registry.get<PathComponent>(*it).data;
+        const auto& path = m_registry.get<PathComponent>(*it).TEMP_path();
         const TransformComponent& transform = m_registry.get<TransformComponent>(*it);
         // const vec2 transformed_pos = transform.revert(position);
-        // const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform.get()).scale;
-        const uuid id = m_registry.get<IDComponent>(*it).id;
+        // const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform).scale;
+        const uuid id = m_registry.get<IDComponent>(*it).id();
 
         bool has_fill = false;
         bool has_stroke = false;
@@ -195,18 +195,19 @@ namespace Graphick::Editor {
           has_fill = true;
           auto& fill_component = m_registry.get<FillComponent>(*it);
 
-          fill = Renderer::Fill{ fill_component.color.get(), fill_component.rule, 0.0f };
+          fill = Renderer::Fill{ fill_component.fill_TEMP().color, fill_component.fill_TEMP().rule, 0.0f };
         }
 
         if (m_registry.all_of<StrokeComponent>(*it)) {
           has_stroke = true;
           auto& stroke_component = m_registry.get<StrokeComponent>(*it);
 
-          stroke = Renderer::Stroke{ stroke_component.color.get(), stroke_component.cap, stroke_component.join, stroke_component.width.get(), stroke_component.miter_limit.get(), 0.0f };
+          // TODO: operator StrokeComponent::Renderer::Stroke()
+          stroke = Renderer::Stroke{ stroke_component.stroke_TEMP().color, stroke_component.stroke_TEMP().cap, stroke_component.stroke_TEMP().join, stroke_component.stroke_TEMP().width, stroke_component.stroke_TEMP().miter_limit, 0.0f };
         }
 
         // if (path.is_point_inside_path(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {
-        if (path.is_point_inside_path(position, has_fill ? &fill : nullptr, has_stroke ? &stroke : nullptr, transform.get(), threshold, zoom)) {
+        if (path.is_point_inside_path(position, has_fill ? &fill : nullptr, has_stroke ? &stroke : nullptr, transform, threshold, zoom)) {
           return id;
         }
       }
@@ -232,7 +233,7 @@ namespace Graphick::Editor {
       const uuid id = std::get<0>(components).id;
       const Renderer::Geometry::Path& path = std::get<1>(components).path;
       const TransformComponent& transform_component = std::get<2>(components);
-      const mat2x3 transform = transform_component.get();
+      const mat2x3 transform = transform_component;
 
       // vec2 r1 = transform / rect.min;
       // vec2 r2 = transform / vec2{ rect.max.x, rect.min.y };
@@ -326,16 +327,20 @@ namespace Graphick::Editor {
       bool draw_vertices = tool_state.active().is_in_category(Input::Tool::CategoryDirect);
 
       for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
-        bool has_id = m_registry.all_of<IDComponent>(*it);
-        bool has_path = m_registry.all_of<PathComponent>(*it);
-        bool has_transform = m_registry.all_of<TransformComponent>(*it);
-        if (!m_registry.all_of<IDComponent, PathComponent, TransformComponent>(*it)) continue;
+        const Entity entity = { *it, const_cast<Scene*>(this) };
+        // TODO: refactor with entity methods maybe
+        if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
 
-        auto components = m_registry.get<IDComponent, PathComponent, TransformComponent>(*it);
+        // TODO: get more than one component at a time
+        // auto components = m_registry.get<IDComponent::Data, PathComponent::Data, TransformComponent::Data>(*it);
 
-        const uuid id = std::get<0>(components).id;
-        const Renderer::Geometry::Path& path = std::get<1>(components).data;
-        const TransformComponent& transform = std::get<2>(components);
+        // const uuid id = std::get<0>(components).id;
+        // const Renderer::Geometry::Path& path = std::get<1>(components).path;
+        // const TransformComponent& transform = TransformComponent(std::get<2>(components);
+
+        const uuid id = entity.id();
+        const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().TEMP_path();
+        const TransformComponent& transform = entity.get_component<TransformComponent>();
 
         if (!has_entity(id)) return;
 
@@ -343,22 +348,21 @@ namespace Graphick::Editor {
           // path.rehydrate_cache();
         }
 
-        bool has_stroke = m_registry.all_of<StrokeComponent>(*it);
-        std::optional<StrokeComponent> stroke = has_stroke ? std::optional<StrokeComponent>(m_registry.get<StrokeComponent>(*it)) : std::nullopt;
+        // TODO: abstract away
+        bool has_stroke = m_registry.all_of<StrokeComponent::Data>(*it);
+        std::optional<StrokeComponent::Data> stroke = has_stroke ? std::optional<StrokeComponent::Data>(m_registry.get<StrokeComponent::Data>(*it)) : std::nullopt;
 
         rect entity_rect = transform.approx_bounding_rect();
 
         if (has_stroke) {
-          entity_rect.min -= vec2{ stroke->width.get() };
-          entity_rect.max += vec2{ stroke->width.get() };
+          entity_rect.min -= vec2{ stroke->width };
+          entity_rect.max += vec2{ stroke->width };
         }
 
         if (!Math::does_rect_intersect_rect(entity_rect, visible_rect)) continue;
 
-        mat2x3 transform_matrix = transform.get();
-
-        bool has_fill = m_registry.all_of<FillComponent>(*it);
-        std::optional<FillComponent> fill = has_fill ? std::optional<FillComponent>(m_registry.get<FillComponent>(*it)) : std::nullopt;
+        bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
+        std::optional<FillComponent::Data> fill = has_fill ? std::optional<FillComponent::Data>(m_registry.get<FillComponent::Data>(*it)) : std::nullopt;
 
         if (has_fill && !fill->visible) has_fill = false;
         if (has_stroke && !stroke->visible) has_stroke = false;
@@ -366,32 +370,32 @@ namespace Graphick::Editor {
         if (has_fill && has_stroke) {
           Renderer::Renderer::draw(
             path,
-            Renderer::Stroke{ stroke->color.get(), stroke->cap, stroke->join, stroke->width.get(), stroke->miter_limit.get(), z_index / z_far },
-            Renderer::Fill{ fill->color.get(), fill->rule, (z_index + 1) / z_far },
-            transform_matrix
+            Renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+            Renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
+            transform
           );
 
           z_index += 2;
         } else if (has_fill) {
           Renderer::Renderer::draw(
             path,
-            Renderer::Fill{ fill->color.get(), fill->rule, z_index / z_far },
-            transform_matrix
+            Renderer::Fill{ fill->color, fill->rule, z_index / z_far },
+            transform
           );
 
           z_index += 1;
         } else if (has_stroke) {
           Renderer::Renderer::draw(
             path,
-            Renderer::Stroke{ stroke->color.get(), stroke->cap, stroke->join, stroke->width.get(), stroke->miter_limit.get(), z_index / z_far },
-            transform_matrix
+            Renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+            transform
           );
 
           z_index += 1;
         }
 
         if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
-          Renderer::Renderer::draw_outline(id, path, transform_matrix, draw_vertices);
+          Renderer::Renderer::draw_outline(id, path, transform, draw_vertices);
         }
 
         // Math::rect bounding_rect = path.bounding_rect();

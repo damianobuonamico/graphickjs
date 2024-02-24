@@ -63,12 +63,12 @@ namespace Graphick::Editor {
     DECODE_COMPONENT(PathComponent);
 
     if (component_id == TransformComponent::component_id) {
-      add<TransformComponent>(id(), decoder, has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
+      add<TransformComponent>(decoder);
 
       if (decoder.end_of_data()) return;
       component_id = decoder.component_id();
     } else if (full_entity) {
-      add<TransformComponent>(id(), has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
+      add<TransformComponent>();
     }
 
     //DECODE_COMPONENT_WITH_DATA(TransformComponent, id(), decoder, has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
@@ -103,7 +103,7 @@ namespace Graphick::Editor {
       // MODIFY_COMPONENT(TagComponent);
       // MODIFY_COMPONENT(CategoryComponent);
       // MODIFY_COMPONENT(PathComponent);
-      MODIFY_COMPONENT(TransformComponent);
+      // MODIFY_COMPONENT(TransformComponent);
       // MODIFY_COMPONENT(StrokeComponent);
       // MODIFY_COMPONENT(FillComponent);
     }
