@@ -65,12 +65,10 @@ namespace Graphick::Editor {
     inline T add_component(Args&&... args) {
       if (has_component<T>()) remove_component<T>();
 
-      auto component_data = T::Data(std::forward<Args>(args)...);
-
       m_scene->history.add(
         id(),
         Action::Target::Component,
-        std::move(T(this, &component_data).encode(io::EncodedData(), false))
+        std::move(T(this, &T::Data(std::forward<Args>(args)...)).encode(io::EncodedData()))
       );
 
       return get_component<T>();
@@ -148,7 +146,7 @@ namespace Graphick::Editor {
       m_scene->history.remove(
         id(),
         Action::Target::Component,
-        get_component<T>().encode(io::EncodedData(), false)
+        get_component<T>().encode(io::EncodedData())
       );
     }
 
@@ -192,6 +190,13 @@ namespace Graphick::Editor {
         return "Entity " + std::to_string(static_cast<uint32_t>(m_handle));
       }
     }
+
+    /**
+     * @brief Gets the scene the entity belongs to.
+     *
+     * @return The scene the entity belongs to.
+     */
+    inline Scene* scene() const { return m_scene; }
 
     /**
      * @brief Equality operator.

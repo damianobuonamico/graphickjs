@@ -2,10 +2,14 @@
  * @file components.cpp
  * @brief This file includes the implementations of all of the components.
  *
- * @todo implement encoding optimizations
+ * @todo implement encoding diffing and generic optimization
+ * @todo implement PathComponent::modify()
+ * @todo avoid going through the history execute system for the first time an action is performed
  */
 
 #include "components.h"
+
+#include "entity.h"
 
 #include "../editor.h"
 
@@ -50,6 +54,10 @@ namespace Graphick::Editor {
     return data;
   }
 
+  void TagComponent::modify(io::DataDecoder& decoder) {
+    m_data->tag = decoder.string();
+  }
+
   /* -- CategoryComponent -- */
 
   CategoryComponentData::CategoryComponentData(const int category) : category(category) {}
@@ -63,6 +71,10 @@ namespace Graphick::Editor {
       .uint8(static_cast<uint8_t>(category()));
 
     return data;
+  }
+
+  void CategoryComponent::modify(io::DataDecoder& decoder) {
+    m_data->category = static_cast<Category>(decoder.uint8());
   }
 
   /* -- PathComponent -- */
@@ -79,6 +91,8 @@ namespace Graphick::Editor {
     return m_data->path.encode(data);
   }
 
+  void PathComponent::modify(io::DataDecoder& decoder) { }
+
   /* -- TransformComponent -- */
 
   TransformComponentData::TransformComponentData(const mat2x3& matrix) : matrix(matrix) {}
@@ -90,10 +104,11 @@ namespace Graphick::Editor {
   }
 
   rect TransformComponent::bounding_rect() const {
-    if (!m_path_ptr) return { };
-    // if (!m_path_ptr) return { position.get(), position.get() };
+    if (!m_path_ptr) {
+      return Math::translation(m_data->matrix);
+    }
 
-    float angle = Math::rotation(m_data->matrix);
+    const float angle = Math::rotation(m_data->matrix);
 
     if (Math::is_almost_zero(std::fmodf(angle, MATH_F_TWO_PI))) {
       return m_data->matrix * m_path_ptr->path.bounding_rect();
@@ -103,10 +118,11 @@ namespace Graphick::Editor {
   }
 
   rect TransformComponent::approx_bounding_rect() const {
-    if (!m_path_ptr) return { };
-    // if (!m_path_ptr) return { position.get(), position.get() };
+    if (!m_path_ptr) {
+      return Math::translation(m_data->matrix);
+    }
 
-    rect path_rect = m_path_ptr->path.approx_bounding_rect();
+    const rect path_rect = m_path_ptr->path.approx_bounding_rect();
 
     return m_data->matrix * path_rect;
   }
@@ -118,47 +134,81 @@ namespace Graphick::Editor {
   void TransformComponent::translate(const vec2 delta) {
     GK_TOTAL("TransformComponent::translate");
 
-    // History::History::add(
-    //   History::Action::Type::Modify,
-    //   m_entity_id,
-    //   History::Action::Property::Transform,
-    //   Math::translate(m_matrix, delta),
-    //   _value()
-    // );
+    if (Math::is_almost_zero(delta)) return;
 
     io::EncodedData new_data;
     io::EncodedData backup_data;
 
     encode(backup_data);
 
-    // new_data.component_id(TransformComponent::component_id)
-    //   .mat2x3(Math::translate(m_matrix, delta));
+    new_data.component_id(component_id)
+      .mat2x3(Math::translate(m_data->matrix, delta));
 
-    // Editor::scene().history.modify(
-    //   m_entity_id,
-    //   std::move(new_data),
-    //   std::move(backup_data)
-    // );
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
   }
 
   void TransformComponent::scale(const vec2 delta) {
-    // History::History::add(
-    //   History::Action::Type::Modify,
-    //   m_entity_id,
-    //   History::Action::Property::Transform,
-    //   Math::scale(m_matrix, delta),
-    //   _value()
-    // );
+    GK_TOTAL("TransformComponent::scale");
+
+    if (Math::is_almost_zero(delta)) return;
+
+    io::EncodedData new_data;
+    io::EncodedData backup_data;
+
+    encode(backup_data);
+
+    new_data.component_id(component_id)
+      .mat2x3(Math::scale(m_data->matrix, delta));
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
   }
 
   void TransformComponent::rotate(const float angle) {
-    // History::History::add(
-    //   History::Action::Type::Modify,
-    //   m_entity_id,
-    //   History::Action::Property::Transform,
-    //   Math::rotate(m_matrix, angle),
-    //   _value()
-    // );
+    GK_TOTAL("TransformComponent::rotate");
+
+    if (Math::is_almost_zero(angle)) return;
+
+    io::EncodedData new_data;
+    io::EncodedData backup_data;
+
+    encode(backup_data);
+
+    new_data.component_id(component_id)
+      .mat2x3(Math::rotate(m_data->matrix, angle));
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
+  }
+
+  void TransformComponent::set(const mat2x3 matrix) {
+    GK_TOTAL("TransformComponent::set");
+
+    if (m_data->matrix == matrix) return;
+
+    io::EncodedData new_data;
+    io::EncodedData backup_data;
+
+    encode(backup_data);
+
+    new_data.component_id(component_id)
+      .mat2x3(matrix);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
   }
 
   io::EncodedData& TransformComponent::encode(io::EncodedData& data, const bool optimize) const {
@@ -168,6 +218,10 @@ namespace Graphick::Editor {
       .mat2x3(m_data->matrix);
 
     return data;
+  }
+
+  void TransformComponent::modify(io::DataDecoder& decoder) {
+    m_data->matrix = decoder.mat2x3();
   }
 
   /* -- StrokeComponent -- */
@@ -185,6 +239,10 @@ namespace Graphick::Editor {
     return data;
   }
 
+  void StrokeComponent::modify(io::DataDecoder& decoder) {
+    m_data->color = decoder.color();
+  }
+
   /* -- FillComponent -- */
 
   FillComponentData::FillComponentData(const vec4& color) : color(color) {}
@@ -198,6 +256,10 @@ namespace Graphick::Editor {
       .color(m_data->color);
 
     return data;
+  }
+
+  void FillComponent::modify(io::DataDecoder& decoder) {
+    m_data->color = decoder.color();
   }
 
 }

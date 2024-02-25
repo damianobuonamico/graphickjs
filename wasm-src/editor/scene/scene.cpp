@@ -178,12 +178,15 @@ namespace Graphick::Editor {
     GK_DEBUGGER_DRAW(rect{ position - threshold - GK_POINT_EPSILON / zoom, position + threshold + GK_POINT_EPSILON / zoom });
 
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
-      if (m_registry.all_of<PathComponent, TransformComponent>(*it)) {
-        const auto& path = m_registry.get<PathComponent>(*it).TEMP_path();
-        const TransformComponent& transform = m_registry.get<TransformComponent>(*it);
+      const Entity entity = { *it, this };
+
+      // TODO: refactor checks, id should always be present
+      if (entity.has_components<IDComponent, PathComponent, TransformComponent>()) {
+        const auto& path = entity.get_component<PathComponent>().TEMP_path();
+        const TransformComponent transform = entity.get_component<TransformComponent>();
         // const vec2 transformed_pos = transform.revert(position);
         // const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform).scale;
-        const uuid id = m_registry.get<IDComponent>(*it).id();
+        const uuid id = entity.id();
 
         bool has_fill = false;
         bool has_stroke = false;
@@ -191,19 +194,19 @@ namespace Graphick::Editor {
         Renderer::Fill fill;
         Renderer::Stroke stroke;
 
-        if (m_registry.all_of<FillComponent>(*it)) {
+        if (entity.has_component<FillComponent>()) {
           has_fill = true;
-          auto& fill_component = m_registry.get<FillComponent>(*it);
+          auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
 
-          fill = Renderer::Fill{ fill_component.fill_TEMP().color, fill_component.fill_TEMP().rule, 0.0f };
+          fill = Renderer::Fill{ fill_component.color, fill_component.rule, 0.0f };
         }
 
-        if (m_registry.all_of<StrokeComponent>(*it)) {
+        if (entity.has_component<StrokeComponent>()) {
           has_stroke = true;
-          auto& stroke_component = m_registry.get<StrokeComponent>(*it);
+          auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
 
           // TODO: operator StrokeComponent::Renderer::Stroke()
-          stroke = Renderer::Stroke{ stroke_component.stroke_TEMP().color, stroke_component.stroke_TEMP().cap, stroke_component.stroke_TEMP().join, stroke_component.stroke_TEMP().width, stroke_component.stroke_TEMP().miter_limit, 0.0f };
+          stroke = Renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0.0f };
         }
 
         // if (path.is_point_inside_path(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {

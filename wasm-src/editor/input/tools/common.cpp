@@ -5,8 +5,6 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
-#include "../../../history/values.h"
-
 #include "../../../math/math.h"
 #include "../../../math/matrix.h"
 
@@ -199,7 +197,7 @@ namespace Graphick::Editor::Input {
   bool Manipulator::on_pointer_down(const float threshold) {
     m_start_transform = transform();
     m_threshold = threshold;
-    m_cache.clear();
+    // m_cache.clear();
 
     if (!m_active) {
       m_active_handle = HandleNone;
@@ -264,7 +262,7 @@ namespace Graphick::Editor::Input {
             Entity entity = scene.get_entity(id);
 
             if (entity.has_component<TransformComponent>()) {
-              //m_cache.push_back(entity.get_component<TransformComponent>()._value());
+              m_cache.push_back(entity.get_component<TransformComponent>());
             }
           }
         }
@@ -290,9 +288,9 @@ namespace Graphick::Editor::Input {
     m_active_handle = HandleNone;
     m_in_use = false;
 
-    for (Graphick::History::Mat2x3Value* matrix : m_cache) {
-      matrix->apply();
-    }
+    // for (Graphick::History::Mat2x3Value* matrix : m_cache) {
+    //   matrix->apply();
+    // }
 
     m_cache.clear();
 
@@ -376,9 +374,23 @@ namespace Graphick::Editor::Input {
 
     update_positions(new_bounding_rect);
 
-    for (Graphick::History::Mat2x3Value* matrix : m_cache) {
-      matrix->set_delta(mat2x3{ 0.0f });
-      matrix->scale(center, magnitude);
+    Scene& scene = Editor::scene();
+    auto& selected = scene.selection.selected();
+
+    size_t i = 0;
+
+    for (const auto& [id, _] : selected) {
+      if (scene.has_entity(id)) {
+        Entity entity = scene.get_entity(id);
+
+        if (entity.has_component<TransformComponent>()) {
+          TransformComponent transform = entity.get_component<TransformComponent>();
+
+          transform.set(Math::scale(m_cache[i], center, magnitude));
+        }
+      }
+
+      i++;
     }
   }
 
@@ -396,9 +408,23 @@ namespace Graphick::Editor::Input {
 
     update_positions(new_bounding_rect);
 
-    for (Graphick::History::Mat2x3Value* matrix : m_cache) {
-      matrix->set_delta(mat2x3{ 0.0f });
-      matrix->rotate(center, sin_angle, cos_angle);
+    Scene& scene = Editor::scene();
+    auto& selected = scene.selection.selected();
+
+    size_t i = 0;
+
+    for (const auto& [id, _] : selected) {
+      if (scene.has_entity(id)) {
+        Entity entity = scene.get_entity(id);
+
+        if (entity.has_component<TransformComponent>()) {
+          TransformComponent transform = entity.get_component<TransformComponent>();
+
+          transform.set(Math::rotate(m_cache[i], center, sin_angle, cos_angle));
+        }
+      }
+
+      i++;
     }
   }
 

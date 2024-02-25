@@ -19,8 +19,8 @@ namespace Graphick::Editor {
   if (decoder.end_of_data()) return; \
   component_id = decoder.component_id(); }
 
-#define ENCODE_COMPONENT(component_type) if (auto handle = m_scene->m_registry.try_get<component_type>(m_handle); handle) { \
-  handle->encode(data); }
+#define ENCODE_COMPONENT(component_type) if (auto handle = m_scene->m_registry.try_get<component_type::Data>(m_handle); handle) { \
+  component_type(this, handle).encode(data); }
 
 #define REMOVE_COMPONENT(component_type) if (component_id == component_type::component_id) { \
   remove<component_type>(); }
@@ -61,17 +61,7 @@ namespace Graphick::Editor {
     DECODE_COMPONENT(TagComponent);
     DECODE_COMPONENT(CategoryComponent);
     DECODE_COMPONENT(PathComponent);
-
-    if (component_id == TransformComponent::component_id) {
-      add<TransformComponent>(decoder);
-
-      if (decoder.end_of_data()) return;
-      component_id = decoder.component_id();
-    } else if (full_entity) {
-      add<TransformComponent>();
-    }
-
-    //DECODE_COMPONENT_WITH_DATA(TransformComponent, id(), decoder, has_component<PathComponent>() ? &get_component<PathComponent>() : nullptr);
+    DECODE_COMPONENT(TransformComponent);
     DECODE_COMPONENT(StrokeComponent);
     DECODE_COMPONENT(FillComponent);
   }
@@ -100,12 +90,12 @@ namespace Graphick::Editor {
     if (decoder.end_of_data()) return;
 
     switch (component_id) {
-      // MODIFY_COMPONENT(TagComponent);
-      // MODIFY_COMPONENT(CategoryComponent);
-      // MODIFY_COMPONENT(PathComponent);
-      // MODIFY_COMPONENT(TransformComponent);
-      // MODIFY_COMPONENT(StrokeComponent);
-      // MODIFY_COMPONENT(FillComponent);
+      MODIFY_COMPONENT(TagComponent);
+      MODIFY_COMPONENT(CategoryComponent);
+      MODIFY_COMPONENT(PathComponent);
+      MODIFY_COMPONENT(TransformComponent);
+      MODIFY_COMPONENT(StrokeComponent);
+      MODIFY_COMPONENT(FillComponent);
     }
   }
 

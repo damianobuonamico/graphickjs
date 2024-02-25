@@ -253,7 +253,7 @@ namespace Graphick::Editor::Input {
      */
     void on_rotate_pointer_move();
   private:
-    std::vector<Graphick::History::Mat2x3Value*> m_cache;   /* The cache of the transform matrices. */
+    std::vector<mat2x3> m_cache;                  /* The cache of the transform matrices. */
     vec2 m_handles[HandleNone];                   /* The positions of the handles. */
     float m_threshold = 0.0f;                     /* The virtual size of the handles. */
 

@@ -45,7 +45,14 @@ namespace Graphick::Editor {
      * @param optimize Whether to skip encoding if the component is in a default state. Default is true.
      * @return A reference to the encoded data.
      */
-    virtual io::EncodedData& encode(io::EncodedData& data, const bool optimize = true) const = 0;
+    virtual io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const = 0;
+  protected:
+    /**
+     * @brief Modifies the underlying data of the component.
+     *
+     * @param decoder A diff of the modified component's data.
+     */
+    virtual void modify(io::DataDecoder& decoder) = 0;
   protected:
     const Entity* m_entity;    /* A pointer to the entity this component belongs to. */
   };
@@ -102,7 +109,14 @@ namespace Graphick::Editor {
      * @param optimize Whether to skip encoding if the component is in a default state. Default is true.
      * @return A reference to the encoded data.
      */
-    io::EncodedData& encode(io::EncodedData& data, const bool optimize = true) const override;
+    io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+  private:
+    /**
+     * @brief An IDComponent cannot be modified.
+     *
+     * @param decoder A diff of the modified component's data.
+     */
+    inline void modify(io::DataDecoder& decoder) override {};
   private:
     Data* m_data;    /* The actual component data. */
   };
@@ -159,9 +173,18 @@ namespace Graphick::Editor {
      * @param optimize Whether to skip encoding if the component is in a default state. Default is true.
      * @return A reference to the encoded data.
      */
-    io::EncodedData& encode(io::EncodedData& data, const bool optimize = true) const override;
+    io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+  private:
+    /**
+     * @brief Modifies the underlying data of the component.
+     *
+     * @param decoder A diff of the modified component's data.
+     */
+    void modify(io::DataDecoder& decoder) override;
   private:
     Data* m_data;    /* The actual component data. */
+  private:
+    friend class Entity;
   };
 
   /**
@@ -230,9 +253,18 @@ namespace Graphick::Editor {
      * @param optimize Whether to skip encoding if the component is in a default state. Default is true.
      * @return A reference to the encoded data.
      */
-    io::EncodedData& encode(io::EncodedData& data, const bool optimize = true) const override;
+    io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+  private:
+    /**
+     * @brief Modifies the underlying data of the component.
+     *
+     * @param decoder A diff of the modified component's data.
+     */
+    void modify(io::DataDecoder& decoder) override;
   private:
     Data* m_data;    /* The actual component data. */
+  private:
+    friend class Entity;
   };
 
   /**
@@ -279,9 +311,18 @@ namespace Graphick::Editor {
      * @param optimize Whether to skip encoding if the component is in a default state. Default is true.
      * @return A reference to the encoded data.
      */
-    io::EncodedData& encode(io::EncodedData& data, const bool optimize = true) const override;
+    io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+  private:
+    /**
+     * @brief Modifies the underlying data of the component.
+     *
+     * @param decoder A diff of the modified component's data.
+     */
+    void modify(io::DataDecoder& decoder) override;
   private:
     Data* m_data;    /* The actual component data. */
+  private:
+    friend class Entity;
   };
 
   /**
@@ -360,7 +401,7 @@ namespace Graphick::Editor {
      * @param point The point to transform.
      * @return The transformed point.
      */
-    inline vec2 transform(vec2 point) const { return m_data->matrix * point; }
+    inline vec2 transform(const vec2 point) const { return m_data->matrix * point; }
 
     /**
      * @brief Reverts a point using the inverse of the transformation matrix.
@@ -368,28 +409,35 @@ namespace Graphick::Editor {
      * @param point The point to revert.
      * @return The reverted point.
      */
-    vec2 revert(vec2 point) const;
+    vec2 revert(const vec2 point) const;
 
     /**
      * @brief Translates the entity by a given delta.
      *
      * @param delta The translation delta.
      */
-    void translate(vec2 delta);
+    void translate(const vec2 delta);
 
     /**
      * @brief Scales the entity by a given delta.
      *
      * @param delta The scale delta.
      */
-    inline void scale(vec2 delta);
+    void scale(const vec2 delta);
 
     /**
      * @brief Rotates the entity by a given delta.
      *
      * @param delta The rotation delta.
      */
-    inline void rotate(float delta);
+    void rotate(const float delta);
+
+    /**
+     * @brief Sets the transformation matrix of the entity.
+     *
+     * @param matrix The new transformation matrix.
+     */
+    void set(const mat2x3 matrix);
 
     /**
      * @brief Encodes the component in binary format.
@@ -398,11 +446,20 @@ namespace Graphick::Editor {
      * @param optimize Whether to skip encoding if the component is in a default state. Default is true.
      * @return A reference to the encoded data.
      */
-    io::EncodedData& encode(io::EncodedData& data, const bool optimize = true) const override;
+    io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+  private:
+    /**
+     * @brief Modifies the underlying data of the component.
+     *
+     * @param decoder A diff of the modified component's data.
+     */
+    void modify(io::DataDecoder& decoder);
   private:
     Data* m_data;                           /* The actual component data. */
 
     const PathComponentData* m_path_ptr;    /* A pointer to the path component of the entity, can be nullptr if the entity is not an element. */
+  private:
+    friend class Entity;
   };
 
   /**
@@ -456,9 +513,18 @@ namespace Graphick::Editor {
      * @param optimize Whether to skip encoding if the component is in a default state. Default is true.
      * @return A reference to the encoded data.
      */
-    io::EncodedData& encode(io::EncodedData& data, const bool optimize = true) const override;
+    io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+  private:
+    /**
+     * @brief Modifies the underlying data of the component.
+     *
+     * @param decoder A diff of the modified component's data.
+     */
+    void modify(io::DataDecoder& decoder) override;
   private:
     Data* m_data;    /* The actual component data. */
+  private:
+    friend class Entity;
   };
 
   /**
@@ -508,9 +574,18 @@ namespace Graphick::Editor {
      * @param optimize Whether to skip encoding if the component is in a default state. Default is true.
      * @return A reference to the encoded data.
      */
-    io::EncodedData& encode(io::EncodedData& data, const bool optimize = true) const override;
+    io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+  private:
+    /**
+     * @brief Modifies the underlying data of the component.
+     *
+     * @param decoder A diff of the modified component's data.
+     */
+    void modify(io::DataDecoder& decoder) override;
   private:
     Data* m_data;    /* The actual component data. */
+  private:
+    friend class Entity;
   };
 
 }
