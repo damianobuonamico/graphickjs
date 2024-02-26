@@ -370,6 +370,33 @@ namespace Graphick::Renderer::Geometry {
     size_t size() const;
 
     /**
+     * @brief Return the number of points in the path.
+     *
+     * @return The number of points in the path.
+     */
+    inline size_t points_size() const { return m_points.size(); }
+
+    /**
+     * @brief Checks whether the given point is a vertex or not.
+     *
+     * A point is considered a vertex if it is the destination of a command.
+     *
+     * @param point_index The index of the point to check.
+     * @return true if the point is a vertex, false otherwise.
+     */
+    bool is_vertex(const size_t point_index) const;
+
+    /**
+     * @brief Checks whether the given point is a handle or not.
+     *
+     * A point is considered a handle if it is not a vertex, i.e. it is a control point of a curve.
+     *
+     * @param point_index The index of the point to check.
+     * @return true if the point is a handle, false otherwise.
+     */
+    inline bool is_handle(const size_t point_index) const { return !is_vertex(point_index); }
+
+    /**
      * @brief Checks whether the path is closed or not.
      *
      * @param move_index The index of the move command corresponding to the sub-path to check.
@@ -500,9 +527,10 @@ namespace Graphick::Renderer::Geometry {
      * @param transform The transformation matrix to apply to the path.
      * @param threshold The threshold to use for the check.
      * @param zoom The zoom level to use for the check.
+     * @param deep_search Whether to include handles in the search or not.
      * @return true if the point is inside the path, false otherwise.
      */
-    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
+    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0, const bool depp_search = false) const;
 
     /**
      * @brief Checks whether the given point is inside the specified segment of the path or not.
@@ -513,9 +541,22 @@ namespace Graphick::Renderer::Geometry {
      * @param transform The transformation matrix to apply to the path.
      * @param threshold The threshold to use for the check.
      * @param zoom The zoom level to use for the check.
-     * @return true if the point is inside the path, false otherwise.
+     * @return true if the point is near the segment, false otherwise.
      */
     bool is_point_inside_segment(const size_t segment_index, const vec2 point, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
+
+    /**
+     * @brief Checks whether the given point is inside the specified path's point or not.
+     *
+     * A point can be either a vertex or a handle, to check use the is_vertex() or is_handle() methods.
+     *
+     * @param point_index The index of the point to check.
+     * @param point The point to check.
+     * @param transform The transformation matrix to apply to the path.
+     * @param threshold The threshold to use for the check.
+     * @return true if the two points are near each other, false otherwise.
+    */
+    bool is_point_inside_point(const size_t point_index, const vec2 point, const mat2x3& transform, const float threshold = 0.0f) const;
 
     /**
      * @brief Encodes the path to a list of bytes.

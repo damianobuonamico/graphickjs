@@ -86,6 +86,26 @@ namespace Graphick::Editor::Input {
       // }
     } else {
       console::log("size", path.data().size());
+      for (size_t i = 0; i < path.data().points_size(); i++) {
+        if (path.data().is_point_inside_point(i, position, transform, threshold)) {
+          m_segment = -1;
+
+          if (path.data().is_vertex(i)) {
+            console::log("HoverState::set_hovered: vertex.");
+            m_type = HoverType::Vertex;
+            m_vertex = i;
+            m_handle = -1;
+          } else {
+            console::log("HoverState::set_hovered: handle.");
+            m_type = HoverType::Handle;
+            m_vertex = -1;
+            m_handle = i;
+          }
+
+          return;
+        }
+      }
+
       for (size_t i = 0; i < path.data().size(); i++) {
         if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom)) {
           console::log("HoverState::set_hovered: segment.");

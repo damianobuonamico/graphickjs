@@ -211,7 +211,7 @@ namespace Graphick::Editor {
         }
 
         // if (path.is_point_inside_path(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {
-        if (path.is_point_inside_path(position, has_fill ? &fill : nullptr, has_stroke ? &stroke : nullptr, transform, threshold, zoom)) {
+        if (path.is_point_inside_path(position, has_fill ? &fill : nullptr, has_stroke ? &stroke : nullptr, transform, threshold, zoom, deep_search && selection.has(id))) {
           return id;
         }
       }

@@ -738,7 +738,7 @@ namespace Graphick::Renderer {
   void Renderer::add_vertex_instances(const Geometry::Path& path, const mat2x3& transform) {
     Editor::Scene& scene = Editor::Editor::scene();
 
-    vec2 last;
+    vec2 last = { 0.0f, 0.0f };
 
     path.for_each(
       [&](const vec2 p0) {
@@ -765,14 +765,14 @@ namespace Graphick::Renderer {
         add_white_square_instance(p);
 
         if (p1 != p2) {
-          vec2 p1 = transform * p1;
-          add_circle_instance(p1);
+          vec2 h = transform * p1;
+          add_circle_instance(h);
           add_linear_segment_instance(last, p1);
         }
 
         if (p2 != p3) {
-          vec2 p2 = transform * p2;
-          add_circle_instance(p2);
+          vec2 h = transform * p2;
+          add_circle_instance(h);
           add_linear_segment_instance(p2, p3);
         }
 

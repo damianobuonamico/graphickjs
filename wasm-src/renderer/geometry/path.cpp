@@ -129,7 +129,7 @@ namespace Graphick::Renderer::Geometry {
         } else if (i == index) {
           break;
         }
-        
+
         switch (command) {
         case Command::Line:
           m_point_index += 1;
@@ -141,7 +141,7 @@ namespace Graphick::Renderer::Geometry {
           m_point_index += 3;
           break;
         }
-        
+
         i++;
         m_index += 1;
       }
@@ -626,6 +626,33 @@ namespace Graphick::Renderer::Geometry {
     return size;
   }
 
+  bool Path::is_vertex(const size_t point_index) const {
+    if (point_index == 0) return true;
+
+    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      if (point_i > point_index) return false;
+
+      switch (get_command(i)) {
+      case Command::Move:
+      case Command::Line:
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        point_i += 3;
+        break;
+      }
+
+      if (point_i - 1 == point_index) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   bool Path::closed(const size_t move_index) const {
     size_t last_point = 0;
     size_t move_i = 0;
@@ -1050,7 +1077,7 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  bool Path::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom) const {
+  bool Path::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom, const bool deep_search) const {
     GK_TOTAL("Path::is_point_inside_path");
 
     const Math::rect bounds = approx_bounding_rect();
@@ -1096,6 +1123,14 @@ namespace Graphick::Renderer::Geometry {
 
       if (winding != 0) {
         return true;
+      }
+    }
+
+    if (deep_search) {
+      for (size_t i = 0; i < m_points.size(); i++) {
+        if (Math::is_point_in_circle(point, transform * m_points[i], threshold)) {
+          return true;
+        }
       }
     }
 
@@ -1145,6 +1180,64 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return false;
+  }
+
+  bool Path::is_point_inside_point(const size_t point_index, const vec2 point, const mat2x3& transform, const float threshold) const {
+    const vec2 p = transform * m_points[point_index];
+
+    if (Math::is_point_in_circle(point, p, threshold)) {
+      if (point_index == 0) return true;
+
+      for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+        switch (get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          if (point_i == point_index) {
+            return true;
+          }
+
+          point_i += 1;
+
+          break;
+        case Command::Quadratic:
+          if (point_i == point_index) {
+            if (m_points[point_i] == m_points[point_i - 1] || m_points[point_i] == m_points[point_i + 1]) {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 1 == point_index) {
+            return true;
+          }
+
+          point_i += 2;
+
+          break;
+        case Command::Cubic:
+          if (point_i == point_index) {
+            if (m_points[point_i] == m_points[point_i - 1] || m_points[point_i] == m_points[point_i + 2]) {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 1 == point_index) {
+            if (m_points[point_i + 1] == m_points[point_i - 1] || m_points[point_i + 1] == m_points[point_i + 2]) {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 2 == point_index) {
+            return true;
+          }
+
+          point_i += 3;
+
+          break;
+        }
+      }
+
+      return true;
+    }
   }
 
   std::vector<uint8_t> Path::encode() const {

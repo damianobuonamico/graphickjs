@@ -199,24 +199,35 @@ int main() {
   // Graphick::Renderer::Geometry::Path& path1 = test_entity1.get_component<Graphick::Editor::PathComponent>().path;
 
   // path.move_to({ 360.0f, 20.0f });
-  path1.move_to({ 0.0f, 0.0f });
-  path1.line_to({ 0.0f, -50.0f });
-  path1.line_to({ 50.0f, -40.0f });
-  // path.line_to({ 200.0f, -50.0f });
-  // path.line_to({ 300.0f, -20.0f });
-  // path.line_to({ 350.0f, -20.0f });
-  // path.line_to({ 380.0f, -40.0f });
-  path1.close();
+  // path1.move_to({ 0.0f, 0.0f });
+  // path1.line_to({ 0.0f, -50.0f });
+  // path1.line_to({ 50.0f, -40.0f });
+  // // path.line_to({ 200.0f, -50.0f });
+  // // path.line_to({ 300.0f, -20.0f });
+  // // path.line_to({ 350.0f, -20.0f });
+  // // path.line_to({ 380.0f, -40.0f });
+  // path1.close();
 
-  path1.move_to({ 300.0f, 100.0f });
-  path1.line_to({ 350.0f, 200.0f });
-  path1.line_to({ 250.0f, 200.0f });
-  path1.close();
+  // path1.move_to({ 300.0f, 100.0f });
+  // path1.line_to({ 350.0f, 200.0f });
+  // path1.line_to({ 250.0f, 200.0f });
+  // path1.close();
 
-  path1.move_to({ 500.0f, 100.0f });
-  path1.line_to({ 550.0f, 200.0f });
-  path1.line_to({ 450.0f, 200.0f });
-  path1.close();
+  // path1.move_to({ 500.0f, 100.0f });
+  // path1.line_to({ 550.0f, 200.0f });
+  // path1.line_to({ 450.0f, 200.0f });
+  // path1.close();
+
+  // TODO: handle case of multiple contours overlapping
+  // TODO: fix outlines when zooming in
+  path1.move_to({ 230.0f, 324.0f });
+  path1.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Handled
+
+  path1.move_to({ 221.0f, 718.0f });
+  path1.cubic_to({ 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f }); // Handled
+
+  path1.move_to({ 295.0f, 343.0f });
+  path1.cubic_to({ 436.0f, 203.0f }, { 540.0f, 323.0f }, { 540.0f, 323.0f }); // Handled
 
   Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element(path1);
 
