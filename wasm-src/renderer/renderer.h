@@ -14,9 +14,6 @@ namespace Graphick::Renderer {
   namespace Geometry {
     class Path;
   }
-  namespace Geometry::Internal {
-    class PathInternal;
-  }
 
   class Renderer {
   public:
@@ -32,8 +29,7 @@ namespace Graphick::Renderer {
     static void draw(const Geometry::Path& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform);
     static void draw(const Geometry::Path& path, const Stroke& stroke, const mat2x3& transform);
     static void draw(const Geometry::Path& path, const Fill& fill, const mat2x3& transform);
-    static void draw_outline(const uuid id, const Geometry::Path& path, const mat2x3& transform = {}, bool draw_vertices = false);
-    static void draw_outline(const Geometry::Internal::PathInternal& path, const mat2x3& transform = {});
+    static void draw_outline(const Geometry::Path& path, const mat2x3& transform = {}, bool draw_vertices = false);
     static void draw_outline(const Geometry::Contour& contour, const mat2x3& transform = {}, const vec4& color = vec4{ 0.17f, 0.71f, 0.90f, 1.0f });
 
     static void draw_square(const vec2 position, const float radius, const mat2x3& transform = {});
@@ -54,10 +50,9 @@ namespace Graphick::Renderer {
     void begin_instanced_renderers();
 
     void add_line_instances(const Geometry::Path& path, const mat2x3& transform);
-    void add_line_instances(const Geometry::Internal::PathInternal& path, const mat2x3& transform);
     void add_linear_segment_instance(const vec2 p0, const vec2 p3);
     void add_cubic_segment_instance(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3);
-    void add_vertex_instances(const uuid id, const Geometry::Path& path, const mat2x3& transform);
+    void add_vertex_instances(const Geometry::Path& path, const mat2x3& transform);
     void add_square_instance(const vec2 position);
     void add_white_square_instance(const vec2 position);
     void add_circle_instance(const vec2 position);

@@ -17,15 +17,16 @@ namespace Graphick::Editor::Input {
   DirectSelectTool::DirectSelectTool() : Tool(ToolType::DirectSelect, CategoryDirect) {}
 
   void DirectSelectTool::on_pointer_down() {
-    m_should_evaluate_selection = false;
     m_is_entity_added_to_selection = false;
+    m_should_evaluate_selection = false;
     m_dragging_occurred = false;
     m_mode = Mode::None;
     m_entity = 0;
-    m_vertex.reset();
-    m_handle.reset();
-    m_vector_cache.clear();
-    m_matrix_cache.clear();
+
+    // m_vertex.reset();
+    // m_handle.reset();
+    // m_vector_cache.clear();
+    // m_matrix_cache.clear();
 
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
@@ -36,8 +37,8 @@ namespace Graphick::Editor::Input {
     }
 
     m_entity = entity->id();
-    m_vertex = InputManager::hover.vertex();
-    m_handle = InputManager::hover.handle();
+    // m_vertex = InputManager::hover.vertex();
+    // m_handle = InputManager::hover.handle();
 
     if (InputManager::keys.alt && m_entity && hover_type != HoverState::HoverType::Handle) {
       on_duplicate_pointer_down();
@@ -123,6 +124,7 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::populate_cache() {
+#if 0
     Scene& scene = Editor::scene();
 
     for (auto& [id, entry] : scene.selection.selected()) {
@@ -132,7 +134,6 @@ namespace Graphick::Editor::Input {
       // History::Mat2x3Value* transform = entity.get_component<TransformComponent>()._value();
 
       if (entry.type == Selection::SelectionEntry::Type::Element && entity.is_element() && !((Selection::SelectionElementEntry&)(entry)).full()) {
-#if 0
         Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
 
         m_transform_cache.emplace_back(transform, vec2{ 0.0f });
@@ -147,14 +148,15 @@ namespace Graphick::Editor::Input {
           if (handles.in_handle) m_vector_cache.emplace_back(handles.in_handle, i);
           if (handles.out_handle) m_vector_cache.emplace_back(handles.out_handle, i);
         }
-#endif
       } else if (entity.has_component<TransformComponent>()) {
         // m_matrix_cache.push_back(transform);
       }
     }
+#endif
   }
 
   void DirectSelectTool::translate_selected() {
+#if 0
     for (size_t i = 0; i < m_transform_cache.size(); i++) {
       auto& [transform, _] = m_transform_cache[i];
       mat2x3 matrix = m_transform_cache[i].first->inverse();
@@ -169,9 +171,11 @@ namespace Graphick::Editor::Input {
     for (Graphick::History::Mat2x3Value* value : m_matrix_cache) {
       value->translate(InputManager::pointer.scene.delta);
     }
+#endif
   }
 
   void DirectSelectTool::apply_selected() {
+#if 0
     for (auto& [value, _] : m_vector_cache) {
       value->apply();
     }
@@ -179,6 +183,7 @@ namespace Graphick::Editor::Input {
     for (Graphick::History::Mat2x3Value* value : m_matrix_cache) {
       value->apply();
     }
+#endif
   }
 
   /* -- on_pointer_down -- */
@@ -189,7 +194,6 @@ namespace Graphick::Editor::Input {
     }
 
     m_selection_rect.set(InputManager::pointer.scene.position);
-
     m_mode = Mode::None;
   }
 
@@ -222,7 +226,7 @@ namespace Graphick::Editor::Input {
       m_is_entity_added_to_selection = true;
     }
 
-    populate_cache();
+    // populate_cache();
 
     m_mode = Mode::Entity;
   }
@@ -237,7 +241,7 @@ namespace Graphick::Editor::Input {
       m_is_entity_added_to_selection = true;
     }
 
-    populate_cache();
+    // populate_cache();
 
     m_mode = Mode::Element;
   }
@@ -282,6 +286,8 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_down() {
+#if 0
+
     Scene& scene = Editor::scene();
     uuid id = m_vertex->lock()->id;
 
@@ -295,6 +301,7 @@ namespace Graphick::Editor::Input {
     populate_cache();
 
     m_mode = Mode::Vertex;
+#endif
   }
 
   void DirectSelectTool::on_handle_pointer_down() {
@@ -305,11 +312,10 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_none_pointer_move() {
     if (m_selection_rect.active()) {
+      Scene& scene = Editor::scene();
+
       m_selection_rect.size(InputManager::pointer.scene.delta);
-
-      rect selection_rect = m_selection_rect.bounding_rect();
-
-      Editor::scene().selection.temp_select(Editor::scene().entities_in(selection_rect, true));
+      scene.selection.temp_select(scene.entities_in(m_selection_rect.bounding_rect()));
     }
   }
 
@@ -318,11 +324,25 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_entity_pointer_move() {
-    translate_selected();
+    // translate_selected();
+
+    vec2 movement = InputManager::pointer.scene.movement;
+    // TODO: Snapping
+
+    Scene& scene = Editor::scene();
+
+    for (auto& [id, _] : scene.selection.selected()) {
+      Entity entity = scene.get_entity(id);
+      // TODO: all entities should have transform component
+      if (!entity.has_component<TransformComponent>()) continue;
+
+      entity.get_component<TransformComponent>().translate(movement);
+      // entity.get_component<TransformComponent>().position.set_delta(delta);
+    }
   }
 
   void DirectSelectTool::on_element_pointer_move() {
-    translate_selected();
+    on_entity_pointer_move();
   }
 
   // TODO: test with asymmetric handles
@@ -462,11 +482,11 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_entity_pointer_up() {
+    if (m_dragging_occurred) return;
+
     Scene& scene = Editor::scene();
 
-    if (m_dragging_occurred) {
-      apply_selected();
-    } else if (scene.selection.has(m_entity) && !m_is_entity_added_to_selection) {
+    if (scene.selection.has(m_entity) && !m_is_entity_added_to_selection) {
       if (InputManager::keys.shift) {
         scene.selection.deselect(m_entity);
       } else {
@@ -511,6 +531,7 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_up() {
+#if 0
     Scene& scene = Editor::scene();
     uuid id = m_vertex->lock()->id;
 
@@ -527,6 +548,7 @@ namespace Graphick::Editor::Input {
         scene.selection.select_vertex(id, m_entity);
       }
     }
+#endif
   }
 
   void DirectSelectTool::on_handle_pointer_up() {

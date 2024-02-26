@@ -6,22 +6,13 @@
 
 #include "../keys.h"
 
-#include "../../../renderer/geometry/internal.h"
+#include "../../../renderer/geometry/path.h"
 
 #include "../../../math/mat2x3.h"
 
-namespace Graphick::Renderer::Geometry {
-  class ControlPoint;
-  class Path;
-};
-
-namespace Graphick::History {
-  class Mat2x3Value;
-  class Vec2Value;
-}
-
 namespace Graphick::Editor::Input {
 
+#if 0
   /**
    * @brief Moves a control point of a path using the pen tool.
    *
@@ -35,6 +26,7 @@ namespace Graphick::Editor::Input {
    * @param in_use_handle A pointer to a History::Vec2Value object that will be set to the handle that is currently in use (out handle), default is nullptr.
    */
   void handle_pointer_move(Renderer::Geometry::Path& path, Renderer::Geometry::ControlPoint& vertex, const mat2x3& transform, bool create_handles = false, bool keep_in_handle_length = true, bool swap_in_out = false, int* direction = nullptr, Graphick::History::Vec2Value* in_use_handle = nullptr);
+#endif
 
   /**
    * @brief A class representing a selection rectangle.
@@ -90,9 +82,9 @@ namespace Graphick::Editor::Input {
     /**
      * @brief Returns the path of the selection rectangle.
      *
-     * @return A Renderer::Geometry::Internal::PathInternal object representing the path of the selection rectangle.
+     * @return A Renderer::Geometry::Path object representing the path of the selection rectangle.
      */
-    inline Renderer::Geometry::Internal::PathInternal path() const { return m_path; }
+    inline const Renderer::Geometry::Path& path() const { return m_path; }
 
     /**
      * @brief Returns the transform matrix of the selection rectangle.
@@ -134,15 +126,15 @@ namespace Graphick::Editor::Input {
      */
     void reset();
   protected:
-    bool m_dashed = false;                                /* Whether should be dashed or not. */
-    bool m_active = false;                                /* Whether is active or not. */
+    bool m_dashed = false;              /* Whether should be dashed or not. */
+    bool m_active = false;              /* Whether is active or not. */
 
-    vec2 m_position;                                      /* Position of the selection rectangle. */
-    vec2 m_anchor_position;                               /* Absolute anchor position of the selection rectangle. */
-    vec2 m_size = { 1.0f, 1.0f };                         /* Size of the selection rectangle. */
-    float m_angle = 0.0f;                                 /* Angle of the selection rectangle. */
+    vec2 m_position;                    /* Position of the selection rectangle. */
+    vec2 m_anchor_position;             /* Absolute anchor position of the selection rectangle. */
+    vec2 m_size = { 1.0f, 1.0f };       /* Size of the selection rectangle. */
+    float m_angle = 0.0f;               /* Angle of the selection rectangle. */
 
-    Renderer::Geometry::Internal::PathInternal m_path;    /* The path to render. */
+    Renderer::Geometry::Path m_path;    /* The path to render. */
   };
 
   class Manipulator : public SelectionRect {

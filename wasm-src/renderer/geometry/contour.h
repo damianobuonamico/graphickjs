@@ -17,16 +17,16 @@ namespace Graphick::Renderer::Geometry {
   public:
     using Parameterization = std::vector<std::pair<dvec2, dvec2>>;
   public:
-    Contour(const double tolerance = GK_PATH_TOLERANCE) : m_tolerance(tolerance) {}
-
     std::vector<f24x8x2> points;
+  public:
+    Contour(const double tolerance = GK_PATH_TOLERANCE) : m_tolerance(tolerance) {}
 
     void move_to(const f24x8x2 p0);
     // TODO: test const reference vs value
     void move_to(const dvec2 p0);
 
-    void line_to(const f24x8x2 p3);
-    void line_to(const dvec2 p3);
+    void line_to(const f24x8x2 p1);
+    void line_to(const dvec2 p1);
 
     void cubic_to(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3);
     void cubic_to(const dvec2 p1, const dvec2 p2, const dvec2 p3);
@@ -49,6 +49,22 @@ namespace Graphick::Renderer::Geometry {
   private:
     f24x8x2 m_p0 = { 0, 0 };
     dvec2 m_d_p0 = { 0, 0 };
+    double m_tolerance;
+  };
+
+  class OutlineContour {
+  public:
+    std::vector<dvec2> points;
+  public:
+    OutlineContour(const double tolerance = GK_PATH_TOLERANCE) : m_tolerance(tolerance) {}
+
+    void move_to(const dvec2 p0);
+    void line_to(const dvec2 p1);
+    void cubic_to(const dvec2 p1, const dvec2 p2, const dvec2 p3);
+
+    void close();
+  private:
+    dvec2 m_p0 = { 0, 0 };
     double m_tolerance;
   };
 

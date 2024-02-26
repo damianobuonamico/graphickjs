@@ -162,7 +162,7 @@ namespace Graphick::Editor::Input {
         pointer.scene.position,
         scene.tool_state.active().is_in_category(Tool::CategoryDirect),
         threshold
-      ), pointer.scene.position, scene.tool_state.active().is_in_category(Tool::CategoryDirect), threshold);
+      ), pointer.scene.position, scene.tool_state.active().is_in_category(Tool::CategoryDirect), threshold, scene.viewport.zoom());
     }
   }
 

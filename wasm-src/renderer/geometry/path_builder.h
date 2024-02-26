@@ -31,8 +31,31 @@ namespace Graphick::Renderer::Geometry {
     PathBuilder(const rect& clip, const dmat2x3& transform, const double tolerance);
     ~PathBuilder() = default;
 
-    Drawable fill(const Path& path, const Fill& fill);
-    Drawable stroke(const Path& path, const Stroke& stroke);
+    /**
+     * @brief Generate the outline drawable of a path.
+     *
+     * @param path The path to outline.
+     * @return The drawable.
+     */
+    OutlineDrawable outline(const Path& path) const;
+
+    /**
+     * @brief Generate the fill drawable of a path.
+     *
+     * @param path The path to fill.
+     * @param fill The fill properties.
+     * @return The drawable.
+     */
+    Drawable fill(const Path& path, const Fill& fill) const;
+
+    /**
+     * @brief Generate the stroke drawable of a path.
+     *
+     * @param path The path to stroke.
+     * @param stroke The stroke properties.
+     * @return The drawable.
+     */
+    Drawable stroke(const Path& path, const Stroke& stroke) const;
   private:
     double m_tolerance;            /* The tessellation tolerance. */
     rect m_clip;                   /* The clipping rect. */

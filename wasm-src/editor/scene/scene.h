@@ -79,6 +79,13 @@ namespace Graphick::Editor {
     Entity get_entity(const uuid id);
 
     /**
+     * @brief Returns the entity with the specified unique identifier.
+     *
+     * @return The entity with the specified unique identifier.
+     */
+    const Entity get_entity(const uuid id) const;
+
+    /**
      * @brief Creates a new entity.
      *
      * @param tag The tag of the entity, if empty a default tag will be generated.

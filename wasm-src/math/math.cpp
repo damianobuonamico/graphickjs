@@ -588,6 +588,10 @@ namespace Graphick::Math {
     return sum >= 0.0f;
   }
 
+  rect linear_bounding_rect(const vec2 p0, const vec2 p1) {
+    return { min(p0, p1), max(p0, p1) };
+  }
+
   rect quadratic_bounding_rect(const vec2 p0, const vec2 p1, const vec2 p2) {
     rect bounds = { min(p0, p2), max(p0, p2) };
 

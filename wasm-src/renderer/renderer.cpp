@@ -1,7 +1,7 @@
 #include "renderer.h"
 
 #include "geometry/path.h"
-#include "geometry/internal.h"
+#include "geometry/path_builder.h"
 #include "gpu/allocator.h"
 
 #include "../math/math.h"
@@ -190,16 +190,10 @@ namespace Graphick::Renderer {
     get()->m_tiler.process_fill(path, transform, fill);
   }
 
-  void Renderer::draw_outline(const uuid id, const Geometry::Path& path, const mat2x3& transform, bool draw_vertices) {
+  void Renderer::draw_outline(const Geometry::Path& path, const mat2x3& transform, bool draw_vertices) {
     if (path.vacant()) return;
     get()->add_line_instances(path, transform);
-    if (draw_vertices) get()->add_vertex_instances(id, path, transform);
-  }
-
-  void Renderer::draw_outline(const Geometry::Internal::PathInternal& path, const mat2x3& transform) {
-    if (path.empty()) return;
-
-    get()->add_line_instances(path, transform);
+    if (draw_vertices) get()->add_vertex_instances(path, transform);
   }
 
   void Renderer::draw_outline(const Geometry::Contour& contour, const mat2x3& transform, const vec4& color) {
@@ -684,29 +678,23 @@ namespace Graphick::Renderer {
   void Renderer::add_line_instances(const Geometry::Path& path, const mat2x3& transform) {
     if (path.empty()) return;
 
-    // path.for_each(
-    //   nullptr,
-    //   [this, transform](const vec2 p0, const vec2 p1) {
-    //     this->add_linear_segment_instance(transform * p0, transform * p1);
-    //   },
-    //   nullptr,
-    //   [this, transform](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
-    //     this->add_cubic_segment_instance(transform * p0, transform * p1, transform * p2, transform * p3);
-    //   }
-    // );
-  }
+    rect visible = {
+      m_viewport.position,
+      m_viewport.position + vec2{
+        static_cast<float>(m_viewport.size.x) / m_viewport.zoom,
+        static_cast<float>(m_viewport.size.y) / m_viewport.zoom
+      }
+    };
 
-  void Renderer::add_line_instances(const Geometry::Internal::PathInternal& path, const mat2x3& transform) {
-    OPTICK_EVENT();
+    Geometry::PathBuilder builder{ visible, dmat2x3(transform), GK_PATH_TOLERANCE };
+    OutlineDrawable drawable = builder.outline(path);
 
-    for (const auto& segment : path.segments()) {
-      vec2 p0 = transform * segment.p0();
-      vec2 p3 = transform * segment.p3();
+    for (const auto& contour : drawable.contours) {
+      for (size_t i = 0; i < contour.points.size() - 1; i++) {
+        dvec2 p0 = contour.points[i];
+        dvec2 p1 = contour.points[i + 1];
 
-      if (segment.is_cubic()) {
-        add_cubic_segment_instance(p0, transform * segment.p1(), transform * segment.p2(), p3);
-      } else {
-        add_linear_segment_instance(p0, p3);
+        add_linear_segment_instance(vec2(p0), vec2(p1));
       }
     }
   }
@@ -747,84 +735,124 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Renderer::add_vertex_instances(const uuid id, const Geometry::Path& path, const mat2x3& transform) {
-#if 0
+  void Renderer::add_vertex_instances(const Geometry::Path& path, const mat2x3& transform) {
     Editor::Scene& scene = Editor::Editor::scene();
 
-    vec2 first_pos, last_pos;
+    vec2 last;
 
-    auto in_handle_ptr = path.in_handle_ptr();
-    auto out_handle_ptr = path.out_handle_ptr();
+    path.for_each(
+      [&](const vec2 p0) {
+        vec2 p = transform * p0;
 
-    if (path.empty()) {
-      auto p = path.last().lock();
-      vec2 p_pos = transform * p->get();
+        add_square_instance(p);
+        add_white_square_instance(p);
 
-      add_square_instance(p_pos);
-      if (!scene.selection.has_vertex(p->id, id, true)) {
-        add_white_square_instance(p_pos);
-      }
+        last = p;
+      },
+      [&](const vec2 p1) {
+        vec2 p = transform * p1;
 
-      first_pos = p_pos;
-      last_pos = p_pos;
-    } else {
-      first_pos = transform * path.segments().front().p0();
-      last_pos = transform * path.segments().back().p3();
-    }
+        add_square_instance(p);
+        add_white_square_instance(p);
 
-    if (!path.closed()) {
-      if (in_handle_ptr.has_value()) {
-        vec2 p = transform * in_handle_ptr.value()->get();
+        last = p;
+      },
+      nullptr,
+      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+        vec2 p = transform * p3;
 
-        add_circle_instance(p);
-        add_linear_segment_instance(first_pos, p);
-      }
+        add_square_instance(p);
+        add_white_square_instance(p);
 
-      if (out_handle_ptr.has_value()) {
-        vec2 p = transform * out_handle_ptr.value()->get();
-
-        add_circle_instance(p);
-        add_linear_segment_instance(last_pos, p);
-      }
-    }
-
-    if (path.empty()) return;
-
-    for (const auto& segment : path.segments()) {
-      vec2 p0 = transform * segment->p0();
-      uuid p0_id = segment->p0_id();
-      // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
-
-      add_square_instance(p0);
-      if (!scene.selection.has_vertex(p0_id, id, true)) {
-        add_white_square_instance(p0);
-      }
-
-      if (segment->is_cubic()) {
-        vec2 p1 = transform * segment->p1();
-        vec2 p2 = transform * segment->p2();
-        vec2 p3 = transform * segment->p3();
-
-        if (p1 != p0) {
+        if (p1 != p2) {
+          vec2 p1 = transform * p1;
           add_circle_instance(p1);
-          add_linear_segment_instance(p0, p1);
+          add_linear_segment_instance(last, p1);
         }
+
         if (p2 != p3) {
+          vec2 p2 = transform * p2;
           add_circle_instance(p2);
           add_linear_segment_instance(p2, p3);
         }
-      }
-    }
 
-    if (!path.closed()) {
-      uuid p3_id = path.segments().back().p3_id();
-
-      add_square_instance(last_pos);
-      if (!scene.selection.has_vertex(p3_id, id, true)) {
-        add_white_square_instance(last_pos);
+        last = p;
       }
-    }
-#endif
+    );
+
+    // vec2 first_pos, last_pos;
+
+    // auto in_handle_ptr = path.in_handle_ptr();
+    // auto out_handle_ptr = path.out_handle_ptr();
+
+    // if (path.empty()) {
+    //   auto p = path.last().lock();
+    //   vec2 p_pos = transform * p->get();
+
+    //   add_square_instance(p_pos);
+    //   if (!scene.selection.has_vertex(p->id, id, true)) {
+    //     add_white_square_instance(p_pos);
+    //   }
+
+    //   first_pos = p_pos;
+    //   last_pos = p_pos;
+    // } else {
+    //   first_pos = transform * path.segments().front().p0();
+    //   last_pos = transform * path.segments().back().p3();
+    // }
+
+    // if (!path.closed()) {
+    //   if (in_handle_ptr.has_value()) {
+    //     vec2 p = transform * in_handle_ptr.value()->get();
+
+    //     add_circle_instance(p);
+    //     add_linear_segment_instance(first_pos, p);
+    //   }
+
+    //   if (out_handle_ptr.has_value()) {
+    //     vec2 p = transform * out_handle_ptr.value()->get();
+
+    //     add_circle_instance(p);
+    //     add_linear_segment_instance(last_pos, p);
+    //   }
+    // }
+
+    // if (path.empty()) return;
+
+    // for (const auto& segment : path.segments()) {
+    //   vec2 p0 = transform * segment->p0();
+    //   uuid p0_id = segment->p0_id();
+    //   // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
+
+    //   add_square_instance(p0);
+    //   if (!scene.selection.has_vertex(p0_id, id, true)) {
+    //     add_white_square_instance(p0);
+    //   }
+
+    //   if (segment->is_cubic()) {
+    //     vec2 p1 = transform * segment->p1();
+    //     vec2 p2 = transform * segment->p2();
+    //     vec2 p3 = transform * segment->p3();
+
+    //     if (p1 != p0) {
+    //       add_circle_instance(p1);
+    //       add_linear_segment_instance(p0, p1);
+    //     }
+    //     if (p2 != p3) {
+    //       add_circle_instance(p2);
+    //       add_linear_segment_instance(p2, p3);
+    //     }
+    //   }
+    // }
+
+    // if (!path.closed()) {
+    //   uuid p3_id = path.segments().back().p3_id();
+
+    //   add_square_instance(last_pos);
+    //   if (!scene.selection.has_vertex(p3_id, id, true)) {
+    //     add_white_square_instance(last_pos);
+    //   }
+    // }
   }
 
   void Renderer::add_square_instance(const vec2 position) {

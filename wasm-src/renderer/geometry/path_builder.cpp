@@ -4,6 +4,7 @@
  *
  * @todo fix tiger whiskers
  * @todo fix rect intersection transforming points and then checking (have to implement drect template)
+ * @todo outline visible intersection for optimizing tesselation
  */
 
 #include "path_builder.h"
@@ -53,7 +54,62 @@ namespace Graphick::Renderer::Geometry {
   PathBuilder::PathBuilder(const rect& clip, const dmat2x3& transform, const double tolerance) :
     m_clip(clip), m_transform(transform), m_tolerance(tolerance) {}
 
-  Drawable PathBuilder::fill(const Path& path, const Fill& fill) {
+  OutlineDrawable PathBuilder::outline(const Path& path) const {
+    OutlineDrawable drawable{ 0 };
+    OutlineContour* contour = nullptr;
+    vec2 last_raw;
+
+    path.for_each(
+      [&](const vec2 p0) {
+        dvec2 a = m_transform * dvec2(p0);
+
+        if (contour) contour->close();
+
+        contour = &drawable.contours.emplace_back(m_tolerance);
+        contour->move_to(a);
+
+        last_raw = p0;
+      },
+      [&](const vec2 p1) {
+        dvec2 b = m_transform * dvec2(p1);
+
+        contour->line_to(b);
+
+        last_raw = p1;
+      },
+      nullptr,
+      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+        rect bounds = { last_raw };
+
+        Math::min(bounds.min, p1, bounds.min);
+        Math::min(bounds.min, p2, bounds.min);
+        Math::min(bounds.min, p3, bounds.min);
+
+        Math::max(bounds.max, p1, bounds.max);
+        Math::max(bounds.max, p2, bounds.max);
+        Math::max(bounds.max, p3, bounds.max);
+
+        dvec2 d = m_transform * dvec2(p3);
+
+        if (Math::does_rect_intersect_rect(bounds, m_clip)) {
+          dvec2 b = m_transform * dvec2(p1);
+          dvec2 c = m_transform * dvec2(p2);
+
+          contour->cubic_to(b, c, d);
+        } else {
+          contour->line_to(d);
+        }
+
+        last_raw = p3;
+      }
+    );
+
+    if (contour) contour->close();
+
+    return drawable;
+  }
+
+  Drawable PathBuilder::fill(const Path& path, const Fill& fill) const {
     Drawable drawable{ 0, fill, m_clip };
     Contour* contour = nullptr;
     dvec2 last;
@@ -112,7 +168,7 @@ namespace Graphick::Renderer::Geometry {
     return drawable;
   }
 
-  Drawable PathBuilder::stroke(const Path& path, const Stroke& stroke) {
+  Drawable PathBuilder::stroke(const Path& path, const Stroke& stroke) const {
     Drawable drawable(0, Paint{ stroke.color, FillRule::NonZero, stroke.z_index }, m_clip);
     Contour* contour = nullptr;
 

@@ -300,6 +300,18 @@ namespace Graphick::Editor {
      */
     PathComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
+    /**
+     * @brief Conversion operator to Renderer::Geometry::Path&.
+     */
+    inline operator const Renderer::Geometry::Path& () const { return m_data->path; }
+
+    /**
+     * @brief Returns the path data of the entity.
+     *
+     * @return The path data of the entity.
+     */
+    inline const Renderer::Geometry::Path& data() const { return m_data->path; }
+
     // TEMP
     inline Renderer::Geometry::Path& TEMP_path() { return m_data->path; }
     inline const Renderer::Geometry::Path& TEMP_path() const { return m_data->path; }

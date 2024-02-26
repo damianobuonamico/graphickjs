@@ -81,6 +81,28 @@ namespace Graphick::Renderer::Geometry {
        * @return true if the segment is a point, false otherwise.
        */
       bool is_point() const;
+
+      /**
+       * @brief Returns the bounding rectangle of the segment.
+       *
+       * @return The bounding rectangle of the segment.
+       */
+      Math::rect bounding_rect() const;
+
+      /**
+       * @brief Calculates the bounding rectangle of the segment in the fixed reference system.
+       *
+       * @param transform The transformation matrix to apply to the segment.
+       * @return The bounding rectangle of the segment.
+       */
+      Math::rect bounding_rect(const mat2x3& transform) const;
+
+      /**
+       * @brief Calculates the approximate bounding rectangle of the segment considering all control points as vertices.
+       *
+       * @return The approximate bounding rectangle of the segment.
+       */
+      Math::rect approx_bounding_rect() const;
     };
 
     /**
@@ -103,8 +125,9 @@ namespace Graphick::Renderer::Geometry {
        *
        * @param path The path to iterate over.
        * @param index The start index of the iterator.
+       * @param is_segment_index Whether the index is a segment index or a command index.
        */
-      Iterator(const Path& path, const size_t index);
+      Iterator(const Path& path, const size_t index, const bool is_segment_index = false);
 
       /**
        * @brief Equality, inequality and comparison operators.
@@ -159,7 +182,7 @@ namespace Graphick::Renderer::Geometry {
       using reference = value_type&;
 
       /**
-       * @brief Constructs an iterator over the given path at the given index.
+       * @brief Constructs an iterator over the given path at the given command index.
        *
        * @param path The path to iterate over.
        * @param index The start index of the iterator.
@@ -282,6 +305,14 @@ namespace Graphick::Renderer::Geometry {
     Segment back(const size_t move_index) const;
 
     /**
+     * @brief Returns the ith segment of the path.
+     *
+     * @param index The index of the segment to return.
+     * @return The ith segment of the path.
+     */
+    inline Segment at(const size_t index) const { return *Iterator(*this, index, true); }
+
+    /**
      * @brief Iterates over the commands of the path, calling the given callbacks for each command.
      *
      * @param move_callback The callback to call for each move command.
@@ -336,7 +367,7 @@ namespace Graphick::Renderer::Geometry {
      *
      * @return The number of segments in the path.
      */
-    inline size_t size() const { return (m_commands_size > 0 ? m_commands_size : 1) - 1; }
+    size_t size() const;
 
     /**
      * @brief Checks whether the path is closed or not.
@@ -344,7 +375,7 @@ namespace Graphick::Renderer::Geometry {
      * @param move_index The index of the move command corresponding to the sub-path to check.
      * @return true if the path is closed, false otherwise.
      */
-    bool closed(const size_t move_index) const;
+    bool closed(const size_t move_index = 0) const;
 
     /**
      * @brief Moves the path cursor to the given point.
@@ -474,6 +505,19 @@ namespace Graphick::Renderer::Geometry {
     bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
 
     /**
+     * @brief Checks whether the given point is inside the specified segment of the path or not.
+     *
+     * @param segment_index The index of the segment to check.
+     * @param point The point to check.
+     * @param stroke The stroke of the path, can be nullptr.
+     * @param transform The transformation matrix to apply to the path.
+     * @param threshold The threshold to use for the check.
+     * @param zoom The zoom level to use for the check.
+     * @return true if the point is inside the path, false otherwise.
+     */
+    bool is_point_inside_segment(const size_t segment_index, const vec2 point, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
+
+    /**
      * @brief Encodes the path to a list of bytes.
      *
      * @return The encoded path.
@@ -500,8 +544,6 @@ namespace Graphick::Renderer::Geometry {
     std::vector<uint8_t> m_commands;    /* The commands used to traverse the path. */
 
     size_t m_commands_size = 0;         /* The effective number of commands in the path. */
-  private:
-    friend struct EncodedData;
   };
 
 }

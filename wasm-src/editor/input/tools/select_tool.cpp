@@ -14,28 +14,30 @@ namespace Graphick::Editor::Input {
   SelectTool::SelectTool() : Tool(ToolType::Select, CategoryNone) {}
 
   void SelectTool::on_pointer_down() {
-    m_is_element_added_to_selection = false;
+    m_is_entity_added_to_selection = false;
     m_dragging_occurred = false;
-    m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity()->id() : uuid{ 0 };
+    m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity()->id() : uuid::null;
 
-    if (!InputManager::keys.shift && (m_entity == uuid{ 0 } || !Editor::scene().selection.has(m_entity))) {
-      Editor::scene().selection.clear();
+    Scene& scene = Editor::scene();
+
+    if (!InputManager::keys.shift && (m_entity == uuid::null || !scene.selection.has(m_entity))) {
+      scene.selection.clear();
     }
 
-    if (m_entity != uuid{ 0 }) {
-      if (!Editor::scene().selection.has(m_entity)) {
-        Editor::scene().selection.select(m_entity);
-        m_is_element_added_to_selection = true;
+    if (m_entity != uuid::null) {
+      if (!scene.selection.has(m_entity)) {
+        scene.selection.select(m_entity);
+        m_is_entity_added_to_selection = true;
       }
 
       if (InputManager::keys.alt) {
-        // std::vector<Entity*> entities = Editor::scene().selection.entities();
-        // Editor::scene().selection.clear();
+        // std::vector<Entity*> entities = scene.selection.entities();
+        // scene.selection.clear();
 
         // TODO: Duplication
         // for (Entity* entity : entities) {
-        //   Entity* duplicate = Editor::scene().duplicate(entity);
-        //   if (duplicate) Editor::scene().selection.select(duplicate);
+        //   Entity* duplicate = scene.duplicate(entity);
+        //   if (duplicate) scene.selection.select(duplicate);
         // }
       }
     } else {
@@ -44,12 +46,13 @@ namespace Graphick::Editor::Input {
   }
 
   void SelectTool::on_pointer_move() {
-    if ((m_entity != uuid{ 0 } && Editor::scene().selection.has(m_entity)) || InputManager::keys.alt) {
+    m_dragging_occurred = true;
+
+    if ((m_entity != uuid::null && Editor::scene().selection.has(m_entity)) || InputManager::keys.alt) {
       if (!Editor::scene().selection.empty()) {
         vec2 movement = InputManager::pointer.scene.movement;
         // TODO: Snapping
 
-        m_dragging_occurred = true;
         for (auto& [id, _] : Editor::scene().selection.selected()) {
           Entity entity = Editor::scene().get_entity(id);
           // TODO: all entities should have transform component
@@ -79,15 +82,15 @@ namespace Graphick::Editor::Input {
 
     if (m_dragging_occurred && !Editor::scene().selection.empty()) {
       for (auto& [id, _] : Editor::scene().selection.selected()) {
-        Entity entity = Editor::scene().get_entity(id);
-        if (!entity.has_component<TransformComponent>()) continue;
+        // Entity entity = Editor::scene().get_entity(id);
+        // if (!entity.has_component<TransformComponent>()) continue;
 
         // entity.get_component<TransformComponent>().apply();
       }
       // for (auto& [id, entity] : Editor::scene().selection) {
       //   entity->transform()->position().apply();
       // }
-    } else if (m_entity != uuid{ 0 } && Editor::scene().selection.has(m_entity) && !m_is_element_added_to_selection) {
+    } else if (m_entity != uuid::null && Editor::scene().selection.has(m_entity) && !m_is_entity_added_to_selection) {
       if (InputManager::keys.shift) {
         Editor::scene().selection.deselect(m_entity);
       } else {

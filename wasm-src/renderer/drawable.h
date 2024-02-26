@@ -27,4 +27,11 @@ namespace Graphick::Renderer {
     Drawable(const size_t i, Paint&& paint, const f24x8x4& bounds) : contours(i), paint(paint), bounds(bounds) {}
   };
 
+  struct OutlineDrawable {
+    std::vector<Geometry::OutlineContour> contours;
+
+    OutlineDrawable() = default;
+    OutlineDrawable(const size_t i) : contours(i) {}
+  };
+
 }

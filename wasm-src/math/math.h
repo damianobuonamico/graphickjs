@@ -362,6 +362,15 @@ namespace Graphick::Math {
   bool clockwise(const std::vector<vec2>& points);
 
   /**
+   * @brief Calculates the bounding rectangle of a line.
+   *
+   * @param p0 The first point.
+   * @param p1 The second point.
+   * @return The bounding rectangle.
+   */
+  rect linear_bounding_rect(const vec2 p0, const vec2 p1);
+
+  /**
    * @brief Calculates the bounding rectangle of a quadratic bezier curve.
    *
    * @param p0 The first control point.

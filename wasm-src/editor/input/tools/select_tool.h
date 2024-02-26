@@ -20,9 +20,9 @@ namespace Graphick::Editor::Input {
   private:
     SelectTool();
   private:
+    bool m_is_entity_added_to_selection = false;
     bool m_dragging_occurred = false;
-    bool m_is_element_added_to_selection = false;
-    uuid m_entity = { 0 };
+    uuid m_entity = uuid::null;
 
     SelectionRect m_selection_rect;
   private:

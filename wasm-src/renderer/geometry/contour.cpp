@@ -15,6 +15,8 @@ namespace Graphick::Renderer::Geometry {
   static constexpr double curve_cusp_limit = 1e-3;
   static constexpr double min_angle_tolerance = 0.1;
 
+  /* -- Contour -- */
+
   void Contour::move_to(const f24x8x2 p0) {
     m_p0 = p0;
     points.push_back(p0);
@@ -27,14 +29,14 @@ namespace Graphick::Renderer::Geometry {
     points.push_back(m_p0);
   }
 
-  void Contour::line_to(const f24x8x2 p3) {
-    m_p0 = p3;
-    points.push_back(p3);
+  void Contour::line_to(const f24x8x2 p1) {
+    m_p0 = p1;
+    points.push_back(p1);
   }
 
-  void Contour::line_to(const dvec2 p3) {
-    m_p0 = { Math::double_to_f24x8(p3.x), Math::double_to_f24x8(p3.y) };
-    m_d_p0 = p3;
+  void Contour::line_to(const dvec2 p1) {
+    m_p0 = { Math::double_to_f24x8(p1.x), Math::double_to_f24x8(p1.y) };
+    m_d_p0 = p1;
 
     points.push_back(m_p0);
   }
@@ -415,6 +417,51 @@ namespace Graphick::Renderer::Geometry {
 
     recursive_cubic_offset(p0, p01, p012, p0123, level + 1, angular_tolerance, parameterization);
     recursive_cubic_offset(p0123, p123, p23, p3, level + 1, angular_tolerance, parameterization);
+  }
+
+  /* -- OutlineContour -- */
+
+  void OutlineContour::move_to(const dvec2 p0) {
+    m_p0 = p0;
+    points.push_back(m_p0);
+  }
+
+  void OutlineContour::line_to(const dvec2 p1) {
+    m_p0 = p1;
+    points.push_back(m_p0);
+  }
+
+  void OutlineContour::cubic_to(const dvec2 p1, const dvec2 p2, const dvec2 p3) {
+    GK_TOTAL("OutlineContour::cubic_to");
+
+    dvec2 a = -m_p0 + 3.0 * p1 - 3.0 * p2 + p3;
+    dvec2 b = 3.0 * m_p0 - 6.0 * p1 + 3.0 * p2;
+    dvec2 c = -3.0 * m_p0 + 3.0 * p1;
+    dvec2 p;
+
+    double conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
+    double dt = std::sqrtf((std::sqrt(8.0) * m_tolerance) / conc);
+    double t = dt;
+
+    points.reserve(static_cast<int>(1.0f / dt) + 1);
+
+    while (t < 1.0f) {
+      double t_sq = t * t;
+
+      p = a * t_sq * t + b * t_sq + c * t + m_p0;
+      points.emplace_back(p);
+
+      t += dt;
+    }
+
+    m_p0 = p3;
+    points.push_back(m_p0);
+  }
+
+  void OutlineContour::close() {
+    if (!points.empty() && (points[0].x != points[points.size() - 1].x || points[0].y != points[points.size() - 1].y)) {
+      points.push_back(points[0]);
+    }
   }
 
 }

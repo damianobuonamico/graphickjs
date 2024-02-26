@@ -39,9 +39,116 @@ namespace Graphick::Renderer::Geometry {
     return point;
   }
 
+  Math::rect Path::Segment::bounding_rect() const {
+    switch (type) {
+    case Command::Cubic: {
+      return Math::cubic_bounding_rect(p0, p1, p2, p3);
+    }
+    case Command::Quadratic: {
+      return Math::quadratic_bounding_rect(p0, p1, p2);
+    }
+    case Command::Line: {
+      return Math::linear_bounding_rect(p0, p1);
+    }
+    default:
+    case Command::Move: {
+      return { p0, p0 };
+    }
+    }
+  }
+
+  Math::rect Path::Segment::bounding_rect(const mat2x3& transform) const {
+    const vec2 a = transform * p0;
+    const vec2 b = transform * p1;
+
+    switch (type) {
+    case Command::Cubic: {
+      const vec2 c = transform * p2;
+      const vec2 d = transform * p3;
+
+      return Math::cubic_bounding_rect(a, b, c, d);
+    }
+    case Command::Quadratic: {
+      const vec2 c = transform * p2;
+
+      return Math::quadratic_bounding_rect(a, b, c);
+    }
+    case Command::Line: {
+      return Math::linear_bounding_rect(a, b);
+    }
+    default:
+      return { a, a };
+    }
+  }
+
+  Math::rect Path::Segment::approx_bounding_rect() const {
+    Math::rect rect = { p0, p0 };
+
+    switch (type) {
+    case Command::Cubic: {
+      Math::min(rect.min, p1, rect.min);
+      Math::min(rect.min, p2, rect.min);
+      Math::min(rect.min, p3, rect.min);
+      Math::max(rect.max, p1, rect.max);
+      Math::max(rect.max, p2, rect.max);
+      Math::max(rect.max, p3, rect.max);
+    }
+    case Command::Quadratic: {
+      Math::min(rect.min, p1, rect.min);
+      Math::min(rect.min, p2, rect.min);
+      Math::max(rect.max, p1, rect.max);
+      Math::max(rect.max, p2, rect.max);
+    }
+    case Command::Line: {
+      Math::min(rect.min, p1, rect.min);
+      Math::max(rect.max, p1, rect.max);
+    }
+    default:
+      break;
+    }
+
+    return rect;
+  }
+
   /* -- Iterator -- */
 
-  Path::Iterator::Iterator(const Path& path, const size_t index) : m_path(path), m_index(index), m_point_index(0) {
+  Path::Iterator::Iterator(const Path& path, const size_t index, const bool is_segment_index) : m_path(path), m_index(index), m_point_index(0) {
+    if (is_segment_index) {
+      GK_ASSERT(index < path.size(), "Segment index out of range.");
+
+      m_index = 0;
+      size_t i = 0;
+
+      while (i <= index) {
+        Command command = path.get_command(m_index);
+
+        if (command == Command::Move) {
+          m_point_index++;
+          m_index++;
+          continue;
+        } else if (i == index) {
+          break;
+        }
+        
+        switch (command) {
+        case Command::Line:
+          m_point_index += 1;
+          break;
+        case Command::Quadratic:
+          m_point_index += 2;
+          break;
+        case Command::Cubic:
+          m_point_index += 3;
+          break;
+        }
+        
+        i++;
+        m_index += 1;
+      }
+
+      return;
+    }
+
     if (m_index < path.m_commands_size && path.get_command(m_index) == Command::Move) m_index++;
 
     GK_ASSERT(m_index > 0 && m_index <= path.m_commands_size, "Index out of range.");
@@ -297,7 +404,7 @@ namespace Graphick::Renderer::Geometry {
 
   Path::Path(io::DataDecoder& decoder) {
     m_commands = decoder.vector<uint8_t>();
-    
+
     if (m_commands.empty()) {
       m_commands_size = 0;
       return;
@@ -502,6 +609,21 @@ namespace Graphick::Renderer::Geometry {
       }
       }
     }
+  }
+
+  size_t Path::size() const {
+    size_t size = 0;
+
+    for (size_t i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        break;
+      default:
+        size += 1;
+      }
+    }
+
+    return size;
   }
 
   bool Path::closed(const size_t move_index) const {
@@ -934,7 +1056,7 @@ namespace Graphick::Renderer::Geometry {
     const Math::rect bounds = approx_bounding_rect();
     const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) && (stroke->width > threshold) : false;
 
-    if (!Math::is_point_in_rect(inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
+    if (!Math::is_point_in_rect(Math::inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
 
     const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
     const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
@@ -968,6 +1090,51 @@ namespace Graphick::Renderer::Geometry {
     Drawable drawable = builder.stroke(*this, s);
 
     GK_DEBUGGER_DRAW(drawable);
+
+    for (Contour& contour : drawable.contours) {
+      const int winding = contour.winding_of(p);
+
+      if (winding != 0) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool Path::is_point_inside_segment(const size_t segment_index, const vec2 point, const Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom) const {
+    const Segment segment = at(segment_index);
+    const Math::rect bounds = segment.approx_bounding_rect();
+
+    if (!Math::is_point_in_rect(Math::inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width + threshold : threshold)) return false;
+
+    const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
+    const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
+
+    PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
+
+    Stroke s = stroke ? *stroke : Stroke{ vec4{}, LineCap::Butt, LineJoin::Bevel, 0.0f, 0.0f, 0.0f };
+    s.width += threshold;
+
+    Path segment_path;
+
+    segment_path.move_to(segment.p0);
+
+    switch (segment.type) {
+    case Command::Cubic:
+      segment_path.cubic_to(segment.p1, segment.p2, segment.p3);
+      break;
+    case Command::Quadratic:
+      segment_path.quadratic_to(segment.p1, segment.p2);
+      break;
+    case Command::Line:
+      segment_path.line_to(segment.p1);
+      break;
+    default:
+      break;
+    }
+
+    Drawable drawable = builder.stroke(segment_path, s);
 
     for (Contour& contour : drawable.contours) {
       const int winding = contour.winding_of(p);

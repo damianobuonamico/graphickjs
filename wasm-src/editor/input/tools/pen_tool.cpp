@@ -20,12 +20,7 @@
 #include "../../../math/vector.h"
 #include "../../../math/scalar.h"
 
-#include "../../../history/command_history.h"
-#include "../../../history/commands.h"
-#include "../../../history/values.h"
-
 #include "../../../renderer/renderer.h"
-#include "../../../renderer/geometry/internal.h"
 
 namespace Graphick::Editor::Input {
 

@@ -25,7 +25,6 @@
 
  // TEMP
 #include "renderer.h"
-#include "geometry/internal.h"
 #include "../utils/console.h"
 
 #define SEGMENTS_MEMORY_POOL_SIZE 30

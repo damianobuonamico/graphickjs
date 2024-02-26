@@ -8,9 +8,6 @@
 #include "../../renderer/renderer.h"
 #include "../../renderer/geometry/path.h"
 
-#include "../../history/command_history.h"
-#include "../../history/commands.h"
-
 // TEMP
 #include "../../math/matrix.h"
 #include "../../math/math.h"
@@ -47,6 +44,10 @@ namespace Graphick::Editor {
 
   Entity Scene::get_entity(const uuid id) {
     return { m_entities.at(id), this };
+  }
+
+  const Entity Scene::get_entity(const uuid id) const {
+    return { m_entities.at(id), const_cast<Scene*>(this) };
   }
 
   Entity Scene::create_entity(const std::string& tag, const bool generate_tag) {
@@ -398,7 +399,7 @@ namespace Graphick::Editor {
         }
 
         if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
-          Renderer::Renderer::draw_outline(id, path, transform, draw_vertices);
+          Renderer::Renderer::draw_outline(path, transform, draw_vertices);
         }
 
         // Math::rect bounding_rect = path.bounding_rect();
