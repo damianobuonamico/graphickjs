@@ -29,7 +29,7 @@ namespace Graphick::Editor::Input {
     void on_duplicate_pointer_down();
     void on_entity_pointer_down();
     void on_element_pointer_down();
-    void on_bezier_pointer_down();
+    void on_segment_pointer_down();
     void on_vertex_pointer_down();
     void on_handle_pointer_down();
 
@@ -37,7 +37,7 @@ namespace Graphick::Editor::Input {
     void on_duplicate_pointer_move();
     void on_entity_pointer_move();
     void on_element_pointer_move();
-    void on_bezier_pointer_move();
+    void on_segment_pointer_move();
     void on_vertex_pointer_move();
     void on_handle_pointer_move();
 
@@ -45,7 +45,7 @@ namespace Graphick::Editor::Input {
     void on_duplicate_pointer_up();
     void on_entity_pointer_up();
     void on_element_pointer_up();
-    void on_bezier_pointer_up();
+    void on_segment_pointer_up();
     void on_vertex_pointer_up();
     void on_handle_pointer_up();
   private:
@@ -70,8 +70,10 @@ namespace Graphick::Editor::Input {
     Mode m_mode = Mode::None;
 
     uuid m_entity = uuid::null;
-    // std::optional<std::weak_ptr<Renderer::Geometry::ControlPoint>> m_vertex = std::nullopt;
-    // std::optional<std::weak_ptr<History::Vec2Value>> m_handle = std::nullopt;
+
+    std::optional<size_t> m_segment = std::nullopt;
+    std::optional<size_t> m_vertex = std::nullopt;
+    std::optional<size_t> m_handle = std::nullopt;
 
     // std::vector<std::pair<History::Vec2Value*, size_t>> m_vector_cache;
     // std::vector<std::pair<History::Mat2x3Value*, vec2>> m_transform_cache;

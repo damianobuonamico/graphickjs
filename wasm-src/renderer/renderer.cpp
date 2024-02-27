@@ -767,13 +767,13 @@ namespace Graphick::Renderer {
         if (p1 != p2) {
           vec2 h = transform * p1;
           add_circle_instance(h);
-          add_linear_segment_instance(last, p1);
+          add_linear_segment_instance(last, h);
         }
 
         if (p2 != p3) {
           vec2 h = transform * p2;
           add_circle_instance(h);
-          add_linear_segment_instance(p2, p3);
+          add_linear_segment_instance(h, p);
         }
 
         last = p;

@@ -85,13 +85,55 @@ namespace Graphick::Editor {
 
   PathComponentData::PathComponentData(io::DataDecoder& decoder) : path(decoder) {}
 
+  void PathComponent::translate(const size_t point_index, const vec2 delta) {
+    GK_TOTAL("PathComponent::translate");
+
+    if (Math::is_almost_zero(delta)) return;
+
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    vec2 backup_position = m_data->path.point_at(point_index);
+    vec2 new_position = backup_position + delta;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::ModifyPoint))
+      .uint32(static_cast<uint32_t>(point_index))
+      .vec2(backup_position);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::ModifyPoint))
+      .uint32(static_cast<uint32_t>(point_index))
+      .vec2(new_position);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
+  }
+
   io::EncodedData& PathComponent::encode(io::EncodedData& data, const bool optimize) const {
     data.component_id(component_id);
 
     return m_data->path.encode(data);
   }
 
-  void PathComponent::modify(io::DataDecoder& decoder) { }
+  void PathComponent::modify(io::DataDecoder& decoder) {
+    PathModifyType type = static_cast<PathModifyType>(decoder.uint8());
+
+    switch (type) {
+    case PathModifyType::ModifyPoint: {
+      size_t point_index = decoder.uint32();
+      vec2 old_position = m_data->path.point_at(point_index);
+      vec2 new_position = decoder.vec2();
+
+      m_data->path.translate(point_index, new_position - old_position);
+
+      break;
+    }
+    }
+  }
 
   /* -- TransformComponent -- */
 

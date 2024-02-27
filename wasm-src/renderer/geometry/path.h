@@ -307,10 +307,18 @@ namespace Graphick::Renderer::Geometry {
     /**
      * @brief Returns the ith segment of the path.
      *
-     * @param index The index of the segment to return.
+     * @param segment_index The index of the segment to return.
      * @return The ith segment of the path.
      */
-    inline Segment at(const size_t index) const { return *Iterator(*this, index, true); }
+    inline Segment at(const size_t segment_index) const { return *Iterator(*this, segment_index, true); }
+
+    /**
+     * @brief Returns the ith control point of the path.
+     *
+     * @param point_index The index of the point to return.
+     * @return The ith control point of the path.
+     */
+    inline vec2 point_at(const size_t point_index) const { return m_points[point_index]; }
 
     /**
      * @brief Iterates over the commands of the path, calling the given callbacks for each command.
@@ -495,6 +503,16 @@ namespace Graphick::Renderer::Geometry {
      * @brief Closes the path.
      */
     void close();
+
+    /**
+     * @brief Translates the ith point of the path by the given delta.
+     *
+     * This method takes care of updating the control points of the curves if the point is a vertex.
+     *
+     * @param point_index The index of the point to translate.
+     * @param delta The delta to translate the point by.
+    */
+    void translate(const size_t point_index, const vec2 delta);
 
     /**
      * @brief Calculates the bounding rectangle of the path.

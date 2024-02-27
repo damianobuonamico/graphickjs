@@ -23,8 +23,9 @@ namespace Graphick::Editor::Input {
     m_mode = Mode::None;
     m_entity = 0;
 
-    // m_vertex.reset();
-    // m_handle.reset();
+    m_segment.reset();
+    m_vertex.reset();
+    m_handle.reset();
     // m_vector_cache.clear();
     // m_matrix_cache.clear();
 
@@ -37,8 +38,9 @@ namespace Graphick::Editor::Input {
     }
 
     m_entity = entity->id();
-    // m_vertex = InputManager::hover.vertex();
-    // m_handle = InputManager::hover.handle();
+    m_segment = InputManager::hover.segment();
+    m_vertex = InputManager::hover.vertex();
+    m_handle = InputManager::hover.handle();
 
     if (InputManager::keys.alt && m_entity && hover_type != HoverState::HoverType::Handle) {
       on_duplicate_pointer_down();
@@ -49,7 +51,7 @@ namespace Graphick::Editor::Input {
     } else if (hover_type == HoverState::HoverType::Handle) {
       on_handle_pointer_down();
     } else if (hover_type == HoverState::HoverType::Segment) {
-      on_bezier_pointer_down();
+      on_segment_pointer_down();
     } else if (hover_type == HoverState::HoverType::Entity && entity->is_in_category(CategoryComponent::Category::Selectable)) {
       on_entity_pointer_down();
     } else {
@@ -74,7 +76,7 @@ namespace Graphick::Editor::Input {
       on_handle_pointer_move();
       break;
     case Mode::Bezier:
-      on_bezier_pointer_move();
+      on_segment_pointer_move();
       break;
     case Mode::Entity:
       on_entity_pointer_move();
@@ -101,7 +103,7 @@ namespace Graphick::Editor::Input {
       on_handle_pointer_up();
       break;
     case Mode::Bezier:
-      on_bezier_pointer_up();
+      on_segment_pointer_up();
       break;
     case Mode::Entity:
       on_entity_pointer_up();
@@ -246,7 +248,7 @@ namespace Graphick::Editor::Input {
     m_mode = Mode::Element;
   }
 
-  void DirectSelectTool::on_bezier_pointer_down() {
+  void DirectSelectTool::on_segment_pointer_down() {
     // if (
     //   !Editor::scene().selection.has(m_element->id) ||
     //   !m_element->selection()->has(m_bezier->start().id) ||
@@ -287,7 +289,6 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_vertex_pointer_down() {
 #if 0
-
     Scene& scene = Editor::scene();
     uuid id = m_vertex->lock()->id;
 
@@ -299,9 +300,9 @@ namespace Graphick::Editor::Input {
     }
 
     populate_cache();
+#endif
 
     m_mode = Mode::Vertex;
-#endif
   }
 
   void DirectSelectTool::on_handle_pointer_down() {
@@ -346,7 +347,7 @@ namespace Graphick::Editor::Input {
   }
 
   // TODO: test with asymmetric handles
-  void DirectSelectTool::on_bezier_pointer_move() {
+  void DirectSelectTool::on_segment_pointer_move() {
     // if (!m_should_evaluate_selection) {
     //   translate_selected();
     //   return;
@@ -423,48 +424,26 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_move() {
-    translate_selected();
+    console::log("vertexmove");
+    Scene& scene = Editor::scene();
+    Entity entity = scene.get_entity(m_entity);
+
+    PathComponent path = entity.get_component<PathComponent>();
+    TransformComponent transform = entity.get_component<TransformComponent>();
+
+    translate_control_point(path, m_vertex.value(), transform, false, true, false, nullptr);
+
+    // translate_selected();
   }
 
   void DirectSelectTool::on_handle_pointer_move() {
-#if 0
-    Entity entity = Editor::scene().get_entity(m_entity);
-    Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
-    mat2x3 transform = entity.get_component<TransformComponent>().get();
+    Scene& scene = Editor::scene();
+    Entity entity = scene.get_entity(m_entity);
 
-    handle_pointer_move(path, *m_vertex->lock(), transform, false, true, false, nullptr, m_handle->lock().get());
-    return;
+    PathComponent path = entity.get_component<PathComponent>();
+    TransformComponent transform = entity.get_component<TransformComponent>();
 
-    auto vertex = m_vertex->lock();
-
-    if (InputManager::keys.space && m_vertex.has_value()) {
-      if (vertex) {
-        vertex->add_delta(InputManager::pointer.scene.movement);
-      }
-
-      return;
-    }
-
-    if (!m_handle.has_value()) return;
-
-    auto handle = m_handle->lock();
-    if (!handle) return;
-
-    handle->set_delta(InputManager::pointer.scene.delta);
-
-    if (InputManager::keys.alt || m_entity == uuid::null || !vertex || Math::is_almost_equal(handle->get(), vertex->get())) return;
-
-    auto handles = Editor::scene().get_entity(m_entity).get_component<PathComponent>().path.relative_handles(m_vertex->lock()->id);
-    if (!handles.in_handle && !handles.out_handle) return;
-
-    History::Vec2Value* other_handle = handles.in_handle == handle.get() ? handles.out_handle : handles.in_handle;
-    if (!other_handle) return;
-
-    vec2 dir = Math::normalize(vertex->get() - handle->get());
-    float length = Math::length(other_handle->get() - other_handle->delta() - vertex->get() + vertex->delta());
-
-    other_handle->move_to(dir * length + vertex->get());
-#endif
+    translate_control_point(path, m_handle.value(), transform, false, true, false, nullptr);
   }
 
   /* -- on_pointer_up -- */
@@ -502,7 +481,7 @@ namespace Graphick::Editor::Input {
     on_entity_pointer_up();
   }
 
-  void DirectSelectTool::on_bezier_pointer_up() {
+  void DirectSelectTool::on_segment_pointer_up() {
     // if (m_dragging_occurred) {
     //   for (const auto& [id, entity] : Editor::scene().selection) {
     //     entity->transform()->apply();

@@ -911,6 +911,59 @@ namespace Graphick::Renderer::Geometry {
     push_command(Command::Line);
   }
 
+  void Path::translate(const size_t point_index, const vec2 delta) {
+    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic:
+        if (j == point_index && m_points[j] != m_points[j - 1]) {
+          m_points[j] += delta;
+        } else if (j + 1 == point_index && m_points[j + 1] != m_points[j + 2]) {
+          m_points[j + 1] += delta;
+        } else if (j + 2 == point_index) {
+          m_points[j + 1] += delta;
+          m_points[j + 2] += delta;
+
+          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
+            m_points[j + 3] += delta;
+          }
+        }
+
+        j += 3;
+
+        break;
+      case Command::Quadratic:
+        if (j == point_index) {
+          m_points[j] += delta;
+        } else if (j + 1 == point_index) {
+          m_points[j + 1] += delta;
+
+          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
+            m_points[j + 2] += delta;
+          }
+        }
+
+        j += 2;
+
+        break;
+      case Command::Line:
+      case Command::Move:
+        if (j == point_index) {
+          m_points[j] += delta;
+
+          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
+            m_points[j + 1] += delta;
+          }
+
+          return;
+        }
+
+        j += 1;
+
+        break;
+      }
+    }
+  }
+
   Math::rect Path::bounding_rect() const {
     if (empty()) {
       if (vacant()) return {};
@@ -1085,6 +1138,8 @@ namespace Graphick::Renderer::Geometry {
 
     if (!Math::is_point_in_rect(Math::inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
 
+    console::log("inside box");
+
     const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
     const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
 
@@ -1126,11 +1181,41 @@ namespace Graphick::Renderer::Geometry {
       }
     }
 
-    if (deep_search) {
-      for (size_t i = 0; i < m_points.size(); i++) {
-        if (Math::is_point_in_circle(point, transform * m_points[i], threshold)) {
-          return true;
+    for (size_t point_index = 0; point_index < m_points.size(); point_index++) {
+      if (Math::is_point_in_circle(point, transform * m_points[point_index], threshold)) {
+        if (deep_search || point_index == 0) return true;
+
+        for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+          switch (get_command(i)) {
+          case Command::Move:
+          case Command::Line:
+            if (point_i == point_index) {
+              return true;
+            }
+
+            point_i += 1;
+
+            break;
+          case Command::Quadratic:
+            if (point_i + 1 == point_index) {
+              return true;
+            }
+
+            point_i += 2;
+
+            break;
+          case Command::Cubic:
+            if (point_i + 2 == point_index) {
+              return true;
+            }
+
+            point_i += 3;
+
+            break;
+          }
         }
+
+        return true;
       }
     }
 

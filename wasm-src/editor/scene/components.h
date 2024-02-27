@@ -317,6 +317,14 @@ namespace Graphick::Editor {
     inline const Renderer::Geometry::Path& TEMP_path() const { return m_data->path; }
 
     /**
+     * @brief Translates a control point in the path by a given delta.
+     *
+     * @param point_index The index of the point to translate.
+     * @param delta The translation delta.
+     */
+    void translate(const size_t point_index, const vec2 delta);
+
+    /**
      * @brief Encodes the component in binary format.
      *
      * @param data The encoded data to append the component to.
@@ -331,6 +339,10 @@ namespace Graphick::Editor {
      * @param decoder A diff of the modified component's data.
      */
     void modify(io::DataDecoder& decoder) override;
+  private:
+    enum class PathModifyType {
+      ModifyPoint = 1 << 0,
+    };
   private:
     Data* m_data;    /* The actual component data. */
   private:

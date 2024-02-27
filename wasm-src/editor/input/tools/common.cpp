@@ -16,6 +16,23 @@ namespace Graphick::Editor::Input {
 
   /* -- Methods -- */
 
+  void translate_control_point(
+    PathComponent& path,
+    const size_t point_index,
+    const mat2x3& transform,
+    bool create_handles, bool keep_in_handle_length, bool swap_in_out,
+    int* direction
+  ) {
+    const mat2x3 inverse_transform = Math::inverse(transform);
+
+    const vec2 position = inverse_transform * InputManager::pointer.scene.position;
+    const vec2 origin = inverse_transform * InputManager::pointer.scene.origin;
+    const vec2 last = inverse_transform * (InputManager::pointer.scene.position - InputManager::pointer.scene.movement);
+    const vec2 movement = position - last;
+
+    path.translate(point_index, movement);
+  }
+
 #if 0
   void handle_pointer_move(
     Renderer::Geometry::Path& path,
