@@ -104,7 +104,7 @@ namespace Graphick::Editor {
      * @param other The action to merge with.
      * @return true if the actions were merged, false otherwise.
      */
-    bool merge(const Action& other);
+    bool merge(Action& other);
   private:
     /**
      * @brief Executes the add action.

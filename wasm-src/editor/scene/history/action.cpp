@@ -125,7 +125,7 @@ namespace Graphick::Editor {
     }
   }
 
-  bool Action::merge(const Action& other) {
+  bool Action::merge(Action& other) {
     if (
       entity_id != other.entity_id ||
       type != Type::Modify || other.type != Type::Modify ||
@@ -134,8 +134,38 @@ namespace Graphick::Editor {
       return false;
     }
 
-    m_data = std::move(other.m_data);
+    if (target == Target::Entity) {
+      m_data = std::move(other.m_data);
+      return true;
+    }
 
+    io::DataDecoder this_decoder(&m_data);
+    io::DataDecoder other_decoder(&other.m_data);
+
+    const uint8_t component_id = this_decoder.component_id();
+
+    if (component_id != other_decoder.component_id()) {
+      return false;
+    }
+
+    if (component_id != StrokeComponent::component_id) {
+      m_data = std::move(other.m_data);
+      return true;
+    }
+
+    const uint8_t modify_type = this_decoder.uint8();
+
+    if (modify_type != other_decoder.uint8()) {
+      return false;
+    }
+
+    const uint32_t point_index = this_decoder.uint32();
+
+    if (point_index != other_decoder.uint32()) {
+      return false;
+    }
+
+    m_data = std::move(other.m_data);
     return true;
   }
 

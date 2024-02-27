@@ -834,7 +834,7 @@ namespace Graphick::Renderer::Geometry {
     const vec2 bottom_right = center + radius;
     const vec2 cp = radius * GEOMETRY_CIRCLE_RATIO;
 
-    move_to({ cp.x, top_left.y });
+    move_to({ center.x, top_left.y });
     cubic_to({ center.x + cp.x, top_left.y }, { bottom_right.x, center.y - cp.y }, { bottom_right.x, center.y });
     cubic_to({ bottom_right.x, center.y + cp.y }, { center.x + cp.x, bottom_right.y }, { center.x, bottom_right.y });
     cubic_to({ center.x - cp.x, bottom_right.y }, { top_left.x, center.y + cp.y }, { top_left.x, center.y });
@@ -907,11 +907,17 @@ namespace Graphick::Renderer::Geometry {
 
   exit_loop:;
 
-    m_points.push_back(p);
-    push_command(Command::Line);
+    if (Math::is_almost_equal(m_points.back(), p, GK_POINT_EPSILON)) {
+      m_points[m_points.size() - 1] = p;
+    } else {
+      line_to(p);
+    }
   }
 
   void Path::translate(const size_t point_index, const vec2 delta) {
+    size_t last_move_point = 0;
+    size_t last_move = 0;
+
     for (size_t i = 0, j = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
       case Command::Cubic:
@@ -920,6 +926,14 @@ namespace Graphick::Renderer::Geometry {
         } else if (j + 1 == point_index && m_points[j + 1] != m_points[j + 2]) {
           m_points[j + 1] += delta;
         } else if (j + 2 == point_index) {
+          if (m_points[j + 2] == m_points[last_move_point]) {
+            if (get_command(last_move + 1) == Command::Cubic && m_points[last_move_point + 1] != m_points[last_move_point]) {
+              m_points[last_move_point + 1] += delta;
+            }
+            
+            m_points[last_move_point] += delta;
+          }
+
           m_points[j + 1] += delta;
           m_points[j + 2] += delta;
 
@@ -935,6 +949,14 @@ namespace Graphick::Renderer::Geometry {
         if (j == point_index) {
           m_points[j] += delta;
         } else if (j + 1 == point_index) {
+          if (m_points[j + 1] == m_points[last_move_point]) {
+            if (get_command(last_move + 1) == Command::Cubic && m_points[last_move_point + 1] != m_points[last_move_point]) {
+              m_points[last_move_point + 1] += delta;
+            }
+
+            m_points[last_move_point] += delta;
+          }
+
           m_points[j + 1] += delta;
 
           if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
@@ -946,8 +968,67 @@ namespace Graphick::Renderer::Geometry {
 
         break;
       case Command::Line:
-      case Command::Move:
         if (j == point_index) {
+          if (m_points[j] == m_points[last_move_point]) {
+            m_points[last_move_point] += delta;
+          }
+
+          m_points[j] += delta;
+
+          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
+            m_points[j + 1] += delta;
+          }
+
+          return;
+        }
+
+        j += 1;
+
+        break;
+      case Command::Move:
+        last_move_point = j;
+        last_move = i;
+
+        if (j == point_index) {
+          size_t k = i + 1;
+          size_t h = j + 1;
+
+          while (k < m_commands_size) {
+            switch (get_command(k)) {
+            case Command::Move:
+              if (m_points[h - 1] == m_points[j]) {
+                if (get_command(k - 1) == Command::Cubic && m_points[h - 2] != m_points[h - 1]) {
+                  m_points[h - 2] += delta;
+                }
+
+                m_points[h - 1] += delta;
+              }
+
+              break;
+            case Command::Line:
+              h += 1;
+              break;
+            case Command::Quadratic:
+              h += 2;
+              break;
+            case Command::Cubic:
+              h += 3;
+              break;
+            }
+
+            k++;
+          }
+
+          h = m_points.size();
+
+          if (k == m_commands_size && m_points.back() == m_points[j]) {
+            if (get_command(k - 1) == Command::Cubic && m_points[h - 2] != m_points[h - 1]) {
+              m_points[h - 2] += delta;
+            }
+
+            m_points[h - 1] += delta;
+          }
+
           m_points[j] += delta;
 
           if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
