@@ -43,6 +43,22 @@ namespace Graphick::Renderer::Geometry {
     };
   public:
     /**
+     * @brief This struct represents a vertex node of the path.
+     *
+     * The vertex node is represented by the index of the incoming and outgoing handles and the index of the vertex itself.
+     *
+     * @struct VertexNode
+     */
+    struct VertexNode {
+      size_t vertex;           /* The index of the vertex. */
+
+      int64_t in;              /* The index of the incoming handle, -1 if no incoming handle is present. */
+      int64_t out;             /* The index of the outgoing handle. -1 if no outgoing handle is present. */
+
+      int64_t close_vertex;    /* The index of the vertex that closes the sub-path, -1 if the sub-path is not closed. */
+    };
+
+    /**
      * @brief This struct represents a segment of the path.
      *
      * The segment is represented by a type and 4 points, even if not used.
@@ -405,6 +421,14 @@ namespace Graphick::Renderer::Geometry {
     inline bool is_handle(const size_t point_index) const { return !is_vertex(point_index); }
 
     /**
+     * @brief Returns the vertex node the given control point is part of.
+     *
+     * @param point_index The index of the point to check.
+     * @return The vertex node the given control point is part of.
+     */
+    VertexNode node_at(const size_t point_index) const;
+
+    /**
      * @brief Checks whether the path is closed or not.
      *
      * @param move_index The index of the move command corresponding to the sub-path to check.
@@ -512,7 +536,7 @@ namespace Graphick::Renderer::Geometry {
      * @param point_index The index of the point to translate.
      * @param delta The delta to translate the point by.
     */
-    void translate(const size_t point_index, const vec2 delta);
+    inline void translate(const size_t point_index, const vec2 delta) { m_points[point_index] += delta; }
 
     /**
      * @brief Calculates the bounding rectangle of the path.

@@ -24,13 +24,54 @@ namespace Graphick::Editor::Input {
     int* direction
   ) {
     const mat2x3 inverse_transform = Math::inverse(transform);
-
     const vec2 position = inverse_transform * InputManager::pointer.scene.position;
-    const vec2 origin = inverse_transform * InputManager::pointer.scene.origin;
-    const vec2 last = inverse_transform * (InputManager::pointer.scene.position - InputManager::pointer.scene.movement);
-    const vec2 movement = position - last;
 
-    path.translate(point_index, movement);
+    const Renderer::Geometry::Path::VertexNode node = path.data().node_at(point_index);
+
+    if (point_index == node.vertex) {
+      const vec2 vertex_position = path.data().point_at(node.vertex);
+      const vec2 movement = position - vertex_position;
+
+      path.translate(node.vertex, movement);
+
+      if (node.in >= 0) path.translate(static_cast<size_t>(node.in), movement);
+      if (node.out >= 0) path.translate(static_cast<size_t>(node.out), movement);
+      if (node.close_vertex >= 0) path.translate(static_cast<size_t>(node.close_vertex), movement);
+
+      return;
+    } else if (InputManager::keys.space) {
+      const vec2 out_position = path.data().point_at(node.out);
+      const vec2 movement = position - out_position;
+
+      path.translate(node.vertex, movement);
+
+      if (node.in >= 0) path.translate(static_cast<size_t>(node.in), movement);
+      if (node.out >= 0) path.translate(static_cast<size_t>(node.out), movement);
+      if (node.close_vertex >= 0) path.translate(static_cast<size_t>(node.close_vertex), movement);
+
+      return;
+    }
+
+    vec2 out_position = position;
+    vec2 in_position = 2.0f * path.data().point_at(node.vertex) - position;
+
+    const vec2 old_out_position = path.data().point_at(static_cast<size_t>(node.out));
+    const vec2 movement = out_position - old_out_position;
+
+    path.translate(static_cast<size_t>(node.out), movement);
+
+    if (InputManager::keys.alt || node.in < 0) {
+      return;
+    }
+
+    if (keep_in_handle_length) {
+      const vec2 dir = Math::normalize(path.data().point_at(node.vertex) - path.data().point_at(static_cast<size_t>(node.out)));
+      const float length = Math::distance(path.data().point_at(static_cast<size_t>(node.in)), path.data().point_at(node.vertex));
+
+      in_position = dir * length + path.data().point_at(node.vertex);
+    }
+
+    path.translate(static_cast<size_t>(static_cast<size_t>(node.in)), in_position - path.data().point_at(static_cast<size_t>(node.in)));
   }
 
 #if 0

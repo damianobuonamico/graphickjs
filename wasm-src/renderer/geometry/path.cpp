@@ -653,6 +653,188 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
+  Path::VertexNode Path::node_at(const size_t point_index) const {
+    VertexNode node = { 0, -1, -1, -1 };
+
+    size_t last_move_point = 0;
+    size_t last_move_i = 0;
+
+    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      if (point_i > point_index) return node;
+
+      switch (get_command(i)) {
+      case Command::Move:
+        last_move_point = point_i;
+        last_move_i = i;
+
+        if (point_i == point_index) {
+          size_t k = i + 1;
+          size_t h = point_i + 1;
+
+          while (k < m_commands_size) {
+            switch (get_command(k)) {
+            case Command::Move:
+              if (m_points[h - 1] == m_points[point_i]) {
+                if (get_command(k - 1) == Command::Cubic) {
+                  node.in = h - 2;
+                }
+
+                node.close_vertex = h - 1;
+              }
+
+              goto exit_closing_while;
+            case Command::Line:
+              h += 1;
+              break;
+            case Command::Quadratic:
+              h += 2;
+              break;
+            case Command::Cubic:
+              h += 3;
+              break;
+            }
+
+            k++;
+          }
+
+        exit_closing_while:;
+
+          h = m_points.size();
+
+          if (k == m_commands_size && m_points.back() == m_points[point_i]) {
+            if (get_command(k - 1) == Command::Cubic) {
+              node.in = h - 2;
+            }
+
+            node.close_vertex = h - 1;
+          }
+
+          node.vertex = point_i;
+
+          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
+            node.out = point_i + 1;
+          }
+
+          return node;
+        }
+
+        point_i += 1;
+        break;
+      case Command::Line:
+        if (point_i == point_index) {
+          node.vertex = point_i;
+
+          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
+            node.out = point_i + 1;
+          }
+
+          return node;
+        }
+
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        if (point_i == point_index) {
+          node.vertex = point_i;
+
+          return node;
+        } else if (point_i + 1 == point_index) {
+          node.vertex = point_i + 1;
+
+          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
+            node.out = point_i + 2;
+          }
+
+          return node;
+        }
+
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        if (point_i == point_index) {
+          node.out = point_i;
+
+          if (i > 0) {
+            Command prev_command = get_command(i - 1);
+
+            if (prev_command == Command::Cubic) {
+              node.in = point_i - 2;
+            } else if (prev_command == Command::Move) {
+              size_t k = i + 1;
+              size_t h = point_i + 3;
+
+              while (k < m_commands_size) {
+                switch (get_command(k)) {
+                case Command::Move:
+                  if (m_points[h - 1] == m_points[point_i - 1]) {
+                    if (get_command(k - 1) == Command::Cubic) {
+                      node.in = h - 2;
+                    }
+
+                    node.close_vertex = h - 1;
+                  }
+
+                  goto exit_cubic_closing_while;
+                case Command::Line:
+                  h += 1;
+                  break;
+                case Command::Quadratic:
+                  h += 2;
+                  break;
+                case Command::Cubic:
+                  h += 3;
+                  break;
+                }
+
+                k++;
+              }
+
+            exit_cubic_closing_while:;
+
+              h = m_points.size();
+
+              if (k == m_commands_size && m_points.back() == m_points[point_i - 1]) {
+                if (get_command(k - 1) == Command::Cubic) {
+                  node.in = h - 2;
+                }
+
+                node.close_vertex = h - 1;
+              }
+            }
+
+            node.vertex = point_i - 1;
+          }
+
+          return node;
+        } else if (point_i + 1 == point_index || point_i + 2 == point_index) {
+          node.out = point_i + 1;
+          node.vertex = point_i + 2;
+
+          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
+            node.in = point_i + 3;
+          } else if (i >= m_commands_size - 1 || get_command(i + 1) == Command::Move) {
+            if (m_points[point_i + 2] == m_points[last_move_point]) {
+              node.close_vertex = last_move_point;
+
+              if (get_command(last_move_i + 1) == Command::Cubic) {
+                node.in = last_move_point + 1;
+              }
+            }
+          }
+
+          return node;
+        }
+
+        point_i += 3;
+        break;
+      }
+    }
+
+    node.vertex = point_index;
+
+    return node;
+  }
+
   bool Path::closed(const size_t move_index) const {
     size_t last_point = 0;
     size_t move_i = 0;
@@ -911,137 +1093,6 @@ namespace Graphick::Renderer::Geometry {
       m_points[m_points.size() - 1] = p;
     } else {
       line_to(p);
-    }
-  }
-
-  void Path::translate(const size_t point_index, const vec2 delta) {
-    size_t last_move_point = 0;
-    size_t last_move = 0;
-
-    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
-      switch (get_command(i)) {
-      case Command::Cubic:
-        if (j == point_index && m_points[j] != m_points[j - 1]) {
-          m_points[j] += delta;
-        } else if (j + 1 == point_index && m_points[j + 1] != m_points[j + 2]) {
-          m_points[j + 1] += delta;
-        } else if (j + 2 == point_index) {
-          if (m_points[j + 2] == m_points[last_move_point]) {
-            if (get_command(last_move + 1) == Command::Cubic && m_points[last_move_point + 1] != m_points[last_move_point]) {
-              m_points[last_move_point + 1] += delta;
-            }
-            
-            m_points[last_move_point] += delta;
-          }
-
-          m_points[j + 1] += delta;
-          m_points[j + 2] += delta;
-
-          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
-            m_points[j + 3] += delta;
-          }
-        }
-
-        j += 3;
-
-        break;
-      case Command::Quadratic:
-        if (j == point_index) {
-          m_points[j] += delta;
-        } else if (j + 1 == point_index) {
-          if (m_points[j + 1] == m_points[last_move_point]) {
-            if (get_command(last_move + 1) == Command::Cubic && m_points[last_move_point + 1] != m_points[last_move_point]) {
-              m_points[last_move_point + 1] += delta;
-            }
-
-            m_points[last_move_point] += delta;
-          }
-
-          m_points[j + 1] += delta;
-
-          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
-            m_points[j + 2] += delta;
-          }
-        }
-
-        j += 2;
-
-        break;
-      case Command::Line:
-        if (j == point_index) {
-          if (m_points[j] == m_points[last_move_point]) {
-            m_points[last_move_point] += delta;
-          }
-
-          m_points[j] += delta;
-
-          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
-            m_points[j + 1] += delta;
-          }
-
-          return;
-        }
-
-        j += 1;
-
-        break;
-      case Command::Move:
-        last_move_point = j;
-        last_move = i;
-
-        if (j == point_index) {
-          size_t k = i + 1;
-          size_t h = j + 1;
-
-          while (k < m_commands_size) {
-            switch (get_command(k)) {
-            case Command::Move:
-              if (m_points[h - 1] == m_points[j]) {
-                if (get_command(k - 1) == Command::Cubic && m_points[h - 2] != m_points[h - 1]) {
-                  m_points[h - 2] += delta;
-                }
-
-                m_points[h - 1] += delta;
-              }
-
-              break;
-            case Command::Line:
-              h += 1;
-              break;
-            case Command::Quadratic:
-              h += 2;
-              break;
-            case Command::Cubic:
-              h += 3;
-              break;
-            }
-
-            k++;
-          }
-
-          h = m_points.size();
-
-          if (k == m_commands_size && m_points.back() == m_points[j]) {
-            if (get_command(k - 1) == Command::Cubic && m_points[h - 2] != m_points[h - 1]) {
-              m_points[h - 2] += delta;
-            }
-
-            m_points[h - 1] += delta;
-          }
-
-          m_points[j] += delta;
-
-          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
-            m_points[j + 1] += delta;
-          }
-
-          return;
-        }
-
-        j += 1;
-
-        break;
-      }
     }
   }
 

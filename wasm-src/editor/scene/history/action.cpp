@@ -148,7 +148,7 @@ namespace Graphick::Editor {
       return false;
     }
 
-    if (component_id != StrokeComponent::component_id) {
+    if (component_id != PathComponent::component_id) {
       m_data = std::move(other.m_data);
       return true;
     }
