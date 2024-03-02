@@ -209,15 +209,15 @@ int main() {
   // path1.close();
 
   path1.circle({ 100.0f, 100.0f }, 50.0f);
-  path1.move_to({ 300.0f, 100.0f });
-  path1.line_to({ 350.0f, 200.0f });
-  path1.line_to({ 250.0f, 200.0f });
-  path1.close();
+  // path1.move_to({ 300.0f, 100.0f });
+  // path1.line_to({ 350.0f, 200.0f });
+  // path1.line_to({ 250.0f, 200.0f });
+  // path1.close();
 
-  path1.move_to({ 500.0f, 100.0f });
-  path1.line_to({ 550.0f, 200.0f });
-  path1.line_to({ 450.0f, 200.0f });
-  path1.close();
+  // path1.move_to({ 500.0f, 100.0f });
+  // path1.line_to({ 550.0f, 200.0f });
+  // path1.line_to({ 450.0f, 200.0f });
+  // path1.close();
 
 
   // TODO: handle case of multiple contours overlapping

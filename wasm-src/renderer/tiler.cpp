@@ -507,6 +507,7 @@ namespace Graphick::Renderer {
 
     m_subpixel = (viewport.position * viewport.zoom) % TILE_SIZE - offset;
 
+    m_viewport = { dvec2(0.0), dvec2(viewport.size) };
     m_visible = {
       -viewport.position + m_subpixel / m_zoom,
       -viewport.position + vec2{
@@ -700,13 +701,12 @@ namespace Graphick::Renderer {
     const dvec2 subpixel_offset = offset + dvec2(m_subpixel) / m_zoom;
     const dvec2 drawable_offset = offset * m_zoom;
 
-    // TODO: template basic math types, Math::vec2<T> -> using vec2 = Math::vec2, dvec2 = Math::vec2<double>
     dmat2x3 mv_matrix = transform;
 
     mv_matrix = Math::translate(mv_matrix, -subpixel_offset);
     mv_matrix = Math::scale(mv_matrix, { m_zoom, m_zoom });
 
-    Geometry::PathBuilder builder{ m_visible, mv_matrix, GK_PATH_TOLERANCE };
+    Geometry::PathBuilder builder{ m_viewport, mv_matrix, GK_PATH_TOLERANCE };
     Drawable drawable = builder.fill(path, fill);
 
     rect bounds = (path_rect - vec2(offset)) * m_zoom - m_subpixel;
@@ -1258,4 +1258,4 @@ namespace Graphick::Renderer {
   }
 #endif
 
-}
+  }

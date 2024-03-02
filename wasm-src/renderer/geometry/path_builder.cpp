@@ -51,69 +51,14 @@ namespace Graphick::Renderer::Geometry {
     return { normal_ab, normal_cd };
   }
 
-  PathBuilder::PathBuilder(const rect& clip, const dmat2x3& transform, const double tolerance) :
+  PathBuilder::PathBuilder(const drect& clip, const dmat2x3& transform, const double tolerance) :
     m_clip(clip), m_transform(transform), m_tolerance(tolerance) {}
 
   OutlineDrawable PathBuilder::outline(const Path& path) const {
     OutlineDrawable drawable{ 0 };
     OutlineContour* contour = nullptr;
-    vec2 last_raw;
 
-    path.for_each(
-      [&](const vec2 p0) {
-        dvec2 a = m_transform * dvec2(p0);
-
-        if (contour) contour->close();
-
-        contour = &drawable.contours.emplace_back(m_tolerance);
-        contour->move_to(a);
-
-        last_raw = p0;
-      },
-      [&](const vec2 p1) {
-        dvec2 b = m_transform * dvec2(p1);
-
-        contour->line_to(b);
-
-        last_raw = p1;
-      },
-      nullptr,
-      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
-        rect bounds = { last_raw };
-
-        Math::min(bounds.min, p1, bounds.min);
-        Math::min(bounds.min, p2, bounds.min);
-        Math::min(bounds.min, p3, bounds.min);
-
-        Math::max(bounds.max, p1, bounds.max);
-        Math::max(bounds.max, p2, bounds.max);
-        Math::max(bounds.max, p3, bounds.max);
-
-        dvec2 d = m_transform * dvec2(p3);
-
-        if (Math::does_rect_intersect_rect(bounds, m_clip)) {
-          dvec2 b = m_transform * dvec2(p1);
-          dvec2 c = m_transform * dvec2(p2);
-
-          contour->cubic_to(b, c, d);
-        } else {
-          contour->line_to(d);
-        }
-
-        last_raw = p3;
-      }
-    );
-
-    if (contour) contour->close();
-
-    return drawable;
-  }
-
-  Drawable PathBuilder::fill(const Path& path, const Fill& fill) const {
-    Drawable drawable{ 0, fill, m_clip };
-    Contour* contour = nullptr;
     dvec2 last;
-    vec2 last_raw;
 
     path.for_each(
       [&](const vec2 p0) {
@@ -125,7 +70,6 @@ namespace Graphick::Renderer::Geometry {
         contour->move_to(a);
 
         last = a;
-        last_raw = p0;
       },
       [&](const vec2 p1) {
         dvec2 b = m_transform * dvec2(p1);
@@ -133,33 +77,85 @@ namespace Graphick::Renderer::Geometry {
         contour->line_to(b);
 
         last = b;
-        last_raw = p1;
       },
       nullptr,
       [&](const vec2 p1, const vec2 p2, const vec2 p3) {
-        rect bounds = { last_raw };
-
-        Math::min(bounds.min, p1, bounds.min);
-        Math::min(bounds.min, p2, bounds.min);
-        Math::min(bounds.min, p3, bounds.min);
-
-        Math::max(bounds.max, p1, bounds.max);
-        Math::max(bounds.max, p2, bounds.max);
-        Math::max(bounds.max, p3, bounds.max);
-
+        dvec2 b = m_transform * dvec2(p1);
+        dvec2 c = m_transform * dvec2(p2);
         dvec2 d = m_transform * dvec2(p3);
 
-        if (Math::does_rect_intersect_rect(bounds, m_clip)) {
-          dvec2 b = m_transform * dvec2(p1);
-          dvec2 c = m_transform * dvec2(p2);
+        drect bounds = { last };
 
+        Math::min(bounds.min, b, bounds.min);
+        Math::min(bounds.min, c, bounds.min);
+        Math::min(bounds.min, d, bounds.min);
+
+        Math::max(bounds.max, b, bounds.max);
+        Math::max(bounds.max, c, bounds.max);
+        Math::max(bounds.max, d, bounds.max);
+
+        if (Math::does_rect_intersect_rect(bounds, m_clip)) {
           contour->cubic_to(b, c, d);
         } else {
           contour->line_to(d);
         }
 
         last = d;
-        last_raw = p3;
+      }
+    );
+
+    if (contour) contour->close();
+
+    return drawable;
+  }
+
+  Drawable PathBuilder::fill(const Path& path, const Fill& fill) const {
+    Drawable drawable{ 0, fill, m_clip };
+    Contour* contour = nullptr;
+
+    dvec2 last;
+
+    path.for_each(
+      [&](const vec2 p0) {
+        dvec2 a = m_transform * dvec2(p0);
+
+        if (contour) contour->close();
+
+        contour = &drawable.contours.emplace_back(m_tolerance);
+        contour->move_to(a);
+
+        last = a;
+      },
+      [&](const vec2 p1) {
+        dvec2 b = m_transform * dvec2(p1);
+
+        contour->line_to(b);
+
+        last = b;
+      },
+      nullptr,
+      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+        dvec2 b = m_transform * dvec2(p1);
+        dvec2 c = m_transform * dvec2(p2);
+        dvec2 d = m_transform * dvec2(p3);
+
+        drect bounds = { last };
+
+        Math::min(bounds.min, b, bounds.min);
+        Math::min(bounds.min, c, bounds.min);
+        Math::min(bounds.min, d, bounds.min);
+
+        Math::max(bounds.max, b, bounds.max);
+        Math::max(bounds.max, c, bounds.max);
+        Math::max(bounds.max, d, bounds.max);
+
+        if (Math::does_rect_intersect_rect(bounds, m_clip)) {
+          contour->cubic_to(b, c, d);
+        } else {
+          contour->line_to(d);
+        }
+
+        last = d;
       }
     );
 

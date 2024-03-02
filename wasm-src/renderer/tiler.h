@@ -332,6 +332,7 @@ namespace Graphick::Renderer {
 
     vec2 m_subpixel = { 0.0f, 0.0f };                  /* The subpixel offset of the viewport. */
 
+    drect m_viewport;                                  /* The bounds of the viewport. */
     rect m_visible;                                    /* The bounds of the viewport in scene space. */
 
     dvec2 m_visible_min;                               /* The upper left corner of the viewport. */

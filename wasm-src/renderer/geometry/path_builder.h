@@ -28,7 +28,7 @@ namespace Graphick::Renderer::Geometry {
     /**
      * @brief Constructor and destructor.
      */
-    PathBuilder(const rect& clip, const dmat2x3& transform, const double tolerance);
+    PathBuilder(const drect& clip, const dmat2x3& transform, const double tolerance);
     ~PathBuilder() = default;
 
     /**
@@ -57,9 +57,9 @@ namespace Graphick::Renderer::Geometry {
      */
     Drawable stroke(const Path& path, const Stroke& stroke) const;
   private:
-    double m_tolerance;            /* The tessellation tolerance. */
-    rect m_clip;                   /* The clipping rect. */
-    const dmat2x3 m_transform;     /* The transformation matrix. */
+    double m_tolerance;     /* The tessellation tolerance. */
+    drect m_clip;           /* The clipping rect. */
+    dmat2x3 m_transform;    /* The transformation matrix. */
   };
 
 }

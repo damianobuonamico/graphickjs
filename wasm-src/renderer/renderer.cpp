@@ -678,12 +678,12 @@ namespace Graphick::Renderer {
   void Renderer::add_line_instances(const Geometry::Path& path, const mat2x3& transform) {
     if (path.empty()) return;
 
-    rect visible = {
-      m_viewport.position,
-      m_viewport.position + vec2{
+    drect visible = {
+      -dvec2(m_viewport.position),
+      dvec2(-m_viewport.position + vec2{
         static_cast<float>(m_viewport.size.x) / m_viewport.zoom,
         static_cast<float>(m_viewport.size.y) / m_viewport.zoom
-      }
+      })
     };
 
     Geometry::PathBuilder builder{ visible, dmat2x3(transform), GK_PATH_TOLERANCE };
