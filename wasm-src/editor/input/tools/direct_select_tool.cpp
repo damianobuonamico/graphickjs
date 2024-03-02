@@ -158,22 +158,41 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::translate_selected() {
-#if 0
-    for (size_t i = 0; i < m_transform_cache.size(); i++) {
-      auto& [transform, _] = m_transform_cache[i];
-      mat2x3 matrix = m_transform_cache[i].first->inverse();
 
-      m_transform_cache[i].second = matrix * InputManager::pointer.scene.position - matrix * InputManager::pointer.scene.origin;
+    vec2 absolute_movenent = InputManager::pointer.scene.movement;
+    vec2 movement = absolute_movenent;
+    // TODO: Snapping
+
+    Scene& scene = Editor::scene();
+
+    if (m_vertex.has_value()) {
+      Entity entity = scene.get_entity(m_entity);
+
+      TransformComponent transform = entity.get_component<TransformComponent>();
+      PathComponent path = entity.get_component<PathComponent>();
+
+      const mat2x3 inverse_transform = Math::inverse(transform.matrix());
+
+      const vec2 position = inverse_transform * InputManager::pointer.scene.position;
+      const vec2 vertex_position = path.data().point_at(m_vertex.value());
+
+      absolute_movenent = InputManager::pointer.scene.position - transform.transform(vertex_position);
+      movement = position - vertex_position;
     }
 
-    for (auto& [value, i] : m_vector_cache) {
-      value->set_delta(m_transform_cache[i].second);
-    }
+    for (auto& [id, entry] : scene.selection.selected()) {
+      Entity entity = scene.get_entity(id);
+      TransformComponent transform = entity.get_component<TransformComponent>();
 
-    for (Graphick::History::Mat2x3Value* value : m_matrix_cache) {
-      value->translate(InputManager::pointer.scene.delta);
+      // TODO: all entities should have transform component
+      if (entry.full()) {
+        transform.translate(absolute_movenent);
+      } else {
+        for (size_t i : entry.indices) {
+          translate_control_point(entity.get_component<PathComponent>(), i, transform, &movement, false, true, false, nullptr);
+        }
+      }
     }
-#endif
   }
 
   void DirectSelectTool::apply_selected() {
@@ -318,25 +337,25 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_duplicate_pointer_move() {
-    // translate_selected();
+    translate_selected();
   }
 
   void DirectSelectTool::on_entity_pointer_move() {
-    // translate_selected();
+    translate_selected();
 
-    vec2 movement = InputManager::pointer.scene.movement;
-    // TODO: Snapping
+    // vec2 movement = InputManager::pointer.scene.movement;
+    // // TODO: Snapping
 
-    Scene& scene = Editor::scene();
+    // Scene& scene = Editor::scene();
 
-    for (auto& [id, _] : scene.selection.selected()) {
-      Entity entity = scene.get_entity(id);
-      // TODO: all entities should have transform component
-      if (!entity.has_component<TransformComponent>()) continue;
+    // for (auto& [id, _] : scene.selection.selected()) {
+    //   Entity entity = scene.get_entity(id);
+    //   // TODO: all entities should have transform component
+    //   if (!entity.has_component<TransformComponent>()) continue;
 
-      entity.get_component<TransformComponent>().translate(movement);
-      // entity.get_component<TransformComponent>().position.set_delta(delta);
-    }
+    //   entity.get_component<TransformComponent>().translate(movement);
+    //   // entity.get_component<TransformComponent>().position.set_delta(delta);
+    // }
   }
 
   void DirectSelectTool::on_element_pointer_move() {
@@ -421,15 +440,15 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_move() {
-    Scene& scene = Editor::scene();
-    Entity entity = scene.get_entity(m_entity);
+    // Scene& scene = Editor::scene();
+    // Entity entity = scene.get_entity(m_entity);
 
-    PathComponent path = entity.get_component<PathComponent>();
-    TransformComponent transform = entity.get_component<TransformComponent>();
+    // PathComponent path = entity.get_component<PathComponent>();
+    // TransformComponent transform = entity.get_component<TransformComponent>();
 
-    translate_control_point(path, m_vertex.value(), transform, false, true, false, nullptr);
+    // translate_control_point(path, m_vertex.value(), transform, nullptr, false, true, false, nullptr);
 
-    // translate_selected();
+    translate_selected();
   }
 
   void DirectSelectTool::on_handle_pointer_move() {
@@ -439,7 +458,7 @@ namespace Graphick::Editor::Input {
     PathComponent path = entity.get_component<PathComponent>();
     TransformComponent transform = entity.get_component<TransformComponent>();
 
-    translate_control_point(path, m_handle.value(), transform, false, true, false, nullptr);
+    translate_control_point(path, m_handle.value(), transform, nullptr, false, true, false, nullptr);
   }
 
   /* -- on_pointer_up -- */

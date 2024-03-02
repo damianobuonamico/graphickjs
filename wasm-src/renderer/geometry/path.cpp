@@ -1319,8 +1319,6 @@ namespace Graphick::Renderer::Geometry {
 
     if (!Math::is_point_in_rect(Math::inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
 
-    console::log("inside box");
-
     const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
     const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
 
@@ -1328,8 +1326,6 @@ namespace Graphick::Renderer::Geometry {
 
     if (fill) {
       Drawable drawable = builder.fill(*this, *fill);
-
-      GK_DEBUGGER_DRAW(drawable);
 
       for (Contour& contour : drawable.contours) {
         const int winding = contour.winding_of(p);
@@ -1351,8 +1347,6 @@ namespace Graphick::Renderer::Geometry {
     }
 
     Drawable drawable = builder.stroke(*this, s);
-
-    GK_DEBUGGER_DRAW(drawable);
 
     for (Contour& contour : drawable.contours) {
       const int winding = contour.winding_of(p);

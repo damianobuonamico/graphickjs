@@ -22,13 +22,14 @@ namespace Graphick::Editor::Input {
    * @param path The path to move the control point on.
    * @param point_index The control point to move.
    * @param transform The transformation matrix of the element containing the path.
+   * @param override_movement A pointer to a vec2 used to override the movement of the control point, default is nullptr.
    * @param create_handles Whether to create handles if not present when moving the control point, default is false.
    * @param keep_in_handle_length Whether to keep the length of the incoming handle when moving the control point, default is true.
    * @param swap_in_out Whether to swap the incoming and outgoing handles when moving the control point, default is false.
    * @param direction A pointer to an integer that will be set to the direction of the move (1 for forward, -1 for backward), default is nullptr.
    * @param in_use_handle A pointer to a History::Vec2Value object that will be set to the handle that is currently in use (out handle), default is nullptr.
    */
-  void translate_control_point(PathComponent& path, const size_t point_index, const mat2x3& transform, bool create_handles = false, bool keep_in_handle_length = true, bool swap_in_out = false, int* direction = nullptr);
+  void translate_control_point(PathComponent& path, const size_t point_index, const mat2x3& transform, const vec2* override_movement = nullptr, bool create_handles = false, bool keep_in_handle_length = true, bool swap_in_out = false, int* direction = nullptr);
 
   /**
    * @brief A class representing a selection rectangle.

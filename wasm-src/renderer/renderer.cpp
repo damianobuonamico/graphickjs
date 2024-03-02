@@ -686,7 +686,7 @@ namespace Graphick::Renderer {
       })
     };
 
-    Geometry::PathBuilder builder{ visible, dmat2x3(transform), GK_PATH_TOLERANCE };
+    Geometry::PathBuilder builder{ visible, dmat2x3(transform), GK_PATH_TOLERANCE / m_viewport.zoom };
     OutlineDrawable drawable = builder.outline(path);
 
     for (const auto& contour : drawable.contours) {
@@ -739,6 +739,7 @@ namespace Graphick::Renderer {
     Editor::Scene& scene = Editor::Editor::scene();
 
     vec2 last = { 0.0f, 0.0f };
+    vec2 last_raw = { 0.0f, 0.0f };
     vec2 last_move_point = { 0.0f, 0.0f };
     size_t i = 0;
 
@@ -753,6 +754,7 @@ namespace Graphick::Renderer {
         }
 
         last_move_point = p0;
+        last_raw = p0;
         last = p;
 
         i += 1;
@@ -767,7 +769,9 @@ namespace Graphick::Renderer {
           }
         }
 
+        last_raw = p1;
         last = p;
+
         i += 1;
       },
       [&](const vec2 p1, const vec2 p2) {
@@ -786,7 +790,9 @@ namespace Graphick::Renderer {
         add_linear_segment_instance(last, h);
         add_linear_segment_instance(h, p);
 
+        last_raw = p2;
         last = p;
+
         i += 2;
       },
       [&](const vec2 p1, const vec2 p2, const vec2 p3) {
@@ -799,7 +805,7 @@ namespace Graphick::Renderer {
           }
         }
 
-        if (p1 != p2) {
+        if (p1 != last_raw) {
           vec2 h = transform * p1;
           add_circle_instance(h);
           add_linear_segment_instance(last, h);
@@ -811,7 +817,9 @@ namespace Graphick::Renderer {
           add_linear_segment_instance(h, p);
         }
 
+        last_raw = p3;
         last = p;
+
         i += 3;
       }
     );

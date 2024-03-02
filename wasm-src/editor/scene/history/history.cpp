@@ -60,7 +60,7 @@ namespace Graphick::Editor {
   }
 
   void History::modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data) {
-    console::log("history_size", m_actions.size());
+    // console::log("history_size", m_actions.size());
 
     push(Action{
       entity_id,

@@ -181,8 +181,8 @@ int main() {
 
   // Graphick::console::log("back", (int)path.back().type);
 
-// #define TIGER
-#define OBJECTS
+#define TIGER
+// #define OBJECTS
 
 #ifdef TIGER
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");

@@ -176,7 +176,7 @@ namespace Graphick::Editor {
     const double zoom = viewport.zoom();
     threshold /= zoom;
 
-    GK_DEBUGGER_DRAW(rect{ position - threshold - GK_POINT_EPSILON / zoom, position + threshold + GK_POINT_EPSILON / zoom });
+    // GK_DEBUGGER_DRAW(rect{ position - threshold - GK_POINT_EPSILON / zoom, position + threshold + GK_POINT_EPSILON / zoom });
 
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       const Entity entity = { *it, this };

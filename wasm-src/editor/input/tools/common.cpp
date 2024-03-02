@@ -19,18 +19,18 @@ namespace Graphick::Editor::Input {
   void translate_control_point(
     PathComponent& path,
     const size_t point_index,
-    const mat2x3& transform,
+    const mat2x3& transform, const vec2* override_movement,
     bool create_handles, bool keep_in_handle_length, bool swap_in_out,
     int* direction
   ) {
-    const mat2x3 inverse_transform = Math::inverse(transform);
+    const mat2x3 inverse_transform = override_movement ? mat2x3{} : Math::inverse(transform);
     const vec2 position = inverse_transform * InputManager::pointer.scene.position;
 
     const Renderer::Geometry::Path::VertexNode node = path.data().node_at(point_index);
 
     if (point_index == node.vertex) {
       const vec2 vertex_position = path.data().point_at(node.vertex);
-      const vec2 movement = position - vertex_position;
+      const vec2 movement = override_movement ? *override_movement : position - vertex_position;
 
       path.translate(node.vertex, movement);
 
@@ -41,7 +41,7 @@ namespace Graphick::Editor::Input {
       return;
     } else if (InputManager::keys.space) {
       const vec2 out_position = path.data().point_at(node.out);
-      const vec2 movement = position - out_position;
+      const vec2 movement = override_movement ? *override_movement : position - out_position;
 
       path.translate(node.vertex, movement);
 
@@ -56,7 +56,7 @@ namespace Graphick::Editor::Input {
     vec2 in_position = 2.0f * path.data().point_at(node.vertex) - position;
 
     const vec2 old_out_position = path.data().point_at(static_cast<size_t>(node.out));
-    const vec2 movement = out_position - old_out_position;
+    const vec2 movement = override_movement ? *override_movement : out_position - old_out_position;
 
     path.translate(static_cast<size_t>(node.out), movement);
 
