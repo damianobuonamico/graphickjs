@@ -1,3 +1,7 @@
+/**
+ *
+*/
+
 #include "selection.h"
 
 #include "scene.h"
@@ -18,8 +22,8 @@ namespace Graphick::Editor {
     rect selection_rect;
 
     for (auto& [id, _] : m_selected) {
-      Entity entity = m_scene->get_entity(id);
-      rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
+      const Entity entity = m_scene->get_entity(id);
+      const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
 
       Math::min(selection_rect.min, entity_rect.min, selection_rect.min);
       Math::max(selection_rect.max, entity_rect.max, selection_rect.max);
@@ -32,20 +36,22 @@ namespace Graphick::Editor {
     return m_selected.find(id) != m_selected.end() || (include_temp && m_temp_selected.find(id) != m_temp_selected.end());
   }
 
-  bool Selection::has_vertex(const uuid id, const uuid element_id, bool include_temp) const {
+  bool Selection::has_child(const uuid element_id, const size_t child_index, bool include_temp) const {
     auto it = m_selected.find(element_id);
+
     if (it == m_selected.end()) {
       it = m_temp_selected.find(element_id);
 
-      if (it == m_temp_selected.end()) return false;
+      if (it == m_temp_selected.end()) {
+        return false;
+      }
     }
 
-    if (it->second.type != SelectionEntry::Type::Element) return false;
+    if (it->second.full()) {
+      return true;
+    }
 
-    SelectionElementEntry& entry = (SelectionElementEntry&)it->second;
-    if (entry.full()) return true;
-
-    return entry.vertices.find(id) != entry.vertices.end();
+    return it->second.indices.find(child_index) != it->second.indices.end();
   }
 
   void Selection::clear() {
@@ -56,28 +62,25 @@ namespace Graphick::Editor {
   void Selection::select(const uuid id) {
     if (!m_scene->has_entity(id)) return;
 
-    Entity entity = m_scene->get_entity(id);
-    if (!entity.is_in_category(CategoryComponent::Category::Selectable)) return;
+    const Entity entity = m_scene->get_entity(id);
 
-    if (entity.is_element()) {
-      m_selected[id] = SelectionElementEntry{ { 0 } };
-    } else {
+    if (entity.is_in_category(CategoryComponent::Category::Selectable)) {
       m_selected[id] = SelectionEntry{};
     }
   }
 
-  // Rename api to select_child, ...
-  void Selection::select_vertex(const uuid id, const uuid element_id) {
+  void Selection::select_child(const uuid element_id, const size_t child_index) {
+    console::log("index", child_index);
+
     auto it = m_selected.find(element_id);
-    if (it == m_selected.end() || it->second.type != SelectionEntry::Type::Element) {
-      m_selected[element_id] = SelectionElementEntry{ { id } };
+
+    if (it == m_selected.end()) {
+      m_selected[element_id] = SelectionEntry{ { child_index } };
       return;
     }
 
-    SelectionElementEntry& entry = (SelectionElementEntry&)it->second;
-
-    if (!entry.full()) {
-      entry.vertices.insert(id);
+    if (!it->second.full()) {
+      it->second.indices.insert(child_index);
     }
   }
 
@@ -85,27 +88,27 @@ namespace Graphick::Editor {
     m_selected.erase(id);
   }
 
-  void Selection::deselect_vertex(const uuid id, const uuid element_id) {
+  void Selection::deselect_child(const uuid element_id, const size_t child_index) {
     auto it = m_selected.find(element_id);
-    if (it == m_selected.end() || it->second.type != SelectionEntry::Type::Element) return;
 
-    SelectionElementEntry& entry = (SelectionElementEntry&)it->second;
+    if (it == m_selected.end()) return;
 
-    if (entry.full()) {
+    if (it->second.full()) {
       Entity element = m_scene->get_entity(element_id);
-      entry.vertices.clear();
 
-#if 0
-      for (uuid vertex_id : element.get_component<PathComponent>().path.vertices_ids()) {
-        if (vertex_id == id) continue;
-        entry.vertices.insert(vertex_id);
+      it->second.indices.clear();
+      it->second.type = SelectionEntry::Type::Element;
+
+      for (size_t i : element.get_component<PathComponent>().data().vertex_indices()) {
+        if (i == child_index) continue;
+
+        it->second.indices.insert(i);
       }
-#endif
     } else {
-      entry.vertices.erase(id);
+      it->second.indices.erase(child_index);
     }
 
-    if (entry.vertices.empty()) {
+    if (it->second.indices.empty()) {
       m_selected.erase(element_id);
     }
   }
@@ -117,17 +120,16 @@ namespace Graphick::Editor {
   void Selection::sync() {
     for (auto& [id, entry] : m_temp_selected) {
       if (entry.type == SelectionEntry::Type::Element) {
-        SelectionElementEntry& element_entry = (SelectionElementEntry&)entry;
         auto it = m_selected.find(id);
 
         if (it != m_selected.end() && it->second.type == SelectionEntry::Type::Element) {
-          if (((SelectionElementEntry&)it->second).full()) continue;
+          if (it->second.full()) continue;
 
-          for (uuid vertex_id : element_entry.vertices) {
-            ((SelectionElementEntry&)it->second).vertices.insert(vertex_id);
+          for (size_t child_index : entry.indices) {
+            it->second.indices.insert(child_index);
           }
         } else {
-          m_selected[id] = element_entry;
+          m_selected[id] = entry;
         }
       } else {
         m_selected[id] = entry;

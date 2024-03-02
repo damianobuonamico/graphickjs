@@ -403,7 +403,7 @@ namespace Graphick::Editor::Input {
         Scene& scene = Editor::scene();
 
         scene.selection.clear();
-        scene.selection.select_vertex(vertex_id, new_path.id);
+        scene.selection.select_vertex(new_path.id, vertex_id);
 
         m_transform = new_transform;
         set_pen_element(0);
@@ -472,7 +472,7 @@ namespace Graphick::Editor::Input {
 #if 0
     if (!m_element || !m_vertex || !m_path) return;
 
-    Editor::scene().selection.select_vertex(m_vertex->id, m_element);
+    Editor::scene().selection.select_vertex(m_entity, m_vertex.value());
 
     if (!m_path->segments().empty()) {
       if (m_vertex->id == m_path->segments().front().p0_id()) {

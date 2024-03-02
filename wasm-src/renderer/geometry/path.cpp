@@ -626,6 +626,55 @@ namespace Graphick::Renderer::Geometry {
     return size;
   }
 
+  size_t Path::points_size(const bool include_handles) const {
+    if (include_handles) {
+      return m_points.size();
+    }
+
+    return m_commands_size;
+  }
+
+  std::vector<size_t> Path::vertex_indices() const {
+    std::vector<size_t> indices;
+    vec2 last_move_point = { 0.0f, 0.0f };
+
+    indices.reserve(points_size(false));
+
+    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        indices.push_back(point_i);
+
+        last_move_point = m_points[point_i];
+        point_i += 1;
+        break;
+      case Command::Line:
+        if (m_points[point_i] != last_move_point) {
+          indices.push_back(point_i);
+        }
+
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        if (m_points[point_i + 1] != last_move_point) {
+          indices.push_back(point_i + 1);
+        }
+
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        if (m_points[point_i + 2] != last_move_point) {
+          indices.push_back(point_i + 2);
+        }
+
+        point_i += 3;
+        break;
+      }
+    }
+
+    return indices;
+  }
+
   bool Path::is_vertex(const size_t point_index) const {
     if (point_index == 0) return true;
 

@@ -394,11 +394,21 @@ namespace Graphick::Renderer::Geometry {
     size_t size() const;
 
     /**
-     * @brief Return the number of points in the path.
+     * @brief Returns the number of control points in the path.
      *
+     * @param include_handles Whether or not to count the handles when counting the points, default is true.
      * @return The number of points in the path.
      */
-    inline size_t points_size() const { return m_points.size(); }
+    size_t points_size(const bool include_handles = true) const;
+
+    /**
+     * @brief Returns a vector containing the incdices of all of the vertex control points.
+     *
+     * Closing vertices are not included in the vector.
+     *
+     * @return The vector of indices.
+    */
+    std::vector<size_t> vertex_indices() const;
 
     /**
      * @brief Checks whether the given point is a vertex or not.

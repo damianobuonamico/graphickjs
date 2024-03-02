@@ -190,10 +190,10 @@ namespace Graphick::Renderer {
     get()->m_tiler.process_fill(path, transform, fill);
   }
 
-  void Renderer::draw_outline(const Geometry::Path& path, const mat2x3& transform, bool draw_vertices) {
+  void Renderer::draw_outline(const Geometry::Path& path, const mat2x3& transform, bool draw_vertices, const std::unordered_set<size_t>* selected_vertices) {
     if (path.vacant()) return;
     get()->add_line_instances(path, transform);
-    if (draw_vertices) get()->add_vertex_instances(path, transform);
+    if (draw_vertices) get()->add_vertex_instances(path, transform, selected_vertices);
   }
 
   void Renderer::draw_outline(const Geometry::Contour& contour, const mat2x3& transform, const vec4& color) {
@@ -735,34 +735,69 @@ namespace Graphick::Renderer {
     }
   }
 
-  void Renderer::add_vertex_instances(const Geometry::Path& path, const mat2x3& transform) {
+  void Renderer::add_vertex_instances(const Geometry::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices) {
     Editor::Scene& scene = Editor::Editor::scene();
 
     vec2 last = { 0.0f, 0.0f };
+    vec2 last_move_point = { 0.0f, 0.0f };
+    size_t i = 0;
 
+    // TODO: should render backwards
     path.for_each(
       [&](const vec2 p0) {
         vec2 p = transform * p0;
 
         add_square_instance(p);
-        add_white_square_instance(p);
+        if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+          add_white_square_instance(p);
+        }
 
+        last_move_point = p0;
         last = p;
+
+        i += 1;
       },
       [&](const vec2 p1) {
         vec2 p = transform * p1;
 
-        add_square_instance(p);
-        add_white_square_instance(p);
+        if (p1 != last_move_point) {
+          add_square_instance(p);
+          if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+            add_white_square_instance(p);
+          }
+        }
 
         last = p;
+        i += 1;
       },
-      nullptr,
+      [&](const vec2 p1, const vec2 p2) {
+        vec2 p = transform * p2;
+
+        if (p2 != last_move_point) {
+          add_square_instance(p);
+          if (selected_vertices && selected_vertices->find(i + 1) == selected_vertices->end()) {
+            add_white_square_instance(p);
+          }
+        }
+
+        vec2 h = transform * p1;
+
+        add_circle_instance(h);
+        add_linear_segment_instance(last, h);
+        add_linear_segment_instance(h, p);
+
+        last = p;
+        i += 2;
+      },
       [&](const vec2 p1, const vec2 p2, const vec2 p3) {
         vec2 p = transform * p3;
 
-        add_square_instance(p);
-        add_white_square_instance(p);
+        if (p3 != last_move_point) {
+          add_square_instance(p);
+          if (selected_vertices && selected_vertices->find(i + 2) == selected_vertices->end()) {
+            add_white_square_instance(p);
+          }
+        }
 
         if (p1 != p2) {
           vec2 h = transform * p1;
@@ -777,6 +812,7 @@ namespace Graphick::Renderer {
         }
 
         last = p;
+        i += 3;
       }
     );
 

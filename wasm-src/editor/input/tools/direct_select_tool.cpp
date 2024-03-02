@@ -236,7 +236,7 @@ namespace Graphick::Editor::Input {
   void DirectSelectTool::on_element_pointer_down() {
     Scene& scene = Editor::scene();
 
-    if (!scene.selection.has(m_entity) || !((Selection::SelectionElementEntry&)(scene.selection.get(m_entity))).full()) {
+    if (!scene.selection.has(m_entity) || !scene.selection.get(m_entity).full()) {
       if (!InputManager::keys.shift) scene.selection.clear();
 
       scene.selection.select(m_entity);
@@ -288,19 +288,16 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_down() {
-#if 0
     Scene& scene = Editor::scene();
-    uuid id = m_vertex->lock()->id;
 
-    if (!scene.selection.has_vertex(id, m_entity)) {
+    if (!scene.selection.has_child(m_entity, m_vertex.value())) {
       if (!InputManager::keys.shift) scene.selection.clear();
 
-      scene.selection.select_vertex(id, m_entity);
+      scene.selection.select_child(m_entity, m_vertex.value());
       m_is_entity_added_to_selection = true;
     }
 
-    populate_cache();
-#endif
+    // populate_cache();
 
     m_mode = Mode::Vertex;
   }
@@ -424,7 +421,6 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_move() {
-    console::log("vertexmove");
     Scene& scene = Editor::scene();
     Entity entity = scene.get_entity(m_entity);
 
@@ -510,24 +506,23 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_vertex_pointer_up() {
-#if 0
-    Scene& scene = Editor::scene();
-    uuid id = m_vertex->lock()->id;
-
     if (m_dragging_occurred) {
-      apply_selected();
-    } else if (scene.selection.has_vertex(id, m_entity) && !m_is_entity_added_to_selection) {
+      return;
+    }
+
+    Scene& scene = Editor::scene();
+
+    if (scene.selection.has_child(m_entity, m_vertex.value()) && !m_is_entity_added_to_selection) {
       if (InputManager::keys.shift) {
-        scene.selection.deselect_vertex(id, m_entity);
+        scene.selection.deselect_child(m_entity, m_vertex.value());
       } else {
         if (InputManager::pointer.button == InputManager::PointerButton::Left) {
           scene.selection.clear();
         }
 
-        scene.selection.select_vertex(id, m_entity);
+        scene.selection.select_child(m_entity, m_vertex.value());
       }
     }
-#endif
   }
 
   void DirectSelectTool::on_handle_pointer_up() {

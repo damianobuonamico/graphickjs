@@ -210,7 +210,6 @@ namespace Graphick::Editor {
           stroke = Renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0.0f };
         }
 
-        // if (path.is_point_inside_path(transformed_pos, m_registry.all_of<FillComponent>(*it), deep_search && selection.has(id), transformed_threshold)) {
         if (path.is_point_inside_path(position, has_fill ? &fill : nullptr, has_stroke ? &stroke : nullptr, transform, threshold, zoom, deep_search && selection.has(id))) {
           return id;
         }
@@ -344,7 +343,7 @@ namespace Graphick::Editor {
 
         const uuid id = entity.id();
         const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().TEMP_path();
-        const TransformComponent& transform = entity.get_component<TransformComponent>();
+        const TransformComponent transform = entity.get_component<TransformComponent>();
 
         if (!has_entity(id)) return;
 
@@ -398,9 +397,35 @@ namespace Graphick::Editor {
           z_index += 1;
         }
 
-        if (selected.find(id) != selected.end() || temp_selected.find(id) != temp_selected.end()) {
-          Renderer::Renderer::draw_outline(path, transform, draw_vertices);
+        bool is_selected = selected.find(id) != selected.end();
+        bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
+        bool is_full = false;
+
+        if (!is_selected && !is_temp_selected) continue;
+
+        std::unordered_set<size_t> selected_vertices;
+
+        if (is_selected) {
+          Selection::SelectionEntry entry = selected.at(id);
+
+          is_full = entry.full();
+
+          if (!is_full) {
+            selected_vertices = entry.indices;
+          }
         }
+
+        if (is_temp_selected && !is_full) {
+          Selection::SelectionEntry entry = temp_selected.at(id);
+
+          is_full = entry.full();
+
+          if (!is_full) {
+            selected_vertices.insert(temp_selected.at(id).indices.begin(), temp_selected.at(id).indices.end());
+          }
+        }
+
+        Renderer::Renderer::draw_outline(path, transform, draw_vertices, is_full ? nullptr : &selected_vertices);
 
         // Math::rect bounding_rect = path.bounding_rect();
         // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);
