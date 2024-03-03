@@ -265,6 +265,28 @@ namespace Graphick::Math {
   std::vector<float> bezier_rect_intersections(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const rect& rect);
 
   /**
+   * @brief Checks whether or not a linear segment intersects a rect.
+   *
+   * @param p0 The starting point of the line segment.
+   * @param p3 The ending point of the line segment.
+   * @param rect The rect to check for intersection.
+   * @return true if they intersect, false otherwise.
+   */
+  bool does_linear_segment_intersect_rect(const vec2 p0, const vec2 p1, const rect& rect);
+
+  /**
+   * @brief Checks whether or not a cubic segment intersects a rect.
+   *
+  * @param p0 The first control point of the Bezier curve.
+   * @param p1 The second control point of the Bezier curve.
+   * @param p2 The third control point of the Bezier curve.
+   * @param p3 The fourth control point of the Bezier curve.
+   * @param rect The rect to check for intersection.
+   * @return true if they intersect, false otherwise.
+   */
+  bool does_cubic_segment_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p3, const vec2 p4, const rect& rect);
+
+  /**
    * @brief Calculates the lines that make up a rect.
    *
    * @param rect The rect.

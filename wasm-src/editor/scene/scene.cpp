@@ -223,20 +223,17 @@ namespace Graphick::Editor {
     OPTICK_EVENT();
 
     std::unordered_map<uuid, Selection::SelectionEntry> entities;
-    std::unordered_set<uuid> vertices;
+    std::unordered_set<size_t> vertices;
 
-#if 0
-    auto view = get_all_entities_with<IDComponent, PathComponent, TransformComponent>();
+    auto view = get_all_entities_with<IDComponent::Data, TransformComponent::Data>();
 
-    for (entt::entity entity : view) {
+    for (entt::entity handle : view) {
       OPTICK_EVENT("entity_in_rect");
 
-      auto components = view.get<IDComponent, PathComponent, TransformComponent>(entity);
+      const Entity entity = { handle, this };
 
-      const uuid id = std::get<0>(components).id;
-      const Renderer::Geometry::Path& path = std::get<1>(components).path;
-      const TransformComponent& transform_component = std::get<2>(components);
-      const mat2x3 transform = transform_component;
+      const uuid id = entity.id();
+      const TransformComponent transform = entity.get_component<TransformComponent>();
 
       // vec2 r1 = transform / rect.min;
       // vec2 r2 = transform / vec2{ rect.max.x, rect.min.y };
@@ -251,53 +248,66 @@ namespace Graphick::Editor {
       //   max(max(r1, r2), max(r3, r4))
       // };
 
-      float angle = Math::rotation(transform);
+      const float angle = Math::rotation(transform.matrix());
 
       if (Math::is_almost_zero(std::fmodf(angle, MATH_F_TWO_PI))) {
-        Math::rect selection_rect = transform / rect;
+        const mat2x3 inverse_transform = transform.inverse();
+        const Math::rect selection_rect = inverse_transform * rect;
 
-        if (deep_search) {
-          vertices.clear();
-
-          if (Math::is_rect_in_rect(transform_component.bounding_rect(), rect)) {
-            entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+        if (entity.is_element()) {
+          if (Math::is_rect_in_rect(transform.bounding_rect(), rect)) {
+            entities.insert({ id, Selection::SelectionEntry() });
             continue;
           }
 
-          vertices.reserve(path.segments().size() + 1);
+          const PathComponent path = entity.get_component<PathComponent>();
 
-          if (path.intersects(selection_rect, vertices)) {
-            entities.insert({ id, Selection::SelectionElementEntry{ vertices } });
+          if (deep_search) {
+            vertices.clear();
+
+            if (path.data().intersects(selection_rect, &vertices)) {
+              entities.insert({ id, Selection::SelectionEntry{ vertices } });
+            }
+          } else {
+            if (path.data().intersects(selection_rect)) {
+              entities.insert({ id, Selection::SelectionEntry() });
+            }
           }
         } else {
-          if (path.intersects(selection_rect)) {
-            entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+          if (Math::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
+            entities.insert({ id, Selection::SelectionEntry() });
           }
         }
       } else {
-        if (deep_search) {
-          vertices.clear();
-
-          if (Math::is_rect_in_rect(transform_component.bounding_rect(), rect)) {
-            entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+        if (entity.is_element()) {
+          if (Math::is_rect_in_rect(transform.bounding_rect(), rect)) {
+            entities.insert({ id, Selection::SelectionEntry() });
             continue;
           }
 
-          vertices.reserve(path.segments().size() + 1);
+          const PathComponent path = entity.get_component<PathComponent>();
 
-          if (path.intersects(rect, transform, vertices)) {
-            entities.insert({ id, Selection::SelectionElementEntry{ vertices } });
+          if (deep_search) {
+            vertices.clear();
+
+            if (path.data().intersects(rect, transform, &vertices)) {
+              entities.insert({ id, Selection::SelectionEntry{ vertices } });
+            }
+          } else {
+            if (path.data().intersects(rect, transform)) {
+              entities.insert({ id, Selection::SelectionEntry() });
+            }
           }
         } else {
-          if (path.intersects(rect, transform)) {
-            entities.insert({ id, Selection::SelectionElementEntry{ { 0 } } });
+          // TODO: implement better check for rotated rects
+          if (Math::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
+            entities.insert({ id, Selection::SelectionEntry() });
           }
         }
       }
 
     }
 
-#endif
     return entities;
   }
 

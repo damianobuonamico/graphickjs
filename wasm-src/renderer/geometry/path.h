@@ -11,6 +11,7 @@
 
 #include "../../io/encode/encode.h"
 
+#include <unordered_set>
 #include <functional>
 #include <optional>
 #include <vector>
@@ -609,6 +610,25 @@ namespace Graphick::Renderer::Geometry {
      * @return true if the two points are near each other, false otherwise.
     */
     bool is_point_inside_point(const size_t point_index, const vec2 point, const mat2x3& transform, const float threshold = 0.0f) const;
+
+    /**
+     * @brief Checks whether the path intersects the given rect or not.
+     *
+     * @param rect The rect to check.
+     * @param indices An optional set to fill with the indices of the vertices that intersect the rect.
+     * @return true if the path intersects the rect, false otherwise.
+     */
+    bool intersects(const Math::rect& rect, std::unordered_set<size_t>* indices = nullptr) const;
+
+    /**
+     * @brief Checks whether the path intersects the given rect or not.
+     *
+     * @param rect The rect to check.
+     * @param transform The transformation matrix to apply to the path.
+     * @param indices An optional set to fill with the indices of the vertices that intersect the rect.
+     * @return true if the path intersects the rect, false otherwise.
+     */
+    bool intersects(const Math::rect& rect, const mat2x3& transform, std::unordered_set<size_t>* indices = nullptr) const;
 
     /**
      * @brief Encodes the path to a list of bytes.

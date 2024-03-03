@@ -1500,6 +1500,160 @@ namespace Graphick::Renderer::Geometry {
     }
   }
 
+  bool Path::intersects(const Math::rect& rect, std::unordered_set<size_t>* indices) const {
+    if (m_commands_size == 0) {
+      return false;
+    } else if (m_commands_size == 1) {
+      if (Math::is_point_in_rect(m_points[0], rect)) {
+        if (indices) indices->insert(0);
+        return true;
+      }
+
+      return false;
+    }
+
+    if (!Math::does_rect_intersect_rect(rect, approx_bounding_rect())) {
+      return false;
+    }
+
+    vec2 last_move_point = { 0.0f, 0.0f };
+    bool found = false;
+
+    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        if (Math::is_point_in_rect(m_points[point_i], rect)) {
+          if (indices) indices->insert(point_i);
+          found = true;
+        }
+
+        last_move_point = m_points[point_i];
+        point_i += 1;
+
+        break;
+      case Command::Line:
+        if (m_points[point_i] != last_move_point && Math::is_point_in_rect(m_points[point_i], rect)) {
+          if (indices) indices->insert(point_i);
+          found = true;
+        } else if (!found && Math::does_linear_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], rect)) {
+          found = true;
+        }
+
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        // if (m_points[point_i + 1] != last_move_point && Math::is_point_in_rect(m_points[point_i + 1], rect)) {
+        //   if (indices) indices->insert(point_i + 1);
+        //   found = true;
+        // } else if (!found && Math::does_quadratic_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], rect)) {
+        //   found = true;
+        // }
+
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        if (m_points[point_i + 2] != last_move_point && Math::is_point_in_rect(m_points[point_i + 2], rect)) {
+          if (indices) indices->insert(point_i + 2);
+          found = true;
+        } else if (!found && Math::does_cubic_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], rect)) {
+          found = true;
+        }
+
+        point_i += 3;
+        break;
+      }
+    }
+
+    return found;
+  }
+
+  bool Path::intersects(const Math::rect& rect, const mat2x3& transform, std::unordered_set<size_t>* indices) const {
+    if (m_commands_size == 0) {
+      return false;
+    } else if (m_commands_size == 1) {
+      if (Math::is_point_in_rect(transform * m_points[0], rect)) {
+        if (indices) indices->insert(0);
+        return true;
+      }
+
+      return false;
+    }
+
+    vec2 last = { 0.0f, 0.0f };
+
+    if (!Math::does_rect_intersect_rect(rect, transform * approx_bounding_rect())) {
+      return false;
+    }
+
+    bool found = false;
+
+    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move: {
+        const vec2 p0 = transform * m_points[point_i];
+
+        if (Math::is_point_in_rect(p0, rect)) {
+          if (indices) indices->insert(point_i);
+          found = true;
+        }
+
+        point_i += 1;
+        last = p0;
+
+        break;
+      }
+      case Command::Line: {
+        const vec2 p1 = transform * m_points[point_i];
+
+        if (Math::is_point_in_rect(p1, rect)) {
+          if (indices) indices->insert(point_i);
+          found = true;
+        } else if (!found && Math::does_linear_segment_intersect_rect(last, p1, rect)) {
+          found = true;
+        }
+
+        point_i += 1;
+        break;
+      }
+      case Command::Quadratic: {
+        const vec2 p2 = transform * m_points[point_i + 1];
+
+        // if (Math::is_point_in_rect(m_points[point_i + 1], rect)) {
+        //   if (indices) indices->insert(point_i + 1);
+        //   found = true;
+        // } else if (!found && Math::does_quadratic_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], rect)) {
+        //   found = true;
+        // }
+
+        point_i += 2;
+        last = p2;
+
+        break;
+      }
+      case Command::Cubic: {
+        const vec2 p1 = transform * m_points[point_i];
+        const vec2 p2 = transform * m_points[point_i + 1];
+        const vec2 p3 = transform * m_points[point_i + 2];
+
+        if (Math::is_point_in_rect(p3, rect)) {
+          if (indices) indices->insert(point_i + 2);
+          found = true;
+        } else if (!found && Math::does_cubic_segment_intersect_rect(last, p1, p2, p3, rect)) {
+          found = true;
+        }
+
+        point_i += 3;
+        last = p3;
+
+        break;
+      }
+      }
+    }
+
+    return found;
+  }
+
+
   std::vector<uint8_t> Path::encode() const {
     if (vacant()) return {};
 

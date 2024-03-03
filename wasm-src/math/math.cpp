@@ -336,6 +336,14 @@ namespace Graphick::Math {
     return intersections_t;
   }
 
+  bool does_linear_segment_intersect_rect(const vec2 p0, const vec2 p1, const rect& rect) {
+    return line_rect_intersection_points(p0, p1, rect).size() > 0;
+  }
+
+  bool does_cubic_segment_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p3, const vec2 p4, const rect& rect) {
+    return bezier_rect_intersections(p0, p1, p3, p4, rect).size() > 0;
+  }
+
   void clip_to_left(std::vector<vec2>& points, float x) {
     if (points.empty()) return;
 

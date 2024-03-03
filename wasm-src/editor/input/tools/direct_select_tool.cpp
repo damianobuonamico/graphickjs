@@ -332,7 +332,7 @@ namespace Graphick::Editor::Input {
       Scene& scene = Editor::scene();
 
       m_selection_rect.size(InputManager::pointer.scene.delta);
-      scene.selection.temp_select(scene.entities_in(m_selection_rect.bounding_rect()));
+      scene.selection.temp_select(scene.entities_in(m_selection_rect.bounding_rect(), true));
     }
   }
 
