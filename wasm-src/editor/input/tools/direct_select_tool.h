@@ -68,7 +68,6 @@ namespace Graphick::Editor::Input {
     // BezierEntity::BezierPointDistance m_closest{};
 
     Mode m_mode = Mode::None;
-
     uuid m_entity = uuid::null;
 
     std::optional<size_t> m_segment = std::nullopt;

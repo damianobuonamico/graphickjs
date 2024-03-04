@@ -317,12 +317,47 @@ namespace Graphick::Editor {
     inline const Renderer::Geometry::Path& TEMP_path() const { return m_data->path; }
 
     /**
+     * @brief Moves the path cursor to the given point.
+     *
+     * @param p0 The point to move the cursor to.
+     * @return The index of the newly added control point.
+     */
+    size_t move_to(const vec2 p0);
+
+    /**
+     * @brief Adds a line segment to the path.
+     *
+     * @param p1 The point to add to the path.
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
+     * @return The index of the newly added control point.
+     */
+    size_t line_to(const vec2 p1, const bool reverse = false);
+
+    /**
+     * @brief Adds a cubic bezier curve to the path.
+     *
+     * @param p1 The first control point of the curve.
+     * @param p2 The second control point of the curve.
+     * @param p2 The point to add to the path.
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
+     * @return The index of the newly added control point.
+     */
+    size_t cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse = false);
+
+    /**
      * @brief Translates a control point in the path by a given delta.
      *
      * @param point_index The index of the point to translate.
      * @param delta The translation delta.
      */
     void translate(const size_t point_index, const vec2 delta);
+
+    /**
+     * @brief Converts the given command to a cubic command.
+     *
+     * @param command_index The index of the command to convert.
+    */
+    void to_cubic(const size_t command_index);
 
     /**
      * @brief Encodes the component in binary format.
@@ -341,7 +376,8 @@ namespace Graphick::Editor {
     void modify(io::DataDecoder& decoder) override;
   private:
     enum class PathModifyType {
-      ModifyPoint = 1 << 0,
+      LoadData = 0,
+      ModifyPoint = 1 << 0
     };
   private:
     Data* m_data;    /* The actual component data. */

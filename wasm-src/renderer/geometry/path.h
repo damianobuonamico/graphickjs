@@ -42,6 +42,9 @@ namespace Graphick::Renderer::Geometry {
       Quadratic = 2,    /* Quadratic bezier curve. */
       Cubic = 3,        /* Cubic bezier curve. */
     };
+
+    static const size_t in_handle_index = std::numeric_limits<uint32_t>::max() - 1;     /* The index of the incoming handle. */
+    static const size_t out_handle_index = std::numeric_limits<uint32_t>::max() - 2;    /* The index of the outgoing handle. */
   public:
     /**
      * @brief This struct represents a vertex node of the path.
@@ -56,7 +59,10 @@ namespace Graphick::Renderer::Geometry {
       int64_t in;              /* The index of the incoming handle, -1 if no incoming handle is present. */
       int64_t out;             /* The index of the outgoing handle. -1 if no outgoing handle is present. */
 
-      int64_t close_vertex;    /* The index of the vertex that closes the sub-path, -1 if the sub-path is not closed. */
+      int64_t close_vertex;    /* The index of the vertex that closes the sub-path, -1 if the sub-path is not closed or the vertex is not a sub-path end. */
+
+      int64_t in_command;      /* The index of the incoming command, -1 if no incoming command is present. */
+      int64_t out_command;     /* The index of the outgoing command, -1 if no outgoing command is present. */
     };
 
     /**
@@ -177,10 +183,10 @@ namespace Graphick::Renderer::Geometry {
        */
       value_type operator*() const;
     private:
-      size_t m_index;           /* The current index of the iterator. */
+      size_t m_index;           /* The current segment index of the iterator. */
       size_t m_point_index;     /* The index of the last point iterated over. */
 
-      const Path& m_path;    /* The path to iterate over. */
+      const Path& m_path;       /* The path to iterate over. */
     };
 
     /**
@@ -237,10 +243,10 @@ namespace Graphick::Renderer::Geometry {
        */
       value_type operator*() const;
     private:
-      size_t m_index;           /* The current index of the iterator. */
+      size_t m_index;           /* The current segment index of the iterator. */
       size_t m_point_index;     /* The index of the last point iterated over. */
 
-      const Path& m_path;    /* The path to iterate over. */
+      const Path& m_path;       /* The path to iterate over. */
     };
   public:
     /**
@@ -306,22 +312,6 @@ namespace Graphick::Renderer::Geometry {
     inline Segment back() const { return *rbegin(); }
 
     /**
-     * @brief Returns the first segment of the sub-path corresponding to the given move command index.
-     *
-     * @param move_index The index of the move command corresponding to the sub-path to check.
-     * @return The first segment of the sub-path corresponding to the given move command index.
-     */
-    Segment front(const size_t move_index) const;
-
-    /**
-     * @brief Returns the last segment of the sub-path corresponding to the given move command index.
-     *
-     * @param move_index The index of the move command corresponding to the sub-path to check.
-     * @return The last segment of the sub-path corresponding to the given move command index.
-     */
-    Segment back(const size_t move_index) const;
-
-    /**
      * @brief Returns the ith segment of the path.
      *
      * @param segment_index The index of the segment to return.
@@ -332,10 +322,27 @@ namespace Graphick::Renderer::Geometry {
     /**
      * @brief Returns the ith control point of the path.
      *
+     * To retrieve the position of the incoming handle, use the Path::in_handle_index constant.
+     * To retrieve the position of the outgoing handle, use the Path::out_handle_index constant.
+     *
      * @param point_index The index of the point to return.
      * @return The ith control point of the path.
      */
-    inline vec2 point_at(const size_t point_index) const { return m_points[point_index]; }
+    vec2 point_at(const size_t point_index) const;
+
+    /**
+     * @brief Checks whether the path has an incoming handle or not.
+     *
+     * @return true if the path has an incoming handle, false otherwise.
+     */
+    inline bool has_in_handle() const { return !vacant() && !closed() && m_in_handle != m_points.front(); }
+
+    /**
+     * @brief Checks whether the path has an outgoing handle or not.
+     *
+     * @return true if the path has an outgoing handle, false otherwise.
+     */
+    inline bool has_out_handle() const { return !vacant() && !closed() && m_out_handle != m_points.front(); }
 
     /**
      * @brief Iterates over the commands of the path, calling the given callbacks for each command.
@@ -432,6 +439,14 @@ namespace Graphick::Renderer::Geometry {
     inline bool is_handle(const size_t point_index) const { return !is_vertex(point_index); }
 
     /**
+     * @brief Checks whether the given point is the first or last point of an open path.
+     *
+     * @param point_index The index of the point to check.
+     * @return true if the point is an open end, false otherwise.
+     */
+    bool is_open_end(const size_t point_index) const;
+
+    /**
      * @brief Returns the vertex node the given control point is part of.
      *
      * @param point_index The index of the point to check.
@@ -442,10 +457,9 @@ namespace Graphick::Renderer::Geometry {
     /**
      * @brief Checks whether the path is closed or not.
      *
-     * @param move_index The index of the move command corresponding to the sub-path to check.
      * @return true if the path is closed, false otherwise.
      */
-    bool closed(const size_t move_index = 0) const;
+    bool closed() const;
 
     /**
      * @brief Moves the path cursor to the given point.
@@ -458,16 +472,18 @@ namespace Graphick::Renderer::Geometry {
      * @brief Adds a line segment to the path.
      *
      * @param point The point to add to the path.
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
      */
-    void line_to(const vec2 point);
+    void line_to(const vec2 point, const bool reverse = false);
 
     /**
      * @brief Adds a quadratic bezier curve to the path.
      *
      * @param control The control point of the curve.
      * @param point The point to add to the path.
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
      */
-    void quadratic_to(const vec2 control, const vec2 point);
+    void quadratic_to(const vec2 control, const vec2 point, const bool reverse = false);
 
     /**
      * @brief Adds a cubic bezier curve to the path.
@@ -475,8 +491,9 @@ namespace Graphick::Renderer::Geometry {
      * @param control_1 The first control point of the curve.
      * @param control_2 The second control point of the curve.
      * @param point The point to add to the path.
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
      */
-    void cubic_to(const vec2 control_1, const vec2 control_2, const vec2 point);
+    void cubic_to(const vec2 control_1, const vec2 control_2, const vec2 point, const bool reverse = false);
 
     /**
      * @brief Adds a cubic bezier curve to the path.
@@ -484,8 +501,9 @@ namespace Graphick::Renderer::Geometry {
      * @param control The control point of the curve.
      * @param point The point to add to the path.
      * @param is_control_1 Whether the control point is the first or the second one.
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
      */
-    void cubic_to(const vec2 control, const vec2 point, const bool is_control_1 = true);
+    void cubic_to(const vec2 control, const vec2 point, const bool is_control_1 = true, const bool reverse = false);
 
     /**
      * @brief Adds an arc to the path.
@@ -496,8 +514,9 @@ namespace Graphick::Renderer::Geometry {
      * @param large_arc_flag Whether the arc is large or not.
      * @param sweep_flag Whether the arc is clockwise or not.
      * @param point The end point of the arc.
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
      */
-    void arc_to(const vec2 center, const vec2 radius, const float x_axis_rotation, const bool large_arc_flag, const bool sweep_flag, const vec2 point);
+    void arc_to(const vec2 center, const vec2 radius, const float x_axis_rotation, const bool large_arc_flag, const bool sweep_flag, const vec2 point, const bool reverse = false);
 
     /**
      * @brief Adds an ellipse to the path.
@@ -547,7 +566,14 @@ namespace Graphick::Renderer::Geometry {
      * @param point_index The index of the point to translate.
      * @param delta The delta to translate the point by.
     */
-    inline void translate(const size_t point_index, const vec2 delta) { m_points[point_index] += delta; }
+    void translate(const size_t point_index, const vec2 delta);
+
+    /**
+     * @brief Converts the given command to a cubic command.
+     *
+     * @param command_index The index of the command to convert.
+    */
+    void to_cubic(const size_t command_index);
 
     /**
      * @brief Calculates the bounding rectangle of the path.
@@ -652,11 +678,30 @@ namespace Graphick::Renderer::Geometry {
      * @param command The command to push.
      */
     void push_command(const Command command);
+
+    /**
+     * @brief Inserts a command to the path, handling the packing logic.
+     *
+     * @param command The command to insert.
+     * @param index The index to insert the command at.
+     */
+    void insert_command(const Command command, const size_t index);
+
+    /**
+     * @brief Replaces the ith command of the path with the given one.
+     *
+     * @param index The index of the command to replace.
+     * @param command The command to replace the ith command with.
+     */
+    void replace_command(const size_t index, const Command command);
   private:
     std::vector<vec2> m_points;         /* The points of the path. */
     std::vector<uint8_t> m_commands;    /* The commands used to traverse the path. */
 
     size_t m_commands_size = 0;         /* The effective number of commands in the path. */
+
+    vec2 m_in_handle;                   /* The incoming handle of the path, its index is Path::in_handle_index. */
+    vec2 m_out_handle;                  /* The outgoing handle of the path, its_index is Path::out_handle_index. */
   };
 
 }

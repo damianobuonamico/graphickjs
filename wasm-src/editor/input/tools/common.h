@@ -19,6 +19,8 @@ namespace Graphick::Editor::Input {
   /**
    * @brief Translates a control point of a path using the pen or direct selection tool.
    *
+   * If create_handles is true, even if the control point provided is a vertex, it's incoming and outgoing handles will be translated.
+   *
    * @param path The path to move the control point on.
    * @param point_index The control point to move.
    * @param transform The transformation matrix of the element containing the path.

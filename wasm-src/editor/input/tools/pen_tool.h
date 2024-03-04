@@ -12,15 +12,6 @@
 #include <memory>
 #include <optional>
 
-namespace Graphick::Renderer::Geometry {
-  class ControlPoint;
-  class Path;
-}
-
-namespace Graphick::History {
-  class Mat2x3Value;
-}
-
 namespace Graphick::Editor::Input {
 
   /**
@@ -109,14 +100,13 @@ namespace Graphick::Editor::Input {
       Start
     };
   private:
-    Mode m_mode = Mode::New;                                /* The current mode of the pen tool. */
-    uuid m_element = uuid::null;                            /* The UUID of the pen element. */
-    Graphick::History::Mat2x3Value* m_transform = nullptr;            /* The transform of the pen element. */
+    Mode m_mode = Mode::New;                          /* The current mode of the pen tool. */
+    uuid m_element = uuid::null;                      /* The UUID of the pen element. */
 
-    Renderer::Geometry::ControlPoint* m_vertex = nullptr;   /* The active vertex. */
-    Renderer::Geometry::Path* m_path = nullptr;             /* The active path. */
+    std::optional<size_t> m_vertex = std::nullopt;    /* The active vertex. */
 
-    int m_direction = 0;                                    /* The direction of the active path. */
+    bool m_reverse = false;                           /* Whether the active path is reversed. */
+    int m_direction = 0;                              /* The direction of the active path. */
   private:
     friend class ToolState;
   };

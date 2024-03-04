@@ -8,6 +8,7 @@
 
 #include "../../utils/console.h"
 
+// TODO: hover priority: handle > vertex > segment > element > none
 namespace Graphick::Editor::Input {
 
   HoverState::~HoverState() {}
@@ -99,25 +100,25 @@ namespace Graphick::Editor::Input {
       }
     }
 
-    // auto in_handle = path.in_handle_ptr();
-    // auto out_handle = path.out_handle_ptr();
+    if (path.data().has_in_handle()) {
+      if (path.data().is_point_inside_point(Renderer::Geometry::Path::in_handle_index, position, transform, threshold)) {
+        m_type = HoverType::Handle;
+        m_segment = -1;
+        m_vertex = -1;
+        m_handle = Renderer::Geometry::Path::in_handle_index;
+        return;
+      }
+    }
 
-    // if (in_handle) {
-    //   if (Math::is_point_in_circle(transformed_pos, in_handle.value()->get(), threshold)) {
-    //     m_type = HoverType::Handle;
-    //     m_vertex = path.empty() ? path.last() : path.segments().front().p0_ptr();
-    //     m_handle = path.in_handle_ptr();
-    //     return;
-    //   }
-    // }
-    // if (out_handle) {
-    //   if (Math::is_point_in_circle(transformed_pos, out_handle.value()->get(), threshold)) {
-    //     m_type = HoverType::Handle;
-    //     m_vertex = path.empty() ? path.last() : path.segments().back().p3_ptr();
-    //     m_handle = path.out_handle_ptr();
-    //     return;
-    //   }
-    // }
+    if (path.data().has_out_handle()) {
+      if (path.data().is_point_inside_point(Renderer::Geometry::Path::out_handle_index, position, transform, threshold)) {
+        m_type = HoverType::Handle;
+        m_segment = -1;
+        m_vertex = -1;
+        m_handle = Renderer::Geometry::Path::out_handle_index;
+        return;
+      }
+    }
   }
 
   void HoverState::reset() {

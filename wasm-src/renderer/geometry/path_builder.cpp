@@ -104,7 +104,7 @@ namespace Graphick::Renderer::Geometry {
       }
     );
 
-    if (contour) contour->close();
+    if (contour && path.closed()) contour->close();
 
     return drawable;
   }
@@ -201,13 +201,11 @@ namespace Graphick::Renderer::Geometry {
 
     bool is_first = true;
 
-    size_t move_index = 0;
-
     /* Forward for the outer stroke. */
 
     path.for_each(
       [&](const vec2 p0) {
-        closed.push_back(path.closed(move_index));
+        closed.push_back(path.closed());
         last_points.push_back(last_point);
         first_points.push_back(first_point);
         last_dirs.push_back(last_dir);
@@ -216,7 +214,7 @@ namespace Graphick::Renderer::Geometry {
         is_first = !closed.back();
 
         if (closed.back()) {
-          const auto segment = path.back(move_index);
+          const auto segment = path.back();
 
           switch (segment.type) {
           case Path::Command::Line: {
@@ -255,8 +253,6 @@ namespace Graphick::Renderer::Geometry {
         } else {
           pivot = m_transform * dvec2(p0);
         }
-
-        move_index += 1;
       },
       [&](const vec2 p1) {
         const dvec2 a = pivot;
@@ -322,13 +318,11 @@ namespace Graphick::Renderer::Geometry {
 
     is_first = true;
 
-    size_t contour_index = drawable.contours.size() - 1;
-
     /* Backward for the inner stroke. */
 
     const auto handle_first = [&](const dvec2 start) {
       if (closed.back()) {
-        const auto segment = path.front(contour_index);
+        const auto segment = path.front();
 
         dvec2 n1;
         dvec2 end1;
@@ -386,12 +380,11 @@ namespace Graphick::Renderer::Geometry {
         }
 
         contour->close();
-        contour = &drawable.contours[(contour_index > 1 ? contour_index : 1) - 1];
+        contour = &drawable.contours[0];
 
         first_points.pop_back();
         closed.pop_back();
 
-        contour_index -= 1;
         is_first = true;
       },
       [&](const vec2 p0, const vec2 p1) {

@@ -85,6 +85,69 @@ namespace Graphick::Editor {
 
   PathComponentData::PathComponentData(io::DataDecoder& decoder) : path(decoder) {}
 
+  size_t PathComponent::move_to(const vec2 p0) {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->path.encode(backup_data);
+
+    m_data->path.move_to(p0);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->path.encode(new_data);
+
+    return 0;
+  }
+
+  size_t PathComponent::line_to(const vec2 p1, const bool reverse) {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->path.encode(backup_data);
+
+    m_data->path.line_to(p1, reverse);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->path.encode(new_data);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
+
+    return reverse ? m_data->path.points_size() - 1 : 0;
+  }
+
+  size_t PathComponent::cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse) {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->path.encode(backup_data);
+
+    m_data->path.cubic_to(p1, p2, p3, reverse);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->path.encode(new_data);
+
+    return reverse ? m_data->path.points_size() - 1 : 0;
+  }
+
   void PathComponent::translate(const size_t point_index, const vec2 delta) {
     GK_TOTAL("PathComponent::translate");
 
@@ -113,6 +176,29 @@ namespace Graphick::Editor {
     );
   }
 
+  void PathComponent::to_cubic(const size_t command_index) {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->path.encode(backup_data);
+
+    m_data->path.to_cubic(command_index);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->path.encode(new_data);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
+  }
+
   io::EncodedData& PathComponent::encode(io::EncodedData& data, const bool optimize) const {
     data.component_id(component_id);
 
@@ -130,6 +216,10 @@ namespace Graphick::Editor {
 
       m_data->path.translate(point_index, new_position - old_position);
 
+      break;
+    }
+    case PathModifyType::LoadData: {
+      m_data->path = Renderer::Geometry::Path(decoder);
       break;
     }
     }

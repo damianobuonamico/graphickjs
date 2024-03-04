@@ -743,6 +743,8 @@ namespace Graphick::Renderer {
     vec2 last_move_point = { 0.0f, 0.0f };
     size_t i = 0;
 
+    const bool closed = path.closed();
+
     // TODO: should render backwards
     path.for_each(
       [&](const vec2 p0) {
@@ -751,6 +753,15 @@ namespace Graphick::Renderer {
         add_square_instance(p);
         if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
           add_white_square_instance(p);
+        }
+
+        const vec2 in_handle = path.point_at(Geometry::Path::in_handle_index);
+
+        if (in_handle != p0) {
+          const vec2 h = transform * in_handle;
+
+          add_circle_instance(h);
+          add_linear_segment_instance(p, h);
         }
 
         last_move_point = p0;
@@ -824,79 +835,16 @@ namespace Graphick::Renderer {
       }
     );
 
-    // vec2 first_pos, last_pos;
+    if (!closed) {
+      const vec2 out_handle = path.point_at(Geometry::Path::out_handle_index);
 
-    // auto in_handle_ptr = path.in_handle_ptr();
-    // auto out_handle_ptr = path.out_handle_ptr();
+      if (out_handle != last_raw) {
+        const vec2 h = transform * out_handle;
 
-    // if (path.empty()) {
-    //   auto p = path.last().lock();
-    //   vec2 p_pos = transform * p->get();
-
-    //   add_square_instance(p_pos);
-    //   if (!scene.selection.has_vertex(p->id, id, true)) {
-    //     add_white_square_instance(p_pos);
-    //   }
-
-    //   first_pos = p_pos;
-    //   last_pos = p_pos;
-    // } else {
-    //   first_pos = transform * path.segments().front().p0();
-    //   last_pos = transform * path.segments().back().p3();
-    // }
-
-    // if (!path.closed()) {
-    //   if (in_handle_ptr.has_value()) {
-    //     vec2 p = transform * in_handle_ptr.value()->get();
-
-    //     add_circle_instance(p);
-    //     add_linear_segment_instance(first_pos, p);
-    //   }
-
-    //   if (out_handle_ptr.has_value()) {
-    //     vec2 p = transform * out_handle_ptr.value()->get();
-
-    //     add_circle_instance(p);
-    //     add_linear_segment_instance(last_pos, p);
-    //   }
-    // }
-
-    // if (path.empty()) return;
-
-    // for (const auto& segment : path.segments()) {
-    //   vec2 p0 = transform * segment->p0();
-    //   uuid p0_id = segment->p0_id();
-    //   // auto p0 = transform.Map(segment.p0().x, segment.p0().y);
-
-    //   add_square_instance(p0);
-    //   if (!scene.selection.has_vertex(p0_id, id, true)) {
-    //     add_white_square_instance(p0);
-    //   }
-
-    //   if (segment->is_cubic()) {
-    //     vec2 p1 = transform * segment->p1();
-    //     vec2 p2 = transform * segment->p2();
-    //     vec2 p3 = transform * segment->p3();
-
-    //     if (p1 != p0) {
-    //       add_circle_instance(p1);
-    //       add_linear_segment_instance(p0, p1);
-    //     }
-    //     if (p2 != p3) {
-    //       add_circle_instance(p2);
-    //       add_linear_segment_instance(p2, p3);
-    //     }
-    //   }
-    // }
-
-    // if (!path.closed()) {
-    //   uuid p3_id = path.segments().back().p3_id();
-
-    //   add_square_instance(last_pos);
-    //   if (!scene.selection.has_vertex(p3_id, id, true)) {
-    //     add_white_square_instance(last_pos);
-    //   }
-    // }
+        add_circle_instance(h);
+        add_linear_segment_instance(last, h);
+      }
+    }
   }
 
   void Renderer::add_square_instance(const vec2 position) {

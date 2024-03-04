@@ -25,10 +25,11 @@ namespace Graphick::Editor::Input {
   ) {
     const mat2x3 inverse_transform = override_movement ? mat2x3{} : Math::inverse(transform);
     const vec2 position = inverse_transform * InputManager::pointer.scene.position;
+    const vec2 origin = inverse_transform * InputManager::pointer.scene.origin;
 
-    const Renderer::Geometry::Path::VertexNode node = path.data().node_at(point_index);
+    Renderer::Geometry::Path::VertexNode node = path.data().node_at(point_index);
 
-    if (point_index == node.vertex) {
+    if (!create_handles && point_index == node.vertex) {
       const vec2 vertex_position = path.data().point_at(node.vertex);
       const vec2 movement = override_movement ? *override_movement : position - vertex_position;
 
@@ -55,20 +56,55 @@ namespace Graphick::Editor::Input {
     vec2 out_position = position;
     vec2 in_position = 2.0f * path.data().point_at(node.vertex) - position;
 
+    // if (path.data().empty())
+
+    if (direction) {
+      if (*direction == 0) {
+        float cos = 0;
+
+        if (node.out >= 0) {
+          cos = Math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.out)) - path.data().point_at(static_cast<size_t>(node.vertex)));
+        }
+
+        if (cos > 0) *direction = -1;
+        else *direction = 1;
+      }
+
+      if (*direction < 0) {
+        std::swap(node.in, node.out);
+      }
+    }
+
+    if (swap_in_out) {
+      std::swap(node.in, node.out);
+      std::swap(in_position, out_position);
+    }
+
+    // if (create_handles && node.out < 0) {
+    //   path.to_cubic(static_cast<size_t>(node.out_command));
+    //   node = path.data().node_at(point_index);
+    // }
+
     const vec2 old_out_position = path.data().point_at(static_cast<size_t>(node.out));
     const vec2 movement = override_movement ? *override_movement : out_position - old_out_position;
 
     path.translate(static_cast<size_t>(node.out), movement);
 
-    if (InputManager::keys.alt || node.in < 0) {
+    if (InputManager::keys.alt || (node.in < 0 && !create_handles)) {
       return;
     }
 
-    if (keep_in_handle_length) {
-      const vec2 dir = Math::normalize(path.data().point_at(node.vertex) - path.data().point_at(static_cast<size_t>(node.out)));
-      const float length = Math::distance(path.data().point_at(static_cast<size_t>(node.in)), path.data().point_at(node.vertex));
+    if (create_handles && node.in < 0) {
+      path.to_cubic(static_cast<size_t>(node.in_command));
+      node = path.data().node_at(point_index);
+    }
 
-      in_position = dir * length + path.data().point_at(node.vertex);
+    if (keep_in_handle_length) {
+      const vec2 vertex_position = path.data().point_at(node.vertex);
+      const vec2 dir = Math::normalize(vertex_position - path.data().point_at(static_cast<size_t>(node.out)));
+      const float length = Math::distance(path.data().point_at(static_cast<size_t>(node.in)), vertex_position);
+
+      in_position = dir * length + vertex_position;
     }
 
     path.translate(static_cast<size_t>(static_cast<size_t>(node.in)), in_position - path.data().point_at(static_cast<size_t>(node.in)));
