@@ -344,6 +344,144 @@ namespace Graphick::Math {
     return bezier_rect_intersections(p0, p1, p3, p4, rect).size() > 0;
   }
 
+  float linear_closest_to(const vec2 p0, const vec2 p1, const vec2 p) {
+    const vec2 v = p1 - p0;
+    const vec2 w = p - p0;
+
+    const float len_sq = squared_length(v);
+    const float t = len_sq == 0 ? -1.0f : dot(v, w) / len_sq;
+
+    return std::clamp(t, 0.0f, 1.0f);
+  }
+
+  float quadratic_closest_to(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p) {
+    const vec2 bez1 = p0 + 2.0f / 3.0f * (p1 - p0);
+    const vec2 bez2 = p2 + 2.0f / 3.0f * (p1 - p2);
+
+    return bezier_closest_to(p0, bez1, bez2, p2, p);
+  }
+
+  float bezier_closest_to(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const vec2 p) {
+    const vec2 A_sq = p0 * p0;
+    const vec2 B_sq = p1 * p1;
+    const vec2 C_sq = p2 * p2;
+    const vec2 D_sq = p3 * p3;
+
+    const vec2 AB = p0 * p1;
+    const vec2 AC = p0 * p2;
+    const vec2 AD = p0 * p3;
+    const vec2 BC = p1 * p2;
+    const vec2 BD = p1 * p3;
+    const vec2 CD = p2 * p3;
+
+    const vec2 Apos = p0 * p;
+    const vec2 Bpos = p1 * p;
+    const vec2 Cpos = p2 * p;
+    const vec2 Dpos = p3 * p;
+
+    float a = 0.0f;
+    float b = 0.0f;
+    float c = 0.0f;
+    float d = 0.0f;
+    float e = 0.0f;
+    float f = 0.0f;
+
+    for (int i = 0; i < 2; ++i) {
+      a +=
+        6.0f * A_sq[i] -
+        36.0f * AB[i] +
+        36.0f * AC[i] -
+        12.0f * AD[i] +
+        54.0f * B_sq[i] -
+        108.0f * BC[i] +
+        36.0f * BD[i] +
+        54.0f * C_sq[i] -
+        36.0f * CD[i] +
+        6.0f * D_sq[i];
+
+      b +=
+        -30.0f * A_sq[i] +
+        150.0f * AB[i] -
+        120.0f * AC[i] +
+        30.0f * AD[i] -
+        180.0f * B_sq[i] +
+        270.0f * BC[i] -
+        60.0f * BD[i] -
+        90.0f * C_sq[i] +
+        30.0f * CD[i];
+
+      c +=
+        60.0f * A_sq[i] -
+        240.0f * AB[i] +
+        144.0f * AC[i] -
+        24.0f * AD[i] +
+        216.0f * B_sq[i] -
+        216.0f * BC[i] +
+        24.0f * BD[i] +
+        36.0f * C_sq[i];
+
+      d +=
+        -60.0f * A_sq[i] +
+        180.0f * AB[i] -
+        72.0f * AC[i] +
+        6.0f * AD[i] +
+        6.0f * Apos[i] -
+        108.0f * B_sq[i] +
+        54.0f * BC[i] -
+        18.0f * Bpos[i] +
+        18.0f * Cpos[i] -
+        6.0f * Dpos[i];
+
+      e +=
+        30.0f * A_sq[i] -
+        60.0f * AB[i] +
+        12.0f * AC[i] -
+        12.0f * Apos[i] +
+        18.0f * B_sq[i] +
+        24.0f * Bpos[i] -
+        12.0f * Cpos[i];
+
+      f +=
+        -6.0f * A_sq[i] +
+        6.0f * AB[i] +
+        6.0f * Apos[i] -
+        6.0f * Bpos[i];
+    }
+
+    float min_sq_distance = squared_distance(p0, p);
+    float min_t = 0.0f;
+
+    for (int i = 0; i <= GK_NEWTON_ITERATIONS; ++i) {
+      float t = (float)i / (float)GK_NEWTON_ITERATIONS;
+
+      for (int j = 0; j < 5; ++j) {
+        const float t_sq = t * t;
+        const float t_cu = t_sq * t;
+        const float t_qu = t_cu * t;
+        const float t_qui = t_qu * t;
+
+        t -= (a * t_qui + b * t_qu + c * t_cu + d * t_sq + e * t + f) /
+          (5.0f * a * t_qu + 4.0f * b * t_cu + 3.0f * c * t_sq + 2.0f * d * t + e);
+      }
+
+      if (t < 0 || t > 1) continue;
+
+      const vec2 point = p0 * (1.0f - t) * (1.0f - t) * (1.0f - t) +
+        p1 * 3.0f * t * (1.0f - t) * (1.0f - t) +
+        p2 * 3.0f * t * t * (1.0f - t) +
+        p3 * t * t * t;
+
+      const float sq_dist = squared_distance(point, p);
+
+      if (sq_dist < min_sq_distance) {
+        min_t = t;
+        min_sq_distance = sq_dist;
+      }
+    }
+
+    return min_t;
+  }
+
   void clip_to_left(std::vector<vec2>& points, float x) {
     if (points.empty()) return;
 
@@ -633,7 +771,7 @@ namespace Graphick::Math {
       if (a[i] == 0.0f) {
         if (b[i] == 0.0f) continue;
 
-        const float t = static_cast<float>(Math::solve_linear(b[i], c[i]));
+        const float t = static_cast<float>(Math::solve_linear(2 * b[i], c[i]));
 
         if (Math::is_normalized(t, false)) {
           const float t_sq = t * t;

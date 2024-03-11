@@ -423,7 +423,7 @@ namespace Graphick::Math::Algorithms {
 
     float	max_error;                          /* Maximum fitting error */
     float	iteration_error = error * 4.0f;     /* Error below which you try iterating */
-    int max_iterations = 4;                   /* Max times to try iterating */
+    int max_iterations = 8;                   /* Max times to try iterating */
 
     size_t split_point;                       /* Point to split point set at */
     size_t n_pts = last - first + 1;          /* Number of points in subset */
@@ -458,7 +458,7 @@ namespace Graphick::Math::Algorithms {
     }
 
     /* If error not too large, try some reparameterization and iteration */
-    if (max_error < iteration_error) {
+    //if (max_error < iteration_error) {
       for (size_t i = 0; i < max_iterations; i++) {
         u_prime = reparameterize(points, first, last, u, bez_curve);
         bez_curve = generate_bezier(points, first, last, u_prime, t_hat_1, t_hat_2);
@@ -470,7 +470,7 @@ namespace Graphick::Math::Algorithms {
 
         u.swap(u_prime);
       }
-    }
+    //}
 
     return bez_curve;
   }

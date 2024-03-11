@@ -17,8 +17,7 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
-#include "../../../math/vector.h"
-#include "../../../math/scalar.h"
+#include "../../../math/math.h"
 
 #include "../../../renderer/renderer.h"
 
@@ -27,8 +26,6 @@ namespace Graphick::Editor::Input {
   PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
 
   void PenTool::on_pointer_down() {
-    m_vertex.reset();
-
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
 
@@ -55,6 +52,7 @@ namespace Graphick::Editor::Input {
           }
         } else {
           if (m_element) {
+            m_temp_element = entity->id();
             return on_join_pointer_down();
           } else {
             set_pen_element(entity->id());
@@ -62,9 +60,11 @@ namespace Graphick::Editor::Input {
           }
         }
       } else if (scene.selection.has(entity->id())) {
+        m_temp_element = entity->id();
         return on_sub_pointer_down();
       }
     } else if (hover_type == HoverState::HoverType::Segment && scene.selection.has(entity->id())) {
+      m_temp_element = entity->id();
       return on_add_pointer_down();
     }
 
@@ -72,9 +72,9 @@ namespace Graphick::Editor::Input {
   }
 
   void PenTool::on_pointer_move() {
-    if (!m_element || !m_vertex.has_value()) return;
+    if ((!m_element && !m_temp_element) || !m_vertex.has_value()) return;
 
-    Entity entity = Editor::scene().get_entity(m_element);
+    Entity entity = Editor::scene().get_entity(m_temp_element ? m_temp_element : m_element);
 
     TransformComponent transform = entity.get_component<TransformComponent>();
     PathComponent path = entity.get_component<PathComponent>();
@@ -83,16 +83,17 @@ namespace Graphick::Editor::Input {
     case Mode::Close:
       if (!path.data().closed()) return;
     case Mode::Join:
-      return translate_control_point(path, m_vertex.value(), transform, nullptr, true, true, true, nullptr);
+      m_vertex = translate_control_point(path, m_vertex.value(), transform, nullptr, true, true, true, nullptr);
+      break;
     case Mode::Add:
-      return translate_control_point(path, m_vertex.value(), transform, nullptr, true, false, false, &m_direction);
+      m_vertex = translate_control_point(path, m_vertex.value(), transform, nullptr, true, false, false, &m_direction);
       break;
     case Mode::Angle:
     case Mode::Start:
-      return translate_control_point(path, m_vertex.value(), transform, nullptr, true, true, false, nullptr);
+      m_vertex = translate_control_point(path, m_vertex.value(), transform, nullptr, true, true, false, nullptr);
       break;
     case Mode::New:
-      return translate_control_point(path, m_vertex.value(), transform, nullptr, true, false, false, nullptr);
+      m_vertex = translate_control_point(path, m_vertex.value(), transform, nullptr, true, false, false, nullptr);
       break;
     default:
     case Mode::Sub:
@@ -102,63 +103,65 @@ namespace Graphick::Editor::Input {
   }
 
   void PenTool::on_pointer_up() {
-#if 0
-    if (!m_path) return;
+    Scene& scene = Editor::scene();
 
-    if (m_mode == Mode::Close) {
-      set_pen_element(uuid::null);
-    } else if (m_mode == Mode::Sub) {
-      if (m_vertex && Math::squared_length(InputManager::pointer.scene.delta) < 10.0f / Editor::scene().viewport.zoom()) {
-        m_path->remove(m_vertex->id, InputManager::keys.shift);
+    if (m_mode == Mode::Sub) {
+      if (m_vertex.has_value() && Math::squared_length(InputManager::pointer.scene.delta) < 10.0f / scene.viewport.zoom()) {
+        PathComponent path = scene.get_entity(m_temp_element).get_component<PathComponent>();
+        path.remove(m_vertex.value(), InputManager::keys.shift);
       }
 
+      m_temp_element = uuid::null;
       return;
     }
 
-    auto in_handle = m_path->in_handle_ptr();
-    auto out_handle = m_path->out_handle_ptr();
-    auto vertex_ptr = m_path->last();
+    m_temp_element = uuid::null;
 
-    if (in_handle) in_handle.value()->apply();
-    if (out_handle) out_handle.value()->apply();
+    if (!m_element || !m_vertex.has_value()) return;
 
-    if (m_vertex) {
-      auto handles = m_path->relative_handles(m_vertex->id);
-      float threshold = 2.5f / Editor::scene().viewport.zoom();
+    Entity entity = scene.get_entity(m_element);
+    PathComponent path = entity.get_component<PathComponent>();
 
-      m_vertex->apply();
+    const Renderer::Geometry::Path::VertexNode node = path.data().node_at(m_vertex.value());
+    const float threshold = 2.5f / Editor::scene().viewport.zoom();
 
-      if (handles.in_handle) {
-        if (Math::is_almost_equal(handles.in_handle->get(), m_vertex->get(), threshold)) {
-          if (handles.in_segment) {
-            if (m_path->reversed()) handles.in_segment->remove_p1();
-            else handles.in_segment->remove_p2();
-          } else {
-            if (m_path->reversed()) m_path->clear_out_handle();
-            else m_path->clear_in_handle();
+    if (node.in >= 0) {
+      const vec2 in_handle = path.data().point_at(static_cast<size_t>(node.in));
+      const vec2 vertex = path.data().point_at(node.vertex);
+
+      if (Math::is_almost_equal(in_handle, vertex, threshold)) {
+        path.translate(static_cast<size_t>(node.in), vertex - in_handle);
+
+        if (node.in_command >= 0) {
+          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), false);
+
+          if (segment.is_line()) {
+            path.to_cubic(static_cast<size_t>(node.in_command));
           }
-        } else {
-          handles.in_handle->apply();
         }
       }
-
-      if (handles.out_handle) {
-        if (Math::is_almost_equal(handles.out_handle->get(), m_vertex->get(), threshold)) {
-          if (handles.out_segment) {
-            if (m_path->reversed()) handles.out_segment->remove_p2();
-            else handles.out_segment->remove_p1();
-          } else {
-            if (m_path->reversed()) m_path->clear_in_handle();
-            else m_path->clear_out_handle();
-          }
-        } else {
-          handles.out_handle->apply();
-        }
-      }
-    } else if (!vertex_ptr.expired()) {
-      vertex_ptr.lock()->apply();
     }
-#endif
+
+    if (node.out >= 0) {
+      const vec2 out_handle = path.data().point_at(static_cast<size_t>(node.out));
+      const vec2 vertex = path.data().point_at(node.vertex);
+
+      if (Math::is_almost_equal(out_handle, vertex, threshold)) {
+        path.translate(static_cast<size_t>(node.out), vertex - out_handle);
+
+        if (node.out_command >= 0) {
+          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), false);
+
+          if (segment.is_line()) {
+            path.to_cubic(static_cast<size_t>(node.out_command));
+          }
+        }
+      }
+    }
+
+    if (m_mode == Mode::Close) {
+      set_pen_element(uuid::null);
+    }
   }
 
   void PenTool::reset() {
@@ -167,39 +170,38 @@ namespace Graphick::Editor::Input {
   }
 
   void PenTool::render_overlays() const {
-#if 0
-    if (!m_element || !m_transform || InputManager::pointer.down) return;
+    if (!m_element || InputManager::pointer.down) return;
 
-    Entity entity = Editor::scene().get_entity(m_element);
-    if (!entity.is_element()) return;
-#endif
+    const Entity entity = Editor::scene().get_entity(m_element);
+    const PathComponent path = entity.get_component<PathComponent>();
+    const mat2x3 transform = entity.get_component<TransformComponent>();
 
-#if 0
-    auto& path = entity.get_component<PathComponent>().path;
-    if (path.vacant() || path.closed()) return;
+    if (path.data().vacant() || path.data().closed()) return;
 
-    Renderer::Geometry::Internal::PathInternal segment{};
-    mat2x3 transform = m_transform->get();
-    History::Vec2Value* handle = nullptr;
+    Renderer::Geometry::Path segment;
+    std::optional<vec2> handle = std::nullopt;
 
-    segment.move_to(transform * path.last().lock()->get());
+    if (m_reverse) {
+      segment.move_to(transform * path.data().point_at(0));
 
-    if (path.reversed()) {
-      auto in_handle_ptr = path.in_handle_ptr();
-      if (in_handle_ptr.has_value()) handle = in_handle_ptr->get();
+      if (path.data().has_in_handle()) {
+        handle = path.data().point_at(Renderer::Geometry::Path::in_handle_index);
+      }
     } else {
-      auto out_handle_ptr = path.out_handle_ptr();
-      if (out_handle_ptr.has_value()) handle = out_handle_ptr->get();
+      segment.move_to(transform * path.data().point_at(path.data().points_size() - 1));
+
+      if (path.data().has_out_handle()) {
+        handle = path.data().point_at(Renderer::Geometry::Path::out_handle_index);
+      }
     }
 
     if (handle) {
-      segment.cubic_to(transform * handle->get(), InputManager::pointer.scene.position, !path.reversed());
+      segment.cubic_to(transform * handle.value(), InputManager::pointer.scene.position, !m_reverse);
     } else {
       segment.line_to(InputManager::pointer.scene.position);
     }
 
     Renderer::Renderer::draw_outline(segment);
-#endif
   }
 
   void PenTool::set_pen_element(const uuid id) {
@@ -238,183 +240,190 @@ namespace Graphick::Editor::Input {
 
       scene.selection.clear();
       scene.selection.select(m_element);
+    } else if (m_reverse) {
+      const bool has_in_handle = path.data().has_in_handle();
+
+      if (has_in_handle) {
+        m_vertex = path.cubic_to(path.data().point_at(Renderer::Geometry::Path::in_handle_index), pointer_position, pointer_position, m_reverse);
+      } else {
+        m_vertex = path.line_to(pointer_position, m_reverse);
+      }
     } else {
-      m_vertex = path.line_to(pointer_position, m_reverse);
+      const bool has_out_handle = path.data().has_out_handle();
+
+      if (has_out_handle) {
+        m_vertex = path.cubic_to(path.data().point_at(Renderer::Geometry::Path::out_handle_index), pointer_position, pointer_position, m_reverse);
+      } else {
+        m_vertex = path.line_to(pointer_position, m_reverse);
+      }
     }
-
-    // else if (m_reverse) {
-    //   auto in_handle_ptr = m_path->in_handle_ptr();
-
-    //   if (in_handle_ptr.has_value()) {
-    //     m_path->cubic_to(in_handle_ptr.value()->get(), pointer_position, true);
-    //     m_path->clear_in_handle();
-    //   } else {
-    //     m_path->line_to(pointer_position);
-    //   }
-    // } else {
-    //   auto out_handle_ptr = m_path->out_handle_ptr();
-
-    //   if (out_handle_ptr.has_value()) {
-    //     m_path->cubic_to(out_handle_ptr.value()->get(), pointer_position, true);
-    //     m_path->clear_out_handle();
-    //   } else {
-    //     m_path->line_to(pointer_position);
-    //   }
-    // }
 
     m_mode = Mode::New;
   }
 
   void PenTool::on_join_pointer_down() {
-#if 0
-    if (!m_element || !m_path || !m_vertex) return;
+    if (!m_element || !m_temp_element || !m_vertex) return;
 
-    uuid vertex_id = m_vertex->id;
-    uuid first_entity_id = m_element;
-    uuid second_entity_id = m_path->id;
+    // TODO: manage styles
+    Scene& scene = Editor::scene();
+    Entity first_entity = scene.get_entity(m_element);
+    Entity second_entity = scene.get_entity(m_temp_element);
+    Entity new_entity = scene.create_element();
 
-    History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
-      []() {},
-      [this, first_entity_id, second_entity_id]() {
-        Scene& scene = Editor::scene();
+    const PathComponent first_path = first_entity.get_component<PathComponent>();
+    const PathComponent second_path = second_entity.get_component<PathComponent>();
+    const mat2x3 first_transform = first_entity.get_component<TransformComponent>();
+    const mat2x3 second_transform = second_entity.get_component<TransformComponent>();
 
-        scene.selection.clear();
-        scene.selection.select(first_entity_id);
-        scene.selection.select(second_entity_id);
+    PathComponent new_path = new_entity.get_component<PathComponent>();
+    new_entity.add_component<StrokeComponent>();
 
-        set_pen_element(first_entity_id);
-      }
-    ));
-
-    Entity first_entity = Editor::scene().get_entity(m_element);
-    Entity second_entity = Editor::scene().get_entity(m_path->id);
-    Entity new_entity = Editor::scene().create_element();
-#endif
-
-#if 0
-    auto& first_path = first_entity.get_component<PathComponent>().path;
-    auto& second_path = *m_path;
-    auto& new_path = new_entity.get_component<PathComponent>().path;
-
-    auto& first_segments = first_path.segments();
-    auto& second_segments = second_path.segments();
-    auto& new_segments = new_path.segments();
-
-    mat2x3 first_transform = first_entity.get_component<TransformComponent>().get();
-    mat2x3 second_transform = second_entity.get_component<TransformComponent>().get();
-    History::Mat2x3Value* new_transform = new_entity.get_component<TransformComponent>()._value();
-
-    std::shared_ptr<Renderer::Geometry::ControlPoint> p0 =
-      first_path.empty() ? first_path.last().lock() :
-      (first_path.reversed() ? first_segments.front().p0_ptr().lock() : first_segments.back().p3_ptr().lock());
-
-    std::optional<vec2> p1 = std::nullopt;
-    std::optional<vec2> p2 = std::nullopt;
-
-    auto in_handle = first_path.in_handle_ptr();
-    auto out_handle = first_path.out_handle_ptr();
-
-    if (first_path.reversed()) {
-      for (int i = (int)first_segments.size() - 1; i >= 0; i--) {
-        std::shared_ptr<Renderer::Geometry::Segment> reversed = Renderer::Geometry::Segment::reverse(first_segments.at(i));
-        Renderer::Geometry::Segment::transform(*reversed, first_transform, false);
-        new_segments.push_back(reversed);
-      }
-
-      auto last_ptr = new_segments.back().p3_ptr().lock();
-      last_ptr->set(first_transform * last_ptr->get());
-
-      if (in_handle) p1 = first_transform * in_handle.value()->get();
-      if (out_handle) new_path.create_in_handle(first_transform * out_handle.value()->get());
-    } else {
-      for (auto& segment : first_segments) {
-        Renderer::Geometry::Segment::transform(*segment, first_transform, false);
-        new_segments.push_back(segment);
-      }
-
-      auto last_ptr = new_segments.back().p3_ptr().lock();
-      last_ptr->set(first_transform * last_ptr->get());
-
-      if (out_handle) p1 = first_transform * out_handle.value()->get();
-      if (in_handle) new_path.create_in_handle(first_transform * in_handle.value()->get());
-    }
-
-    in_handle = second_path.in_handle_ptr();
-    out_handle = second_path.out_handle_ptr();
-
-    if (second_path.empty()) {
-      std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_path.last().lock();
-      p3->set(second_transform * p3->get());
-
-      if (in_handle) p2 = second_transform * in_handle.value()->get();
-      if (out_handle) new_path.create_out_handle(second_transform * out_handle.value()->get());
-
-      new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
-    } else if (m_vertex->id == second_segments.front().p0_id()) {
-      std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_segments.front().p0_ptr().lock();
-
-      if (in_handle) p2 = second_transform * in_handle.value()->get();
-      if (out_handle) new_path.create_out_handle(second_transform * out_handle.value()->get());
-
-      new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
-
-      for (auto& segment : second_segments) {
-        Renderer::Geometry::Segment::transform(*segment, second_transform, false);
-        new_segments.push_back(segment);
-      }
-
-      auto last_ptr = new_segments.back().p3_ptr().lock();
-      last_ptr->set(second_transform * last_ptr->get());
-    } else {
-      std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_segments.back().p3_ptr().lock();
-
-      if (out_handle) p2 = second_transform * out_handle.value()->get();
-      if (in_handle) new_path.create_out_handle(second_transform * in_handle.value()->get());
-
-      new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
-
-      size_t size = new_segments.size();
-
-      for (int i = (int)second_segments.size() - 1; i >= 0; i--) {
-        std::shared_ptr<Renderer::Geometry::Segment> reversed = Renderer::Geometry::Segment::reverse(second_segments.at(i));
-        Renderer::Geometry::Segment::transform(*reversed, second_transform, false);
-        new_segments.push_back(reversed);
-      }
-
-      auto last_ptr = new_segments.back().p3_ptr().lock();
-      last_ptr->set(second_transform * last_ptr->get());
-    }
-
-    Editor::scene().delete_entity(first_entity);
-    Editor::scene().delete_entity(second_path.id);
-
-    History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
-      [this, new_path, new_transform, vertex_id]() {
-        Scene& scene = Editor::scene();
-
-        scene.selection.clear();
-        scene.selection.select_vertex(new_path.id, vertex_id);
-
-        m_transform = new_transform;
-        set_pen_element(uuid::null);
+    first_path.data().for_each(
+      [&](const vec2 p0) {
+        new_path.move_to(first_transform * p0);
       },
-      []() {}
-    ));
+      [&](const vec2 p1) {
+        new_path.line_to(first_transform * p1);
+      },
+      [&](const vec2 p1, const vec2 p2) {
+        // TODO: implement and test quadratic
+        // new_path.quadratic_to(p1, p2);
+      },
+      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+        new_path.cubic_to(first_transform * p1, first_transform * p2, first_transform * p3);
+      }
+    );
 
-    m_path = &new_path;
+    const vec2 in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(Renderer::Geometry::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_size() - 1);
+    const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().point_at(Renderer::Geometry::Path::in_handle_index) : second_path.data().point_at(0);
+
+    second_path.data().for_each(
+      [&](const vec2 p0) {
+        new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * p0);
+        m_vertex = new_path.data().points_size() - 1;
+      },
+      [&](const vec2 p1) {
+        new_path.line_to(second_transform * p1);
+      },
+      [&](const vec2 p1, const vec2 p2) {
+        // TODO: implement and test quadratic
+        // new_path.quadratic_to(p1, p2);
+      },
+      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+        new_path.cubic_to(second_transform * p1, second_transform * p2, second_transform * p3);
+      }
+    );
+
+
+    // std::shared_ptr<Renderer::Geometry::ControlPoint> p0 =
+    //   first_path.empty() ? first_path.last().lock() :
+    //   (first_path.reversed() ? first_segments.front().p0_ptr().lock() : first_segments.back().p3_ptr().lock());
+
+    // std::optional<vec2> p1 = std::nullopt;
+    // std::optional<vec2> p2 = std::nullopt;
+
+    // auto in_handle = first_path.in_handle_ptr();
+    // auto out_handle = first_path.out_handle_ptr();
+
+    // if (first_path.reversed()) {
+    //   for (int i = (int)first_segments.size() - 1; i >= 0; i--) {
+    //     std::shared_ptr<Renderer::Geometry::Segment> reversed = Renderer::Geometry::Segment::reverse(first_segments.at(i));
+    //     Renderer::Geometry::Segment::transform(*reversed, first_transform, false);
+    //     new_segments.push_back(reversed);
+    //   }
+
+    //   auto last_ptr = new_segments.back().p3_ptr().lock();
+    //   last_ptr->set(first_transform * last_ptr->get());
+
+    //   if (in_handle) p1 = first_transform * in_handle.value()->get();
+    //   if (out_handle) new_path.create_in_handle(first_transform * out_handle.value()->get());
+    // } else {
+    //   for (auto& segment : first_segments) {
+    //     Renderer::Geometry::Segment::transform(*segment, first_transform, false);
+    //     new_segments.push_back(segment);
+    //   }
+
+    //   auto last_ptr = new_segments.back().p3_ptr().lock();
+    //   last_ptr->set(first_transform * last_ptr->get());
+
+    //   if (out_handle) p1 = first_transform * out_handle.value()->get();
+    //   if (in_handle) new_path.create_in_handle(first_transform * in_handle.value()->get());
+    // }
+
+    // in_handle = second_path.in_handle_ptr();
+    // out_handle = second_path.out_handle_ptr();
+
+    // if (second_path.empty()) {
+    //   std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_path.last().lock();
+    //   p3->set(second_transform * p3->get());
+
+    //   if (in_handle) p2 = second_transform * in_handle.value()->get();
+    //   if (out_handle) new_path.create_out_handle(second_transform * out_handle.value()->get());
+
+    //   new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
+    // } else if (m_vertex->id == second_segments.front().p0_id()) {
+    //   std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_segments.front().p0_ptr().lock();
+
+    //   if (in_handle) p2 = second_transform * in_handle.value()->get();
+    //   if (out_handle) new_path.create_out_handle(second_transform * out_handle.value()->get());
+
+    //   new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
+
+    //   for (auto& segment : second_segments) {
+    //     Renderer::Geometry::Segment::transform(*segment, second_transform, false);
+    //     new_segments.push_back(segment);
+    //   }
+
+    //   auto last_ptr = new_segments.back().p3_ptr().lock();
+    //   last_ptr->set(second_transform * last_ptr->get());
+    // } else {
+    //   std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_segments.back().p3_ptr().lock();
+
+    //   if (out_handle) p2 = second_transform * out_handle.value()->get();
+    //   if (in_handle) new_path.create_out_handle(second_transform * in_handle.value()->get());
+
+    //   new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
+
+    //   size_t size = new_segments.size();
+
+    //   for (int i = (int)second_segments.size() - 1; i >= 0; i--) {
+    //     std::shared_ptr<Renderer::Geometry::Segment> reversed = Renderer::Geometry::Segment::reverse(second_segments.at(i));
+    //     Renderer::Geometry::Segment::transform(*reversed, second_transform, false);
+    //     new_segments.push_back(reversed);
+    //   }
+
+    //   auto last_ptr = new_segments.back().p3_ptr().lock();
+    //   last_ptr->set(second_transform * last_ptr->get());
+    // }
+
+    Editor::scene().delete_entity(first_entity.id());
+    Editor::scene().delete_entity(second_entity.id());
+
+    // History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
+    //   [this, new_path, new_transform, vertex_id]() {
+    //     Scene& scene = Editor::scene();
+
+    //     scene.selection.clear();
+    //     scene.selection.select_vertex(new_path.id, vertex_id);
+
+    //     m_transform = new_transform;
+    //     set_pen_element(uuid::null);
+    //   },
+    //   []() {}
+    // ));
+
+    m_element = new_entity.id();
     m_mode = Mode::Join;
-#endif
   }
 
   void PenTool::on_close_pointer_down() {
-#if 0
-    if (!m_element || !m_path) return;
+    if (!m_element || !m_vertex.has_value()) return;
 
-    m_path->close();
+    Entity entity = Editor::scene().get_entity(m_element);
+    PathComponent path = entity.get_component<PathComponent>();
 
-    m_vertex = m_path->last().lock().get();
+    m_vertex = path.close();
     m_mode = Mode::Close;
-#endif
   }
 
   void PenTool::on_sub_pointer_down() {
@@ -422,40 +431,57 @@ namespace Graphick::Editor::Input {
   }
 
   void PenTool::on_add_pointer_down() {
-#if 0
-    if (!m_path) return;
+    if (!m_temp_element) return;
 
-    std::optional<std::pair<std::weak_ptr<Renderer::Geometry::Segment>, float>> segment_hover = InputManager::hover.segment();
+    std::optional<size_t> segment_hover = InputManager::hover.segment();
     if (!segment_hover.has_value()) return;
 
-    auto& [segment_ptr, t] = segment_hover.value();
-    if (segment_ptr.expired()) return;
+    Entity entity = Editor::scene().get_entity(m_temp_element);
+    PathComponent path = entity.get_component<PathComponent>();
+    TransformComponent transform = entity.get_component<TransformComponent>();
 
-    auto new_vertex = m_path->split(*segment_ptr.lock(), t);
+    const Renderer::Geometry::Path::Segment segment = path.data().at(segment_hover.value());
+    const mat2x3 inverse_transform = transform.inverse();
+    const vec2 p = inverse_transform * InputManager::pointer.scene.position;
 
-    if (!new_vertex.has_value() || new_vertex->expired()) {
-      m_mode = Mode::None;
-      return;
+    float t;
+
+    switch (segment.type) {
+    case Renderer::Geometry::Path::Command::Cubic:
+      t = Math::bezier_closest_to(segment.p0, segment.p1, segment.p2, segment.p3, p);
+      break;
+    case Renderer::Geometry::Path::Command::Quadratic:
+      t = Math::quadratic_closest_to(segment.p0, segment.p1, segment.p2, p);
+      break;
+    default:
+      t = Math::linear_closest_to(segment.p0, segment.p1, p);
+      break;
     }
 
-    m_vertex = new_vertex->lock().get();
+    m_vertex = path.split(segment_hover.value(), t);
     m_direction = 0;
     m_mode = Mode::Add;
-#endif
   }
 
   void PenTool::on_angle_pointer_down() {
-#if 0
-    if (!m_element || !m_path) return;
+    if (!m_element || !m_vertex.has_value()) return;
 
-    if (m_path->reversed()) {
-      m_path->clear_in_handle();
+    Entity entity = Editor::scene().get_entity(m_element);
+    PathComponent path = entity.get_component<PathComponent>();
+
+    if (m_reverse) {
+      path.translate(
+        Renderer::Geometry::Path::in_handle_index,
+        path.data().point_at(0) - path.data().point_at(Renderer::Geometry::Path::in_handle_index)
+      );
     } else {
-      m_path->clear_out_handle();
+      path.translate(
+        Renderer::Geometry::Path::out_handle_index,
+        path.data().point_at(path.data().points_size() - 1) - path.data().point_at(Renderer::Geometry::Path::out_handle_index)
+      );
     }
 
     m_mode = Mode::Angle;
-#endif
   }
 
   void PenTool::on_start_pointer_down() {

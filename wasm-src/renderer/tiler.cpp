@@ -1258,4 +1258,4 @@ namespace Graphick::Renderer {
   }
 #endif
 
-  }
+}

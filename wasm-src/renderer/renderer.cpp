@@ -755,13 +755,15 @@ namespace Graphick::Renderer {
           add_white_square_instance(p);
         }
 
-        const vec2 in_handle = path.point_at(Geometry::Path::in_handle_index);
+        if (!closed) {
+          const vec2 in_handle = path.point_at(Geometry::Path::in_handle_index);
 
-        if (in_handle != p0) {
-          const vec2 h = transform * in_handle;
+          if (in_handle != p0) {
+            const vec2 h = transform * in_handle;
 
-          add_circle_instance(h);
-          add_linear_segment_instance(p, h);
+            add_circle_instance(h);
+            add_linear_segment_instance(p, h);
+          }
         }
 
         last_move_point = p0;

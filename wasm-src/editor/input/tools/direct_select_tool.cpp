@@ -545,22 +545,47 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_handle_pointer_up() {
-#if 0
-    if (!m_dragging_occurred || !m_handle.has_value()) return;
+    if (!m_entity || !m_handle.has_value()) return;
 
-    auto vertex = m_vertex->lock();
-    auto handle = m_handle->lock();
+    Entity entity = Editor::scene().get_entity(m_entity);
+    PathComponent path = entity.get_component<PathComponent>();
 
-    if (handle) handle->apply();
-    if (vertex && m_entity) {
-      auto handles = Editor::scene().get_entity(m_entity).get_component<PathComponent>().path.relative_handles(vertex->id);
+    const Renderer::Geometry::Path::VertexNode node = path.data().node_at(m_handle.value());
+    const float threshold = 2.5f / Editor::scene().viewport.zoom();
 
-      if (handles.in_handle) handles.in_handle->apply();
-      if (handles.out_handle) handles.out_handle->apply();
+    if (node.in >= 0) {
+      const vec2 in_handle = path.data().point_at(static_cast<size_t>(node.in));
+      const vec2 vertex = path.data().point_at(node.vertex);
 
-      vertex->apply();
+      if (Math::is_almost_equal(in_handle, vertex, threshold)) {
+        path.translate(static_cast<size_t>(node.in), vertex - in_handle);
+
+        if (node.in_command >= 0) {
+          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), false);
+
+          if (segment.is_line()) {
+            path.to_cubic(static_cast<size_t>(node.in_command));
+          }
+        }
+      }
     }
-#endif
+
+    if (node.out >= 0) {
+      const vec2 out_handle = path.data().point_at(static_cast<size_t>(node.out));
+      const vec2 vertex = path.data().point_at(node.vertex);
+
+      if (Math::is_almost_equal(out_handle, vertex, threshold)) {
+        path.translate(static_cast<size_t>(node.out), vertex - out_handle);
+
+        if (node.out_command >= 0) {
+          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), false);
+
+          if (segment.is_line()) {
+            path.to_cubic(static_cast<size_t>(node.out_command));
+          }
+        }
+      }
+    }
   }
 
 }

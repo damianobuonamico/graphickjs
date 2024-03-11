@@ -102,6 +102,7 @@ namespace Graphick::Editor::Input {
   private:
     Mode m_mode = Mode::New;                          /* The current mode of the pen tool. */
     uuid m_element = uuid::null;                      /* The UUID of the pen element. */
+    uuid m_temp_element = uuid::null;                 /* The UUID of a temp element that lasts only one pointer down -> up sequence. */
 
     std::optional<size_t> m_vertex = std::nullopt;    /* The active vertex. */
 

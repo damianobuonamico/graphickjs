@@ -3,6 +3,8 @@
 #define GK_EPSILON 1e-6f
 #define GK_POINT_EPSILON 1e-3f
 #define GK_PATH_TOLERANCE 0.25
+#define GK_NEWTON_ITERATIONS 5
+#define GK_FIT_RESOLUTION 10
 
 #define ZOOM_MIN 0.02f
 #define ZOOM_MAX 640.0f

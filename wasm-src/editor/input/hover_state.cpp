@@ -64,39 +64,27 @@ namespace Graphick::Editor::Input {
 
     const bool deep = deep_search && scene.selection.has(id);
 
-    if (path.data().empty()) {
-      if (path.data().vacant()) {
-        m_type = HoverType::None;
-        m_entity = 0;
-        return;
-      }
-    } else {
-      for (size_t i = 0; i < path.data().points_size(); i++) {
-        if (path.data().is_point_inside_point(i, position, transform, threshold)) {
-          m_segment = -1;
+    if (path.data().empty() && path.data().vacant()) {
+      m_type = HoverType::None;
+      m_entity = 0;
+      return;
+    }
 
-          if (path.data().is_vertex(i)) {
-            m_type = HoverType::Vertex;
-            m_vertex = i;
-            m_handle = -1;
-          } else {
-            m_type = HoverType::Handle;
-            m_vertex = -1;
-            m_handle = i;
-          }
+    for (size_t i = 0; i < path.data().points_size(); i++) {
+      if (path.data().is_point_inside_point(i, position, transform, threshold)) {
+        m_segment = -1;
 
-          return;
-        }
-      }
-
-      for (size_t i = 0; i < path.data().size(); i++) {
-        if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom)) {
-          m_type = HoverType::Segment;
-          m_segment = i;
-          m_vertex = -1;
+        if (path.data().is_vertex(i)) {
+          m_type = HoverType::Vertex;
+          m_vertex = i;
           m_handle = -1;
-          return;
+        } else {
+          m_type = HoverType::Handle;
+          m_vertex = -1;
+          m_handle = i;
         }
+
+        return;
       }
     }
 
@@ -117,6 +105,18 @@ namespace Graphick::Editor::Input {
         m_vertex = -1;
         m_handle = Renderer::Geometry::Path::out_handle_index;
         return;
+      }
+    }
+
+    if (!path.data().empty()) {
+      for (size_t i = 0; i < path.data().size(); i++) {
+        if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom)) {
+          m_type = HoverType::Segment;
+          m_segment = i;
+          m_vertex = -1;
+          m_handle = -1;
+          return;
+        }
       }
     }
   }

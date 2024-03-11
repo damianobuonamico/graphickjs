@@ -1,6 +1,7 @@
 /**
  * @file path.h
  * @brief Path class definition
+ * @todo simplify and refactor with index type usage
  */
 
 #pragma once
@@ -40,7 +41,16 @@ namespace Graphick::Renderer::Geometry {
       Move = 0,         /* Move to a point. */
       Line = 1,         /* Linear segment. */
       Quadratic = 2,    /* Quadratic bezier curve. */
-      Cubic = 3,        /* Cubic bezier curve. */
+      Cubic = 3         /* Cubic bezier curve. */
+    };
+
+    /**
+     * @brief The IndexType enum represents the type of index used to traverse the path.
+     */
+    enum class IndexType {
+      Point = 0,        /* The index represents the ith control point. */
+      Command = 1,      /* The index represents the ith command. */
+      Segment = 2       /* The index represents the ith segment. */
     };
 
     static const size_t in_handle_index = std::numeric_limits<uint32_t>::max() - 1;     /* The index of the incoming handle. */
@@ -106,6 +116,14 @@ namespace Graphick::Renderer::Geometry {
       bool is_point() const;
 
       /**
+       * @brief Samples the segment at the given t value.
+       *
+       * @param t The t value to sample the segment at.
+       * @return The point on the segment at the given t value.
+       */
+      vec2 sample(const float t) const;
+
+      /**
        * @brief Returns the bounding rectangle of the segment.
        *
        * @return The bounding rectangle of the segment.
@@ -146,11 +164,13 @@ namespace Graphick::Renderer::Geometry {
       /**
        * @brief Constructs an iterator over the given path at the given index.
        *
+       * If index_type is IndexType::Point, and the point corresponds to a vertex, the iterator will point to the segment that ends at the vertex.
+       *
        * @param path The path to iterate over.
        * @param index The start index of the iterator.
-       * @param is_segment_index Whether the index is a segment index or a command index.
+       * @param index_type The type of index to use, default is IndexType::Command.
        */
-      Iterator(const Path& path, const size_t index, const bool is_segment_index = false);
+      Iterator(const Path& path, const size_t index, const IndexType index_type = IndexType::Command);
 
       /**
        * @brief Equality, inequality and comparison operators.
@@ -182,8 +202,29 @@ namespace Graphick::Renderer::Geometry {
        * @return The current segment.
        */
       value_type operator*() const;
+
+      /**
+       * @brief Returns the index of the command the iterator is currently pointing to.
+       *
+       * @return The index of the command the iterator is currently pointing to.
+       */
+      inline size_t command_index() const { return m_index; }
+
+      /**
+       * @brief Returns the index of the segment the iterator is currently pointing to.
+       *
+       * @return The index of the segment the iterator is currently pointing to.
+       */
+      inline size_t segment_index() const { return m_index - 1; }
+
+      /**
+       * @brief Returns the index of the point the iterator is currently pointing to.
+       *
+       * @return The index of the point the iterator is currently pointing to.
+       */
+      inline size_t point_index() const { return m_point_index; }
     private:
-      size_t m_index;           /* The current segment index of the iterator. */
+      size_t m_index;           /* The current command index of the iterator. */
       size_t m_point_index;     /* The index of the last point iterated over. */
 
       const Path& m_path;       /* The path to iterate over. */
@@ -315,9 +356,10 @@ namespace Graphick::Renderer::Geometry {
      * @brief Returns the ith segment of the path.
      *
      * @param segment_index The index of the segment to return.
+     * @param is_segment_index Whether the index is a segment index or a command index.
      * @return The ith segment of the path.
      */
-    inline Segment at(const size_t segment_index) const { return *Iterator(*this, segment_index, true); }
+    inline Segment at(const size_t segment_index, const bool is_segment_index = true) const { return *Iterator(*this, segment_index, is_segment_index ? IndexType::Segment : IndexType::Command); }
 
     /**
      * @brief Returns the ith control point of the path.
@@ -342,7 +384,7 @@ namespace Graphick::Renderer::Geometry {
      *
      * @return true if the path has an outgoing handle, false otherwise.
      */
-    inline bool has_out_handle() const { return !vacant() && !closed() && m_out_handle != m_points.front(); }
+    inline bool has_out_handle() const { return !vacant() && !closed() && m_out_handle != m_points.back(); }
 
     /**
      * @brief Iterates over the commands of the path, calling the given callbacks for each command.
@@ -569,11 +611,37 @@ namespace Graphick::Renderer::Geometry {
     void translate(const size_t point_index, const vec2 delta);
 
     /**
-     * @brief Converts the given command to a cubic command.
+     * @brief Converts the given command to a line command.
      *
      * @param command_index The index of the command to convert.
     */
-    void to_cubic(const size_t command_index);
+    void to_line(const size_t command_index);
+
+    /**
+     * @brief Converts the given command to a cubic command.
+     *
+     * @param command_index The index of the command to convert.
+     * @param reference_point The control point to return the updated index of
+     * @return The updated index of the reference point.
+     */
+    size_t to_cubic(const size_t command_index, size_t reference_point = 0);
+
+      /**
+     * @brief Removes the ith control point from the path.
+     *
+     * @param point_index The index of the control point to remove.
+     * @param keep_shape Whether to keep the shape of the path after removing the control point. Default is false.
+     */
+    void remove(const size_t point_index, const bool keep_shape = false);
+
+    /**
+     * @brief Splits the segment at the given index at the given t value.
+     *
+     * @param segment_index The index of the segment to split.
+     * @param t The t value to split the segment at.
+     * @return The index of the newly added vertex.
+     */
+    size_t split(const size_t segment_index, const float t);
 
     /**
      * @brief Calculates the bounding rectangle of the path.
@@ -694,6 +762,13 @@ namespace Graphick::Renderer::Geometry {
      * @param command The command to replace the ith command with.
      */
     void replace_command(const size_t index, const Command command);
+
+    /**
+     * @brief Removes the ith command of the path.
+     *
+     * @param index The index of the command to remove.
+     */
+    void remove_command(const size_t index);
   private:
     std::vector<vec2> m_points;         /* The points of the path. */
     std::vector<uint8_t> m_commands;    /* The commands used to traverse the path. */

@@ -345,6 +345,15 @@ namespace Graphick::Editor {
     size_t cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse = false);
 
     /**
+     * @brief Closes the path by adding a segment to the first point in the path.
+     *
+     * If incoming or outgoing handles are present, the new segment will be a cubic bezier curve.
+     *
+     * @return The index of the newly added control point.
+     */
+    size_t close();
+
+    /**
      * @brief Translates a control point in the path by a given delta.
      *
      * @param point_index The index of the point to translate.
@@ -353,11 +362,38 @@ namespace Graphick::Editor {
     void translate(const size_t point_index, const vec2 delta);
 
     /**
+     * @brief Converts the given command to a line command.
+     *
+     * @param command_index The index of the command to convert.
+     * @return The number of control points removed from the path.
+     */
+    size_t to_line(const size_t command_index);
+
+    /**
      * @brief Converts the given command to a cubic command.
      *
      * @param command_index The index of the command to convert.
-    */
-    void to_cubic(const size_t command_index);
+     * @param reference_point The control point to return the updated index of
+     * @return The updated index of the reference point.
+     */
+    size_t to_cubic(const size_t command_index, const size_t reference_point = 0);
+
+    /**
+     * @brief Splits the segment at the given index at the given t value.
+     *
+     * @param segment_index The index of the segment to split.
+     * @param t The t value to split the segment at.
+     * @return The index of the newly added vertex.
+     */
+    size_t split(const size_t segment_index, const float t);
+
+    /**
+     * @brief Removes the ith control point from the path.
+     *
+     * @param point_index The index of the control point to remove.
+     * @param keep_shape Whether to keep the shape of the path after removing the control point. Default is false.
+     */
+    void remove(const size_t point_index, const bool keep_shape = false);
 
     /**
      * @brief Encodes the component in binary format.

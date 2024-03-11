@@ -152,6 +152,8 @@ int main() {
 
   // path1.circle({ 100.0f, 100.0f }, 50.0f);
   path1.move_to({ 300.0f, 100.0f });
+  path1.cubic_to({ 300.0f, 200.0f }, { 400.0f, 200.0f }, { 400.0f, 100.0f });
+  path1.cubic_to({ 400.0f, 0.0f }, { 300.0f, 0.0f }, { 300.0f, 100.0f });
   path1.line_to({ 350.0f, 200.0f });
   path1.line_to({ 250.0f, 200.0f });
   // path1.close();

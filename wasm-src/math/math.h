@@ -287,6 +287,40 @@ namespace Graphick::Math {
   bool does_cubic_segment_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p3, const vec2 p4, const rect& rect);
 
   /**
+   * @brief Calculates the closest t parameter to a point on a line.
+   *
+   * @param p0 The starting point of the line.
+   * @param p1 The ending point of the line.
+   * @param p The point to find the closest t to.
+   * @return The closest t value, clamped to the range [0, 1].
+   */
+  float linear_closest_to(const vec2 p0, const vec2 p1, const vec2 p);
+
+  /**
+   * @brief Calculates the closest t parameter to a point on a quadratic bezier curve.
+   *
+   * @param p0 The first control point of the Bezier curve.
+   * @param p1 The second control point of the Bezier curve.
+   * @param p2 The third control point of the Bezier curve.
+   * @param p The point to find the closest t to.
+   * @return The closest t value, clamped to the range [0, 1].
+   */
+  float quadratic_closest_to(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p);
+
+  // TODO: rename all bezier_* to cubic_*
+  /**
+   * @brief Calculates the closest t parameter to a point on a cubic bezier curve.
+   *
+   * @param p0 The first control point of the Bezier curve.
+   * @param p1 The second control point of the Bezier curve.
+   * @param p2 The third control point of the Bezier curve.
+   * @param p3 The fourth control point of the Bezier curve.
+   * @param p The point to find the closest t to.
+   * @return The closest t value, clamped to the range [0, 1].
+   */
+  float bezier_closest_to(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const vec2 p);
+
+  /**
    * @brief Calculates the lines that make up a rect.
    *
    * @param rect The rect.

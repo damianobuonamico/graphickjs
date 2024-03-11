@@ -126,7 +126,7 @@ namespace Graphick::Editor {
       std::move(backup_data)
     );
 
-    return reverse ? m_data->path.points_size() - 1 : 0;
+    return reverse ? 0 : (m_data->path.points_size() - 1);
   }
 
   size_t PathComponent::cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse) {
@@ -145,7 +145,37 @@ namespace Graphick::Editor {
 
     new_data = m_data->path.encode(new_data);
 
-    return reverse ? m_data->path.points_size() - 1 : 0;
+    return reverse ? 0 : (m_data->path.points_size() - 1);
+  }
+
+  size_t PathComponent::close() {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->path.encode(backup_data);
+
+    m_data->path.close();
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->path.encode(new_data);
+
+    return m_data->path.points_size() - 1;
+
+    // const bool has_in_handle = m_data->path.has_in_handle();
+    // const bool has_out_handle = m_data->path.has_out_handle();
+
+    // if (!has_in_handle && !has_out_handle) return line_to(m_data->path.point_at(0), true);
+
+    // const vec2 p1 = m_data->path.point_at(Renderer::Geometry::Path::out_handle_index);
+    // const vec2 p2 = m_data->path.point_at(Renderer::Geometry::Path::in_handle_index);
+    // const vec2 p3 = m_data->path.point_at(0);
+
+    // return cubic_to(p1, p2, p3, true);
   }
 
   void PathComponent::translate(const size_t point_index, const vec2 delta) {
@@ -176,7 +206,7 @@ namespace Graphick::Editor {
     );
   }
 
-  void PathComponent::to_cubic(const size_t command_index) {
+  size_t PathComponent::to_line(const size_t command_index) {
     io::EncodedData backup_data;
     io::EncodedData new_data;
 
@@ -185,7 +215,88 @@ namespace Graphick::Editor {
 
     backup_data = m_data->path.encode(backup_data);
 
-    m_data->path.to_cubic(command_index);
+    const size_t prev_points = m_data->path.points_size();
+
+    // TODO: check if necessary to perform the operation
+    m_data->path.to_line(command_index);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->path.encode(new_data);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
+
+    return prev_points - m_data->path.points_size();
+  }
+
+  size_t PathComponent::to_cubic(const size_t command_index, const size_t reference_point) {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->path.encode(backup_data);
+
+    // TODO: check if necessary to perform the operation
+    const size_t index = m_data->path.to_cubic(command_index, reference_point);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->path.encode(new_data);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
+
+    return index;
+  }
+
+  size_t PathComponent::split(const size_t segment_index, const float t) {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->path.encode(backup_data);
+
+    const size_t index = m_data->path.split(segment_index, t);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->path.encode(new_data);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
+
+    return index;
+  }
+
+  void PathComponent::remove(const size_t index, const bool keep_shape) {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->path.encode(backup_data);
+
+    const size_t prev_points = m_data->path.points_size();
+
+    m_data->path.remove(index, keep_shape);
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
