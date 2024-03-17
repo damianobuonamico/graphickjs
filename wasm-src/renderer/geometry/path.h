@@ -1,7 +1,6 @@
 /**
  * @file path.h
  * @brief Path class definition
- * @todo simplify and refactor with index type usage
  */
 
 #pragma once
@@ -189,12 +188,14 @@ namespace Graphick::Renderer::Geometry {
        */
       Iterator& operator++();
       Iterator operator++(int);
+      Iterator operator+(const size_t n) const;
 
       /**
        * @brief Pre and post decrement operators.
        */
       Iterator& operator--();
       Iterator operator--(int);
+      Iterator operator-(const size_t n) const;
 
       /**
        * @brief Dereference operator.
@@ -355,11 +356,11 @@ namespace Graphick::Renderer::Geometry {
     /**
      * @brief Returns the ith segment of the path.
      *
-     * @param segment_index The index of the segment to return.
-     * @param is_segment_index Whether the index is a segment index or a command index.
+     * @param index The index of the segment to return;
+     * @param index_type The type of index to use, default is IndexType::Segment.
      * @return The ith segment of the path.
      */
-    inline Segment at(const size_t segment_index, const bool is_segment_index = true) const { return *Iterator(*this, segment_index, is_segment_index ? IndexType::Segment : IndexType::Command); }
+    inline Segment at(const size_t index, const IndexType index_type = IndexType::Segment) const { return *Iterator(*this, index, index_type); }
 
     /**
      * @brief Returns the ith control point of the path.
@@ -729,7 +730,6 @@ namespace Graphick::Renderer::Geometry {
      *
      * @return The encoded path.
      */
-    std::vector<uint8_t> encode() const;
     io::EncodedData& encode(io::EncodedData& data) const;
   private:
     /**

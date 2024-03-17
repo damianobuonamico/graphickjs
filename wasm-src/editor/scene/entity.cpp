@@ -50,6 +50,26 @@ namespace Graphick::Editor {
     return data;
   }
 
+  std::pair<uuid, io::EncodedData> Entity::duplicate() const {
+    io::EncodedData data;
+
+    IDComponentData id_data = { uuid() };
+    IDComponent(this, &id_data).encode(data);
+
+    if (auto tag_handle = m_scene->m_registry.try_get<TagComponent::Data>(m_handle); tag_handle) {
+      TagComponentData tag_data = { tag_handle->tag + " (Copy)" };
+      TagComponent(this, &tag_data).encode(data);
+    }
+
+    ENCODE_COMPONENT(CategoryComponent);
+    ENCODE_COMPONENT(PathComponent);
+    ENCODE_COMPONENT(TransformComponent);
+    ENCODE_COMPONENT(StrokeComponent);
+    ENCODE_COMPONENT(FillComponent);
+
+    return { id_data.id, data };
+  }
+
   void Entity::add(const io::EncodedData& encoded_data, const bool full_entity) {
     io::DataDecoder decoder(&encoded_data);
 

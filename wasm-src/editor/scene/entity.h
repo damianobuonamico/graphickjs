@@ -226,12 +226,13 @@ namespace Graphick::Editor {
     /**
      * @brief Checks if the entity is an element.
      *
-     * An element is an entity that has a PathComponent and a TransformComponent.
+     * An element is an entity that has a PathComponent.
+     * All entities have a TransformComponent.
      *
      * @return true if the entity is an element, false otherwise.
      */
     inline bool is_element() const {
-      return has_components<PathComponent, TransformComponent>();
+      return has_components<PathComponent>();
     }
 
     /**
@@ -240,6 +241,13 @@ namespace Graphick::Editor {
      * @return The encoded data.
      */
     io::EncodedData encode() const;
+
+    /**
+     * @brief Duplicates the entity in binary format.
+     *
+     * @return A pair containing the new UUID and the encoded data.
+     */
+    std::pair<uuid, io::EncodedData> duplicate() const;
   private:
     /**
      * @brief Adds a component to the entity.

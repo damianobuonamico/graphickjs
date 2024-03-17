@@ -1,6 +1,6 @@
 /**
  * @file pen_tool.cpp
- * @brief Implements the PenTool class.
+ * @brief Contains the implementation of the PenTool class.
  *
  * @todo esc to cancel pen and other tools
  * @todo shift to slow down movement
@@ -133,7 +133,7 @@ namespace Graphick::Editor::Input {
         path.translate(static_cast<size_t>(node.in), vertex - in_handle);
 
         if (node.in_command >= 0) {
-          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), false);
+          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), Renderer::Geometry::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.in_command));
@@ -150,7 +150,7 @@ namespace Graphick::Editor::Input {
         path.translate(static_cast<size_t>(node.out), vertex - out_handle);
 
         if (node.out_command >= 0) {
-          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), false);
+          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), Renderer::Geometry::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.out_command));

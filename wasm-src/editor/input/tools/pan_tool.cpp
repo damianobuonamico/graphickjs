@@ -1,3 +1,8 @@
+/**
+ * @file pan_tool.cpp
+ * @brief Contains the implementation of the PanTool class.
+ */
+
 #include "pan_tool.h"
 
 #include "../input_manager.h"

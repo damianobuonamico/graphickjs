@@ -65,6 +65,9 @@ namespace Graphick::Editor {
     data.component_id(CategoryComponent::component_id)
       .uint8(static_cast<uint8_t>(CategoryComponent::Category::None));
 
+    data.component_id(TransformComponent::component_id)
+      .mat2x3(mat2x3(1.0f));
+
     history.add(
       id,
       Action::Target::Entity,
@@ -217,6 +220,20 @@ namespace Graphick::Editor {
     }
 
     return { 0 };
+  }
+
+  Entity Scene::duplicate_entity(const uuid id) {
+    Entity entity = get_entity(id);
+
+    auto [new_id, data] = entity.duplicate();
+
+    history.add(
+      new_id,
+      Action::Target::Entity,
+      std::move(data)
+    );
+
+    return get_entity(new_id);
   }
 
   std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const Math::rect& rect, bool deep_search) {

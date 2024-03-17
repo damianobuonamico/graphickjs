@@ -294,6 +294,45 @@ namespace Graphick::Math {
     return intersection_points;
   }
 
+  std::vector<float> quadratic_rect_intersections(const vec2 p0, const vec2 p1, const vec2 p2, const rect& rect) {
+    std::vector<float> intersections_t;
+    std::vector<double> intersections;
+
+    dvec2 dp0 = { p0.x, p0.y };
+    dvec2 dp1 = { p1.x, p1.y };
+    dvec2 dp2 = { p2.x, p2.y };
+
+    dvec2 a = dp0 - 2.0 * dp1 + dp2;
+    dvec2 b = 2.0 * (dp1 - dp0);
+
+    for (int j = 0; j < 2; j++) {
+      for (int k = 0; k < 2; k++) {
+        QuadraticSolutions roots = solve_quadratic(a[k], b[k], dp0[k] - rect[j][k]);
+
+        for (uint8_t i = 0; i < roots.count; i++) {
+          double t = roots.solutions[i];
+
+          if (t >= 0.0 && t <= 1.0) intersections.push_back(t);
+        }
+      }
+    }
+
+    if (intersections.empty()) return intersections_t;
+
+    std::sort(intersections.begin(), intersections.end());
+
+    for (double t : intersections) {
+      double t_sq = t * t;
+      dvec2 p = a * t_sq + b * t + dp0;
+
+      if (is_point_in_rect({ (float)p.x, (float)p.y }, rect, GK_POINT_EPSILON)) {
+        intersections_t.push_back((float)t);
+      }
+    }
+
+    return intersections_t;
+  }
+
   std::vector<float> bezier_rect_intersections(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const rect& rect) {
     std::vector<float> intersections_t;
     std::vector<double> intersections;
@@ -323,7 +362,6 @@ namespace Graphick::Math {
 
     std::sort(intersections.begin(), intersections.end());
 
-
     for (double t : intersections) {
       double t_sq = t * t;
       dvec2 p = a * t_sq * t + b * t_sq + c * t + dp0;
@@ -338,6 +376,10 @@ namespace Graphick::Math {
 
   bool does_linear_segment_intersect_rect(const vec2 p0, const vec2 p1, const rect& rect) {
     return line_rect_intersection_points(p0, p1, rect).size() > 0;
+  }
+
+  bool does_quadratic_segment_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p2, const rect& rect) {
+    return quadratic_rect_intersections(p0, p1, p2, rect).size() > 0;
   }
 
   bool does_cubic_segment_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p3, const vec2 p4, const rect& rect) {

@@ -1,3 +1,8 @@
+/**
+ * @file select_tool.cpp
+ * @brief Contains the implementation of the SelectTool class.
+ */
+
 #include "select_tool.h"
 
 #include "../input_manager.h"
@@ -31,14 +36,17 @@ namespace Graphick::Editor::Input {
       }
 
       if (InputManager::keys.alt) {
-        // std::vector<Entity*> entities = scene.selection.entities();
-        // scene.selection.clear();
+        std::vector<uuid> duplicated;
 
-        // TODO: Duplication
-        // for (Entity* entity : entities) {
-        //   Entity* duplicate = scene.duplicate(entity);
-        //   if (duplicate) scene.selection.select(duplicate);
-        // }
+        for (const auto& [id, _] : scene.selection.selected()) {
+          duplicated.push_back(scene.duplicate_entity(id).id());
+        }
+
+        scene.selection.clear();
+
+        for (uuid id : duplicated) {
+          scene.selection.select(id);
+        }
       }
     } else {
       m_selection_rect.set(InputManager::pointer.scene.position);
@@ -50,19 +58,13 @@ namespace Graphick::Editor::Input {
 
     if ((m_entity != uuid::null && Editor::scene().selection.has(m_entity)) || InputManager::keys.alt) {
       if (!Editor::scene().selection.empty()) {
-        vec2 movement = InputManager::pointer.scene.movement;
-        // TODO: Snapping
+        const vec2 movement = InputManager::pointer.scene.movement;
 
         for (auto& [id, _] : Editor::scene().selection.selected()) {
           Entity entity = Editor::scene().get_entity(id);
-          // TODO: all entities should have transform component
-          if (!entity.has_component<TransformComponent>()) continue;
 
           entity.get_component<TransformComponent>().translate(movement);
-          // entity.get_component<TransformComponent>().position.set_delta(delta);
         }
-        //     for (auto& [id, entity] : Editor::scene().selection) {
-        //       entity->transform()->translate(delta - entity->transform()->position().delta());
       }
     } else if (m_selection_rect.active()) {
       OPTICK_EVENT();
@@ -73,24 +75,17 @@ namespace Graphick::Editor::Input {
   }
 
   void SelectTool::on_pointer_up() {
-    // TODO: abort
     Editor::scene().selection.sync();
 
     if (m_selection_rect.active()) {
       m_selection_rect.reset();
     }
 
-    if (m_dragging_occurred && !Editor::scene().selection.empty()) {
-      for (auto& [id, _] : Editor::scene().selection.selected()) {
-        // Entity entity = Editor::scene().get_entity(id);
-        // if (!entity.has_component<TransformComponent>()) continue;
+    if (m_dragging_occurred) {
+      return;
+    }
 
-        // entity.get_component<TransformComponent>().apply();
-      }
-      // for (auto& [id, entity] : Editor::scene().selection) {
-      //   entity->transform()->position().apply();
-      // }
-    } else if (m_entity != uuid::null && Editor::scene().selection.has(m_entity) && !m_is_entity_added_to_selection) {
+    if (m_entity != uuid::null && Editor::scene().selection.has(m_entity) && !m_is_entity_added_to_selection) {
       if (InputManager::keys.shift) {
         Editor::scene().selection.deselect(m_entity);
       } else {

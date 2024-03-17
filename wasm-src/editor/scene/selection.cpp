@@ -70,8 +70,6 @@ namespace Graphick::Editor {
   }
 
   void Selection::select_child(const uuid element_id, const size_t child_index) {
-    console::log("index", child_index);
-
     auto it = m_selected.find(element_id);
 
     if (it == m_selected.end()) {

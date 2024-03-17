@@ -2,6 +2,7 @@
  * @file common.h
  * @brief Contains common classes and functions used by input tools in the Graphick editor.
  */
+
 #pragma once
 
 #include "../keys.h"

@@ -128,6 +128,14 @@ namespace Graphick::Editor {
     void delete_entity(uuid id);
 
     /**
+     * @brief Duplicates an entity.
+     *
+     * @param id The id of the entity to duplicate.
+     * @return The duplicated entity.
+     */
+    Entity duplicate_entity(const uuid id);
+
+    /**
      * @brief Returns the uuid of the entity at the specified position if any, uuid::null otherwise.
      *
      * @param position The position to check.

@@ -1,3 +1,8 @@
+/**
+ * @file pencil_tool.cpp
+ * @brief Contains the implementation of the PencilTool class.
+ */
+
 #include "pencil_tool.h"
 
 #include "../input_manager.h"

@@ -1,3 +1,8 @@
+/**
+ * @file zoom_tool.cpp
+ * @brief Contains the implementation of the ZoomTool class.
+ */
+
 #include "zoom_tool.h"
 
 #include "../input_manager.h"
@@ -11,11 +16,16 @@ namespace Graphick::Editor::Input {
   ZoomTool::ZoomTool() : Tool(ToolType::Zoom, CategoryImmediate) {}
 
   void ZoomTool::on_pointer_move() {
-    float delta =
+    Scene& scene = Editor::scene();
+
+    const float delta =
       std::abs(InputManager::pointer.client.movement.x) > std::abs(InputManager::pointer.client.movement.y) ?
       InputManager::pointer.client.movement.x : -InputManager::pointer.client.movement.y;
 
-    Editor::scene().viewport.zoom_to(Editor::scene().viewport.zoom() * (1.0f + (delta * ZOOM_STEP) / 50.0f), InputManager::pointer.client.origin);
+    scene.viewport.zoom_to(
+      scene.viewport.zoom() * (1.0f + (delta * ZOOM_STEP) / 50.0f),
+      InputManager::pointer.client.origin
+    );
   }
 
 }

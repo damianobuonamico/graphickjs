@@ -1,3 +1,9 @@
+/**
+ * @file hover_state.cpp
+ * @brief Contains the implementation of the HoverState class.
+ * @todo hover priority: handle > vertex > segment > element > none
+ */
+
 #include "hover_state.h"
 
 #include "../scene/entity.h"
@@ -8,7 +14,6 @@
 
 #include "../../utils/console.h"
 
-// TODO: hover priority: handle > vertex > segment > element > none
 namespace Graphick::Editor::Input {
 
   HoverState::~HoverState() {}

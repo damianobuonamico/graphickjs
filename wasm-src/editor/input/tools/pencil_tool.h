@@ -1,10 +1,21 @@
+/**
+ * @file pencil_tool.h
+ * @brief Contains the declaration of the PencilTool class.
+ *
+ * @todo implement the PencilTool class.
+ */
+
 #pragma once
 
 #include "../tool.h"
-// #include "../../scene/entities/freehand_entity.h"
 
 namespace Graphick::Editor::Input {
 
+  /**
+   * @brief The PencilTool class represents a tool used for drawing freehand entities.
+   *
+   * @class PencilTool
+   */
   class PencilTool : public Tool {
   public:
     virtual void on_pointer_down() override;

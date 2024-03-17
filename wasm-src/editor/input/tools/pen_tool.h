@@ -17,9 +17,8 @@ namespace Graphick::Editor::Input {
   /**
    * @brief The PenTool class represents a tool used for drawing paths with a pen.
    *
-   * This class inherits from the Tool class and implements its virtual methods.
-   * It also provides additional methods for setting and getting the UUID of the pen element.
-   * The class has a private Mode enum for keeping track of the current mode of the tool.
+   * This class provides methods for setting and getting the UUID of the pen element.
+   * The state of the pen tool is managed internally.
    *
    * @class PenTool
    */
@@ -47,6 +46,9 @@ namespace Graphick::Editor::Input {
      */
     void set_pen_element(const uuid id);
   private:
+    /**
+     * @brief Default constructor.
+     */
     PenTool();
 
     /**

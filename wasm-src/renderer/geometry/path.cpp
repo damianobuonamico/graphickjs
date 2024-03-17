@@ -2,12 +2,7 @@
  * @file path.cpp
  * @brief Implementation of the Path class.
  *
- * @todo refactor iterator indexing logic, maybe merging in one multiindex loop.
- * @todo refactor add/remove segments logic in the middle of the path.
  * @todo Implement history.
- * @todo Implement in and out handles.
- * @todo Better closing algorithm.
- * @todo is_point_in_path() should have a stroke of std::max(stroke_width, threshold).
  * @todo implement compound paths when groups are a thing.
  */
 
@@ -131,53 +126,15 @@ namespace Graphick::Renderer::Geometry {
   /* -- Iterator -- */
 
   Path::Iterator::Iterator(const Path& path, const size_t index, const IndexType index_type) : m_path(path), m_index(index), m_point_index(0) {
-    if (index_type == IndexType::Segment) {
-      GK_ASSERT(index < path.size(), "Segment index out of range.");
-
-      m_index = 0;
-      size_t i = 0;
-
-      while (i <= index) {
-        Command command = path.get_command(m_index);
-
-        if (command == Command::Move) {
-          m_point_index++;
-          m_index++;
-          continue;
-        } else if (i == index) {
-          break;
-        }
-
-        switch (command) {
-        case Command::Line:
-          m_point_index += 1;
-          break;
-        case Command::Quadratic:
-          m_point_index += 2;
-          break;
-        case Command::Cubic:
-          m_point_index += 3;
-          break;
-        }
-
-        i++;
-        m_index += 1;
-      }
-
-      return;
-    } else if (index_type == IndexType::Point) {
+    if (index_type == IndexType::Point) {
       GK_ASSERT(index < path.m_points.size(), "Point index out of range.");
 
       m_index = 0;
 
       while (m_point_index <= index) {
-        Command command = path.get_command(m_index);
-
-        switch (command) {
+        switch (path.get_command(m_index)) {
         case Command::Move:
           if (index == m_point_index) {
-            m_point_index += 1;
-            m_index += 1;
             return;
           }
 
@@ -191,24 +148,14 @@ namespace Graphick::Renderer::Geometry {
           m_point_index += 1;
           break;
         case Command::Quadratic:
-          if (index == m_point_index) {
-            m_point_index += 1;
-            return;
-          } else if (index == m_point_index + 1) {
+          if (size_t delta = index - m_point_index; delta <= 1) {
             return;
           }
 
           m_point_index += 2;
           break;
         case Command::Cubic:
-          // TODO: simplify
-          if (index == m_point_index) {
-            m_point_index += 2;
-            return;
-          } else if (index == m_point_index + 1) {
-            m_point_index += 1;
-            return;
-          } else if (index == m_point_index + 2) {
+          if (size_t delta = index - m_point_index; delta <= 2) {
             return;
           }
 
@@ -220,13 +167,19 @@ namespace Graphick::Renderer::Geometry {
       }
 
       return;
+    } else if (index_type == IndexType::Segment) {
+      GK_ASSERT(index < path.size(), "Segment index out of range.");
+
+      m_index = index + 1;
     }
 
-    if (m_index < path.m_commands_size && path.get_command(m_index) == Command::Move) m_index++;
+    if (m_index < path.m_commands_size && path.get_command(m_index) == Command::Move) {
+      m_index += 1;
+    }
 
     GK_ASSERT(m_index > 0 && m_index <= path.m_commands_size, "Index out of range.");
 
-    if (m_index < path.m_commands_size / 2) {
+    if (m_index <= path.m_commands_size / 2) {
       for (size_t i = 0; i < m_index; i++) {
         switch (path.get_command(i)) {
         case Command::Move:
@@ -291,6 +244,16 @@ namespace Graphick::Renderer::Geometry {
     return tmp;
   }
 
+  Path::Iterator Path::Iterator::operator+(const size_t n) const {
+    Iterator tmp = *this;
+
+    for (size_t i = 0; i < n; i++) {
+      ++tmp;
+    }
+
+    return tmp;
+  }
+
   Path::Iterator& Path::Iterator::operator--() {
     GK_ASSERT(m_index > 0, "Cannot decrement the begin iterator.");
 
@@ -316,6 +279,16 @@ namespace Graphick::Renderer::Geometry {
   Path::Iterator Path::Iterator::operator--(int) {
     Iterator tmp = *this;
     --(*this);
+
+    return tmp;
+  }
+
+  Path::Iterator Path::Iterator::operator-(const size_t n) const {
+    Iterator tmp = *this;
+
+    for (size_t i = 0; i < n; i++) {
+      --tmp;
+    }
 
     return tmp;
   }
@@ -546,6 +519,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   vec2 Path::point_at(const size_t point_index) const {
+    GK_ASSERT(point_index < m_points.size() || point_index == in_handle_index || point_index == out_handle_index, "Point index out of range.");
+
     switch (point_index) {
     case in_handle_index:
       return m_in_handle;
@@ -564,7 +539,7 @@ namespace Graphick::Renderer::Geometry {
   ) const {
     for (size_t i = 0, j = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
-      case Command::Cubic: {
+      case Command::Cubic:
         GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
 
         if (cubic_callback) {
@@ -572,10 +547,8 @@ namespace Graphick::Renderer::Geometry {
         }
 
         j += 3;
-
         break;
-      }
-      case Command::Quadratic: {
+      case Command::Quadratic:
         GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
 
         if (quadratic_callback) {
@@ -583,10 +556,8 @@ namespace Graphick::Renderer::Geometry {
         }
 
         j += 2;
-
         break;
-      }
-      case Command::Line: {
+      case Command::Line:
         GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
 
         if (line_callback) {
@@ -594,10 +565,8 @@ namespace Graphick::Renderer::Geometry {
         }
 
         j += 1;
-
         break;
-      }
-      case Command::Move: {
+      case Command::Move:
         GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
 
         if (move_callback) {
@@ -605,9 +574,7 @@ namespace Graphick::Renderer::Geometry {
         }
 
         j += 1;
-
         break;
-      }
       }
     }
   }
@@ -620,7 +587,7 @@ namespace Graphick::Renderer::Geometry {
   ) const {
     for (int i = static_cast<int>(m_commands_size) - 1, j = static_cast<int>(m_points.size()); i >= 0; i--) {
       switch (get_command(i)) {
-      case Command::Cubic: {
+      case Command::Cubic:
         GK_ASSERT(j - 4 >= 0, "Not enough points for a cubic bezier.");
 
         if (cubic_callback) {
@@ -628,10 +595,8 @@ namespace Graphick::Renderer::Geometry {
         }
 
         j -= 3;
-
         break;
-      }
-      case Command::Quadratic: {
+      case Command::Quadratic:
         GK_ASSERT(j - 3 >= 0, "Not enough points for a quadratic bezier.");
 
         if (quadratic_callback) {
@@ -639,10 +604,8 @@ namespace Graphick::Renderer::Geometry {
         }
 
         j -= 2;
-
         break;
-      }
-      case Command::Line: {
+      case Command::Line:
         GK_ASSERT(j - 2 >= 0, "Not enough points for a line.");
 
         if (line_callback) {
@@ -650,10 +613,8 @@ namespace Graphick::Renderer::Geometry {
         }
 
         j -= 1;
-
         break;
-      }
-      case Command::Move: {
+      case Command::Move:
         GK_ASSERT(j - 1 >= 0, "Points vector subscript out of range.");
 
         if (move_callback) {
@@ -661,9 +622,7 @@ namespace Graphick::Renderer::Geometry {
         }
 
         j -= 1;
-
         break;
-      }
       }
     }
   }
@@ -756,6 +715,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   Path::VertexNode Path::node_at(const size_t point_index) const {
+    GK_ASSERT(point_index < m_points.size(), "Point index out of range.");
+
     VertexNode node = { 0, -1, -1, -1, -1, -1 };
 
     if (vacant()) return node;
@@ -951,6 +912,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::move_to(const vec2 point) {
+    GK_ASSERT(empty(), "Cannot add a move to a non-empty path.");
+
     if (!vacant() && get_command(m_commands_size - 1) == Command::Move) {
       m_points[m_points.size() - 1] = point;
       return;
@@ -1216,6 +1179,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::translate(const size_t point_index, const vec2 delta) {
+    GK_ASSERT(point_index < m_points.size() || point_index == in_handle_index || point_index == out_handle_index, "Point index out of range.");
+
     switch (point_index) {
     case in_handle_index:
       m_in_handle += delta;
@@ -1230,6 +1195,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::to_line(const size_t command_index) {
+    GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
+
     const Command command = get_command(command_index);
 
     if (command == Command::Line || command == Command::Move) return;
@@ -1265,68 +1232,73 @@ namespace Graphick::Renderer::Geometry {
   }
 
   size_t Path::to_cubic(const size_t command_index, size_t reference_point) {
-    const Command command = get_command(command_index);
+    GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
 
+    const Command command = get_command(command_index);
     if (command == Command::Cubic || command == Command::Move) return reference_point;
 
-    for (size_t i = 0, point_i = 0; i <= command_index; i++) {
-      switch (get_command(i)) {
-      case Command::Move:
-        point_i += 1;
-        break;
-      case Command::Line:
-        if (command_index == i) {
-          m_points.insert(m_points.begin() + point_i, { m_points[point_i - 1], m_points[point_i] });
+    const Iterator it = { *this, command_index, IndexType::Command };
+    const Segment segment = *it;
+    const size_t point_i = it.point_index();
 
-          replace_command(i, Command::Cubic);
+    if (segment.type == Command::Line) {
+      m_points.insert(m_points.begin() + point_i, { m_points[point_i - 1], m_points[point_i] });
 
-          return reference_point >= point_i ? reference_point + 2 : reference_point;
-        }
+      replace_command(command_index, Command::Cubic);
 
-        point_i += 1;
-        break;
-      case Command::Quadratic:
-        if (command_index == i) {
-          const vec2 p0 = m_points[point_i - 1];
-          const vec2 p1 = m_points[point_i];
-          const vec2 p2 = m_points[point_i + 1];
-
-          const vec2 bez1 = p0 + 2.0f / 3.0f * (p1 - p0);
-          const vec2 bez2 = p2 + 2.0f / 3.0f * (p1 - p2);
-
-          m_points[point_i] = bez1;
-          m_points.insert(m_points.begin() + point_i + 1, bez2);
-
-          replace_command(i, Command::Cubic);
-
-          return reference_point >= point_i + 1 ? reference_point + 1 : reference_point;
-        }
-
-        point_i += 2;
-        break;
-      case Command::Cubic:
-        point_i += 3;
-        break;
-      }
+      return reference_point >= point_i ? reference_point + 2 : reference_point;
     }
+
+    const vec2 p0 = m_points[point_i - 1];
+    const vec2 p1 = m_points[point_i];
+    const vec2 p2 = m_points[point_i + 1];
+
+    const vec2 bez1 = p0 + 2.0f / 3.0f * (p1 - p0);
+    const vec2 bez2 = p2 + 2.0f / 3.0f * (p1 - p2);
+
+    m_points[point_i] = bez1;
+    m_points.insert(m_points.begin() + point_i + 1, bez2);
+
+    replace_command(command_index, Command::Cubic);
+
+    return reference_point >= point_i + 1 ? reference_point + 1 : reference_point;
   }
 
   void Path::remove(const size_t point_index, const bool keep_shape) {
+    GK_ASSERT(point_index < m_points.size(), "Point index out of range.");
+
     size_t to_remove = point_index == m_points.size() - 1 ? 0 : point_index;
 
     if (empty() || (point_index == 0 && !closed())) {
       return;
     }
 
+    const Iterator it = { *this, to_remove, IndexType::Point };
+    const Iterator next_it = it + 1;
+    const Segment segment = to_remove == 0 ? back() : *it;
+    const Segment next_segment = to_remove == 0 ? front() : *next_it;
+
+    if (size() == 2 && closed()) {
+      const vec2 p = segment.p0;
+      const vec2 out = segment.type == Command::Cubic ? segment.p1 : p;
+      const vec2 in = next_segment.type == Command::Cubic ? next_segment.p2 : p;
+
+      m_points.clear();
+      m_commands.clear();
+      m_commands_size = 0;
+
+      move_to(p);
+
+      m_in_handle = in;
+      m_out_handle = out;
+
+      return;
+    }
+
+    Math::Algorithms::CubicBezier cubic;
+
     if (keep_shape) {
-      Iterator it = { *this, to_remove, IndexType::Point };
-      Iterator next_it = it;
       std::vector<vec2> points(GK_FIT_RESOLUTION * 2 + 2);
-
-      next_it++;
-
-      const Segment segment = to_remove == 0 ? back() : *it;
-      const Segment next_segment = to_remove == 0 ? front() : *next_it;
 
       for (size_t i = 0; i <= GK_FIT_RESOLUTION; i++) {
         float t = static_cast<float>(i) / static_cast<float>(GK_FIT_RESOLUTION);
@@ -1335,208 +1307,117 @@ namespace Graphick::Renderer::Geometry {
         points[GK_FIT_RESOLUTION + i + 1] = next_segment.sample(t);
       }
 
-      Math::Algorithms::CubicBezier cubic = Math::Algorithms::fit_points_to_cubic(points, GK_PATH_TOLERANCE);
+      cubic = Math::Algorithms::fit_points_to_cubic(points, GK_PATH_TOLERANCE);
+    } else {
+      const vec2 p1 = segment.type == Command::Line ? segment.p0 : segment.p1;
 
-      if (to_remove == 0) {
-        switch (segment.type) {
-        case Command::Line:
-          m_points.pop_back();
-          break;
-        case Command::Quadratic:
-          m_points.pop_back();
-          m_points.pop_back();
-          break;
-        case Command::Cubic:
-          m_points.pop_back();
-          m_points.pop_back();
-          m_points.pop_back();
-          break;
-        }
-
-        remove_command(m_commands_size - 1);
-
-        switch (next_segment.type) {
-        case Command::Line:
-          m_points.insert(m_points.begin(), { cubic.p0, cubic.p1 });
-          m_points[2] = cubic.p2;
-          break;
-        case Command::Quadratic:
-          m_points.insert(m_points.begin(), cubic.p0);
-          m_points[1] = cubic.p1;
-          m_points[2] = cubic.p2;
-          break;
-        case Command::Cubic:
-          m_points[0] = cubic.p0;
-          m_points[1] = cubic.p1;
-          m_points[2] = cubic.p2;
-          break;
-        }
-
-        replace_command(1, Command::Cubic);
+      if (next_segment.type == Command::Line) {
+        cubic = { segment.p0, p1, next_segment.p1, next_segment.p1 };
+      } else if (next_segment.type == Command::Quadratic) {
+        cubic = { segment.p0, p1, next_segment.p1, next_segment.p2 };
       } else {
-        switch (segment.type) {
-        case Command::Line:
-          m_points[to_remove] = cubic.p3;
-          m_points.insert(m_points.begin() + to_remove, { cubic.p1, cubic.p2 });
-          break;
-        case Command::Quadratic:
-          m_points[to_remove - 1] = cubic.p1;
-          m_points[to_remove] = cubic.p3;
-          m_points.insert(m_points.begin() + to_remove, cubic.p2);
-          break;
-        case Command::Cubic:
-          m_points[to_remove - 2] = cubic.p1;
-          m_points[to_remove - 1] = cubic.p2;
-          m_points[to_remove] = cubic.p3;
-          break;
-        }
-
-        replace_command(it.command_index(), Command::Cubic);
-
-        switch (next_segment.type) {
-        case Command::Line:
-          m_points.erase(m_points.begin() + to_remove + 1);
-          break;
-        case Command::Quadratic:
-          m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 3);
-          break;
-        case Command::Cubic:
-          m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 4);
-          break;
-        }
-
-        remove_command(next_it.command_index());
+        cubic = { segment.p0, p1, next_segment.p2, next_segment.p3 };
       }
-
-      return;
     }
 
-    for (size_t i = 0, point_i = 0; i <= m_commands_size; i++) {
-      if (point_i > to_remove) return;
+    size_t new_command_index = 0;
 
-      switch (get_command(i)) {
-      case Command::Move:
-        point_i += 1;
-        break;
+    if (to_remove == 0) {
+      switch (segment.type) {
       case Command::Line:
-        if (to_remove == point_i) {
-          Command next_command = get_command(i + 1);
-
-          if (keep_shape) {
-            std::vector<vec2> points(GK_FIT_RESOLUTION * 2 + 1);
-
-            for (size_t i = 0; i < GK_FIT_RESOLUTION; i++) {
-              float t = static_cast<float>(i) / static_cast<float>(GK_FIT_RESOLUTION);
-              float t_prime = static_cast<float>(i) / static_cast<float>(GK_FIT_RESOLUTION);
-
-              points[i] = Math::lerp(m_points[point_i - 1], m_points[point_i], t);
-
-              switch (next_command) {
-              case Command::Cubic:
-                points[GK_FIT_RESOLUTION + i] = Math::bezier(m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], m_points[point_i + 3], t_prime);
-                break;
-              case Command::Quadratic:
-                points[GK_FIT_RESOLUTION + i] = Math::quadratic(m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], t_prime);
-                break;
-              case Command::Line:
-                points[GK_FIT_RESOLUTION + i] = Math::lerp(m_points[point_i], m_points[point_i + 1], t_prime);
-                break;
-              }
-            }
-
-            points[points.size() - 1] = m_points[point_i + 3];
-
-            Math::Algorithms::CubicBezier cubic = Math::Algorithms::fit_points_to_cubic(points, GK_PATH_TOLERANCE);
-
-            switch (next_command) {
-            case Command::Cubic:
-              m_points.erase(m_points.begin() + point_i);
-              break;
-            case Command::Quadratic:
-              break;
-            case Command::Line:
-              m_points.insert(m_points.begin() + point_i, vec2{ 0.0f, 0.0f });
-              break;
-            }
-
-            m_points[point_i] = cubic.p1;
-            m_points[point_i + 1] = cubic.p2;
-
-            remove_command(i);
-            replace_command(i, Command::Cubic);
-
-            return;
-          } else if (next_command == Command::Cubic) {
-            m_points[point_i] = m_points[point_i - 1];
-            m_points.erase(m_points.begin() + point_i + 1);
-          } else {
-            m_points.erase(m_points.begin() + point_i);
-          }
-
-          return remove_command(i);
-        }
-
-        point_i += 1;
+        m_points.pop_back();
         break;
       case Command::Quadratic:
-        if (to_remove == point_i + 1) {
-          if (i >= m_commands_size - 1) {
-          }
-
-          Command next_command = get_command(i + 1);
-
-          if (next_command == Command::Cubic) {
-            m_points.erase(m_points.begin() + point_i, m_points.begin() + point_i + 3);
-            m_points.insert(m_points.begin() + point_i - 1, m_points[point_i - 1]);
-            return remove_command(i);
-          } else if (next_command == Command::Quadratic) {
-            m_points.erase(m_points.begin() + point_i, m_points.begin() + point_i + 3);
-            remove_command(i + 1);
-            return replace_command(i, Command::Line);
-          } else {
-            m_points.erase(m_points.begin() + point_i, m_points.begin() + point_i + 2);
-            return remove_command(i);
-          }
-        }
-
-        point_i += 2;
+        m_points.pop_back();
+        m_points.pop_back();
         break;
       case Command::Cubic:
-        if (to_remove == point_i + 2) {
-          if (i >= m_commands_size - 1) {
-            // TODO: closing command logic
-            return;
-          }
-
-          Command next_command = get_command(i + 1);
-
-          if (next_command == Command::Cubic) {
-            m_points.erase(m_points.begin() + point_i + 1, m_points.begin() + point_i + 4);
-            return remove_command(i);
-          } else if (next_command == Command::Quadratic) {
-            m_points.erase(m_points.begin() + point_i + 1, m_points.begin() + point_i + 3);
-            return remove_command(i + 1);
-          } else {
-            m_points.insert(m_points.begin() + point_i + 3, m_points[point_i + 3]);
-            m_points.erase(m_points.begin() + point_i + 1, m_points.begin() + point_i + 3);
-            return remove_command(i + 1);
-          }
-
-          Segment segment = at(i, false);
-
-          if (segment.is_line()) {
-            to_line(i);
-          }
-        }
-
-        point_i += 3;
+        m_points.pop_back();
+        m_points.pop_back();
+        m_points.pop_back();
         break;
       }
+
+      switch (next_segment.type) {
+      case Command::Line:
+        m_points.insert(m_points.begin(), { cubic.p0, cubic.p1 });
+        m_points[2] = cubic.p2;
+        break;
+      case Command::Quadratic:
+        m_points.insert(m_points.begin(), cubic.p0);
+        m_points[1] = cubic.p1;
+        m_points[2] = cubic.p2;
+        break;
+      case Command::Cubic:
+        m_points[0] = cubic.p0;
+        m_points[1] = cubic.p1;
+        m_points[2] = cubic.p2;
+        break;
+      }
+
+      new_command_index = 1;
+
+      remove_command(m_commands_size - 1);
+      replace_command(new_command_index, Command::Cubic);
+    } else {
+      switch (segment.type) {
+      case Command::Line:
+        m_points[to_remove] = cubic.p3;
+        m_points.insert(m_points.begin() + to_remove, { cubic.p1, cubic.p2 });
+        break;
+      case Command::Quadratic:
+        m_points[to_remove - 1] = cubic.p1;
+        m_points[to_remove] = cubic.p3;
+        m_points.insert(m_points.begin() + to_remove, cubic.p2);
+        break;
+      case Command::Cubic:
+        m_points[to_remove - 2] = cubic.p1;
+        m_points[to_remove - 1] = cubic.p2;
+        m_points[to_remove] = cubic.p3;
+        break;
+      }
+
+      switch (next_segment.type) {
+      case Command::Line:
+        m_points.erase(m_points.begin() + to_remove + 1);
+        break;
+      case Command::Quadratic:
+        m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 3);
+        break;
+      case Command::Cubic:
+        m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 4);
+        break;
+      }
+
+      new_command_index = it.command_index();
+
+      replace_command(new_command_index, Command::Cubic);
+      remove_command(next_it.command_index());
+    }
+
+    if (cubic.p0 == cubic.p1 && cubic.p2 == cubic.p3) {
+      to_line(new_command_index);
     }
   }
 
   size_t Path::split(const size_t segment_index, const float t) {
+    GK_ASSERT(segment_index < m_commands_size - 1, "Segment index out of range.");
+
     if (empty()) return 0;
+
+    const Iterator it = { *this, segment_index, IndexType::Segment };
+    const Segment segment = *it;
+
+    switch (segment.type) {
+    case Command::Line: {
+
+      return segment_index;
+    }
+    case Command::Quadratic:
+      return segment_index;
+    case Command::Cubic:
+      return segment_index;
+    };
 
     for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
@@ -1578,50 +1459,6 @@ namespace Graphick::Renderer::Geometry {
         break;
       }
     }
-
-    // int index = 0;
-
-    // for (int i = 0; i < m_segments.size(); i++) {
-    //   if (&m_segments[i] == &segment) {
-    //     index = i;
-    //     break;
-    //   }
-    // }
-
-    // std::optional<std::shared_ptr<ControlPoint>> new_vertex = std::nullopt;
-    // std::shared_ptr<ControlPoint> first_vertex = segment.m_p0;
-    // std::shared_ptr<ControlPoint> last_vertex = segment.m_p3;
-
-    // if (segment.is_linear()) {
-    //   new_vertex = std::make_shared<ControlPoint>(segment.get(t));
-    //   m_segments.erase(index);
-
-    //   if (m_reversed) {
-    //     m_segments.insert(std::make_shared<Segment>(first_vertex, new_vertex.value()), index);
-    //     m_segments.insert(std::make_shared<Segment>(new_vertex.value(), last_vertex), index + 1);
-    //   } else {
-    //     m_segments.insert(std::make_shared<Segment>(new_vertex.value(), last_vertex), index);
-    //     m_segments.insert(std::make_shared<Segment>(first_vertex, new_vertex.value()), index);
-    //   }
-    // } else {
-    //   auto [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(segment.p0(), segment.p1(), segment.p2(), segment.p3(), t);
-
-    //   new_vertex = std::make_shared<ControlPoint>(p);
-    //   m_segments.erase(index);
-
-    //   if (m_reversed) {
-    //     m_segments.insert(std::make_shared<Segment>(first_vertex, in_p1, in_p2, new_vertex.value()), index);
-    //     m_segments.insert(std::make_shared<Segment>(new_vertex.value(), out_p1, out_p2, last_vertex), index + 1);
-    //   } else {
-    //     m_segments.insert(std::make_shared<Segment>(new_vertex.value(), out_p1, out_p2, last_vertex), index);
-    //     m_segments.insert(std::make_shared<Segment>(first_vertex, in_p1, in_p2, new_vertex.value()), index);
-    //   }
-    // }
-
-    // uuid new_vertex_id = new_vertex.value()->id;
-    // uuid element_id = id;
-
-    // return new_vertex;
   }
 
   Math::rect Path::bounding_rect() const {
@@ -2042,12 +1879,12 @@ namespace Graphick::Renderer::Geometry {
         point_i += 1;
         break;
       case Command::Quadratic:
-        // if (m_points[point_i + 1] != last_move_point && Math::is_point_in_rect(m_points[point_i + 1], rect)) {
-        //   if (indices) indices->insert(point_i + 1);
-        //   found = true;
-        // } else if (!found && Math::does_quadratic_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], rect)) {
-        //   found = true;
-        // }
+        if (Math::is_point_in_rect(m_points[point_i + 1], rect)) {
+          if (indices) indices->insert(point_i + 1);
+          found = true;
+        } else if (!found && Math::does_quadratic_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], rect)) {
+          found = true;
+        }
 
         point_i += 2;
         break;
@@ -2122,12 +1959,12 @@ namespace Graphick::Renderer::Geometry {
       case Command::Quadratic: {
         const vec2 p2 = transform * m_points[point_i + 1];
 
-        // if (Math::is_point_in_rect(m_points[point_i + 1], rect)) {
-        //   if (indices) indices->insert(point_i + 1);
-        //   found = true;
-        // } else if (!found && Math::does_quadratic_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], rect)) {
-        //   found = true;
-        // }
+        if (Math::is_point_in_rect(p2, rect)) {
+          if (indices) indices->insert(point_i + 1);
+          found = true;
+        } else if (!found && Math::does_quadratic_segment_intersect_rect(last, transform * m_points[point_i], p2, rect)) {
+          found = true;
+        }
 
         point_i += 2;
         last = p2;
@@ -2161,37 +1998,6 @@ namespace Graphick::Renderer::Geometry {
     return found;
   }
 
-
-  std::vector<uint8_t> Path::encode() const {
-    if (vacant()) return {};
-
-    std::vector<uint8_t> buffer(4 + m_commands.size() + 4 + m_points.size() * sizeof(vec2));
-
-    buffer[0] = static_cast<uint8_t>(m_commands_size >> 24);
-    buffer[1] = static_cast<uint8_t>(m_commands_size >> 16);
-    buffer[2] = static_cast<uint8_t>(m_commands_size >> 8);
-    buffer[3] = static_cast<uint8_t>(m_commands_size);
-
-    for (size_t i = 0; i < m_commands.size(); i++) {
-      buffer[i + 4] = m_commands[i];
-    }
-
-    buffer[m_commands.size() + 4] = static_cast<uint8_t>(m_points.size() >> 24);
-    buffer[m_commands.size() + 5] = static_cast<uint8_t>(m_points.size() >> 16);
-    buffer[m_commands.size() + 6] = static_cast<uint8_t>(m_points.size() >> 8);
-    buffer[m_commands.size() + 7] = static_cast<uint8_t>(m_points.size());
-
-    for (size_t i = 0; i < m_points.size(); i++) {
-      const uint8_t* p = reinterpret_cast<const uint8_t*>(&m_points[i]);
-
-      for (size_t j = 0; j < sizeof(vec2); j++) {
-        buffer[m_commands.size() + 8 + i * sizeof(vec2) + j] = p[j];
-      }
-    }
-
-    return buffer;
-  }
-
   io::EncodedData& Path::encode(io::EncodedData& data) const {
     if (vacant()) return data.uint32(0);
 
@@ -2212,7 +2018,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::insert_command(const Command command, const size_t index) {
-    if (index == m_commands_size) {
+    if (index >= m_commands_size) {
       return push_command(command);
     } else if (index == 0) {
       std::vector<Command> commands(m_commands_size + 1);
@@ -2260,6 +2066,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::replace_command(const size_t index, const Command command) {
+    GK_ASSERT(index < m_commands_size, "Command index out of range.");
+
     size_t rem = index % 4;
 
     m_commands[index / 4] &= ~(0b00000011 << (6 - rem * 2));
@@ -2267,6 +2075,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Path::remove_command(const size_t index) {
+    GK_ASSERT(index < m_commands_size, "Command index out of range.");
+
     if (index == m_commands_size - 1) {
       size_t rem = (m_commands_size - 1) % 4;
 

@@ -1,3 +1,11 @@
+/**
+ * @file direct_select_tool.cpp
+ * @brief Contains the implementation of the DirectSelectTool class.
+ *
+ * @todo snapping and maybe grid
+ * @todo curve molding
+ */
+
 #include "direct_select_tool.h"
 
 #include "../input_manager.h"
@@ -26,8 +34,6 @@ namespace Graphick::Editor::Input {
     m_segment.reset();
     m_vertex.reset();
     m_handle.reset();
-    // m_vector_cache.clear();
-    // m_matrix_cache.clear();
 
     HoverState::HoverType hover_type = InputManager::hover.type();
     std::optional<Entity> entity = InputManager::hover.entity();
@@ -64,22 +70,16 @@ namespace Graphick::Editor::Input {
 
     switch (m_mode) {
     case Mode::Duplicate:
-      on_duplicate_pointer_move();
-      break;
+    case Mode::Entity:
     case Mode::Element:
-      on_element_pointer_move();
-      break;
     case Mode::Vertex:
-      on_vertex_pointer_move();
+      translate_selected();
       break;
     case Mode::Handle:
       on_handle_pointer_move();
       break;
     case Mode::Bezier:
       on_segment_pointer_move();
-      break;
-    case Mode::Entity:
-      on_entity_pointer_move();
       break;
     default:
     case Mode::None:
@@ -91,10 +91,10 @@ namespace Graphick::Editor::Input {
   void DirectSelectTool::on_pointer_up() {
     switch (m_mode) {
     case Mode::Duplicate:
-      on_duplicate_pointer_up();
       break;
+    case Mode::Entity:
     case Mode::Element:
-      on_element_pointer_up();
+      on_entity_pointer_up();
       break;
     case Mode::Vertex:
       on_vertex_pointer_up();
@@ -104,9 +104,6 @@ namespace Graphick::Editor::Input {
       break;
     case Mode::Bezier:
       on_segment_pointer_up();
-      break;
-    case Mode::Entity:
-      on_entity_pointer_up();
       break;
     default:
     case Mode::None:
@@ -125,43 +122,9 @@ namespace Graphick::Editor::Input {
     Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
   }
 
-  void DirectSelectTool::populate_cache() {
-#if 0
-    Scene& scene = Editor::scene();
-
-    for (auto& [id, entry] : scene.selection.selected()) {
-      if (!scene.has_entity(id)) continue;
-
-      Entity entity = scene.get_entity(id);
-      // History::Mat2x3Value* transform = entity.get_component<TransformComponent>()._value();
-
-      if (entry.type == Selection::SelectionEntry::Type::Element && entity.is_element() && !((Selection::SelectionElementEntry&)(entry)).full()) {
-        Renderer::Geometry::Path& path = entity.get_component<PathComponent>().path;
-
-        m_transform_cache.emplace_back(transform, vec2{ 0.0f });
-
-        for (auto& vertex : path.vertices()) {
-          if (entry.vertices.find(vertex->id) == entry.vertices.end()) continue;
-          auto handles = path.relative_handles(vertex->id);
-          size_t i = m_transform_cache.size() - 1;
-
-          m_vector_cache.emplace_back(vertex, i);
-
-          if (handles.in_handle) m_vector_cache.emplace_back(handles.in_handle, i);
-          if (handles.out_handle) m_vector_cache.emplace_back(handles.out_handle, i);
-        }
-      } else if (entity.has_component<TransformComponent>()) {
-        // m_matrix_cache.push_back(transform);
-      }
-    }
-#endif
-  }
-
   void DirectSelectTool::translate_selected() {
-
     vec2 absolute_movenent = InputManager::pointer.scene.movement;
     vec2 movement = absolute_movenent;
-    // TODO: Snapping
 
     Scene& scene = Editor::scene();
 
@@ -184,7 +147,6 @@ namespace Graphick::Editor::Input {
       Entity entity = scene.get_entity(id);
       TransformComponent transform = entity.get_component<TransformComponent>();
 
-      // TODO: all entities should have transform component
       if (entry.full()) {
         transform.translate(absolute_movenent);
       } else {
@@ -193,18 +155,6 @@ namespace Graphick::Editor::Input {
         }
       }
     }
-  }
-
-  void DirectSelectTool::apply_selected() {
-#if 0
-    for (auto& [value, _] : m_vector_cache) {
-      value->apply();
-    }
-
-    for (Graphick::History::Mat2x3Value* value : m_matrix_cache) {
-      value->apply();
-    }
-#endif
   }
 
   /* -- on_pointer_down -- */
@@ -219,20 +169,29 @@ namespace Graphick::Editor::Input {
   }
 
   void DirectSelectTool::on_duplicate_pointer_down() {
-    // if (!Editor::scene().selection.has(m_entity->id)) {
-    //   if (!InputManager::keys.shift) Editor::scene().selection.clear();
+    on_entity_pointer_down();
 
-    //   Editor::scene().selection.select(m_entity);
-    //   m_is_entity_added_to_selection = true;
-    // }
+    Scene& scene = Editor::scene();
 
-    // std::vector<Entity*> entities = Editor::scene().selection.entities();
-    // Editor::scene().selection.clear();
+    if (!scene.selection.has(m_entity)) {
+      return;
+    }
 
-    // for (Entity* entity : entities) {
-    //   Entity* duplicate = Editor::scene().duplicate(entity);
-    //   if (duplicate) Editor::scene().selection.select(duplicate);
-    // }
+    std::vector<uuid> duplicated;
+
+    for (const auto& [id, _] : scene.selection.selected()) {
+      duplicated.push_back(scene.duplicate_entity(id).id());
+    }
+
+    scene.selection.clear();
+
+    for (uuid id : duplicated) {
+      scene.selection.select(id);
+    }
+
+    m_vertex.reset();
+    m_handle.reset();
+    m_segment.reset();
 
     m_mode = Mode::Duplicate;
   }
@@ -247,8 +206,6 @@ namespace Graphick::Editor::Input {
       m_is_entity_added_to_selection = true;
     }
 
-    // populate_cache();
-
     m_mode = Mode::Entity;
   }
 
@@ -262,48 +219,57 @@ namespace Graphick::Editor::Input {
       m_is_entity_added_to_selection = true;
     }
 
-    // populate_cache();
-
     m_mode = Mode::Element;
   }
 
   void DirectSelectTool::on_segment_pointer_down() {
-    // if (
-    //   !Editor::scene().selection.has(m_element->id) ||
-    //   !m_element->selection()->has(m_bezier->start().id) ||
-    //   !m_element->selection()->has(m_bezier->end().id)
-    //   ) {
-    //   if (m_bezier->type() == BezierEntity::Type::Linear) {
-    //     if (!InputManager::keys.shift) {
-    //       Editor::scene().selection.clear();
-    //     }
+    Scene& scene = Editor::scene();
+    Entity entity = scene.get_entity(m_entity);
 
-    //     m_element->selection()->select(&m_bezier->start());
-    //     m_element->selection()->select(&m_bezier->end());
+    if (!entity.is_element()) {
+      return;
+    }
 
-    //     m_is_entity_added_to_selection = true;
-    //   } else {
-    //     if (InputManager::keys.shift) {
-    //       m_element->selection()->select(&m_bezier->start());
-    //       m_element->selection()->select(&m_bezier->end());
+    const PathComponent path = entity.get_component<PathComponent>();
+    const Renderer::Geometry::Path::Iterator it(path.data(), m_segment.value(), Renderer::Geometry::Path::IndexType::Segment);
+    const Renderer::Geometry::Path::Segment segment = *it;
 
-    //       m_is_entity_added_to_selection = true;
-    //     } else {
-    //       Editor::scene().selection.clear();
-    //       Editor::scene().selection.select(m_element, false);
-
-    //       m_last_bezier_point = InputManager::pointer.scene.origin - m_element->transform()->position().get();
-    //       m_last_bezier_p1 = m_bezier->p1();
-    //       m_last_bezier_p2 = m_bezier->p2();
-    //       m_closest = m_bezier->closest_to(m_last_bezier_point);
-
-
-    //       m_should_evaluate_selection = true;
-    //     }
-    //   }
-    // }
+    const size_t start_index = std::max(size_t(1), it.point_index()) - 1;
+    const size_t end_index = start_index + static_cast<size_t>(segment.type);
 
     m_mode = Mode::Bezier;
+
+    if (
+      scene.selection.has(m_entity) &&
+      scene.selection.has_child(m_entity, start_index) &&
+      scene.selection.has_child(m_entity, end_index)
+    ) {
+      return;
+    }
+
+    if (segment.type == Renderer::Geometry::Path::Command::Cubic) {
+      if (InputManager::keys.shift) {
+        m_is_entity_added_to_selection = true;
+      } else {
+        scene.selection.clear();
+
+        // m_last_bezier_point = InputManager::pointer.scene.origin - m_element->transform()->position().get();
+        // m_last_bezier_p1 = m_bezier->p1();
+        // m_last_bezier_p2 = m_bezier->p2();
+        // m_closest = m_bezier->closest_to(m_last_bezier_point);
+
+        m_should_evaluate_selection = true;
+      }
+    } else {
+      if (!InputManager::keys.shift) {
+        scene.selection.clear();
+      }
+
+      m_is_entity_added_to_selection = true;
+    }
+
+    scene.selection.select_child(m_entity, start_index);
+    scene.selection.select_child(m_entity, end_index);
   }
 
   void DirectSelectTool::on_vertex_pointer_down() {
@@ -315,8 +281,6 @@ namespace Graphick::Editor::Input {
       scene.selection.select_child(m_entity, m_vertex.value());
       m_is_entity_added_to_selection = true;
     }
-
-    // populate_cache();
 
     m_mode = Mode::Vertex;
   }
@@ -336,38 +300,11 @@ namespace Graphick::Editor::Input {
     }
   }
 
-  void DirectSelectTool::on_duplicate_pointer_move() {
-    translate_selected();
-  }
-
-  void DirectSelectTool::on_entity_pointer_move() {
-    translate_selected();
-
-    // vec2 movement = InputManager::pointer.scene.movement;
-    // // TODO: Snapping
-
-    // Scene& scene = Editor::scene();
-
-    // for (auto& [id, _] : scene.selection.selected()) {
-    //   Entity entity = scene.get_entity(id);
-    //   // TODO: all entities should have transform component
-    //   if (!entity.has_component<TransformComponent>()) continue;
-
-    //   entity.get_component<TransformComponent>().translate(movement);
-    //   // entity.get_component<TransformComponent>().position.set_delta(delta);
-    // }
-  }
-
-  void DirectSelectTool::on_element_pointer_move() {
-    on_entity_pointer_move();
-  }
-
-  // TODO: test with asymmetric handles
   void DirectSelectTool::on_segment_pointer_move() {
-    // if (!m_should_evaluate_selection) {
-    //   translate_selected();
-    //   return;
-    // }
+    if (!m_should_evaluate_selection) {
+      translate_selected();
+      return;
+    }
 
     // vec2 p0 = m_bezier->p0();
     // vec2 p1 = m_last_bezier_p1;
@@ -439,18 +376,6 @@ namespace Graphick::Editor::Input {
     // m_bezier->end().transform()->translate_left_to(lerp_np2 - p3);
   }
 
-  void DirectSelectTool::on_vertex_pointer_move() {
-    // Scene& scene = Editor::scene();
-    // Entity entity = scene.get_entity(m_entity);
-
-    // PathComponent path = entity.get_component<PathComponent>();
-    // TransformComponent transform = entity.get_component<TransformComponent>();
-
-    // translate_control_point(path, m_vertex.value(), transform, nullptr, false, true, false, nullptr);
-
-    translate_selected();
-  }
-
   void DirectSelectTool::on_handle_pointer_move() {
     Scene& scene = Editor::scene();
     Entity entity = scene.get_entity(m_entity);
@@ -465,14 +390,6 @@ namespace Graphick::Editor::Input {
 
   void DirectSelectTool::on_none_pointer_up() {
     Editor::scene().selection.sync();
-  }
-
-  void DirectSelectTool::on_duplicate_pointer_up() {
-    // if (m_dragging_occurred) {
-    //   for (const auto& [id, entity] : Editor::scene().selection) {
-    //     entity->transform()->apply();
-    //   }
-    // }
   }
 
   void DirectSelectTool::on_entity_pointer_up() {
@@ -492,36 +409,40 @@ namespace Graphick::Editor::Input {
     }
   }
 
-  void DirectSelectTool::on_element_pointer_up() {
-    on_entity_pointer_up();
-  }
-
   void DirectSelectTool::on_segment_pointer_up() {
-    // if (m_dragging_occurred) {
-    //   for (const auto& [id, entity] : Editor::scene().selection) {
-    //     entity->transform()->apply();
-    //   }
-    // } else if (m_should_evaluate_selection) {
-    //   m_element->selection()->select(&m_bezier->start());
-    //   m_element->selection()->select(&m_bezier->end());
-    // } else if (
-    //   !m_is_entity_added_to_selection &&
-    //   Editor::scene().selection.has(m_element->id) &&
-    //   m_element->selection()->has(m_bezier->start().id) &&
-    //   m_element->selection()->has(m_bezier->end().id)
-    //   ) {
-    //   if (InputManager::keys.shift) {
-    //     m_element->selection()->deselect(m_bezier->start().id);
-    //     m_element->selection()->deselect(m_bezier->end().id);
-    //   } else {
-    //     if (InputManager::pointer.button == InputManager::PointerButton::Left) {
-    //       Editor::scene().selection.clear();
-    //     }
+    if (m_dragging_occurred) return;
 
-    //     m_element->selection()->select(&m_bezier->start());
-    //     m_element->selection()->select(&m_bezier->end());
-    //   }
-    // }
+    Scene& scene = Editor::scene();
+    Entity entity = scene.get_entity(m_entity);
+
+    const PathComponent path = entity.get_component<PathComponent>();
+    const Renderer::Geometry::Path::Iterator it(path.data(), m_segment.value(), Renderer::Geometry::Path::IndexType::Segment);
+    const Renderer::Geometry::Path::Segment segment = *it;
+
+    const size_t start_index = std::max(size_t(1), it.point_index()) - 1;
+    const size_t end_index = start_index + static_cast<size_t>(segment.type);
+
+    if (m_should_evaluate_selection) {
+      scene.selection.select_child(m_entity, start_index);
+      scene.selection.select_child(m_entity, end_index);
+    } else if (
+      !m_is_entity_added_to_selection &&
+      scene.selection.has(m_entity) &&
+      scene.selection.has_child(m_entity, start_index) &&
+      scene.selection.has_child(m_entity, end_index)
+    ) {
+      if (InputManager::keys.shift) {
+        scene.selection.deselect_child(m_entity, start_index);
+        scene.selection.deselect_child(m_entity, end_index);
+      } else {
+        if (InputManager::pointer.button == InputManager::PointerButton::Left) {
+          Editor::scene().selection.clear();
+        }
+
+        scene.selection.select_child(m_entity, start_index);
+        scene.selection.select_child(m_entity, end_index);
+      }
+    }
   }
 
   void DirectSelectTool::on_vertex_pointer_up() {
@@ -561,7 +482,7 @@ namespace Graphick::Editor::Input {
         path.translate(static_cast<size_t>(node.in), vertex - in_handle);
 
         if (node.in_command >= 0) {
-          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), false);
+          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), Renderer::Geometry::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.in_command));
@@ -578,7 +499,7 @@ namespace Graphick::Editor::Input {
         path.translate(static_cast<size_t>(node.out), vertex - out_handle);
 
         if (node.out_command >= 0) {
-          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), false);
+          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), Renderer::Geometry::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.out_command));
