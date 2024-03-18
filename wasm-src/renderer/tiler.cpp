@@ -1089,7 +1089,7 @@ namespace Graphick::Renderer {
         vec2 p2 = transform * raw_segment.p2() - visible.min;
 
         // TODO: check if all inside or all outside with control points
-        std::vector<float> intersections = Math::bezier_rect_intersections(p0, p1, p2, p3, visible - visible.min);
+        std::vector<float> intersections = Math::cubic_rect_intersections(p0, p1, p2, p3, visible - visible.min);
 
         if (intersections.empty()) {
           if (p0_in) {

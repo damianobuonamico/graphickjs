@@ -448,7 +448,7 @@ namespace Graphick::Editor::Input {
 
     switch (segment.type) {
     case Renderer::Geometry::Path::Command::Cubic:
-      t = Math::bezier_closest_to(segment.p0, segment.p1, segment.p2, segment.p3, p);
+      t = Math::cubic_closest_to(segment.p0, segment.p1, segment.p2, segment.p3, p);
       break;
     case Renderer::Geometry::Path::Command::Quadratic:
       t = Math::quadratic_closest_to(segment.p0, segment.p1, segment.p2, p);

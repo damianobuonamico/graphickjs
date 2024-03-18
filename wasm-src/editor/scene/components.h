@@ -2,7 +2,7 @@
  * @file components.h
  * @brief Components to be added to entities.
  *
- * @todo doc
+ * @todo remove TEMP methods.
  */
 
 #pragma once

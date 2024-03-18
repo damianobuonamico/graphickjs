@@ -3,8 +3,9 @@
  * @brief PathBuilder class implementation
  *
  * @todo fix tiger whiskers
- * @todo fix rect intersection transforming points and then checking (have to implement drect template)
+ * @todo fix rect intersection transforming points and then checking
  * @todo outline visible intersection for optimizing tesselation
+ * @todo stroke and fill intersection for optimizing tesselation
  */
 
 #include "path_builder.h"

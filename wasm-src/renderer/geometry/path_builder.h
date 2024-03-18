@@ -2,9 +2,8 @@
  * @file path_builder.h
  * @brief PathBuilder class definition
  *
- * A PathBuilder is used to generate drawables from a path. It computes strokes and fills.
+ * A PathBuilder is used to generate drawables from a path. It computes strokes, fills and outlines.
  *
- * @todo stroke() method
  * @todo fill_and_stroke() method
 */
 
@@ -23,6 +22,13 @@ namespace Graphick::Renderer::Geometry {
 
 namespace Graphick::Renderer::Geometry {
 
+  /**
+   * @brief A class to generate drawables from a path.
+   *
+   * A PathBuilder is used to generate drawables from a path. It computes strokes, fills and outlines.
+   *
+   * @class PathBuilder
+   */
   class PathBuilder {
   public:
     /**

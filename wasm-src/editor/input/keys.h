@@ -1,7 +1,17 @@
+/**
+ * @file keys.h
+ * @brief Contains the keymap for the supported platforms.
+ *
+ * @todo add the GLFW keymap.
+ */
+
 #pragma once
 
 namespace Graphick::Editor::Input {
 
+  /**
+   * @brief The KeyboardKey enum translates platform-specific keycodes to a platform-agnostic set of keynames.
+  */
   enum class KeyboardKey {
     Undefined = -1,
     Backspace = 8,

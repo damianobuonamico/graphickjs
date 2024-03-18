@@ -9,9 +9,9 @@
 
 namespace Graphick::Math {
 
-  /* -- bezier -- */
+  /* -- cubic -- */
 
-  std::vector<float> bezier_extrema(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4) {
+  std::vector<float> cubic_extrema(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4) {
     const vec2 a = 3.0f * (-v1 + 3.0f * v2 - 3.0f * v3 + v4);
     const vec2 b = 6.0f * (v1 - 2.0f * v2 + v3);
     const vec2 c = 3.0f * (v2 - v1);

@@ -1,3 +1,11 @@
+/**
+ * @file svg.cpp
+ * @brief Contains the implementation of the SVG parser.
+ *
+ * @todo refactor and finish implementation (true style parsing)
+ * @todo path sanity checks when parsing is done
+ */
+
 #include "svg.h"
 
 #include "../../utils/console.h"
@@ -665,7 +673,6 @@ namespace Graphick::io::svg {
       }
 
       if (!read_identifier(ptr, end, name)) return false;
-      // TODO: Implement
 
       if (name == "g") {
         fill_colors.push_back({ 0.0f, 0.0f, 0.0f, 0.0f });
@@ -735,18 +742,15 @@ namespace Graphick::io::svg {
         } if (name == "d") {
           // if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 1.0f }) {
           decode_text(start, rtrim(start, ptr), value);
-          // TODO: optimize copy
           // History::CommandHistory::disable();
           Renderer::Geometry::Path path = parse_path(value);
           // History::CommandHistory::enable();
 
           if (!path.empty()) {
-            //TODO: sanitize path
             /*if (!path.closed() && Math::is_almost_equal(path.front().p0, path.back().p3, GK_POINT_EPSILON)) {
               path.close();
             }*/
 
-            // TODO: reimplement svg creation, element creation, path optimization
             Editor::Entity element = Editor::Editor::scene().create_element(std::move(path));
 
             if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {

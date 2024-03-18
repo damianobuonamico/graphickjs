@@ -44,8 +44,17 @@ namespace Graphick::Editor {
 
       /**
        * @brief Constructs a selection entry.
+       *
+       * @param type The type of the selection entry.
        */
       SelectionEntry(const Type type = Type::Entity) : type(type) {}
+
+      /**
+       * @brief Constructs a selection entry.
+       *
+       * @param type The type of the selection entry.
+       * @param indices The indices of the children.
+       */
       SelectionEntry(std::unordered_set<size_t> indices, const Type type = Type::Element) : indices(indices), type(type) {}
 
       /**

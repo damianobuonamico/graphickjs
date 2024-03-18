@@ -1,6 +1,9 @@
 /**
- *
-*/
+ * @file selection.cpp
+ * @brief This file contains the implementation of the Selection class.
+ * 
+ * @todo optimize selection parsing and rendering
+ */
 
 #include "selection.h"
 
@@ -15,7 +18,6 @@ namespace Graphick::Editor {
 
   Selection::Selection(Scene* scene) : m_scene(scene) {}
 
-  // TODO: optimize selection parsing and rendering
   rect Selection::bounding_rect() const {
     GK_TOTAL("Selection::bounding_rect");
 

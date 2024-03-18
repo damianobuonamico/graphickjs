@@ -1,6 +1,16 @@
+/**
+ * @file input_manager.cpp
+ * @brief Contains the implementation of the InputManager class.
+ *
+ * @todo fix events clogging animation frame queue (request frame and let editor collapse calls)
+ * @todo InputManager reinitialization
+ * @todo implement shortcuts and emscripten/glfw key codes mapping
+ * @todo move zoom and scroll normalization to the viewport class
+ * @todo clipboard events
+ */
+
 #include "input_manager.h"
 
-// #include "../../math/vector.h"
 #include "../editor.h"
 #include "../scene/entity.h"
 
@@ -10,8 +20,6 @@
 
 #include "../../utils/console.h"
 
-// TOOD: fix events clogging animation frame queue
-
 namespace Graphick::Editor::Input {
 
   InputManager* InputManager::s_instance = nullptr;
@@ -20,7 +28,6 @@ namespace Graphick::Editor::Input {
   HoverState InputManager::hover{};
 
   void InputManager::init() {
-    // TODO: InputManager reinitialization
     assert(!s_instance);
     s_instance = new InputManager();
   }
@@ -89,7 +96,6 @@ namespace Graphick::Editor::Input {
       should_render = true;
     }
 
-    // TODO: request frame and let editor collapse calls
     if (should_render && (keys.ctrl_state_changed || keys.space_state_changed)) Editor::render();
 
     switch (event) {
@@ -322,11 +328,8 @@ namespace Graphick::Editor::Input {
     Scene& scene = Editor::scene();
 
     if (keys.ctrl) {
-      // Zoom
-      // TODO: Move in scene specific input code
       scene.viewport.zoom_to(Math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) * scene.viewport.zoom(), pointer.client.position);
     } else {
-      // Scroll
       scene.viewport.move(PAN_STEP * vec2{ -delta_x, -delta_y } / scene.viewport.zoom());
     }
 

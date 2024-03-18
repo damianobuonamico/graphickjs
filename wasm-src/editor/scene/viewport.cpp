@@ -1,3 +1,8 @@
+/**
+ * @file viewport.cpp
+ * @brief This file contains the implementation of the Viewport class.
+ */
+
 #include "viewport.h"
 
 #include "../../math/math.h"
@@ -77,31 +82,6 @@ namespace Graphick::Editor {
   bool Viewport::is_visible(const rect& rect) {
     return Math::does_rect_intersect_rect(rect, visible());
   }
-
-  // void Viewport::load(const JSON& data) {
-  //   if (data.has("position")) m_position = data.at("position").to_vec2();
-  //   if (data.has("zoom")) m_zoom = data.at("zoom").to_float();
-  //   if (data.has("rotation")) m_rotation = data.at("rotation").to_float();
-
-  //   if (data.has("bounds")) {
-  //     JSON bounds = data.at("bounds");
-  //     set_bounds({ bounds[0].to_vec2(), bounds[1].to_vec2() });
-  //   }
-  // }
-
-  // JSON Viewport::json() const {
-  //   JSON viewport = JSON::object();
-
-  //   if (!is_almost_zero(m_position)) viewport["position"] = m_position;
-  //   if (!is_almost_equal(m_zoom, 1.0f)) viewport["zoom"] = m_zoom;
-  //   if (!is_almost_zero(m_rotation)) viewport["rotation"] = m_rotation;
-
-  //   if (m_min_position != std::numeric_limits<vec2>::min() || m_max_position != std::numeric_limits<vec2>::max()) {
-  //     viewport["bounds"] = rect{ m_min_position, m_max_position };
-  //   }
-
-  //   return viewport;
-  // }
 
   vec2 Viewport::client_to_scene(const vec2 position) {
     return (position - vec2(m_offset)) / m_zoom - m_position;

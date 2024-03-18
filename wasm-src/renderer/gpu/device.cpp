@@ -1,3 +1,8 @@
+/**
+ * @file device.cpp
+ * @brief Contains the GPU device backend-agnostic methods implementation.
+*/
+
 #include "device.h"
 
 #include "../../utils/console.h"

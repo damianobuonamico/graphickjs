@@ -1,3 +1,16 @@
+/**
+ * @file scene.cpp
+ * @brief This file contains the implementation of the Scene class.
+ *
+ * @todo refactor entity/element creation
+ * @todo refactor checks, id and transform should always be present
+ * @todo operator StrokeComponent::Renderer::Stroke() to use in entity_at()
+ * @todo implement better check for rotated rects to use in entities_in()
+ * @todo reimplment cache and maybe check for rehydration only if actions performed are destructive
+ * @todo get more than one component at a time in entity
+ * @todo refactor and abstract away entity related methods in render()
+ */
+
 #include "scene.h"
 
 #include "entity.h"
@@ -8,7 +21,6 @@
 #include "../../renderer/renderer.h"
 #include "../../renderer/geometry/path.h"
 
-// TEMP
 #include "../../math/matrix.h"
 #include "../../math/math.h"
 
@@ -179,17 +191,12 @@ namespace Graphick::Editor {
     const double zoom = viewport.zoom();
     threshold /= zoom;
 
-    // GK_DEBUGGER_DRAW(rect{ position - threshold - GK_POINT_EPSILON / zoom, position + threshold + GK_POINT_EPSILON / zoom });
-
     for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
       const Entity entity = { *it, this };
 
-      // TODO: refactor checks, id should always be present
       if (entity.has_components<IDComponent, PathComponent, TransformComponent>()) {
         const auto& path = entity.get_component<PathComponent>().TEMP_path();
         const TransformComponent transform = entity.get_component<TransformComponent>();
-        // const vec2 transformed_pos = transform.revert(position);
-        // const vec2 transformed_threshold = vec2{ threshold } / Math::decompose(transform).scale;
         const uuid id = entity.id();
 
         bool has_fill = false;
@@ -209,7 +216,6 @@ namespace Graphick::Editor {
           has_stroke = true;
           auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
 
-          // TODO: operator StrokeComponent::Renderer::Stroke()
           stroke = Renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0.0f };
         }
 
@@ -248,22 +254,8 @@ namespace Graphick::Editor {
       OPTICK_EVENT("entity_in_rect");
 
       const Entity entity = { handle, this };
-
       const uuid id = entity.id();
       const TransformComponent transform = entity.get_component<TransformComponent>();
-
-      // vec2 r1 = transform / rect.min;
-      // vec2 r2 = transform / vec2{ rect.max.x, rect.min.y };
-      // vec2 r3 = transform / vec2{ rect.min.x, rect.max.y };
-      // vec2 r4 = transform / rect.max;
-
-      // std::tuple<vec2, vec2, vec2, vec2> rect_points = { r1, r2, r3, r4 };
-
-      // TODO: add constructor for 4 vec2s
-      // Math::rect selection_rect = {
-      //   min(min(r1, r2), min(r3, r4)),
-      //   max(max(r1, r2), max(r3, r4))
-      // };
 
       const float angle = Math::rotation(transform.matrix());
 
@@ -316,7 +308,6 @@ namespace Graphick::Editor {
             }
           }
         } else {
-          // TODO: implement better check for rotated rects
           if (Math::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
             entities.insert({ id, Selection::SelectionEntry() });
           }
@@ -345,7 +336,6 @@ namespace Graphick::Editor {
     const size_t z_far = m_order.size() * 2 + 1;
     float z_index = 1.0f;
 
-    // TODO: maybe check for rehydration only if actions performed are destructive
     bool should_rehydrate = true;
 
     {
@@ -358,15 +348,7 @@ namespace Graphick::Editor {
 
       for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
         const Entity entity = { *it, const_cast<Scene*>(this) };
-        // TODO: refactor with entity methods maybe
         if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
-
-        // TODO: get more than one component at a time
-        // auto components = m_registry.get<IDComponent::Data, PathComponent::Data, TransformComponent::Data>(*it);
-
-        // const uuid id = std::get<0>(components).id;
-        // const Renderer::Geometry::Path& path = std::get<1>(components).path;
-        // const TransformComponent& transform = TransformComponent(std::get<2>(components);
 
         const uuid id = entity.id();
         const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().TEMP_path();
@@ -378,7 +360,6 @@ namespace Graphick::Editor {
           // path.rehydrate_cache();
         }
 
-        // TODO: abstract away
         bool has_stroke = m_registry.all_of<StrokeComponent::Data>(*it);
         std::optional<StrokeComponent::Data> stroke = has_stroke ? std::optional<StrokeComponent::Data>(m_registry.get<StrokeComponent::Data>(*it)) : std::nullopt;
 

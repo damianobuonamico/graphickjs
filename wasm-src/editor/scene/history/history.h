@@ -12,12 +12,25 @@
 
 namespace Graphick::Editor {
 
+  /**
+   * @brief This class represents the history of a scene.
+   *
+   * The history is a list of actions that can be undone and redone.
+   *
+   * @class History
+   */
   class History {
   public:
+    /**
+     * @brief Default, move and copy constructors.
+     */
     History(Scene* scene);
     History(const History&) = delete;
     History(History&&) = delete;
 
+    /**
+     * @brief Default constructor.
+     */
     ~History() = default;
 
     /**

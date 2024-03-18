@@ -1,7 +1,6 @@
 /**
  * @file action.h
  * @brief This file contains the action struct of the history.
- * @todo use a unionS
  */
 
 #pragma once

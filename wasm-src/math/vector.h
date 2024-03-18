@@ -528,7 +528,7 @@ namespace Graphick::Math {
     return 2 * (v1 - 2 * v2 + v3) * t + 2 * (v2 - v1);
   }
 
-  /* -- bezier -- */
+  /* -- cubic -- */
 
   /**
    * @brief Cubic bezier interpolation between four Vec2s.
@@ -560,7 +560,7 @@ namespace Graphick::Math {
    * @param t The interpolation factor.
    */
   template<typename T>
-  constexpr Vec2<T> bezier_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
+  constexpr Vec2<T> cubic_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
     Vec2<T> a = 3 * (-v1 + 3 * v2 - 3 * v3 + v4);
     Vec2<T> b = 6 * (v1 - 2 * v2 + v3);
     Vec2<T> c = -3 * (v1 - v2);
@@ -578,7 +578,7 @@ namespace Graphick::Math {
    * @param t The interpolation factor.
   */
   template<typename T>
-  constexpr Vec2<T> bezier_second_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
+  constexpr Vec2<T> cubic_second_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
     Vec2<T> a = 6 * (-v1 + 3 * v2 - 3 * v3 + v4);
     Vec2<T> b = 6 * (v1 - 2 * v2 + v3);
 
@@ -594,7 +594,7 @@ namespace Graphick::Math {
    * @param v4 p3.
    * @return The t values corresponding to the extrema of the curve.
    */
-  std::vector<float> bezier_extrema(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4);
+  std::vector<float> cubic_extrema(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4);
 
   /* -- midpoint -- */
 

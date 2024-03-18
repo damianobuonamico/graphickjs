@@ -1,6 +1,6 @@
 /**
  * @file scene.h
- * @brief This file contains the definition of the scene class.
+ * @brief This file contains the definition of the Scene class.
  */
 
 #pragma once

@@ -1,3 +1,8 @@
+/**
+ * @file shaders.cpp
+ * @brief Contains the GPU shaders and vertex arrays implementations.
+ */
+
 #include "shaders.h"
 
 namespace Graphick::Renderer::GPU {
@@ -44,19 +49,12 @@ namespace Graphick::Renderer::GPU {
     radius_uniform(Device::get_uniform(program, "uRadius").value()),
     zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
 
-  GPUPathProgram::GPUPathProgram() :
-    program(Device::create_program("gpu_path")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
-    paths_texture_size_uniform(Device::get_uniform(program, "uPathsTextureSize").value()),
-    paths_texture(Device::get_texture_parameter(program, "uPathsTexture").value()) {}
-
   Programs::Programs() :
     opaque_tile_program(),
     masked_tile_program(),
     line_program(),
     square_program(),
-    circle_program(),
-    gpu_path_program() {}
+    circle_program() {}
 
   DefaultVertexArray::DefaultVertexArray(
     const DefaultProgram& default_program,
@@ -388,82 +386,6 @@ namespace Graphick::Renderer::GPU {
     Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
 
     Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
-  }
-
-  GPUPathVertexArray::GPUPathVertexArray(
-    const GPUPathProgram& gpu_path_program,
-    const Buffer& instance_buffer,
-    const Buffer& quad_vertex_positions_buffer,
-    const Buffer& quad_vertex_indices_buffer
-  )
-    : vertex_array(Device::create_vertex_array())
-  {
-    VertexAttr position_attr = Device::get_vertex_attr(gpu_path_program.program, "aPosition").value();
-    VertexAttr path_position_attr = Device::get_vertex_attr(gpu_path_program.program, "aPathPosition").value();
-    VertexAttr path_size_attr = Device::get_vertex_attr(gpu_path_program.program, "aPathSize").value();
-    VertexAttr segments_index_attr = Device::get_vertex_attr(gpu_path_program.program, "aSegmentsIndex").value();
-    VertexAttr color_index_attr = Device::get_vertex_attr(gpu_path_program.program, "aColorIndex").value();
-
-    VertexAttrDescriptor position_desc = {
-      2,
-      VertexAttrClass::Int,
-      VertexAttrType::U16,
-      4,
-      0,
-      0,
-      0
-    };
-
-    VertexAttrDescriptor path_position_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      24,
-      0,
-      1,
-      1
-    };
-
-    VertexAttrDescriptor path_size_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      24,
-      8,
-      1,
-      1
-    };
-
-    VertexAttrDescriptor segments_index_desc = {
-      1,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      24,
-      16,
-      1,
-      1
-    };
-
-    VertexAttrDescriptor color_index_desc = {
-      1,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      24,
-      20,
-      1,
-      1
-    };
-
-    Device::bind_buffer(*vertex_array, quad_vertex_positions_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
-
-    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, path_position_attr, path_position_desc);
-    Device::configure_vertex_attr(*vertex_array, path_size_attr, path_size_desc);
-    Device::configure_vertex_attr(*vertex_array, segments_index_attr, segments_index_desc);
-    Device::configure_vertex_attr(*vertex_array, color_index_attr, color_index_desc);
-
-    Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
   }
 
 }

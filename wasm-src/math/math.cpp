@@ -3,6 +3,7 @@
  * @brief Contains the implementation of math functions used by the Graphick editor.
  *
  * @todo try inlining lerps in split_bezier()
+ * @todo ask if roots with multiplicity > 1 should be considered as separate roots
  */
 
 #include "math.h"
@@ -101,7 +102,6 @@ namespace Graphick::Math {
 
       double root = -b / (2.0 * a);
 
-      // TODO: ask if roots with multiplicity > 1 should be considered as separate roots
       return { root, root };
     } else if (discriminant < 0.0) {
       /* No real roots. */
@@ -146,7 +146,6 @@ namespace Graphick::Math {
       double realRoot1 = 2 * u - b / (3 * a);
       double realRoot2 = -u - b / (3 * a);
 
-      // TODO: ask if roots with multiplicity > 1 should be considered as different roots
       return { realRoot1, realRoot2, realRoot2 };
     } else if (discriminant > 0) {
       double u = std::cbrt(-q / 2 + std::sqrt(discriminant));
@@ -333,7 +332,7 @@ namespace Graphick::Math {
     return intersections_t;
   }
 
-  std::vector<float> bezier_rect_intersections(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const rect& rect) {
+  std::vector<float> cubic_rect_intersections(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const rect& rect) {
     std::vector<float> intersections_t;
     std::vector<double> intersections;
 
@@ -374,16 +373,16 @@ namespace Graphick::Math {
     return intersections_t;
   }
 
-  bool does_linear_segment_intersect_rect(const vec2 p0, const vec2 p1, const rect& rect) {
+  bool does_line_intersect_rect(const vec2 p0, const vec2 p1, const rect& rect) {
     return line_rect_intersection_points(p0, p1, rect).size() > 0;
   }
 
-  bool does_quadratic_segment_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p2, const rect& rect) {
+  bool does_quadratic_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p2, const rect& rect) {
     return quadratic_rect_intersections(p0, p1, p2, rect).size() > 0;
   }
 
-  bool does_cubic_segment_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p3, const vec2 p4, const rect& rect) {
-    return bezier_rect_intersections(p0, p1, p3, p4, rect).size() > 0;
+  bool does_cubic_intersect_rect(const vec2 p0, const vec2 p1, const vec2 p3, const vec2 p4, const rect& rect) {
+    return cubic_rect_intersections(p0, p1, p3, p4, rect).size() > 0;
   }
 
   float linear_closest_to(const vec2 p0, const vec2 p1, const vec2 p) {
@@ -400,10 +399,10 @@ namespace Graphick::Math {
     const vec2 bez1 = p0 + 2.0f / 3.0f * (p1 - p0);
     const vec2 bez2 = p2 + 2.0f / 3.0f * (p1 - p2);
 
-    return bezier_closest_to(p0, bez1, bez2, p2, p);
+    return cubic_closest_to(p0, bez1, bez2, p2, p);
   }
 
-  float bezier_closest_to(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const vec2 p) {
+  float cubic_closest_to(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const vec2 p) {
     const vec2 A_sq = p0 * p0;
     const vec2 B_sq = p1 * p1;
     const vec2 C_sq = p2 * p2;

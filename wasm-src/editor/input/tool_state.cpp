@@ -1,3 +1,11 @@
+/**
+ * @file tool_state.cpp
+ * @brief Contains the implementation of the ToolState class.
+ *
+ * @todo the manipulator should be available in all non-direct tools, not just the select tool.
+ * @todo implement the rect and ellipse tools.
+ */
+
 #include "tool_state.h"
 
 #include "input_manager.h"

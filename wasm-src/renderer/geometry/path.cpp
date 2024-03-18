@@ -1872,7 +1872,7 @@ namespace Graphick::Renderer::Geometry {
         if (Math::is_point_in_rect(m_points[point_i], rect)) {
           if (indices) indices->insert(point_i);
           found = true;
-        } else if (!found && Math::does_linear_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], rect)) {
+        } else if (!found && Math::does_line_intersect_rect(m_points[point_i - 1], m_points[point_i], rect)) {
           found = true;
         }
 
@@ -1882,7 +1882,7 @@ namespace Graphick::Renderer::Geometry {
         if (Math::is_point_in_rect(m_points[point_i + 1], rect)) {
           if (indices) indices->insert(point_i + 1);
           found = true;
-        } else if (!found && Math::does_quadratic_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], rect)) {
+        } else if (!found && Math::does_quadratic_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], rect)) {
           found = true;
         }
 
@@ -1892,7 +1892,7 @@ namespace Graphick::Renderer::Geometry {
         if (Math::is_point_in_rect(m_points[point_i + 2], rect)) {
           if (indices) indices->insert(point_i + 2);
           found = true;
-        } else if (!found && Math::does_cubic_segment_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], rect)) {
+        } else if (!found && Math::does_cubic_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], rect)) {
           found = true;
         }
 
@@ -1949,7 +1949,7 @@ namespace Graphick::Renderer::Geometry {
         if (Math::is_point_in_rect(p1, rect)) {
           if (indices) indices->insert(point_i);
           found = true;
-        } else if (!found && Math::does_linear_segment_intersect_rect(last, p1, rect)) {
+        } else if (!found && Math::does_line_intersect_rect(last, p1, rect)) {
           found = true;
         }
 
@@ -1962,7 +1962,7 @@ namespace Graphick::Renderer::Geometry {
         if (Math::is_point_in_rect(p2, rect)) {
           if (indices) indices->insert(point_i + 1);
           found = true;
-        } else if (!found && Math::does_quadratic_segment_intersect_rect(last, transform * m_points[point_i], p2, rect)) {
+        } else if (!found && Math::does_quadratic_intersect_rect(last, transform * m_points[point_i], p2, rect)) {
           found = true;
         }
 
@@ -1979,7 +1979,7 @@ namespace Graphick::Renderer::Geometry {
         if (Math::is_point_in_rect(p3, rect)) {
           if (indices) indices->insert(point_i + 2);
           found = true;
-        } else if (!found && Math::does_cubic_segment_intersect_rect(last, p1, p2, p3, rect)) {
+        } else if (!found && Math::does_cubic_intersect_rect(last, p1, p2, p3, rect)) {
           found = true;
         }
 

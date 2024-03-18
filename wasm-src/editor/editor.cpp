@@ -1,3 +1,12 @@
+/**
+ * @file editor.cpp
+ * @brief Contains the main Graphick Editor class implementation.
+ *
+ * @todo fix all todos (one day)
+ * @todo editor reinitialization
+ * @todo add emscripten main loop or something similar
+ */
+
 #include "editor.h"
 
 #include "scene/scene.h"
@@ -22,9 +31,7 @@ namespace Graphick::Editor {
 
   Editor* Editor::s_instance = nullptr;
 
-  // TODO: fix all todos (one day)
   void Editor::init() {
-    // TODO: Editor reinitialization
     if (s_instance != nullptr) {
       console::error("Editor already initialized, call shutdown() before reinitializing!");
       return;
@@ -35,13 +42,10 @@ namespace Graphick::Editor {
     Input::InputManager::init();
     Utils::ResourceManager::init();
     Renderer::Renderer::init();
-    // FontManager::init();
 
     GK_DEBUGGER_INIT();
 
     s_instance->m_scenes.emplace_back();
-
-    // scene().load();
   }
 
   void Editor::prepare_refresh() {
@@ -60,7 +64,6 @@ namespace Graphick::Editor {
 
     GK_DEBUGGER_SHUTDOWN();
 
-    // FontManager::shutdown();
     Renderer::Renderer::shutdown();
     Utils::ResourceManager::shutdown();
     Input::InputManager::shutdown();
@@ -90,7 +93,6 @@ namespace Graphick::Editor {
 #endif
   ) {
 #ifdef EMSCRIPTEN
-    // TODO: add emscripten loop or something similar
     emscripten_request_animation_frame(render_callback, nullptr);
 #else
     if (is_main_loop) {

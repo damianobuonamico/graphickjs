@@ -2,8 +2,7 @@
  * @file components.cpp
  * @brief This file includes the implementations of all of the components.
  *
- * @todo implement encoding diffing and generic optimization
- * @todo implement PathComponent::modify()
+ * @todo implement encoding diffing and generic optimization (especially for the path component).
  * @todo avoid going through the history execute system for the first time an action is performed
  */
 
