@@ -3,7 +3,6 @@
  * @brief Contains the implementation of the PenTool class.
  *
  * @todo esc to cancel pen and other tools
- * @todo shift to slow down movement
  * @todo create element at current position to avoid flickering at far distances
  * @todo carry attributes to new elements
  */
@@ -116,6 +115,10 @@ namespace Graphick::Editor::Input {
     }
 
     m_temp_element = uuid::null;
+
+    if (m_mode == Mode::Join) {
+      return;
+    }
 
     if (!m_element || !m_vertex.has_value()) return;
 
@@ -264,57 +267,66 @@ namespace Graphick::Editor::Input {
   void PenTool::on_join_pointer_down() {
     if (!m_element || !m_temp_element || !m_vertex) return;
 
-    // TODO: manage styles
     Scene& scene = Editor::scene();
     Entity first_entity = scene.get_entity(m_element);
     Entity second_entity = scene.get_entity(m_temp_element);
     Entity new_entity = scene.create_element();
 
-    const PathComponent first_path = first_entity.get_component<PathComponent>();
-    const PathComponent second_path = second_entity.get_component<PathComponent>();
-    const mat2x3 first_transform = first_entity.get_component<TransformComponent>();
-    const mat2x3 second_transform = second_entity.get_component<TransformComponent>();
+    const uuid first_id = first_entity.id();
+    const uuid second_id = second_entity.id();
+    const uuid new_id = new_entity.id();
 
-    PathComponent new_path = new_entity.get_component<PathComponent>();
-    new_entity.add_component<StrokeComponent>();
+    {
+      //const PathComponent first_path = first_entity.get_component<PathComponent>();
+      //const PathComponent second_path = second_entity.get_component<PathComponent>();
+      //const mat2x3 first_transform = first_entity.get_component<TransformComponent>();
+      //const mat2x3 second_transform = second_entity.get_component<TransformComponent>();
 
-    first_path.data().for_each(
-      [&](const vec2 p0) {
-        new_path.move_to(first_transform * p0);
-      },
-      [&](const vec2 p1) {
-        new_path.line_to(first_transform * p1);
-      },
-      [&](const vec2 p1, const vec2 p2) {
-        // TODO: implement and test quadratic
-        // new_path.quadratic_to(p1, p2);
-      },
-      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
-        new_path.cubic_to(first_transform * p1, first_transform * p2, first_transform * p3);
-      }
-    );
+      PathComponent new_path = new_entity.get_component<PathComponent>();
+      new_entity.add_component<StrokeComponent>(vec4{ 1.0f, 0.0f, 0.4f, 1.0f });
 
-    const vec2 in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(Renderer::Geometry::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_size() - 1);
-    const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().point_at(Renderer::Geometry::Path::in_handle_index) : second_path.data().point_at(0);
+#if 0
+    // first_path.data().for_each(
+    //   [&](const vec2 p0) {
+    //     new_path.move_to(first_transform * p0);
+    //   },
+    //   [&](const vec2 p1) {
+    //     new_path.line_to(first_transform * p1);
+    //   },
+    //   [&](const vec2 p1, const vec2 p2) {
+    //     // TODO: implement and test quadratic
+    //     // new_path.quadratic_to(p1, p2);
+    //   },
+    //   [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+    //     new_path.cubic_to(first_transform * p1, first_transform * p2, first_transform * p3);
+    //   }
+    // );
 
-    second_path.data().for_each(
-      [&](const vec2 p0) {
-        new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * p0);
-        m_vertex = new_path.data().points_size() - 1;
-      },
-      [&](const vec2 p1) {
-        new_path.line_to(second_transform * p1);
-      },
-      [&](const vec2 p1, const vec2 p2) {
-        // TODO: implement and test quadratic
-        // new_path.quadratic_to(p1, p2);
-      },
-      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
-        new_path.cubic_to(second_transform * p1, second_transform * p2, second_transform * p3);
-      }
-    );
+    // const vec2 in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(Renderer::Geometry::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_size() - 1);
+    // const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().point_at(Renderer::Geometry::Path::in_handle_index) : second_path.data().point_at(0);
 
+    // second_path.data().for_each(
+    //   [&](const vec2 p0) {
+    //     m_vertex = new_path.line_to(second_transform * p0);
+    //     // new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * p0);
+    //   },
+    //   [&](const vec2 p1) {
+    //     new_path.line_to(second_transform * p1);
+    //   },
+    //   [&](const vec2 p1, const vec2 p2) {
+    //     // TODO: implement and test quadratic
+    //     // new_path.quadratic_to(p1, p2);
+    //   },
+    //   [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+    //     new_path.cubic_to(second_transform * p1, second_transform * p2, second_transform * p3);
+    //   }
+    // );
+#endif
 
+      new_path.move_to({ 0.0f, 0.0f });
+      new_path.line_to({ 100.0f, 0.0f });
+    }
+#if 0
     // std::shared_ptr<Renderer::Geometry::ControlPoint> p0 =
     //   first_path.empty() ? first_path.last().lock() :
     //   (first_path.reversed() ? first_segments.front().p0_ptr().lock() : first_segments.back().p3_ptr().lock());
@@ -395,9 +407,18 @@ namespace Graphick::Editor::Input {
     //   auto last_ptr = new_segments.back().p3_ptr().lock();
     //   last_ptr->set(second_transform * last_ptr->get());
     // }
+#endif 
 
-    Editor::scene().delete_entity(first_entity.id());
-    Editor::scene().delete_entity(second_entity.id());
+    PathComponent new_path = new_entity.get_component<PathComponent>();
+
+    first_entity.remove_component<PathComponent>();
+    //Editor::scene().delete_entity(first_id);
+
+    new_entity = scene.get_entity(new_id);
+
+    new_path = new_entity.get_component<PathComponent>();
+
+    // Editor::scene().delete_entity(second_entity.id());
 
     // History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
     //   [this, new_path, new_transform, vertex_id]() {
@@ -412,7 +433,8 @@ namespace Graphick::Editor::Input {
     //   []() {}
     // ));
 
-    m_element = new_entity.id();
+    m_element = new_id;
+    m_vertex = 0;
     m_mode = Mode::Join;
   }
 

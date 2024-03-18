@@ -204,6 +204,32 @@ namespace Graphick::Renderer::Geometry {
 
     /* Forward for the outer stroke. */
 
+    auto line_forward_callback = [&](const vec2 p1) {
+      const dvec2 a = pivot;
+      const dvec2 b = m_transform * dvec2(p1);
+
+      if (Math::is_almost_equal(a, b, (double)GK_POINT_EPSILON)) return;
+
+      const dvec2 n = Math::normal(a, b);
+      const dvec2 nr = n * radius;
+
+      const dvec2 start = a + nr;
+
+      if (is_first) {
+        contour->move_to(start);
+        first_point = start;
+        is_first = false;
+      } else {
+        contour->add_join(last_point, start, pivot, last_dir, n, radius, inv_miter_limit, stroke.join);
+      }
+
+      last_dir = n;
+      pivot = b;
+      last_point = b + nr;
+
+      contour->line_to(last_point);
+      };
+
     path.for_each(
       [&](const vec2 p0) {
         closed.push_back(path.closed());
@@ -255,31 +281,7 @@ namespace Graphick::Renderer::Geometry {
           pivot = m_transform * dvec2(p0);
         }
       },
-      [&](const vec2 p1) {
-        const dvec2 a = pivot;
-        const dvec2 b = m_transform * dvec2(p1);
-
-        if (Math::is_almost_equal(a, b, (double)GK_POINT_EPSILON)) return;
-
-        const dvec2 n = Math::normal(a, b);
-        const dvec2 nr = n * radius;
-
-        const dvec2 start = a + nr;
-
-        if (is_first) {
-          contour->move_to(start);
-          first_point = start;
-          is_first = false;
-        } else {
-          contour->add_join(last_point, start, pivot, last_dir, n, radius, inv_miter_limit, stroke.join);
-        }
-
-        last_dir = n;
-        pivot = b;
-        last_point = b + nr;
-
-        contour->line_to(last_point);
-      },
+      line_forward_callback,
       nullptr,
       [&](const vec2 p1, const vec2 p2, const vec2 p3) {
         const dvec2 a = pivot;
@@ -289,9 +291,14 @@ namespace Graphick::Renderer::Geometry {
 
         if (
           Math::is_almost_equal(a, b, (double)GK_POINT_EPSILON) &&
-          Math::is_almost_equal(a, c, (double)GK_POINT_EPSILON) &&
-          Math::is_almost_equal(a, d, (double)GK_POINT_EPSILON)
-          ) return;
+          Math::is_almost_equal(c, d, (double)GK_POINT_EPSILON)
+        ) {
+          if (Math::is_almost_equal(a, d, (double)GK_POINT_EPSILON)) {
+            return;
+          }
+
+          return line_forward_callback(p3);
+        }
 
         const auto [start_n, end_n] = cubic_normals(a, b, c, d);
 
@@ -374,6 +381,30 @@ namespace Graphick::Renderer::Geometry {
       is_first = false;
       };
 
+    auto line_backward_callback = [&](const vec2 p0, const vec2 p1) {
+      if (Math::is_almost_equal(p0, p1, GK_POINT_EPSILON)) return;
+
+      const dvec2 a = m_transform * dvec2(p1);
+      const dvec2 b = m_transform * dvec2(p0);
+
+      const dvec2 n = Math::normal(a, b);
+      const dvec2 nr = n * radius;
+
+      const dvec2 start = a + nr;
+
+      if (is_first) {
+        handle_first(start);
+      } else {
+        contour->add_join(last_point, start, pivot, last_dir, n, radius, inv_miter_limit, stroke.join);
+      }
+
+      last_dir = n;
+      pivot = b;
+      last_point = b + nr;
+
+      contour->line_to(last_point);
+      };
+
     path.for_each_reversed(
       [&](const vec2 p0) {
         if (!closed.back()) {
@@ -388,36 +419,19 @@ namespace Graphick::Renderer::Geometry {
 
         is_first = true;
       },
-      [&](const vec2 p0, const vec2 p1) {
-        if (Math::is_almost_equal(p0, p1, GK_POINT_EPSILON)) return;
-
-        const dvec2 a = m_transform * dvec2(p1);
-        const dvec2 b = m_transform * dvec2(p0);
-
-        const dvec2 n = Math::normal(a, b);
-        const dvec2 nr = n * radius;
-
-        const dvec2 start = a + nr;
-
-        if (is_first) {
-          handle_first(start);
-        } else {
-          contour->add_join(last_point, start, pivot, last_dir, n, radius, inv_miter_limit, stroke.join);
-        }
-
-        last_dir = n;
-        pivot = b;
-        last_point = b + nr;
-
-        contour->line_to(last_point);
-      },
+      line_backward_callback,
       nullptr,
       [&](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
         if (
           Math::is_almost_equal(p0, p1, GK_POINT_EPSILON) &&
-          Math::is_almost_equal(p0, p3, GK_POINT_EPSILON) &&
-          Math::is_almost_equal(p0, p3, GK_POINT_EPSILON)
-          ) return;
+          Math::is_almost_equal(p2, p3, GK_POINT_EPSILON)
+        ) {
+          if (Math::is_almost_equal(p0, p3, GK_POINT_EPSILON)) {
+            return;
+          }
+
+          return line_backward_callback(p0, p3);
+        }
 
         const dvec2 a = m_transform * dvec2(p3);
         const dvec2 b = m_transform * dvec2(p2);

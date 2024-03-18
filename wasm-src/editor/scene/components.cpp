@@ -78,12 +78,6 @@ namespace Graphick::Editor {
 
   /* -- PathComponent -- */
 
-  PathComponentData::PathComponentData() : path() {}
-
-  PathComponentData::PathComponentData(const Renderer::Geometry::Path& path) : path(path) {}
-
-  PathComponentData::PathComponentData(io::DataDecoder& decoder) : path(decoder) {}
-
   size_t PathComponent::move_to(const vec2 p0) {
     io::EncodedData backup_data;
     io::EncodedData new_data;
@@ -91,14 +85,20 @@ namespace Graphick::Editor {
     backup_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    backup_data = m_data->path.encode(backup_data);
+    m_data->encode(backup_data);
 
-    m_data->path.move_to(p0);
+    m_data->move_to(p0);
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    new_data = m_data->path.encode(new_data);
+    m_data->encode(new_data);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(new_data),
+      std::move(backup_data)
+    );
 
     return 0;
   }
@@ -110,14 +110,14 @@ namespace Graphick::Editor {
     backup_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    backup_data = m_data->path.encode(backup_data);
+    backup_data = m_data->encode(backup_data);
 
-    m_data->path.line_to(p1, reverse);
+    m_data->line_to(p1, reverse);
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    new_data = m_data->path.encode(new_data);
+    new_data = m_data->encode(new_data);
 
     m_entity->scene()->history.modify(
       m_entity->id(),
@@ -125,7 +125,7 @@ namespace Graphick::Editor {
       std::move(backup_data)
     );
 
-    return reverse ? 0 : (m_data->path.points_size() - 1);
+    return reverse ? 0 : (m_data->points_size() - 1);
   }
 
   size_t PathComponent::cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse) {
@@ -135,16 +135,16 @@ namespace Graphick::Editor {
     backup_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    backup_data = m_data->path.encode(backup_data);
+    backup_data = m_data->encode(backup_data);
 
-    m_data->path.cubic_to(p1, p2, p3, reverse);
+    m_data->cubic_to(p1, p2, p3, reverse);
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    new_data = m_data->path.encode(new_data);
+    new_data = m_data->encode(new_data);
 
-    return reverse ? 0 : (m_data->path.points_size() - 1);
+    return reverse ? 0 : (m_data->points_size() - 1);
   }
 
   size_t PathComponent::close() {
@@ -154,25 +154,25 @@ namespace Graphick::Editor {
     backup_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    backup_data = m_data->path.encode(backup_data);
+    backup_data = m_data->encode(backup_data);
 
-    m_data->path.close();
+    m_data->close();
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    new_data = m_data->path.encode(new_data);
+    new_data = m_data->encode(new_data);
 
-    return m_data->path.points_size() - 1;
+    return m_data->points_size() - 1;
 
-    // const bool has_in_handle = m_data->path.has_in_handle();
-    // const bool has_out_handle = m_data->path.has_out_handle();
+    // const bool has_in_handle = m_data->has_in_handle();
+    // const bool has_out_handle = m_data->has_out_handle();
 
-    // if (!has_in_handle && !has_out_handle) return line_to(m_data->path.point_at(0), true);
+    // if (!has_in_handle && !has_out_handle) return line_to(m_data->point_at(0), true);
 
-    // const vec2 p1 = m_data->path.point_at(Renderer::Geometry::Path::out_handle_index);
-    // const vec2 p2 = m_data->path.point_at(Renderer::Geometry::Path::in_handle_index);
-    // const vec2 p3 = m_data->path.point_at(0);
+    // const vec2 p1 = m_data->point_at(Renderer::Geometry::Path::out_handle_index);
+    // const vec2 p2 = m_data->point_at(Renderer::Geometry::Path::in_handle_index);
+    // const vec2 p3 = m_data->point_at(0);
 
     // return cubic_to(p1, p2, p3, true);
   }
@@ -185,7 +185,7 @@ namespace Graphick::Editor {
     io::EncodedData backup_data;
     io::EncodedData new_data;
 
-    vec2 backup_position = m_data->path.point_at(point_index);
+    vec2 backup_position = m_data->point_at(point_index);
     vec2 new_position = backup_position + delta;
 
     backup_data.component_id(component_id)
@@ -212,17 +212,17 @@ namespace Graphick::Editor {
     backup_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    backup_data = m_data->path.encode(backup_data);
+    backup_data = m_data->encode(backup_data);
 
-    const size_t prev_points = m_data->path.points_size();
+    const size_t prev_points = m_data->points_size();
 
     // TODO: check if necessary to perform the operation
-    m_data->path.to_line(command_index);
+    m_data->to_line(command_index);
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    new_data = m_data->path.encode(new_data);
+    new_data = m_data->encode(new_data);
 
     m_entity->scene()->history.modify(
       m_entity->id(),
@@ -230,7 +230,7 @@ namespace Graphick::Editor {
       std::move(backup_data)
     );
 
-    return prev_points - m_data->path.points_size();
+    return prev_points - m_data->points_size();
   }
 
   size_t PathComponent::to_cubic(const size_t command_index, const size_t reference_point) {
@@ -240,15 +240,15 @@ namespace Graphick::Editor {
     backup_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    backup_data = m_data->path.encode(backup_data);
+    backup_data = m_data->encode(backup_data);
 
     // TODO: check if necessary to perform the operation
-    const size_t index = m_data->path.to_cubic(command_index, reference_point);
+    const size_t index = m_data->to_cubic(command_index, reference_point);
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    new_data = m_data->path.encode(new_data);
+    new_data = m_data->encode(new_data);
 
     m_entity->scene()->history.modify(
       m_entity->id(),
@@ -266,14 +266,14 @@ namespace Graphick::Editor {
     backup_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    backup_data = m_data->path.encode(backup_data);
+    backup_data = m_data->encode(backup_data);
 
-    const size_t index = m_data->path.split(segment_index, t);
+    const size_t index = m_data->split(segment_index, t);
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    new_data = m_data->path.encode(new_data);
+    new_data = m_data->encode(new_data);
 
     m_entity->scene()->history.modify(
       m_entity->id(),
@@ -291,16 +291,16 @@ namespace Graphick::Editor {
     backup_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    backup_data = m_data->path.encode(backup_data);
+    backup_data = m_data->encode(backup_data);
 
-    const size_t prev_points = m_data->path.points_size();
+    const size_t prev_points = m_data->points_size();
 
-    m_data->path.remove(index, keep_shape);
+    m_data->remove(index, keep_shape);
 
     new_data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
-    new_data = m_data->path.encode(new_data);
+    new_data = m_data->encode(new_data);
 
     m_entity->scene()->history.modify(
       m_entity->id(),
@@ -312,7 +312,7 @@ namespace Graphick::Editor {
   io::EncodedData& PathComponent::encode(io::EncodedData& data, const bool optimize) const {
     data.component_id(component_id);
 
-    return m_data->path.encode(data);
+    return m_data->encode(data);
   }
 
   void PathComponent::modify(io::DataDecoder& decoder) {
@@ -321,15 +321,15 @@ namespace Graphick::Editor {
     switch (type) {
     case PathModifyType::ModifyPoint: {
       size_t point_index = decoder.uint32();
-      vec2 old_position = m_data->path.point_at(point_index);
+      vec2 old_position = m_data->point_at(point_index);
       vec2 new_position = decoder.vec2();
 
-      m_data->path.translate(point_index, new_position - old_position);
+      m_data->translate(point_index, new_position - old_position);
 
       break;
     }
     case PathModifyType::LoadData: {
-      m_data->path = Renderer::Geometry::Path(decoder);
+      *m_data = decoder;
       break;
     }
     }
@@ -353,9 +353,9 @@ namespace Graphick::Editor {
     const float angle = Math::rotation(m_data->matrix);
 
     if (Math::is_almost_zero(std::fmodf(angle, MATH_F_TWO_PI))) {
-      return m_data->matrix * m_path_ptr->path.bounding_rect();
+      return m_data->matrix * m_path_ptr->bounding_rect();
     } else {
-      return m_path_ptr->path.bounding_rect(m_data->matrix);
+      return m_path_ptr->bounding_rect(m_data->matrix);
     }
   }
 
@@ -364,7 +364,7 @@ namespace Graphick::Editor {
       return Math::translation(m_data->matrix);
     }
 
-    const rect path_rect = m_path_ptr->path.approx_bounding_rect();
+    const rect path_rect = m_path_ptr->approx_bounding_rect();
 
     return m_data->matrix * path_rect;
   }

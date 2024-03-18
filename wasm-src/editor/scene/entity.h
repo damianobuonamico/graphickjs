@@ -141,6 +141,8 @@ namespace Graphick::Editor {
      */
     template<typename T>
     inline void remove_component() {
+      // m_scene->m_registry.remove<T::Data>(m_handle);
+
       if (!has_component<T>()) return;
 
       m_scene->history.remove(

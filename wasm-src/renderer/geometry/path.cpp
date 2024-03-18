@@ -135,6 +135,7 @@ namespace Graphick::Renderer::Geometry {
         switch (path.get_command(m_index)) {
         case Command::Move:
           if (index == m_point_index) {
+            operator++();
             return;
           }
 
@@ -148,14 +149,14 @@ namespace Graphick::Renderer::Geometry {
           m_point_index += 1;
           break;
         case Command::Quadratic:
-          if (size_t delta = index - m_point_index; delta <= 1) {
+          if (index - m_point_index <= 1) {
             return;
           }
 
           m_point_index += 2;
           break;
         case Command::Cubic:
-          if (size_t delta = index - m_point_index; delta <= 2) {
+          if (index - m_point_index <= 2) {
             return;
           }
 
@@ -489,10 +490,13 @@ namespace Graphick::Renderer::Geometry {
     }
 
     if (last_non_move_index == 0) {
-      m_commands_size = 0;
+      m_commands_size = 1;
 
       m_commands.resize(1);
       m_points.resize(1);
+
+      m_in_handle = m_points.front();
+      m_out_handle = m_points.back();
 
       return;
     }
@@ -507,6 +511,9 @@ namespace Graphick::Renderer::Geometry {
   Path& Path::operator=(const Path& other) {
     m_points = other.m_points;
     m_commands = other.m_commands;
+    m_commands_size = other.m_commands_size;
+    m_in_handle = other.m_in_handle;
+    m_out_handle = other.m_out_handle;
 
     return *this;
   }
@@ -514,6 +521,9 @@ namespace Graphick::Renderer::Geometry {
   Path& Path::operator=(Path&& other) noexcept {
     m_points = std::move(other.m_points);
     m_commands = std::move(other.m_commands);
+    m_commands_size = other.m_commands_size;
+    m_in_handle = other.m_in_handle;
+    m_out_handle = other.m_out_handle;
 
     return *this;
   }
@@ -715,11 +725,19 @@ namespace Graphick::Renderer::Geometry {
   }
 
   Path::VertexNode Path::node_at(const size_t point_index) const {
-    GK_ASSERT(point_index < m_points.size(), "Point index out of range.");
+    GK_ASSERT(point_index < m_points.size() || point_index == in_handle_index || point_index == out_handle_index, "Point index out of range.");
 
     VertexNode node = { 0, -1, -1, -1, -1, -1 };
 
-    if (vacant()) return node;
+    if (empty()) {
+      if (!vacant()) {
+        node.vertex = 0;
+        node.in = in_handle_index;
+        node.out = out_handle_index;
+      }
+
+      return node;
+    }
 
     if (!closed()) {
       switch (point_index) {
@@ -729,7 +747,7 @@ namespace Graphick::Renderer::Geometry {
 
         if (m_commands_size > 1 && get_command(1) == Command::Cubic) {
           node.in = 1;
-          node.in_command = 0;
+          node.in_command = 1;
         } else if (m_commands_size == 1) {
           node.in = out_handle_index;
         }
@@ -752,157 +770,77 @@ namespace Graphick::Renderer::Geometry {
       }
     }
 
-    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
-      if (point_i > point_index) return node;
+    Iterator it = { *this, point_index, IndexType::Point };
+    Segment segment = *it;
 
-      switch (get_command(i)) {
-      case Command::Move:
-        if (point_i == point_index) {
-          if (m_points.size() > 1 && m_points.back() == m_points[point_i]) {
-            if (get_command(m_commands_size - 1) == Command::Cubic) {
-              node.in = m_points.size() - 2;
-              node.in_command = m_commands_size - 1;
-            }
+    int64_t* in = &node.in;
+    int64_t* in_command = &node.in_command;
+    int64_t* out = &node.out;
+    int64_t* out_command = &node.out_command;
 
-            node.close_vertex = m_points.size() - 1;
-          } else {
-            node.in = in_handle_index;
-          }
+    if (!point_index == 0 && !(segment.type == Command::Cubic && it.point_index() >= point_index)) {
+      it++;
 
-          node.vertex = point_i;
+      if (point_index == m_points.size() - 1 || it != end()) {
+        in = &node.out;
+        in_command = &node.out_command;
+        out = &node.in;
+        out_command = &node.in_command;
+      }
 
-          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
-            node.out = point_i + 1;
-            node.out_command = i + 1;
-          } else if (i >= m_commands_size - 1) {
-            node.out = out_handle_index;
-          }
+      if (it == end()) {
+        node.vertex = it.point_index() - 1;
+        *out_command = m_commands_size - 1;
 
-          return node;
+        if (segment.type == Command::Cubic) {
+          *out = node.vertex - 1;
         }
 
-        point_i += 1;
-        break;
-      case Command::Line:
-        if (point_i == point_index) {
-          node.vertex = point_i;
-          node.in_command = i;
+        if (closed()) {
+          *in_command = 1;
 
-          if (i < m_commands_size - 1) {
-            if (get_command(i + 1) == Command::Cubic) {
-              node.out = point_i + 1;
-            }
-
-            node.out_command = i + 1;
-          } else if (point_i == m_points.size() - 1 && !closed()) {
-            node.out = out_handle_index;
+          if (get_command(1) == Command::Cubic) {
+            *in = 1;
           }
 
-          return node;
+          node.close_vertex = 0;
+        } else {
+          *in = out_handle_index;
         }
 
-        point_i += 1;
-        break;
-      case Command::Quadratic:
-        if (point_i == point_index) {
-          node.vertex = point_i;
-          node.in_command = i;
-
-          return node;
-        } else if (point_i + 1 == point_index) {
-          node.vertex = point_i + 1;
-
-          if (i < m_commands_size - 1) {
-            if (get_command(i + 1) == Command::Cubic) {
-              node.out = point_i + 2;
-            }
-
-            node.out_command = i + 1;
-          } else if (!closed()) {
-            node.out = out_handle_index;
-          }
-
-          return node;
-        }
-
-        point_i += 2;
-        break;
-      case Command::Cubic:
-        if (point_i == point_index) {
-          node.out = point_i;
-          node.out_command = i;
-
-          if (i > 0) {
-            Command prev_command = get_command(i - 1);
-
-            if (prev_command == Command::Cubic) {
-              node.in = point_i - 2;
-              node.in_command = i - 1;
-            } else if (prev_command == Command::Move) {
-              if (closed()) {
-                if (get_command(m_commands_size - 1) == Command::Cubic) {
-                  node.in = m_points.size() - 2;
-                  node.in_command = m_commands_size - 1;
-                }
-
-                node.close_vertex = m_points.size() - 1;
-              } else {
-                node.in = in_handle_index;
-              }
-            }
-
-            node.vertex = point_i - 1;
-          }
-
-          return node;
-        } else if (point_i + 1 == point_index) {
-          node.out = point_i + 1;
-          node.out_command = i;
-          node.vertex = point_i + 2;
-
-          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
-            node.in = point_i + 3;
-          } else if (i >= m_commands_size - 1) {
-            if (closed()) {
-              node.close_vertex = 0;
-
-              if (get_command(1) == Command::Cubic) {
-                node.in = 1;
-              }
-            } else {
-              node.in = out_handle_index;
-            }
-          }
-
-          return node;
-        } else if (point_i + 2 == point_index) {
-          node.in = point_i + 1;
-          node.in_command = i;
-          node.vertex = point_i + 2;
-
-          if (i < m_commands_size - 1 && get_command(i + 1) == Command::Cubic) {
-            node.out = point_i + 3;
-          } else if (i >= m_commands_size - 1) {
-            if (closed()) {
-              node.close_vertex = 0;
-
-              if (get_command(1) == Command::Cubic) {
-                node.out = 1;
-              }
-            } else {
-              node.out = out_handle_index;
-            }
-          }
-
-          return node;
-        }
-
-        point_i += 3;
-        break;
+        return node;
+      } else {
+        segment = *it;
       }
     }
 
-    node.vertex = point_index;
+    node.vertex = it.point_index() - 1;
+    *out_command = it.command_index();
+
+    if (segment.type == Command::Cubic) {
+      *out = node.vertex + 1;
+    }
+
+    if (it.segment_index() > 0) {
+      Iterator prev_it = it - 1;
+      Segment prev_segment = *prev_it;
+
+      *in_command = prev_it.command_index();
+
+      if (prev_segment.type == Command::Cubic) {
+        *in = node.vertex - 1;
+      }
+    } else if (closed()) {
+      *in_command = m_commands_size - 1;
+
+      if (get_command(m_commands_size - 1) == Command::Cubic) {
+        *in = m_points.size() - 2;
+      }
+
+      node.close_vertex = m_points.size() - 1;
+    } else {
+      *in = in_handle_index;
+    }
 
     return node;
   }
@@ -1407,58 +1345,36 @@ namespace Graphick::Renderer::Geometry {
 
     const Iterator it = { *this, segment_index, IndexType::Segment };
     const Segment segment = *it;
+    const size_t point_i = it.point_index();
 
     switch (segment.type) {
     case Command::Line: {
+      const vec2 p = Math::lerp(segment.p0, segment.p1, t);
 
-      return segment_index;
+      m_points.insert(m_points.begin() + point_i, p);
+      insert_command(Command::Line, segment_index + 1);
+
+      return point_i;
     }
     case Command::Quadratic:
-      return segment_index;
-    case Command::Cubic:
-      return segment_index;
+      return point_i + 1;
+    case Command::Cubic: {
+
+      const auto [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(
+        m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], t
+      );
+
+      m_points[point_i] = in_p1;
+      m_points[point_i + 1] = out_p2;
+
+      m_points.insert(m_points.begin() + point_i + 1, { in_p2, p, out_p1 });
+      insert_command(Command::Cubic, segment_index + 1);
+
+      return point_i + 2;
+    }
     };
 
-    for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
-      switch (get_command(i)) {
-      case Command::Move:
-        point_i += 1;
-        break;
-      case Command::Line:
-        if (i - 1 == segment_index) {
-          const vec2 p = Math::lerp(m_points[point_i - 1], m_points[point_i], t);
-
-          m_points.insert(m_points.begin() + point_i, p);
-          insert_command(Command::Line, i);
-
-          return point_i;
-        }
-
-        point_i += 1;
-        break;
-      case Command::Quadratic:
-        point_i += 2;
-        break;
-      case Command::Cubic:
-        if (i - 1 == segment_index) {
-
-          const auto [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(
-            m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], t
-          );
-
-          m_points[point_i] = in_p1;
-          m_points[point_i + 1] = out_p2;
-
-          m_points.insert(m_points.begin() + point_i + 1, { in_p2, p, out_p1 });
-          insert_command(Command::Cubic, i);
-
-          return point_i + 2;
-        }
-
-        point_i += 3;
-        break;
-      }
-    }
+    return 0;
   }
 
   Math::rect Path::bounding_rect() const {
@@ -2003,6 +1919,8 @@ namespace Graphick::Renderer::Geometry {
 
     data.vector(m_commands);
     data.vector(m_points);
+
+    return data;
   }
 
   void Path::push_command(const Command command) {

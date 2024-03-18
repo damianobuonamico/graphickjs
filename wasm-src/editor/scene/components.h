@@ -267,20 +267,7 @@ namespace Graphick::Editor {
     friend class Entity;
   };
 
-  /**
-   * @brief PathComponent data.
-   *
-   * This struct should not be used directly, use the PathComponent wrapper instead.
-   *
-   * @struct PathComponentData
-   */
-  struct PathComponentData {
-    Renderer::Geometry::Path path;    /* The path data. */
-
-    PathComponentData();
-    PathComponentData(const Renderer::Geometry::Path& path);
-    PathComponentData(io::DataDecoder& decoder);
-  };
+  using PathComponentData = Renderer::Geometry::Path;
 
   /**
    * @brief PathComponent wrapper.
@@ -303,18 +290,14 @@ namespace Graphick::Editor {
     /**
      * @brief Conversion operator to Renderer::Geometry::Path&.
      */
-    inline operator const Renderer::Geometry::Path& () const { return m_data->path; }
+    inline operator const Renderer::Geometry::Path& () const { return *m_data; }
 
     /**
      * @brief Returns the path data of the entity.
      *
      * @return The path data of the entity.
      */
-    inline const Renderer::Geometry::Path& data() const { return m_data->path; }
-
-    // TEMP
-    inline Renderer::Geometry::Path& TEMP_path() { return m_data->path; }
-    inline const Renderer::Geometry::Path& TEMP_path() const { return m_data->path; }
+    inline const Renderer::Geometry::Path& data() const { return *m_data; }
 
     /**
      * @brief Moves the path cursor to the given point.

@@ -9,6 +9,7 @@
  * @todo reimplment cache and maybe check for rehydration only if actions performed are destructive
  * @todo get more than one component at a time in entity
  * @todo refactor and abstract away entity related methods in render()
+ * @todo when scene serialization is a thing, implement copy constructor
  */
 
 #include "scene.h"
@@ -38,9 +39,7 @@ namespace Graphick::Editor {
     selection(this),
     history(this),
     viewport(other.viewport)
-  {
-    m_registry.assign(other.m_registry.data(), other.m_registry.data() + other.m_registry.size(), other.m_registry.released());
-  }
+  {}
 
   Scene::Scene(Scene&& other) noexcept :
     m_registry(std::move(other.m_registry)),
@@ -195,7 +194,7 @@ namespace Graphick::Editor {
       const Entity entity = { *it, this };
 
       if (entity.has_components<IDComponent, PathComponent, TransformComponent>()) {
-        const auto& path = entity.get_component<PathComponent>().TEMP_path();
+        const auto& path = entity.get_component<PathComponent>().data();
         const TransformComponent transform = entity.get_component<TransformComponent>();
         const uuid id = entity.id();
 
@@ -351,7 +350,7 @@ namespace Graphick::Editor {
         if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
 
         const uuid id = entity.id();
-        const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().TEMP_path();
+        const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().data();
         const TransformComponent transform = entity.get_component<TransformComponent>();
 
         if (!has_entity(id)) return;
@@ -485,9 +484,9 @@ namespace Graphick::Editor {
     entt::entity entity = it->second;
 
     selection.deselect(id);
-    m_registry.destroy(entity);
     m_entities.erase(it);
-    m_order.erase(std::remove(m_order.begin(), m_order.end(), static_cast<entt::entity>(entity)), m_order.end());
+    m_order.erase(std::remove(m_order.begin(), m_order.end(), entity), m_order.end());
+    m_registry.destroy(entity);
   }
 
 }

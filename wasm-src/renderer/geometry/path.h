@@ -216,7 +216,7 @@ namespace Graphick::Renderer::Geometry {
        *
        * @return The index of the segment the iterator is currently pointing to.
        */
-      inline size_t segment_index() const { return m_index - 1; }
+      inline size_t segment_index() const { return std::max(size_t(1), m_index) - 1; }
 
       /**
        * @brief Returns the index of the point the iterator is currently pointing to.
@@ -771,12 +771,13 @@ namespace Graphick::Renderer::Geometry {
     void remove_command(const size_t index);
   private:
     std::vector<vec2> m_points;         /* The points of the path. */
-    std::vector<uint8_t> m_commands;    /* The commands used to traverse the path. */
 
     size_t m_commands_size = 0;         /* The effective number of commands in the path. */
 
     vec2 m_in_handle;                   /* The incoming handle of the path, its index is Path::in_handle_index. */
     vec2 m_out_handle;                  /* The outgoing handle of the path, its_index is Path::out_handle_index. */
+
+    std::vector<uint8_t> m_commands;    /* The commands used to traverse the path. */
   };
 
 }

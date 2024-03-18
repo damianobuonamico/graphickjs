@@ -27,7 +27,7 @@ namespace Graphick::Editor::Input {
     PathComponent& path,
     const size_t point_index,
     const mat2x3& transform, const vec2* override_movement,
-    bool create_handles, bool keep_in_handle_length, bool swap_in_out,
+    bool create_handles, bool keep_in_handle_length, bool translate_in_first,
     int* direction
   ) {
     const mat2x3 inverse_transform = override_movement ? mat2x3{} : Math::inverse(transform);
@@ -63,6 +63,8 @@ namespace Graphick::Editor::Input {
     vec2 out_position = position;
     vec2 in_position = 2.0f * path.data().point_at(node.vertex) - position;
 
+    bool swap_in_out = false;
+
     if (direction) {
       if (*direction == 0) {
         float cos = 0;
@@ -70,7 +72,7 @@ namespace Graphick::Editor::Input {
         if (node.out >= 0) {
           cos = Math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.out)) - path.data().point_at(static_cast<size_t>(node.vertex)));
         } else if (node.vertex > 0) {
-          cos = Math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.vertex)) - path.data().point_at(static_cast<size_t>(node.vertex - 1)));
+          cos = -Math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.vertex)) - path.data().point_at(static_cast<size_t>(node.vertex - 1)));
         }
 
         if (cos > 0) *direction = -1;
@@ -78,26 +80,32 @@ namespace Graphick::Editor::Input {
       }
 
       if (*direction < 0) {
-        std::swap(node.in, node.out);
+        swap_in_out = !swap_in_out;
       }
+    }
+
+    if (translate_in_first) {
+      swap_in_out = !swap_in_out;
+
+      std::swap(out_position, in_position);
     }
 
     if (swap_in_out) {
       std::swap(node.in, node.out);
       std::swap(node.in_command, node.out_command);
-      std::swap(in_position, out_position);
     }
 
     size_t new_point_index = point_index;
 
     if (create_handles && node.out < 0) {
-      if (node.out_command < 0) return point_index;
+      if (node.out_command < 0) return new_point_index;
 
       new_point_index = path.to_cubic(static_cast<size_t>(node.out_command), new_point_index);
       node = path.data().node_at(new_point_index);
 
       if (swap_in_out) {
         std::swap(node.in, node.out);
+        std::swap(node.in_command, node.out_command);
       }
     }
 
@@ -106,27 +114,33 @@ namespace Graphick::Editor::Input {
 
     path.translate(static_cast<size_t>(node.out), movement);
 
-    if (InputManager::keys.alt || (node.in < 0 && !create_handles)) {
-      return point_index;
+    // TODO: replace with is_closed
+    if (InputManager::keys.alt || (node.in < 0 && (!create_handles || translate_in_first))) {
+      return new_point_index;
     }
 
     if (create_handles && node.in < 0) {
-      if (node.in_command < 0) return point_index;
+      if (node.in_command < 0) return new_point_index;
 
       new_point_index = path.to_cubic(static_cast<size_t>(node.in_command), new_point_index);
       node = path.data().node_at(new_point_index);
 
       if (swap_in_out) {
         std::swap(node.in, node.out);
+        std::swap(node.in_command, node.out_command);
       }
     }
 
     if (keep_in_handle_length) {
       const vec2 vertex_position = path.data().point_at(node.vertex);
       const vec2 dir = Math::normalize(vertex_position - path.data().point_at(static_cast<size_t>(node.out)));
-      const float length = Math::distance(path.data().point_at(static_cast<size_t>(node.in)), vertex_position);
 
-      in_position = dir * length + vertex_position;
+      if (!Math::is_almost_zero(dir)) {
+        const float length = Math::distance(path.data().point_at(static_cast<size_t>(node.in)), vertex_position);
+        in_position = dir * length + vertex_position;
+      } else {
+        in_position = path.data().point_at(static_cast<size_t>(node.in));
+      }
     }
 
     path.translate(static_cast<size_t>(static_cast<size_t>(node.in)), in_position - path.data().point_at(static_cast<size_t>(node.in)));
