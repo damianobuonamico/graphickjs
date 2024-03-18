@@ -1,18 +1,19 @@
+/**
+ * @file allocator.cpp
+ * @brief The file contains the implementation of the GPU memory allocator.
+ */
+
 #include "allocator.h"
 
 #include "../../math/scalar.h"
 
-// Everything above 16 MB is allocated exactly.
+/* Everything above 16 MB is allocated exactly.*/
 #define MAX_BUFFER_SIZE_CLASS 16u * 1024u * 1024u
 
-// Number of milliseconds before unused memory is purged.
-//
-// TODO: jemalloc uses a sigmoidal decay curve here. Consider something similar.
+/* Number of milliseconds before unused memory is purged. */
 #define DECAY_TIME 250u
 
-// Number of milliseconds before we can reuse an object buffer.
-//
-// This helps avoid stalls. This is admittedly a bit of a hack.
+/* Number of milliseconds before we can reuse an object buffer, used to avoid stalling the GPU. */
 #define REUSE_TIME 15u
 
 namespace Graphick::Renderer::GPU::Memory {

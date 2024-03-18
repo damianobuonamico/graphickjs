@@ -1,3 +1,8 @@
+/**
+ * @file export.cpp
+ * @brief The file exports methods to the WebAssembly runtime.
+ */
+
 #include "editor/editor.h"
 #include "editor/scene/entity.h"
 #include "editor/input/input_manager.h"

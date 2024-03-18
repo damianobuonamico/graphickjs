@@ -1,3 +1,10 @@
+/**
+ * @file renderer.h
+ * @brief The file contains the definition of the main Graphick renderer.
+ *
+ * @todo refactor and document
+ */
+
 #pragma once
 
 #include "tiler.h"

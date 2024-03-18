@@ -1,3 +1,10 @@
+/**
+ * @file defines.h
+ * @brief The file contains the definition of the global constants.
+ *
+ * @todo refactor the constants
+ */
+
 #pragma once
 
 #define GK_EPSILON 1e-6f

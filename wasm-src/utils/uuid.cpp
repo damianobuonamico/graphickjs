@@ -1,3 +1,8 @@
+/**
+ * @file uuid.cpp
+ * @brief The file contains the implementation of the UUID class.
+ */
+
 #include "uuid.h"
 
 #include <random>

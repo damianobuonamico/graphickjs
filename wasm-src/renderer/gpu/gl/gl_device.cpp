@@ -1,3 +1,8 @@
+/**
+ * @file gl_device.cpp
+ * @brief The file contains the implementation of the OpenGL device.
+ */
+
 #include "gl_device.h"
 
 #include "../../../utils/resource_manager.h"

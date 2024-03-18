@@ -1,3 +1,8 @@
+/**
+ * @file assert.h
+ * @brief The file contains the definition of the assert macro.
+ */
+
 #pragma once
 
 #ifdef GK_CONF_DIST

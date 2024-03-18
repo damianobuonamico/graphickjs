@@ -1,3 +1,8 @@
+/**
+ * @file resource_manager.cpp
+ * @brief The file contains the implementation of the resource manager.
+ */
+
 #include "resource_manager.h"
 
 #include "console.h"
