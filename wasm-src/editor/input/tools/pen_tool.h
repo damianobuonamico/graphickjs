@@ -109,7 +109,7 @@ namespace Graphick::Editor::Input {
     std::optional<size_t> m_vertex = std::nullopt;    /* The active vertex. */
 
     bool m_reverse = false;                           /* Whether the active path is reversed. */
-    int m_direction = 0;                              /* The direction of the active path. */
+    int m_direction = 0;                              /* The direction of the active path, 1 for forward, -1 for backward. */
   private:
     friend class ToolState;
   };

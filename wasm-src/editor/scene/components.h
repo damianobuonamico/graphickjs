@@ -332,9 +332,10 @@ namespace Graphick::Editor {
      *
      * If incoming or outgoing handles are present, the new segment will be a cubic bezier curve.
      *
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
      * @return The index of the newly added control point.
      */
-    size_t close();
+    size_t close(const bool reverse = false);
 
     /**
      * @brief Translates a control point in the path by a given delta.

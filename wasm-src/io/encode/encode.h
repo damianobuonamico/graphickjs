@@ -30,6 +30,18 @@ namespace Graphick::io {
     std::vector<uint8_t> data;    /* The encoded data buffer. */
 
     /**
+     * @brief Encodes a boolean.
+     *
+     * A boolean is treated as a 8-bit unsigned integer.
+     *
+     * @param t The boolean to encode.
+     */
+    inline EncodedData& boolean(const bool t) {
+      data.push_back(static_cast<uint8_t>(t));
+      return *this;
+    }
+
+    /**
      * @brief Encodes an int8_t.
      *
      * @param t The int8_t to encode.
@@ -228,14 +240,14 @@ namespace Graphick::io {
   public:
     /**
      * @brief Constructs a new DataDecoder from an EncodedData.
-     * 
+     *
      * @param data The EncodedData to decode.
      */
     DataDecoder(const EncodedData* data) : m_data(data) {}
 
     /**
      * @brief Checks if the decoder has reached the end of the data.
-     * 
+     *
      * @return true if the decoder has reached the end of the data, false otherwise.
      */
     inline bool end_of_data() const {
@@ -244,7 +256,7 @@ namespace Graphick::io {
 
     /**
      * @brief Checks if the data has enough bytes to decode.
-     * 
+     *
      * @param size The number of bytes to decode.
      * @return true if the data has enough bytes to decode, false otherwise.
      */
@@ -253,8 +265,20 @@ namespace Graphick::io {
     }
 
     /**
+     * @brief Decodes a boolean.
+     *
+     * @return The decoded boolean.
+     */
+    inline bool boolean() {
+      GK_ASSERT(has_bytes(sizeof(uint8_t)), "Not enough bytes to decode boolean!");
+      if (!has_bytes(sizeof(uint8_t))) return false;
+
+      return m_data->data[m_index++] != 0;
+    }
+
+    /**
      * @brief Decodes an int8_t.
-     * 
+     *
      * @return The decoded int8_t.
      */
     inline int8_t int8() {
@@ -266,7 +290,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes an int16_t.
-     * 
+     *
      * @return The decoded int16_t.
      */
     inline int16_t int16() {
@@ -282,7 +306,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes an int32_t.
-     * 
+     *
      * @return The decoded int32_t.
      */
     inline int32_t int32() {
@@ -298,7 +322,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes an int64_t.
-     * 
+     *
      * @return The decoded int64_t.
      */
     inline int64_t int64() {
@@ -314,7 +338,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a uint8_t.
-     * 
+     *
      * @return The decoded uint8_t.
      */
     inline uint8_t uint8() {
@@ -326,7 +350,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a uint16_t.
-     * 
+     *
      * @return The decoded uint16_t.
      */
     inline uint16_t uint16() {
@@ -342,7 +366,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a uint32_t.
-     * 
+     *
      * @return The decoded uint32_t.
      */
     inline uint32_t uint32() {
@@ -358,7 +382,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a uint64_t.
-     * 
+     *
      * @return The decoded uint64_t.
      */
     inline uint64_t uint64() {
@@ -374,7 +398,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a float.
-     * 
+     *
      * @return The decoded float.
      */
     inline float float32() {
@@ -390,7 +414,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a double.
-     * 
+     *
      * @return The decoded double.
      */
     inline double float64() {
@@ -406,7 +430,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a component id.
-     * 
+     *
      * @return The decoded component id.
      */
     inline uint8_t component_id() {
@@ -415,7 +439,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a UUID.
-     * 
+     *
      * @return The decoded UUID.
      */
     inline uint64_t uuid() {
@@ -424,7 +448,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a std::string.
-     * 
+     *
      * @return The decoded string.
      */
     inline std::string string() {
@@ -441,7 +465,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a std::vector<T>.
-     * 
+     *
      * @return The decoded vector.
      */
     template<typename T>
@@ -460,7 +484,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a Math::vec2.
-     * 
+     *
      * @return The decoded vec2.
      */
     inline Math::vec2 vec2() {
@@ -476,7 +500,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a Math::mat2x3.
-     * 
+     *
      * @return The decoded mat2x3.
      */
     inline Math::mat2x3 mat2x3() {
@@ -492,7 +516,7 @@ namespace Graphick::io {
 
     /**
      * @brief Decodes a Math::vec4 representing an RGB color.
-     * 
+     *
      * @return The decoded vec4.
      */
     inline Math::vec4 color() {

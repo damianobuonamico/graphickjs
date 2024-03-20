@@ -147,7 +147,7 @@ namespace Graphick::Editor {
     return reverse ? 0 : (m_data->points_size() - 1);
   }
 
-  size_t PathComponent::close() {
+  size_t PathComponent::close(const bool reverse) {
     io::EncodedData backup_data;
     io::EncodedData new_data;
 
@@ -162,6 +162,10 @@ namespace Graphick::Editor {
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
 
     new_data = m_data->encode(new_data);
+
+    if (reverse) {
+      return std::min(m_data->points_size() - 1, m_data->points_size() - static_cast<size_t>(m_data->back().type) - 1);
+    }
 
     return m_data->points_size() - 1;
 

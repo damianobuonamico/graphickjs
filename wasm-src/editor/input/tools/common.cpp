@@ -1,8 +1,6 @@
 /**
  * @file common.cpp
  * @brief Contains the implementation of common classes and functions used by input tools in the Graphick editor.
- *
- * @todo add is_closed parameter to translate_control_point to avoid closing the path when moving the last point.
  */
 
 #include "common.h"
@@ -114,7 +112,6 @@ namespace Graphick::Editor::Input {
 
     path.translate(static_cast<size_t>(node.out), movement);
 
-    // TODO: replace with is_closed
     if (InputManager::keys.alt || (node.in < 0 && (!create_handles || translate_in_first))) {
       return new_point_index;
     }

@@ -462,6 +462,8 @@ namespace Graphick::Renderer::Geometry {
     }
 
     m_points = decoder.vector<vec2>();
+    m_closed = decoder.boolean();
+
 
     size_t point_index = 0;
     size_t last_non_move_index = 0;
@@ -495,8 +497,8 @@ namespace Graphick::Renderer::Geometry {
       m_commands.resize(1);
       m_points.resize(1);
 
-      m_in_handle = m_points.front();
-      m_out_handle = m_points.back();
+      m_in_handle = decoder.vec2();
+      m_out_handle = decoder.vec2();
 
       return;
     }
@@ -504,8 +506,8 @@ namespace Graphick::Renderer::Geometry {
     m_commands_size = last_non_move_index + 1;
     m_points.resize(last_non_move_point_index);
 
-    m_in_handle = m_points.front();
-    m_out_handle = m_points.back();
+    m_in_handle = decoder.vec2();
+    m_out_handle = decoder.vec2();
   }
 
   Path& Path::operator=(const Path& other) {
@@ -770,6 +772,10 @@ namespace Graphick::Renderer::Geometry {
       }
     }
 
+    // if (closed() && point_index == m_points.size() - 1) {
+    //   point_index = 0;
+    // }
+
     Iterator it = { *this, point_index, IndexType::Point };
     Segment segment = *it;
 
@@ -843,10 +849,6 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return node;
-  }
-
-  bool Path::closed() const {
-    return !empty() && m_points.front() == m_points.back();
   }
 
   void Path::move_to(const vec2 point) {
@@ -1114,6 +1116,8 @@ namespace Graphick::Renderer::Geometry {
         cubic_to(m_out_handle, m_in_handle, p);
       }
     }
+
+    m_closed = true;
   }
 
   void Path::translate(const size_t point_index, const vec2 delta) {
@@ -1919,6 +1923,12 @@ namespace Graphick::Renderer::Geometry {
 
     data.vector(m_commands);
     data.vector(m_points);
+    data.boolean(closed());
+
+    // if (encode_in_out_handles && !closed()) {
+    data.vec2(m_in_handle);
+    data.vec2(m_out_handle);
+    // }
 
     return data;
   }
