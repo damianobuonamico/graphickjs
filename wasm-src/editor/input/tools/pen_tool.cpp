@@ -82,9 +82,13 @@ namespace Graphick::Editor::Input {
 
     switch (m_mode) {
     case Mode::Close:
-      if (!path.data().closed()) return;
+      if (path.data().closed()) {
+        m_vertex = translate_control_point(path, m_vertex.value(), transform, nullptr, true, true, true, nullptr);
+      }
+      break;
     case Mode::Join:
-      m_vertex = translate_control_point(path, m_vertex.value(), transform, nullptr, true, true, true, nullptr);
+      direction = -1;
+      m_vertex = translate_control_point(path, m_vertex.value(), transform, nullptr, true, true, true, &direction);
       break;
     case Mode::Add:
       m_vertex = translate_control_point(path, m_vertex.value(), transform, nullptr, true, false, false, &m_direction);
@@ -286,142 +290,92 @@ namespace Graphick::Editor::Input {
     PathComponent new_path = new_entity.get_component<PathComponent>();
     new_entity.add_component<StrokeComponent>(vec4{ 1.0f, 0.0f, 0.4f, 1.0f });
 
-    first_path.data().for_each(
-      [&](const vec2 p0) {
-        new_path.move_to(first_transform * p0);
-      },
-      [&](const vec2 p1) {
-        new_path.line_to(first_transform * p1);
-      },
-      [&](const vec2 p1, const vec2 p2) {
-        // TODO: implement and test quadratic
-        // new_path.quadratic_to(p1, p2);
-      },
-      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
-        new_path.cubic_to(first_transform * p1, first_transform * p2, first_transform * p3);
-      }
-    );
+    size_t index;
+    vec2 in_p1;
 
-    const vec2 in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(Renderer::Geometry::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_size() - 1);
-    const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().point_at(Renderer::Geometry::Path::in_handle_index) : second_path.data().point_at(0);
+    if (m_reverse) {
+      in_p1 = first_path.data().has_in_handle() ? first_path.data().point_at(Renderer::Geometry::Path::in_handle_index) : first_path.data().point_at(0);
 
-    second_path.data().for_each(
-      [&](const vec2 p0) {
-        new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * p0);
-      },
-      [&](const vec2 p1) {
-        new_path.line_to(second_transform * p1);
-      },
-      [&](const vec2 p1, const vec2 p2) {
-        // TODO: implement and test quadratic
-        // new_path.quadratic_to(p1, p2);
-      },
-      [&](const vec2 p1, const vec2 p2, const vec2 p3) {
-        new_path.cubic_to(second_transform * p1, second_transform * p2, second_transform * p3);
-      }
-    );
+      new_path.move_to(first_transform * first_path.data().point_at(first_path.data().points_size() - 1));
 
-#if 0
-    // std::shared_ptr<Renderer::Geometry::ControlPoint> p0 =
-    //   first_path.empty() ? first_path.last().lock() :
-    //   (first_path.reversed() ? first_segments.front().p0_ptr().lock() : first_segments.back().p3_ptr().lock());
+      first_path.data().for_each_reversed(
+        nullptr,
+        [&](const vec2 p0, const vec2 p1) {
+          new_path.line_to(first_transform * p0);
+        },
+        [&](const vec2 p0, const vec2 p1, const vec2 p2) {
+          new_path.quadratic_to(first_transform * p1, first_transform * p0);
+        },
+        [&](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+          new_path.cubic_to(first_transform * p2, first_transform * p1, first_transform * p0);
+        }
+      );
+    } else {
+      in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(Renderer::Geometry::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_size() - 1);
 
-    // std::optional<vec2> p1 = std::nullopt;
-    // std::optional<vec2> p2 = std::nullopt;
+      first_path.data().for_each(
+        [&](const vec2 p0) {
+          new_path.move_to(first_transform * p0);
+        },
+        [&](const vec2 p1) {
+          new_path.line_to(first_transform * p1);
+        },
+        [&](const vec2 p1, const vec2 p2) {
+          new_path.quadratic_to(first_transform * p1, first_transform * p2);
+        },
+        [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+          new_path.cubic_to(first_transform * p1, first_transform * p2, first_transform * p3);
+        }
+      );
+    }
 
-    // auto in_handle = first_path.in_handle_ptr();
-    // auto out_handle = first_path.out_handle_ptr();
+    if (m_vertex.value() == 0) {
+      const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().point_at(Renderer::Geometry::Path::in_handle_index) : second_path.data().point_at(0);
 
-    // if (first_path.reversed()) {
-    //   for (int i = (int)first_segments.size() - 1; i >= 0; i--) {
-    //     std::shared_ptr<Renderer::Geometry::Segment> reversed = Renderer::Geometry::Segment::reverse(first_segments.at(i));
-    //     Renderer::Geometry::Segment::transform(*reversed, first_transform, false);
-    //     new_segments.push_back(reversed);
-    //   }
+      second_path.data().for_each(
+        [&](const vec2 p0) {
+          new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * p0);
+          index = new_path.data().points_size() - 1;
+        },
+        [&](const vec2 p1) {
+          new_path.line_to(second_transform * p1);
+        },
+        [&](const vec2 p1, const vec2 p2) {
+          new_path.quadratic_to(second_transform * p1, second_transform * p2);
+        },
+        [&](const vec2 p1, const vec2 p2, const vec2 p3) {
+          new_path.cubic_to(second_transform * p1, second_transform * p2, second_transform * p3);
+        }
+      );
+    } else {
+      const vec2 in_p2 = second_path.data().has_out_handle() ? second_path.data().point_at(Renderer::Geometry::Path::out_handle_index) : second_path.data().point_at(second_path.data().points_size() - 1);
 
-    //   auto last_ptr = new_segments.back().p3_ptr().lock();
-    //   last_ptr->set(first_transform * last_ptr->get());
+      new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * second_path.data().point_at(second_path.data().points_size() - 1));
+      index = new_path.data().points_size() - 1;
 
-    //   if (in_handle) p1 = first_transform * in_handle.value()->get();
-    //   if (out_handle) new_path.create_in_handle(first_transform * out_handle.value()->get());
-    // } else {
-    //   for (auto& segment : first_segments) {
-    //     Renderer::Geometry::Segment::transform(*segment, first_transform, false);
-    //     new_segments.push_back(segment);
-    //   }
-
-    //   auto last_ptr = new_segments.back().p3_ptr().lock();
-    //   last_ptr->set(first_transform * last_ptr->get());
-
-    //   if (out_handle) p1 = first_transform * out_handle.value()->get();
-    //   if (in_handle) new_path.create_in_handle(first_transform * in_handle.value()->get());
-    // }
-
-    // in_handle = second_path.in_handle_ptr();
-    // out_handle = second_path.out_handle_ptr();
-
-    // if (second_path.empty()) {
-    //   std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_path.last().lock();
-    //   p3->set(second_transform * p3->get());
-
-    //   if (in_handle) p2 = second_transform * in_handle.value()->get();
-    //   if (out_handle) new_path.create_out_handle(second_transform * out_handle.value()->get());
-
-    //   new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
-    // } else if (m_vertex->id == second_segments.front().p0_id()) {
-    //   std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_segments.front().p0_ptr().lock();
-
-    //   if (in_handle) p2 = second_transform * in_handle.value()->get();
-    //   if (out_handle) new_path.create_out_handle(second_transform * out_handle.value()->get());
-
-    //   new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
-
-    //   for (auto& segment : second_segments) {
-    //     Renderer::Geometry::Segment::transform(*segment, second_transform, false);
-    //     new_segments.push_back(segment);
-    //   }
-
-    //   auto last_ptr = new_segments.back().p3_ptr().lock();
-    //   last_ptr->set(second_transform * last_ptr->get());
-    // } else {
-    //   std::shared_ptr<Renderer::Geometry::ControlPoint> p3 = second_segments.back().p3_ptr().lock();
-
-    //   if (out_handle) p2 = second_transform * out_handle.value()->get();
-    //   if (in_handle) new_path.create_out_handle(second_transform * in_handle.value()->get());
-
-    //   new_segments.push_back(std::make_shared<Renderer::Geometry::Segment>(p0, p1, p2, p3));
-
-    //   size_t size = new_segments.size();
-
-    //   for (int i = (int)second_segments.size() - 1; i >= 0; i--) {
-    //     std::shared_ptr<Renderer::Geometry::Segment> reversed = Renderer::Geometry::Segment::reverse(second_segments.at(i));
-    //     Renderer::Geometry::Segment::transform(*reversed, second_transform, false);
-    //     new_segments.push_back(reversed);
-    //   }
-
-    //   auto last_ptr = new_segments.back().p3_ptr().lock();
-    //   last_ptr->set(second_transform * last_ptr->get());
-    // }
-#endif 
+      second_path.data().for_each_reversed(
+        nullptr,
+        [&](const vec2 p0, const vec2 p1) {
+          new_path.line_to(second_transform * p0);
+        },
+        [&](const vec2 p0, const vec2 p1, const vec2 p2) {
+          new_path.quadratic_to(second_transform * p1, second_transform * p0);
+        },
+        [&](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+          new_path.cubic_to(second_transform * p2, second_transform * p1, second_transform * p0);
+        }
+      );
+    }
 
     Editor::scene().delete_entity(first_id);
-    Editor::scene().delete_entity(second_entity.id());
+    Editor::scene().delete_entity(second_id);
 
-    // History::CommandHistory::add(std::make_unique<History::FunctionCommand>(
-    //   [this, new_path, new_transform, vertex_id]() {
-    //     Scene& scene = Editor::scene();
+    scene.selection.clear();
+    scene.selection.select(new_id);
 
-    //     scene.selection.clear();
-    //     scene.selection.select_vertex(new_path.id, vertex_id);
-
-    //     m_transform = new_transform;
-    //     set_pen_element(uuid::null);
-    //   },
-    //   []() {}
-    // ));
-
+    m_temp_element = uuid::null;
     m_element = new_id;
-    m_vertex = 0;
+    m_vertex = index;
     m_mode = Mode::Join;
   }
 

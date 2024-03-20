@@ -901,6 +901,10 @@ namespace Graphick::Renderer::Geometry {
   void Path::cubic_to(const vec2 control1, const vec2 control2, const vec2 point, const bool reverse) {
     GK_ASSERT(!vacant(), "Cannot add a cubic bezier to a vacant path.");
 
+    if (control1 == (reverse ? m_points.front() : m_points.back()) && control2 == point) {
+      return line_to(point, reverse);
+    }
+
     if (reverse) {
       m_points.insert(m_points.begin(), { point, control2, control1 });
       m_in_handle = point;

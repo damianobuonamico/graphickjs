@@ -128,6 +128,25 @@ namespace Graphick::Editor {
     return reverse ? 0 : (m_data->points_size() - 1);
   }
 
+  size_t PathComponent::quadratic_to(const vec2 p1, const vec2 p2, const bool reverse = false) {
+    io::EncodedData backup_data;
+    io::EncodedData new_data;
+
+    backup_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    backup_data = m_data->encode(backup_data);
+
+    m_data->quadratic_to(p1, p2, reverse);
+
+    new_data.component_id(component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+
+    new_data = m_data->encode(new_data);
+
+    return reverse ? 0 : (m_data->points_size() - 1);
+  }
+
   size_t PathComponent::cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse) {
     io::EncodedData backup_data;
     io::EncodedData new_data;

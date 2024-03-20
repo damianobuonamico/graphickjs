@@ -317,11 +317,21 @@ namespace Graphick::Editor {
     size_t line_to(const vec2 p1, const bool reverse = false);
 
     /**
+     * @brief Adds a quadratic bezier curve to the path.
+     *
+     * @param p1 The first control point of the curve.
+     * @param p2 The second control point of the curve.
+     * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
+     * @return The index of the newly added control point.
+     */
+    size_t quadratic_to(const vec2 p1, const vec2 p2, const bool reverse = false);
+
+    /**
      * @brief Adds a cubic bezier curve to the path.
      *
      * @param p1 The first control point of the curve.
      * @param p2 The second control point of the curve.
-     * @param p2 The point to add to the path.
+     * @param p3 The third control point of the curve.
      * @param reverse Whether to add the point to the beginning of the path, instead of the end. Default is false.
      * @return The index of the newly added control point.
      */
