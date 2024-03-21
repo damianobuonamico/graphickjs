@@ -59,9 +59,10 @@ namespace Graphick::Editor {
      * @param entity_id The id of the entity the action is related to.
      * @param encoded_data The encoded data of the target.
      * @param backup_data The encoded backup data of the target.
+     * @param execute Whether to execute the action or not (i.e. the action was already executed), default is true.
      */
-    void modify(uuid entity_id, const io::EncodedData& encoded_data, const io::EncodedData& backup_data);
-    void modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data);
+    void modify(uuid entity_id, const io::EncodedData& encoded_data, const io::EncodedData& backup_data, const bool execute = true);
+    void modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data, const bool execute = true);
 
     /**
      * @brief Undo the last action.
@@ -86,11 +87,12 @@ namespace Graphick::Editor {
     /**
      * @brief Push an action to the history.
      *
-     * It automatically executes the action and calls the seal method.
+     * It automatically executes the action (if execute is set to true) and calls the seal method.
      *
      * @param action The action to add.
+     * @param execute Whether to execute the action or just push it, default is true.
      */
-    void push(Action&& action);
+    void push(Action&& action, const bool execute = true);
 
     /**
      * @brief Seal the history.

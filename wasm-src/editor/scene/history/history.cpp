@@ -49,17 +49,17 @@ namespace Graphick::Editor {
     });
   }
 
-  void History::modify(uuid entity_id, const io::EncodedData& encoded_data, const io::EncodedData& backup_data) {
+  void History::modify(uuid entity_id, const io::EncodedData& encoded_data, const io::EncodedData& backup_data, const bool execute) {
     push(Action{
       entity_id,
       Action::Target::Component,
       Action::Type::Modify,
       encoded_data,
       backup_data
-    });
+    }, execute);
   }
 
-  void History::modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data) {
+  void History::modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data, const bool execute) {
     // console::log("history_size", m_actions.size());
 
     push(Action{
@@ -68,7 +68,7 @@ namespace Graphick::Editor {
       Action::Type::Modify,
       encoded_data,
       backup_data
-    });
+    }, execute);
   }
 
   void History::undo() {
@@ -117,10 +117,12 @@ namespace Graphick::Editor {
     m_batch_index++;
   }
 
-  void History::push(Action&& action) {
+  void History::push(Action&& action, const bool execute) {
     bool merged = false;
 
-    action.execute(m_scene);
+    if (execute) {
+      action.execute(m_scene);
+    }
 
     seal();
 

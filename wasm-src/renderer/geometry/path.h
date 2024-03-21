@@ -363,6 +363,14 @@ namespace Graphick::Renderer::Geometry {
     inline Segment at(const size_t index, const IndexType index_type = IndexType::Segment) const { return *Iterator(*this, index, index_type); }
 
     /**
+     * @brief Returns the ith command of the path.
+     *
+     * @param command_index The index of the command to return.
+     * @return The ith command of the path.
+     */
+    inline Command command_at(const size_t command_index) const { return get_command(command_index); }
+
+    /**
      * @brief Returns the ith control point of the path.
      *
      * To retrieve the position of the incoming handle, use the Path::in_handle_index constant.
@@ -615,14 +623,16 @@ namespace Graphick::Renderer::Geometry {
      * @brief Converts the given command to a line command.
      *
      * @param command_index The index of the command to convert.
-    */
-    void to_line(const size_t command_index);
+     * @param reference_point The control point to return the updated index of.
+     * @return The updated index of the reference point.
+     */
+    size_t to_line(const size_t command_index, size_t reference_point = 0);
 
     /**
      * @brief Converts the given command to a cubic command.
      *
      * @param command_index The index of the command to convert.
-     * @param reference_point The control point to return the updated index of
+     * @param reference_point The control point to return the updated index of.
      * @return The updated index of the reference point.
      */
     size_t to_cubic(const size_t command_index, size_t reference_point = 0);

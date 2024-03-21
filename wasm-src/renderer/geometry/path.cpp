@@ -447,23 +447,23 @@ namespace Graphick::Renderer::Geometry {
 
   Path::Path(const Path& other) :
     m_points(other.m_points), m_commands(other.m_commands), m_commands_size(other.m_commands_size),
-    m_in_handle(other.m_in_handle), m_out_handle(other.m_out_handle) {}
+    m_closed(other.m_closed), m_in_handle(other.m_in_handle), m_out_handle(other.m_out_handle) {}
 
   Path::Path(Path&& other) noexcept :
     m_points(std::move(other.m_points)), m_commands(std::move(other.m_commands)), m_commands_size(other.m_commands_size),
-    m_in_handle(other.m_in_handle), m_out_handle(other.m_out_handle) {}
+    m_closed(other.m_closed), m_in_handle(other.m_in_handle), m_out_handle(other.m_out_handle) {}
 
   Path::Path(io::DataDecoder& decoder) {
     m_commands = decoder.vector<uint8_t>();
 
     if (m_commands.empty()) {
       m_commands_size = 0;
+      m_closed = false;
       return;
     }
 
     m_points = decoder.vector<vec2>();
     m_closed = decoder.boolean();
-
 
     size_t point_index = 0;
     size_t last_non_move_index = 0;
@@ -514,6 +514,7 @@ namespace Graphick::Renderer::Geometry {
     m_points = other.m_points;
     m_commands = other.m_commands;
     m_commands_size = other.m_commands_size;
+    m_closed = other.m_closed;
     m_in_handle = other.m_in_handle;
     m_out_handle = other.m_out_handle;
 
@@ -524,6 +525,7 @@ namespace Graphick::Renderer::Geometry {
     m_points = std::move(other.m_points);
     m_commands = std::move(other.m_commands);
     m_commands_size = other.m_commands_size;
+    m_closed = other.m_closed;
     m_in_handle = other.m_in_handle;
     m_out_handle = other.m_out_handle;
 
@@ -1140,41 +1142,29 @@ namespace Graphick::Renderer::Geometry {
     }
   }
 
-  void Path::to_line(const size_t command_index) {
+  size_t Path::to_line(const size_t command_index, const size_t reference_point) {
     GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
 
     const Command command = get_command(command_index);
+    if (command == Command::Line || command == Command::Move) return reference_point;
 
-    if (command == Command::Line || command == Command::Move) return;
+    const Iterator it = { *this, command_index, IndexType::Command };
+    const Segment segment = *it;
+    const size_t point_i = it.point_index();
 
-    size_t point_index = 0;
+    if (segment.type == Command::Cubic) {
+      m_points.erase(m_points.begin() + point_i, m_points.begin() + point_i + 2);
 
-    for (size_t i = 0; i <= command_index; i++) {
-      switch (get_command(i)) {
-      case Command::Move:
-        point_index += 1;
-        break;
-      case Command::Line:
-        point_index += 1;
-        break;
-      case Command::Quadratic:
-        if (command_index == i) {
-          m_points.erase(m_points.begin() + point_index);
-          return replace_command(i, Command::Line);
-        }
+      replace_command(command_index, Command::Line);
 
-        point_index += 2;
-        break;
-      case Command::Cubic:
-        if (command_index == i) {
-          m_points.erase(m_points.begin() + point_index, m_points.begin() + point_index + 2);
-          return replace_command(i, Command::Line);
-        }
-
-        point_index += 3;
-        break;
-      }
+      return reference_point > point_i ? reference_point - 2 : reference_point;
     }
+
+    m_points.erase(m_points.begin() + point_i, m_points.begin() + point_i + 1);
+
+    replace_command(command_index, Command::Line);
+
+    return reference_point > point_i ? reference_point - 1 : reference_point;
   }
 
   size_t Path::to_cubic(const size_t command_index, size_t reference_point) {

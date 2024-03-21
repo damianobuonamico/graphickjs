@@ -359,15 +359,16 @@ namespace Graphick::Editor {
      * @brief Converts the given command to a line command.
      *
      * @param command_index The index of the command to convert.
-     * @return The number of control points removed from the path.
+     * @param reference_point The control point to return the updated index of.
+     * @return The updated index of the reference point.
      */
-    size_t to_line(const size_t command_index);
+    size_t to_line(const size_t command_index, const size_t reference_point = 0);
 
     /**
      * @brief Converts the given command to a cubic command.
      *
      * @param command_index The index of the command to convert.
-     * @param reference_point The control point to return the updated index of
+     * @param reference_point The control point to return the updated index of.
      * @return The updated index of the reference point.
      */
     size_t to_cubic(const size_t command_index, const size_t reference_point = 0);
@@ -399,16 +400,27 @@ namespace Graphick::Editor {
     io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
   private:
     /**
+     * @brief Path history modification types.
+     */
+    enum class PathModifyType {
+      LoadData = 0,
+      ModifyPoint = 1 << 0
+    };
+  private:
+    /**
      * @brief Modifies the underlying data of the component.
      *
      * @param decoder A diff of the modified component's data.
      */
     void modify(io::DataDecoder& decoder) override;
-  private:
-    enum class PathModifyType {
-      LoadData = 0,
-      ModifyPoint = 1 << 0
-    };
+
+    /**
+     * @brief Commits a PathModifyAction::LoadData to the history.
+     *
+     * @param action The action to commit.
+     * @return An index returned by the action, can be ignored.
+     */
+    size_t commit_load(const std::function<size_t()> action);
   private:
     Data* m_data;    /* The actual component data. */
   private:

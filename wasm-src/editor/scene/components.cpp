@@ -3,7 +3,7 @@
  * @brief This file includes the implementations of all of the components.
  *
  * @todo implement encoding diffing and generic optimization (especially for the path component).
- * @todo avoid going through the history execute system for the first time an action is performed
+ * @todo translate multiple points in one history action
  */
 
 #include "components.h"
@@ -79,125 +79,55 @@ namespace Graphick::Editor {
   /* -- PathComponent -- */
 
   size_t PathComponent::move_to(const vec2 p0) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
-
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    m_data->encode(backup_data);
-
-    m_data->move_to(p0);
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    m_data->encode(new_data);
-
-    m_entity->scene()->history.modify(
-      m_entity->id(),
-      std::move(new_data),
-      std::move(backup_data)
-    );
+    commit_load([&]() {
+      m_data->move_to(p0);
+      return 0;
+    });
 
     return 0;
   }
 
   size_t PathComponent::line_to(const vec2 p1, const bool reverse) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
-
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    backup_data = m_data->encode(backup_data);
-
-    m_data->line_to(p1, reverse);
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    new_data = m_data->encode(new_data);
-
-    m_entity->scene()->history.modify(
-      m_entity->id(),
-      std::move(new_data),
-      std::move(backup_data)
-    );
+    commit_load([&]() {
+      m_data->line_to(p1, reverse);
+      return 0;
+    });
 
     return reverse ? 0 : (m_data->points_size() - 1);
   }
 
-  size_t PathComponent::quadratic_to(const vec2 p1, const vec2 p2, const bool reverse = false) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
-
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    backup_data = m_data->encode(backup_data);
-
-    m_data->quadratic_to(p1, p2, reverse);
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    new_data = m_data->encode(new_data);
+  size_t PathComponent::quadratic_to(const vec2 p1, const vec2 p2, const bool reverse) {
+    commit_load([&]() {
+      m_data->quadratic_to(p1, p2, reverse);
+      return 0;
+    });
 
     return reverse ? 0 : (m_data->points_size() - 1);
   }
 
   size_t PathComponent::cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
-
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    backup_data = m_data->encode(backup_data);
-
-    m_data->cubic_to(p1, p2, p3, reverse);
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    new_data = m_data->encode(new_data);
+    commit_load([&]() {
+      m_data->cubic_to(p1, p2, p3, reverse);
+      return 0;
+    });
 
     return reverse ? 0 : (m_data->points_size() - 1);
   }
 
   size_t PathComponent::close(const bool reverse) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
-
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    backup_data = m_data->encode(backup_data);
-
-    m_data->close();
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    new_data = m_data->encode(new_data);
+    commit_load([&]() {
+      m_data->close();
+      return 0;
+    });
 
     if (reverse) {
-      return std::min(m_data->points_size() - 1, m_data->points_size() - static_cast<size_t>(m_data->back().type) - 1);
+      return std::min(
+        m_data->points_size() - 1,
+        m_data->points_size() - static_cast<size_t>(m_data->back().type) - 1
+      );
     }
 
     return m_data->points_size() - 1;
-
-    // const bool has_in_handle = m_data->has_in_handle();
-    // const bool has_out_handle = m_data->has_out_handle();
-
-    // if (!has_in_handle && !has_out_handle) return line_to(m_data->point_at(0), true);
-
-    // const vec2 p1 = m_data->point_at(Renderer::Geometry::Path::out_handle_index);
-    // const vec2 p2 = m_data->point_at(Renderer::Geometry::Path::in_handle_index);
-    // const vec2 p3 = m_data->point_at(0);
-
-    // return cubic_to(p1, p2, p3, true);
   }
 
   void PathComponent::translate(const size_t point_index, const vec2 delta) {
@@ -205,131 +135,62 @@ namespace Graphick::Editor {
 
     if (Math::is_almost_zero(delta)) return;
 
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
+    io::EncodedData backup, data;
 
     vec2 backup_position = m_data->point_at(point_index);
-    vec2 new_position = backup_position + delta;
+    vec2 position = backup_position + delta;
 
-    backup_data.component_id(component_id)
+    m_data->translate(point_index, delta);
+
+    backup.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::ModifyPoint))
       .uint32(static_cast<uint32_t>(point_index))
       .vec2(backup_position);
 
-    new_data.component_id(component_id)
+    data.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::ModifyPoint))
       .uint32(static_cast<uint32_t>(point_index))
-      .vec2(new_position);
+      .vec2(position);
 
     m_entity->scene()->history.modify(
       m_entity->id(),
-      std::move(new_data),
-      std::move(backup_data)
+      std::move(data),
+      std::move(backup),
+      false
     );
   }
 
-  size_t PathComponent::to_line(const size_t command_index) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
+  size_t PathComponent::to_line(const size_t command_index, const size_t reference_point) {
+    if (m_data->command_at(command_index) == Data::Command::Cubic) {
+      return reference_point;
+    }
 
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    backup_data = m_data->encode(backup_data);
-
-    const size_t prev_points = m_data->points_size();
-
-    // TODO: check if necessary to perform the operation
-    m_data->to_line(command_index);
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    new_data = m_data->encode(new_data);
-
-    m_entity->scene()->history.modify(
-      m_entity->id(),
-      std::move(new_data),
-      std::move(backup_data)
-    );
-
-    return prev_points - m_data->points_size();
+    return commit_load([&]() {
+      return m_data->to_line(command_index, reference_point);
+    });
   }
 
   size_t PathComponent::to_cubic(const size_t command_index, const size_t reference_point) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
+    if (m_data->command_at(command_index) == Data::Command::Cubic) {
+      return reference_point;
+    }
 
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    backup_data = m_data->encode(backup_data);
-
-    // TODO: check if necessary to perform the operation
-    const size_t index = m_data->to_cubic(command_index, reference_point);
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    new_data = m_data->encode(new_data);
-
-    m_entity->scene()->history.modify(
-      m_entity->id(),
-      std::move(new_data),
-      std::move(backup_data)
-    );
-
-    return index;
+    return commit_load([&]() {
+      return m_data->to_cubic(command_index, reference_point);
+    });
   }
 
   size_t PathComponent::split(const size_t segment_index, const float t) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
-
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    backup_data = m_data->encode(backup_data);
-
-    const size_t index = m_data->split(segment_index, t);
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    new_data = m_data->encode(new_data);
-
-    m_entity->scene()->history.modify(
-      m_entity->id(),
-      std::move(new_data),
-      std::move(backup_data)
-    );
-
-    return index;
+    return commit_load([&]() {
+      return m_data->split(segment_index, t);
+    });
   }
 
   void PathComponent::remove(const size_t index, const bool keep_shape) {
-    io::EncodedData backup_data;
-    io::EncodedData new_data;
-
-    backup_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    backup_data = m_data->encode(backup_data);
-
-    const size_t prev_points = m_data->points_size();
-
-    m_data->remove(index, keep_shape);
-
-    new_data.component_id(component_id)
-      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-
-    new_data = m_data->encode(new_data);
-
-    m_entity->scene()->history.modify(
-      m_entity->id(),
-      std::move(new_data),
-      std::move(backup_data)
-    );
+    commit_load([&]() {
+      m_data->remove(index, keep_shape);
+      return 0;
+    });
   }
 
   io::EncodedData& PathComponent::encode(io::EncodedData& data, const bool optimize) const {
@@ -356,6 +217,29 @@ namespace Graphick::Editor {
       break;
     }
     }
+  }
+
+  size_t PathComponent::commit_load(const std::function<size_t()> action) {
+    io::EncodedData backup, data;
+
+    backup.component_id(PathComponent::component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+    m_data->encode(backup);
+
+    size_t index = action();
+
+    data.component_id(PathComponent::component_id)
+      .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
+    m_data->encode(data);
+
+    m_entity->scene()->history.modify(
+      m_entity->id(),
+      std::move(data),
+      std::move(backup),
+      false
+    );
+
+    return index;
   }
 
   /* -- TransformComponent -- */
