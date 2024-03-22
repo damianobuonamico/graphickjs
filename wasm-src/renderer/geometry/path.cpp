@@ -1943,6 +1943,8 @@ namespace Graphick::Renderer::Geometry {
   }
 
   renderer::geometry::QuadraticPath Path::to_quadratics(const float tolerance) const {
+    GK_TOTAL("Path::to_quadratics");
+
     renderer::geometry::QuadraticPath path;
 
     if (empty()) {

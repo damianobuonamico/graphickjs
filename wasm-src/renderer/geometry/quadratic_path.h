@@ -43,6 +43,23 @@ namespace Graphick::renderer::geometry {
       return empty() ? 0 : (points.size() - 1) / 2;
     }
 
+    inline rect approx_bounding_rect() const {
+      if (empty()) {
+        return rect{};
+      }
+
+      rect bounds{ points[0], points[0] };
+
+      for (size_t i = 1; i < points.size(); i += 2) {
+        std::min(bounds.min, points[i], bounds.min);
+        std::max(bounds.max, points[i], bounds.max);
+        std::min(bounds.min, points[i + 1], bounds.min);
+        std::max(bounds.max, points[i + 1], bounds.max);
+      }
+
+      return bounds;
+    }
+
     /**
      * @brief Moves the path cursor to the given point.
      *

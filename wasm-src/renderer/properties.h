@@ -39,6 +39,8 @@ namespace Graphick::Renderer {
 
   /**
    * @brief Fill properties used to render a path.
+   *
+   * @struct Fill
    */
   struct Fill {
     vec4 color;       /* The color used to fill the path. */
@@ -66,6 +68,8 @@ namespace Graphick::Renderer {
 
   /**
    * @brief Stroke properties used to render a path.
+   *
+   * @struct Stroke
    */
   struct Stroke {
     vec4 color;           /* The color used to stroke the path. */

@@ -13,6 +13,8 @@
 #define GK_NEWTON_ITERATIONS 5
 #define GK_FIT_RESOLUTION 10
 
+#define GK_LARGE_BUFFER_SIZE 2e19u
+
 #define ZOOM_MIN 0.02f
 #define ZOOM_MAX 640.0f
 #define ZOOM_STEP 0.18f

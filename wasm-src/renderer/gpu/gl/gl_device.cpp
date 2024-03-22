@@ -16,10 +16,10 @@ namespace Graphick::Renderer::GPU::GL {
     switch (format) {
     case TextureFormat::R8: return GL_R8;
     case TextureFormat::R32F: return GL_R32F;
-      // case TextureFormat::R16F: return GL_R16F;
+    case TextureFormat::R16F: return GL_R16F;
     case TextureFormat::RGBA8: return GL_RGBA8;
     case TextureFormat::RGBA8UI: return GL_RGBA8UI;
-      // case TextureFormat::RGBA16F: return GL_RGBA16F;
+    case TextureFormat::RGBA16F: return GL_RGBA16F;
     default:
     case TextureFormat::RGBA32F: return GL_RGBA32F;
     }
@@ -29,10 +29,10 @@ namespace Graphick::Renderer::GPU::GL {
     switch (format) {
     case TextureFormat::R8:
     case TextureFormat::R32F: return GL_RED;
-      // case TextureFormat::R16F: return GL_RED;
+    case TextureFormat::R16F: return GL_RED;
     case TextureFormat::RGBA8: return GL_RGBA;
     case TextureFormat::RGBA8UI: return GL_RGBA_INTEGER;
-      // case TextureFormat::RGBA16F:
+    case TextureFormat::RGBA16F:
     default:
     case TextureFormat::RGBA32F: return GL_RGBA;
     }
@@ -43,8 +43,8 @@ namespace Graphick::Renderer::GPU::GL {
     case TextureFormat::R8:
     case TextureFormat::RGBA8:
     case TextureFormat::RGBA8UI: return GL_UNSIGNED_BYTE;
-      // case TextureFormat::R16F:
-      // case TextureFormat::RGBA16F: return GL_HALF_FLOAT;
+    case TextureFormat::R16F:
+    case TextureFormat::RGBA16F: return GL_HALF_FLOAT;
     default:
     case TextureFormat::R32F: return GL_FLOAT;
     case TextureFormat::RGBA32F: return GL_FLOAT;

@@ -19,7 +19,7 @@
 #include "../input/input_manager.h"
 #include "../input/tools/pen_tool.h"
 
-#include "../../renderer/renderer.h"
+#include "../../renderer/renderer_new.h"
 #include "../../renderer/geometry/path.h"
 
 #include "../../math/matrix.h"
@@ -324,16 +324,17 @@ namespace Graphick::Editor {
 
     const Math::rect visible_rect = viewport.visible();
 
-    Renderer::Renderer::begin_frame({
+    renderer::Renderer::begin_frame({
       Math::round(vec2(viewport.size()) * viewport.dpr()),
       viewport.position(),
       viewport.zoom() * viewport.dpr(),
       viewport.dpr(),
-      vec4{1.0f, 1.0f, 1.0f, 1.0f}
-      });
+      vec4{0.2f, 0.2f, 0.21f, 1.0f}
+    });
 
     const size_t z_far = m_order.size() * 2 + 1;
     float z_index = 1.0f;
+    float tolerance = GK_PATH_TOLERANCE / (viewport.zoom() * viewport.dpr());
 
     bool should_rehydrate = true;
 
@@ -377,36 +378,45 @@ namespace Graphick::Editor {
         if (has_fill && !fill->visible) has_fill = false;
         if (has_stroke && !stroke->visible) has_stroke = false;
 
+        bool is_selected = selected.find(id) != selected.end();
+        bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
+        bool is_full = false;
+
+        if ((!is_selected && !is_selected) && !has_fill && !has_stroke) continue;
+
+        mat2x3 transform_matrix = transform.matrix();
+
+        auto transformation = Math::decompose(transform_matrix);
+        float scale = std::max(transformation.scale.x, transformation.scale.y);
+
+        renderer::geometry::QuadraticPath quadratics = path.to_quadratics(tolerance / scale);
+
         if (has_fill && has_stroke) {
-          Renderer::Renderer::draw(
-            path,
+          renderer::Renderer::draw(
+            quadratics,
             Renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
             Renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
-            transform
+            transform_matrix
           );
 
           z_index += 2;
         } else if (has_fill) {
-          Renderer::Renderer::draw(
-            path,
+          renderer::Renderer::draw(
+            quadratics,
             Renderer::Fill{ fill->color, fill->rule, z_index / z_far },
-            transform
+            transform_matrix
           );
 
           z_index += 1;
         } else if (has_stroke) {
-          Renderer::Renderer::draw(
-            path,
+          renderer::Renderer::draw(
+            quadratics,
             Renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
-            transform
+            transform_matrix
           );
 
           z_index += 1;
         }
-
-        bool is_selected = selected.find(id) != selected.end();
-        bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
-        bool is_full = false;
 
         if (!is_selected && !is_temp_selected) continue;
 
@@ -432,18 +442,23 @@ namespace Graphick::Editor {
           }
         }
 
-        Renderer::Renderer::draw_outline(path, transform, draw_vertices, is_full ? nullptr : &selected_vertices);
+        renderer::Renderer::draw_outline(
+          quadratics,
+          transform,
+          draw_vertices,
+          is_full ? nullptr : &selected_vertices
+        );
 
-        // Math::rect bounding_rect = path.bounding_rect();
-        // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);
-        // Renderer::Geometry::Path rect;
-        // rect.move_to(lines[0].min);
+      // Math::rect bounding_rect = path.bounding_rect();
+      // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);
+      // Renderer::Geometry::Path rect;
+      // rect.move_to(lines[0].min);
 
-        // for (auto& line : lines) {
-        //   rect.line_to(line.max);
-        // }
+      // for (auto& line : lines) {
+      //   rect.line_to(line.max);
+      // }
 
-        // Renderer::Renderer::draw_outline(id, rect, position);
+      // Renderer::Renderer::draw_outline(id, rect, position);
       }
     }
 
@@ -465,7 +480,7 @@ namespace Graphick::Editor {
       tool_state.render_overlays(viewport.zoom());
     }
 
-    Renderer::Renderer::end_frame();
+    renderer::Renderer::end_frame();
 
     GK_DEBUGGER_RENDER(vec2(viewport.size()) * viewport.dpr());
   }

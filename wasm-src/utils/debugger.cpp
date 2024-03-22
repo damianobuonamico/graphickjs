@@ -95,6 +95,8 @@ namespace Graphick::Utils {
 
     size_t messages_count = get()->m_messages.size();
 
+    return;
+
     Renderer::Renderer::debug_rect({ {viewport_size.x - 350.0f, 0 }, { viewport_size.x, messages_count * 20.0f + 8.0f } }, vec4{ 0.0f, 0.0f, 0.0f, 0.7f });
 
     for (size_t i = 0; i < messages_count; i++) {

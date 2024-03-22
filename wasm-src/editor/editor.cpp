@@ -12,7 +12,7 @@
 #include "scene/scene.h"
 #include "input/input_manager.h"
 
-#include "../renderer/renderer.h"
+#include "../renderer/renderer_new.h"
 
 #include "../utils/resource_manager.h"
 #include "../utils/debugger.h"
@@ -41,7 +41,7 @@ namespace Graphick::Editor {
 
     Input::InputManager::init();
     Utils::ResourceManager::init();
-    Renderer::Renderer::init();
+    renderer::Renderer::init();
 
     GK_DEBUGGER_INIT();
 
@@ -49,11 +49,11 @@ namespace Graphick::Editor {
   }
 
   void Editor::prepare_refresh() {
-    Renderer::Renderer::shutdown();
+    renderer::Renderer::shutdown();
   }
 
   void Editor::refresh() {
-    Renderer::Renderer::init();
+    renderer::Renderer::init();
   }
 
   void Editor::shutdown() {
@@ -64,7 +64,7 @@ namespace Graphick::Editor {
 
     GK_DEBUGGER_SHUTDOWN();
 
-    Renderer::Renderer::shutdown();
+    renderer::Renderer::shutdown();
     Utils::ResourceManager::shutdown();
     Input::InputManager::shutdown();
 

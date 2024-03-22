@@ -314,11 +314,6 @@ namespace Graphick::Renderer::Geometry {
     Path& operator=(Path&& other) noexcept;
 
     /**
-     * @brief Type casts to a QuadraticPath.
-     */
-    inline operator renderer::geometry::QuadraticPath() const { return to_quadratics(); }
-
-    /**
      * @brief Returns a segment iterator to the beginning of the path.
      *
      * @return An iterator to the beginning of the path.
