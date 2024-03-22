@@ -5,6 +5,7 @@
 #include "gpu/allocator.h"
 
 #include "../math/math.h"
+#include "../math/matrix.h"
 
 #include "../utils/resource_manager.h"
 #include "../utils/console.h"
@@ -176,6 +177,34 @@ namespace Graphick::Renderer {
 
     get()->m_tiler.process_stroke(path, transform, stroke);
     get()->m_tiler.process_fill(path, transform, fill);
+
+    // TEMP:
+    auto transformation = Math::decompose(transform);
+    float scale = std::max(transformation.scale.x, transformation.scale.y);
+
+    renderer::geometry::QuadraticPath quadratics = path.to_quadratics(GK_PATH_TOLERANCE / (scale * get()->m_viewport.zoom));
+
+    console::log("quadratics", quadratics.size());
+
+    for (size_t i = 0; i < quadratics.size(); i++) {
+      const vec2& p0 = quadratics.points[i * 2];
+      const vec2& p1 = quadratics.points[i * 2 + 1];
+      const vec2& p2 = quadratics.points[i * 2 + 2];
+
+      vec2 p0_transformed = transform * p0;
+      vec2 p1_transformed = transform * p1;
+      vec2 p2_transformed = transform * p2;
+
+      for (size_t j = 0; j < 20; j++) {
+        float t1 = (float)j / 20.0f;
+        float t2 = (float)(j + 1) / 20.0f;
+
+        vec2 first_p = Math::quadratic(p0_transformed, p1_transformed, p2_transformed, t1);
+        vec2 second_p = Math::quadratic(p0_transformed, p1_transformed, p2_transformed, t2);
+
+        get()->add_linear_segment_instance(first_p, second_p);
+      }
+    }
   }
 
   void Renderer::draw(const Geometry::Path& path, const Stroke& stroke, const mat2x3& transform) {

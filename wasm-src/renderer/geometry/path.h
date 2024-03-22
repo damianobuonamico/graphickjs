@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "quadratic_path.h"
+
 #include "../../math/vec2.h"
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
@@ -310,6 +312,11 @@ namespace Graphick::Renderer::Geometry {
      */
     Path& operator=(const Path& other);
     Path& operator=(Path&& other) noexcept;
+
+    /**
+     * @brief Type casts to a QuadraticPath.
+     */
+    inline operator renderer::geometry::QuadraticPath() const { return to_quadratics(); }
 
     /**
      * @brief Returns a segment iterator to the beginning of the path.
@@ -734,6 +741,14 @@ namespace Graphick::Renderer::Geometry {
      * @return true if the path intersects the rect, false otherwise.
      */
     bool intersects(const Math::rect& rect, const mat2x3& transform, std::unordered_set<size_t>* indices = nullptr) const;
+
+    /**
+     * @brief Converts the path to a list of quadratic bezier curves.
+     *
+     * @param tolerance The tolerance to use for the conversion, default is 0.25.
+     * @return The quadratic representation of the path.
+     */
+    renderer::geometry::QuadraticPath to_quadratics(const float tolerance = 0.25f) const;
 
     /**
      * @brief Encodes the path to a list of bytes.

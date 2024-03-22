@@ -2,7 +2,6 @@
  * @file path.cpp
  * @brief Implementation of the Path class.
  *
- * @todo Implement history.
  * @todo implement compound paths when groups are a thing.
  */
 
@@ -24,6 +23,37 @@
 #include "../../utils/assert.h"
 
 namespace Graphick::Renderer::Geometry {
+
+  /* -- Static -- */
+
+  /**
+   * @brief Approximates a cubic bezier segment with a single quadratic bezier segment.
+   *
+   * This is terrible as a general approximation but works if the cubic curve does not have inflection points and is "flat" enough.
+   * Typically usables after subdiving the curve a few times.
+   *
+   * @param cubic The cubic bezier segment to approximate.
+   * @return The p1 control point of the quadratic bezier curve, p0 and p2 are the start and end points of the cubic curve.
+   */
+  static vec2 single_quadratic_approximation(const Path::Segment& cubic) {
+    const vec2 p1 = (cubic.p1 * 3.0f - cubic.p0) * 0.5f;
+    const vec2 p2 = (cubic.p2 * 3.0f - cubic.p3) * 0.5f;
+
+    return (p1 + p2) * 0.5f;
+  }
+
+  /**
+   * @brief Evaluates an upper bound on the maximum distance between the cubic and its quadratic approximation.
+   *
+   * The approximation is obtained using the single_quadratic_approximation() method.
+   * See http://caffeineowl.com/graphics/2d/vectorial/cubic2quad01.html
+   *
+   * @param cubic The cubic bezier segment to evaluate.
+   * @return The maximum distance between the cubic and its quadratic approximation.
+   */
+  static float single_quadratic_approximation_error(const Path::Segment& cubic) {
+    return std::sqrtf(3.0f) / 36.0f * Math::length((cubic.p3 - cubic.p2 * 3.0f) + (cubic.p1 * 3.0f - cubic.p0));
+  }
 
   /* -- Segment -- */
 
@@ -1910,6 +1940,63 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return found;
+  }
+
+  renderer::geometry::QuadraticPath Path::to_quadratics(const float tolerance) const {
+    renderer::geometry::QuadraticPath path;
+
+    if (empty()) {
+      return path;
+    }
+
+    for (size_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        path.move_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Line:
+        path.quadratic_to(m_points[j], m_points[j]);
+        j += 1;
+        break;
+      case Command::Quadratic:
+        path.quadratic_to(m_points[j], m_points[j + 1]);
+        j += 2;
+        break;
+      case Command::Cubic: {
+        Segment curve = { m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
+        Segment sub_curve = curve;
+
+        float t_min = 0.0f;
+        float t_max = 1.0f;
+
+        while (true) {
+          if (single_quadratic_approximation_error(sub_curve) <= tolerance) {
+            path.quadratic_to(single_quadratic_approximation(sub_curve), sub_curve.p3);
+
+            if (t_max >= 1.0f) {
+              goto next_segment;
+            }
+
+            t_min = t_max;
+            t_max = 1.0f;
+          } else {
+            t_max = (t_min + t_max) / 2.0f;
+          }
+
+          auto& [p0, p1, p2, p3] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, t_min, t_max);
+
+          sub_curve = { p0, p1, p2, p3 };
+        }
+
+      next_segment:
+        j += 3;
+        break;
+      }
+      }
+    }
+
+    return path;
   }
 
   io::EncodedData& Path::encode(io::EncodedData& data) const {
