@@ -291,7 +291,7 @@ namespace Graphick::Editor::Input {
   }
 
   bool Manipulator::on_key(const bool down, const KeyboardKey key) {
-    if (!m_active) return false;
+    if (!m_active || !m_in_use) return false;
 
     if (InputManager::keys.shift_state_changed || InputManager::keys.alt_state_changed) {
       on_pointer_move();
