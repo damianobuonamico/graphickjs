@@ -271,6 +271,15 @@ namespace Graphick::Renderer::GPU {
     inline static void draw_arrays(const size_t vertex_count, const RenderState& render_state) { s_device->draw_arrays(vertex_count, render_state); }
 
     /**
+     * @brief Performs a glDrawArraysInstanced() with the given render_state.
+     *
+     * @param index_count The number of vertices to draw.
+     * @param instance_count The number of instances to draw.
+     * @param render_state The render state to use.
+     */
+    inline static void draw_arrays_instanced(const size_t vertex_count, const size_t instance_count, const RenderState& render_state) { s_device->draw_arrays_instanced(vertex_count, instance_count, render_state); }
+
+    /**
      * @brief Performs a glDrawElements() call with the given render_state.
      *
      * @param index_count The number of indices to draw.

@@ -102,7 +102,7 @@ namespace Graphick::Renderer::GPU {
   };
 
   /**
-   * @brief Groupd all of the available shaders together.
+   * @brief Groups all of the available shaders together.
    *
    * @struct Programs
    */

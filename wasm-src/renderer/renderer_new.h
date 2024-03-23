@@ -10,6 +10,8 @@
 #include "renderer_data_new.h"
 #include "properties.h"
 
+#include "gpu/shaders_new.h"
+
 #include "geometry/quadratic_path.h"
 
 #include "../math/mat2x3.h"
@@ -121,23 +123,9 @@ namespace Graphick::renderer {
      * @return The singleton instance of the renderer.
      */
     static inline Renderer* get() { return s_instance; }
-
-    /**
-     * @brief Flushes the instanced data to the GPU.
-     *
-     * Here the GPU draw calls are actually issued.
-     *
-     * @param data The instanced data to flush.
-     */
-    // template<typename T>
-    // void flush(InstancedData<T>& data) {
-    //   if (data.instances.empty()) {
-    //     return;
-    //   }
-
-
-    // }
   private:
+    GPU::Programs m_programs;                        /* The shader programs to use. */
+
     Viewport m_viewport;                             /* The viewport to render to. */
     dmat4 m_vp_matrix;                               /* The view-projection matrix. */
 

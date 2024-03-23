@@ -9,6 +9,10 @@
 
 #include "gpu/gpu_data.h"
 
+#include "../utils/uuid.h"
+
+#include <vector>
+
 namespace Graphick::renderer {
 
   /**
@@ -35,23 +39,26 @@ namespace Graphick::renderer {
    */
   template<typename T>
   struct InstancedData {
-    std::vector<T> instances;         /* The per-instance data. */
+    std::vector<T> instances;                /* The per-instance data. */
 
-    std::vector<vec2> vertices;       /* The vertices of the mesh. */
+    std::vector<vec2> vertices;              /* The vertices of the mesh. */
 
-    GPU::Primitive primitive;         /* The primitive type of the mesh. */
+    Graphick::Renderer::GPU::Primitive primitive;                /* The primitive type of the mesh. */
 
-    uuid instance_buffer_id;          /* The ID of the instance buffer. */
-    uuid vertex_buffer_id;            /* The ID of the vertex buffer. */
+    uuid instance_buffer_id = uuid::null;    /* The ID of the instance buffer. */
+    uuid vertex_buffer_id = uuid::null;      /* The ID of the vertex buffer. */
 
-    uint32_t max_instances;           /* The maximum number of instances. */
+    uint32_t max_instances;                  /* The maximum number of instances. */
 
     /**
      * @brief Initializes the instance data.
      *
      * @param buffer_size The maximum buffer size.
      */
-    InstancedData(const size_t buffer_size) : max_instances(static_cast<uint32_t>(buffer_size / sizeof(T))) {
+    InstancedData(const size_t buffer_size, const Graphick::Renderer::GPU::Primitive = Graphick::Renderer::GPU::Primitive::Triangles) :
+      max_instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
+      primitive(primitive)
+    {
       instances.reserve(max_instances);
     }
 

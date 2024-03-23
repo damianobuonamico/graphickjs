@@ -266,6 +266,15 @@ namespace Graphick::Renderer::GPU::GL {
     void draw_arrays(const size_t vertex_count, const GLRenderState& render_state) const;
 
     /**
+     * @brief Draws the binded vertex array with instancing.
+     *
+     * @param vertex_count The number of vertices to draw.
+     * @param instance_count The number of instances to draw.
+     * @param render_state The render state to use.
+     */
+    void draw_arrays_instanced(const size_t vertex_count, const size_t instance_count, const GLRenderState& render_state) const;
+
+    /**
      * @brief Draws the elements of the binded vertex array.
      *
      * @param index_count The number of indices to draw.

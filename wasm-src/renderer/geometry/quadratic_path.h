@@ -8,6 +8,7 @@
 #pragma once
 
 #include "../../math/vec2.h"
+#include "../../math/rect.h"
 
 #include <vector>
 
@@ -51,10 +52,10 @@ namespace Graphick::renderer::geometry {
       rect bounds{ points[0], points[0] };
 
       for (size_t i = 1; i < points.size(); i += 2) {
-        std::min(bounds.min, points[i], bounds.min);
-        std::max(bounds.max, points[i], bounds.max);
-        std::min(bounds.min, points[i + 1], bounds.min);
-        std::max(bounds.max, points[i + 1], bounds.max);
+        bounds.min.x = std::min({ bounds.min.x, points[i].x, points[i + 1].x });
+        bounds.min.y = std::min({ bounds.min.y, points[i].y, points[i + 1].y });
+        bounds.max.x = std::max({ bounds.max.x, points[i].x, points[i + 1].x });
+        bounds.max.y = std::max({ bounds.max.y, points[i].y, points[i + 1].y });
       }
 
       return bounds;

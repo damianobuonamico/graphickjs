@@ -403,6 +403,12 @@ namespace Graphick::Renderer::GPU::GL {
     reset_render_state(render_state);
   }
 
+  void GLDevice::draw_arrays_instanced(const size_t vertex_count, const size_t instance_count, const GLRenderState& render_state) const {
+    set_render_state(render_state);
+    glCall(glDrawArraysInstanced(gl_primitive(render_state.primitive), 0, (GLsizei)vertex_count, (GLsizei)instance_count));
+    reset_render_state(render_state);
+  }
+
   void GLDevice::draw_elements(const size_t index_count, const GLRenderState& render_state) const {
     set_render_state(render_state);
     glCall(glDrawElements(gl_primitive(render_state.primitive), (GLsizei)index_count, GL_UNSIGNED_INT, nullptr));

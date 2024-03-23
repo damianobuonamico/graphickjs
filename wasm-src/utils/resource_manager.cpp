@@ -7,10 +7,10 @@
 
 #include "console.h"
 
-#define SHADERS_LENGTH 7
+#define SHADERS_LENGTH 8
 
 static constexpr const char* shader_names[SHADERS_LENGTH] = {
-  "default", "opaque_tile", "masked_tile", "line", "square", "circle", "gpu_path"
+  "path", "default", "opaque_tile", "masked_tile", "line", "square", "circle", "gpu_path"
 };
 
 namespace Graphick::Utils {
@@ -36,6 +36,10 @@ namespace Graphick::Utils {
 
   void ResourceManager::prefetch_shaders() {
     static const char* shader_sources[SHADERS_LENGTH * 2] = {
+      #include "../renderer/gpu/shaders/path.vs.glsl"
+      ,
+      #include "../renderer/gpu/shaders/path.fs.glsl"
+      ,
       #include "../renderer/gpu/shaders/default.vs.glsl"
       ,
       #include "../renderer/gpu/shaders/default.fs.glsl"

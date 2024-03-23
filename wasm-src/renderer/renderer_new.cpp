@@ -10,6 +10,7 @@
 #include "gpu/allocator.h"
 #include "gpu/device.h"
 
+#include "../utils/defines.h"
 #include "../utils/assert.h"
 
 #ifdef EMSCRIPTEN
@@ -17,9 +18,6 @@
 #endif
 
 namespace Graphick::renderer {
-
-  // TEMP
-  namespace GPU = Graphick::Renderer::GPU;
 
   /* -- Static -- */
 
@@ -86,19 +84,83 @@ namespace Graphick::renderer {
   }
 
   /**
+   * @brief Prepares the renderer for instanced rendering.
+   *
+   * @param data The instanced data to initialize.
+   */
+  template<typename T>
+  static void init_instanced(InstancedData<T>& data) {
+    if (data.instance_buffer_id != uuid::null) {
+      Graphick::Renderer::GPU::Memory::Allocator::free_general_buffer(data.instance_buffer_id);
+    }
+
+    if (data.vertex_buffer_id != uuid::null) {
+      Graphick::Renderer::GPU::Memory::Allocator::free_general_buffer(data.vertex_buffer_id);
+    }
+
+    data.instance_buffer_id = Graphick::Renderer::GPU::Memory::Allocator::allocate_general_buffer<T>(data.max_instances, "instanced_data");
+    data.vertex_buffer_id = Graphick::Renderer::GPU::Memory::Allocator::allocate_general_buffer<vec2>(data.vertices.size(), "instance_vertices");
+
+    const Graphick::Renderer::GPU::Buffer& vertex_buffer = Graphick::Renderer::GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
+
+    Graphick::Renderer::GPU::Device::upload_to_buffer(vertex_buffer, 0, data.vertices, Graphick::Renderer::GPU::BufferTarget::Vertex);
+  }
+
+  /**
    * @brief Flushes the instanced data to the GPU.
    *
    * Here the GPU draw calls are actually issued.
    *
    * @param data The instanced data to flush.
    */
-  template<typename T>
-  static void flush(InstancedData<T>& data) {
+  template<typename T, typename S, typename V>
+  static void flush(InstancedData<T>& data, const S& shader, mat4 temp) {
     if (data.instances.empty()) {
       return;
     }
 
-    const GPU::Buffer instance_buffer = GPU::Memory::Allocator::create_buffer(data.instances.data(), data.instances.size() * sizeof(T), GPU::BufferUsage::DynamicDraw);
+    const Graphick::Renderer::GPU::Buffer& instance_buffer = Graphick::Renderer::GPU::Memory::Allocator::get_general_buffer(data.instance_buffer_id);
+    const Graphick::Renderer::GPU::Buffer& vertex_buffer = Graphick::Renderer::GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
+
+    Graphick::Renderer::GPU::Device::upload_to_buffer(instance_buffer, 0, data.instances, Graphick::Renderer::GPU::BufferTarget::Vertex);
+
+    V vertex_array(shader, instance_buffer, vertex_buffer);
+
+    Graphick::Renderer::GPU::RenderState state = {
+      nullptr,
+      shader.program,
+      *vertex_array.vertex_array,
+      data.primitive,
+      {},
+      {},
+      {
+        {shader.mvp_uniform, temp}
+      },
+      {
+        { 0.0f, 0.0f },
+        // m_viewport.size
+        { 800.0f, 600.0f }
+      },
+       {
+        Graphick::Renderer::GPU::BlendState{
+          Graphick::Renderer::GPU::BlendFactor::SrcAlpha,
+          Graphick::Renderer::GPU::BlendFactor::OneMinusSrcAlpha,
+          Graphick::Renderer::GPU::BlendFactor::SrcAlpha,
+          Graphick::Renderer::GPU::BlendFactor::OneMinusSrcAlpha,
+          Graphick::Renderer::GPU::BlendOp::Add,
+        },
+        std::nullopt,
+        std::nullopt,
+        {
+          std::nullopt,
+          std::nullopt,
+          std::nullopt
+        },
+        true
+      }
+    };
+
+    Graphick::Renderer::GPU::Device::draw_arrays_instanced(data.vertices.size(), data.instances.size(), state);
   }
 
   /* -- Static member initialization -- */
@@ -125,13 +187,26 @@ namespace Graphick::renderer {
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
     emscripten_webgl_make_context_current(ctx);
 
-    GPU::Device::init(GPU::DeviceVersion::GLES3, 0);
+    Graphick::Renderer::GPU::Device::init(Graphick::Renderer::GPU::DeviceVersion::GLES3, 0);
 #else
-    GPU::Device::init(GPU::DeviceVersion::GL3, 0);
+    Graphick::Renderer::GPU::Device::init(Graphick::Renderer::GPU::DeviceVersion::GL3, 0);
 #endif
-    GPU::Memory::Allocator::init();
+    Graphick::Renderer::GPU::Memory::Allocator::init();
 
     s_instance = new Renderer();
+
+    // fix constructor
+    get()->m_path_instances.primitive = Graphick::Renderer::GPU::Primitive::Triangles;
+    get()->m_path_instances.vertices = {
+      { -100.f, -100.f },
+      { 100.f, -100.f },
+      { 100.f, 100.f },
+      { 100.f, -100.f },
+      { 100.f, 100.f },
+      { -100.f, 100.f }
+    };
+
+    init_instanced(get()->m_path_instances);
   }
 
   void Renderer::shutdown() {
@@ -140,8 +215,8 @@ namespace Graphick::renderer {
     delete s_instance;
     s_instance = nullptr;
 
-    GPU::Memory::Allocator::shutdown();
-    GPU::Device::shutdown();
+    Graphick::Renderer::GPU::Memory::Allocator::shutdown();
+    Graphick::Renderer::GPU::Device::shutdown();
 
 #ifdef EMSCRIPTEN
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_get_current_context();
@@ -159,16 +234,18 @@ namespace Graphick::renderer {
     get()->m_path_instances.clear();
     get()->m_transforms.clear();
 
-    GPU::Device::begin_commands();
-    GPU::Device::set_viewport(viewport.size);
-    GPU::Device::clear({ viewport.background, 1.0f, std::nullopt });
+    Graphick::Renderer::GPU::Device::begin_commands();
+    Graphick::Renderer::GPU::Device::set_viewport(viewport.size);
+    Graphick::Renderer::GPU::Device::clear({ viewport.background, 1.0f, std::nullopt });
   }
 
   void Renderer::end_frame() {
-    get()->flush(get()->m_path_instances);
+    if (!get()->m_transforms.empty()) {
+      flush<PathInstance, GPU::PathProgram, GPU::PathVertexArray>(get()->m_path_instances, get()->m_programs.path_program, get()->m_transforms.front());
+    }
 
-    GPU::Memory::Allocator::purge_if_needed();
-    GPU::Device::end_commands();
+    Graphick::Renderer::GPU::Memory::Allocator::purge_if_needed();
+    Graphick::Renderer::GPU::Device::end_commands();
   }
 
   void Renderer::draw(const geometry::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
@@ -203,9 +280,5 @@ namespace Graphick::renderer {
 
   Renderer::Renderer() :
     m_path_instances(GK_LARGE_BUFFER_SIZE) {}
-
-// void Renderer::flush(InstancedData<T>& data) {
-
-// }
 
 }
