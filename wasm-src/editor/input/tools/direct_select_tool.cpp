@@ -13,7 +13,7 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
-#include "../../../renderer/renderer.h"
+#include "../../../renderer/renderer_new.h"
 
 #include "../../../utils/console.h"
 
@@ -119,7 +119,7 @@ namespace Graphick::Editor::Input {
   void DirectSelectTool::render_overlays() const {
     if (!m_selection_rect.active()) return;
 
-    Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
+    renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
   }
 
   void DirectSelectTool::translate_selected() {

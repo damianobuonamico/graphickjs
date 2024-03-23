@@ -17,7 +17,7 @@
 #include "tools/pen_tool.h"
 #include "tools/pencil_tool.h"
 
-#include "../../renderer/renderer.h"
+#include "../../renderer/renderer_new.h"
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
@@ -37,7 +37,7 @@ void update_tool_ui(int type) {}
 namespace Graphick::Editor::Input {
 
   ToolState::ToolState() :
-    m_current(Tool::ToolType::Select), m_active(m_current), m_last_tool(m_current),
+    m_current(Tool::ToolType::Pen), m_active(m_current), m_last_tool(m_current),
     m_tools{
       new PanTool(),
       new ZoomTool(),
@@ -173,12 +173,12 @@ namespace Graphick::Editor::Input {
 
     mat2x3 transform = manipulator.transform();
 
-    Renderer::Renderer::draw_outline(manipulator.path(), transform);
+    renderer::Renderer::draw_outline(manipulator.path(), transform);
 
     const vec2* handles = manipulator.handles();
 
     for (int i = 0; i < Manipulator::RN; i++) {
-      Renderer::Renderer::draw_square(handles[i], 5.0f / zoom, transform);
+      //Renderer::Renderer::draw_square(handles[i], 5.0f / zoom, transform);
     }
   }
 

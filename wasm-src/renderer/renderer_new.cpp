@@ -1,6 +1,8 @@
 /**
  * @file renderer.cpp
  * @brief The file contains the implementation of the main Graphick renderer.
+ *
+ * @todo batches of instanced data overflow handling
  */
 
 #pragma once
@@ -9,6 +11,10 @@
 
 #include "gpu/allocator.h"
 #include "gpu/device.h"
+
+#include "geometry/path.h"
+
+#include "../math/vector.h"
 
 #include "../utils/defines.h"
 #include "../utils/assert.h"
@@ -20,6 +26,20 @@
 namespace Graphick::renderer {
 
   /* -- Static -- */
+
+  /**
+   * @brief The flush data structure.
+   *
+   * This structure is used to pass data to the flush function.
+   *
+   * @struct FlushData
+   */
+  struct FlushData {
+    std::vector<Graphick::Renderer::GPU::TextureBinding<Graphick::Renderer::GPU::TextureParameter, const Graphick::Renderer::GPU::Texture&>> textures;    /* The textures to bind. */
+    std::vector<Graphick::Renderer::GPU::UniformBinding<Graphick::Renderer::GPU::Uniform>> uniforms;                        /* The uniforms to bind. */
+
+    vec2 viewport_size;                                                                                                     /* The size of the viewport. */
+  };
 
   /**
    * @brief Generates an orthographic projection matrix.
@@ -84,26 +104,70 @@ namespace Graphick::renderer {
   }
 
   /**
+   * @brief Generates the vertices of a quad centered at a given position.
+   *
+   * @param position The position of the quad.
+   * @param size The size of the quad.
+   * @return The vertices of the quad.
+   */
+  static std::vector<vec2> centered_quad_vertices(const vec2 position, const vec2 size) {
+    const vec2 half_size = size * 0.5f;
+
+    return {
+      position + vec2{ -half_size.x, -half_size.y },
+      position + vec2{ half_size.x, -half_size.y },
+      position + vec2{ half_size.x, half_size.y },
+      position + vec2{ half_size.x, half_size.y },
+      position + vec2{ -half_size.x, half_size.y },
+      position + vec2{ -half_size.x, -half_size.y }
+    };
+  }
+
+  /**
+   * @brief Generates the vertices of a quad.
+   *
+   * @param min The minimum point of the quad.
+   * @param max The maximum point of the quad.
+   * @return The vertices of the quad.
+   */
+  static std::vector<vec2> quad_vertices(const vec2 min, const vec2 max) {
+    return {
+      min,
+      vec2{ max.x, min.y },
+      max,
+      max,
+      vec2{ min.x, max.y },
+      min
+    };
+  }
+
+  /**
    * @brief Prepares the renderer for instanced rendering.
    *
    * @param data The instanced data to initialize.
+   * @param vertex_buffer_id The ID of the vertex buffer to use if shared, default is uuid::null.
    */
   template<typename T>
-  static void init_instanced(InstancedData<T>& data) {
+  static void init_instanced(InstancedData<T>& data, const uuid vertex_buffer_id = uuid::null) {
     if (data.instance_buffer_id != uuid::null) {
       Graphick::Renderer::GPU::Memory::Allocator::free_general_buffer(data.instance_buffer_id);
     }
 
-    if (data.vertex_buffer_id != uuid::null) {
-      Graphick::Renderer::GPU::Memory::Allocator::free_general_buffer(data.vertex_buffer_id);
-    }
-
     data.instance_buffer_id = Graphick::Renderer::GPU::Memory::Allocator::allocate_general_buffer<T>(data.max_instances, "instanced_data");
-    data.vertex_buffer_id = Graphick::Renderer::GPU::Memory::Allocator::allocate_general_buffer<vec2>(data.vertices.size(), "instance_vertices");
 
-    const Graphick::Renderer::GPU::Buffer& vertex_buffer = Graphick::Renderer::GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
+    if (vertex_buffer_id == uuid::null) {
+      if (data.vertex_buffer_id != uuid::null) {
+        Graphick::Renderer::GPU::Memory::Allocator::free_general_buffer(data.vertex_buffer_id);
+      }
 
-    Graphick::Renderer::GPU::Device::upload_to_buffer(vertex_buffer, 0, data.vertices, Graphick::Renderer::GPU::BufferTarget::Vertex);
+      data.vertex_buffer_id = Graphick::Renderer::GPU::Memory::Allocator::allocate_general_buffer<vec2>(data.vertices.size(), "instance_vertices");
+
+      const Graphick::Renderer::GPU::Buffer& vertex_buffer = Graphick::Renderer::GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
+
+      Graphick::Renderer::GPU::Device::upload_to_buffer(vertex_buffer, 0, data.vertices, Graphick::Renderer::GPU::BufferTarget::Vertex);
+    } else {
+      data.vertex_buffer_id = vertex_buffer_id;
+    }
   }
 
   /**
@@ -112,9 +176,11 @@ namespace Graphick::renderer {
    * Here the GPU draw calls are actually issued.
    *
    * @param data The instanced data to flush.
+   * @param program The shader program to use.
+   * @param flush_data The flush data to use.
    */
   template<typename T, typename S, typename V>
-  static void flush(InstancedData<T>& data, const S& shader, mat4 temp) {
+  static void flush(InstancedData<T>& data, const S& program, const FlushData flush_data) {
     if (data.instances.empty()) {
       return;
     }
@@ -124,24 +190,21 @@ namespace Graphick::renderer {
 
     Graphick::Renderer::GPU::Device::upload_to_buffer(instance_buffer, 0, data.instances, Graphick::Renderer::GPU::BufferTarget::Vertex);
 
-    V vertex_array(shader, instance_buffer, vertex_buffer);
+    V vertex_array(program, instance_buffer, vertex_buffer);
 
     Graphick::Renderer::GPU::RenderState state = {
       nullptr,
-      shader.program,
+      program.program,
       *vertex_array.vertex_array,
       data.primitive,
+      flush_data.textures,
       {},
-      {},
-      {
-        {shader.mvp_uniform, temp}
-      },
+      flush_data.uniforms,
       {
         { 0.0f, 0.0f },
-        // m_viewport.size
-        { 800.0f, 600.0f }
+        flush_data.viewport_size
       },
-       {
+      {
         Graphick::Renderer::GPU::BlendState{
           Graphick::Renderer::GPU::BlendFactor::SrcAlpha,
           Graphick::Renderer::GPU::BlendFactor::OneMinusSrcAlpha,
@@ -161,6 +224,8 @@ namespace Graphick::renderer {
     };
 
     Graphick::Renderer::GPU::Device::draw_arrays_instanced(data.vertices.size(), data.instances.size(), state);
+
+    data.instances.clear();
   }
 
   /* -- Static member initialization -- */
@@ -195,18 +260,17 @@ namespace Graphick::renderer {
 
     s_instance = new Renderer();
 
-    // fix constructor
-    get()->m_path_instances.primitive = Graphick::Renderer::GPU::Primitive::Triangles;
-    get()->m_path_instances.vertices = {
-      { -100.f, -100.f },
-      { 100.f, -100.f },
-      { 100.f, 100.f },
-      { 100.f, -100.f },
-      { 100.f, 100.f },
-      { -100.f, 100.f }
-    };
+    get()->m_path_instances.vertices = quad_vertices({ 0.0f, 0.0f }, { 1.0f, 1.0f });
+    get()->m_line_instances.vertices = quad_vertices({ 0.0f, 0.0f }, { 1.0f, 1.0f });
+    get()->m_handle_instances.vertices = quad_vertices({ 0.0f, 0.0f }, { 1.0f, 1.0f });
+    get()->m_vertex_instances.vertices = quad_vertices({ 0.0f, 0.0f }, { 1.0f, 1.0f });
+    get()->m_white_vertex_instances.vertices = quad_vertices({ 0.0f, 0.0f }, { 1.0f, 1.0f });
 
     init_instanced(get()->m_path_instances);
+    init_instanced(get()->m_line_instances, get()->m_path_instances.vertex_buffer_id);
+    init_instanced(get()->m_handle_instances, get()->m_path_instances.vertex_buffer_id);
+    init_instanced(get()->m_vertex_instances, get()->m_path_instances.vertex_buffer_id);
+    init_instanced(get()->m_white_vertex_instances, get()->m_path_instances.vertex_buffer_id);
   }
 
   void Renderer::shutdown() {
@@ -231,7 +295,6 @@ namespace Graphick::renderer {
     get()->m_viewport = viewport;
     get()->m_vp_matrix = projection_matrix * view_matrix;
 
-    get()->m_path_instances.clear();
     get()->m_transforms.clear();
 
     Graphick::Renderer::GPU::Device::begin_commands();
@@ -240,9 +303,7 @@ namespace Graphick::renderer {
   }
 
   void Renderer::end_frame() {
-    if (!get()->m_transforms.empty()) {
-      flush<PathInstance, GPU::PathProgram, GPU::PathVertexArray>(get()->m_path_instances, get()->m_programs.path_program, get()->m_transforms.front());
-    }
+    get()->flush_meshes();
 
     Graphick::Renderer::GPU::Memory::Allocator::purge_if_needed();
     Graphick::Renderer::GPU::Device::end_commands();
@@ -275,10 +336,224 @@ namespace Graphick::renderer {
     get()->m_path_instances.instances.push_back({ vec2{ 100.0f, 100.0f }, static_cast<uint32_t>(get()->m_transforms.size() - 1) });
   }
 
-  void Renderer::draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, bool draw_vertices, const std::unordered_set<size_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+    if (path.empty()) {
+      return;
+    }
+
+    std::vector<vec4>& lines = get()->m_line_instances.instances;
+
+    for (size_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path.points[i * 2];
+      const vec2 p1 = path.points[i * 2 + 1];
+      const vec2 p2 = path.points[i * 2 + 2];
+
+      if (p1 == p2) {
+        lines.emplace_back(p0.x, p0.y, p2.x, p2.y);
+      } else {
+        const vec2 a = p0 - 2.0f * p1 + p2;
+        const vec2 b = 2.0f * (p1 - p0);
+        const vec2 c = p0;
+
+        const float dt = std::sqrtf((4.0 * tolerance) / Math::length(p0 - 2.0 * p1 + p2));
+
+        console::log("n", 1.0 / dt);
+
+        vec2 last = p0;
+        float t = dt;
+
+        while (t < 1.0f) {
+          const float t_sq = t * t;
+          const vec2 p = a * t_sq + b * t + c;
+
+          lines.emplace_back(last.x, last.y, p.x, p.y);
+
+          last = p;
+          t += dt;
+        }
+
+        lines.emplace_back(last.x, last.y, p2.x, p2.y);
+      }
+    }
+  }
+
+  void Renderer::draw_outline(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+  }
+
+  void Renderer::draw_outline_vertices(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
+    if (path.vacant()) {
+      return;
+    }
+
+    std::vector<vec4>& lines = get()->m_line_instances.instances;
+    std::vector<vec2>& filled = get()->m_vertex_instances.instances;
+    std::vector<vec2>& white = get()->m_white_vertex_instances.instances;
+    std::vector<vec2>& circles = get()->m_handle_instances.instances;
+
+    size_t i = path.points_size() - 1;
+
+    if (!path.closed()) {
+      const vec2 p = path.point_at(i);
+      const vec2 out_handle = path.point_at(Graphick::Renderer::Geometry::Path::out_handle_index);
+
+      filled.push_back(p);
+
+      if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+        white.push_back(p);
+      }
+
+      if (out_handle != p) {
+        circles.push_back(out_handle);
+        lines.emplace_back(out_handle.x, out_handle.y, p.x, p.y);
+      }
+    }
+
+    path.for_each_reversed(
+      [&](const vec2 p0) {
+        filled.push_back(p0);
+
+        if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+          white.push_back(p0);
+        }
+
+        if (!path.closed()) {
+          vec2 in_handle = path.point_at(Graphick::Renderer::Geometry::Path::in_handle_index);
+
+          if (in_handle != p0) {
+            circles.push_back(in_handle);
+            lines.emplace_back(in_handle.x, in_handle.y, p0.x, p0.y);
+          }
+        }
+
+        i -= 1;
+      },
+      [&](const vec2 p0, const vec2 p1) {
+        filled.push_back(p0);
+
+        if (selected_vertices && selected_vertices->find(i - 1) == selected_vertices->end()) {
+          white.push_back(p0);
+        }
+
+        i -= 1;
+      },
+      [&](const vec2 p0, const vec2 p1, const vec2 p2) {
+        filled.push_back(p0);
+
+        if (selected_vertices && selected_vertices->find(i - 2) == selected_vertices->end()) {
+          white.push_back(p0);
+        }
+
+        if (p1 != p0 && p2 != p0) {
+          circles.push_back(p1);
+          lines.emplace_back(p1.x, p1.y, p0.x, p0.y);
+          lines.emplace_back(p1.x, p1.y, p2.x, p2.y);
+        }
+
+        i -= 2;
+      },
+      [&](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
+        filled.push_back(p0);
+
+        if (selected_vertices && selected_vertices->find(i - 3) == selected_vertices->end()) {
+          white.push_back(p0);
+        }
+
+        if (p2 != p3) {
+          circles.push_back(p2);
+          lines.emplace_back(p2.x, p2.y, p3.x, p3.y);
+        }
+
+        if (p1 != p0) {
+          circles.push_back(p1);
+          lines.emplace_back(p1.x, p1.y, p0.x, p0.y);
+        }
+
+        i -= 3;
+      }
+    );
   }
 
   Renderer::Renderer() :
-    m_path_instances(GK_LARGE_BUFFER_SIZE) {}
+    m_path_instances(GK_LARGE_BUFFER_SIZE),
+    m_line_instances(GK_LARGE_BUFFER_SIZE),
+    m_handle_instances(GK_BUFFER_SIZE),
+    m_vertex_instances(GK_BUFFER_SIZE),
+    m_white_vertex_instances(GK_BUFFER_SIZE) {}
+
+  void Renderer::flush_meshes() {
+    if (m_transforms.empty()) {
+      return;
+    }
+
+    flush<PathInstance, GPU::PathProgram, GPU::PathVertexArray>(
+      m_path_instances,
+      m_programs.path_program,
+      {
+        {},
+        {
+          { m_programs.path_program.mvp_uniform, m_transforms.back() }
+        },
+        m_viewport.size
+      }
+    );
+
+    flush<vec4, GPU::LineProgram, GPU::LineVertexArray>(
+      m_line_instances,
+      m_programs.line_program,
+      {
+        {},
+        {
+          { m_programs.line_program.mvp_uniform, m_transforms.back() },
+          { m_programs.line_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } - vec4{ 0.05f, 0.05f, 0.05f, 0.0f } },
+          { m_programs.line_program.line_width_uniform, static_cast<float>((2.0 * m_viewport.dpr) / m_viewport.zoom) },
+          { m_programs.line_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
+        },
+        m_viewport.size
+      }
+    );
+
+    flush<vec2, GPU::SquareProgram, GPU::SquareVertexArray>(
+      m_vertex_instances,
+      m_programs.square_program,
+      {
+        {},
+        {
+          { m_programs.square_program.mvp_uniform, m_transforms.back() },
+          { m_programs.square_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
+          { m_programs.square_program.size_uniform, static_cast<float>(std::round(5.0 * m_viewport.dpr) / m_viewport.zoom) }
+        },
+        m_viewport.size
+      }
+    );
+
+    flush<vec2, GPU::SquareProgram, GPU::SquareVertexArray>(
+      m_white_vertex_instances,
+      m_programs.square_program,
+      {
+        {},
+        {
+          { m_programs.square_program.mvp_uniform, m_transforms.back() },
+          { m_programs.square_program.color_uniform, vec4{ 1.0f, 1.0f, 1.0f, 1.0f } },
+          { m_programs.square_program.size_uniform, static_cast<float>(std::round(3.0 * m_viewport.dpr) / m_viewport.zoom) }
+        },
+        m_viewport.size
+      }
+    );
+
+    flush<vec2, GPU::CircleProgram, GPU::CircleVertexArray>(
+      m_handle_instances,
+      m_programs.circle_program,
+      {
+        {},
+        {
+          { m_programs.circle_program.mvp_uniform, m_transforms.back() },
+          { m_programs.circle_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
+          { m_programs.circle_program.radius_uniform, static_cast<float>((2.5 * m_viewport.dpr) / m_viewport.zoom) },
+          { m_programs.circle_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
+        },
+        m_viewport.size
+      }
+    );
+  }
 
 }

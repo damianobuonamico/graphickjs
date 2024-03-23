@@ -18,7 +18,7 @@
 
 #include "../../../math/math.h"
 
-#include "../../../renderer/renderer.h"
+#include "../../../renderer/renderer_new.h"
 
 namespace Graphick::Editor::Input {
 
@@ -210,7 +210,7 @@ namespace Graphick::Editor::Input {
       segment.line_to(InputManager::pointer.scene.position);
     }
 
-    Renderer::Renderer::draw_outline(segment);
+    renderer::Renderer::draw_outline(segment, mat2x3(1.0f));
   }
 
   void PenTool::set_pen_element(const uuid id) {

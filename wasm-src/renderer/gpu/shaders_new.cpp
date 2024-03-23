@@ -18,6 +18,26 @@ namespace Graphick::renderer::GPU {
     program(Device::create_program("path")),
     mvp_uniform(Device::get_uniform(program, "uMVP").value()) {}
 
+  LineProgram::LineProgram() :
+    program(Device::create_program("line")),
+    mvp_uniform(Device::get_uniform(program, "uMVP").value()),
+    color_uniform(Device::get_uniform(program, "uColor").value()),
+    line_width_uniform(Device::get_uniform(program, "uLineWidth").value()),
+    zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
+
+  SquareProgram::SquareProgram() :
+    program(Device::create_program("square")),
+    mvp_uniform(Device::get_uniform(program, "uMVP").value()),
+    color_uniform(Device::get_uniform(program, "uColor").value()),
+    size_uniform(Device::get_uniform(program, "uSize").value()) {}
+
+  CircleProgram::CircleProgram() :
+    program(Device::create_program("circle")),
+    mvp_uniform(Device::get_uniform(program, "uMVP").value()),
+    color_uniform(Device::get_uniform(program, "uColor").value()),
+    radius_uniform(Device::get_uniform(program, "uRadius").value()),
+    zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
+
   /* -- VertexArrays -- */
 
   PathVertexArray::PathVertexArray(
@@ -52,6 +72,94 @@ namespace Graphick::renderer::GPU {
     Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, instance_size_attr, instance_size_attr_desc);
     Device::configure_vertex_attr(*vertex_array, instance_uniforms_index_attr, instance_uniforms_index_attr_desc);
+  }
+
+  LineVertexArray::LineVertexArray(
+    const LineProgram& program,
+    const Buffer& instance_buffer,
+    const Buffer& vertex_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(program.program, "aPosition").value();
+    VertexAttr instance_from_attr = Device::get_vertex_attr(program.program, "aInstanceFrom").value();
+    VertexAttr instance_to_attr = Device::get_vertex_attr(program.program, "aInstanceTo").value();
+
+    VertexAttrDescriptor position_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      8, 0, 0, 0
+    };
+
+    VertexAttrDescriptor instance_from_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      16, 0, 1, 1
+    };
+
+    VertexAttrDescriptor instance_to_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      16, 8, 1, 1
+    };
+
+    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, instance_from_attr, instance_from_desc);
+    Device::configure_vertex_attr(*vertex_array, instance_to_attr, instance_to_desc);
+  }
+
+  SquareVertexArray::SquareVertexArray(
+   const SquareProgram& program,
+   const Buffer& instance_buffer,
+   const Buffer& vertex_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(program.program, "aPosition").value();
+    VertexAttr instance_position_attr = Device::get_vertex_attr(program.program, "aInstancePosition").value();
+
+    VertexAttrDescriptor position_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      8, 0, 0, 0
+    };
+
+    VertexAttrDescriptor instance_position_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      8, 0, 1, 1
+    };
+
+    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
+  }
+
+  CircleVertexArray::CircleVertexArray(
+   const CircleProgram& program,
+   const Buffer& instance_buffer,
+   const Buffer& vertex_buffer
+  )
+    : vertex_array(Device::create_vertex_array())
+  {
+    VertexAttr position_attr = Device::get_vertex_attr(program.program, "aPosition").value();
+    VertexAttr instance_position_attr = Device::get_vertex_attr(program.program, "aInstancePosition").value();
+
+    VertexAttrDescriptor position_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      8, 0, 0, 0
+    };
+
+    VertexAttrDescriptor instance_position_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      8, 0, 1, 1
+    };
+
+    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
+
+    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
+    Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
   }
 
 }

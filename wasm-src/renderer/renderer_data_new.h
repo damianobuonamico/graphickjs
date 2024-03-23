@@ -54,13 +54,20 @@ namespace Graphick::renderer {
      * @brief Initializes the instance data.
      *
      * @param buffer_size The maximum buffer size.
+     * @param primitive The primitive type of the mesh.
      */
-    InstancedData(const size_t buffer_size, const Graphick::Renderer::GPU::Primitive = Graphick::Renderer::GPU::Primitive::Triangles) :
-      max_instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
-      primitive(primitive)
+    InstancedData(const size_t buffer_size, const Graphick::Renderer::GPU::Primitive primitive = Graphick::Renderer::GPU::Primitive::Triangles) :
+      primitive(primitive),
+      max_instances(static_cast<uint32_t>(buffer_size / sizeof(T)))
     {
       instances.reserve(max_instances);
     }
+
+    InstancedData(const InstancedData&) = delete;
+    InstancedData(InstancedData&&) = delete;
+
+    InstancedData& operator=(const InstancedData&) = delete;
+    InstancedData& operator=(InstancedData&&) = delete;
 
     /**
      * @brief Clears the instance data.

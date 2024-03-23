@@ -1958,7 +1958,7 @@ namespace Graphick::Renderer::Geometry {
         j += 1;
         break;
       case Command::Line:
-        path.quadratic_to(m_points[j], m_points[j]);
+        path.line_to(m_points[j]);
         j += 1;
         break;
       case Command::Quadratic:

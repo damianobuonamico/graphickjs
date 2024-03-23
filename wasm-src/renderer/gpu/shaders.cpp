@@ -31,20 +31,20 @@ namespace Graphick::Renderer::GPU {
 
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    view_projection_uniform(Device::get_uniform(program, "uMVP").value()),
     color_uniform(Device::get_uniform(program, "uColor").value()),
     line_width_uniform(Device::get_uniform(program, "uLineWidth").value()),
     zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
 
   SquareProgram::SquareProgram() :
     program(Device::create_program("square")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    view_projection_uniform(Device::get_uniform(program, "uMVP").value()),
     color_uniform(Device::get_uniform(program, "uColor").value()),
     size_uniform(Device::get_uniform(program, "uSize").value()) {}
 
   CircleProgram::CircleProgram() :
     program(Device::create_program("circle")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    view_projection_uniform(Device::get_uniform(program, "uMVP").value()),
     color_uniform(Device::get_uniform(program, "uColor").value()),
     radius_uniform(Device::get_uniform(program, "uRadius").value()),
     zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}

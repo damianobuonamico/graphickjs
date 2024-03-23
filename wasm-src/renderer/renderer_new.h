@@ -19,6 +19,10 @@
 
 #include <unordered_set>
 
+namespace Graphick::Renderer::Geometry {
+  class Path;
+};
+
 namespace Graphick::renderer {
 
   // TEMP
@@ -104,12 +108,33 @@ namespace Graphick::renderer {
      *
      * @param path The QuadraticPath to draw.
      * @param transform The transformation matrix to apply to the path.
-     * @param draw_vertices Whether to draw the vertices of the path, default is false.
-     * @param selected_vertices The set of selected vertices, can be nullptr.
+     * @param tolerance The tolerance to use when approximating the path, default is 0.25.
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, bool draw_vertices = false, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+
+    /**
+     * @brief Draws the outline of a Path.
+     *
+     * @param path The Path to draw.
+     * @param transform The transformation matrix to apply to the path.
+     * @param tolerance The tolerance to use when approximating the path, default is 0.25.
+     * @param stroke The Stroke properties to use, can be nullptr.
+     * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
+     */
+    static void draw_outline(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+
+    /**
+     * @brief Draws the vertices of a Path's outline.
+     *
+     * @param path The Path to draw the vertices of.
+     * @param transform The transformation matrix to apply to the path.
+     * @param selected_vertices The indices of the selected vertices, if nullptr all vertices are selected.
+     * @param stroke The Stroke properties to use, can be nullptr.
+     * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
+     */
+    static void draw_outline_vertices(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
   private:
     /**
      * @brief Default constructor and destructor.
@@ -123,6 +148,13 @@ namespace Graphick::renderer {
      * @return The singleton instance of the renderer.
      */
     static inline Renderer* get() { return s_instance; }
+
+    /**
+     * @brief Flushes the renderer.
+     *
+     * This function issues the draw calls to the GPU.
+     */
+    void flush_meshes();
   private:
     GPU::Programs m_programs;                        /* The shader programs to use. */
 
@@ -131,7 +163,11 @@ namespace Graphick::renderer {
 
     std::vector<mat4> m_transforms;                  /* The model-view-projection matrices of the paths. */
 
-    InstancedData<PathInstance> m_path_instances;    /* The instances to render. */
+    InstancedData<PathInstance> m_path_instances;    /* The path instances to render. */
+    InstancedData<vec4> m_line_instances;            /* The line instances to render. */
+    InstancedData<vec2> m_handle_instances;          /* The handle instances to render. */
+    InstancedData<vec2> m_vertex_instances;          /* The vertex instances to render. */
+    InstancedData<vec2> m_white_vertex_instances;    /* The vertex instances to render. */
   private:
     static Renderer* s_instance;    /* The singleton instance of the renderer. */
   };

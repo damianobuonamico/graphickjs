@@ -18,6 +18,7 @@ namespace Graphick::renderer::geometry {
    * @brief A quadratic path is a series of control points that are connected by quadratic curves.
    *
    * The last control point of a curve is the first control point of the next curve.
+   * Linear segments are treated as quadratic curves with p1 = p2.
    *
    * @struct QuadraticPath
    */
@@ -67,6 +68,18 @@ namespace Graphick::renderer::geometry {
      * @param p The point to move the cursor to.
      */
     inline void move_to(const vec2 p) {
+      points.push_back(p);
+    }
+
+    /**
+     * @brief Adds a line to the path.
+     *
+     * Lineare segments are treated as quadratic curves with p1 = p2.
+     *
+     * @param p The end point of the line.
+     */
+    inline void line_to(const vec2 p) {
+      points.push_back(p);
       points.push_back(p);
     }
 

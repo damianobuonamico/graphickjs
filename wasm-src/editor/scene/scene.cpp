@@ -442,23 +442,25 @@ namespace Graphick::Editor {
           }
         }
 
-        renderer::Renderer::draw_outline(
-          quadratics,
-          transform,
-          draw_vertices,
+        renderer::Renderer::draw_outline(quadratics, transform, tolerance / 2.0f);
+        renderer::Renderer::draw_outline_vertices(
+          path, transform,
           is_full ? nullptr : &selected_vertices
         );
 
-      // Math::rect bounding_rect = path.bounding_rect();
-      // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);
-      // Renderer::Geometry::Path rect;
-      // rect.move_to(lines[0].min);
 
-      // for (auto& line : lines) {
-      //   rect.line_to(line.max);
-      // }
+            // draw_vertices,
 
-      // Renderer::Renderer::draw_outline(id, rect, position);
+        // Math::rect bounding_rect = path.bounding_rect();
+        // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);
+        // Renderer::Geometry::Path rect;
+        // rect.move_to(lines[0].min);
+
+        // for (auto& line : lines) {
+        //   rect.line_to(line.max);
+        // }
+
+        // Renderer::Renderer::draw_outline(id, rect, position);
       }
     }
 
