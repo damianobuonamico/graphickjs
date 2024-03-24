@@ -9,6 +9,8 @@
 
 #include "gpu/gpu_data.h"
 
+#include "../math/rect.h"
+
 #include "../utils/uuid.h"
 
 #include <vector>
@@ -30,6 +32,35 @@ namespace Graphick::renderer {
     double dpr;         /* The device pixel ratio. */
 
     vec4 background;    /* The background color to clear the viewport with. */
+
+    /**
+     * @brief Default constructor.
+     */
+    Viewport() = default;
+
+    /**
+     * @brief Constructs a new Viewport object.
+     *
+     * @param size The size of the viewport.
+     * @param position The position of the viewport.
+     * @param zoom The zoom level of the viewport, pre-multiplied by the dpr.
+     * @param dpr The device-pixel-ratio of the screen.
+     * @param background The clear color of the viewport.
+     */
+    Viewport(const vec2 size, const vec2 position, const double zoom, const double dpr, const vec4& background) :
+      size(size), position(position), zoom(zoom), dpr(dpr), background(background),
+      m_visible({ -position, size / static_cast<float>(zoom) - position }) {}
+
+    /**
+     * @brief Returns the scene-space visible area.
+     *
+     * @return The scene-space rectangle that is visible in the viewport.
+    */
+    inline rect visible() const {
+      return m_visible;
+    }
+  private:
+    rect m_visible;     /* The visible area of the viewport in scene-space coordinates. */
   };
 
   /**
@@ -84,7 +115,6 @@ namespace Graphick::renderer {
    */
   struct PathInstance {
     vec2 size;             /* The size of the quad. */
-    uint32_t mvp_index;    /* The index of the model-view-projection matrix in the uniform buffer. */
   };
 
 }

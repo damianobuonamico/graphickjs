@@ -45,6 +45,16 @@ namespace Graphick::renderer::geometry {
       return empty() ? 0 : (points.size() - 1) / 2;
     }
 
+    /**
+     * @brief Returns the i-th control point of the path.
+     *
+     * @param i The index of the control point.
+     * @return The i-th control point.
+     */
+    inline vec2 operator[](const size_t i) const {
+      return points[i];
+    }
+
     inline rect approx_bounding_rect() const {
       if (empty()) {
         return rect{};

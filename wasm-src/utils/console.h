@@ -207,6 +207,7 @@ namespace Graphick::Utils {
       GK_DEBUGGER_CLEAR();
 
       for (auto& [name, timer] : m_total_timers) {
+        console::log("Total " + name + ": " + std::to_string((float)timer.average() / 1000000.0f) + "ms");
         GK_DEBUGGER_LOG(name + ": " + std::to_string((float)timer.average() / 1000000.0f) + "ms");
         timer.next();
       }

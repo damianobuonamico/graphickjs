@@ -16,24 +16,24 @@ namespace Graphick::renderer::GPU {
 
   PathProgram::PathProgram() :
     program(Device::create_program("path")),
-    mvp_uniform(Device::get_uniform(program, "uMVP").value()) {}
+    vp_uniform(Device::get_uniform(program, "uViewProjection").value()) {}
 
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
-    mvp_uniform(Device::get_uniform(program, "uMVP").value()),
+    vp_uniform(Device::get_uniform(program, "uViewProjection").value()),
     color_uniform(Device::get_uniform(program, "uColor").value()),
     line_width_uniform(Device::get_uniform(program, "uLineWidth").value()),
     zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
 
   SquareProgram::SquareProgram() :
     program(Device::create_program("square")),
-    mvp_uniform(Device::get_uniform(program, "uMVP").value()),
+    vp_uniform(Device::get_uniform(program, "uViewProjection").value()),
     color_uniform(Device::get_uniform(program, "uColor").value()),
     size_uniform(Device::get_uniform(program, "uSize").value()) {}
 
   CircleProgram::CircleProgram() :
     program(Device::create_program("circle")),
-    mvp_uniform(Device::get_uniform(program, "uMVP").value()),
+    vp_uniform(Device::get_uniform(program, "uViewProjection").value()),
     color_uniform(Device::get_uniform(program, "uColor").value()),
     radius_uniform(Device::get_uniform(program, "uRadius").value()),
     zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}

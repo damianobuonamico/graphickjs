@@ -442,7 +442,7 @@ namespace Graphick::Editor {
           }
         }
 
-        renderer::Renderer::draw_outline(quadratics, transform, tolerance / 2.0f);
+        renderer::Renderer::draw_outline(quadratics, transform, tolerance);
         renderer::Renderer::draw_outline_vertices(
           path, transform,
           is_full ? nullptr : &selected_vertices

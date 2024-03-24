@@ -3,6 +3,7 @@
  * @brief The file contains the implementation of the main Graphick renderer.
  *
  * @todo batches of instanced data overflow handling
+ * @todo path builder clipping rect
  */
 
 #pragma once
@@ -12,6 +13,7 @@
 #include "gpu/allocator.h"
 #include "gpu/device.h"
 
+#include "geometry/path_builder_new.h"
 #include "geometry/path.h"
 
 #include "../math/vector.h"
@@ -330,54 +332,16 @@ namespace Graphick::renderer {
     }
 
     const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
-    const mat4 mvp = mat4(get()->m_vp_matrix * model_matrix(transform));
 
-    get()->m_transforms.push_back(mvp);
-    get()->m_path_instances.instances.push_back({ vec2{ 100.0f, 100.0f }, static_cast<uint32_t>(get()->m_transforms.size() - 1) });
+    get()->m_path_instances.instances.push_back({ transform * vec2{ 100.0f, 100.0f } });
   }
 
   void Renderer::draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
-    if (path.empty()) {
-      return;
-    }
-
-    std::vector<vec4>& lines = get()->m_line_instances.instances;
-
-    for (size_t i = 0; i < path.size(); i++) {
-      const vec2 p0 = path.points[i * 2];
-      const vec2 p1 = path.points[i * 2 + 1];
-      const vec2 p2 = path.points[i * 2 + 2];
-
-      if (p1 == p2) {
-        lines.emplace_back(p0.x, p0.y, p2.x, p2.y);
-      } else {
-        const vec2 a = p0 - 2.0f * p1 + p2;
-        const vec2 b = 2.0f * (p1 - p0);
-        const vec2 c = p0;
-
-        const float dt = std::sqrtf((4.0 * tolerance) / Math::length(p0 - 2.0 * p1 + p2));
-
-        console::log("n", 1.0 / dt);
-
-        vec2 last = p0;
-        float t = dt;
-
-        while (t < 1.0f) {
-          const float t_sq = t * t;
-          const vec2 p = a * t_sq + b * t + c;
-
-          lines.emplace_back(last.x, last.y, p.x, p.y);
-
-          last = p;
-          t += dt;
-        }
-
-        lines.emplace_back(last.x, last.y, p2.x, p2.y);
-      }
-    }
+    geometry::PathBuilder(path, transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
   void Renderer::draw_outline(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+    geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
   void Renderer::draw_outline_vertices(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
@@ -391,83 +355,106 @@ namespace Graphick::renderer {
     std::vector<vec2>& circles = get()->m_handle_instances.instances;
 
     size_t i = path.points_size() - 1;
+    vec2 last_raw = path.point_at(i);
+    vec2 last = transform * last_raw;
 
     if (!path.closed()) {
-      const vec2 p = path.point_at(i);
-      const vec2 out_handle = path.point_at(Graphick::Renderer::Geometry::Path::out_handle_index);
-
-      filled.push_back(p);
+      filled.push_back(last);
 
       if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
-        white.push_back(p);
+        white.push_back(last);
       }
 
-      if (out_handle != p) {
-        circles.push_back(out_handle);
-        lines.emplace_back(out_handle.x, out_handle.y, p.x, p.y);
+      const vec2 out_handle = path.point_at(Graphick::Renderer::Geometry::Path::out_handle_index);
+
+      if (out_handle != last_raw) {
+        const vec2 h = transform * out_handle;
+
+        circles.push_back(h);
+        lines.emplace_back(h.x, h.y, last.x, last.y);
       }
     }
 
     path.for_each_reversed(
       [&](const vec2 p0) {
-        filled.push_back(p0);
+        const vec2 p = transform * p0;
+
+        filled.push_back(p);
 
         if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
-          white.push_back(p0);
+          white.push_back(p);
         }
 
         if (!path.closed()) {
           vec2 in_handle = path.point_at(Graphick::Renderer::Geometry::Path::in_handle_index);
 
           if (in_handle != p0) {
-            circles.push_back(in_handle);
-            lines.emplace_back(in_handle.x, in_handle.y, p0.x, p0.y);
+            const vec2 h = transform * in_handle;
+
+            circles.push_back(h);
+            lines.emplace_back(h.x, h.y, p.x, p.y);
           }
         }
 
+        last = p;
         i -= 1;
       },
       [&](const vec2 p0, const vec2 p1) {
-        filled.push_back(p0);
+        const vec2 p = transform * p0;
+
+        filled.push_back(p);
 
         if (selected_vertices && selected_vertices->find(i - 1) == selected_vertices->end()) {
-          white.push_back(p0);
+          white.push_back(p);
         }
 
+        last = p;
         i -= 1;
       },
       [&](const vec2 p0, const vec2 p1, const vec2 p2) {
-        filled.push_back(p0);
+        const vec2 p = transform * p0;
+
+        filled.push_back(p);
 
         if (selected_vertices && selected_vertices->find(i - 2) == selected_vertices->end()) {
-          white.push_back(p0);
+          white.push_back(p);
         }
 
         if (p1 != p0 && p2 != p0) {
-          circles.push_back(p1);
-          lines.emplace_back(p1.x, p1.y, p0.x, p0.y);
-          lines.emplace_back(p1.x, p1.y, p2.x, p2.y);
+          const vec2 h = transform * p1;
+
+          circles.push_back(h);
+          lines.emplace_back(h.x, h.y, p.x, p.y);
+          lines.emplace_back(h.x, h.y, last.x, last.y);
         }
 
+        last = p;
         i -= 2;
       },
       [&](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
-        filled.push_back(p0);
+        const vec2 p = transform * p0;
+
+        filled.push_back(p);
 
         if (selected_vertices && selected_vertices->find(i - 3) == selected_vertices->end()) {
-          white.push_back(p0);
+          white.push_back(p);
         }
 
         if (p2 != p3) {
-          circles.push_back(p2);
-          lines.emplace_back(p2.x, p2.y, p3.x, p3.y);
+          const vec2 h = transform * p2;
+
+          circles.push_back(h);
+          lines.emplace_back(h.x, h.y, last.x, last.y);
         }
 
         if (p1 != p0) {
-          circles.push_back(p1);
-          lines.emplace_back(p1.x, p1.y, p0.x, p0.y);
+          const vec2 h = transform * p1;
+
+          circles.push_back(h);
+          lines.emplace_back(h.x, h.y, p.x, p.y);
         }
 
+        last = p;
         i -= 3;
       }
     );
@@ -481,17 +468,13 @@ namespace Graphick::renderer {
     m_white_vertex_instances(GK_BUFFER_SIZE) {}
 
   void Renderer::flush_meshes() {
-    if (m_transforms.empty()) {
-      return;
-    }
-
     flush<PathInstance, GPU::PathProgram, GPU::PathVertexArray>(
       m_path_instances,
       m_programs.path_program,
       {
         {},
         {
-          { m_programs.path_program.mvp_uniform, m_transforms.back() }
+          { m_programs.path_program.vp_uniform, m_vp_matrix }
         },
         m_viewport.size
       }
@@ -503,7 +486,7 @@ namespace Graphick::renderer {
       {
         {},
         {
-          { m_programs.line_program.mvp_uniform, m_transforms.back() },
+          { m_programs.line_program.vp_uniform, m_vp_matrix },
           { m_programs.line_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } - vec4{ 0.05f, 0.05f, 0.05f, 0.0f } },
           { m_programs.line_program.line_width_uniform, static_cast<float>((2.0 * m_viewport.dpr) / m_viewport.zoom) },
           { m_programs.line_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
@@ -518,7 +501,7 @@ namespace Graphick::renderer {
       {
         {},
         {
-          { m_programs.square_program.mvp_uniform, m_transforms.back() },
+          { m_programs.square_program.vp_uniform, m_vp_matrix },
           { m_programs.square_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
           { m_programs.square_program.size_uniform, static_cast<float>(std::round(5.0 * m_viewport.dpr) / m_viewport.zoom) }
         },
@@ -532,7 +515,7 @@ namespace Graphick::renderer {
       {
         {},
         {
-          { m_programs.square_program.mvp_uniform, m_transforms.back() },
+          { m_programs.square_program.vp_uniform, m_vp_matrix },
           { m_programs.square_program.color_uniform, vec4{ 1.0f, 1.0f, 1.0f, 1.0f } },
           { m_programs.square_program.size_uniform, static_cast<float>(std::round(3.0 * m_viewport.dpr) / m_viewport.zoom) }
         },
@@ -546,7 +529,7 @@ namespace Graphick::renderer {
       {
         {},
         {
-          { m_programs.circle_program.mvp_uniform, m_transforms.back() },
+          { m_programs.circle_program.vp_uniform, m_vp_matrix },
           { m_programs.circle_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
           { m_programs.circle_program.radius_uniform, static_cast<float>((2.5 * m_viewport.dpr) / m_viewport.zoom) },
           { m_programs.circle_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }

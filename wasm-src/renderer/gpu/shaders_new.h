@@ -20,8 +20,8 @@ namespace Graphick::renderer::GPU {
    * @struct PathProgram
    */
   struct PathProgram {
-    Program program;    /* The shader program. */
-    Uniform mvp_uniform;  // TEMP
+    Program program;       /* The shader program. */
+    Uniform vp_uniform;    /* The view projection uniform. */
 
     PathProgram();
   };
@@ -32,11 +32,11 @@ namespace Graphick::renderer::GPU {
    * @struct LineProgram
    */
   struct LineProgram {
-    Program program;                    /* The shader program. */
-    Uniform mvp_uniform;                /* The view projection uniform. */
-    Uniform color_uniform;              /* The color uniform. */
-    Uniform line_width_uniform;         /* The line width uniform. */
-    Uniform zoom_uniform;               /* The zoom uniform. */
+    Program program;               /* The shader program. */
+    Uniform vp_uniform;            /* The view projection uniform. */
+    Uniform color_uniform;         /* The color uniform. */
+    Uniform line_width_uniform;    /* The line width uniform. */
+    Uniform zoom_uniform;          /* The zoom uniform. */
 
     LineProgram();
   };
@@ -48,7 +48,7 @@ namespace Graphick::renderer::GPU {
    */
   struct SquareProgram {
     Program program;          /* The shader program. */
-    Uniform mvp_uniform;      /* The view projection uniform. */
+    Uniform vp_uniform;       /* The view projection uniform. */
     Uniform color_uniform;    /* The color uniform. */
     Uniform size_uniform;     /* The size uniform. */
 
@@ -62,7 +62,7 @@ namespace Graphick::renderer::GPU {
    */
   struct CircleProgram {
     Program program;           /* The shader program. */
-    Uniform mvp_uniform;       /* The view projection uniform. */
+    Uniform vp_uniform;        /* The view projection uniform. */
     Uniform color_uniform;     /* The color uniform. */
     Uniform radius_uniform;    /* The radius uniform. */
     Uniform zoom_uniform;      /* The zoom uniform. */
