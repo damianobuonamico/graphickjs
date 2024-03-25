@@ -21,6 +21,9 @@ R"(
     /* The effective pixel dimensions of the em square. */
 	  vec2 pixelsPerEm = vec2(1.0 / fwidth(vTexCoord.x), 1.0 / fwidth(vTexCoord.y));
 
+    // TODO: max samples uniform
+    ivec2 sampleCount = clamp(ivec2(pixelsPerEm * 32.0 + 1.0), ivec2(1, 1), ivec2(4, 4));
+
     // uvec2 glyphLoc = uvec2(0U, 0U);
 
     for (uint curve = 0U; curve < 8U; curve++) {
@@ -35,8 +38,11 @@ R"(
        *     C(t) = (1 - t)^2 p1 + 2t(1 - t) p2 + t^2 p3
        */
 
-      vec4 p12 = (texture(uCurvesTexture, curveLoc / 512.0) - vec4(vPosition, vPosition)) / vec4(vSize, vSize) - vec4(vTexCoord, vTexCoord);
-      vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord;
+      // vec4 p12 = (texture(uCurvesTexture, curveLoc / 512.0) - vec4(vPosition, vPosition)) / vec4(vSize, vSize) - vec4(vTexCoord - 0.5 / pixelsPerEm, vTexCoord - 0.5 / pixelsPerEm);
+      // vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord - 0.5 / pixelsPerEm;
+
+      vec4 p12 = (texture(uCurvesTexture, curveLoc / 512.0) - vec4(vPosition, vPosition)) / vec4(vSize, vSize) - vec4(vTexCoord, vTexCoord) - vec4(0.0, 0.5 / pixelsPerEm.y, 0.0, 0.5 / pixelsPerEm.y);
+      vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord - vec2(0.0, 0.5 / pixelsPerEm.y);
 
       /* If the largest x coordinate among all three control points falls
        * left of the current pixel, then there are no more curves in the
@@ -64,36 +70,40 @@ R"(
         // roots are treated as a double root at the global minimum
         // where t = b / a.
 
-        float ax = p12.x - p12.z * 2.0 + p3.x;
-        float ay = p12.y - p12.w * 2.0 + p3.y;
-        float bx = p12.x - p12.z;
-        float by = p12.y - p12.w;
-        float ra = 1.0 / ay;
+        for (int sample = 0; sample < sampleCount.y; sample++) {
+          p12 += vec4(0.0, float(sample + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y), 0.0, float(sample + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y));
+          p3 += vec2(0.0, float(sample + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y));
 
-        float d = sqrt(max(by * by - ay * p12.y, 0.0));
-        float t1 = (by - d) * ra;
-        float t2 = (by + d) * ra;
+          float ax = p12.x - p12.z * 2.0 + p3.x;
+          float ay = p12.y - p12.w * 2.0 + p3.y;
+          float bx = p12.x - p12.z;
+          float by = p12.y - p12.w;
+          float ra = 1.0 / ay;
 
-        // If the polynomial is nearly linear, then solve -2b t + c = 0.
+          float d = sqrt(max(by * by - ay * p12.y, 0.0));
+          float t1 = (by - d) * ra;
+          float t2 = (by + d) * ra;
 
-        if (abs(ay) < kQuadraticEpsilon) t1 = t2 = p12.y * 0.5 / by;
+          // If the polynomial is nearly linear, then solve -2b t + c = 0.
 
-        // Calculate the x coordinates where C(t) = 0, and transform
-        // them so that the current pixel corresponds to the range
-        // [0,1]. Clamp the results and use them for root contributions.
+          if (abs(ay) < kQuadraticEpsilon) t1 = t2 = p12.y * 0.5 / by;
 
-        float x1 = (ax * t1 - bx * 2.0) * t1 + p12.x;
-        float x2 = (ax * t2 - bx * 2.0) * t2 + p12.x;
-        x1 = clamp(x1 * pixelsPerEm.x + 0.5, 0.0, 1.0);
-        x2 = clamp(x2 * pixelsPerEm.x + 0.5, 0.0, 1.0);
+          // Calculate the x coordinates where C(t) = 0, and transform
+          // them so that the current pixel corresponds to the range
+          // [0,1]. Clamp the results and use them for root contributions.
 
-        // Bits in code tell which roots make a contribution.
+          float x1 = (ax * t1 - bx * 2.0) * t1 + p12.x;
+          float x2 = (ax * t2 - bx * 2.0) * t2 + p12.x;
+          x1 = clamp(x1 * pixelsPerEm.x + 0.5, 0.0, 1.0);
+          x2 = clamp(x2 * pixelsPerEm.x + 0.5, 0.0, 1.0);
 
-        if ((code & 1U) != 0U) coverage += x1;
-        if (code > 1U) coverage -= x2;
+          // Bits in code tell which roots make a contribution.
+
+          if ((code & 1U) != 0U) coverage += x1 / float(sampleCount.y);
+          if (code > 1U) coverage -= x2 / float(sampleCount.y);
+        }
       }
     }
-
 
     // Loop over all curves in the vertical band.
 
@@ -101,8 +111,11 @@ R"(
       // ivec2 curveLoc = ivec2(texelFetch(bandTex, ivec2(vbandLoc.x + curve, vbandLoc.y)).xy);
       vec2 curveLoc = vec2(float(curve), 0.0);
 
-      vec4 p12 = (texture(uCurvesTexture, curveLoc / 512.0) - vec4(vPosition, vPosition)) / vec4(vSize, vSize) - vec4(vTexCoord, vTexCoord);
-      vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1.0, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord;
+      // vec4 p12 = (texture(uCurvesTexture, curveLoc / 512.0) - vec4(vPosition, vPosition)) / vec4(vSize, vSize) - vec4(vTexCoord, vTexCoord);
+      // vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1.0, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord;
+
+      vec4 p12 = (texture(uCurvesTexture, curveLoc / 512.0) - vec4(vPosition, vPosition)) / vec4(vSize, vSize) - vec4(vTexCoord, vTexCoord) - vec4(0.5 / pixelsPerEm.x, 0.0, 0.5 / pixelsPerEm.x, 0.0);
+      vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord - vec2(0.5 / pixelsPerEm.x, 0.0);
 
       // If the largest y coordinate among all three control points falls
       // below the current pixel, then exit the loop.
@@ -115,30 +128,34 @@ R"(
       uint code = (0x2E74U >> (((p12.x > 0.0) ? 2U : 0U) +
               ((p12.z > 0.0) ? 4U : 0U) + ((p3.x > 0.0) ? 8U : 0U))) & 3U;
 
-      if (code != 0U)
-      {
+      if (code != 0U) {
         // At least one root makes a contribution, so solve for the
         // values of t where the rotated curve crosses y = 0.
 
-        float ax = p12.y - p12.w * 2.0 + p3.y;
-        float ay = p12.x - p12.z * 2.0 + p3.x;
-        float bx = p12.y - p12.w;
-        float by = p12.x - p12.z;
-        float ra = 1.0 / ay;
+        for (int sample = 0; sample < sampleCount.x; sample++) {
+          p12 += vec4(float(sample + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0, float(sample + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0);
+          p3 += vec2(float(sample + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0);
 
-        float d = sqrt(max(by * by - ay * p12.x, 0.0));
-        float t1 = (by - d) * ra;
-        float t2 = (by + d) * ra;
+          float ax = p12.y - p12.w * 2.0 + p3.y;
+          float ay = p12.x - p12.z * 2.0 + p3.x;
+          float bx = p12.y - p12.w;
+          float by = p12.x - p12.z;
+          float ra = 1.0 / ay;
 
-        if (abs(ay) < kQuadraticEpsilon) t1 = t2 = p12.x * 0.5 / by;
+          float d = sqrt(max(by * by - ay * p12.x, 0.0));
+          float t1 = (by - d) * ra;
+          float t2 = (by + d) * ra;
 
-        float x1 = (ax * t1 - bx * 2.0) * t1 + p12.y;
-        float x2 = (ax * t2 - bx * 2.0) * t2 + p12.y;
-        x1 = clamp(x1 * pixelsPerEm.y + 0.5, 0.0, 1.0);
-        x2 = clamp(x2 * pixelsPerEm.y + 0.5, 0.0, 1.0);
+          if (abs(ay) < kQuadraticEpsilon) t1 = t2 = p12.x * 0.5 / by;
 
-        if ((code & 1U) != 0U) coverage -= x1;
-        if (code > 1U) coverage += x2;
+          float x1 = (ax * t1 - bx * 2.0) * t1 + p12.y;
+          float x2 = (ax * t2 - bx * 2.0) * t2 + p12.y;
+          x1 = clamp(x1 * pixelsPerEm.y + 0.5, 0.0, 1.0);
+          x2 = clamp(x2 * pixelsPerEm.y + 0.5, 0.0, 1.0);
+
+          if ((code & 1U) != 0U) coverage -= x1 / float(sampleCount.x);
+          if (code > 1U) coverage += x2 / float(sampleCount.x);
+        }
       }
     }
 
