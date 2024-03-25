@@ -2,10 +2,12 @@ R"(
 
   precision highp float;
 
+  in vec4 vColor;
+
   out vec4 oFragColor;
 
   void main() {
-    oFragColor = vec4(0.6, 0.6, 0.6, 1.0);
+    oFragColor = vColor;
   }
 
 )"

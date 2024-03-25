@@ -9,7 +9,9 @@
 
 #include "gpu/gpu_data.h"
 
+#include "../math/vec4.h"
 #include "../math/rect.h"
+#include "../math/mat2x3.h"
 
 #include "../utils/uuid.h"
 
@@ -114,7 +116,20 @@ namespace Graphick::renderer {
    * @struct PathInstance
    */
   struct PathInstance {
-    vec2 size;             /* The size of the quad. */
+    vec4 attrib_1;    /* transform[0][0] transform[0][1] transform[0][2] transform[1][0] */
+    vec2 attrib_2;    /* transform[1][1] transform[1][2] */
+    uvec4 color;      /* color.rgba */
+
+    /**
+     * @brief Constructs a new PathInstance object.
+     *
+     * @param transform The transformation matrix of the path.
+     * @param color The color of the path.
+     */
+    PathInstance(const mat2x3& transform, const vec4& color) :
+      attrib_1(transform[0][0], transform[0][1], transform[0][2], transform[1][0]),
+      attrib_2(transform[1][1], transform[1][2]),
+      color(color * 255.0f) {}
   };
 
 }

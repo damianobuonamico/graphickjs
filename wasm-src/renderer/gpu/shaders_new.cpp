@@ -48,30 +48,37 @@ namespace Graphick::renderer::GPU {
     vertex_array(Device::create_vertex_array())
   {
     VertexAttr position_attr = Device::get_vertex_attr(program.program, "aPosition").value();
-    VertexAttr instance_size_attr = Device::get_vertex_attr(program.program, "aInstanceSize").value();
-    VertexAttr instance_uniforms_index_attr = Device::get_vertex_attr(program.program, "aInstanceUniformsIndex").value();
+    VertexAttr instance_first_attr = Device::get_vertex_attr(program.program, "aAttrib1").value();
+    VertexAttr instance_second_attr = Device::get_vertex_attr(program.program, "aAttrib2").value();
+    VertexAttr instance_color_attr = Device::get_vertex_attr(program.program, "aColor").value();
 
     VertexAttrDescriptor position_attr_desc = {
       2, VertexAttrClass::Float, VertexAttrType::F32,
       8, 0, 0, 0
     };
 
-    VertexAttrDescriptor instance_size_attr_desc = {
-      2, VertexAttrClass::Float, VertexAttrType::F32,
-      12, 0, 1, 1
+    VertexAttrDescriptor instance_first_attr_desc = {
+      4, VertexAttrClass::Float, VertexAttrType::F32,
+      28, 0, 1, 1
     };
 
-    VertexAttrDescriptor instance_uniforms_index_attr_desc = {
-      1, VertexAttrClass::Int, VertexAttrType::I32,
-      12, 8, 1, 1
+    VertexAttrDescriptor instance_second_attr_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      28, 16, 1, 1
+    };
+
+    VertexAttrDescriptor instance_color_attr_desc = {
+      4, VertexAttrClass::Int, VertexAttrType::U8,
+      28, 24, 1, 1
     };
 
     Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, position_attr, position_attr_desc);
 
     Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, instance_size_attr, instance_size_attr_desc);
-    Device::configure_vertex_attr(*vertex_array, instance_uniforms_index_attr, instance_uniforms_index_attr_desc);
+    Device::configure_vertex_attr(*vertex_array, instance_first_attr, instance_first_attr_desc);
+    Device::configure_vertex_attr(*vertex_array, instance_second_attr, instance_second_attr_desc);
+    Device::configure_vertex_attr(*vertex_array, instance_color_attr, instance_color_attr_desc);
   }
 
   LineVertexArray::LineVertexArray(

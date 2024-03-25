@@ -329,7 +329,7 @@ namespace Graphick::Math {
   using vec2 = Math::Vec2<float>;
   using dvec2 = Math::Vec2<double>;
   using ivec2 = Math::Vec2<int32_t>;
-  using uvec2 = Math::Vec2<uint32_t>;
+  using uvec2 = Math::Vec2<uint8_t>;
 
 }
 

@@ -278,12 +278,12 @@ namespace Graphick::Math {
   using rect = Math::Rect<float>;
   using drect = Math::Rect<double>;
   using irect = Math::Rect<int32_t>;
-  using urect = Math::Rect<uint32_t>;
+  using urect = Math::Rect<uint8_t>;
 
   using rrect = Math::RRect<float>;
   using drrect = Math::RRect<double>;
   using irrect = Math::RRect<int32_t>;
-  using urrect = Math::RRect<uint32_t>;
+  using urrect = Math::RRect<uint8_t>;
 
 }
 

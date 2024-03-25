@@ -343,7 +343,7 @@ namespace Graphick::Math {
   using mat4 = Math::Mat4<float>;
   using dmat4 = Math::Mat4<double>;
   using imat4 = Math::Mat4<int32_t>;
-  using umat4 = Math::Mat4<uint32_t>;
+  using umat4 = Math::Mat4<uint8_t>;
 
 }
 

@@ -285,7 +285,7 @@ namespace Graphick::Math {
   using mat2 = Math::Mat2<float>;
   using dmat2 = Math::Mat2<double>;
   using imat2 = Math::Mat2<int32_t>;
-  using umat2 = Math::Mat2<uint32_t>;
+  using umat2 = Math::Mat2<uint8_t>;
 
 }
 

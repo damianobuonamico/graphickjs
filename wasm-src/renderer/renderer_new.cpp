@@ -17,6 +17,7 @@
 #include "geometry/path.h"
 
 #include "../math/vector.h"
+#include "../math/matrix.h"
 
 #include "../utils/defines.h"
 #include "../utils/assert.h"
@@ -331,9 +332,23 @@ namespace Graphick::renderer {
       return;
     }
 
-    const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
+    // TODO: test different layouts
+    // pos: 8bytes, color: 4bytes, params: 1byte = 13bytes * 4 = 52bytes per instance (square)
+    // pos: 8bytes, tex: 8bytes, color: 4bytes, params: 1byte = 21bytes * 4 = 84bytes per instance (any size)
+    // transform: 24bytes, color: 4bytes, params: 1byte = 29bytes per instance (path)
 
-    get()->m_path_instances.instances.push_back({ transform * vec2{ 100.0f, 100.0f } });
+    // TODO: exact bounding box can perform better
+    const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
+    const vec2 bounds_size = bounds.size();
+
+    const mat2x3 bounds_transform = mat2x3{
+      bounds_size.x, 0.0f, 100.0f,
+      0.0f, bounds_size.y, bounds.min.y,
+    };
+
+    get()->m_path_instances.instances.push_back({
+      bounds_transform * transform, fill.color
+    });
   }
 
   void Renderer::draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {

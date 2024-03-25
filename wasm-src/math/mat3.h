@@ -310,7 +310,7 @@ namespace Graphick::Math {
   using mat3 = Math::Mat3<float>;
   using dmat3 = Math::Mat3<double>;
   using imat3 = Math::Mat3<int32_t>;
-  using umat3 = Math::Mat3<uint32_t>;
+  using umat3 = Math::Mat3<uint8_t>;
 
 }
 

@@ -372,7 +372,7 @@ namespace Graphick::Math {
   using vec4 = Math::Vec4<float>;
   using dvec4 = Math::Vec4<double>;
   using ivec4 = Math::Vec4<int32_t>;
-  using uvec4 = Math::Vec4<uint32_t>;
+  using uvec4 = Math::Vec4<uint8_t>;
 
 }
 
