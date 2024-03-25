@@ -16,7 +16,8 @@ namespace Graphick::renderer::GPU {
 
   PathProgram::PathProgram() :
     program(Device::create_program("path")),
-    vp_uniform(Device::get_uniform(program, "uViewProjection").value()) {}
+    vp_uniform(Device::get_uniform(program, "uViewProjection").value()),
+    curves_texture(Device::get_texture_parameter(program, "uCurvesTexture").value()) {}
 
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
@@ -48,9 +49,11 @@ namespace Graphick::renderer::GPU {
     vertex_array(Device::create_vertex_array())
   {
     VertexAttr position_attr = Device::get_vertex_attr(program.program, "aPosition").value();
-    VertexAttr instance_first_attr = Device::get_vertex_attr(program.program, "aAttrib1").value();
-    VertexAttr instance_second_attr = Device::get_vertex_attr(program.program, "aAttrib2").value();
-    VertexAttr instance_color_attr = Device::get_vertex_attr(program.program, "aColor").value();
+    VertexAttr instance_first_attr = Device::get_vertex_attr(program.program, "aInstanceAttrib1").value();
+    VertexAttr instance_second_attr = Device::get_vertex_attr(program.program, "aInstanceAttrib2").value();
+    VertexAttr instance_position_attr = Device::get_vertex_attr(program.program, "aInstancePosition").value();
+    VertexAttr instance_size_attr = Device::get_vertex_attr(program.program, "aInstanceSize").value();
+    VertexAttr instance_color_attr = Device::get_vertex_attr(program.program, "aInstanceColor").value();
 
     VertexAttrDescriptor position_attr_desc = {
       2, VertexAttrClass::Float, VertexAttrType::F32,
@@ -59,17 +62,27 @@ namespace Graphick::renderer::GPU {
 
     VertexAttrDescriptor instance_first_attr_desc = {
       4, VertexAttrClass::Float, VertexAttrType::F32,
-      28, 0, 1, 1
+      44, 0, 1, 1
     };
 
     VertexAttrDescriptor instance_second_attr_desc = {
       2, VertexAttrClass::Float, VertexAttrType::F32,
-      28, 16, 1, 1
+      44, 16, 1, 1
+    };
+
+    VertexAttrDescriptor instance_position_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      44, 24, 1, 1
+    };
+
+    VertexAttrDescriptor instance_size_desc = {
+      2, VertexAttrClass::Float, VertexAttrType::F32,
+      44, 32, 1, 1
     };
 
     VertexAttrDescriptor instance_color_attr_desc = {
       4, VertexAttrClass::Int, VertexAttrType::U8,
-      28, 24, 1, 1
+      44, 40, 1, 1
     };
 
     Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
@@ -78,6 +91,8 @@ namespace Graphick::renderer::GPU {
     Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
     Device::configure_vertex_attr(*vertex_array, instance_first_attr, instance_first_attr_desc);
     Device::configure_vertex_attr(*vertex_array, instance_second_attr, instance_second_attr_desc);
+    Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
+    Device::configure_vertex_attr(*vertex_array, instance_size_attr, instance_size_desc);
     Device::configure_vertex_attr(*vertex_array, instance_color_attr, instance_color_attr_desc);
   }
 

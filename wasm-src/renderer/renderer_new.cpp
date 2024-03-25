@@ -274,6 +274,12 @@ namespace Graphick::renderer {
     init_instanced(get()->m_handle_instances, get()->m_path_instances.vertex_buffer_id);
     init_instanced(get()->m_vertex_instances, get()->m_path_instances.vertex_buffer_id);
     init_instanced(get()->m_white_vertex_instances, get()->m_path_instances.vertex_buffer_id);
+
+    if (get()->m_path_instances.curves_texture_id != uuid::null) {
+      Graphick::Renderer::GPU::Memory::Allocator::free_texture(get()->m_path_instances.curves_texture_id);
+    }
+
+    get()->m_path_instances.curves_texture_id = GPU::Memory::Allocator::allocate_texture({ 512, 512 }, GPU::TextureFormat::RGBA32F, "Curves");
   }
 
   void Renderer::shutdown() {
@@ -341,14 +347,26 @@ namespace Graphick::renderer {
     const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
     const vec2 bounds_size = bounds.size();
 
-    const mat2x3 bounds_transform = mat2x3{
-      bounds_size.x, 0.0f, 100.0f,
-      0.0f, bounds_size.y, bounds.min.y,
-    };
+    // const mat2x3 bounds_transform = mat2x3{
+    //   bounds_size.x, 0.0f, bounds.min.x,
+    //   0.0f, bounds_size.y, bounds.min.y,
+    // };
 
-    get()->m_path_instances.instances.push_back({
-      bounds_transform * transform, fill.color
-    });
+    PathInstancedData& data = get()->m_path_instances;
+
+    // data.instances.emplace_back(
+    //   transform * bounds_transform, bounds_size, fill.color
+    // );
+
+    data.instances.emplace_back(
+      transform, bounds.min, bounds_size, fill.color
+    );
+
+    data.curves.insert(data.curves.end(), path.points.begin(), path.points.end());
+
+    if (path.points.size() % 4 != 0) {
+      data.curves.emplace_back(0.0f, 0.0f);
+    }
   }
 
   void Renderer::draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
@@ -483,17 +501,38 @@ namespace Graphick::renderer {
     m_white_vertex_instances(GK_BUFFER_SIZE) {}
 
   void Renderer::flush_meshes() {
+    const GPU::Texture& curves_texture = GPU::Memory::Allocator::get_texture(m_path_instances.curves_texture_id);
+
+    // TODO: should preallocate the texture
+    if (m_path_instances.curves.size() < 512 * 512 * 2) {
+      m_path_instances.curves.resize(512 * 512 * 2);
+    }
+
+    GPU::Device::upload_to_texture(
+      curves_texture,
+      {
+        { 0.0f, 0.0f },
+        { 512.0f, 512.0f },
+        // { static_cast<float>((m_path_instances.curves.size() / 2) % 512), static_cast<float>((m_path_instances.curves.size() / 2) / 512) }
+      },
+      m_path_instances.curves.data()
+      );
+
     flush<PathInstance, GPU::PathProgram, GPU::PathVertexArray>(
       m_path_instances,
       m_programs.path_program,
       {
-        {},
+        {
+          { m_programs.path_program.curves_texture, curves_texture }
+        },
         {
           { m_programs.path_program.vp_uniform, m_vp_matrix }
         },
         m_viewport.size
       }
     );
+
+    m_path_instances.clear();
 
     flush<vec4, GPU::LineProgram, GPU::LineVertexArray>(
       m_line_instances,

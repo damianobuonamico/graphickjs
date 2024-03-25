@@ -163,7 +163,8 @@ namespace Graphick::renderer {
 
     std::vector<mat4> m_transforms;                  /* The model-view-projection matrices of the paths. */
 
-    InstancedData<PathInstance> m_path_instances;    /* The path instances to render. */
+    PathInstancedData m_path_instances;              /* The path instances to render. */
+    
     InstancedData<vec4> m_line_instances;            /* The line instances to render. */
     InstancedData<vec2> m_handle_instances;          /* The handle instances to render. */
     InstancedData<vec2> m_vertex_instances;          /* The vertex instances to render. */

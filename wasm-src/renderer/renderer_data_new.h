@@ -66,6 +66,33 @@ namespace Graphick::renderer {
   };
 
   /**
+   * @brief Represents a path instance, the main building block of the renderer.
+   *
+   * @struct PathInstance
+   */
+  struct PathInstance {
+    vec4 attrib_1;    /* transform[0][0] transform[0][1] transform[0][2] transform[1][0] */
+    vec2 attrib_2;    /* transform[1][1] transform[1][2] */
+    vec2 position;    /* position.xy */
+    vec2 size;        /* size.xy */
+    uvec4 color;      /* color.rgba */
+
+    /**
+     * @brief Constructs a new PathInstance object.
+     *
+     * @param transform The transformation matrix of the path.
+     * @param position The position of the path's bounding rect before transformation, used to normalize the curves.
+     * @param size The size of the path's bounding rect before transformation, used to normalize the curves.
+     * @param color The color of the path.
+     */
+    PathInstance(const mat2x3& transform, const vec2 position, const vec2 size, const vec4& color) :
+      attrib_1(transform[0][0], transform[0][1], transform[0][2], transform[1][0]),
+      attrib_2(transform[1][1], transform[1][2]),
+      position(position), size(size),
+      color(color * 255.0f) {}
+  };
+
+  /**
    * @brief Represents a mesh to be rendered using instancing.
    *
    * @struct InstancedData
@@ -105,31 +132,35 @@ namespace Graphick::renderer {
     /**
      * @brief Clears the instance data.
      */
-    inline void clear() {
+    virtual inline void clear() {
       instances.clear();
     }
   };
 
   /**
-   * @brief Represents a path instance, the main building block of the renderer.
+   * @brief Represents the data of the path instances to render.
    *
-   * @struct PathInstance
+   * @struct PathInstancedData
    */
-  struct PathInstance {
-    vec4 attrib_1;    /* transform[0][0] transform[0][1] transform[0][2] transform[1][0] */
-    vec2 attrib_2;    /* transform[1][1] transform[1][2] */
-    uvec4 color;      /* color.rgba */
+  struct PathInstancedData : public InstancedData<PathInstance> {
+    std::vector<vec2> curves;               /* The control points of the curves. */
+
+    uuid curves_texture_id = uuid::null;    /* The ID of the curves texture. */
 
     /**
-     * @brief Constructs a new PathInstance object.
+     * @brief Constructs a new PathInstanceData object.
      *
-     * @param transform The transformation matrix of the path.
-     * @param color The color of the path.
+     * @param buffer_size The maximum buffer size.
      */
-    PathInstance(const mat2x3& transform, const vec4& color) :
-      attrib_1(transform[0][0], transform[0][1], transform[0][2], transform[1][0]),
-      attrib_2(transform[1][1], transform[1][2]),
-      color(color * 255.0f) {}
+    PathInstancedData(const size_t buffer_size) : InstancedData<PathInstance>(buffer_size) {}
+
+    /**
+     * @brief Clears the instance data.
+     */
+    virtual inline void clear() override {
+      InstancedData<PathInstance>::clear();
+      curves.clear();
+    }
   };
 
 }
