@@ -148,28 +148,28 @@ namespace Graphick::Math {
     /* -- Constructors -- */
 
     RRect() :
-      Rect(),
+      Rect<T>(),
       angle(0) {}
 
     constexpr RRect(const RRect& r) :
-      Rect(r.min, r.max),
+      Rect<T>(r.min, r.max),
       angle(r.angle) {}
 
     constexpr RRect(const Rect<T>& r, T t = 0) :
-      Rect(r),
+      Rect<T>(r),
       angle(t) {}
 
     constexpr RRect(Vec2<T> v, T t = 0) :
-      Rect(v),
+      Rect<T>(v),
       angle(t) {}
 
     constexpr RRect(Vec2<T> v1, Vec2<T> v2, T t = 0) :
-      Rect(v1, v2),
+      Rect<T>(v1, v2),
       angle(t) {}
 
     template<typename U>
     constexpr RRect(const RRect<U>& r) :
-      Rect(r.min, r.max),
+      Rect<T>(r.min, r.max),
       angle(static_cast<T>(r.angle)) {}
   };
 

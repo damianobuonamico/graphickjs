@@ -32,7 +32,7 @@ R"(
       /* Fetch the three 2D control points for the current curve from the
        * curve texture. The first texel contains both p1 and p2 in the
        * (x,y) and (z,w) components, respectively, and the the second texel
-       * contains p3 in the (x,y) components. The quadratic B�zier curve
+       * contains p3 in the (x,y) components. The quadratic Bézier curve
        * C(t) is given by:
        *
        *     C(t) = (1 - t)^2 p1 + 2t(1 - t) p2 + t^2 p3
@@ -42,7 +42,7 @@ R"(
       // vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord - 0.5 / pixelsPerEm;
 
       vec4 p12 = (texture(uCurvesTexture, curveLoc / 512.0) - vec4(vPosition, vPosition)) / vec4(vSize, vSize) - vec4(vTexCoord, vTexCoord) - vec4(0.0, 0.5 / pixelsPerEm.y, 0.0, 0.5 / pixelsPerEm.y);
-      vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord - vec2(0.0, 0.5 / pixelsPerEm.y);
+      vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1.0, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord - vec2(0.0, 0.5 / pixelsPerEm.y);
 
       /* If the largest x coordinate among all three control points falls
        * left of the current pixel, then there are no more curves in the
@@ -70,9 +70,9 @@ R"(
         // roots are treated as a double root at the global minimum
         // where t = b / a.
 
-        for (int sample = 0; sample < sampleCount.y; sample++) {
-          p12 += vec4(0.0, float(sample + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y), 0.0, float(sample + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y));
-          p3 += vec2(0.0, float(sample + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y));
+        for (int sample_i = 0; sample_i < sampleCount.y; sample_i++) {
+          p12 += vec4(0.0, float(sample_i + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y), 0.0, float(sample_i + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y));
+          p3 += vec2(0.0, float(sample_i + 1) / (float(sampleCount.y + 1) * pixelsPerEm.y));
 
           float ax = p12.x - p12.z * 2.0 + p3.x;
           float ay = p12.y - p12.w * 2.0 + p3.y;
@@ -115,7 +115,7 @@ R"(
       // vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1.0, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord;
 
       vec4 p12 = (texture(uCurvesTexture, curveLoc / 512.0) - vec4(vPosition, vPosition)) / vec4(vSize, vSize) - vec4(vTexCoord, vTexCoord) - vec4(0.5 / pixelsPerEm.x, 0.0, 0.5 / pixelsPerEm.x, 0.0);
-      vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord - vec2(0.5 / pixelsPerEm.x, 0.0);
+      vec2 p3 = (texture(uCurvesTexture, vec2(curveLoc.x + 1.0, curveLoc.y) / 512.0).xy - vPosition) / vSize - vTexCoord - vec2(0.5 / pixelsPerEm.x, 0.0);
 
       // If the largest y coordinate among all three control points falls
       // below the current pixel, then exit the loop.
@@ -132,9 +132,9 @@ R"(
         // At least one root makes a contribution, so solve for the
         // values of t where the rotated curve crosses y = 0.
 
-        for (int sample = 0; sample < sampleCount.x; sample++) {
-          p12 += vec4(float(sample + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0, float(sample + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0);
-          p3 += vec2(float(sample + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0);
+        for (int sample_i = 0; sample_i < sampleCount.x; sample_i++) {
+          p12 += vec4(float(sample_i + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0, float(sample_i + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0);
+          p3 += vec2(float(sample_i + 1) / (float(sampleCount.x + 1) * pixelsPerEm.x), 0.0);
 
           float ax = p12.y - p12.w * 2.0 + p3.y;
           float ay = p12.x - p12.z * 2.0 + p3.x;

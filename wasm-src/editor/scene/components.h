@@ -555,7 +555,7 @@ namespace Graphick::Editor {
      *
      * @param decoder A diff of the modified component's data.
      */
-    void modify(io::DataDecoder& decoder);
+    void modify(io::DataDecoder& decoder) override;
   private:
     Data* m_data;                           /* The actual component data. */
 

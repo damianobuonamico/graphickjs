@@ -816,7 +816,7 @@ namespace Graphick::Renderer::Geometry {
     int64_t* out = &node.out;
     int64_t* out_command = &node.out_command;
 
-    if (!point_index == 0 && !(segment.type == Command::Cubic && it.point_index() >= point_index)) {
+    if (point_index != 0 && !(segment.type == Command::Cubic && it.point_index() >= point_index)) {
       it++;
 
       if (point_index == m_points.size() - 1 || it != end()) {
@@ -1302,6 +1302,9 @@ namespace Graphick::Renderer::Geometry {
         m_points.pop_back();
         m_points.pop_back();
         break;
+      case Command::Move:
+      default:
+        break;
       }
 
       switch (next_segment.type) {
@@ -1318,6 +1321,9 @@ namespace Graphick::Renderer::Geometry {
         m_points[0] = cubic.p0;
         m_points[1] = cubic.p1;
         m_points[2] = cubic.p2;
+        break;
+      case Command::Move:
+      default:
         break;
       }
 
@@ -1341,6 +1347,9 @@ namespace Graphick::Renderer::Geometry {
         m_points[to_remove - 1] = cubic.p2;
         m_points[to_remove] = cubic.p3;
         break;
+      case Command::Move:
+      default:
+        break;
       }
 
       switch (next_segment.type) {
@@ -1352,6 +1361,9 @@ namespace Graphick::Renderer::Geometry {
         break;
       case Command::Cubic:
         m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 4);
+        break;
+      case Command::Move:
+      default:
         break;
       }
 
@@ -1400,6 +1412,9 @@ namespace Graphick::Renderer::Geometry {
 
       return point_i + 2;
     }
+    case Command::Move:
+    default:
+      break;
     };
 
     return 0;
@@ -1986,7 +2001,7 @@ namespace Graphick::Renderer::Geometry {
             t_max = (t_min + t_max) / 2.0f;
           }
 
-          auto& [p0, p1, p2, p3] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, t_min, t_max);
+          const auto& [p0, p1, p2, p3] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, t_min, t_max);
 
           sub_curve = { p0, p1, p2, p3 };
         }

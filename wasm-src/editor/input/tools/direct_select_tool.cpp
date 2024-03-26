@@ -151,7 +151,8 @@ namespace Graphick::Editor::Input {
         transform.translate(absolute_movenent);
       } else {
         for (size_t i : entry.indices) {
-          translate_control_point(entity.get_component<PathComponent>(), i, transform, &movement, false, true, false, nullptr);
+          PathComponent path = entity.get_component<PathComponent>();
+          translate_control_point(path, i, transform, &movement, false, true, false, nullptr);
         }
       }
     }

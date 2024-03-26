@@ -245,16 +245,6 @@ namespace Graphick::Math {
 
   template<typename T>
   constexpr Mat3<T> operator*(const Mat3<T>& m1, const Mat3<T>& m2) {
-    result[0][0] = src_a00 * src_b00 + src_a01 * src_b10 + src_a02 * src_b20;
-    result[0][1] = src_a00 * src_b01 + src_a01 * src_b11 + src_a02 * src_b21;
-    result[0][2] = src_a00 * src_b02 + src_a01 * src_b12 + src_a02 * src_b22;
-    result[1][0] = src_a10 * src_b00 + src_a11 * src_b10 + src_a12 * src_b20;
-    result[1][1] = src_a10 * src_b01 + src_a11 * src_b11 + src_a12 * src_b21;
-    result[1][2] = src_a10 * src_b02 + src_a11 * src_b12 + src_a12 * src_b22;
-    result[2][0] = src_a20 * src_b00 + src_a21 * src_b10 + src_a22 * src_b20;
-    result[2][1] = src_a20 * src_b01 + src_a21 * src_b11 + src_a22 * src_b21;
-    result[2][2] = src_a20 * src_b02 + src_a21 * src_b12 + src_a22 * src_b22;
-
     return Mat3<T>(
       m1[0][0] * m2[0][0] + m1[0][1] * m2[1][0] + m1[0][2] * m2[2][0],
       m1[0][0] * m2[0][1] + m1[0][1] * m2[1][1] + m1[0][2] * m2[2][1],

@@ -6,8 +6,6 @@
  * @todo path builder clipping rect
  */
 
-#pragma once
-
 #include "renderer_new.h"
 
 #include "gpu/allocator.h"
@@ -593,4 +591,4 @@ namespace Graphick::renderer {
     );
   }
 
-}
+  }

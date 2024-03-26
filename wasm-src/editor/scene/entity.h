@@ -65,10 +65,15 @@ namespace Graphick::Editor {
     inline T add_component(Args&&... args) {
       if (has_component<T>()) remove_component<T>();
 
+      using Data = typename T::Data;
+
+      Data data = Data(std::forward<Args>(args)...);
+      io::EncodedData encoded_data{};
+
       m_scene->history.add(
         id(),
         Action::Target::Component,
-        std::move(T(this, &T::Data(std::forward<Args>(args)...)).encode(io::EncodedData()))
+        std::move(T(this, &data).encode(encoded_data))
       );
 
       return get_component<T>();
@@ -82,7 +87,7 @@ namespace Graphick::Editor {
     template<typename T>
     inline T get_component() {
       GK_ASSERT(has_component<T>(), "Entity does not have component!");
-      return T{ this, &m_scene->m_registry.get<T::Data>(m_handle) };
+      return T{ this, &m_scene->m_registry.get<typename T::Data>(m_handle) };
     }
     template<>
     inline TransformComponent get_component() {
@@ -103,7 +108,7 @@ namespace Graphick::Editor {
     template<typename T>
     inline const T get_component() const {
       GK_ASSERT(has_component<T>(), "Entity does not have component!");
-      return T{ this, &m_scene->m_registry.get<T::Data>(m_handle) };
+      return T{ this, &m_scene->m_registry.get<typename T::Data>(m_handle) };
     }
     template<>
     inline const TransformComponent get_component() const {
@@ -123,7 +128,7 @@ namespace Graphick::Editor {
      */
     template<typename T>
     inline bool has_component() const {
-      return m_scene->m_registry.all_of<T::Data>(m_handle);
+      return m_scene->m_registry.all_of<typename T::Data>(m_handle);
     }
 
     /**
@@ -141,14 +146,14 @@ namespace Graphick::Editor {
      */
     template<typename T>
     inline void remove_component() {
-      // m_scene->m_registry.remove<T::Data>(m_handle);
-
       if (!has_component<T>()) return;
+
+      io::EncodedData encoded_data{};
 
       m_scene->history.remove(
         id(),
         Action::Target::Component,
-        get_component<T>().encode(io::EncodedData())
+        get_component<T>().encode(encoded_data)
       );
     }
 
@@ -185,7 +190,7 @@ namespace Graphick::Editor {
      *
      * @return The entity's tag.
      */
-    inline const std::string& tag() const {
+    inline const std::string tag() const {
       if (has_component<TagComponent>()) {
         return m_scene->m_registry.get<TagComponent::Data>(m_handle).tag;
       } else {
@@ -261,7 +266,7 @@ namespace Graphick::Editor {
      */
     template<typename T, typename... Args>
     inline T add(Args&&... args) {
-      return T{ this, &m_scene->m_registry.emplace<T::Data>(m_handle, std::forward<Args>(args)...) };
+      return T{ this, &m_scene->m_registry.emplace<typename T::Data>(m_handle, std::forward<Args>(args)...) };
     }
 
     /**
@@ -281,7 +286,7 @@ namespace Graphick::Editor {
      */
     template<typename T>
     void remove() {
-      m_scene->m_registry.remove<T::Data>(m_handle);
+      m_scene->m_registry.remove<typename T::Data>(m_handle);
     }
 
     /**

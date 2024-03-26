@@ -108,6 +108,9 @@ namespace Graphick::Editor {
     case Type::Modify:
       execute_modify(scene);
       break;
+    case Type::Invalid:
+    default:
+      break;
     }
   }
 
@@ -121,6 +124,9 @@ namespace Graphick::Editor {
       break;
     case Type::Modify:
       revert_modify(scene);
+      break;
+    case Type::Invalid:
+    default:
       break;
     }
   }

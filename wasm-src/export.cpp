@@ -86,19 +86,17 @@ extern "C" {
   void EMSCRIPTEN_KEEPALIVE init() {
     Graphick::Editor::Editor::init();
 
-    Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element("Test Element");
-    Graphick::Renderer::Geometry::Path& path = test_entity.get_component<Graphick::Editor::PathComponent>().data;
+    Graphick::Renderer::Geometry::Path path;
 
     path.move_to({ 0.0f, 0.0f });
-    path.line_to({ 20.0f, -20.0f });
-    path.line_to({ 50.0f, -40.0f });
-    path.line_to({ 200.0f, -50.0f });
-    path.line_to({ 300.0f, -20.0f });
-    path.line_to({ 350.0f, -20.0f });
-    path.line_to({ 380.0f, -40.0f });
-    path.line_to({ 360.0f, 20.0f });
-
+    path.quadratic_to({ 100.0f, 100.0f }, { 200.0f, 000.0f });
+    path.quadratic_to({ 100.0f, -100.0f }, { 0.0f, 0.0f });
     path.close();
+
+    Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element(path);
+
+    test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
+    test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
   }
 
   void EMSCRIPTEN_KEEPALIVE prepare_refresh() {
