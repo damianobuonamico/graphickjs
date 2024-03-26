@@ -12,9 +12,9 @@ R"(
 
   void main() {
     float dist = 2.0 * uRadius * length(vTexCoord);
-    float col = smoothstep(uRadius, uRadius - 1.0 / uZoom, dist) ;
+    float alpha = smoothstep(uRadius, uRadius - 1.0 / uZoom, dist) ;
 
-    oFragColor = vec4(vColor.rgb, col);
+    oFragColor = vColor * alpha;
   }
 
 )"

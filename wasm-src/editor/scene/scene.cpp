@@ -346,7 +346,7 @@ namespace Graphick::Editor {
 
       bool draw_vertices = tool_state.active().is_in_category(Input::Tool::CategoryDirect);
 
-      for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+      for (auto it = m_order.begin(); it != m_order.end(); it++) {
         const Entity entity = { *it, const_cast<Scene*>(this) };
         if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
 

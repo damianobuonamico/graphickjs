@@ -22,11 +22,11 @@ R"(
 	  vec2 pixelsPerEm = vec2(1.0 / fwidth(vTexCoord.x), 1.0 / fwidth(vTexCoord.y));
 
     // TODO: max samples uniform
-    ivec2 sampleCount = clamp(ivec2(pixelsPerEm * 32.0 + 1.0), ivec2(1, 1), ivec2(4, 4));
+    ivec2 sampleCount = clamp(ivec2(32.0 / pixelsPerEm + 1.0), ivec2(4, 4), ivec2(8, 8));
 
     // uvec2 glyphLoc = uvec2(0U, 0U);
 
-    for (uint curve = 0U; curve < 8U; curve++) {
+    for (uint curve = 0U; curve < 2U; curve++) {
       vec2 curveLoc = vec2(float(curve), 0.0);
 
       /* Fetch the three 2D control points for the current curve from the
@@ -107,7 +107,7 @@ R"(
 
     // Loop over all curves in the vertical band.
 
-    for (uint curve = 0U; curve < 8U; curve++) {
+    for (uint curve = 0U; curve < 2U; curve++) {
       // ivec2 curveLoc = ivec2(texelFetch(bandTex, ivec2(vbandLoc.x + curve, vbandLoc.y)).xy);
       vec2 curveLoc = vec2(float(curve), 0.0);
 
@@ -159,8 +159,10 @@ R"(
       }
     }
 
-    coverage = sqrt(clamp(abs(coverage) * 0.5, 0.0, 1.0));
+    coverage = clamp(abs(coverage) * 0.5, 0.0, 1.0);
+    // coverage = sqrt(clamp(abs(coverage) * 0.5, 0.0, 1.0));
 	  float alpha = coverage * vColor.a;
+	  // oFragColor = vec4(float(sampleCount.x) / 8.0 * alpha, 0.0, 0.0, alpha);
 	  oFragColor = vec4(vColor.rgb * alpha, alpha);
     // oFragColor = vColor * vec4(texture(uCurvesTexture, vec2(0.0, 0.0))) * vec4(pixelsPerEm.x, pixelsPerEm.y, 1.0, 1.0);
   }

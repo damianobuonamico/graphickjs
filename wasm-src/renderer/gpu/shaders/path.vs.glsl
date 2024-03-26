@@ -31,10 +31,10 @@ R"(
       aInstanceAttrib1.z, aInstanceAttrib2.y, 1.0
     );
 
-    gl_Position = uViewProjection * vec4(model * transform * vec3(aPosition, 1.0), 1.0);
+    gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition, 1.0), 1.0) + vec4(aPosition - 0.5, 0.0, 0.0));
 
     vColor = vec4(aInstanceColor.x / 255.0, aInstanceColor.y / 255.0, aInstanceColor.z / 255.0, aInstanceColor.w / 255.0);
-    vTexCoord = aPosition;
+    vTexCoord = aPosition + (aPosition - 0.5) / aInstanceSize;
 
     vPosition = aInstancePosition;
     vSize = aInstanceSize;

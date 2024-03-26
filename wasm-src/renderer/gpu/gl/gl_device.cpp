@@ -475,8 +475,8 @@ namespace Graphick::Renderer::GPU::GL {
       glCall(glBlendFuncSeparate(
         gl_blend_factor(options.blend->src_rgb_factor),
         gl_blend_factor(options.blend->dest_rgb_factor),
-        gl_blend_factor(options.blend->dest_rgb_factor),
-        gl_blend_factor(options.blend->dest_rgb_factor)
+        gl_blend_factor(options.blend->src_alpha_factor),
+        gl_blend_factor(options.blend->dest_alpha_factor)
       ));
       glCall(glBlendEquation(gl_blend_op(options.blend->op)));
       glCall(glEnable(GL_BLEND));

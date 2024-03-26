@@ -209,9 +209,9 @@ namespace Graphick::renderer {
       },
       {
         Graphick::Renderer::GPU::BlendState{
-          Graphick::Renderer::GPU::BlendFactor::SrcAlpha,
+          Graphick::Renderer::GPU::BlendFactor::One,
           Graphick::Renderer::GPU::BlendFactor::OneMinusSrcAlpha,
-          Graphick::Renderer::GPU::BlendFactor::SrcAlpha,
+          Graphick::Renderer::GPU::BlendFactor::One,
           Graphick::Renderer::GPU::BlendFactor::OneMinusSrcAlpha,
           Graphick::Renderer::GPU::BlendOp::Add,
         },
