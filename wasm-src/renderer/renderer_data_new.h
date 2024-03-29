@@ -13,6 +13,7 @@
 #include "../math/rect.h"
 #include "../math/mat2x3.h"
 
+#include "../utils/defines.h"
 #include "../utils/uuid.h"
 
 #include <vector>
@@ -71,11 +72,13 @@ namespace Graphick::renderer {
    * @struct PathInstance
    */
   struct PathInstance {
-    vec4 attrib_1;    /* transform[0][0] transform[0][1] transform[0][2] transform[1][0] */
-    vec2 attrib_2;    /* transform[1][1] transform[1][2] */
-    vec2 position;    /* position.xy */
-    vec2 size;        /* size.xy */
-    uvec4 color;      /* color.rgba */
+    vec4 attrib_1;           /* transform[0][0] transform[0][1] transform[0][2] transform[1][0] */
+    vec2 attrib_2;           /* transform[1][1] transform[1][2] */
+    vec2 position;           /* position.xy */
+    vec2 size;               /* size.xy */
+    uvec4 color;             /* color.rgba */
+    uint32_t curves_data;    /* start_x start_y */
+    uint32_t bands_data;     /* h_count v_count start_x start_y */
 
     /**
      * @brief Constructs a new PathInstance object.
@@ -85,11 +88,25 @@ namespace Graphick::renderer {
      * @param size The size of the path's bounding rect before transformation, used to normalize the curves.
      * @param color The color of the path.
      */
-    PathInstance(const mat2x3& transform, const vec2 position, const vec2 size, const vec4& color) :
+    PathInstance(
+      const mat2x3& transform, const vec2 position, const vec2 size, const vec4& color,
+      const size_t curves_start_index, const size_t bands_start_index,
+      const uint8_t horizontal_bands, const uint8_t vertical_bands
+    ) :
       attrib_1(transform[0][0], transform[0][1], transform[0][2], transform[1][0]),
       attrib_2(transform[1][1], transform[1][2]),
-      position(position), size(size),
-      color(color * 255.0f) {}
+      position(position), size(size), color(color * 255.0f)
+    {
+      const uint32_t curves_x = static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE);
+      const uint32_t curves_y = static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE);
+      const uint32_t bands_x = static_cast<uint32_t>(bands_start_index % GK_BANDS_TEXTURE_SIZE);
+      const uint32_t bands_y = static_cast<uint32_t>(bands_start_index / GK_BANDS_TEXTURE_SIZE);
+      const uint32_t bands_h = static_cast<uint32_t>(horizontal_bands - 1);
+      const uint32_t bands_v = static_cast<uint32_t>(vertical_bands - 1);
+
+      curves_data = ((curves_x << 20) >> 8) | ((curves_y << 20) >> 20);
+      bands_data = (bands_h << 28) | ((bands_v << 28) >> 4) | ((bands_x << 20) >> 8) | ((bands_y << 20) >> 20);
+    }
   };
 
   /**
@@ -144,8 +161,11 @@ namespace Graphick::renderer {
    */
   struct PathInstancedData : public InstancedData<PathInstance> {
     std::vector<vec2> curves;               /* The control points of the curves. */
+    std::vector<uint16_t> bands;            /* The bands of the mesh. */
+    std::vector<uint16_t> bands_data;       /* The indices of each curve in the bands. */
 
     uuid curves_texture_id = uuid::null;    /* The ID of the curves texture. */
+    uuid bands_texture_id = uuid::null;     /* The ID of the curves texture. */
 
     /**
      * @brief Constructs a new PathInstanceData object.
@@ -159,7 +179,10 @@ namespace Graphick::renderer {
      */
     virtual inline void clear() override {
       InstancedData<PathInstance>::clear();
+
       curves.clear();
+      bands.clear();
+      bands_data.clear();
     }
   };
 

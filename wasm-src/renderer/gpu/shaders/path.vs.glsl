@@ -11,12 +11,16 @@ R"(
   in vec2 aInstancePosition;
   in vec2 aInstanceSize;
   in uvec4 aInstanceColor;
+  in uint aInstanceCurvesData;
+  in uint aInstanceBandsData;
 
   out vec4 vColor;
   out vec2 vTexCoord;
 
   flat out vec2 vPosition;
   flat out vec2 vSize;
+  flat out uint vCurvesData;
+  flat out uint vBandsData;
 
   void main() {
     mat3 transform = mat3(
@@ -31,13 +35,17 @@ R"(
       aInstanceAttrib1.z, aInstanceAttrib2.y, 1.0
     );
 
-    gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition, 1.0), 1.0) + vec4(aPosition - 0.5, 0.0, 0.0));
+    gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition, 1.0), 1.0));
+    // gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition, 1.0), 1.0) + vec4(aPosition - 0.5, 0.0, 0.0));
 
     vColor = vec4(float(aInstanceColor.x) / 255.0, float(aInstanceColor.y) / 255.0, float(aInstanceColor.z) / 255.0, float(aInstanceColor.w) / 255.0);
-    vTexCoord = aPosition + (aPosition - 0.5) / aInstanceSize;
+    vTexCoord = aPosition;
+    // vTexCoord = aPosition + (aPosition - 0.5) / aInstanceSize;
 
     vPosition = aInstancePosition;
     vSize = aInstanceSize;
+    vCurvesData = aInstanceCurvesData;
+    vBandsData = aInstanceBandsData;
   }
 
 )"

@@ -20,6 +20,8 @@
 #include "../utils/defines.h"
 #include "../utils/assert.h"
 
+#include <algorithm>
+
 #ifdef EMSCRIPTEN
 #include <emscripten/html5.h>
 #endif
@@ -276,8 +278,12 @@ namespace Graphick::renderer {
     if (get()->m_path_instances.curves_texture_id != uuid::null) {
       Graphick::Renderer::GPU::Memory::Allocator::free_texture(get()->m_path_instances.curves_texture_id);
     }
+    if (get()->m_path_instances.bands_texture_id != uuid::null) {
+      Graphick::Renderer::GPU::Memory::Allocator::free_texture(get()->m_path_instances.bands_texture_id);
+    }
 
     get()->m_path_instances.curves_texture_id = GPU::Memory::Allocator::allocate_texture({ 512, 512 }, GPU::TextureFormat::RGBA32F, "Curves");
+    get()->m_path_instances.bands_texture_id = GPU::Memory::Allocator::allocate_texture({ 512, 512 }, GPU::TextureFormat::R16UI, "Bands");
   }
 
   void Renderer::shutdown() {
@@ -345,26 +351,161 @@ namespace Graphick::renderer {
     const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
     const vec2 bounds_size = bounds.size();
 
-    // const mat2x3 bounds_transform = mat2x3{
-    //   bounds_size.x, 0.0f, bounds.min.x,
-    //   0.0f, bounds_size.y, bounds.min.y,
-    // };
-
     PathInstancedData& data = get()->m_path_instances;
 
-    // data.instances.emplace_back(
-    //   transform * bounds_transform, bounds_size, fill.color
-    // );
+    /* Starting indices for this path. */
 
-    data.instances.emplace_back(
-      transform, bounds.min, bounds_size, fill.color
-    );
+    const size_t curves_start_index = data.curves.size() / 2;
+    const size_t bands_start_index = data.bands.size();
+
+    /* Copy the curves, close the path and add padding, so that each path starts at xy and not zw. */
+
+    const bool closed = path.closed();
+    const size_t len = closed ? path.size() : path.size() + 1;
 
     data.curves.insert(data.curves.end(), path.points.begin(), path.points.end());
 
-    if (path.points.size() % 4 != 0) {
+    if (!closed) {
+      data.curves.insert(data.curves.end(), { path[0], path[0] });
+    }
+
+    if (path.points.size() % 2 != 0) {
       data.curves.emplace_back(0.0f, 0.0f);
     }
+
+    /* Bands count is always between 1 and 16, based on the number of segments. */
+
+    const float max_size = std::max(bounds_size.x, bounds_size.y);
+
+    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
+    const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
+
+    const vec2 bands_overlap = 2.0f * bounds_size / get()->m_viewport.size;
+
+    /* Cache min and max x and y for each curve. */
+
+    std::vector<vec2> min_x_y(len);
+    std::vector<vec2> max_x_y(len);
+
+    for (size_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path[i * 2];
+      const vec2 p1 = path[i * 2 + 1];
+      const vec2 p2 = path[i * 2 + 2];
+
+      min_x_y[i] = vec2{
+        std::min({ p0.x, p1.x, p2.x }),
+        std::min({ p0.y, p1.y, p2.y }),
+      };
+
+      max_x_y[i] = vec2{
+        std::max({ p0.x, p1.x, p2.x }),
+        std::max({ p0.y, p1.y, p2.y }),
+      };
+    }
+
+    if (!closed) {
+      const vec2 p0 = path.points.back();
+      const vec2 p1 = path[0];
+
+      min_x_y.back() = vec2{
+        std::min(p0.x, p1.x),
+        std::min(p0.y, p1.y)
+      };
+
+      max_x_y.back() = vec2{
+        std::max(p0.x, p1.x),
+        std::max(p0.y, p1.y)
+      };
+    }
+
+    /* Sort curves by descending max x and y. */
+
+    std::vector<uint16_t> h_indices(len);
+    std::vector<uint16_t> v_indices(len);
+
+    std::iota(h_indices.begin(), h_indices.end(), 0);
+    std::iota(v_indices.begin(), v_indices.end(), 0);
+
+    std::sort(h_indices.begin(), h_indices.end(), [&](const uint16_t a, const uint16_t b) {
+      return max_x_y[a].x > max_x_y[b].x;
+    });
+
+    std::sort(v_indices.begin(), v_indices.end(), [&](const uint16_t a, const uint16_t b) {
+      return max_x_y[a].y > max_x_y[b].y;
+    });
+
+    /* Calculate band metrics. */
+
+    const vec2 band_delta = bounds_size / vec2(uvec2(vertical_bands, horizontal_bands));
+
+    vec2 band_min = bounds.min;
+    vec2 band_max = bounds.min + band_delta;
+
+    /* Preallocate horizontal and vertical bands header. */
+
+    data.bands.resize(data.bands.size() + horizontal_bands * 2 + vertical_bands * 2, 0);
+
+    /* Determine which curves are in each horizontal band. */
+
+    for (int i = 0; i < horizontal_bands; i++) {
+      const size_t band_start = data.bands.size();
+
+      for (uint16_t j = 0; j < h_indices.size(); j++) {
+        const float min_y = min_x_y[h_indices[j]].y;
+        const float max_y = max_x_y[h_indices[j]].y;
+
+        if (min_y == max_y || min_y > band_max.y + bands_overlap.y || max_y < band_min.y - bands_overlap.y) {
+          continue;
+        }
+
+        data.bands.push_back(h_indices[j]);
+      }
+
+      const size_t band_end = data.bands.size();
+
+      /* Each band header is an offset from this path's bands data start and the number of curves in the band. */
+
+      data.bands[bands_start_index + i * 2] = static_cast<uint16_t>(band_start - bands_start_index);
+      data.bands[bands_start_index + i * 2 + 1] = static_cast<uint16_t>(band_end - band_start);
+
+      band_min.y += band_delta.y;
+      band_max.y += band_delta.y;
+    }
+
+    /* Determine which curves are in each vertical band. */
+
+    for (int i = 0; i < vertical_bands; i++) {
+      const size_t band_start = data.bands.size();
+
+      for (uint16_t j = 0; j < v_indices.size(); j++) {
+        float min_x = min_x_y[v_indices[j]].x;
+        float max_x = max_x_y[v_indices[j]].x;
+
+        if (min_x == max_x || min_x > band_max.x + bands_overlap.x || max_x < band_min.x - bands_overlap.x) {
+          continue;
+        }
+
+        data.bands.push_back(v_indices[j]);
+      }
+
+      const size_t band_end = data.bands.size();
+
+      /* Each band header is an offset from this path's bands data start and the number of curves in the band. */
+
+      data.bands[bands_start_index + (horizontal_bands + i) * 2] = static_cast<uint16_t>(band_start - bands_start_index);
+      data.bands[bands_start_index + (horizontal_bands + i) * 2 + 1] = static_cast<uint16_t>(band_end - band_start);
+
+      band_min.x += band_delta.x;
+      band_max.x += band_delta.x;
+    }
+
+    /* Push instance. */
+
+    data.instances.emplace_back(
+      transform, bounds.min, bounds_size, fill.color,
+      curves_start_index, bands_start_index,
+      horizontal_bands, vertical_bands
+    );
   }
 
   void Renderer::draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
@@ -500,10 +641,23 @@ namespace Graphick::renderer {
 
   void Renderer::flush_meshes() {
     const GPU::Texture& curves_texture = GPU::Memory::Allocator::get_texture(m_path_instances.curves_texture_id);
+    const GPU::Texture& bands_texture = GPU::Memory::Allocator::get_texture(m_path_instances.bands_texture_id);
 
     // TODO: should preallocate the texture
     if (m_path_instances.curves.size() < 512 * 512 * 2) {
       m_path_instances.curves.resize(512 * 512 * 2);
+    }
+
+    std::vector<uint16_t> bands;
+
+    bands.insert(bands.end(), m_path_instances.bands.begin(), m_path_instances.bands.end());
+
+    // size_t bands_data_start = bands.size();
+
+    // bands.insert(bands.end(), m_path_instances.bands_data.begin(), m_path_instances.bands_data.end());
+
+    if (bands.size() < 512 * 512) {
+      bands.resize(512 * 512);
     }
 
     GPU::Device::upload_to_texture(
@@ -516,15 +670,25 @@ namespace Graphick::renderer {
       m_path_instances.curves.data()
       );
 
+    GPU::Device::upload_to_texture(
+      bands_texture,
+      {
+        { 0.0f, 0.0f },
+        { 512.0f, 512.0f },
+      },
+      bands.data()
+      );
+
     flush<PathInstance, GPU::PathProgram, GPU::PathVertexArray>(
       m_path_instances,
       m_programs.path_program,
       {
         {
-          { m_programs.path_program.curves_texture, curves_texture }
+          { m_programs.path_program.curves_texture, curves_texture },
+          { m_programs.path_program.bands_texture, bands_texture }
         },
         {
-          { m_programs.path_program.vp_uniform, m_vp_matrix }
+          { m_programs.path_program.vp_uniform, m_vp_matrix },
         },
         m_viewport.size
       }
@@ -591,4 +755,4 @@ namespace Graphick::renderer {
     );
   }
 
-  }
+}

@@ -37,6 +37,7 @@ namespace Graphick::Renderer::GPU {
    */
   enum class TextureFormat {
     R8,
+    R16UI,
     RGBA8,
     RGBA8UI,
     R16F,
@@ -65,7 +66,8 @@ namespace Graphick::Renderer::GPU {
     I16,
     I32,
     U8,
-    U16
+    U16,
+    U32
   };
 
   /**
@@ -206,6 +208,8 @@ namespace Graphick::Renderer::GPU {
 
   using UniformData = std::variant<
     int,
+    uint16_t,
+    uint32_t,
     ivec2,
     float,
     vec2,
@@ -292,6 +296,7 @@ namespace Graphick::Renderer::GPU {
   constexpr uint8_t bytes_per_pixel(TextureFormat format) {
     switch (format) {
     case TextureFormat::R8: return 1;
+    case TextureFormat::R16UI:
     case TextureFormat::R16F: return 2;
     case TextureFormat::RGBA8:
     case TextureFormat::R32F: return 4;
@@ -310,6 +315,7 @@ namespace Graphick::Renderer::GPU {
   constexpr uint8_t channels_per_pixel(TextureFormat format) {
     switch (format) {
     case TextureFormat::R8:
+    case TextureFormat::R16UI:
     case TextureFormat::R16F:
     case TextureFormat::R32F: return 1;
     default:

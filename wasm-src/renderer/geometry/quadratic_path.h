@@ -46,6 +46,17 @@ namespace Graphick::renderer::geometry {
     }
 
     /**
+     * @brief Returns whether the path is closed.
+     *
+     * A path is considered closed if the first and last control points are the same.
+     *
+     * @return true if the path is closed, false otherwise.
+     */
+    inline bool closed() const {
+      return !empty() && points.front() == points.back();
+    }
+
+    /**
      * @brief Returns the i-th control point of the path.
      *
      * @param i The index of the control point.

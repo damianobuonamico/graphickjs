@@ -15,6 +15,7 @@ namespace Graphick::Renderer::GPU::GL {
   static constexpr GLint gl_internal_format(TextureFormat format) {
     switch (format) {
     case TextureFormat::R8: return GL_R8;
+    case TextureFormat::R16UI: return GL_R16UI;
     case TextureFormat::R32F: return GL_R32F;
     case TextureFormat::R16F: return GL_R16F;
     case TextureFormat::RGBA8: return GL_RGBA8;
@@ -30,6 +31,7 @@ namespace Graphick::Renderer::GPU::GL {
     case TextureFormat::R8:
     case TextureFormat::R32F: return GL_RED;
     case TextureFormat::R16F: return GL_RED;
+    case TextureFormat::R16UI: return GL_RED_INTEGER;
     case TextureFormat::RGBA8: return GL_RGBA;
     case TextureFormat::RGBA8UI: return GL_RGBA_INTEGER;
     case TextureFormat::RGBA16F:
@@ -43,6 +45,7 @@ namespace Graphick::Renderer::GPU::GL {
     case TextureFormat::R8:
     case TextureFormat::RGBA8:
     case TextureFormat::RGBA8UI: return GL_UNSIGNED_BYTE;
+    case TextureFormat::R16UI: return GL_UNSIGNED_SHORT;
     case TextureFormat::R16F:
     case TextureFormat::RGBA16F: return GL_HALF_FLOAT;
     default:
@@ -58,6 +61,7 @@ namespace Graphick::Renderer::GPU::GL {
     case VertexAttrType::I16: return GL_SHORT;
     case VertexAttrType::I32: return GL_INT;
     case VertexAttrType::U8: return GL_UNSIGNED_BYTE;
+    case VertexAttrType::U32: return GL_UNSIGNED_INT;
     default:
     case VertexAttrType::U16: return GL_UNSIGNED_SHORT;
     }
@@ -536,6 +540,8 @@ namespace Graphick::Renderer::GPU::GL {
   void GLDevice::set_uniform(const GLUniform& uniform, const UniformData& data) const {
     if (std::holds_alternative<int>(data)) {
       glCall(glUniform1i(uniform.location, std::get<int>(data)));
+    } else if (std::holds_alternative<uint32_t>(data)) {
+      glCall(glUniform1ui(uniform.location, std::get<uint32_t>(data)));
     } else if (std::holds_alternative<ivec2>(data)) {
       ivec2 vec = std::get<ivec2>(data);
       glCall(glUniform2i(uniform.location, (GLint)vec.x, (GLint)vec.y));
