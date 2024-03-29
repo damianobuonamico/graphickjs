@@ -689,6 +689,7 @@ namespace Graphick::renderer {
         },
         {
           { m_programs.path_program.vp_uniform, m_vp_matrix },
+          { m_programs.path_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
         },
         m_viewport.size
       }

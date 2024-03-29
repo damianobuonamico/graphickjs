@@ -22,6 +22,7 @@ namespace Graphick::renderer::GPU {
   struct PathProgram {
     Program program;                     /* The shader program. */
     Uniform vp_uniform;                  /* The view projection uniform. */
+    Uniform zoom_uniform;                /* The zoom uniform. */
     TextureParameter curves_texture;     /* The curves texture. */
     TextureParameter bands_texture;      /* The bands texture. */
 

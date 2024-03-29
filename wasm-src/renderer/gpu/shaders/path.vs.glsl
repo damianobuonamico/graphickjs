@@ -4,6 +4,7 @@ R"(
   precision highp int;
 
   uniform mat4 uViewProjection;
+  uniform float uZoom;
 
   in vec2 aPosition;
   in vec4 aInstanceAttrib1;
@@ -35,12 +36,17 @@ R"(
       aInstanceAttrib1.z, aInstanceAttrib2.y, 1.0
     );
 
-    gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition, 1.0), 1.0));
-    // gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition, 1.0), 1.0) + vec4(aPosition - 0.5, 0.0, 0.0));
+    vec2 xDilate = (model * transform * vec3(1.0, 0.0, 1.0)).xy;
+    vec2 yDilate = (model * transform * vec3(0.0, 1.0, 1.0)).xy;
+    vec2 origin = (model * transform * vec3(0.0, 0.0, 1.0)).xy;
+
+    float xDist = distance(xDilate, origin) * uZoom;
+    float yDist = distance(yDilate, origin) * uZoom;
+
+    gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition + vec2(aPosition - 0.5) / vec2(xDist, yDist), 1.0), 1.0));
 
     vColor = vec4(float(aInstanceColor.x) / 255.0, float(aInstanceColor.y) / 255.0, float(aInstanceColor.z) / 255.0, float(aInstanceColor.w) / 255.0);
-    vTexCoord = aPosition;
-    // vTexCoord = aPosition + (aPosition - 0.5) / aInstanceSize;
+    vTexCoord = aPosition + (aPosition - 0.5) / vec2(xDist, yDist);
 
     vPosition = aInstancePosition;
     vSize = aInstanceSize;
