@@ -19,16 +19,20 @@ R"(
 
   const float kQuadraticEpsilon = 0.0001;
   
-  vec2 to_coords(uint x, uint y) {
-    return vec2(float(x) + 0.5, float(y) + 0.5) / 512.0;
+  vec2 to_coords(uint x) {
+    return vec2(float(x % 512U) + 0.5, float(x / 512U) + 0.5) / 512.0;
   }
 
   bool not_normalized(float x) {
-    return x <= 0.0 || x >= 1.0;
+    return x < 0.0 || x > 1.0;
   }
 
   void main() {
-    if (not_normalized(vTexCoord.x) || not_normalized(vTexCoord.y)) discard;
+    // if (not_normalized(vTexCoord.x) || not_normalized(vTexCoord.y)) {
+    //   oFragColor = vec4(0.0, 1.0, 0.0, 1.0);
+    //   return;
+    //   // discard;
+    // }
 
     float coverage = 0.0;
 
@@ -37,14 +41,18 @@ R"(
     vec2 pixelSize = 1.0 / pixelsPerEm;
 
     // TODO: max samples uniform
-    ivec2 sampleCount = ivec2(0, 4);
+    ivec2 sampleCount = ivec2(4, 4);
 
     uint hBands = (vBandsData >> 28) + 1U;
     uint vBands = ((vBandsData >> 24) & 0xFU) + 1U;
+
     uint xBandsOffset = (vBandsData >> 12) & 0xFFFU;
     uint yBandsOffset = vBandsData & 0xFFFU;
     uint xCurvesOffset = (vCurvesData >> 12) & 0xFFFU;
     uint yCurvesOffset = vCurvesData & 0xFFFU;
+
+    uint bandsIndexOffset = xBandsOffset + yBandsOffset * 512U;
+    uint curvesIndexOffset = xCurvesOffset + yCurvesOffset * 512U;
  
     vec2 texCoords = vTexCoord;
     
@@ -56,21 +64,23 @@ R"(
     float hSampleDelta = 1.0 / float(2 * sampleCount.x) * pixelSize.y;
     float vSampleDelta = 1.0 / float(2 * sampleCount.y) * pixelSize.x;
 
-    uint hBandDataStart = texture(uBandsTexture, to_coords(xBandsOffset + bandIndex.x * 2U, yBandsOffset)).x + xBandsOffset;
-    uint hBandCurvesCount = texture(uBandsTexture, to_coords(xBandsOffset + bandIndex.x * 2U + 1U, yBandsOffset)).x;
+    uint hBandDataStart = texture(uBandsTexture, to_coords(bandsIndexOffset + bandIndex.x * 2U)).x + bandsIndexOffset;
+    uint hBandCurvesCount = texture(uBandsTexture, to_coords(bandsIndexOffset + bandIndex.x * 2U + 1U)).x;
 
+    // if (hBandDataStart > 512U) {
+    //   hBandDataStart %= 512U;
+    //   yBandsOffset += 1U;
+    // }
 
     for (uint curve = 0U; curve < hBandCurvesCount; curve++) {
-      uint curveOffset = texture(uBandsTexture, to_coords(hBandDataStart + curve, yBandsOffset)).x;
-      uint xCurve = xCurvesOffset + curveOffset % 512U;
-      uint yCurve = yCurvesOffset + curveOffset / 512U;
+      uint curveOffset = curvesIndexOffset + texture(uBandsTexture, to_coords(hBandDataStart + curve)).x;
 
-      vec4 p12 = (texture(uCurvesTexture, to_coords(xCurve, yCurve))
+      vec4 p12 = (texture(uCurvesTexture, to_coords(curveOffset))
         - vec4(vPosition, vPosition)) / vec4(vSize, vSize)
         - vec4(texCoords, texCoords)
         - vec4(0.0, 0.5 * pixelSize.y - hSampleDelta, 0.0, 0.5 * pixelSize.y - hSampleDelta);
 
-      vec2 p3 = (texture(uCurvesTexture, to_coords(xCurve + 1U, yCurve)).xy 
+      vec2 p3 = (texture(uCurvesTexture, to_coords(curveOffset)).xy 
         - vPosition) / vSize 
         - texCoords
         - vec2(0.0, 0.5 * pixelSize.y - hSampleDelta);
@@ -107,21 +117,23 @@ R"(
       }
     }
 
-    uint vBandDataStart = texture(uBandsTexture, to_coords(xBandsOffset + hBands * 2U + bandIndex.y * 2U, yBandsOffset)).x + xBandsOffset;
-    uint vBandCurvesCount = texture(uBandsTexture, to_coords(xBandsOffset + hBands * 2U + bandIndex.y * 2U + 1U, yBandsOffset)).x;
+    uint vBandDataStart = texture(uBandsTexture, to_coords(bandsIndexOffset + hBands * 2U + bandIndex.y * 2U)).x + bandsIndexOffset;
+    uint vBandCurvesCount = texture(uBandsTexture, to_coords(bandsIndexOffset + hBands * 2U + bandIndex.y * 2U + 1U)).x;
 
-    // for (uint curve = 0U; curve < 0U; curve++) {
+    // if (vBandDataStart > 512U) {
+    //   vBandDataStart %= 512U;
+    //   yBandsOffset += 1U;
+    // }
+
     for (uint curve = 0U; curve < vBandCurvesCount; curve++) {
-      uint curveOffset = texture(uBandsTexture, to_coords(vBandDataStart + curve, yBandsOffset)).x;
-      uint xCurve = xCurvesOffset + curveOffset % 512U;
-      uint yCurve = yCurvesOffset + curveOffset / 512U;
+      uint curveOffset = curvesIndexOffset + texture(uBandsTexture, to_coords(vBandDataStart + curve)).x;
 
-      vec4 p12 = (texture(uCurvesTexture, to_coords(xCurve, yCurve))
+      vec4 p12 = (texture(uCurvesTexture, to_coords(curveOffset))
         - vec4(vPosition, vPosition)) / vec4(vSize, vSize)
         - vec4(texCoords, texCoords)
         - vec4(0.5 * pixelSize.x - vSampleDelta, 0.0, 0.5 * pixelSize.x - vSampleDelta, 0.0);
 
-      vec2 p3 = (texture(uCurvesTexture, to_coords(xCurve + 1U, yCurve)).xy 
+      vec2 p3 = (texture(uCurvesTexture, to_coords(curveOffset + 1U)).xy 
         - vPosition) / vSize 
         - texCoords
         - vec2(0.5 * pixelSize.x - vSampleDelta, 0.0);
@@ -149,8 +161,8 @@ R"(
           x1 = clamp(x1 * pixelsPerEm.y + 0.5, 0.0, 1.0);
           x2 = clamp(x2 * pixelsPerEm.y + 0.5, 0.0, 1.0);
 
-          // if ((code & 1U) != 0U) coverage -= x1;
-          if (code > 1U) coverage += x2;
+          if ((code & 1U) != 0U) coverage += x1;
+          if (code > 1U) coverage -= x2;
 
           p12 += vec4(2.0 * vSampleDelta, 0.0, 2.0 * vSampleDelta, 0.0);
           p3 += vec2(2.0 * vSampleDelta, 0.0);
@@ -158,14 +170,14 @@ R"(
       }
     }
 
-    coverage = (clamp(abs(coverage / float(sampleCount.x + sampleCount.y)), 0.0, 1.0));
-    if (coverage == 0.0) {
-      oFragColor = vec4(1.0, 0.0, 0.0, 1.0);
-      return;
-    }
-	  float alpha = coverage * vColor.a;
-	  oFragColor = vec4(vColor.rgb * 0.0000000000001 + vec3(1.0, texCoords.y, 1.0) * alpha, alpha);
-	  // oFragColor = vec4(vColor.rgb * alpha, alpha);
+    coverage = sqrt(clamp(abs(2.0 * coverage / float(sampleCount.x + sampleCount.y)), 0.0, 1.0));
+    // if (coverage == 0.0) {
+    //   oFragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //   return;
+    // }
+	  float alpha = coverage;
+	  // oFragColor = vec4(vColor.rgb * 0.0000000000001 + vec3(1.0, 1.0, 1.0) * alpha, alpha);
+	  oFragColor = vec4(vColor.rgb * alpha, alpha);
     
 	  // oFragColor = vec4(vColor.rgb * vec3(float(bandIndex.x + 1U) / float(hBands - 1U), float(bandIndex.y + 1U) / float(vBands - 1U), 0.0) * alpha, alpha);
 

@@ -123,8 +123,8 @@ int main() {
   Graphick::Editor::Editor::init();
   Graphick::Editor::Input::InputManager::on_resize_event((int)(width / dpr), (int)(height / dpr), dpr, 0, 0);
 
-// #define TIGER
-#define OBJECTS
+#define TIGER
+// #define OBJECTS
 
 #ifdef TIGER
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
@@ -153,17 +153,17 @@ int main() {
   // path1.move_to({ 100.0f, 100.0f });
   // path1.cubic_to({ 100.0f, 100.0f }, { 300.0f, 100.0f }, { 300.0f, 100.0f });
 
-  path1.move_to({ 100.0f, 100.0f });
-  path1.line_to({ 80.0f, 190.0f });
-  path1.line_to({ 200.0f, 200.0f });
-  path1.close();
+  // path1.move_to({ 100.0f, 100.0f });
+  // path1.line_to({ 80.0f, 190.0f });
+  // path1.line_to({ 200.0f, 200.0f });
+  // path1.close();
 
   // path1.move_to({ 0.0f, 0.0f });
   // path1.quadratic_to({ 100.0f, 100.0f }, { 200.0f, 000.0f });
   // path1.quadratic_to({ 100.0f, -100.0f }, { 0.0f, 0.0f });
   // path1.close();
 
-  // path1.circle({ 100.0f, 100.0f }, 50.0f);
+  path1.circle({ 100.0f, 100.0f }, 50.0f);
   // path1.move_to({ 300.0f, 100.0f });
   // path1.cubic_to({ 300.0f, 200.0f }, { 400.0f, 200.0f }, { 400.0f, 100.0f });
   // path1.cubic_to({ 400.0f, 0.0f }, { 300.0f, 0.0f }, { 300.0f, 100.0f });
