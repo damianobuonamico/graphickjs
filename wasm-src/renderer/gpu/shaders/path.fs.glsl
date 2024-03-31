@@ -26,25 +26,32 @@ R"(
     return vec2(float(x % 512U) + 0.5, float(x / 512U) + 0.5) / 512.0;
   }
 
-  bool not_normalized(float x) {
-    return x < 0.0 || x > 1.0;
+  bool not_normalized(float x, float pixelSize) {
+    return x <= -0.5 * pixelSize || x >= 1.0 + 0.5 * pixelSize;
   }
 
   void main() {
-    // if (not_normalized(vTexCoord.x) || not_normalized(vTexCoord.y)) {
-    //   oFragColor = vec4(0.0, 1.0, 0.0, 1.0);
-    //   return;
-    //   // discard;
-    // }
+    vec2 texCoords = vTexCoord;
+ 
+    // vec2 texCoords = vec2(
+    //   clamp(vTexCoord.x, 0.01, 0.99),
+    //   clamp(vTexCoord.y, 0.01, 0.99)
+    // );
 
     float coverage = 0.0;
 
     /* The effective pixel dimensions of the em square. */
-	  vec2 pixelsPerEm = vec2(1.0 / fwidth(vTexCoord.x), 1.0 / fwidth(vTexCoord.y));
+	  vec2 pixelsPerEm = vec2(1.0 / fwidth(texCoords.x), 1.0 / fwidth(texCoords.y));
     vec2 pixelSize = 1.0 / pixelsPerEm;
 
+    // if (not_normalized(texCoords.x, pixelSize.x) || not_normalized(texCoords.y, pixelSize.y)) {
+      // oFragColor = vec4(0.0, 1.0, 0.0, 1.0);
+      // return;
+      // discard;
+    // }
+    
     ivec2 sampleCount = clamp(ivec2(32.0 / pixelsPerEm + 1.0), ivec2(uMinSamples, uMinSamples), ivec2(uMaxSamples, uMaxSamples));
-    // ivec2 sampleCount = ivec2(2, 2);
+    // ivec2 sampleCount = ivec2(min(0, uMinSamples), min(4, uMaxSamples));
 
     uint hBands = (vBandsData >> 28) + 1U;
     uint vBands = ((vBandsData >> 24) & 0xFU) + 1U;
@@ -56,12 +63,10 @@ R"(
 
     uint bandsIndexOffset = xBandsOffset + yBandsOffset * 512U;
     uint curvesIndexOffset = xCurvesOffset + yCurvesOffset * 512U;
- 
-    vec2 texCoords = vTexCoord;
     
     uvec2 bandIndex = uvec2(
-      floor(texCoords.y * float(hBands)),
-      floor(texCoords.x * float(vBands))
+      clamp(uint(floor(texCoords.y * float(hBands))), 0U, hBands - 1U),
+      clamp(uint(floor(texCoords.x * float(vBands))), 0U, vBands - 1U)
     );
    
     float hSampleDelta = 1.0 / float(2 * sampleCount.x) * pixelSize.y;
@@ -181,16 +186,17 @@ R"(
 	  float alpha = vColor.a * coverage;
 	  // float alpha = coverage + 0.2;
 
-    // if (vTexCoord.x < 0.0 || vTexCoord.x > 1.0 || vTexCoord.y < 0.0 || vTexCoord.y > 1.0) {
+    // if (texCoords.x < 0.0 || texCoords.x > 1.0 || texCoords.y < 0.0 || texCoords.y > 1.0) {
     //   oFragColor = vec4(0.0, 1.0, 0.0, 1.0);
     //   return;
     // }
 
 	  // oFragColor = vec4(vColor.rgb * 0.0000000000001 + vec3(1.0, 1.0, 1.0) * alpha, alpha);
-	  // oFragColor = vec4((vColor.rgb * 0.00000000001 + vec3(vTexCoord, 0.0)) * alpha, alpha);
-    
-	  // oFragColor = vec4(vColor.rgb * vec3(float(bandIndex.x + 1U) / float(hBands - 1U), float(bandIndex.y + 1U) / float(vBands - 1U), 0.0) * alpha, alpha);
+	  // oFragColor = vec4((vColor.rgb * 0.00000000001 + vec3(texCoords, 0.0)) * alpha, alpha);
+
+	  // oFragColor = vec4(vColor.rgb * 0.000000001 +  vec3(float(bandIndex.y) / float(hBands - 1U), 0.0, 0.0) * alpha, alpha);
     // oFragColor = vec4(vec3(sampleCount.x / 16.0) * alpha, alpha);
+    // oFragColor = vec4(vColor.rgb * 0.000000001 + vec3(texCoords, 0.0) * alpha, alpha);
     oFragColor = vec4(vColor.rgb * alpha, alpha);
 
 

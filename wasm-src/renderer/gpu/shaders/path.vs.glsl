@@ -49,7 +49,7 @@ R"(
     float u = w * (s * (m[0][0] * n.x + m[1][0] * n.y) - t * (m[0][0] * p.x + m[1][0] * p.y + m[3][0]));
     float v = h * (s * (m[0][1] * n.x + m[1][1] * n.y) - t * (m[0][1] * p.x + m[1][1] * p.y + m[3][1]));
 
-    float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t)  * 2.0;
+    float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t) * 2.0;
 
     // vec2 xDilate = (model * transform * vec3(1.0, 0.0, 1.0)).xy;
     // vec2 yDilate = (model * transform * vec3(0.0, 1.0, 1.0)).xy;
@@ -59,7 +59,7 @@ R"(
     // float yDist = distance(yDilate, origin) * uZoom / 5.0;
 
     // gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition + vec2(aPosition - 0.5) / vec2(xDist, yDist), 1.0), 1.0));
-    gl_Position = m * vec4(p + n * d, 1.0, 1.0);
+    gl_Position = m * vec4(p + n * d * 2.0, 1.0, 1.0);
 
     vColor = vec4(float(aInstanceColor.x) / 255.0, float(aInstanceColor.y) / 255.0 + uViewportSize.x * 0.00000000000000001, float(aInstanceColor.z) / 255.0, float(aInstanceColor.w) / 255.0);
     vTexCoord = aPosition + n * d / aInstanceSize;

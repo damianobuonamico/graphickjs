@@ -364,7 +364,9 @@ namespace Graphick::renderer {
     /* Copy the curves, close the path and add padding, so that each path starts at xy and not zw. */
 
     const bool closed = path.closed();
-    const size_t len = closed ? path.size() : path.size() + 1;
+    const size_t len = closed ? path.size() : (path.size() + 1);
+
+    //if (!data.instances.empty()) return;
 
     data.curves.insert(data.curves.end(), path.points.begin(), path.points.end());
 
@@ -380,11 +382,11 @@ namespace Graphick::renderer {
 
     const float max_size = std::max(bounds_size.x, bounds_size.y);
 
-    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
-    const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
+    // const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
+    // const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
 
-    // const uint8_t horizontal_bands = 1;
-    // const uint8_t vertical_bands = 1;
+    const uint8_t horizontal_bands = 1;
+    const uint8_t vertical_bands = 1;
 
     const vec2 bands_overlap = 2.0f * bounds_size / get()->m_viewport.size;
 
@@ -439,6 +441,8 @@ namespace Graphick::renderer {
     std::sort(v_indices.begin(), v_indices.end(), [&](const uint16_t a, const uint16_t b) {
       return max_x_y[a].y > max_x_y[b].y;
     });
+
+    //if (!data.instances.empty()) return;
 
     /* Calculate band metrics. */
 
@@ -506,6 +510,8 @@ namespace Graphick::renderer {
     }
 
     /* Push instance. */
+
+    //if (!data.instances.empty()) return;
 
     data.instances.emplace_back(
       transform, bounds.min, bounds_size, fill.color,
