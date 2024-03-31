@@ -377,8 +377,11 @@ namespace Graphick::renderer {
 
     const float max_size = std::max(bounds_size.x, bounds_size.y);
 
-    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
-    const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
+    // const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
+    // const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
+
+    const uint8_t horizontal_bands = 1;
+    const uint8_t vertical_bands = 1;
 
     const vec2 bands_overlap = 2.0f * bounds_size / get()->m_viewport.size;
 
@@ -689,7 +692,7 @@ namespace Graphick::renderer {
         },
         {
           { m_programs.path_program.vp_uniform, m_vp_matrix },
-          { m_programs.path_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
+          { m_programs.path_program.viewport_size_uniform, m_viewport.size }
         },
         m_viewport.size
       }

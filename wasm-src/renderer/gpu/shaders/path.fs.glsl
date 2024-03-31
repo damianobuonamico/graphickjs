@@ -175,9 +175,9 @@ R"(
     //   oFragColor = vec4(1.0, 0.0, 0.0, 1.0);
     //   return;
     // }
-	  float alpha = coverage;
+	  float alpha = coverage + 0.2;
 	  // oFragColor = vec4(vColor.rgb * 0.0000000000001 + vec3(1.0, 1.0, 1.0) * alpha, alpha);
-	  oFragColor = vec4(vColor.rgb * alpha, alpha);
+	  oFragColor = vec4((vColor.rgb * 0.00000000001 + vec3(vTexCoord, 0.0)) * alpha, alpha);
     
 	  // oFragColor = vec4(vColor.rgb * vec3(float(bandIndex.x + 1U) / float(hBands - 1U), float(bandIndex.y + 1U) / float(vBands - 1U), 0.0) * alpha, alpha);
 

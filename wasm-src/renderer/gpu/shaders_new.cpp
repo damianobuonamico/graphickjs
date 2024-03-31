@@ -17,7 +17,7 @@ namespace Graphick::renderer::GPU {
   PathProgram::PathProgram() :
     program(Device::create_program("path")),
     vp_uniform(Device::get_uniform(program, "uViewProjection").value()),
-    zoom_uniform(Device::get_uniform(program, "uZoom").value()),
+    viewport_size_uniform(Device::get_uniform(program, "uViewportSize").value()),
     curves_texture(Device::get_texture_parameter(program, "uCurvesTexture").value()),
     bands_texture(Device::get_texture_parameter(program, "uBandsTexture").value()) {}
 
