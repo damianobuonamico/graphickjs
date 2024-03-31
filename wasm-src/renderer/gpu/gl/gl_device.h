@@ -29,7 +29,7 @@ namespace Graphick::Renderer::GPU::GL {
     /**
      * @brief Default destructor.
      */
-    ~GLDevice() = default;
+    ~GLDevice();
 
     /**
      * @brief Deleted copy, move constructor and assignment operators.
@@ -254,8 +254,10 @@ namespace Graphick::Renderer::GPU::GL {
 
     /**
      * @brief Flushes the GPU commands.
+     *
+     * @return The GPU time.
      */
-    void end_commands() const;
+    size_t end_commands() const;
 
     /**
      * @brief Draws the binded vertex array.
@@ -460,10 +462,12 @@ namespace Graphick::Renderer::GPU::GL {
     void upload_to_buffer_internal(const GLBuffer& buffer, size_t position, const void* data, const size_t size, const BufferTarget target) const;
   private:
     DeviceVersion m_version;                       /* The version of the device. */
+    std::string m_glsl_version_spec;               /* The GLSL version specification. */
+
+    GLuint m_timer_query;                          /* The timer query. */
+
     GLuint m_default_framebuffer;                  /* The default framebuffer. */
     std::unique_ptr<GLTexture> m_dummy_texture;    /* The dummy texture. */
-
-    std::string m_glsl_version_spec;               /* The GLSL version specification. */
   };
 
 }

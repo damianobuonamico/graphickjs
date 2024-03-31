@@ -18,6 +18,8 @@ namespace Graphick::renderer::GPU {
     program(Device::create_program("path")),
     vp_uniform(Device::get_uniform(program, "uViewProjection").value()),
     viewport_size_uniform(Device::get_uniform(program, "uViewportSize").value()),
+    min_samples_uniform(Device::get_uniform(program, "uMinSamples").value()),
+    max_samples_uniform(Device::get_uniform(program, "uMaxSamples").value()),
     curves_texture(Device::get_texture_parameter(program, "uCurvesTexture").value()),
     bands_texture(Device::get_texture_parameter(program, "uBandsTexture").value()) {}
 

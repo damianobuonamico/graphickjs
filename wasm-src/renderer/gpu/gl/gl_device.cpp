@@ -175,6 +175,12 @@ namespace Graphick::Renderer::GPU::GL {
   {
     U8TextureData dummy_texture_data{ DUMMY_TEXTURE_LENGTH, DUMMY_TEXTURE_LENGTH, 4 };
     m_dummy_texture = create_texture(TextureFormat::RGBA8, ivec2{ DUMMY_TEXTURE_LENGTH }, dummy_texture_data);
+
+    glCall(glGenQueries(1, &m_timer_query));
+  }
+
+  GLDevice::~GLDevice() {
+    glCall(glDeleteQueries(1, &m_timer_query));
   }
 
   std::string GLDevice::device_name() {
@@ -395,10 +401,19 @@ namespace Graphick::Renderer::GPU::GL {
     glCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (int)flags & (int)TextureSamplingFlag::RepeatV ? GL_REPEAT : GL_CLAMP_TO_EDGE));
   }
 
-  void GLDevice::begin_commands() const {}
+  void GLDevice::begin_commands() const {
+    glCall(glBeginQuery(GL_TIME_ELAPSED, m_timer_query));
+  }
 
-  void GLDevice::end_commands() const {
+  size_t GLDevice::end_commands() const {
     glCall(glFlush());
+    glCall(glEndQuery(GL_TIME_ELAPSED));
+
+    GLuint64 time;
+
+    glCall(glGetQueryObjectui64v(m_timer_query, GL_QUERY_RESULT, &time));
+
+    return static_cast<size_t>(time);
   }
 
   void GLDevice::draw_arrays(const size_t vertex_count, const GLRenderState& render_state) const {

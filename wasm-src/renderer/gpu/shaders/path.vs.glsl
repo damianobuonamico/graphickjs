@@ -49,7 +49,7 @@ R"(
     float u = w * (s * (m[0][0] * n.x + m[1][0] * n.y) - t * (m[0][0] * p.x + m[1][0] * p.y + m[3][0]));
     float v = h * (s * (m[0][1] * n.x + m[1][1] * n.y) - t * (m[0][1] * p.x + m[1][1] * p.y + m[3][1]));
 
-    float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t) * 20.0;
+    float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t)  * 2.0;
 
     // vec2 xDilate = (model * transform * vec3(1.0, 0.0, 1.0)).xy;
     // vec2 yDilate = (model * transform * vec3(0.0, 1.0, 1.0)).xy;

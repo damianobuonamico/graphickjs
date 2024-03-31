@@ -4,6 +4,7 @@
  *
  * @todo batches of instanced data overflow handling
  * @todo path builder clipping rect
+ * @todo dynamic number of samples based on dpr and hardware performance
  */
 
 #include "renderer_new.h"
@@ -319,7 +320,9 @@ namespace Graphick::renderer {
     get()->flush_meshes();
 
     Graphick::Renderer::GPU::Memory::Allocator::purge_if_needed();
-    Graphick::Renderer::GPU::Device::end_commands();
+    size_t time = Graphick::Renderer::GPU::Device::end_commands();
+
+    console::log("GPU", static_cast<double>(time) / 1000000.0);
   }
 
   void Renderer::draw(const geometry::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
@@ -377,11 +380,11 @@ namespace Graphick::renderer {
 
     const float max_size = std::max(bounds_size.x, bounds_size.y);
 
-    // const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
-    // const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
+    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
+    const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
 
-    const uint8_t horizontal_bands = 1;
-    const uint8_t vertical_bands = 1;
+    // const uint8_t horizontal_bands = 1;
+    // const uint8_t vertical_bands = 1;
 
     const vec2 bands_overlap = 2.0f * bounds_size / get()->m_viewport.size;
 
@@ -692,7 +695,9 @@ namespace Graphick::renderer {
         },
         {
           { m_programs.path_program.vp_uniform, m_vp_matrix },
-          { m_programs.path_program.viewport_size_uniform, m_viewport.size }
+          { m_programs.path_program.viewport_size_uniform, m_viewport.size },
+          { m_programs.path_program.min_samples_uniform, 4 },
+          { m_programs.path_program.max_samples_uniform, 16 }
         },
         m_viewport.size
       }

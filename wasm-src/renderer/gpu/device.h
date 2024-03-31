@@ -259,8 +259,10 @@ namespace Graphick::Renderer::GPU {
 
     /**
      * @brief Flushes the GPU commands.
+     *
+     * @return The GPU time.
      */
-    inline static void end_commands() { s_device->end_commands(); }
+    inline static size_t end_commands() { return s_device->end_commands(); }
 
     /**
      * @brief Performs a glDrawArrays() call with the given render_state.

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="svg2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37.74 99.2">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #fff;
+        stroke: #000;
+        stroke-miterlimit: 7.06;
+        stroke-width: .3px;
+      }
+    </style>
+  </defs>
+    <g id="g1" fill="#FFF">
+      <path id="path12" class="cls-1" d="m37.59,96.31s-.97,3.21-2.33,2.68C33.9,98.46,35.45,8.76.04.15.04.15,33.97-1.37,37.59,96.31h0Z"/>
+    </g>
+</svg>
