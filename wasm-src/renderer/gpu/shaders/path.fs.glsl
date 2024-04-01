@@ -22,39 +22,50 @@ R"(
 
   const float kQuadraticEpsilon = 0.0001;
   
-  vec2 to_coords(uint x) {
+  vec2 toCoords(uint x) {
     return vec2(float(x % 512U) + 0.5, float(x / 512U) + 0.5) / 512.0;
   }
 
-  bool not_normalized(float x, float pixelSize) {
-    return x <= -0.5 * pixelSize || x >= 1.0 + 0.5 * pixelSize;
-  }
-
   void main() {
-    vec2 texCoords = vTexCoord;
- 
-    // vec2 texCoords = vec2(
-    //   clamp(vTexCoord.x, 0.01, 0.99),
-    //   clamp(vTexCoord.y, 0.01, 0.99)
-    // );
-
     float coverage = 0.0;
 
-    /* The effective pixel dimensions of the em square. */
-	  vec2 pixelsPerEm = vec2(1.0 / fwidth(texCoords.x), 1.0 / fwidth(texCoords.y));
-    vec2 pixelSize = 1.0 / pixelsPerEm;
-
-    // if (not_normalized(texCoords.x, pixelSize.x) || not_normalized(texCoords.y, pixelSize.y)) {
-      // oFragColor = vec4(0.0, 1.0, 0.0, 1.0);
-      // return;
-      // discard;
-    // }
-    
-    ivec2 sampleCount = clamp(ivec2(32.0 / pixelsPerEm + 1.0), ivec2(uMinSamples, uMinSamples), ivec2(uMaxSamples, uMaxSamples));
-    // ivec2 sampleCount = ivec2(min(0, uMinSamples), min(4, uMaxSamples));
+    vec2 pixelSize = vec2(fwidth(vTexCoord.x), fwidth(vTexCoord.y));
+    vec2 pixelsPerEm = 1.0 / pixelSize;
 
     uint hBands = (vBandsData >> 28) + 1U;
     uint vBands = ((vBandsData >> 24) & 0xFU) + 1U;
+
+    uvec2 minBandIndex = uvec2(
+      clamp(uint(floor((vTexCoord.y - 0.49 * pixelSize.y) * float(hBands))), 0U, hBands - 1U),
+      clamp(uint(floor((vTexCoord.x - 0.49 * pixelSize.x) * float(vBands))), 0U, vBands - 1U)
+    );
+
+    uvec2 maxBandIndex = uvec2(
+      clamp(uint(floor((vTexCoord.y + 0.49 * pixelSize.y) * float(hBands))), 0U, hBands - 1U),
+      clamp(uint(floor((vTexCoord.x + 0.49 * pixelSize.x) * float(vBands))), 0U, vBands - 1U)
+    );
+
+    uvec2 sampleCount = clamp(
+      uvec2(32.0 / pixelsPerEm + 1.0), 
+      uvec2(uMinSamples), uvec2(uMaxSamples)
+    );
+
+    bool hBandChanged = false;
+
+    if (minBandIndex.x != maxBandIndex.x) {
+      minBandIndex.x = clamp(uint(floor(vTexCoord.y * float(hBands))), 0U, hBands - 1U);
+      sampleCount.x = 1U;
+      sampleCount.y *= 2U;
+
+      hBandChanged = true;
+    }
+
+    if (minBandIndex.y != maxBandIndex.y) {
+      minBandIndex.y = clamp(uint(floor(vTexCoord.x * float(vBands))), 0U, vBands - 1U);
+      sampleCount.y = 1U;
+
+      if (!hBandChanged) sampleCount.x *= 2U;
+    }
 
     uint xBandsOffset = (vBandsData >> 12) & 0xFFFU;
     uint yBandsOffset = vBandsData & 0xFFFU;
@@ -63,42 +74,32 @@ R"(
 
     uint bandsIndexOffset = xBandsOffset + yBandsOffset * 512U;
     uint curvesIndexOffset = xCurvesOffset + yCurvesOffset * 512U;
-    
-    uvec2 bandIndex = uvec2(
-      clamp(uint(floor(texCoords.y * float(hBands))), 0U, hBands - 1U),
-      clamp(uint(floor(texCoords.x * float(vBands))), 0U, vBands - 1U)
-    );
-   
-    float hSampleDelta = 1.0 / float(2 * sampleCount.x) * pixelSize.y;
-    float vSampleDelta = 1.0 / float(2 * sampleCount.y) * pixelSize.x;
 
-    uint hBandDataStart = texture(uBandsTexture, to_coords(bandsIndexOffset + bandIndex.x * 2U)).x + bandsIndexOffset;
-    uint hBandCurvesCount = texture(uBandsTexture, to_coords(bandsIndexOffset + bandIndex.x * 2U + 1U)).x;
+    float hSampleDelta = 1.0 / float(2U * sampleCount.x) * pixelSize.y;
+    float vSampleDelta = 1.0 / float(2U * sampleCount.y) * pixelSize.x;
 
-    // if (hBandDataStart > 512U) {
-    //   hBandDataStart %= 512U;
-    //   yBandsOffset += 1U;
-    // }
+    uint hBandDataStart = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U)).x + bandsIndexOffset;
+    uint hBandCurvesCount = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U + 1U)).x;
 
     for (uint curve = 0U; curve < hBandCurvesCount; curve++) {
-      uint curveOffset = curvesIndexOffset + texture(uBandsTexture, to_coords(hBandDataStart + curve)).x;
+      uint curveOffset = curvesIndexOffset + texture(uBandsTexture, toCoords(hBandDataStart + curve)).x;
 
-      vec4 p12 = (texture(uCurvesTexture, to_coords(curveOffset))
+      vec4 p12 = (texture(uCurvesTexture, toCoords(curveOffset))
         - vec4(vPosition, vPosition)) / vec4(vSize, vSize)
-        - vec4(texCoords, texCoords)
+        - vec4(vTexCoord, vTexCoord)
         - vec4(0.0, 0.5 * pixelSize.y - hSampleDelta, 0.0, 0.5 * pixelSize.y - hSampleDelta);
 
-      vec2 p3 = (texture(uCurvesTexture, to_coords(curveOffset + 1U)).xy 
+      vec2 p3 = (texture(uCurvesTexture, toCoords(curveOffset + 1U)).xy 
         - vPosition) / vSize 
-        - texCoords
+        - vTexCoord
         - vec2(0.0, 0.5 * pixelSize.y - hSampleDelta);
 
-      if (max(max(p12.x, p12.z), p3.x) * pixelsPerEm.x < -0.5) continue;
+      if (max(max(p12.x, p12.z), p3.x) * pixelsPerEm.x < -0.5) break;
 
       uint code = (0x2E74U >> (((p12.y > 0.0) ? 2U : 0U) + ((p12.w > 0.0) ? 4U : 0U) + ((p3.y > 0.0) ? 8U : 0U))) & 3U;
 
       if (code != 0U) {
-        for (int sample_i = 0; sample_i < sampleCount.x; sample_i++) {
+        for (uint iSample = 0U; iSample < sampleCount.x; iSample++) {
           float ax = p12.x - p12.z * 2.0 + p3.x;
           float ay = p12.y - p12.w * 2.0 + p3.y;
           float bx = p12.x - p12.z;
@@ -125,25 +126,20 @@ R"(
       }
     }
 
-    uint vBandDataStart = texture(uBandsTexture, to_coords(bandsIndexOffset + hBands * 2U + bandIndex.y * 2U)).x + bandsIndexOffset;
-    uint vBandCurvesCount = texture(uBandsTexture, to_coords(bandsIndexOffset + hBands * 2U + bandIndex.y * 2U + 1U)).x;
-
-    // if (vBandDataStart > 512U) {
-    //   vBandDataStart %= 512U;
-    //   yBandsOffset += 1U;
-    // }
+    uint vBandDataStart = texture(uBandsTexture, toCoords(bandsIndexOffset + hBands * 2U + minBandIndex.y * 2U)).x + bandsIndexOffset;
+    uint vBandCurvesCount = texture(uBandsTexture, toCoords(bandsIndexOffset + hBands * 2U + minBandIndex.y * 2U + 1U)).x;
 
     for (uint curve = 0U; curve < vBandCurvesCount; curve++) {
-      uint curveOffset = curvesIndexOffset + texture(uBandsTexture, to_coords(vBandDataStart + curve)).x;
+      uint curveOffset = curvesIndexOffset + texture(uBandsTexture, toCoords(vBandDataStart + curve)).x;
 
-      vec4 p12 = (texture(uCurvesTexture, to_coords(curveOffset))
+      vec4 p12 = (texture(uCurvesTexture, toCoords(curveOffset))
         - vec4(vPosition, vPosition)) / vec4(vSize, vSize)
-        - vec4(texCoords, texCoords)
+        - vec4(vTexCoord, vTexCoord)
         - vec4(0.5 * pixelSize.x - vSampleDelta, 0.0, 0.5 * pixelSize.x - vSampleDelta, 0.0);
 
-      vec2 p3 = (texture(uCurvesTexture, to_coords(curveOffset + 1U)).xy 
+      vec2 p3 = (texture(uCurvesTexture, toCoords(curveOffset + 1U)).xy 
         - vPosition) / vSize 
-        - texCoords
+        - vTexCoord
         - vec2(0.5 * pixelSize.x - vSampleDelta, 0.0);
 
       if (max(max(p12.y, p12.w), p3.y) * pixelsPerEm.y < -0.5) break;
@@ -151,7 +147,7 @@ R"(
       uint code = (0x2E74U >> (((p12.x > 0.0) ? 2U : 0U) + ((p12.z > 0.0) ? 4U : 0U) + ((p3.x > 0.0) ? 8U : 0U))) & 3U;
 
       if (code != 0U) {
-        for (int sample_i = 0; sample_i < sampleCount.y; sample_i++) {
+        for (uint iSample = 0U; iSample < sampleCount.y; iSample++) {
           float ax = p12.y - p12.w * 2.0 + p3.y;
           float ay = p12.x - p12.z * 2.0 + p3.x;
           float bx = p12.y - p12.w;
@@ -179,32 +175,10 @@ R"(
     }
 
     coverage = sqrt(clamp(abs(coverage / float(sampleCount.x + sampleCount.y)), 0.0, 1.0));
-    // if (coverage == 0.0) {
-    //   oFragColor = vec4(1.0, 0.0, 0.0, 1.0);
-    //   return;
-    // }
-	  float alpha = vColor.a * coverage;
-	  // float alpha = coverage + 0.2;
 
-    // if (texCoords.x < 0.0 || texCoords.x > 1.0 || texCoords.y < 0.0 || texCoords.y > 1.0) {
-    //   oFragColor = vec4(0.0, 1.0, 0.0, 1.0);
-    //   return;
-    // }
+    float alpha = vColor.a * coverage;
 
-	  // oFragColor = vec4(vColor.rgb * 0.0000000000001 + vec3(1.0, 1.0, 1.0) * alpha, alpha);
-	  // oFragColor = vec4((vColor.rgb * 0.00000000001 + vec3(texCoords, 0.0)) * alpha, alpha);
-
-	  // oFragColor = vec4(vColor.rgb * 0.000000001 +  vec3(float(bandIndex.y) / float(hBands - 1U), 0.0, 0.0) * alpha, alpha);
-    // oFragColor = vec4(vec3(sampleCount.x / 16.0) * alpha, alpha);
-    // oFragColor = vec4(vColor.rgb * 0.000000001 + vec3(texCoords, 0.0) * alpha, alpha);
-    oFragColor = vec4(vColor.rgb * alpha, alpha);
-
-
-    // oFragColor = vColor * 0.0000000001 + vec4(float(vBandCurvesCount) / 6.0, 0.0, 0.0, 1.0);
-    // return;
-
-    // oFragColor = vColor * vec4(float(bandIndex.x + 1U) / float(hBands - 1U), 1.0, 0.2, 1.0);
-    // oFragColor *= vec4(1.0, float(bandIndex.y + 1U) / float(vBands - 1U), 1.0, 1.0);
+    oFragColor = vec4(vColor.rgb, 1.0) * alpha;
   }
 
 )"

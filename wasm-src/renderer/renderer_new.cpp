@@ -366,8 +366,6 @@ namespace Graphick::renderer {
     const bool closed = path.closed();
     const size_t len = closed ? path.size() : (path.size() + 1);
 
-    //if (!data.instances.empty()) return;
-
     data.curves.insert(data.curves.end(), path.points.begin(), path.points.end());
 
     if (!closed) {
@@ -382,13 +380,8 @@ namespace Graphick::renderer {
 
     const float max_size = std::max(bounds_size.x, bounds_size.y);
 
-    // const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
-    // const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
-
-    const uint8_t horizontal_bands = 1;
-    const uint8_t vertical_bands = 1;
-
-    const vec2 bands_overlap = 2.0f * bounds_size / get()->m_viewport.size;
+    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
+    const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
 
     /* Cache min and max x and y for each curve. */
 
@@ -442,8 +435,6 @@ namespace Graphick::renderer {
       return max_x_y[a].y > max_x_y[b].y;
     });
 
-    //if (!data.instances.empty()) return;
-
     /* Calculate band metrics. */
 
     const vec2 band_delta = bounds_size / vec2(uvec2(vertical_bands, horizontal_bands));
@@ -464,7 +455,7 @@ namespace Graphick::renderer {
         const float min_y = min_x_y[h_indices[j]].y;
         const float max_y = max_x_y[h_indices[j]].y;
 
-        if (min_y == max_y || min_y > band_max.y + bands_overlap.y || max_y < band_min.y - bands_overlap.y) {
+        if (min_y == max_y || min_y > band_max.y || max_y < band_min.y) {
           continue;
         }
 
@@ -491,7 +482,7 @@ namespace Graphick::renderer {
         float min_x = min_x_y[v_indices[j]].x;
         float max_x = max_x_y[v_indices[j]].x;
 
-        if (min_x == max_x || min_x > band_max.x + bands_overlap.x || max_x < band_min.x - bands_overlap.x) {
+        if (min_x == max_x || min_x > band_max.x || max_x < band_min.x) {
           continue;
         }
 
@@ -510,8 +501,6 @@ namespace Graphick::renderer {
     }
 
     /* Push instance. */
-
-    //if (!data.instances.empty()) return;
 
     data.instances.emplace_back(
       transform, bounds.min, bounds_size, fill.color,
