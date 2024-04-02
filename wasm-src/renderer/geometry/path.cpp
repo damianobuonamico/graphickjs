@@ -1681,7 +1681,7 @@ namespace Graphick::Renderer::Geometry {
           }
         }
 
-        return true;
+        return false;
       }
     }
 

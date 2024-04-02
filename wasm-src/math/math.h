@@ -494,6 +494,37 @@ namespace Graphick::Math {
   std::tuple<vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t1, const float t2);
 
   /**
+   * @brief Splits a quadratic bezier curve into two at a given point.
+   *
+   * @param p0 The first control point.
+   * @param p1 The second control point.
+   * @param p2 The third control point.
+   * @param t The point at which to split the curve.
+   * @return The resulting control points for the two curves.
+   */
+  inline std::tuple<vec2, vec2, vec2> split_quadratic(const vec2 p0, const vec2 p1, const vec2 p2, const float t) {
+    vec2 p = quadratic(p0, p1, p2, t);
+
+    vec2 q0 = lerp(p0, p1, t);
+    vec2 q1 = lerp(p1, p2, t);
+
+    return { p, q0, q1 };
+  }
+
+  inline std::tuple<vec2, vec2, vec2, vec2, vec2> split_quadratic(const vec2 p0, const vec2 p1, const vec2 p2, const float t1, const float t2) {
+    vec2 p01 = quadratic(p0, p1, p2, t1);
+    vec2 p02 = quadratic(p0, p1, p2, t2);
+
+    vec2 q1 = lerp(p0, p1, t1);
+    vec2 q2 = lerp(p1, p2, t2);
+
+    vec2 r1 = lerp(p1, p2, t1);
+    vec2 q = lerp(q1, r1, t2);
+
+    return { q1, p01, q, p02, q2 };
+  }
+
+  /**
    * @brief Calculates a hash value for a list of floats.
    *
    * @param floats The list of floats.

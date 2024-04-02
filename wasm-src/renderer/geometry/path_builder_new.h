@@ -18,6 +18,10 @@ namespace Graphick::Renderer::Geometry {
   class Path;
 }
 
+namespace Graphick::Renderer {
+  struct Stroke;
+}
+
 namespace Graphick::renderer::geometry {
 
   struct QuadraticPath;
@@ -46,6 +50,15 @@ namespace Graphick::renderer::geometry {
     ~PathBuilder() = default;
 
     /**
+     * @brief Strokes a path and outputs a fill composed of quadratic bezier curves.
+     *
+     * @param stroke The stroke properties to use.
+     * @param tolerance The offset error tolerance.
+     * @return The output fill.
+     */
+    QuadraticPath stroke(const Graphick::Renderer::Stroke& stroke, const float tolerance) const;
+
+    /**
      * @brief Flattens a path and outputs the line segments to a sink vector.
      *
      * If the portion of the path visible is less than 50%, it is clipped.
@@ -56,6 +69,18 @@ namespace Graphick::renderer::geometry {
      */
     void flatten(const rect& clip, const float tolerance, std::vector<vec4>& sink) const;
   private:
+    /**
+     * @brief Offsets a quadratic bezier curve.
+     *
+     * @param p0 The start point of the curve.
+     * @param p1 The control point of the curve.
+     * @param p2 The end point of the curve.
+     * @param width The width to offset the curve by.
+     * @param tolerance The offset error tolerance.
+     * @param sink The output path.
+     */
+    void offset_quadratic(vec2 p0, vec2 p1, vec2 p2, const float width, const float tolerance, QuadraticPath& sink) const;
+
     /**
      * @brief Clips and flattens a path and outputs the line segments to a sink vector.
      *

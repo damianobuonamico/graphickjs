@@ -884,5 +884,5 @@ namespace Graphick::Math {
 
     return { Paaa, Paab, Pabb, Pbbb };
   }
-
+  
 }

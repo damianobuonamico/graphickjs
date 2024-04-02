@@ -337,10 +337,25 @@ namespace Graphick::renderer {
       return;
     }
 
-    // Will call fill once stroke path is calcualted
+    const float radius_safe = 0.5f * stroke.width * (stroke.join == Graphick::Renderer::LineJoin::Miter ? stroke.miter_limit : 1.0f);
+    rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
+
+    bounds.min -= radius_safe;
+    bounds.max += radius_safe;
+
+    const geometry::QuadraticPath stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
+    const Fill fill = {
+      stroke.color,
+      Graphick::Renderer::FillRule::NonZero,
+      stroke.z_index
+    };
+
+    draw(stroked_path, fill, transform, bounding_rect);
   }
 
   void Renderer::draw(const geometry::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
+    GK_TOTAL("Renderer::draw(fill)");
+
     if (path.empty()) {
       return;
     }
