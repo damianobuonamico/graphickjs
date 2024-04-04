@@ -343,14 +343,26 @@ namespace Graphick::renderer {
     bounds.min -= radius_safe;
     bounds.max += radius_safe;
 
-    const geometry::QuadraticPath stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
+    // TODO: iterate quadraticpaths returned
+    const geometry::QuadraticPath stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f)[0];
     const Fill fill = {
       stroke.color,
       Graphick::Renderer::FillRule::NonZero,
       stroke.z_index
     };
 
-    draw(stroked_path, fill, transform, bounding_rect);
+    draw(stroked_path, fill, transform, &bounds);
+    // draw_outline(stroked_path, transform, 0.25f, nullptr, nullptr);
+
+    // for (size_t i = 0; i < stroked_path.size(); i++) {
+    //   const vec2 p0 = stroked_path[i * 2];
+    //   const vec2 p1 = stroked_path[i * 2 + 1];
+    //   const vec2 p2 = stroked_path[i * 2 + 2];
+
+    //   get()->m_vertex_instances.instances.push_back(transform * p0);
+    //   get()->m_handle_instances.instances.push_back(transform * p1);
+    //   get()->m_vertex_instances.instances.push_back(transform * p2);
+    // }
   }
 
   void Renderer::draw(const geometry::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
