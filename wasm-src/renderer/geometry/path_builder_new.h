@@ -56,7 +56,7 @@ namespace Graphick::renderer::geometry {
      * @param tolerance The offset error tolerance.
      * @return The output fill.
      */
-    std::vector<QuadraticPath> stroke(const Graphick::Renderer::Stroke& stroke, const float tolerance) const;
+    QuadraticPath stroke(const Graphick::Renderer::Stroke& stroke, const float tolerance) const;
 
     /**
      * @brief Flattens a path and outputs the line segments to a sink vector.

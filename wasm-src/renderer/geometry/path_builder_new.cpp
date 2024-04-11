@@ -22,6 +22,11 @@ namespace Graphick::renderer::geometry {
   using LineCap = Graphick::Renderer::LineCap;
   using LineJoin = Graphick::Renderer::LineJoin;
 
+  struct StrokeOutline {
+    QuadraticPath inner;
+    QuadraticPath outer;
+  };
+
   /* -- Static -- */
 
   /**
@@ -34,6 +39,49 @@ namespace Graphick::renderer::geometry {
    * @param tolerance The offset error tolerance.
    * @param sink The output path.
    */
+  static vec2 offset_monotonic_quadratic(vec2 p0, vec2 p1, vec2 p2, const float radius, const float tolerance, StrokeOutline& sink) {
+    vec2 start_n = Math::normal(p0, p1);
+
+    while (true) {
+      const vec2 a = 2.0f * (p0 - 2.0f * p1 + p2);
+      const vec2 b = 2.0f * (p1 - p0);
+
+      const float aob = Math::dot(a, b);
+      const float axb = Math::cross(a, b);
+
+      if (aob == 0.0f) {
+        break;
+      }
+
+      float t = tolerance * Math::squared_length(b) / (std::abs(axb) - tolerance * aob);
+
+      if (!(t > GK_QUADRATIC_EPSILON && t < 1.0f - GK_QUADRATIC_EPSILON)) {
+        t = 1.0;
+      }
+
+      const auto [p, q1, q2] = Math::split_quadratic(p0, p1, p2, t);
+
+      const vec2 end_n = Math::normal(q1, p);
+      const vec2 n = start_n + end_n;
+
+      const vec2 nr1 = n * (2.0f * radius / Math::squared_length(n));
+      const vec2 nr2 = end_n * radius;
+
+      sink.inner.quadratic_to(q1 - nr1, p - nr2);
+      sink.outer.quadratic_to(q1 + nr1, p + nr2);
+
+      if (t == 1.0f) {
+        break;
+      }
+
+      p0 = p;
+      p1 = q2;
+      start_n = end_n;
+    }
+
+    return start_n;
+  }
+
   static void offset_monotonic_quadratic(vec2 p0, vec2 p1, vec2 p2, const float radius, const float tolerance, QuadraticPath& sink) {
     // TODO: don't recalcuate start normal
 
@@ -86,6 +134,83 @@ namespace Graphick::renderer::geometry {
    * @param tolerance The offset error tolerance.
    * @param sink The output path.
    */
+  static vec2 offset_quadratic(vec2 p0, vec2 p1, vec2 p2, const float radius, const float tolerance, StrokeOutline& sink) {
+    const vec2 v1 = p1 - p0;
+    const vec2 v2 = p2 - p1;
+
+    const float cross = Math::cross(v2, v1);
+
+    if (Math::is_almost_zero(cross, 3.0f)) {
+      // TODO: implement
+      const float dot = Math::dot(-v1, v2);
+
+      /* Check if the control point lies outside of the start/end points. */
+      if (dot > 0.0f) {
+        /* Rotate all points to x-axis. */
+        const float r1 = Math::squared_length(v1);
+        const float r2 = Math::dot(p2 - p0, v1);
+
+        /* Parameter of the cusp if it's within (0, 1). */
+        const float t = r2 / r1;
+
+        if (Math::is_normalized(t, false)) {
+          // Offset line
+          return vec2{ 0.0f, 0.0f };
+        }
+      }
+
+      // Offset line
+      // sink.line_to(p2);
+
+      return vec2{ 0.0f, 0.0f };
+    }
+
+    const vec2 a = 2.0f * (v2 - v1);
+    const vec2 b = 2.0f * (p1 - p0);
+
+    const float bxa = Math::cross(b, a);
+    const float boa = Math::dot(b, a);
+
+    if (bxa == 0) {
+      return vec2{ 0.0f, 0.0f };
+    }
+
+    const double alen2 = Math::squared_length(a);
+    const double blen2 = Math::squared_length(b);
+
+    const float fac = -1.0f / alen2;
+    const float sqrt_ = std::sqrtf(boa * boa - alen2 * (blen2 - std::cbrtf(radius * radius * bxa * bxa)));
+
+    const float t1 = fac * (boa + sqrt_);
+    const float t2 = fac * (boa - sqrt_);
+
+    const uint8_t code = static_cast<uint8_t>(Math::is_normalized(t1, false)) |
+      (static_cast<uint8_t>(Math::is_normalized(t2, false)) << 1);
+
+    switch (code) {
+    case 1: {
+      const auto [p, q1, q2] = Math::split_quadratic(p0, p1, p2, t1);
+      offset_monotonic_quadratic(p0, q1, p, radius, tolerance, sink);
+      return offset_monotonic_quadratic(p, q2, p2, radius, tolerance, sink);
+    }
+    case 2: {
+      const auto [p, q1, q2] = Math::split_quadratic(p0, p1, p2, t2);
+      offset_monotonic_quadratic(p0, q1, p, radius, tolerance, sink);
+      return offset_monotonic_quadratic(p, q2, p2, radius, tolerance, sink);
+    }
+    case 3: {
+      const auto [q1, p01, q, p02, q2] = Math::split_quadratic(p0, p1, p2, t1, t2);
+      offset_monotonic_quadratic(p0, q1, p01, radius, tolerance, sink);
+      offset_monotonic_quadratic(p01, q, p02, radius, tolerance, sink);
+      return offset_monotonic_quadratic(p02, q2, p2, radius, tolerance, sink);
+    }
+    case 0:
+    default: {
+      return offset_monotonic_quadratic(p0, p1, p2, radius, tolerance, sink);
+    }
+    }
+  }
+
   static void offset_quadratic(vec2 p0, vec2 p1, vec2 p2, const float radius, const float tolerance, QuadraticPath& sink) {
     const vec2 v1 = p1 - p0;
     const vec2 v2 = p2 - p1;
@@ -222,19 +347,30 @@ namespace Graphick::renderer::geometry {
    * @param inv_miter_limit The inverse miter limit.
    * @param join The join type.
    * @param sink The contour to add the join to.
+   * @param reverse Whether to consider the complementary angle.
    */
-  static void add_join(const vec2 from, const vec2 to, const vec2 pivot, const vec2 from_normal, const vec2 to_normal, const float radius, const float inv_miter_limit, LineJoin join, QuadraticPath& sink) {
-    const vec2 center = from - from_normal * radius;
-    const vec2 a = from - center;
-    const vec2 b = to - center;
+  static void add_join(const vec2 from, const vec2 to, const vec2 pivot, const vec2 from_normal, const vec2 to_normal, const float radius, const float inv_miter_limit, LineJoin join, QuadraticPath& sink, const bool reverse = false) {
+    if (Math::is_almost_equal(from, to, GK_POINT_EPSILON)) {
+      return;
+    }
 
-    const double dot = a.x * b.x + a.y * b.y;
-    const double cross = a.x * b.y - a.y * b.x;
+    //const vec2 center = from - from_normal * radius;
+    const vec2 a = from - pivot;
+    const vec2 b = to - pivot;
 
-    double ang = std::atan2(cross, dot);
+    float dot = a.x * b.x + a.y * b.y;
+    float cross = a.x * b.y - a.y * b.x;
+
+    if (reverse) cross = -cross;
+
+    float ang = std::atan2(cross, dot);
 
     if (ang < 0.0) ang += MATH_TWO_PI;
     if (ang >= MATH_PI) join = LineJoin::Bevel;
+
+    if (Math::is_almost_zero(ang)) {
+      return;
+    }
 
     switch (join) {
     case LineJoin::Round: {
@@ -243,15 +379,15 @@ namespace Graphick::renderer::geometry {
       // break;
     }
     case LineJoin::Miter: {
-      double dot = from_normal.x * to_normal.x + from_normal.y * to_normal.y;
-      double sin_half = std::sqrt((1.0 + dot) * 0.5);
+      float dot = from_normal.x * to_normal.x + from_normal.y * to_normal.y;
+      float sin_half = std::sqrt((1.0 + dot) * 0.5);
 
       if (sin_half < inv_miter_limit) {
         sink.line_to(to);
         break;
       } else {
         vec2 mid = from_normal + to_normal;
-        double l = radius / (sin_half * std::hypot(mid.x, mid.y));
+        float l = radius / (sin_half * std::hypot(mid.x, mid.y));
         vec2 p = pivot + mid * l;
 
         sink.line_to(p);
@@ -453,7 +589,8 @@ namespace Graphick::renderer::geometry {
     return fill;
   }
 #else
-  std::vector<QuadraticPath> PathBuilder::stroke(const Graphick::Renderer::Stroke& stroke, const float tolerance) const {
+
+  QuadraticPath PathBuilder::stroke(const Graphick::Renderer::Stroke& stroke, const float tolerance) const {
     if (m_path.empty()) {
       return {};
     }
@@ -462,11 +599,10 @@ namespace Graphick::renderer::geometry {
     vec2 p1 = m_path[1];
     vec2 p2 = m_path[2];
 
-    const float radius = stroke.width * 0.5f;
+    const float radius = stroke.width * 0.5f * 20.0f;
     const float inv_miter_limit = 1.0f / stroke.miter_limit;
 
-    std::vector<QuadraticPath> fill;
-    QuadraticPath* contour = nullptr;
+    StrokeOutline outline;
 
     if (m_path.size() == 1 && (p0 == p1 && p1 == p2)) {
       if (stroke.cap != LineCap::Butt) {
@@ -478,14 +614,76 @@ namespace Graphick::renderer::geometry {
       vec2 start = p0 + nr;
       vec2 rstart = p0 - nr;
 
-      contour->move_to(start);
+      outline.outer.move_to(start);
 
-      add_cap(start, rstart, n, radius, stroke.cap, *contour);
-      add_cap(rstart, start, -n, radius, stroke.cap, *contour);
+      add_cap(start, rstart, n, radius, stroke.cap, outline.outer);
+      add_cap(rstart, start, -n, radius, stroke.cap, outline.outer);
 
-      return fill;
+      return outline.outer;
     }
 
+    p0 = m_path[0];
+    p1 = m_path[1];
+    p2 = m_path[2];
+
+    vec2 pivot = p0;
+    vec2 last_p1 = p1;
+    vec2 last_n = Math::normal(p0, p1);
+
+    outline.inner.move_to(p0 - last_n * radius);
+    outline.outer.move_to(p0 + last_n * radius);
+
+    for (size_t i = 0; i < m_path.size(); i++) {
+      p0 = m_path[i * 2];
+      p1 = m_path[i * 2 + 1];
+      p2 = m_path[i * 2 + 2];
+
+      const vec2 start_n = Math::normal(p0, p1);
+      const vec2 start_nr = start_n * radius;
+
+      const dvec2 a = dvec2(p1) - dvec2(p0);
+      const dvec2 b = dvec2(last_p1) - dvec2(p0);
+
+      double cos = Math::dot(a, b) / (Math::length(a) * Math::length(b));
+      // double cross = Math::cross(a, b);
+      // cos *= cos / (Math::squared_length(a) * Math::squared_length(b));
+      // console::log("cossssssssssssssssssssssssssssssssssssssssssssssssssssss", cos > 0.0);
+
+      if (cos > 0 || std::abs(cos) < 1.0 - GK_POINT_EPSILON) {
+        const vec2 inner_start = p0 - start_nr;
+        const vec2 outer_start = p0 + start_nr;
+
+        add_join(outline.inner.points.back(), inner_start, pivot, -last_n, -start_n, radius, inv_miter_limit, stroke.join, outline.inner, true);
+        add_join(outline.outer.points.back(), outer_start, pivot, last_n, start_n, radius, inv_miter_limit, stroke.join, outline.outer);
+      }
+
+      if (p1 == p2) {
+        /* Linear segment. */
+
+        outline.inner.line_to(p2 - start_nr);
+        outline.outer.line_to(p2 + start_nr);
+
+        last_n = start_n;
+        last_p1 = p0;
+      } else {
+        /* Quadratic segment. */
+
+        last_n = offset_quadratic(p0, p1, p2, radius, tolerance, outline);
+        last_p1 = p1;
+      }
+
+      pivot = p2;
+    }
+
+    QuadraticPath stroke_outline = std::move(outline.outer);
+
+    // TODO: handle closed
+    add_cap(stroke_outline.points.back(), outline.inner.points.back(), last_n, radius, stroke.cap, stroke_outline);
+
+    stroke_outline.points.insert(stroke_outline.points.end(), outline.inner.points.rbegin() + 1, outline.inner.points.rend());
+
+    return stroke_outline;
+#if 0
     vec2 last_dir = { 0.0f, 0.0f };
     vec2 first_point = { 0.0f, 0.0f };
     vec2 last_point = { 0.0f, 0.0f };
@@ -530,6 +728,8 @@ namespace Graphick::renderer::geometry {
       contour->move_to(front_start);
     }
 
+#endif
+#if 0
     for (size_t i = 0; i < m_path.size(); i++) {
       p0 = m_path[i * 2];
       p1 = m_path[i * 2 + 1];
@@ -654,7 +854,8 @@ namespace Graphick::renderer::geometry {
     }
 
     return fill;
-  }
+#endif
+    }
 #endif
 
   void PathBuilder::flatten(const rect& clip, const float tolerance, std::vector<vec4>& sink) const {
@@ -709,4 +910,4 @@ namespace Graphick::renderer::geometry {
     }
   }
 
-}
+  }
