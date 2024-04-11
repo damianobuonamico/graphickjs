@@ -11,6 +11,8 @@
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
 
+#include "quadratic_path.h"
+
 #include <vector>
 
 //TEMP
@@ -24,8 +26,6 @@ namespace Graphick::Renderer {
 
 namespace Graphick::renderer::geometry {
 
-  struct QuadraticPath;
-
   /**
    * @brief A class to generate drawables from a path.
    *
@@ -34,6 +34,18 @@ namespace Graphick::renderer::geometry {
    * @class PathBuilder
    */
   class PathBuilder {
+  public:
+    /**
+     * @brief A structure to hold the inner and outer outlines of a stroke.
+     *
+     * If the stroke is not closed, the inner outline will be empty.
+     *
+     * @struct StrokeOutline
+     */
+    struct StrokeOutline {
+      QuadraticPath outer;    /* The outer outline of the stroke. */
+      QuadraticPath inner;    /* The inner outline of the stroke, in reverse order. */
+    };
   public:
     /**
      * @brief Constructs a PathBuilder.
@@ -56,7 +68,7 @@ namespace Graphick::renderer::geometry {
      * @param tolerance The offset error tolerance.
      * @return The output fill.
      */
-    QuadraticPath stroke(const Graphick::Renderer::Stroke& stroke, const float tolerance) const;
+    StrokeOutline stroke(const Graphick::Renderer::Stroke& stroke, const float tolerance) const;
 
     /**
      * @brief Flattens a path and outputs the line segments to a sink vector.

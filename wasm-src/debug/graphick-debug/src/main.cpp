@@ -155,8 +155,8 @@ int main() {
   // path1.line_to({ 80.0f, 190.0f });
   // path1.close();
 
-  // path1.move_to({ 0.0f, 0.0f });
-  // path1.quadratic_to({ 100.0f, 100.0f }, { 200.0f, 000.0f });
+  path1.move_to({ 0.0f, 0.0f });
+  path1.quadratic_to({ 100.0f, 100.0f }, { 200.0f, 000.0f });
   // path1.quadratic_to({ 100.0f, -100.0f }, { 0.0f, 0.0f });
   // path1.close();
 
@@ -164,8 +164,8 @@ int main() {
   // path1.cubic_to({ 300.0f, 200.0f }, { 320.0f, 150.0f }, { 400.0f, 100.0f });
 
   // path1.circle({ 100.0f, 100.0f }, 50.0f);
-  path1.move_to({ 300.0f, 100.0f });
-  path1.cubic_to({ 300.0f, 200.0f }, { 400.0f, 200.0f }, { 400.0f, 100.0f });
+  // path1.move_to({ 300.0f, 100.0f });
+  // path1.cubic_to({ 300.0f, 200.0f }, { 400.0f, 200.0f }, { 400.0f, 100.0f });
   // path1.cubic_to({ 400.0f, 0.0f }, { 300.0f, 0.0f }, { 300.0f, 100.0f });
   // path1.line_to({ 350.0f, 200.0f });
   // path1.line_to({ 250.0f, 200.0f });
@@ -265,7 +265,11 @@ int main() {
   // path1.close();
 
   test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
-  test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
+  Graphick::Editor::StrokeComponent stroke = test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
+
+  const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 20.0f;
+  const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = Graphick::Renderer::LineCap::Round;
+  const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = Graphick::Renderer::LineJoin::Round;
 
   // test_entity1.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });
   // test_entity1.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
