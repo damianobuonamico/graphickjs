@@ -334,7 +334,8 @@ namespace Graphick::Editor {
 
     const size_t z_far = m_order.size() * 2 + 1;
     float z_index = 1.0f;
-    float tolerance = GK_PATH_TOLERANCE / (viewport.zoom() * viewport.dpr());
+    float tolerance = GK_PATH_TOLERANCE / 2.0f;
+    float outline_tolerance = GK_PATH_TOLERANCE / (viewport.zoom() * viewport.dpr());
 
     bool should_rehydrate = true;
 
@@ -442,7 +443,7 @@ namespace Graphick::Editor {
           }
         }
 
-        renderer::Renderer::draw_outline(quadratics, transform, tolerance);
+        renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
         renderer::Renderer::draw_outline_vertices(
           path, transform,
           is_full ? nullptr : &selected_vertices

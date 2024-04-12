@@ -354,15 +354,25 @@ namespace Graphick::renderer {
     // TODO: actually render both inner and outer
 
     draw(stroked_path.outer, fill, transform, &bounds);
-    draw_outline(stroked_path.outer, transform, 0.25f, nullptr, nullptr);
+    // draw_outline(stroked_path.outer, transform, 0.25f, nullptr, nullptr);
 
-    for (size_t i = 0; i < stroked_path.outer.size(); i++) {
-      const vec2 p0 = stroked_path.outer[i * 2];
-      const vec2 p1 = stroked_path.outer[i * 2 + 1];
-      const vec2 p2 = stroked_path.outer[i * 2 + 2];
+    // for (size_t i = 0; i < stroked_path.outer.size(); i++) {
+    //   const vec2 p0 = stroked_path.outer[i * 2];
+    //   const vec2 p1 = stroked_path.outer[i * 2 + 1];
+    //   const vec2 p2 = stroked_path.outer[i * 2 + 2];
+
+    //   get()->m_vertex_instances.instances.push_back(transform * p0);
+    //   get()->m_handle_instances.instances.push_back(transform * p1);
+    //   get()->m_vertex_instances.instances.push_back(transform * p2);
+    // }
+
+    for (size_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path[i * 2];
+      const vec2 p1 = path[i * 2 + 1];
+      const vec2 p2 = path[i * 2 + 2];
 
       get()->m_vertex_instances.instances.push_back(transform * p0);
-      get()->m_handle_instances.instances.push_back(transform * p1);
+      // get()->m_handle_instances.instances.push_back(transform * p1);
       get()->m_vertex_instances.instances.push_back(transform * p2);
     }
   }

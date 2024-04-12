@@ -55,6 +55,39 @@ namespace Graphick::Renderer::Geometry {
     return std::sqrtf(3.0f) / 36.0f * Math::length((cubic.p3 - cubic.p2 * 3.0f) + (cubic.p1 * 3.0f - cubic.p0));
   }
 
+  /**
+   * @brief Approximates a monotonic cubic bezier curve with a sequence of quadratic bezier segments.
+   *
+   * @param cubic The cubic bezier segment to approximate.
+   * @param tolerance The maximum error tolerance.
+   * @param sink The quadratic path to append the approximated segments to.
+   */
+  static void monotonic_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, renderer::geometry::QuadraticPath& sink) {
+    Path::Segment sub_curve = cubic;
+
+    float t_min = 0.0f;
+    float t_max = 1.0f;
+
+    while (true) {
+      if (single_quadratic_approximation_error(sub_curve) <= tolerance) {
+        sink.quadratic_to(single_quadratic_approximation(sub_curve), sub_curve.p3);
+
+        if (t_max >= 1.0f) {
+          return;
+        }
+
+        t_min = t_max;
+        t_max = 1.0f;
+      } else {
+        t_max = (t_min + t_max) / 2.0f;
+      }
+
+      const auto& [p0, p1, p2, p3] = Math::split_bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t_min, t_max);
+
+      sub_curve = { p0, p1, p2, p3 };
+    }
+  }
+
   /* -- Segment -- */
 
   bool Path::Segment::is_point() const {
@@ -1984,29 +2017,70 @@ namespace Graphick::Renderer::Geometry {
         Segment curve = { m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
         Segment sub_curve = curve;
 
-        float t_min = 0.0f;
-        float t_max = 1.0f;
+        const vec2 a = curve.p0 - 2.0f * curve.p1 + curve.p2;
+        const vec2 b = -2.0f * curve.p0 + 2.0f * curve.p1;
+        const vec2 c = curve.p0;
 
-        while (true) {
-          if (single_quadratic_approximation_error(sub_curve) <= tolerance) {
-            path.quadratic_to(single_quadratic_approximation(sub_curve), sub_curve.p3);
+        // To get the inflections C'(t) cross C''(t) = at^2 + bt + c = 0 needs to be solved for 't'.
+        // The first cooefficient of the quadratic formula is also the denominator.
+        const float den = Math::cross(b, a);
 
-            if (t_max >= 1.0f) {
-              goto next_segment;
-            }
+        if (den != 0.0f) {
+          // Two roots might exist, solve with quadratic formula ('tl' is real).
+          const float tc = Math::cross(a, c) / den;
+          float tl = tc * tc + Math::cross(b, c) / den;
 
-            t_min = t_max;
-            t_max = 1.0f;
-          } else {
-            t_max = (t_min + t_max) / 2.0f;
+          // If 'tl < 0' there are two complex roots (no need to solve).
+          // If 'tl == 0' there is a real double root at tc (cusp case).
+          // If 'tl > 0' two real roots exist at 'tc - Sqrt(tl)' and 'tc + Sqrt(tl)'.
+          // if (tl > 0) {
+          //   tl = std::sqrtf(tl);
+          // }
+
+          if (tl == 0) {
+            const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
+
+            monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
+            monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
+
+            console::log("cusppppppppppppppppppppppp");
           }
+        } else {
+          // One real root might exist, solve linear case ('tl' is NaN).
+          const float tc = -0.5f * Math::cross(c, b) / Math::cross(c, a);
 
-          const auto& [p0, p1, p2, p3] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, t_min, t_max);
+          const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
 
-          sub_curve = { p0, p1, p2, p3 };
+          monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
+          monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
+
+          console::log("cuspppppppppppppppppppppppsssssssssssssssss");
         }
 
-      next_segment:
+        monotonic_cubic_to_quadratics(curve, tolerance, path);
+      //   float t_min = 0.0f;
+      //   float t_max = 1.0f;
+
+      //   while (true) {
+      //     if (single_quadratic_approximation_error(sub_curve) <= tolerance) {
+      //       path.quadratic_to(single_quadratic_approximation(sub_curve), sub_curve.p3);
+
+      //       if (t_max >= 1.0f) {
+      //         goto next_segment;
+      //       }
+
+      //       t_min = t_max;
+      //       t_max = 1.0f;
+      //     } else {
+      //       t_max = (t_min + t_max) / 2.0f;
+      //     }
+
+      //     const auto& [p0, p1, p2, p3] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, t_min, t_max);
+
+      //     sub_curve = { p0, p1, p2, p3 };
+      //   }
+
+      // next_segment:
         j += 3;
         break;
       }

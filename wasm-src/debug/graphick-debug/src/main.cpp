@@ -164,9 +164,9 @@ int main() {
   // path1.cubic_to({ 300.0f, 200.0f }, { 320.0f, 150.0f }, { 400.0f, 100.0f });
 
   // path1.circle({ 100.0f, 100.0f }, 50.0f);
-  path1.move_to({ 300.0f, 100.0f });
-  path1.cubic_to({ 300.0f, 200.0f }, { 400.0f, 200.0f }, { 400.0f, 100.0f });
-  path1.cubic_to({ 400.0f, 0.0f }, { 300.0f, 0.0f }, { 300.0f, 100.0f });
+  // path1.move_to({ 300.0f, 100.0f });
+  // path1.cubic_to({ 300.0f, 200.0f }, { 400.0f, 200.0f }, { 400.0f, 100.0f });
+  // path1.cubic_to({ 400.0f, 0.0f }, { 300.0f, 0.0f }, { 300.0f, 100.0f });
   // path1.line_to({ 350.0f, 200.0f });
   // path1.line_to({ 250.0f, 200.0f });
   // path1.close();
@@ -180,78 +180,68 @@ int main() {
   // TODO: handle case of multiple contours overlapping
   // TODO: fix outlines when zooming in
   // path1.move_to({ 230.0f, 324.0f });
-  // path1.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Handled
+  // path1.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Not Handled
 
   // path1.move_to({ 221.0f, 718.0f });
-  // path1.cubic_to({ 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f }); // Handled
+  // path1.cubic_to({ 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f }); // Not Handled
 
   // path1.move_to({ 295.0f, 343.0f });
-  // path1.cubic_to({ 436.0f, 203.0f }, { 540.0f, 323.0f }, { 540.0f, 323.0f }); // Handled
-
-  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element(path1);
+  // path1.cubic_to({ 436.0f, 203.0f }, { 540.0f, 323.0f }, { 540.0f, 323.0f }); // Not Handled
 
   /* Stroking Robustness */
 
-  // path.move_to({ 230.0f, 324.0f });
-  // path.cubic_to({ 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f }); // Handled
+  using Graphick::vec2;
 
-  // path.move_to({ 221.0f, 718.0f });
-  // path.cubic_to({ 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f }); // Handled
+  std::vector<std::array<vec2, 4>> tests = {
+    std::array<vec2, 4>{ vec2{ 230.0f, 324.0f }, { 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f } }, // Handled
+    std::array<vec2, 4>{ vec2{ 221.0f, 718.0f }, { 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f } }, // Handled
+    std::array<vec2, 4>{ vec2{ 295.0f, 343.0f }, { 436.0f, 203.0f }, { 307.0f, 221.0f }, { 540.0f, 323.0f } }, // Handled
+    std::array<vec2, 4>{ vec2{ 50.0f, 200.0f }, { -150.0f, 100.0f }, { -50.0f, 100.0f }, { -50.0f, 200.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 50.0f, 200.0f }, { -150.0f, 100.0f }, { -37.0f, 112.0f }, { -50.0f, 200.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 110.0f, 100.0f }, { -10.0f, 100.0f }, { 100.0f, 0.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 101.0f, 100.0f }, { -1.0f, 100.0f }, { 100.0f, 0.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 100.0f, 100.0f }, { 0.0f, 100.0f }, { 100.0f, 0.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 10.0f, 60.0f }, { 0.0f, 60.0f }, { 10.0f, 50.0f } }, // High Curvature Endpoint (naive)
+    std::array<vec2, 4>{ vec2{ 357.188f, 170.417f }, { 360.313f, 175.417f }, { 1304.06f, -507.917f }, { 0.0f, 0.0f } }, // High Curvature Endpoint (naive)
+    std::array<vec2, 4>{ vec2{ 75.8624f, 74.2385f }, { 272.016f, 272.517f }, { 39.1216f, 36.2832f }, { 200.0f, 200.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 129.012f, 295.262f }, { 129.113f, 295.551f }, { 116.507f, 268.718f }, { 117.396f, 270.102f } }, // High Curvature Endpoint (naive)
+    std::array<vec2, 4>{ vec2{ 0.0f, 150.0f }, { -60.0f, 250.0f }, { -10.0f, 350.0f }, { 150.0f, 450.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 33.0f, 66.0f }, { 66.0f, 66.0f }, { 100.0f, 0.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 100.0f, 100.0f }, { 203.243f, 170.858f }, { 100.0f, 100.0f }, { 200.0f, 200.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 100.0f, 100.0f }, { 200.0f, 200.0f }, { 529.0f, 160.0f }, { 400.0f, 400.0f } } // Not Handled
+  };
 
-  // path.move_to({ 295.0f, 343.0f });
-  // path.cubic_to({ 436.0f, 203.0f }, { 307.0f, 221.0f }, { 540.0f, 323.0f }); // Handled
+  for (size_t i = 4; i < tests.size(); i++) {
+    Graphick::Renderer::Geometry::Path path;
 
-  // path.move_to({ 50.0f, 200.0f });
-  // path.cubic_to({ -150.0f, 100.0f }, { -50.0f, 100.0f }, { -50.0f, 200.0f }); // Handled
+    const Graphick::vec2 delta = { 0.0f, 0.0f };
+    // const Graphick::vec2 delta = { (i / 5) * 300.0f, (i % 5) * 300.0f };
 
-  // path.move_to({ 50.0f, 200.0f });
-  // path.cubic_to({ -150.0f, 100.0f }, { -37.0f, 112.0f }, { -50.0f, 200.0f }); // Handled
+    path.move_to(delta + tests[i][0]);
+    path.cubic_to(delta + tests[i][1], delta + tests[i][2], delta + tests[i][3]);
 
-  // path.move_to({ 0.0f, 0.0f });
-  // path.cubic_to({ 110.0f, 100.0f }, { -10.0f, 100.0f }, { 100.0f, 0.0f }); // Handled
+    Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element(path);
+    Graphick::Editor::StrokeComponent stroke = test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
 
-  // path.move_to({ 0.0f, 0.0f });
-  // path.cubic_to({ 101.0f, 100.0f }, { -1.0f, 100.0f }, { 100.0f, 0.0f }); // Handled
+    const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
+    const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = Graphick::Renderer::LineCap::Round;
+    const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = Graphick::Renderer::LineJoin::Round;
 
-  // path.move_to({ 0.0f, 0.0f });
-  // path.cubic_to({ 100.0f, 100.0f }, { 0.0f, 100.0f }, { 100.0f, 0.0f }); // Handled
+    break;
+  }
 
-  // path.move_to({ 0.0f, 0.0f });
-  // path.cubic_to({ 10.0f, 60.0f }, { 0.0f, 60.0f }, { 10.0f, 50.0f }); // High Curvature Endpoint (naive)
+  // path1.move_to({ 0.0f, 0.0f });
+  // path1.cubic_to({ -2.0f, 10.0f }, { -2.0f, 90.0f }, { 0.0f, 100.0f });
+  // path1.cubic_to({ 0.0f, 100.0f }, { 210.0f, -300.0f }, { 200.0f, 100.0f });
+  // path1.line_to({ 230.0f, 70.0f });
+  // path1.cubic_to({ 225.0f, 73.0f }, { 173.0f, 0.0f }, { 170.0f, -60.0f });
+  // path1.cubic_to({ 80.0f, 0.0f }, { 500.0f, 70.0f }, { 0.0f, 0.0f });
+  // path1.close();
 
-  // path.move_to({ 357.188f, 170.417f });
-  // path.cubic_to({ 360.313f, 175.417f }, { 1304.06f, -507.917f }, { 0.0f, 0.0f }); // High Curvature Endpoint (naive)
-
-  // path.move_to({ 75.8624f, 74.2385f });
-  // path.cubic_to({ 272.016f, 272.517f }, { 39.1216f, 36.2832f }, { 200.0f, 200.0f }); // Handled
-
-  // path.move_to({ 129.012f, 295.262f });
-  // path.cubic_to({ 129.113f, 295.551f }, { 116.507f, 268.718f }, { 117.396f, 270.102f }); // High Curvature Endpoint (naive)
-
-  // path.move_to({ 0.0f, 150.0f });
-  // path.cubic_to({ -60.0f, 250.0f }, { -10.0f, 350.0f }, { 150.0f, 450.0f }); // Handled
-
-  // path.move_to({ 0.0f, 0.0f });
-  // path.cubic_to({ 33.0f, 66.0f }, { 66.0f, 66.0f }, { 100.0f, 0.0f }); // Handled
-
-  // path.move_to({ 100.0f, 100.0f });
-  // path.cubic_to({ 203.243f, 170.858f }, { 100.0f, 100.0f }, { 200.0f, 200.0f }); // Handled
-
-  // path.move_to({ 100.0f, 100.0f });
-  // path.cubic_to({ 200.0f, 200.0f }, { 529.0f, 160.0f }, { 400.0f, 400.0f }); // Handled
-
-  // path.move_to({ 0.0f, 0.0f });
-  // path.cubic_to({ -2.0f, 10.0f }, { -2.0f, 90.0f }, { 0.0f, 100.0f });
-  // path.cubic_to({ 0.0f, 100.0f }, { 210.0f, -300.0f }, { 200.0f, 100.0f });
-  // path.line_to({ 230.0f, 70.0f });
-  // path.cubic_to({ 225.0f, 73.0f }, { 173.0f, 0.0f }, { 170.0f, -60.0f });
-  // path.cubic_to({ 80.0f, 0.0f }, { 500.0f, 70.0f }, { 0.0f, 0.0f });
-  // path.close();
-
-  // path.move_to({ 0.0f, 0.0f });
-  // path.cubic_to({ 0.0f, 0.0f }, { -47.0f, -36.0f }, { -50.0f, -40.0f });
-  // path.cubic_to({ -50.0f, -40.0f }, { -70.0f, -85.0f }, { -110.0f, -85.0f });
-  // path.cubic_to({ -110.0f, -85.0f }, { -170.0f, -85.0f }, { -220.0f, -45.0f });
+  // path1.move_to({ 0.0f, 0.0f });
+  // path1.cubic_to({ 0.0f, 0.0f }, { -47.0f, -36.0f }, { -50.0f, -40.0f });
+  // path1.cubic_to({ -50.0f, -40.0f }, { -70.0f, -85.0f }, { -110.0f, -85.0f });
+  // path1.cubic_to({ -110.0f, -85.0f }, { -170.0f, -85.0f }, { -220.0f, -45.0f });
 
   // path1.move_to({ 100.0f, 0.0f });
   // path1.line_to({ 20.0f, -20.0f });
@@ -263,6 +253,8 @@ int main() {
   // path1.line_to({ 360.0f, 260.0f });
 
   // path1.close();
+
+  Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element(path1);
 
   test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
   Graphick::Editor::StrokeComponent stroke = test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
