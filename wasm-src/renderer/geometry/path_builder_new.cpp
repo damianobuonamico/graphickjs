@@ -359,17 +359,29 @@ namespace Graphick::renderer::geometry {
       return;
     }
 
-    const bool p0_in = Math::is_point_in_rect(p0, clip);
-    const bool p1_in = Math::is_point_in_rect(p1, clip);
-    const bool p2_in = Math::is_point_in_rect(p2, clip);
+    // const bool p0_in = Math::is_point_in_rect(p0, clip);
+    // const bool p1_in = Math::is_point_in_rect(p1, clip);
+    // const bool p2_in = Math::is_point_in_rect(p2, clip);
 
-    if (!p0_in && !p1_in && !p2_in) {
-      sink.emplace_back(p0.x, p0.y, p2.x, p2.y);
-      return;
-    } else if (p0_in && p1_in && p2_in) {
-      fast_flatten(p0, p1, p2, tolerance, sink);
+    // TODO: implement Math::rect_from_points
+    rect bounds = { p0, p0 };
+
+    Math::min(bounds.min, p1, bounds.min);
+    Math::min(bounds.min, p2, bounds.min);
+    Math::max(bounds.max, p1, bounds.max);
+    Math::max(bounds.max, p2, bounds.max);
+
+    if (!Math::does_rect_intersect_rect(bounds, clip)) {
       return;
     }
+
+    // if (!p0_in && !p1_in && !p2_in) {
+    //   sink.emplace_back(p0.x, p0.y, p2.x, p2.y);
+    //   return;
+    // } else if (p0_in && p1_in && p2_in) {
+    //   fast_flatten(p0, p1, p2, tolerance, sink);
+    //   return;
+    // }
 
     depth += 1;
 

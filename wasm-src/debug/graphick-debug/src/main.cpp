@@ -8,6 +8,8 @@
 
 #include "wasm-src/renderer/geometry/path.h"
 
+#include "wasm-src/math/math.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -197,8 +199,8 @@ int main() {
     std::array<vec2, 4>{ vec2{ 221.0f, 718.0f }, { 620.0f, 450.0f }, { 190.0f, 140.0f }, { 518.0f, 243.0f } }, // Handled
     std::array<vec2, 4>{ vec2{ 295.0f, 343.0f }, { 436.0f, 203.0f }, { 307.0f, 221.0f }, { 540.0f, 323.0f } }, // Handled
     std::array<vec2, 4>{ vec2{ 50.0f, 200.0f }, { -150.0f, 100.0f }, { -50.0f, 100.0f }, { -50.0f, 200.0f } }, // Not Handled
-    std::array<vec2, 4>{ vec2{ 50.0f, 200.0f }, { -150.0f, 100.0f }, { -37.0f, 112.0f }, { -50.0f, 200.0f } }, // Not Handled
-    std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 110.0f, 100.0f }, { -10.0f, 100.0f }, { 100.0f, 0.0f } }, // Not Handled
+    std::array<vec2, 4>{ vec2{ 50.0f, 200.0f }, { -150.0f, 100.0f }, { -37.0f, 112.0f }, { -50.0f, 200.0f } }, // Not Handled (small error)
+    std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 110.0f, 100.0f }, { -10.0f, 100.0f }, { 100.0f, 0.0f } }, // Handled
     std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 101.0f, 100.0f }, { -1.0f, 100.0f }, { 100.0f, 0.0f } }, // Not Handled
     std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 100.0f, 100.0f }, { 0.0f, 100.0f }, { 100.0f, 0.0f } }, // Not Handled
     std::array<vec2, 4>{ vec2{ 0.0f, 0.0f }, { 10.0f, 60.0f }, { 0.0f, 60.0f }, { 10.0f, 50.0f } }, // High Curvature Endpoint (naive)
@@ -211,21 +213,28 @@ int main() {
     std::array<vec2, 4>{ vec2{ 100.0f, 100.0f }, { 200.0f, 200.0f }, { 529.0f, 160.0f }, { 400.0f, 400.0f } } // Not Handled
   };
 
-  for (size_t i = 4; i < tests.size(); i++) {
+  for (size_t i = 3; i < tests.size(); i++) {
     Graphick::Renderer::Geometry::Path path;
 
     const Graphick::vec2 delta = { 0.0f, 0.0f };
     // const Graphick::vec2 delta = { (i / 5) * 300.0f, (i % 5) * 300.0f };
 
+    // const auto& [p, in_p1, in_p2, out_p1, out_p2] = Graphick::Math::split_bezier(tests[i][0], tests[i][1], tests[i][2], tests[i][3], 0.5f);
+
+    // path.move_to(delta + tests[i][0]);
+    // path.cubic_to(delta + in_p1, delta + in_p2, delta + p);
+    //path.cubic_to(delta + out_p1, delta + out_p2, delta + tests[i][3]);
+
     path.move_to(delta + tests[i][0]);
     path.cubic_to(delta + tests[i][1], delta + tests[i][2], delta + tests[i][3]);
 
     Graphick::Editor::Entity test_entity = Graphick::Editor::Editor::scene().create_element(path);
-    Graphick::Editor::StrokeComponent stroke = test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
+    Graphick::Editor::FillComponent fill = test_entity.add_component<Graphick::Editor::FillComponent>(Graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
+    // Graphick::Editor::StrokeComponent stroke = test_entity.add_component<Graphick::Editor::StrokeComponent>(Graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
 
-    const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
-    const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = Graphick::Renderer::LineCap::Round;
-    const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = Graphick::Renderer::LineJoin::Round;
+    // const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
+    // const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = Graphick::Renderer::LineCap::Round;
+    // const_cast<Graphick::Editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = Graphick::Renderer::LineJoin::Round;
 
     break;
   }

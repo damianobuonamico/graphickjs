@@ -443,6 +443,8 @@ namespace Graphick::Editor {
           }
         }
 
+        // TEMP
+        renderer::Renderer::draw_outline(path, transform, outline_tolerance);
         renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
         renderer::Renderer::draw_outline_vertices(
           path, transform,

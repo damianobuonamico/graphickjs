@@ -371,7 +371,7 @@ namespace Graphick::renderer {
       const vec2 p1 = path[i * 2 + 1];
       const vec2 p2 = path[i * 2 + 2];
 
-      get()->m_vertex_instances.instances.push_back(transform * p0);
+      // get()->m_vertex_instances.instances.push_back(transform * p0);
       // get()->m_handle_instances.instances.push_back(transform * p1);
       get()->m_vertex_instances.instances.push_back(transform * p2);
     }
@@ -546,6 +546,17 @@ namespace Graphick::renderer {
       curves_start_index, bands_start_index,
       horizontal_bands, vertical_bands
     );
+
+    for (size_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path[i * 2];
+      const vec2 p1 = path[i * 2 + 1];
+      const vec2 p2 = path[i * 2 + 2];
+
+      // get()->m_vertex_instances.instances.push_back(transform * p0);
+      // get()->m_handle_instances.instances.push_back(transform * p1);
+      // get()->m_vertex_instances.instances.push_back(transform * p2);
+      get()->m_handle_instances.instances.push_back(transform * p2);
+    }
   }
 
   void Renderer::draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
@@ -553,6 +564,40 @@ namespace Graphick::renderer {
   }
 
   void Renderer::draw_outline(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+    if (path.size() == 1) {
+      const vec2 p0 = transform * path.point_at(0);
+      const vec2 p1 = transform * path.point_at(1);
+      const vec2 p2 = transform * path.point_at(2);
+      const vec2 p3 = transform * path.point_at(3);
+
+      vec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
+      vec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
+      vec2 c = -3.0 * p0 + 3.0 * p1;
+      vec2 p;
+
+      float conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
+      float dt = std::sqrtf((std::sqrt(8.0) * tolerance) / conc);
+      float t = dt;
+
+      while (t < 1.0f) {
+        float t_sq = t * t;
+
+        p = a * t_sq * t + b * t_sq + c * t + p0;
+
+        const float last_x = get()->m_line_instances.instances.size() ? get()->m_line_instances.instances.back().b : p0.x;
+        const float last_y = get()->m_line_instances.instances.size() ? get()->m_line_instances.instances.back().a : p0.y;
+
+        get()->m_line_instances.instances.emplace_back(last_x, last_y, p.x, p.y);
+
+        t += dt;
+      }
+
+      get()->m_line_instances.instances.emplace_back(get()->m_line_instances.instances.back().b, get()->m_line_instances.instances.back().a, p3.x, p3.y);
+
+      return;
+    }
+
+
     geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 

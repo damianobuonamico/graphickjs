@@ -19,6 +19,8 @@
 #include "../../math/mat2.h"
 #include "../../math/math.h"
 
+#include "../../math/cubic_bezier.h"
+
 #include "../../utils/console.h"
 #include "../../utils/assert.h"
 
@@ -36,10 +38,41 @@ namespace Graphick::Renderer::Geometry {
    * @return The p1 control point of the quadratic bezier curve, p0 and p2 are the start and end points of the cubic curve.
    */
   static vec2 single_quadratic_approximation(const Path::Segment& cubic) {
-    const vec2 p1 = (cubic.p1 * 3.0f - cubic.p0) * 0.5f;
-    const vec2 p2 = (cubic.p2 * 3.0f - cubic.p3) * 0.5f;
+    if (Math::is_almost_equal(cubic.p0, cubic.p1)) {
+      return cubic.p2;
+    } else if (Math::is_almost_equal(cubic.p2, cubic.p3)) {
+      return cubic.p1;
+    }
 
-    return (p1 + p2) * 0.5f;
+    // const vec2 ab = cubic.p1 - cubic.p0;
+    // const vec2 cd = cubic.p3 - cubic.p2;
+    // const float pcd = Math::cross(ab, cd);
+
+    dvec2 p0 = dvec2(cubic.p0);
+    dvec2 p1 = dvec2(cubic.p1);
+    dvec2 p2 = dvec2(cubic.p2);
+    dvec2 p3 = dvec2(cubic.p3);
+
+    double d = (p0.x - p1.x) * (p2.y - p3.y) - (p0.y - p1.y) * (p2.x - p3.x);
+
+    if (Math::is_almost_zero(d, 0.000001)) {
+    // if (Math::is_almost_zero(pcd)) {
+      // return std::nullopt;
+      const dvec2 p1 = (p1 * 3.0 - p0) * 0.5;
+      const dvec2 p2 = (p2 * 3.0 - p3) * 0.5;
+
+      return vec2((p1 + p2) * 0.5);
+    }
+
+    double pre = (p0.x * p1.y - p0.y * p1.x), post = (p2.x * p3.y - p2.y * p3.x);
+
+    double x = (pre * (p2.x - p3.x) - (p0.x - p1.x) * post) / d;
+    double y = (pre * (p2.y - p3.y) - (p0.y - p1.y) * post) / d;
+
+    return vec2(dvec2{ x, y });
+
+    // const float h = Math::cross(ab, (cubic.p0 - cubic.p2) / pcd);
+    // return cubic.p2 + cd * h;
   }
 
   /**
@@ -55,6 +88,32 @@ namespace Graphick::Renderer::Geometry {
     return std::sqrtf(3.0f) / 36.0f * Math::length((cubic.p3 - cubic.p2 * 3.0f) + (cubic.p1 * 3.0f - cubic.p0));
   }
 
+  static void degenerate_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, renderer::geometry::QuadraticPath& sink) {
+    // Path::Segment sub_curve = cubic;
+
+    // float t_min = 0.0f;
+    // float t_max = 1.0f;
+
+    // while (true) {
+    //   if (single_quadratic_approximation_error(sub_curve) <= tolerance) {
+    //     sink.quadratic_to(single_quadratic_approximation(sub_curve), sub_curve.p3);
+
+    //     if (t_max >= 1.0f) {
+    //       return;
+    //     }
+
+    //     t_min = t_max;
+    //     t_max = 1.0f;
+    //   } else {
+    //     t_max = (t_min + t_max) / 2.0f;
+    //   }
+
+    //   const auto& [p0, p1, p2, p3] = Math::split_bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t_min, t_max);
+
+    //   sub_curve = { p0, p1, p2, p3 };
+    // }
+  }
+
   /**
    * @brief Approximates a monotonic cubic bezier curve with a sequence of quadratic bezier segments.
    *
@@ -63,6 +122,11 @@ namespace Graphick::Renderer::Geometry {
    * @param sink The quadratic path to append the approximated segments to.
    */
   static void monotonic_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, renderer::geometry::QuadraticPath& sink) {
+    // degenerate_cubic_to_quadratics(cubic, tolerance, sink);
+  // if (Math::is_almost_equal(cubic.p2, cubic.p3)) {
+    // return;
+  // }
+
     Path::Segment sub_curve = cubic;
 
     float t_min = 0.0f;
@@ -1990,6 +2054,202 @@ namespace Graphick::Renderer::Geometry {
     return found;
   }
 
+  enum class CuspType {
+    None = 0,
+    Loop,
+    DoubleInflection
+  };
+
+  struct Nearest {
+    float t;
+    float distance_sq;
+  };
+
+  static Path::Segment deriv(const Path::Segment& c) {
+    return {
+      3.0f * (c.p1 - c.p0),
+      3.0f * (c.p2 - c.p1),
+      3.0f * (c.p3 - c.p2)
+    };
+  }
+
+  // static Nearest nearest(const Path::Segment& c, const float accuracy) {
+  //   let mut best_r = None;
+  //   let mut best_t = 0.0;
+
+  //   for (t0, t1, q) in self.to_quads(accuracy) {
+  //     let nearest = q.nearest(p, accuracy);
+  //     if best_r
+  //       .map(| best_r | nearest.distance_sq < best_r)
+  //       .unwrap_or(true)
+  //     {
+  //       best_t = t0 + nearest.t * (t1 - t0);
+  //       best_r = Some(nearest.distance_sq);
+  //     }
+  //   }
+  //   Nearest{
+  //       t: best_t,
+  //       distance_sq : best_r.unwrap(),
+  //   }
+  // }
+
+  // static CuspType detect_cusp(const Path::Segment& c, const float dimension) {
+  //   const vec2 d01 = c.p1 - c.p0;
+  //   const vec2 d02 = c.p2 - c.p0;
+  //   const vec2 d03 = c.p3 - c.p0;
+  //   const vec2 d12 = c.p2 - c.p1;
+  //   const vec2 d23 = c.p3 - c.p2;
+
+  //   float det_012 = Math::cross(d01, d02);
+  //   float det_123 = Math::cross(d12, d23);
+  //   float det_013 = Math::cross(d01, d03);
+  //   float det_023 = Math::cross(d02, d03);
+
+  //   if (det_012 * det_123 > 0.0f && det_012 * det_013 < 0.0f && det_012 * det_023 < 0.0f) {
+  //     Path::Segment q = deriv(c);
+
+  //     // Accuracy isn't used for quadratic nearest
+  //     let nearest = q.nearest(Point::ORIGIN, 1e-9);
+  //     // detect whether curvature at minimum derivative exceeds 1/dimension,
+  //     // without division.
+  //     let d = q.eval(nearest.t);
+  //     let d2 = q.deriv().eval(nearest.t);
+  //     let cross = d.to_vec2().cross(d2.to_vec2());
+  //     if nearest.distance_sq.powi(3) <= (cross * dimension).powi(2) {
+  //       let a = 3. * det_012 + det_023 - 2. * det_013;
+  //       let b = -3. * det_012 + det_013;
+  //       let c = det_012;
+  //       let d = b * b - 4. * a * c;
+  //       if d > 0.0f {
+  //         return Some(CuspType::DoubleInflection);
+  //       } else {
+  //         return Some(CuspType::Loop);
+  //       }
+  //     }
+  //   }
+  //   None
+  // }
+
+  // TODO: move to maths directory
+  // static Path::Segment regularize(Path::Segment c, const float dimension) {
+  //   const float dim2 = dimension * dimension;
+
+  //   if (Math::squared_distance(c.p0, c.p1) < dim2) {
+  //     const float d02 = Math::squared_distance(c.p0, c.p2);
+
+  //     if (d02 >= dim2) {
+  //       c.p1 = Math::lerp(c.p0, c.p2, std::sqrtf(dim2 / d02));
+  //     } else {
+  //       c.p1 = Math::lerp(c.p0, c.p3, 1.0f / 3.0f);
+  //       c.p2 = Math::lerp(c.p3, c.p0, 1.0f / 3.0f);
+
+  //       return c;
+  //     }
+  //   }
+
+  //   if (Math::squared_distance(c.p3, c.p2) < dim2) {
+  //     const float d13 = Math::squared_distance(c.p1, c.p2);
+
+  //     if (d13 >= dim2) {
+  //       c.p2 = Math::lerp(c.p3, c.p1, std::sqrtf(dim2 / d13));
+  //     } else {
+  //       c.p1 = Math::lerp(c.p0, c.p3, 1.0f / 3.0f);
+  //       c.p2 = Math::lerp(c.p3, c.p0, 1.0f / 3.0f);
+
+  //       return c;
+  //     }
+  //   }
+
+  //   if
+
+  //     if let Some(cusp_type) = self.detect_cusp(dimension) {
+  //       let d01 = c.p1 - c.p0;
+  //       let d01h = d01.hypot();
+  //       let d23 = c.p3 - c.p2;
+  //       let d23h = d23.hypot();
+  //       match cusp_type{
+  //           CuspType::Loop = > {
+  //               c.p1 += (dimension / d01h) * d01;
+  //               c.p2 -= (dimension / d23h) * d23;
+  //           }
+  //           CuspType::DoubleInflection = > {
+  //               // Avoid making control distance smaller than dimension
+  //               if d01h > 2.0 * dimension {
+  //                   c.p1 -= (dimension / d01h) * d01;
+  //               }
+  //               if d23h > 2.0 * dimension {
+  //                   c.p2 += (dimension / d23h) * d23;
+  //               }
+  //           }
+  //       }
+  //     }
+  //   c
+  // }
+
+  /// Computes the point where two lines, if extended to infinity, would cross.
+  // static std::optional<vec2> crossing_point(rect& l, rect& other) {
+  //   const vec2 ab = l.max - l.min;
+  //   const vec2 cd = other.max - other.min;
+  //   const float pcd = Math::cross(ab, cd);
+
+  //   if (pcd == 0.0f) {
+  //     return std::nullopt;
+  //   }
+
+  //   const float h = Math::cross(ab, (l.min - other.min) / pcd);
+  //   return other.min + cd * h;
+  // }
+
+  // static void try_approx_quadratic(const Path::Segment& c, const float accuracy, renderer::geometry::QuadraticPath& sink) {
+  //   std::optional<vec2> q1 = crossing_point(rect{ c.p0, c.p1 }, rect{ c.p2, c.p3 });
+
+  //   if (q1.has_value()) {
+  //     // TODO: implement
+  //     // let c1 = self.p0.lerp(q1, 2.0 / 3.0);
+  //     // let c2 = self.p3.lerp(q1, 2.0 / 3.0);
+  //     // if !CubicBez::new(
+  //     //     Point::ZERO,
+  //     //     c1 - self.p1.to_vec2(),
+  //     //     c2 - self.p2.to_vec2(),
+  //     //     Point::ZERO,
+  //     // )
+  //     //   .fit_inside(accuracy)
+  //     // {
+  //     //   return None;
+  //     // }
+
+  //     sink.quadratic_to(q1.value(), c.p3);
+  //   }
+  // }
+
+  // static void to_quads(const Path::Segment& c, const float accuracy, renderer::geometry::QuadraticPath& sink) {
+  //   // The maximum error, as a vector from the cubic to the best approximating
+  //   // quadratic, is proportional to the third derivative, which is constant
+  //   // across the segment. Thus, the error scales down as the third power of
+  //   // the number of subdivisions. Our strategy then is to subdivide `t` evenly.
+  //   //
+  //   // This is an overestimate of the error because only the component
+  //   // perpendicular to the first derivative is important. But the simplicity is
+  //   // appealing.
+
+  //   // This magic number is the square of 36 / sqrt(3).
+  //   // See: http://caffeineowl.com/graphics/2d/vectorial/cubic2quad01.html
+  //   const float max_hypot2 = 432.0f * accuracy * accuracy;
+
+  //   const vec2 p1x2 = 3.0f * c.p1 - c.p0;
+  //   const vec2 p2x2 = 3.0f * c.p2 - c.p3;
+
+  //   const float err = Math::squared_length(p2x2 - p1x2);
+  //   const int n = std::max(1, static_cast<int>(std::ceilf(std::powf(err / max_hypot2, 1.0f / 6.0f))));
+
+  //   if (n == 1) {
+  //     try_approx_quadratic(c, accuracy, sink);
+  //     return;
+  //   }
+
+
+  // }
+
   renderer::geometry::QuadraticPath Path::to_quadratics(const float tolerance) const {
     GK_TOTAL("Path::to_quadratics");
 
@@ -2014,21 +2274,33 @@ namespace Graphick::Renderer::Geometry {
         j += 2;
         break;
       case Command::Cubic: {
+        Math::CubicBezier cubic{ m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
+
+        std::vector<vec2> quads = Math::to_quads(cubic, 0.25f);
+
+        if (!quads.empty()) {
+          path.points.insert(path.points.end(), quads.begin() + 1, quads.end());
+        }
+
+#if 0
         Segment curve = { m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
         Segment sub_curve = curve;
 
-        const vec2 a = curve.p0 - 2.0f * curve.p1 + curve.p2;
-        const vec2 b = -2.0f * curve.p0 + 2.0f * curve.p1;
-        const vec2 c = curve.p0;
+        const vec2 a = 3 * (-curve.p0 + 3 * curve.p1 - 3 * curve.p2 + curve.p3);
+        const vec2 b = 6 * (curve.p0 - 2 * curve.p1 + curve.p2);
+        const vec2 c = -3 * (curve.p0 - curve.p1);
 
         // To get the inflections C'(t) cross C''(t) = at^2 + bt + c = 0 needs to be solved for 't'.
         // The first cooefficient of the quadratic formula is also the denominator.
         const float den = Math::cross(b, a);
 
+        float tc = -1.0f;
+        float tl = -1.0f;
+
         if (den != 0.0f) {
           // Two roots might exist, solve with quadratic formula ('tl' is real).
-          const float tc = Math::cross(a, c) / den;
-          float tl = tc * tc + Math::cross(b, c) / den;
+          tc = Math::cross(a, c) / den;
+          tl = tc * tc + Math::cross(b, c) / den;
 
           // If 'tl < 0' there are two complex roots (no need to solve).
           // If 'tl == 0' there is a real double root at tc (cusp case).
@@ -2037,27 +2309,78 @@ namespace Graphick::Renderer::Geometry {
           //   tl = std::sqrtf(tl);
           // }
 
-          if (tl == 0) {
-            const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
-
-            monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
-            monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
-
-            console::log("cusppppppppppppppppppppppp");
+          if (tl > 0.0) {
+            tl = std::sqrtf(tl);
           }
+
+          // if (tl == 0 && tc > GK_POINT_EPSILON && tc < 1.0 - GK_POINT_EPSILON) {
+          //   const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
+
+          //   // path.quadratic_to(single_quadratic_approximation({ curve.p0, in_p1, in_p2, p }), p);
+          //   // path.quadratic_to(single_quadratic_approximation({ p, out_p1, out_p2, curve.p3 }), curve.p3);
+          //   monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
+          //   monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
+
+          //   console::log("cusppppppppppppppppppppppp");
+
+          //   goto next_segment;
+          // }
         } else {
           // One real root might exist, solve linear case ('tl' is NaN).
-          const float tc = -0.5f * Math::cross(c, b) / Math::cross(c, a);
+          tc = -0.5f * Math::cross(c, b) / Math::cross(c, a);
 
+          // if (tc > GK_POINT_EPSILON && tc < 1.0 - GK_POINT_EPSILON) {
+          //   const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
+
+          //   monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
+          //   monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
+
+          //   console::log("cuspppppppppppppppppppppppsssssssssssssssss");
+
+          //   goto next_segment;
+          // }
+        }
+
+        const bool tc_in = tc > GK_POINT_EPSILON && tc < 1.0f - GK_POINT_EPSILON;
+        const bool tl_in = tl > GK_POINT_EPSILON && tl < 1.0f - GK_POINT_EPSILON;
+
+        if (tc_in && tl_in) {
+          monotonic_cubic_to_quadratics(curve, tolerance, path);
+          // if (tc > tl) {
+          //   std::swap(tc, tl);
+          // }
+
+          // const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
+
+          // monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
+
+          // const auto& [p1, in_p1_1, in_p2_1, out_p1_1, out_p2_1] = Math::split_bezier(p, out_p1, out_p2, curve.p3, tl * tc);
+
+          // monotonic_cubic_to_quadratics({ p, in_p1_1, in_p2_1, p1 }, tolerance, path);
+          // monotonic_cubic_to_quadratics({ p1, out_p1_1, out_p2_1, curve.p3 }, tolerance, path);
+
+          console::log("cusp 1");
+          console::log(tc);
+          console::log(tl);
+        } else if (tc_in) {
           const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
 
           monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
           monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
 
-          console::log("cuspppppppppppppppppppppppsssssssssssssssss");
-        }
+          console::log("cusp 2");
+          console::log(tc);
+        } else if (tl_in) {
+          const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tl);
 
-        monotonic_cubic_to_quadratics(curve, tolerance, path);
+          monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
+          monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
+
+          console::log("cusp 3");
+          console::log(tl);
+        } else {
+          monotonic_cubic_to_quadratics(curve, tolerance, path);
+        }
       //   float t_min = 0.0f;
       //   float t_max = 1.0f;
 
@@ -2079,7 +2402,7 @@ namespace Graphick::Renderer::Geometry {
 
       //     sub_curve = { p0, p1, p2, p3 };
       //   }
-
+#endif
       // next_segment:
         j += 3;
         break;
