@@ -8,14 +8,14 @@
 #include <cstdint>
 #include <limits>
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief A 2D vector struct with x and y components.
    *
    * @struct Vec2
    */
-  template<typename T>
+  template <typename T>
   struct Vec2 {
     union { T x, r, s; };    /* The 0 component of the vector. */
     union { T y, g, t; };    /* The 1 component of the vector. */
@@ -60,10 +60,20 @@ namespace Graphick::Math {
       x(x),
       y(y) {}
 
-    template<typename U>
+    template <typename U>
     constexpr explicit Vec2(const Vec2<U>& v) :
       x(static_cast<T>(v.x)),
       y(static_cast<T>(v.y)) {}
+
+    /* -- Static constructors -- */
+
+    static constexpr Vec2<T> zero() {
+      return Vec2<T>(T(0));
+    }
+
+    static constexpr Vec2<T> identity() {
+      return Vec2<T>(T(1));
+    }
 
     /* -- Assign operator -- */
 
@@ -144,12 +154,12 @@ namespace Graphick::Math {
 
   /* -- Unary operators */
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator+(const Vec2<T> v) {
     return v;
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator-(const Vec2<T> v) {
     return Vec2<T>(
       -v.x,
@@ -159,7 +169,7 @@ namespace Graphick::Math {
 
   /* -- Binary operators -- */
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator+(const Vec2<T> v, U scalar) {
     return Vec2<T>(
       v.x + static_cast<T>(scalar),
@@ -167,7 +177,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator+(U scalar, const Vec2<T> v) {
     return Vec2<T>(
       static_cast<T>(scalar) + v.x,
@@ -175,7 +185,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator+(const Vec2<T> v1, const Vec2<T> v2) {
     return Vec2<T>(
       v1.x + v2.x,
@@ -183,7 +193,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator-(const Vec2<T> v, U scalar) {
     return Vec2<T>(
       v.x - static_cast<T>(scalar),
@@ -191,7 +201,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator-(U scalar, const Vec2<T> v) {
     return Vec2<T>(
       static_cast<T>(scalar) - v.x,
@@ -199,7 +209,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator-(const Vec2<T> v1, const Vec2<T> v2) {
     return Vec2<T>(
       v1.x - v2.x,
@@ -207,7 +217,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator*(const Vec2<T> v, U scalar) {
     return Vec2<T>(
       v.x * static_cast<T>(scalar),
@@ -215,7 +225,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator*(U scalar, const Vec2<T> v) {
     return Vec2<T>(
       static_cast<T>(scalar) * v.x,
@@ -223,7 +233,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator*(const Vec2<T> v1, const Vec2<T> v2) {
     return Vec2<T>(
       v1.x * v2.x,
@@ -231,7 +241,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator/(const Vec2<T> v, U scalar) {
     return Vec2<T>(
       v.x / static_cast<T>(scalar),
@@ -239,7 +249,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator/(U scalar, const Vec2<T> v) {
     return Vec2<T>(
       static_cast<T>(scalar) / v.x,
@@ -247,7 +257,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator/(const Vec2<T> v1, const Vec2<T> v2) {
     return Vec2<T>(
       v1.x / v2.x,
@@ -255,7 +265,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator%(const Vec2<T> v, U scalar) {
     return Vec2<T>(
       static_cast<T>(static_cast<int>(v.x) % static_cast<int>(scalar)),
@@ -263,7 +273,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec2<T> operator%(U scalar, const Vec2<T> v) {
     return Vec2<T>(
       static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.x)),
@@ -271,7 +281,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator%(const Vec2<T> v1, const Vec2<T> v2) {
     return Vec2<T>(
       static_cast<T>(static_cast<int>(v1.x) % static_cast<int>(v2.x)),
@@ -281,22 +291,22 @@ namespace Graphick::Math {
 
   /* -- Boolean operators -- */
 
-  template<typename T>
+  template <typename T>
   constexpr bool operator==(const Vec2<T> v1, const Vec2<T> v2) {
     return v1.x == v2.x && v1.y == v2.y;
   }
 
-  template<typename T>
+  template <typename T>
   constexpr bool operator!=(const Vec2<T> v1, const Vec2<T> v2) {
     return !(v1 == v2);
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator&&(const Vec2<T> v1, const Vec2<T> v2) {
     return Vec2<T>(v1.x && v2.x, v1.y && v2.y);
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator||(const Vec2<T> v1, const Vec2<T> v2) {
     return Vec2<T>(v1.x || v2.x, v1.y || v2.y);
   }
@@ -306,38 +316,40 @@ namespace std {
 
   /* -- numeric_limits -- */
 
-  template<typename T>
-  class numeric_limits<Graphick::Math::Vec2<T>> {
+  template <typename T>
+  class numeric_limits<graphick::math::Vec2<T>> {
   public:
-    static inline Graphick::Math::Vec2<T> min() {
-      return Graphick::Math::Vec2{ numeric_limits<T>::min() };
+    static inline graphick::math::Vec2<T> min() {
+      return graphick::math::Vec2{ numeric_limits<T>::min() };
     }
 
-    static inline Graphick::Math::Vec2<T> max() {
-      return Graphick::Math::Vec2{ numeric_limits<T>::max() };
+    static inline graphick::math::Vec2<T> max() {
+      return graphick::math::Vec2{ numeric_limits<T>::max() };
     }
 
-    static inline Graphick::Math::Vec2<T> lowest() {
-      return Graphick::Math::Vec2{ numeric_limits<T>::lowest() };
+    static inline graphick::math::Vec2<T> lowest() {
+      return graphick::math::Vec2{ numeric_limits<T>::lowest() };
     }
   };
 
 }
 
-namespace Graphick::Math {
+/* -- Aliases -- */
 
-  using vec2 = Math::Vec2<float>;
-  using dvec2 = Math::Vec2<double>;
-  using ivec2 = Math::Vec2<int32_t>;
-  using uvec2 = Math::Vec2<uint8_t>;
+namespace graphick::math {
+
+  using vec2 = math::Vec2<float>;
+  using dvec2 = math::Vec2<double>;
+  using ivec2 = math::Vec2<int32_t>;
+  using uvec2 = math::Vec2<uint8_t>;
 
 }
 
-namespace Graphick {
+namespace graphick {
 
-  using vec2 = Math::vec2;
-  using dvec2 = Math::dvec2;
-  using ivec2 = Math::ivec2;
-  using uvec2 = Math::uvec2;
+  using vec2 = math::vec2;
+  using dvec2 = math::dvec2;
+  using ivec2 = math::ivec2;
+  using uvec2 = math::uvec2;
 
 }

@@ -23,7 +23,7 @@ namespace Graphick::Math {
    *
    * @struct DecomposedTransform
    */
-  template<typename T>
+  template <typename T>
   struct DecomposedTransform {
     Vec2<T> translation;    /* Position component. */
     Vec2<T> scale;          /* Scale component. */
@@ -37,7 +37,7 @@ namespace Graphick::Math {
    *
    * @param m The matrix to be zeroed.
    */
-  template<typename T>
+  template <typename T>
   void zero(Mat2<T>& m) {
     zero(m[0]);
     zero(m[1]);
@@ -48,7 +48,7 @@ namespace Graphick::Math {
    *
    * @param m The matrix to be zeroed.
    */
-  template<typename T>
+  template <typename T>
   void zero(Mat3<T>& m) {
     zero(m[0]);
     zero(m[1]);
@@ -60,7 +60,7 @@ namespace Graphick::Math {
    *
    * @param m The matrix to be zeroed.
    */
-  template<typename T>
+  template <typename T>
   void zero(Mat4<T>& m) {
     zero(m[0]);
     zero(m[1]);
@@ -73,7 +73,7 @@ namespace Graphick::Math {
    *
    * @param m The matrix to be zeroed.
    */
-  template<typename T>
+  template <typename T>
   void zero(Mat2x3<T>& m) {
     zero(m[0]);
     zero(m[1]);
@@ -85,7 +85,7 @@ namespace Graphick::Math {
    * @param m The matrix to check.
    * @return True if the matrix is a zero matrix, false otherwise.
    */
-  template<typename T>
+  template <typename T>
   bool is_zero(const Mat2<T>& m) {
     return (
       is_zero(m[0]) &&
@@ -99,7 +99,7 @@ namespace Graphick::Math {
    * @param m The matrix to check.
    * @return True if the matrix is a zero matrix, false otherwise.
    */
-  template<typename T>
+  template <typename T>
   bool is_zero(const Mat3<T>& m) {
     return (
       is_zero(m[0]) &&
@@ -114,7 +114,7 @@ namespace Graphick::Math {
    * @param m The matrix to check.
    * @return True if the matrix is a zero matrix, false otherwise.
    */
-  template<typename T>
+  template <typename T>
   bool is_zero(const Mat4<T>& m) {
     return (
       is_zero(m[0]) &&
@@ -130,7 +130,7 @@ namespace Graphick::Math {
    * @param m The matrix to check.
    * @return True if the matrix is a zero matrix, false otherwise.
    */
-  template<typename T>
+  template <typename T>
   bool is_zero(const Mat2x3<T>& m) {
     return (
       is_zero(m[0]) &&
@@ -144,7 +144,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the determinant of.
    * @return The determinant of the matrix.
    */
-  template<typename T>
+  template <typename T>
   T determinant(const Mat2<T>& m) {
     return (
       +m[0][0] * m[1][1]
@@ -158,7 +158,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the determinant of.
    * @return The determinant of the matrix.
    */
-  template<typename T>
+  template <typename T>
   T determinant(const Mat3<T>& m) {
     return (
       +m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2])
@@ -173,7 +173,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the determinant of.
    * @return The determinant of the matrix.
    */
-  template<typename T>
+  template <typename T>
   T determinant(const Mat4<T>& m) {
     return (
       +m[0][0] * (
@@ -208,7 +208,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the determinant of.
    * @return The determinant of the matrix.
    */
-  template<typename T>
+  template <typename T>
   T determinant(const Mat2x3<T>& m) {
     return (
       +m[0][0] * m[1][1]
@@ -222,7 +222,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the inverse of.
    * @return The inverse of the matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2<T> inverse(const Mat2<T>& m) {
     T one_over_determinant = 1.0f / determinant(m);
 
@@ -241,7 +241,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the inverse of.
    * @return The inverse of the matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat3<T> inverse(const Mat3<T>& m) {
     T one_over_determinant = 1.0f / determinant(m);
 
@@ -265,7 +265,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the inverse
    * @return The inverse of the matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat4<T> inverse(const Mat4<T>& m) {
     T one_over_determinant = 1.0f / determinant(m);
 
@@ -363,7 +363,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the inverse of.
    * @return The inverse of the matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2x3<T> inverse(const Mat2x3<T>& m) {
     T one_over_determinant = 1.0f / determinant(m);
 
@@ -385,7 +385,7 @@ namespace Graphick::Math {
    * @param v The vector to translate by.
    * @return The translated matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2x3<T> translate(const Mat2x3<T>& m, const Vec2<T> v) {
     const T src_b00 = m[0][0];
     const T src_b01 = m[0][1];
@@ -411,7 +411,7 @@ namespace Graphick::Math {
    * @param v The vector to scale by.
    * @return The scaled matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2x3<T> scale(const Mat2x3<T>& m, const Vec2<T> v) {
     const T src_b00 = m[0][0];
     const T src_b01 = m[0][1];
@@ -438,7 +438,7 @@ namespace Graphick::Math {
    * @param v The vector to scale by.
    * @return The scaled matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2x3<T> scale(const Mat2x3<T>& m, const Vec2<T> c, const Vec2<T> v) {
     return translate(scale(translate(m, -c), v), c);
   }
@@ -450,7 +450,7 @@ namespace Graphick::Math {
    * @param t The angle to rotate by.
    * @return The rotated matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2x3<T> rotate(const Mat2x3<T>& m, const T t) {
     return rotate(m, std::sinf(t), std::cosf(t));
   }
@@ -465,7 +465,7 @@ namespace Graphick::Math {
    * @param cos_t The cosine of the angle to rotate by.
    * @return The rotated matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2x3<T> rotate(const Mat2x3<T>& m, const T sin_t, const T cos_t) {
     const T src_b00 = m[0][0];
     const T src_b01 = m[0][1];
@@ -492,7 +492,7 @@ namespace Graphick::Math {
    * @param t The angle to rotate by.
    * @return The rotated matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2x3<T> rotate(const Mat2x3<T>& m, const Vec2<T> c, const T t) {
     return translate(rotate(translate(m, -c), t), c);
   }
@@ -506,7 +506,7 @@ namespace Graphick::Math {
    * @param cos_t The cosine of the angle to rotate by.
    * @return The rotated matrix.
    */
-  template<typename T>
+  template <typename T>
   Mat2x3<T> rotate(const Mat2x3<T>& m, const Vec2<T> c, const T sin_t, const T cos_t) {
     return translate(rotate(translate(m, -c), sin_t, cos_t), c);
   }
@@ -517,7 +517,7 @@ namespace Graphick::Math {
    * @param m The matrix to decompose.
    * @return The decomposed matrix.
    */
-  template<typename T>
+  template <typename T>
   DecomposedTransform<T> decompose(const Mat2x3<T>& m) {
     DecomposedTransform<T> decomposed;
 
@@ -540,7 +540,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the translation component of.
    * @return The translation component of the matrix.
    */
-  template<typename T>
+  template <typename T>
   Vec2<T> translation(const Mat2x3<T>& m) {
     return { m[0][2], m[1][2] };
   }
@@ -552,7 +552,7 @@ namespace Graphick::Math {
    * @param m The matrix to calculate the rotation component of.
    * @return The rotation component of the matrix.
    */
-  template<typename T>
+  template <typename T>
   T rotation(const Mat2x3<T>& m) {
     return std::atan2f(m[1][0], m[0][0]);
   }
@@ -560,7 +560,7 @@ namespace Graphick::Math {
   /**
    * @brief Overloaded multiplication operator to multiply a 2x3 matrix by a 2D rect.
    */
-  template<typename T>
+  template <typename T>
   rect operator*(const Mat2x3<T>& m, const rect& r) {
     Vec2<T> r1 = m * r.min;
     Vec2<T> r2 = m * Vec2<T>{ r.min.x, r.max.y };
@@ -576,7 +576,7 @@ namespace Graphick::Math {
   /**
    * @brief Overloaded division operator to divide a 2x3 matrix by a 2D rect.
    */
-  template<typename T>
+  template <typename T>
   rect operator/(const Mat2x3<T>& m, const rect& r) {
     return inverse(m) * r;
   }

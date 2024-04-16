@@ -310,19 +310,19 @@ namespace Graphick::Utils {
 
 namespace std {
 
-  template<typename T>
+  template <typename T>
   inline ostream& operator<<(ostream& os, const Graphick::Math::Vec2<T> v) {
     os << "(" << v.x << ", " << v.y << ")";
     return os;
   }
 
-  template<typename T>
+  template <typename T>
   inline ostream& operator<<(ostream& os, const Graphick::Math::Vec3<T>& v) {
     os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << ")";
     return os;
   }
 
-  template<typename T>
+  template <typename T>
   inline ostream& operator<<(ostream& os, const Graphick::Math::Vec4<T>& v) {
     os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
     return os;

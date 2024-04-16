@@ -61,7 +61,7 @@ namespace Graphick::Editor {
      * @param args The component constructor arguments.
      * @return The added component.
      */
-    template<typename T, typename... Args>
+    template <typename T, typename... Args>
     inline T add_component(Args&&... args) {
       if (has_component<T>()) remove_component<T>();
 
@@ -84,7 +84,7 @@ namespace Graphick::Editor {
      *
      * @return The component.
      */
-    template<typename T>
+    template <typename T>
     inline T get_component() {
       GK_ASSERT(has_component<T>(), "Entity does not have component!");
       return T{ this, &m_scene->m_registry.get<typename T::Data>(m_handle) };
@@ -105,7 +105,7 @@ namespace Graphick::Editor {
      *
      * @return The component.
      */
-    template<typename T>
+    template <typename T>
     inline const T get_component() const {
       GK_ASSERT(has_component<T>(), "Entity does not have component!");
       return T{ this, &m_scene->m_registry.get<typename T::Data>(m_handle) };
@@ -126,7 +126,7 @@ namespace Graphick::Editor {
      *
      * @return true if the entity has the component, false otherwise.
      */
-    template<typename T>
+    template <typename T>
     inline bool has_component() const {
       return m_scene->m_registry.all_of<typename T::Data>(m_handle);
     }
@@ -136,7 +136,7 @@ namespace Graphick::Editor {
      *
      * @return true if the entity has all of the specified components, false otherwise.
      */
-    template<typename... T>
+    template <typename... T>
     inline bool has_components() const {
       return (has_component<T>() && ...);
     }
@@ -144,7 +144,7 @@ namespace Graphick::Editor {
     /**
      * @brief Removes a component from the entity.
      */
-    template<typename T>
+    template <typename T>
     inline void remove_component() {
       if (!has_component<T>()) return;
 
@@ -264,7 +264,7 @@ namespace Graphick::Editor {
      * @param args The component constructor arguments.
      * @return The added component.
      */
-    template<typename T, typename... Args>
+    template <typename T, typename... Args>
     inline T add(Args&&... args) {
       return T{ this, &m_scene->m_registry.emplace<typename T::Data>(m_handle, std::forward<Args>(args)...) };
     }
@@ -284,7 +284,7 @@ namespace Graphick::Editor {
      *
      * This method should only be called internally.
      */
-    template<typename T>
+    template <typename T>
     void remove() {
       m_scene->m_registry.remove<typename T::Data>(m_handle);
     }

@@ -184,7 +184,7 @@ namespace Graphick::io {
      *
      * @param t The vector to encode.
      */
-    template<typename T>
+    template <typename T>
     inline EncodedData& vector(const std::vector<T>& t) {
       uint32(t.size());
       data.insert(data.end(), reinterpret_cast<const uint8_t*>(t.data()), reinterpret_cast<const uint8_t*>(t.data()) + t.size() * sizeof(T));
@@ -468,7 +468,7 @@ namespace Graphick::io {
      *
      * @return The decoded vector.
      */
-    template<typename T>
+    template <typename T>
     inline std::vector<T> vector() {
       uint32_t size = uint32();
 

@@ -7,7 +7,8 @@
 
 #include "path.h"
 
-#include "path_builder.h"
+#include "path_builder_new.h"
+#include "contour.h"
 
 #include "../properties.h"
 
@@ -1710,20 +1711,38 @@ namespace Graphick::Renderer::Geometry {
     const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
     const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
 
-    PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
+    const renderer::geometry::QuadraticPath quadratics = to_quadratics();
+
+    Graphick::renderer::geometry::PathBuilder builder{ quadratics, transform, &bounds };
+
+    // PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
+
+    // TODO: fix all of this mess, maybe with specific methods in pathbuilder
 
     if (fill) {
-      Drawable drawable = builder.fill(*this, *fill);
+      std::vector<vec4> lines;
 
-      for (Contour& contour : drawable.contours) {
-        const int winding = contour.winding_of(p);
+      // TODO: clip here with specific fill clipping method
+      builder.flatten(bounds, GK_PATH_TOLERANCE / zoom, lines);
 
-        if (
-          (fill->rule == FillRule::NonZero && winding != 0) ||
-          (fill->rule == FillRule::EvenOdd && winding % 2 != 0)
-          ) {
-          return true;
-        }
+      lines.emplace_back(lines.back().z, lines.back().w, lines.front().x, lines.front().y);
+
+      // TEMP
+      Contour contour;
+
+      contour.move_to(dvec2{ lines[0].x, lines[0].y });
+
+      for (vec4 line : lines) {
+        contour.line_to(dvec2{ line.z, line.w });
+      }
+
+      const int winding = contour.winding_of(p);
+
+      if (
+        (fill->rule == FillRule::NonZero && winding != 0) ||
+        (fill->rule == FillRule::EvenOdd && winding % 2 != 0)
+        ) {
+        return true;
       }
     }
 
@@ -1734,15 +1753,65 @@ namespace Graphick::Renderer::Geometry {
       s.miter_limit = 0.0f;
     }
 
-    Drawable drawable = builder.stroke(*this, s);
+    renderer::geometry::PathBuilder::StrokeOutline contours = builder.stroke(s, GK_PATH_TOLERANCE / zoom);
 
-    for (Contour& contour : drawable.contours) {
-      const int winding = contour.winding_of(p);
+    // Drawable drawable = builder.stroke(*this, s);
 
-      if (winding != 0) {
-        return true;
+    int winding = 0;
+
+    if (!contours.inner.empty()) {
+      std::vector<vec4> lines;
+
+      Graphick::renderer::geometry::PathBuilder stroke_builder{ contours.inner, { } };
+
+      stroke_builder.flatten(threshold_box, GK_PATH_TOLERANCE / zoom, lines);
+
+      if (!lines.empty()) {
+        // TEMP
+        Contour contour;
+
+        contour.move_to(dvec2{ lines[0].x, lines[0].y });
+
+        for (vec4 line : lines) {
+          contour.line_to(dvec2{ line.z, line.w });
+        }
+
+        winding += contour.winding_of(p);
       }
     }
+
+    if (!contours.outer.empty()) {
+      std::vector<vec4> lines;
+
+      Graphick::renderer::geometry::PathBuilder stroke_builder{ contours.outer, { } };
+
+      stroke_builder.flatten(threshold_box, GK_PATH_TOLERANCE / zoom, lines);
+
+      if (!lines.empty()) {
+        // TEMP
+        Contour contour;
+
+        contour.move_to(dvec2{ lines[0].x, lines[0].y });
+
+        for (vec4 line : lines) {
+          contour.line_to(dvec2{ line.z, line.w });
+        }
+
+        winding += contour.winding_of(p);
+      }
+    }
+
+    if (winding != 0) {
+      return true;
+    }
+
+    // for (Contour& contour : drawable.contours) {
+    //   const int winding = contour.winding_of(p);
+
+    //   if (winding != 0) {
+    //     return true;
+    //   }
+    // }
 
     for (size_t point_index = 0; point_index < m_points.size(); point_index++) {
       if (Math::is_point_in_circle(point, transform * m_points[point_index], threshold)) {
@@ -1797,7 +1866,7 @@ namespace Graphick::Renderer::Geometry {
     const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
     const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
 
-    PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
+    // PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
 
     Stroke s = stroke ? *stroke : Stroke{ vec4{}, LineCap::Butt, LineJoin::Bevel, 0.0f, 0.0f, 0.0f };
     s.width += threshold;
@@ -1820,17 +1889,21 @@ namespace Graphick::Renderer::Geometry {
       break;
     }
 
-    Drawable drawable = builder.stroke(segment_path, s);
+    return segment_path.is_point_inside_path(point, nullptr, &s, transform, threshold, zoom, false);
 
-    for (Contour& contour : drawable.contours) {
-      const int winding = contour.winding_of(p);
+    // Graphick::renderer::geometry::PathBuilder builder{ segment_path.to_quadratics(), transform, &bounds };
 
-      if (winding != 0) {
-        return true;
-      }
-    }
+    // Drawable drawable = builder.stroke(segment_path, s);
 
-    return false;
+    // for (Contour& contour : drawable.contours) {
+    //   const int winding = contour.winding_of(p);
+
+    //   if (winding != 0) {
+    //     return true;
+    //   }
+    // }
+
+    // return false;
   }
 
   bool Path::is_point_inside_point(const size_t point_index, const vec2 point, const mat2x3& transform, const float threshold) const {

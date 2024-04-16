@@ -114,7 +114,7 @@ namespace Graphick::renderer {
    *
    * @struct InstancedData
    */
-  template<typename T>
+  template <typename T>
   struct InstancedData {
     std::vector<T> instances;                /* The per-instance data. */
 

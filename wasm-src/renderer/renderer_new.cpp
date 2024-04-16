@@ -151,7 +151,7 @@ namespace Graphick::renderer {
    * @param data The instanced data to initialize.
    * @param vertex_buffer_id The ID of the vertex buffer to use if shared, default is uuid::null.
    */
-  template<typename T>
+  template <typename T>
   static void init_instanced(InstancedData<T>& data, const uuid vertex_buffer_id = uuid::null) {
     if (data.instance_buffer_id != uuid::null) {
       Graphick::Renderer::GPU::Memory::Allocator::free_general_buffer(data.instance_buffer_id);
@@ -183,7 +183,7 @@ namespace Graphick::renderer {
    * @param program The shader program to use.
    * @param flush_data The flush data to use.
    */
-  template<typename T, typename S, typename V>
+  template <typename T, typename S, typename V>
   static void flush(InstancedData<T>& data, const S& program, const FlushData flush_data) {
     if (data.instances.empty()) {
       return;

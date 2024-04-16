@@ -5,35 +5,39 @@
 
 #pragma once
 
-#include "../utils/defines.h"
-
 #include <cstdint>
+#include <limits>
 #include <cfloat>
 #include <cmath>
 
 /* -- Defines -- */
 
-#define MATH_F_PI 3.14159265358979323846f
-#define MATH_F_TWO_PI (MATH_F_PI * 2.0f)
-#define MATH_PI 3.14159265358979323846
-#define MATH_TWO_PI MATH_PI * 2.0
+template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+constexpr T pi = T(3.14159265358979323846);
 
-namespace Graphick::Math {
+template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+constexpr T two_pi = T(2) * pi<T>;
+
+template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+constexpr T epsilon = std::numeric_limits<T>::epsilon();
+
+namespace graphick::math {
 
   /**
-   * @brief Rounds a float to a certain number of decimals.
+   * @brief Rounds a scalar to a certain number of decimals.
    *
-   * @param t The float to round.
+   * @param t The scalar to round.
    * @param precision The smallest value to round to.
-   * @return The rounded float.
+   * @return The rounded scalar.
    */
-  inline float round(float t, float precision) noexcept {
-    if (precision >= 1.0f) {
+  template <typename T>
+  inline T round(const T t, const T precision) noexcept {
+    if (precision >= T(1)) {
       return std::round(t / precision) * precision;
     }
 
-    float integer_part = std::floor(t);
-    float decimal_part = t - integer_part;
+    const T integer_part = std::floor(t);
+    const T decimal_part = t - integer_part;
 
     return integer_part + std::round(decimal_part / precision) * precision;
   }
@@ -48,25 +52,12 @@ namespace Graphick::Math {
    * @param new_max The maximum value of the new range.
    * @return The mapped value.
    */
-  inline float map(float t, float old_min, float old_max, float new_min, float new_max) {
+  template <typename T>
+  inline T map(const T t, const T old_min, const T old_max, const T new_min, const T new_max) {
     return (
       ((t - old_min) * (new_max - new_min)) /
       (old_max - old_min) + new_min
     );
-  }
-
-  /**
-   * @brief Clamps a value between a minimum and a maximum.
-   *
-   * @param t The value to clamp.
-   * @param min The minimum value.
-   * @param max The maximum value.
-   * @return The clamped value.
-   */
-  inline float clamp(float t, float min, float max) {
-    if (t < min) return min;
-    if (t > max) return max;
-    return t;
   }
 
   /**
@@ -77,7 +68,8 @@ namespace Graphick::Math {
    * @param t The interpolation value.
    * @return The interpolated value.
    */
-  inline float lerp(float a, float b, float t) {
+  template <typename T>
+  inline T lerp(const T a, const T b, const T t) {
     return a + (b - a) * t;
   }
 
@@ -89,8 +81,10 @@ namespace Graphick::Math {
    * @param max The maximum value.
    * @return The wrapped value.
    */
-  inline int wrap(int t, int min, int max) {
-    int range_size = max - min + 1;
+  template <typename T, typename = std::enable_if<std::is_integral<T>::value>>
+  inline T wrap(T t, const T min, const T max) {
+
+    const T range_size = max - min + 1;
 
     if (t < min) {
       t += range_size * ((min - t) / range_size + 1);
@@ -100,149 +94,102 @@ namespace Graphick::Math {
   }
 
   /**
-   * @brief Checks if a float is almost zero.
+   * @brief Checks if a scalar is almost zero.
    *
-   * @param t The float to check.
+   * @param t The scalar to check.
    * @param eps The precision to check with.
-   * @return Whether the float is almost zero.
+   * @return Whether the scalar is almost zero.
    */
-  inline bool is_almost_zero(const float t, const float eps = GK_EPSILON) {
-    return std::fabsf(t) <= eps;
-  }
-
-  /**
-   * @brief Checks if a double is almost zero.
-   *
-   * @param t The double to check.
-   * @param eps The precision to check with.
-   * @return Whether the double is almost zero.
-   */
-  inline bool is_almost_zero(const double t, const double eps = GK_EPSILON) {
+  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  inline bool is_almost_zero(const T t, const T eps = epsilon<T>) {
     return std::abs(t) <= eps;
   }
 
   /**
-   * @brief Checks if two floats are almost equal.
+   * @brief Checks if two scalars are almost equal.
    *
-   * @param t1 The first float.
-   * @param t2 The second float.
+   * @param t1 The first scalar.
+   * @param t2 The second scalar.
    * @param eps The precision to check with.
-   * @return Whether the floats are almost equal.
+   * @return Whether the scalars are almost equal.
    */
-  inline bool is_almost_equal(const float t1, const float t2, const float eps = GK_EPSILON) {
+  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>) {
     return std::abs(t1 - t2) <= eps;
   }
 
   /**
-   * @brief Checks if two doubles are almost equal.
+   * @brief Checks if a scalar is normalized.
    *
-   * @param t1 The first double.
-   * @param t2 The second double.
-   * @param eps The precision to check with.
-   * @return Whether the doubles are almost equal.
-   */
-  inline bool is_almost_equal(const double t1, const double t2, const double eps = GK_EPSILON) {
-    return std::abs(t1 - t2) <= eps;
-  }
-
-  /**
-   * @brief Checks if a float is normalized.
-   *
-   * @param t The float to check.
+   * @param t The scalar to check.
    * @param include_ends Whether to include the ends of the range, defaults to true.
-   * @return Whether the float is normalized.
+   * @return Whether the scalar is normalized.
    */
-  inline bool is_normalized(const float t, bool include_ends = true) {
-    if (include_ends) {
-      return t >= 0.0f && t <= 1.0f;
-    }
-
-    return t > 0.0f && t < 1.0f;
+  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  inline bool is_normalized(const T t, const bool include_ends = true) {
+    return include_ends ? (t >= T(0) && t <= T(1)) : (t > T(0) && t < T(1));
   }
 
   /**
-   * @brief Checks if a float is in a range.
+   * @brief Checks if a scalar is in a range.
    *
-   * @param t The float to check.
+   * @param t The scalar to check.
    * @param min The minimum value of the range.
    * @param max The maximum value of the range.
    * @param include_ends Whether to include the ends of the range, defaults to true.
-   * @return Whether the float is in the range.
+   * @return Whether the scalar is in the range.
    */
-  inline bool is_in_range(const float t, const float min, const float max, bool include_ends = true) {
-    if (include_ends) {
-      return t >= min && t <= max;
-    }
-
-    return t > min && t < max;
+  template <typename T>
+  inline bool is_in_range(const T t, const T min, const T max, const bool include_ends = true) {
+    return include_ends ? (t >= min && t <= max) : (t > min && t < max);
   }
 
   /**
-   * @brief Converts a float from degrees to radians.
+   * @brief Converts a scalar from degrees to radians.
    *
    * @param a The angle in degrees.
    * @return The angle in radians.
    */
-  inline float degrees_to_radians(float a) {
-    return a * MATH_F_PI / 180.0f;
+  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  inline T degrees_to_radians(const T a) {
+    return a * pi<T> / T(180);
   }
 
   /**
-   * @brief Converts a double from degrees to radians.
-   *
-   * @param a The angle in degrees.
-   * @return The angle in radians.
-   */
-  inline double degrees_to_radians(double a) {
-    return a * MATH_PI / 180.0;
-  }
-
-  /**
-   * @brief Converts a float from radians to degrees.
+   * @brief Converts a scalar from radians to degrees.
    *
    * @param a The angle in radians.
    * @return The angle in degrees.
    */
-  inline float radians_to_degrees(float a) {
-    return a * 180.0f / MATH_F_PI;
+  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  inline T radians_to_degrees(const T a) {
+    return a * T(180) / pi<T>;
   }
 
   /**
-   * @brief Converts a double from radians to degrees.
+   * @brief Calculates the next power of two of a scalar.
    *
-   * @param a The angle in radians.
-   * @return The angle in degrees.
-   */
-  inline double radians_to_degrees(double a) {
-    return a * 180.0 / MATH_PI;
-  }
-
-  /**
-   * @brief Calculates the next power of two of a number.
-   *
-   * @param n The number to calculate the next power of two of.
+   * @param n The scalar to calculate the next power of two of.
    * @return The next power of two.
    */
-  inline size_t next_power_of_two(size_t n) {
+  template <typename T, typename = std::enable_if<std::is_integral<T>::value>>
+  inline T next_power_of_two(T n) {
     n--;
 
-    n |= n >> 1;
-    n |= n >> 2;
-    n |= n >> 4;
-    n |= n >> 8;
-    n |= n >> 16;
-#ifndef EMSCRIPTEN
-    n |= n >> 32;
-#endif
+    uint8_t power = (sizeof(T) < 8 ? 8 : sizeof(T)) - 2;
 
-    return n++;
+    for (uint8_t i = 0; i < power; i++) {
+      n |= n >> uint8_t(std::pow(2, i));
+    }
+
+    return n + 1;
   }
 
   /**
-   * @brief Calculates the sign of a number.
+   * @brief Calculates the sign of a scalar.
    *
-   * @param val The number to calculate the sign of.
-   * @return The sign of the number.
+   * @param val The scalar to calculate the sign of.
+   * @return The sign of the scalar.
    */
   template <typename T>
   inline T sign(T val) {

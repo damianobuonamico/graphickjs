@@ -14,7 +14,7 @@ namespace Graphick::Math {
    *
    * @struct Mat2
    */
-  template<typename T>
+  template <typename T>
   struct Mat2 {
     /* -- Component accesses -- */
 
@@ -60,7 +60,7 @@ namespace Graphick::Math {
       Vec2<T>(x1, y1)
     } {}
 
-    template<typename U>
+    template <typename U>
     constexpr Mat2(const Mat2<U>& m) : value{
       Vec2<T>(m[0]),
       Vec2<T>(m[1])
@@ -76,7 +76,7 @@ namespace Graphick::Math {
 
     /* -- Unary arithmetic operators -- */
 
-    template<typename U>
+    template <typename U>
     constexpr Mat2<T>& operator+=(U scalar) {
       this->value[0] += scalar;
       this->value[1] += scalar;
@@ -89,7 +89,7 @@ namespace Graphick::Math {
       return *this;
     }
 
-    template<typename U>
+    template <typename U>
     constexpr Mat2<T>& operator-=(U scalar) {
       this->value[0] -= scalar;
       this->value[1] -= scalar;
@@ -102,7 +102,7 @@ namespace Graphick::Math {
       return *this;
     }
 
-    template<typename U>
+    template <typename U>
     constexpr Mat2<T>& operator*=(U scalar) {
       this->value[0] *= scalar;
       this->value[1] *= scalar;
@@ -113,7 +113,7 @@ namespace Graphick::Math {
       return (*this = *this * m);
     }
 
-    template<typename U>
+    template <typename U>
     constexpr Mat2<T>& operator/=(U scalar) {
       this->value[0] /= scalar;
       this->value[1] /= scalar;
@@ -143,12 +143,12 @@ namespace Graphick::Math {
 
   /* -- Unary operators */
 
-  template<typename T>
+  template <typename T>
   constexpr Mat2<T> operator+(const Mat2<T>& m) {
     return m;
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Mat2<T> operator-(const Mat2<T>& m) {
     return Mat2<T>(
       -m[0],
@@ -158,7 +158,7 @@ namespace Graphick::Math {
 
   /* -- Binary operators -- */
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Mat2<T> operator+(const Mat2<T>& m, U scalar) {
     return Mat2<T>(
       m[0] + scalar,
@@ -166,7 +166,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Mat2<T> operator+(U scalar, const Mat2<T>& m) {
     return Mat2<T>(
       scalar + m[0],
@@ -174,7 +174,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Mat2<T> operator+(const Mat2<T>& m1, const Mat2<T>& m2) {
     return Mat2<T>(
       m1[0] + m2[0],
@@ -182,7 +182,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Mat2<T> operator-(const Mat2<T>& m, U scalar) {
     return Mat2<T>(
       m[0] - scalar,
@@ -190,7 +190,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Mat2<T> operator-(U scalar, const Mat2<T>& m) {
     return Mat2<T>(
       scalar - m[0],
@@ -198,7 +198,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Mat2<T> operator-(const Mat2<T>& m1, const Mat2<T>& m2) {
     return Mat2<T>(
       m1[0] - m2[0],
@@ -206,7 +206,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Mat2<T> operator*(const Mat2<T>& m, U scalar) {
     return Mat2<T>(
       m[0] * scalar,
@@ -214,7 +214,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Mat2<T> operator*(U scalar, const Mat2<T>& m) {
     return Mat2<T>(
       scalar * m[0],
@@ -222,7 +222,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator*(const Mat2<T>& m, const Vec2<T>& v) {
     return Vec2<T>(
       m[0][0] * v.x + m[1][0] * v.y,
@@ -230,7 +230,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Mat2<T> operator*(const Mat2<T>& m1, const Mat2<T>& m2) {
     return Mat2<T>(
       m1[0][0] * m2[0][0] + m1[0][1] * m2[1][0],
@@ -240,7 +240,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Mat2<T> operator/(const Mat2<T>& m, U scalar) {
     return Mat2<T>(
       m[0] / scalar,
@@ -248,7 +248,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Mat2<T> operator/(U scalar, const Mat2<T>& m) {
     return Mat2<T>(
       scalar / m[0],
@@ -256,12 +256,12 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> operator/(const Mat2<T>& m, const Vec2<T>& v) {
     return inverse(m) * v;
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Mat2<T> operator/(const Mat2<T>& m1, const Mat2<T>& m2) {
     Mat2<T> m1_copy(m1);
     return m1_copy /= m2;
@@ -269,12 +269,12 @@ namespace Graphick::Math {
 
   /* -- Boolean operators -- */
 
-  template<typename T>
+  template <typename T>
   constexpr bool operator==(const Mat2<T>& m1, const Mat2<T>& m2) {
     return m1[0] == m2[0] && m1[1] == m2[1];
   }
 
-  template<typename T>
+  template <typename T>
   constexpr bool operator!=(const Mat2<T>& m1, const Mat2<T>& m2) {
     return !(m1 == m2);
   }

@@ -7,14 +7,14 @@
 
 #include "vec2.h"
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief A 2D rectangle struct with min and max components.
    *
    * @struct Rect
    */
-  template<typename T>
+  template <typename T>
   struct Rect {
     Vec2<T> min;   /* The minimum point of the rectangle. */
     Vec2<T> max;   /* The maximum point of the rectangle. */
@@ -57,10 +57,41 @@ namespace Graphick::Math {
       min(v1),
       max(v2) {}
 
-    template<typename U>
+    template <typename U>
     constexpr Rect(const Rect<U>& r) :
       min(r.min),
       max(r.max) {}
+
+    /* -- Static constructors -- */
+
+    static constexpr Rect<T> from_size(Vec2<T> size) {
+      return Rect<T>(Vec2<T>::zero(), size);
+    }
+
+    static constexpr Rect<T> from_center(Vec2<T> center, Vec2<T> size) {
+      return Rect<T>(center - size / 2, center + size / 2);
+    }
+
+    static constexpr Rect<T> from_vectors(Vec2<T> v1, Vec2<T> v2) {
+      return Rect<T>(
+        { v1.x < v2.x ? v1.x : v2.x, v1.y < v2.y ? v1.y : v2.y },
+        { v1.x > v2.x ? v1.x : v2.x, v1.y > v2.y ? v1.y : v2.y }
+      );
+    }
+
+    static constexpr Rect<T> from_vectors(std::initializer_list<Vec2<T>> vectors) {
+      Vec2<T> min = std::numeric_limits<Vec2<T>>::max();
+      Vec2<T> max = std::numeric_limits<Vec2<T>>::lowest();
+
+      for (Vec2<T> v : vectors) {
+        min.x = min.x > v.x ? v.x : min.x;
+        min.y = min.y > v.y ? v.y : min.y;
+        max.x = max.x < v.x ? v.x : max.x;
+        max.y = max.y < v.y ? v.y : max.y;
+      }
+
+      return Rect<T>(min, max);
+    }
 
     /* -- Dimensions -- */
 
@@ -141,7 +172,7 @@ namespace Graphick::Math {
    *
    * @struct rrect
    */
-  template<typename T>
+  template <typename T>
   struct RRect : public Rect<T> {
     T angle;    /* The angle of rotation of the rectangle. */
 
@@ -167,7 +198,7 @@ namespace Graphick::Math {
       Rect<T>(v1, v2),
       angle(t) {}
 
-    template<typename U>
+    template <typename U>
     constexpr RRect(const RRect<U>& r) :
       Rect<T>(r.min, r.max),
       angle(static_cast<T>(r.angle)) {}
@@ -175,7 +206,7 @@ namespace Graphick::Math {
 
   /* -- Binary operators -- */
 
-  template<typename T>
+  template <typename T>
   constexpr Rect<T> operator+(const Rect<T>& r1, const Rect<T>& r2) {
     return Rect<T>(
       r1.min + r2.min,
@@ -183,7 +214,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Rect<T> operator+(const Rect<T>& r, const Vec2<T> v) {
     return Rect<T>(
       r.min + v,
@@ -191,7 +222,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Rect<T> operator+(const Rect<T>& r, U scalar) {
     return Rect<T>(
       r.min + scalar,
@@ -199,7 +230,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Rect<T> operator-(const Rect<T>& r1, const Rect<T>& r2) {
     return Rect<T>(
       r1.min - r2.min,
@@ -207,7 +238,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Rect<T> operator-(const Rect<T>& r, const Vec2<T> v) {
     return Rect<T>(
       r.min - v,
@@ -215,7 +246,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Rect<T> operator-(const Rect<T>& r, U scalar) {
     return Rect<T>(
       r.min - scalar,
@@ -223,7 +254,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Rect<T> operator*(const Rect<T>& r, const Vec2<T> v) {
     return Rect<T>(
       r.min * v,
@@ -231,7 +262,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Rect<T> operator*(const Rect<T>& r, U scalar) {
     return Rect<T>(
       r.min * scalar,
@@ -239,7 +270,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Rect<T> operator/(const Rect<T>& r, const Vec2<T> v) {
     return Rect<T>(
       r.min / v,
@@ -247,7 +278,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Rect<T> operator/(const Rect<T>& r, U scalar) {
     return Rect<T>(
       r.min / scalar,
@@ -255,7 +286,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Rect<T> operator%(const Rect<T>& r, const Vec2<T> v) {
     return Rect<T>(
       r.min % v,
@@ -263,7 +294,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Rect<T> operator%(const Rect<T>& r, U scalar) {
     return Rect<T>(
       r.min % scalar,
@@ -273,30 +304,32 @@ namespace Graphick::Math {
 
 }
 
-namespace Graphick::Math {
+/* -- Aliases -- */
 
-  using rect = Math::Rect<float>;
-  using drect = Math::Rect<double>;
-  using irect = Math::Rect<int32_t>;
-  using urect = Math::Rect<uint8_t>;
+namespace graphick::math {
 
-  using rrect = Math::RRect<float>;
-  using drrect = Math::RRect<double>;
-  using irrect = Math::RRect<int32_t>;
-  using urrect = Math::RRect<uint8_t>;
+  using rect = math::Rect<float>;
+  using drect = math::Rect<double>;
+  using irect = math::Rect<int32_t>;
+  using urect = math::Rect<uint8_t>;
+
+  using rrect = math::RRect<float>;
+  using drrect = math::RRect<double>;
+  using irrect = math::RRect<int32_t>;
+  using urrect = math::RRect<uint8_t>;
 
 }
 
-namespace Graphick {
+namespace graphick {
 
-  using rect = Math::rect;
-  using drect = Math::drect;
-  using irect = Math::irect;
-  using urect = Math::urect;
+  using rect = math::rect;
+  using drect = math::drect;
+  using irect = math::irect;
+  using urect = math::urect;
 
-  using rrect = Math::rrect;
-  using drrect = Math::drrect;
-  using irrect = Math::irrect;
-  using urrect = Math::urrect;
+  using rrect = math::rrect;
+  using drrect = math::drrect;
+  using irrect = math::irrect;
+  using urrect = math::urrect;
 
 }

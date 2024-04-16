@@ -5,24 +5,23 @@
 
 #pragma once
 
+#include "scalar.h"
+
 #include "vec2.h"
 #include "vec3.h"
 #include "vec4.h"
 
-#include "../utils/defines.h"
-
 #include <vector>
-#include <cmath>
 
-#define XY(v) Graphick::Vec2{ v.x, v.y }
-#define RG(v) Graphick::Vec2{ v.r, v.g }
-#define ST(v) Graphick::Vec2{ v.s, v.t }
+#define XY(v) graphick::math::Vec2{ v.x, v.y }
+#define RG(v) graphick::math::Vec2{ v.r, v.g }
+#define ST(v) graphick::math::Vec2{ v.s, v.t }
 
-#define XYZ(v) Graphick::Math::Vec3<T>{ v.x, v.y, v.z }
-#define RGB(v) Graphick::Math::Vec3<T>{ v.r, v.g, v.b }
-#define STP(v) Graphick::Math::Vec3<T>{ v.s, v.t, v.p }
+#define XYZ(v) graphick::math::Vec3{ v.x, v.y, v.z }
+#define RGB(v) graphick::math::Vec3{ v.r, v.g, v.b }
+#define STP(v) graphick::math::Vec3{ v.s, v.t, v.p }
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /* -- min -- */
 
@@ -33,12 +32,12 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The minimum of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> min(const Vec2<T> v1, const Vec2<T> v2) {
-    return Vec2<T>{
+    return Vec2<T>(
       std::min(v1.x, v2.x),
-        std::min(v1.y, v2.y)
-    };
+      std::min(v1.y, v2.y)
+    );
   }
 
   /**
@@ -48,13 +47,13 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The minimum of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> min(const Vec3<T>& v1, const Vec3<T>& v2) {
-    return Vec3<T>{
+    return Vec3<T>(
       std::min(v1.x, v2.x),
-        std::min(v1.y, v2.y),
-        std::min(v1.z, v2.z)
-    };
+      std::min(v1.y, v2.y),
+      std::min(v1.z, v2.z)
+    );
   }
 
   /**
@@ -64,14 +63,14 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The minimum of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> min(const Vec4<T>& v1, const Vec4<T>& v2) {
-    return Vec4<T>{
+    return Vec4<T>(
       std::min(v1.x, v2.x),
-        std::min(v1.y, v2.y),
-        std::min(v1.z, v2.z),
-        std::min(v1.w, v2.w),
-    };
+      std::min(v1.y, v2.y),
+      std::min(v1.z, v2.z),
+      std::min(v1.w, v2.w),
+      );
   }
 
   /**
@@ -82,7 +81,7 @@ namespace Graphick::Math {
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T>& min(const Vec2<T> v1, const Vec2<T> v2, Vec2<T>& out) {
     out.x = std::min(v1.x, v2.x);
     out.y = std::min(v1.y, v2.y);
@@ -98,7 +97,7 @@ namespace Graphick::Math {
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T>& min(const Vec3<T>& v1, const Vec3<T>& v2, Vec3<T>& out) {
     out.x = std::min(v1.x, v2.x);
     out.y = std::min(v1.y, v2.y);
@@ -115,7 +114,7 @@ namespace Graphick::Math {
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T>& min(const Vec4<T>& v1, const Vec4<T>& v2, Vec4<T>& out) {
     out.x = std::min(v1.x, v2.x);
     out.y = std::min(v1.y, v2.y);
@@ -134,12 +133,12 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The maximum of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2) {
-    return Vec2<T>{
+    return Vec2<T>(
       std::max(v1.x, v2.x),
-        std::max(v1.y, v2.y)
-    };
+      std::max(v1.y, v2.y)
+    );
   }
 
   /**
@@ -149,13 +148,13 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The maximum of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> max(const Vec3<T>& v1, const Vec3<T>& v2) {
-    return Vec3<T>{
+    return Vec3<T>(
       std::max(v1.x, v2.x),
-        std::max(v1.y, v2.y),
-        std::max(v1.z, v2.z)
-    };
+      std::max(v1.y, v2.y),
+      std::max(v1.z, v2.z)
+    );
   }
 
   /**
@@ -165,14 +164,14 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The maximum of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> max(const Vec4<T>& v1, const Vec4<T>& v2) {
-    return Vec4<T>{
+    return Vec4<T>(
       std::max(v1.x, v2.x),
-        std::max(v1.y, v2.y),
-        std::max(v1.z, v2.z),
-        std::max(v1.w, v2.w)
-    };
+      std::max(v1.y, v2.y),
+      std::max(v1.z, v2.z),
+      std::max(v1.w, v2.w)
+    );
   }
 
   /**
@@ -183,7 +182,7 @@ namespace Graphick::Math {
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2, Vec2<T>& out) {
     out.x = std::max(v1.x, v2.x);
     out.y = std::max(v1.y, v2.y);
@@ -199,7 +198,7 @@ namespace Graphick::Math {
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> max(const Vec3<T>& v1, const Vec3<T>& v2, Vec3<T>& out) {
     out.x = std::max(v1.x, v2.x);
     out.y = std::max(v1.y, v2.y);
@@ -216,7 +215,7 @@ namespace Graphick::Math {
    * @param out The output vector, can be the same as v1 or v2.
    * @return A reference to the output vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> max(const Vec4<T>& v1, const Vec4<T>& v2, Vec4<T>& out) {
     out.x = std::max(v1.x, v2.x);
     out.y = std::max(v1.y, v2.y);
@@ -234,7 +233,7 @@ namespace Graphick::Math {
    * @param v The vector.
    * @return The length of the vector.
    */
-  template<typename T>
+  template <typename T>
   inline T length(const Vec2<T> v) {
     return std::hypot(v.x, v.y);
   }
@@ -245,7 +244,7 @@ namespace Graphick::Math {
    * @param v The vector.
    * @return The length of the vector.
    */
-  template<typename T>
+  template <typename T>
   inline T length(const Vec3<T>& v) {
     return std::hypot(v.x, v.y, v.z);
   }
@@ -256,7 +255,7 @@ namespace Graphick::Math {
    * @param v The vector.
    * @return The length of the vector.
    */
-  template<typename T>
+  template <typename T>
   inline T length(const Vec4<T>& v) {
     return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
   }
@@ -270,7 +269,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The dot product of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr T dot(const Vec2<T> v1, const Vec2<T> v2) {
     return v1.x * v2.x + v1.y * v2.y;
   }
@@ -282,7 +281,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The dot product of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr T dot(const Vec3<T>& v1, const Vec3<T>& v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
   }
@@ -294,7 +293,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The dot product of the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr T dot(const Vec4<T>& v1, const Vec4<T>& v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
   }
@@ -308,7 +307,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The cross product as a scalar value.
    */
-  template<typename T>
+  template <typename T>
   constexpr T cross(const Vec2<T> v1, const Vec2<T> v2) {
     return v1.x * v2.y - v2.x * v1.y;
   }
@@ -320,13 +319,13 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The cross product as a Vec3.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2) {
-    return {
+    return Vec3<T>(
       v1.y * v2.z - v1.z * v2.y,
       -(v1.x * v2.z - v1.z * v2.x),
       v1.x * v2.y - v1.y * v2.x
-    };
+    );
   }
 
   /* -- squared_length -- */
@@ -337,7 +336,7 @@ namespace Graphick::Math {
    * @param v The vector.
    * @return The squared length of the vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr T squared_length(const Vec2<T> v) {
     return v.x * v.x + v.y * v.y;
   }
@@ -348,7 +347,7 @@ namespace Graphick::Math {
    * @param v The vector.
    * @return The squared length of the vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr T squared_length(const Vec3<T>& v) {
     return v.x * v.x + v.y * v.y + v.z * v.z;
   }
@@ -359,7 +358,7 @@ namespace Graphick::Math {
    * @param v The vector.
    * @return The squared length of the vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr T squared_length(const Vec4<T>& v) {
     return v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
   }
@@ -373,7 +372,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The distance between the two vectors.
    */
-  template<typename T>
+  template <typename T>
   inline T distance(const Vec2<T> v1, const Vec2<T> v2) {
     return std::hypot(v2.x - v1.x, v2.y - v1.y);
   }
@@ -385,7 +384,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The distance between the two vectors.
    */
-  template<typename T>
+  template <typename T>
   inline T distance(const Vec3<T>& v1, const Vec3<T>& v2) {
     return std::hypot(v2.x - v1.x, v2.y - v1.y, v2.z - v1.z);
   }
@@ -397,7 +396,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The distance between the two vectors.
    */
-  template<typename T>
+  template <typename T>
   inline T distance(const Vec4<T>& v1, const Vec4<T>& v2) {
     return length(v2 - v1);
   }
@@ -411,7 +410,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The squared distance between the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr T squared_distance(const Vec2<T> v1, const Vec2<T> v2) {
     Vec2<T> v = v2 - v1;
     return dot(v, v);
@@ -424,7 +423,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The squared distance between the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr T squared_distance(const Vec3<T>& v1, const Vec3<T>& v2) {
     Vec3<T> v = v2 - v1;
     return dot(v, v);
@@ -437,7 +436,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The squared distance between the two vectors.
    */
-  template<typename T>
+  template <typename T>
   constexpr T squared_distance(const Vec4<T>& v1, const Vec4<T>& v2) {
     Vec4<T> v = v2 - v1;
     return dot(v, v);
@@ -453,12 +452,12 @@ namespace Graphick::Math {
    * @param t The interpolation factor.
    * @return The interpolated vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> lerp(const Vec2<T> v1, const Vec2<T> v2, T t) {
-    return Vec2<T>{
+    return Vec2<T>(
       v1.x + t * (v2.x - v1.x),
-        v1.y + t * (v2.y - v1.y)
-    };
+      v1.y + t * (v2.y - v1.y)
+    );
   }
 
   /**
@@ -469,13 +468,13 @@ namespace Graphick::Math {
    * @param t The interpolation factor.
    * @return The interpolated vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> lerp(const Vec3<T>& v1, const Vec3<T>& v2, T t) {
-    return Vec3<T>{
+    return Vec3<T>(
       v1.x + t * (v2.x - v1.x),
-        v1.y + t * (v2.y - v1.y),
-        v1.z + t * (v2.z - v1.z)
-    };
+      v1.y + t * (v2.y - v1.y),
+      v1.z + t * (v2.z - v1.z)
+    );
   }
 
   /**
@@ -486,115 +485,17 @@ namespace Graphick::Math {
    * @param t The interpolation factor.
    * @return The interpolated vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> lerp(const Vec4<T>& v1, const Vec4<T>& v2, T t) {
-    return Vec4<T>{
+    return Vec4<T>(
       v1.x + t * (v2.x - v1.x),
-        v1.y + t * (v2.y - v1.y),
-        v1.z + t * (v2.z - v1.z),
-        v1.w + t * (v2.w - v1.w)
-    };
+      v1.y + t * (v2.y - v1.y),
+      v1.z + t * (v2.z - v1.z),
+      v1.w + t * (v2.w - v1.w)
+    );
   }
 
-  /* -- quadratic -- */
-
-  /**
-   * @brief Quadratic bezier interpolation between three Vec2s.
-   *
-   * @param v1 p0.
-   * @param v2 p1.
-   * @param v3 p3.
-   * @param t The interpolation factor.
-   */
-  template<typename T>
-  constexpr Vec2<T> quadratic(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, T t) {
-    Vec2<T> a = v1 - 2 * v2 + v3;
-    Vec2<T> b = 2 * (v2 - v1);
-    Vec2<T> c = v1;
-
-    return a * t * t + b * t + c;
-  }
-
-  /**
-   * @brief Calculates the derivative of a quadratic bezier curve.
-   *
-   * @param v1 p0.
-   * @param v2 p1.
-   * @param v3 p3.
-   * @param t The interpolation factor.
-  */
-  template<typename T>
-  constexpr Vec2<T> quadratic_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, T t) {
-    return 2 * (v1 - 2 * v2 + v3) * t + 2 * (v2 - v1);
-  }
-
-  /* -- cubic -- */
-
-  /**
-   * @brief Cubic bezier interpolation between four Vec2s.
-   *
-   * @param v1 p0.
-   * @param v2 p1.
-   * @param v3 p2.
-   * @param v4 p3.
-   * @param t The interpolation factor.
-   */
-  template<typename T>
-  constexpr Vec2<T> bezier(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
-    Vec2<T> a = -v1 + 3 * v2 - 3 * v3 + v4;
-    Vec2<T> b = 3 * v1 - 6 * v2 + 3 * v3;
-    Vec2<T> c = -3 * v1 + 3 * v2;
-
-    T t_sq = t * t;
-
-    return a * t_sq * t + b * t_sq + c * t + v1;
-  }
-
-  /**
-   * @brief Calculates the derivative of a cubic bezier curve.
-   *
-   * @param v1 p0.
-   * @param v2 p1.
-   * @param v3 p2.
-   * @param v4 p3.
-   * @param t The interpolation factor.
-   */
-  template<typename T>
-  constexpr Vec2<T> cubic_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
-    Vec2<T> a = 3 * (-v1 + 3 * v2 - 3 * v3 + v4);
-    Vec2<T> b = 6 * (v1 - 2 * v2 + v3);
-    Vec2<T> c = -3 * (v1 - v2);
-
-    return a * t * t + b * t + c;
-  }
-
-  /**
-   * @brief Calculates the second derivative of a cubic bezier curve.
-   *
-   * @param v1 p0.
-   * @param v2 p1.
-   * @param v3 p2.
-   * @param v4 p3.
-   * @param t The interpolation factor.
-  */
-  template<typename T>
-  constexpr Vec2<T> cubic_second_derivative(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const Vec2<T> v4, T t) {
-    Vec2<T> a = 6 * (-v1 + 3 * v2 - 3 * v3 + v4);
-    Vec2<T> b = 6 * (v1 - 2 * v2 + v3);
-
-    return a * t + b;
-  }
-
-  /**
-   * @brief Calculates the extrema of a cubic bezier curve.
-   *
-   * @param v1 p0.
-   * @param v2 p1.
-   * @param v3 p2.
-   * @param v4 p3.
-   * @return The t values corresponding to the extrema of the curve.
-   */
-  std::vector<float> cubic_extrema(const vec2 v1, const vec2 v2, const vec2 v3, const vec2 v4);
+  //TODO: implement quadratic(), quadratic_derivative(), cubic(), cubic_derivative(), cubic_second_derivative(), cubic_extrema()
 
   /* -- midpoint -- */
 
@@ -605,12 +506,12 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The midpoint between v1 and v2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> midpoint(const Vec2<T> v1, const Vec2<T> v2) {
-    return Vec2<T>{
-      (v1.x + v2.x) * 0.5f,
-        (v1.y + v2.y) * 0.5f
-    };
+    return Vec2<T>(
+      (v1.x + v2.x) / T(2),
+      (v1.y + v2.y) / T(2)
+    );
   }
 
   /**
@@ -620,13 +521,13 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The midpoint between v1 and v2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> midpoint(const Vec3<T>& v1, const Vec3<T>& v2) {
-    return Vec3<T>{
-      (v1.x + v2.x) * 0.5f,
-        (v1.y + v2.y) * 0.5f,
-        (v1.z + v2.z) * 0.5f
-    };
+    return Vec3<T>(
+      (v1.x + v2.x) / T(2),
+      (v1.y + v2.y) / T(2),
+      (v1.z + v2.z) / T(2)
+    );
   }
 
   /**
@@ -636,14 +537,14 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The midpoint between v1 and v2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> midpoint(const Vec4<T>& v1, const Vec4<T>& v2) {
-    return Vec4<T>{
-      (v1.x + v2.x) * 0.5f,
-        (v1.y + v2.y) * 0.5f,
-        (v1.z + v2.z) * 0.5f,
-        (v1.w + v2.w) * 0.5f
-    };
+    return Vec4<T>(
+      (v1.x + v2.x) / T(2),
+      (v1.y + v2.y) / T(2),
+      (v1.z + v2.z) / T(2),
+      (v1.w + v2.w) / T(2)
+    );
   }
 
   /* -- normalize -- */
@@ -654,15 +555,15 @@ namespace Graphick::Math {
    * @param v The vector to normalize.
    * @return The normalized Vec2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> normalize(const Vec2<T> v) {
     T len = v.x * v.x + v.y * v.y;
     if (len > 0) len = 1 / std::sqrt(len);
 
-    return Vec2<T>{
-      v.x* len,
-        v.y* len,
-    };
+    return Vec2<T>(
+      v.x * len,
+      v.y * len
+    );
   }
 
   /**
@@ -671,16 +572,16 @@ namespace Graphick::Math {
    * @param v The vector to normalize.
    * @return The normalized Vec3.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> normalize(const Vec3<T>& v) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z;
     if (len > 0) len = 1 / std::sqrt(len);
 
-    return Vec3<T>{
-      v.x* len,
-        v.y* len,
-        v.z* len,
-    };
+    return Vec3<T>(
+      v.x * len,
+      v.y * len,
+      v.z * len
+    );
   }
 
   /**
@@ -689,17 +590,17 @@ namespace Graphick::Math {
    * @param v The vector to normalize.
    * @return The normalized Vec4.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> normalize(const Vec4<T>& v) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
     if (len > 0) len = 1 / std::sqrt(len);
 
-    return Vec4<T>{
-      v.x* len,
-        v.y* len,
-        v.z* len,
-        v.w* len,
-    };
+    return Vec4<T>(
+      v.x * len,
+      v.y * len,
+      v.z * len,
+      v.w * len
+    );
   }
 
   /**
@@ -709,7 +610,7 @@ namespace Graphick::Math {
    * @param out The normalized vector (output).
    * @return The normalized Vec2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T>& normalize(const Vec2<T> v, Vec2<T>& out) {
     T len = v.x * v.x + v.y * v.y;
     if (len > 0) len = 1 / std::sqrt(len);
@@ -727,7 +628,7 @@ namespace Graphick::Math {
    * @param out The normalized vector (output).
    * @return The normalized Vec3.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T>& normalize(const Vec3<T>& v, Vec3<T>& out) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z;
     if (len > 0) len = 1 / std::sqrt(len);
@@ -746,7 +647,7 @@ namespace Graphick::Math {
    * @param out The normalized vector (output).
    * @return The normalized Vec4.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T>& normalize(const Vec4<T>& v, Vec4<T>& out) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
     if (len > 0) len = 1 / std::sqrt(len);
@@ -768,15 +669,15 @@ namespace Graphick::Math {
    * @param t The scaling factor.
    * @return The normalized and scaled Vec2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> normalize_length(const Vec2<T> v, T t) {
     T len = v.x * v.x + v.y * v.y;
     if (len > 0) len = 1 / std::sqrt(len);
 
-    return Vec2<T>{
-      v.x* len* t,
-        v.y* len* t,
-    };
+    return Vec2<T>(
+      v.x * len * t,
+      v.y * len * t
+    );
   }
 
   /**
@@ -786,16 +687,16 @@ namespace Graphick::Math {
    * @param t The scaling factor.
    * @return The normalized and scaled Vec3.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> normalize_length(const Vec3<T>& v, T t) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z;
     if (len > 0) len = 1 / std::sqrt(len);
 
-    return Vec3<T>{
-      v.x* len* t,
-        v.y* len* t,
-        v.z* len* t,
-    };
+    return Vec3<T>(
+      v.x * len * t,
+      v.y * len * t,
+      v.z * len * t
+    );
   }
 
   /**
@@ -805,17 +706,17 @@ namespace Graphick::Math {
    * @param t The scaling factor.
    * @return The normalized and scaled Vec4.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> normalize_length(const Vec4<T>& v, T t) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
     if (len > 0) len = 1 / std::sqrt(len);
 
-    return Vec4<T>{
-      v.x* len* t,
-        v.y* len* t,
-        v.z* len* t,
-        v.w* len* t,
-    };
+    return Vec4<T>(
+      v.x * len * t,
+      v.y * len * t,
+      v.z * len * t,
+      v.w * len * t
+    );
   }
 
   /**
@@ -826,7 +727,7 @@ namespace Graphick::Math {
    * @param out The normalized and scaled vector (output).
    * @return The normalized and scaled Vec2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T>& normalize_length(const Vec2<T> v, T t, Vec2<T>& out) {
     T len = v.x * v.x + v.y * v.y;
     if (len > 0) len = 1 / std::sqrt(len);
@@ -845,7 +746,7 @@ namespace Graphick::Math {
    * @param out The normalized and scaled vector (output).
    * @return The normalized and scaled Vec3.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T>& normalize_length(const Vec3<T>& v, T t, Vec3<T>& out) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z;
     if (len > 0) len = 1 / std::sqrt(len);
@@ -865,7 +766,7 @@ namespace Graphick::Math {
    * @param out The normalized and scaled vector (output).
    * @return The normalized and scaled Vec4.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T>& normalize_length(const Vec4<T>& v, T t, Vec4<T>& out) {
     T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
     if (len > 0) len = 1 / std::sqrt(len);
@@ -886,12 +787,9 @@ namespace Graphick::Math {
    * @param v The vector to negate.
    * @return The negated Vec2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> negate(const Vec2<T> v) {
-    return Vec2<T>{
-      -v.x,
-        -v.y
-    };
+    return -v;
   }
 
   /**
@@ -900,13 +798,9 @@ namespace Graphick::Math {
    * @param v The vector to negate.
    * @return The negated Vec3.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> negate(const Vec3<T>& v) {
-    return Vec3<T>{
-      -v.x,
-        -v.y,
-        -v.z
-    };
+    return -v;
   }
 
   /**
@@ -915,14 +809,9 @@ namespace Graphick::Math {
    * @param v The vector to negate.
    * @return The negated Vec4.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> negate(const Vec4<T>& v) {
-    return Vec4<T>{
-      -v.x,
-        -v.y,
-        -v.z,
-        -v.w
-    };
+    return -v;
   }
 
   /**
@@ -932,7 +821,7 @@ namespace Graphick::Math {
    * @param out The negated vector (output).
    * @return The negated Vec2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T>& negate(const Vec2<T> v, Vec2<T>& out) {
     out.x = -v.x;
     out.y = -v.y;
@@ -947,7 +836,7 @@ namespace Graphick::Math {
    * @param out The negated vector (output).
    * @return The negated Vec3.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T>& negate(const Vec3<T>& v, Vec3<T>& out) {
     out.x = -v.x;
     out.y = -v.y;
@@ -963,7 +852,7 @@ namespace Graphick::Math {
    * @param out The negated vector (output).
    * @return The negated Vec4.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T>& negate(const Vec4<T>& v, Vec4<T>& out) {
     out.x = -v.x;
     out.y = -v.y;
@@ -981,12 +870,12 @@ namespace Graphick::Math {
    * @param v The vector to calculate absolute values for.
    * @return The Vec2<T> with absolute values of its components.
    */
-  template<typename T>
+  template <typename T>
   inline Vec2<T> abs(const Vec2<T> v) {
-    return Vec2<T>{
-      std::fabsf(v.x),
-        std::fabsf(v.y)
-    };
+    return Vec2<T>(
+      std::abs(v.x),
+      std::abs(v.y)
+    );
   }
 
   /**
@@ -995,13 +884,13 @@ namespace Graphick::Math {
    * @param v The vector to calculate absolute values for.
    * @return The Vec3<T> with absolute values of its components.
    */
-  template<typename T>
+  template <typename T>
   inline Vec3<T> abs(const Vec3<T>& v) {
-    return Vec3<T>{
-      std::fabsf(v.x),
-        std::fabsf(v.y),
-        std::fabsf(v.z)
-    };
+    return Vec3<T>(
+      std::abs(v.x),
+      std::abs(v.y),
+      std::abs(v.z)
+    );
   }
 
   /**
@@ -1010,14 +899,14 @@ namespace Graphick::Math {
    * @param v The vector to calculate absolute values for.
    * @return The Vec4<T> with absolute values of its components.
    */
-  template<typename T>
+  template <typename T>
   inline Vec4<T> abs(const Vec4<T>& v) {
-    return Vec4<T>{
-      std::fabsf(v.x),
-        std::fabsf(v.y),
-        std::fabsf(v.z),
-        std::fabsf(v.w)
-    };
+    return Vec4<T>(
+      std::abs(v.x),
+      std::abs(v.y),
+      std::abs(v.z),
+      std::abs(v.w)
+    );
   }
 
   /**
@@ -1027,10 +916,10 @@ namespace Graphick::Math {
    * @param out The vector with absolute values of its components (output).
    * @return The Vec2<T> with absolute values of its components.
    */
-  template<typename T>
+  template <typename T>
   inline Vec2<T>& abs(const Vec2<T> v, Vec2<T>& out) {
-    out.x = std::fabsf(v.x);
-    out.y = std::fabsf(v.y);
+    out.x = std::abs(v.x);
+    out.y = std::abs(v.y);
 
     return out;
   }
@@ -1041,11 +930,11 @@ namespace Graphick::Math {
    * @param out The vector with absolute values of its components (output).
    * @return The Vec3<T> with absolute values of its components.
    */
-  template<typename T>
+  template <typename T>
   inline Vec3<T>& abs(const Vec3<T>& v, Vec3<T>& out) {
-    out.x = std::fabsf(v.x);
-    out.y = std::fabsf(v.y);
-    out.z = std::fabsf(v.z);
+    out.x = std::abs(v.x);
+    out.y = std::abs(v.y);
+    out.z = std::abs(v.z);
     return out;
   }
 
@@ -1056,12 +945,12 @@ namespace Graphick::Math {
    * @param out The vector with absolute values of its components (output).
    * @return The Vec4<T> with absolute values of its components.
    */
-  template<typename T>
+  template <typename T>
   inline Vec4<T>& abs(const Vec4<T>& v, Vec4<T>& out) {
-    out.x = std::fabsf(v.x);
-    out.y = std::fabsf(v.y);
-    out.z = std::fabsf(v.z);
-    out.w = std::fabsf(v.w);
+    out.x = std::abs(v.x);
+    out.y = std::abs(v.y);
+    out.z = std::abs(v.z);
+    out.w = std::abs(v.w);
     return out;
   }
 
@@ -1072,9 +961,9 @@ namespace Graphick::Math {
    *
    * @param v The vector to be zeroed.
    */
-  template<typename T>
+  template <typename T>
   constexpr void zero(Vec2<T>& v) {
-    v.x = v.y = 0;
+    v.x = v.y = T(0);
   }
 
   /**
@@ -1082,9 +971,9 @@ namespace Graphick::Math {
    *
    * @param v The vector to be zeroed.
    */
-  template<typename T>
+  template <typename T>
   constexpr void zero(Vec3<T>& v) {
-    v.x = v.y = v.z = 0;
+    v.x = v.y = v.z = T(0);
   }
 
   /**
@@ -1092,9 +981,9 @@ namespace Graphick::Math {
    *
    * @param v The vector to be zeroed.
    */
-  template<typename T>
+  template <typename T>
   constexpr void zero(Vec4<T>& v) {
-    v.x = v.y = v.z = v.w = 0;
+    v.x = v.y = v.z = v.w = T(0);
   }
 
   /* -- is_zero -- */
@@ -1105,9 +994,9 @@ namespace Graphick::Math {
    * @param v The vector to be checked.
    * @return True if all components are zero, false otherwise.
    */
-  template<typename T>
+  template <typename T>
   constexpr bool is_zero(const Vec2<T> v) {
-    return v.x == 0 && v.y == 0;
+    return v.x == T(0) && v.y == T(0);
   }
 
   /**
@@ -1116,9 +1005,9 @@ namespace Graphick::Math {
    * @param v The vector to be checked.
    * @return True if all components are zero, false otherwise.
    */
-  template<typename T>
+  template <typename T>
   constexpr bool is_zero(const Vec3<T>& v) {
-    return v.x == 0 && v.y == 0 && v.z == 0;
+    return v.x == T(0) && v.y == T(0) && v.z == T(0);
   }
 
   /**
@@ -1127,9 +1016,9 @@ namespace Graphick::Math {
    * @param v The vector to be checked.
    * @return True if all components are zero, false otherwise.
    */
-  template<typename T>
+  template <typename T>
   constexpr bool is_zero(const Vec4<T>& v) {
-    return v.x == 0 && v.y == 0 && v.z == 0 && v.w == 0;
+    return v.x == T(0) && v.y == T(0) && v.z == T(0) && v.w == T(0);
   }
 
   /* -- not_zero -- */
@@ -1140,9 +1029,9 @@ namespace Graphick::Math {
    * @param v The vector to be checked.
    * @return True if any component is non-zero, false if all are zero.
    */
-  template<typename T>
+  template <typename T>
   constexpr bool not_zero(const Vec2<T> v) {
-    return v.x != 0 || v.y != 0;
+    return v.x != T(0) || v.y != T(0);
   }
 
   /**
@@ -1151,9 +1040,9 @@ namespace Graphick::Math {
    * @param v The vector to be checked.
    * @return True if any component is non-zero, false if all are zero.
    */
-  template<typename T>
+  template <typename T>
   constexpr bool not_zero(const Vec3<T>& v) {
-    return v.x != 0 || v.y != 0 || v.z != 0;
+    return v.x != T(0) || v.y != T(0) || v.z != T(0);
   }
 
   /**
@@ -1162,9 +1051,9 @@ namespace Graphick::Math {
    * @param v The vector to be checked.
    * @return True if any component is non-zero, false if all are zero.
    */
-  template<typename T>
+  template <typename T>
   constexpr bool not_zero(const Vec4<T>& v) {
-    return v.x != 0 || v.y != 0 || v.z != 0 || v.w != 0;
+    return v.x != T(0) || v.y != T(0) || v.z != T(0) || v.w != T(0);
   }
 
   /* -- is_almost_zero -- */
@@ -1173,11 +1062,11 @@ namespace Graphick::Math {
    * @brief Checks if all components of a Vec2 are nearly zero within a given epsilon.
    *
    * @param v The vector to be checked.
-   * @param eps The epsilon value for comparison (default is GK_EPSILON).
+   * @param eps The epsilon value for comparison (default is math::epsilon).
    * @return True if all components are within epsilon of zero, false otherwise.
    */
-  template<typename T>
-  inline bool is_almost_zero(const Vec2<T> v, const T eps = GK_EPSILON) {
+  template <typename T>
+  inline bool is_almost_zero(const Vec2<T> v, const T eps = epsilon<T>) {
     return !(std::abs(v.x) > eps || std::abs(v.y) > eps);
   }
 
@@ -1185,11 +1074,11 @@ namespace Graphick::Math {
    * @brief Checks if all components of a Vec3<T> are nearly zero within a given epsilon.
    *
    * @param v The vector to be checked.
-   * @param eps The epsilon value for comparison (default is GK_EPSILON).
+   * @param eps The epsilon value for comparison (default is math::epsilon).
    * @return True if all components are within epsilon of zero, false otherwise.
    */
-  template<typename T>
-  inline bool is_almost_zero(const Vec3<T>& v, const T eps = GK_EPSILON) {
+  template <typename T>
+  inline bool is_almost_zero(const Vec3<T>& v, const T eps = epsilon<T>) {
     return !(std::abs(v.x) > eps || std::abs(v.y) > eps || std::abs(v.z) > eps);
   }
 
@@ -1197,11 +1086,11 @@ namespace Graphick::Math {
    * @brief Checks if all components of a Vec4<T> are nearly zero within a given epsilon.
    *
    * @param v The vector to be checked.
-   * @param eps The epsilon value for comparison (default is GK_EPSILON).
+   * @param eps The epsilon value for comparison (default is math::epsilon).
    * @return True if all components are within epsilon of zero, false otherwise.
    */
-  template<typename T>
-  inline bool is_almost_zero(const Vec4<T>& v, const T eps = GK_EPSILON) {
+  template <typename T>
+  inline bool is_almost_zero(const Vec4<T>& v, const T eps = epsilon<T>) {
     return !(std::abs(v.x) > eps || std::abs(v.y) > eps || std::abs(v.z) > eps || std::abs(v.w) > eps);
   }
 
@@ -1212,11 +1101,11 @@ namespace Graphick::Math {
    *
    * @param v1 The first vector for comparison.
    * @param v2 The second vector for comparison.
-   * @param eps The epsilon value for comparison (default is GK_EPSILON).
+   * @param eps The epsilon value for comparison (default is math::epsilon).
    * @return True if all components are within epsilon of each other, false otherwise.
    */
-  template<typename T>
-  inline bool is_almost_equal(const Vec2<T> v1, const Vec2<T> v2, const T eps = GK_EPSILON) {
+  template <typename T>
+  inline bool is_almost_equal(const Vec2<T> v1, const Vec2<T> v2, const T eps = epsilon<T>) {
     return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps);
   }
 
@@ -1225,11 +1114,11 @@ namespace Graphick::Math {
    *
    * @param v1 The first vector for comparison.
    * @param v2 The second vector for comparison.
-   * @param eps The epsilon value for comparison (default is GK_EPSILON).
+   * @param eps The epsilon value for comparison (default is math::epsilon).
    * @return True if all components are within epsilon of each other, false otherwise.
    */
-  template<typename T>
-  inline bool is_almost_equal(const Vec3<T>& v1, const Vec3<T>& v2, const T eps = GK_EPSILON) {
+  template <typename T>
+  inline bool is_almost_equal(const Vec3<T>& v1, const Vec3<T>& v2, const T eps = epsilon<T>) {
     return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps || std::abs(v1.z - v2.z) > eps);
   }
 
@@ -1238,11 +1127,11 @@ namespace Graphick::Math {
    *
    * @param v1 The first vector for comparison.
    * @param v2 The second vector for comparison.
-   * @param eps The epsilon value for comparison (default is GK_EPSILON).
+   * @param eps The epsilon value for comparison (default is math::epsilon).
    * @return True if all components are within epsilon of each other, false otherwise.
    */
-  template<typename T>
-  inline bool is_almost_equal(const Vec4<T>& v1, const Vec4<T>& v2, const T eps = GK_EPSILON) {
+  template <typename T>
+  inline bool is_almost_equal(const Vec4<T>& v1, const Vec4<T>& v2, const T eps = epsilon<T>) {
     return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps || std::abs(v1.z - v2.z) > eps || std::abs(v1.w - v2.w) > eps);
   }
 
@@ -1254,12 +1143,12 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec2<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> floor(const Vec2<T> v) {
-    return Vec2<T>{
+    return Vec2<T>(
       std::floor(v.x),
-        std::floor(v.y),
-    };
+      std::floor(v.y)
+    );
   }
 
   /**
@@ -1268,13 +1157,13 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec3<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> floor(const Vec3<T>& v) {
-    return Vec3<T>{
+    return Vec3<T>(
       std::floor(v.x),
-        std::floor(v.y),
-        std::floor(v.z),
-    };
+      std::floor(v.y),
+      std::floor(v.z)
+    );
   }
 
   /**
@@ -1283,14 +1172,14 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec4<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> floor(const Vec4<T>& v) {
-    return Vec4<T>{
+    return Vec4<T>(
       std::floor(v.x),
-        std::floor(v.y),
-        std::floor(v.z),
-        std::floor(v.w),
-    };
+      std::floor(v.y),
+      std::floor(v.z),
+      std::floor(v.w)
+    );
   }
 
   /* -- ceil -- */
@@ -1301,12 +1190,12 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec2<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> ceil(const Vec2<T> v) {
-    return Vec2<T>{
+    return Vec2<T>(
       std::ceil(v.x),
-        std::ceil(v.y),
-    };
+      std::ceil(v.y)
+    );
   }
 
   /**
@@ -1315,13 +1204,13 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec3<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> ceil(const Vec3<T>& v) {
-    return Vec3<T>{
+    return Vec3<T>(
       std::ceil(v.x),
-        std::ceil(v.y),
-        std::ceil(v.z),
-    };
+      std::ceil(v.y),
+      std::ceil(v.z)
+    );
   }
 
   /**
@@ -1330,14 +1219,14 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec4<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> ceil(const Vec4<T>& v) {
-    return Vec4<T>{
+    return Vec4<T>(
       std::ceil(v.x),
-        std::ceil(v.y),
-        std::ceil(v.z),
-        std::ceil(v.w),
-    };
+      std::ceil(v.y),
+      std::ceil(v.z),
+      std::ceil(v.w)
+    );
   }
 
   /* -- round -- */
@@ -1348,12 +1237,12 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec2<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> round(const Vec2<T> v) {
-    return Vec2<T>{
+    return Vec2<T>(
       std::round(v.x),
-        std::round(v.y)
-    };
+      std::round(v.y)
+    );
   }
 
   /**
@@ -1362,13 +1251,13 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec3<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> round(const Vec3<T>& v) {
-    return Vec3<T>{
+    return Vec3<T>(
       std::round(v.x),
-        std::round(v.y),
-        std::round(v.z)
-    };
+      std::round(v.y),
+      std::round(v.z)
+    );
   }
 
   /**
@@ -1377,17 +1266,19 @@ namespace Graphick::Math {
    * @param v The vector to be rounded.
    * @return The Vec4<T> with rounded components.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec4<T> round(const Vec4<T>& v) {
-    return Vec4<T>{
+    return Vec4<T>(
       std::round(v.x),
-        std::round(v.y),
-        std::round(v.z),
-        std::round(v.w)
-    };
+      std::round(v.y),
+      std::round(v.z),
+      std::round(v.w)
+    );
   }
 
   /* -- angle -- */
+
+  // TODO: move here with template std::enable_if<std::is_floating_point<T>::value, T>::type
 
   /**
    * @brief Computes the angle in radians between two vec2s.
@@ -1405,7 +1296,7 @@ namespace Graphick::Math {
    * @param v2 The second vector.
    * @return The arctangent of the angle between the two vectors.
    */
-  template<typename T>
+  template <typename T>
   inline T atan2(const Vec2<T> v1, const Vec2<T> v2) {
     return std::atan2(v2.y - v1.y, v2.x - v1.x);
   }
@@ -1420,17 +1311,17 @@ namespace Graphick::Math {
    * @param t The angle in radians by which to rotate the vector.
    * @return The rotated Vec2.
    */
-  template<typename T>
+  template <typename T>
   inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T t) {
-    T cx = v.x - c.x;
-    T cy = v.y - c.y;
-    T sin_t = std::sin(t);
-    T cos_t = std::cos(t);
+    const T cx = v.x - c.x;
+    const T cy = v.y - c.y;
+    const T sin_t = std::sin(t);
+    const T cos_t = std::cos(t);
 
-    return Vec2<T>{
-      cx* cos_t - cy * sin_t + c.x,
-        cx* sin_t + cy * cos_t + c.y
-    };
+    return Vec2<T>(
+      cx * cos_t - cy * sin_t + c.x,
+      cx * sin_t + cy * cos_t + c.y
+    );
   }
 
   /**
@@ -1442,15 +1333,15 @@ namespace Graphick::Math {
    * @param cos_t The cosine of the rotation angle.
    * @return The rotated Vec2.
    */
-  template<typename T>
+  template <typename T>
   inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T sin_t, T cos_t) {
-    T cx = v.x - c.x;
-    T cy = v.y - c.y;
+    const T cx = v.x - c.x;
+    const T cy = v.y - c.y;
 
-    return Vec2<T>{
-      cx* cos_t - cy * sin_t + c.x,
-        cx* sin_t + cy * cos_t + c.y
-    };
+    return Vec2<T>(
+      cx * cos_t - cy * sin_t + c.x,
+      cx * sin_t + cy * cos_t + c.y
+    );
   }
 
   /* -- scale -- */
@@ -1463,12 +1354,12 @@ namespace Graphick::Math {
    * @param t The scaling factor.
    * @return The scaled Vec2.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> scale(const Vec2<T> v, const Vec2<T> c, const Vec2<T> s) {
-    return Vec2<T>{
-      (v.x - c.x)* s.x + c.x,
-        (v.y - c.y)* s.y + c.y
-    };
+    return Vec2<T>(
+      (v.x - c.x) * s.x + c.x,
+      (v.y - c.y) * s.y + c.y
+    );
   }
 
   /* -- orthogonal -- */
@@ -1479,9 +1370,9 @@ namespace Graphick::Math {
    * @param v The vector to calculate the orthogonal vector for.
    * @return The orthogonal vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> orthogonal(const Vec2<T> v) {
-    return Vec2<T>{ -v.y, v.x };
+    return Vec2<T>(-v.y, v.x);
   }
 
   /**
@@ -1491,7 +1382,7 @@ namespace Graphick::Math {
    * @param out The orthogonal output vector.
    * @return A reference to the output vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T>& orthogonal(const Vec2<T> v, Vec2<T>& out) {
     T temp = v.x;
 
@@ -1509,9 +1400,9 @@ namespace Graphick::Math {
    * @param v The vector to calculate the normal vector for.
    * @return The normal vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> normal(const Vec2<T> v1, const Vec2<T> v2) {
-    return normalize(Vec2<T>{ v2.y - v1.y, v1.x - v2.x });
+    return normalize(Vec2<T>(v2.y - v1.y, v1.x - v2.x));
   }
 
   /* -- swap_coordinates -- */
@@ -1522,12 +1413,12 @@ namespace Graphick::Math {
    * @param v The vector to swap coordinates for.
    * @return The vector with swapped coordinates.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T> swap_coordinates(const Vec2<T> v) {
-    return {
+    return (
       v.y,
       v.x
-    };
+    );
   }
 
   /**
@@ -1537,7 +1428,7 @@ namespace Graphick::Math {
    * @param out The output vector with swapped coordinates.
    * @return A reference to the output vector.
    */
-  template<typename T>
+  template <typename T>
   constexpr Vec2<T>& swap_coordinates(const Vec2<T> v, Vec2<T>& out) {
     T temp = v.x;
 
@@ -1549,15 +1440,17 @@ namespace Graphick::Math {
 
   /* -- collinear -- */
 
+  // TODO: move here with template std::enable_if<std::is_floating_point<T>::value, T>::type
+
   /**
    * @brief Checks if three vec2s are collinear.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @param v3 The third vector.
-   * @param eps The epsilon value for comparison (default is GK_EPSILON).
+   * @param eps The epsilon value for comparison (default is math::epsilon).
    * @return True if the three vectors are collinear, false otherwise.
    */
-  bool collinear(const vec2 v1, const vec2 v2, const vec2 v3, const float eps = GK_EPSILON);
+  bool collinear(const vec2 v1, const vec2 v2, const vec2 v3, const float eps = math::epsilon);
 
 }

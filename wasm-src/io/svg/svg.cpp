@@ -174,7 +174,7 @@ namespace Graphick::io::svg {
     return true;
   }
 
-  template<typename I>
+  template <typename I>
   static  bool parse_number(const char*& ptr, const char* end, I& number) {
     I integer, fraction;
     int sign, expsign, exponent;

@@ -8,14 +8,14 @@
 #include <cstdint>
 #include <limits>
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief A 4D vector struct with x, y, z and w components.
    *
    * @struct Vec4
    */
-  template<typename T>
+  template <typename T>
   struct Vec4 {
     union { T x, r, s; };    /* The 0 component of the vector. */
     union { T y, g, t; };    /* The 1 component of the vector. */
@@ -74,12 +74,22 @@ namespace Graphick::Math {
       z(z),
       w(w) {}
 
-    template<typename U>
+    template <typename U>
     constexpr explicit Vec4(const Vec4<U>& v) :
       x(static_cast<T>(v.x)),
       y(static_cast<T>(v.y)),
       z(static_cast<T>(v.z)),
       w(static_cast<T>(v.w)) {}
+
+    /* -- Static constructors -- */
+
+    static constexpr Vec4<T> zero() {
+      return Vec4<T>(T(0));
+    }
+
+    static constexpr Vec4<T> identity() {
+      return Vec4<T>(T(1));
+    }
 
     /* -- Assign operator -- */
 
@@ -367,20 +377,22 @@ namespace Graphick::Math {
   }
 }
 
-namespace Graphick::Math {
+/* -- Aliases -- */
 
-  using vec4 = Math::Vec4<float>;
-  using dvec4 = Math::Vec4<double>;
-  using ivec4 = Math::Vec4<int32_t>;
-  using uvec4 = Math::Vec4<uint8_t>;
+namespace graphick::math {
+
+  using vec4 = math::Vec4<float>;
+  using dvec4 = math::Vec4<double>;
+  using ivec4 = math::Vec4<int32_t>;
+  using uvec4 = math::Vec4<uint8_t>;
 
 }
 
-namespace Graphick {
+namespace graphick {
 
-  using vec4 = Math::vec4;
-  using dvec4 = Math::dvec4;
-  using ivec4 = Math::ivec4;
-  using uvec4 = Math::uvec4;
+  using vec4 = math::vec4;
+  using dvec4 = math::dvec4;
+  using ivec4 = math::ivec4;
+  using uvec4 = math::uvec4;
 
 }

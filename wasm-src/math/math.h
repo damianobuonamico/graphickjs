@@ -502,7 +502,7 @@ namespace Graphick::Math {
    * @param t The point at which to split the curve.
    * @return The resulting control points for the two curves.
    */
-  template<typename T>
+  template <typename T>
   inline std::tuple<Vec2<T>, Vec2<T>, Vec2<T>> split_quadratic(const Vec2<T> p0, const Vec2<T> p1, const Vec2<T> p2, const T t) {
     Vec2<T> p = quadratic(p0, p1, p2, t);
 
@@ -522,7 +522,7 @@ namespace Graphick::Math {
    * @param t2 The second point at which to split the curve.
    * @return The resulting control points for the two curves.
    */
-  template<typename T>
+  template <typename T>
   inline std::tuple<Vec2<T>, Vec2<T>, Vec2<T>, Vec2<T>, Vec2<T>> split_quadratic(const Vec2<T> p0, const Vec2<T> p1, const Vec2<T> p2, const T t1, const T t2) {
     Vec2<T> p01 = quadratic(p0, p1, p2, t1);
     Vec2<T> p02 = quadratic(p0, p1, p2, t2);

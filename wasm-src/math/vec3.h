@@ -8,14 +8,14 @@
 #include <cstdint>
 #include <limits>
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief A 3D vector struct with x, y and z components.
    *
    * @struct Vec3<T>
    */
-  template<typename T>
+  template <typename T>
   struct Vec3 {
     union { T x, r, s; };    /* The 0 component of the vector. */
     union { T y, g, t; };    /* The 1 component of the vector. */
@@ -67,11 +67,21 @@ namespace Graphick::Math {
       y(y),
       z(z) {}
 
-    template<typename U>
+    template <typename U>
     constexpr explicit Vec3(const Vec3<U>& v) :
       x(static_cast<T>(v.x)),
       y(static_cast<T>(v.y)),
       z(static_cast<T>(v.z)) {}
+
+    /* -- Static constructors -- */
+
+    static constexpr Vec3<T> zero() {
+      return Vec3<T>(T(0));
+    }
+
+    static constexpr Vec3<T> identity() {
+      return Vec3<T>(T(1));
+    }
 
     /* -- Assign operator -- */
 
@@ -163,12 +173,12 @@ namespace Graphick::Math {
 
   /* -- Unary operators */
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator+(const Vec3<T>& v) {
     return v;
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator-(const Vec3<T>& v) {
     return Vec3<T>(
       -v.x,
@@ -179,7 +189,7 @@ namespace Graphick::Math {
 
   /* -- Binary operators -- */
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator+(const Vec3<T>& v, U scalar) {
     return Vec3<T>(
       v.x + static_cast<T>(scalar),
@@ -188,7 +198,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator+(U scalar, const Vec3<T>& v) {
     return Vec3<T>(
       static_cast<T>(scalar) + v.x,
@@ -197,7 +207,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator+(const Vec3<T>& v1, const Vec3<T>& v2) {
     return Vec3<T>(
       v1.x + v2.x,
@@ -206,7 +216,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator-(const Vec3<T>& v, U scalar) {
     return Vec3<T>(
       v.x - static_cast<T>(scalar),
@@ -215,7 +225,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator-(U scalar, const Vec3<T>& v) {
     return Vec3<T>(
       static_cast<T>(scalar) - v.x,
@@ -224,7 +234,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator-(const Vec3<T>& v1, const Vec3<T>& v2) {
     return Vec3<T>(
       v1.x - v2.x,
@@ -233,7 +243,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator*(const Vec3<T>& v, U scalar) {
     return Vec3<T>(
       v.x * static_cast<T>(scalar),
@@ -242,7 +252,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator*(U scalar, const Vec3<T>& v) {
     return Vec3<T>(
       static_cast<T>(scalar) * v.x,
@@ -251,7 +261,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator*(const Vec3<T>& v1, const Vec3<T>& v2) {
     return Vec3<T>(
       v1.x * v2.x,
@@ -260,7 +270,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator/(const Vec3<T>& v, U scalar) {
     return Vec3<T>(
       v.x / static_cast<T>(scalar),
@@ -269,7 +279,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator/(U scalar, const Vec3<T>& v) {
     return Vec3<T>(
       static_cast<T>(scalar) / v.x,
@@ -278,7 +288,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator/(const Vec3<T>& v1, const Vec3<T>& v2) {
     return Vec3<T>(
       v1.x / v2.x,
@@ -287,7 +297,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator%(const Vec3<T>& v, U scalar) {
     return Vec3<T>(
       static_cast<T>(static_cast<int>(v.x) % static_cast<int>(scalar)),
@@ -296,7 +306,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T, typename U>
+  template <typename T, typename U>
   constexpr Vec3<T> operator%(U scalar, const Vec3<T>& v) {
     return Vec3<T>(
       static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.x)),
@@ -305,7 +315,7 @@ namespace Graphick::Math {
     );
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator%(const Vec3<T>& v1, const Vec3<T>& v2) {
     return Vec3<T>(
       static_cast<T>(static_cast<int>(v1.x) % static_cast<int>(v2.x)),
@@ -316,41 +326,43 @@ namespace Graphick::Math {
 
   /* -- Boolean operators -- */
 
-  template<typename T>
+  template <typename T>
   constexpr bool operator==(const Vec3<T>& v1, const Vec3<T>& v2) {
     return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
   }
 
-  template<typename T>
+  template <typename T>
   constexpr bool operator!=(const Vec3<T>& v1, const Vec3<T>& v2) {
     return !(v1 == v2);
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator&&(const Vec3<T>& v1, const Vec3<T>& v2) {
     return Vec3<T>(v1.x && v2.x, v1.y && v2.y, v1.z && v2.z);
   }
 
-  template<typename T>
+  template <typename T>
   constexpr Vec3<T> operator||(const Vec3<T>& v1, const Vec3<T>& v2) {
     return Vec3<T>(v1.x || v2.x, v1.y || v2.y, v1.z || v2.z);
   }
 }
 
-namespace Graphick::Math {
+/* -- Aliases -- */
 
-  using vec3 = Math::Vec3<float>;
-  using dvec3 = Math::Vec3<double>;
-  using ivec3 = Math::Vec3<int32_t>;
-  using uvec3 = Math::Vec3<uint8_t>;
+namespace graphick::math {
+
+  using vec3 = math::Vec3<float>;
+  using dvec3 = math::Vec3<double>;
+  using ivec3 = math::Vec3<int32_t>;
+  using uvec3 = math::Vec3<uint8_t>;
 
 }
 
-namespace Graphick {
+namespace graphick {
 
-  using vec3 = Math::vec3;
-  using dvec3 = Math::dvec3;
-  using ivec3 = Math::ivec3;
-  using uvec3 = Math::uvec3;
+  using vec3 = math::vec3;
+  using dvec3 = math::dvec3;
+  using ivec3 = math::ivec3;
+  using uvec3 = math::uvec3;
 
 }
