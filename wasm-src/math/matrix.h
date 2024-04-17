@@ -16,7 +16,9 @@
 #include "scalar.h"
 #include "vector.h"
 
-namespace Graphick::Math {
+namespace graphick::math {
+
+  /* -- Structs -- */
 
   /**
    * @brief A struct containing the decomposed components of a 2x3 matrix.
@@ -31,6 +33,8 @@ namespace Graphick::Math {
     T rotation;      /* Rotation component in radians. */
     T shear;         /* Shear component along the y-axis. */
   };
+
+  /* -- zero -- */
 
   /**
    * Sets all elements of the given 2x2 matrix to zero.
@@ -78,6 +82,81 @@ namespace Graphick::Math {
     zero(m[0]);
     zero(m[1]);
   }
+
+  /* -- identity -- */
+
+  /**
+   * Sets the given 2x2 matrix to the identity matrix.
+   *
+   * @param m The matrix to be set to the identity matrix.
+   */
+  template <typename T>
+  void identity(Mat2<T>& m) {
+    m[0][0] = T(1);
+    m[0][1] = T(0);
+    m[1][0] = T(0);
+    m[1][1] = T(1);
+  }
+
+  /**
+   * Sets the given 3x3 matrix to the identity matrix.
+   *
+   * @param m The matrix to be set to the identity matrix.
+   */
+  template <typename T>
+  void identity(Mat3<T>& m) {
+    m[0][0] = T(1);
+    m[0][1] = T(0);
+    m[0][2] = T(0);
+    m[1][0] = T(0);
+    m[1][1] = T(1);
+    m[1][2] = T(0);
+    m[2][0] = T(0);
+    m[2][1] = T(0);
+    m[2][2] = T(1);
+  }
+
+  /**
+   * Sets the given 4x4 matrix to the identity matrix.
+   *
+   * @param m The matrix to be set to the identity matrix.
+   */
+  template <typename T>
+  void identity(Mat4<T>& m) {
+    m[0][0] = T(1);
+    m[0][1] = T(0);
+    m[0][2] = T(0);
+    m[0][3] = T(0);
+    m[1][0] = T(0);
+    m[1][1] = T(1);
+    m[1][2] = T(0);
+    m[1][3] = T(0);
+    m[2][0] = T(0);
+    m[2][1] = T(0);
+    m[2][2] = T(1);
+    m[2][3] = T(0);
+    m[3][0] = T(0);
+    m[3][1] = T(0);
+    m[3][2] = T(0);
+    m[3][3] = T(1);
+  }
+
+  /**
+   * Sets the given 2x3 matrix to the identity matrix.
+   *
+   * @param m The matrix to be set to the identity matrix.
+   */
+  template <typename T>
+  void identity(Mat2x3<T>& m) {
+    m[0][0] = T(1);
+    m[0][1] = T(0);
+    m[1][0] = T(0);
+    m[1][1] = T(1);
+    m[0][2] = T(0);
+    m[1][2] = T(0);
+  }
+
+  /* -- is_zero -- */
 
   /**
    * Checks if a 2x2 matrix is a zero matrix.
@@ -137,6 +216,78 @@ namespace Graphick::Math {
       is_zero(m[1])
     );
   }
+
+  /* -- not_identity -- */
+
+  /**
+   * Checks if a 2x2 matrix is not an identity matrix.
+   *
+   * Checking if a matrix is not an identity matrix is faster than checking if it is an identity matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is not an identity matrix, false otherwise.
+   */
+  template <typename T>
+  bool not_identity(const Mat2<T>& m) {
+    return (
+      m[0][0] != T(1) || m[0][1] != T(0) ||
+      m[1][0] != T(0) || m[1][1] != T(1)
+    );
+  }
+
+  /**
+   * Checks if a 3x3 matrix is not an identity matrix.
+   *
+   * Checking if a matrix is not an identity matrix is faster than checking if it is an identity matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is not an identity matrix, false otherwise.
+   */
+  template <typename T>
+  bool not_identity(const Mat3<T>& m) {
+    return (
+      m[0][0] != T(1) || m[0][1] != T(0) || m[0][2] != T(0) ||
+      m[1][0] != T(0) || m[1][1] != T(1) || m[1][2] != T(0) ||
+      m[2][0] != T(0) || m[2][1] != T(0) || m[2][2] != T(1)
+    );
+  }
+
+  /**
+   * Checks if a 4x4 matrix is not an identity matrix.
+   *
+   * Checking if a matrix is not an identity matrix is faster than checking if it is an identity matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is not an identity matrix, false otherwise.
+   */
+  template <typename T>
+  bool not_identity(const Mat4<T>& m) {
+    return (
+      m[0][0] != T(1) || m[0][1] != T(0) || m[0][2] != T(0) || m[0][3] != T(0) ||
+      m[1][0] != T(0) || m[1][1] != T(1) || m[1][2] != T(0) || m[1][3] != T(0) ||
+      m[2][0] != T(0) || m[2][1] != T(0) || m[2][2] != T(1) || m[2][3] != T(0) ||
+      m[3][0] != T(0) || m[3][1] != T(0) || m[3][2] != T(0) || m[3][3] != T(1)
+    );
+  }
+
+  /**
+   * Checks if a 2x3 matrix is not an identity matrix.
+   *
+   * Checking if a matrix is not an identity matrix is faster than checking if it is an identity matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is not an identity matrix, false otherwise.
+   */
+  template <typename T>
+  bool not_identity(const Mat2x3<T>& m) {
+    return (
+      m[0][0] != T(1) || m[0][1] != T(0) ||
+      m[1][0] != T(0) || m[1][1] != T(1) ||
+      m[0][2] != T(0) || m[1][2] != T(0)
+    );
+  }
+
+  /* -- determinant -- */
 
   /**
    * @brief Calculates the determinant of a 2x2 matrix.
@@ -215,6 +366,8 @@ namespace Graphick::Math {
       - m[0][1] * m[1][0]
     );
   }
+
+  /* -- inverse -- */
 
   /**
    * @brief Calculates the inverse of a 2x2 matrix.
@@ -378,6 +531,75 @@ namespace Graphick::Math {
     return inverse;
   }
 
+  /* -- transpose -- */
+
+  /**
+   * @brief Transposes a 2x2 matrix.
+   *
+   * @param m The matrix to transpose
+   * @return The transposed matrix.
+   */
+  template <typename T>
+  Mat2<T> transpose(const Mat2<T>& m) {
+    Mat2<T> result;
+    result[0][0] = m[0][0];
+    result[0][1] = m[1][0];
+    result[1][0] = m[0][1];
+    result[1][1] = m[1][1];
+    return result;
+  }
+
+  /**
+   * @brief Transposes a 3x3 matrix.
+   *
+   * @param m The matrix to transpose
+   * @return The transposed matrix.
+   */
+  template <typename T>
+  Mat3<T> transpose(const Mat3<T>& m) {
+    Mat3<T> result;
+    result[0][0] = m[0][0];
+    result[0][1] = m[1][0];
+    result[0][2] = m[2][0];
+    result[1][0] = m[0][1];
+    result[1][1] = m[1][1];
+    result[1][2] = m[2][1];
+    result[2][0] = m[0][2];
+    result[2][1] = m[1][2];
+    result[2][2] = m[2][2];
+    return result;
+  }
+
+  /**
+   * @brief Transposes a 4x4 matrix.
+   *
+   * @param m The matrix to transpose
+   * @return The transposed matrix.
+   */
+  template <typename T>
+  Mat4<T> transpose(const Mat4<T>& m) {
+    Mat4<T> result;
+    result[0][0] = m[0][0];
+    result[0][1] = m[1][0];
+    result[0][2] = m[2][0];
+    result[0][3] = m[3][0];
+    result[1][0] = m[0][1];
+    result[1][1] = m[1][1];
+    result[1][2] = m[2][1];
+    result[1][3] = m[3][1];
+    result[2][0] = m[0][2];
+    result[2][1] = m[1][2];
+    result[2][2] = m[2][2];
+    result[2][3] = m[3][2];
+    result[3][0] = m[0][3];
+    result[3][1] = m[1][3];
+    result[3][2] = m[2][3];
+    result[3][3] = m[3][3];
+    return result;
+  }
+
+  /* -- translate -- */
+
   /**
    * @brief Performs a 2D translation to a 2x3 matrix.
    *
@@ -403,6 +625,8 @@ namespace Graphick::Math {
     result[1][2] = src_b12 + v.y;
     return result;
   }
+
+  /* -- scale -- */
 
   /**
    * @brief Performs a 2D scale to a 2x3 matrix.
@@ -442,6 +666,8 @@ namespace Graphick::Math {
   Mat2x3<T> scale(const Mat2x3<T>& m, const Vec2<T> c, const Vec2<T> v) {
     return translate(scale(translate(m, -c), v), c);
   }
+
+  /* -- rotate -- */
 
   /**
    * @brief Performs a 2D rotation to a 2x3 matrix.
@@ -511,6 +737,8 @@ namespace Graphick::Math {
     return translate(rotate(translate(m, -c), sin_t, cos_t), c);
   }
 
+  /* -- decompose -- */
+
   /**
    * @brief Decomposes a 2x3 matrix into its translation, scale, and rotation components.
    *
@@ -556,6 +784,19 @@ namespace Graphick::Math {
   T rotation(const Mat2x3<T>& m) {
     return std::atan2f(m[1][0], m[0][0]);
   }
+
+  /**
+   * @brief Calculates the scale component of a 2x3 matrix.
+   *
+   * @param m The matrix to calculate the scale component of.
+   * @return The scale component of the matrix.
+   */
+  template <typename T>
+  Vec2<T> scaling(const Mat2x3<T>& m) {
+    return decompose(m).scale;
+  }
+
+  /* -- operators -- */
 
   /**
    * @brief Overloaded multiplication operator to multiply a 2x3 matrix by a 2D rect.

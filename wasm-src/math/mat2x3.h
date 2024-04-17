@@ -8,7 +8,7 @@
 #include "vec2.h"
 #include "vec3.h"
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief A 2x3 matrix struct with 3 columns and 2 rows.
@@ -39,7 +39,7 @@ namespace Graphick::Math {
 
     constexpr Mat2x3() : value{
       Vec3<T>(1, 0, 0),
-       Vec3<T>(0, 1, 0)
+      Vec3<T>(0, 1, 0)
     } {}
 
     constexpr Mat2x3(const Mat2x3<T>& m) : value{
@@ -49,12 +49,12 @@ namespace Graphick::Math {
 
     constexpr explicit Mat2x3(T scalar) : value{
       Vec3<T>(scalar, 0, 0),
-       Vec3<T>(0, scalar, 0)
+      Vec3<T>(0, scalar, 0)
     } {}
 
     constexpr Mat2x3(const Vec3<T>& v0, const Vec3<T>& v1) : value{
-       Vec3<T>(v0),
-        Vec3<T>(v1)
+      Vec3<T>(v0),
+      Vec3<T>(v1)
     } {}
 
     constexpr Mat2x3(
@@ -62,7 +62,7 @@ namespace Graphick::Math {
       T x1, T y1, T z1
     ) : value{
       Vec3<T>(x0, y0, z0),
-       Vec3<T>(x1, y1, z1)
+      Vec3<T>(x1, y1, z1)
     } {}
 
     template <typename U>
@@ -70,6 +70,50 @@ namespace Graphick::Math {
       Vec3<T>(m[0]),
        Vec3<T>(m[1])
     } {}
+
+    /* -- Static constructors -- */
+
+    static constexpr Mat2x3<T> zero() {
+      return Mat2x3<T>(T(0));
+    }
+
+    static constexpr Mat2x3<T> identity() {
+      return Mat2x3<T>(T(1));
+    }
+
+    static constexpr Mat2x3<T> from_translation(const Vec2<T>& v) {
+      return Mat2x3<T>(
+        1, 0, v.x,
+        0, 1, v.y
+      );
+    }
+
+    static constexpr Mat2x3<T> from_rotation(T angle) {
+      const T s = std::sin(angle);
+      const T c = std::cos(angle);
+
+      return Mat2x3<T>(
+        c, -s, 0,
+        s, c, 0
+      );
+    }
+
+    static constexpr Mat2x3<T> from_scale(const Vec2<T>& v) {
+      return Mat2x3<T>(
+        v.x, 0, 0,
+        0, v.y, 0
+      );
+    }
+
+    static constexpr Mat2x3<T> from_translation_rotation_scale(const Vec2<T>& translation, T rotation, const Vec2<T>& scale) {
+      const T s = std::sin(rotation);
+      const T c = std::cos(rotation);
+
+      return Mat2x3<T>(
+        scale.x * c, -scale.y * s, translation.x,
+        scale.x * s, scale.y * c, translation.y
+      );
+    }
 
     /* -- Assign operator -- */
 
@@ -278,20 +322,20 @@ namespace Graphick::Math {
   }
 }
 
-namespace Graphick::Math {
+namespace graphick::math {
 
-  using mat2x3 = Math::Mat2x3<float>;
-  using dmat2x3 = Math::Mat2x3<double>;
-  using imat2x3 = Math::Mat2x3<int32_t>;
-  using umat2x3 = Math::Mat2x3<uint32_t>;
+  using mat2x3 = math::Mat2x3<float>;
+  using dmat2x3 = math::Mat2x3<double>;
+  using imat2x3 = math::Mat2x3<int32_t>;
+  using umat2x3 = math::Mat2x3<uint32_t>;
 
 }
 
-namespace Graphick {
+namespace graphick {
 
-  using mat2x3 = Math::mat2x3;
-  using dmat2x3 = Math::dmat2x3;
-  using imat2x3 = Math::imat2x3;
-  using umat2x3 = Math::umat2x3;
+  using mat2x3 = math::mat2x3;
+  using dmat2x3 = math::dmat2x3;
+  using imat2x3 = math::imat2x3;
+  using umat2x3 = math::umat2x3;
 
 }

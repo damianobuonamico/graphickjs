@@ -7,7 +7,7 @@
 
 #include "vec2.h"
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief A 2D matrix struct.
@@ -49,7 +49,7 @@ namespace Graphick::Math {
 
     constexpr Mat2(const Vec2<T> v0, const Vec2<T> v1) : value{
       Vec2<T>(v0),
-       Vec2<T>(v1)
+      Vec2<T>(v1)
     } {}
 
     constexpr Mat2(
@@ -65,6 +65,16 @@ namespace Graphick::Math {
       Vec2<T>(m[0]),
       Vec2<T>(m[1])
     } {}
+
+    /* -- Static constructors -- */
+
+    static constexpr Mat2<T> zero() {
+      return Mat2<T>(T(0));
+    }
+
+    static constexpr Mat2<T> identity() {
+      return Mat2<T>(T(1));
+    }
 
     /* -- Assign operator -- */
 
@@ -280,20 +290,20 @@ namespace Graphick::Math {
   }
 }
 
-namespace Graphick::Math {
+namespace graphick::math {
 
-  using mat2 = Math::Mat2<float>;
-  using dmat2 = Math::Mat2<double>;
-  using imat2 = Math::Mat2<int32_t>;
-  using umat2 = Math::Mat2<uint8_t>;
+  using mat2 = math::Mat2<float>;
+  using dmat2 = math::Mat2<double>;
+  using imat2 = math::Mat2<int32_t>;
+  using umat2 = math::Mat2<uint8_t>;
 
 }
 
-namespace Graphick {
+namespace graphick {
 
-  using mat2 = Math::mat2;
-  using dmat2 = Math::dmat2;
-  using imat2 = Math::imat2;
-  using umat2 = Math::umat2;
+  using mat2 = math::mat2;
+  using dmat2 = math::dmat2;
+  using imat2 = math::imat2;
+  using umat2 = math::umat2;
 
 }

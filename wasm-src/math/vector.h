@@ -1281,13 +1281,16 @@ namespace graphick::math {
   // TODO: move here with template std::enable_if<std::is_floating_point<T>::value, T>::type
 
   /**
-   * @brief Computes the angle in radians between two vec2s.
+   * @brief Computes the angle in radians between two Vec2s.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
    * @return The angle in radians between the two vectors.
    */
-  float angle(const vec2 v1, const vec2 v2);
+  template <typename T, typename = std::enable_if_t<std::is_floating_point<T>::value>>
+  inline T angle(const Vec2<T> v1, const Vec2<T> v2) {
+    return sign(cross(v1, v2)) * std::acos(dot(v1, v2) / std::sqrt(squared_length(v1) * squared_length(v2)))
+  }
 
   /**
    * @brief Computes the arctangent of the angle between two Vec2s.
@@ -1440,10 +1443,8 @@ namespace graphick::math {
 
   /* -- collinear -- */
 
-  // TODO: move here with template std::enable_if<std::is_floating_point<T>::value, T>::type
-
   /**
-   * @brief Checks if three vec2s are collinear.
+   * @brief Checks if three Vec2s are collinear.
    *
    * @param v1 The first vector.
    * @param v2 The second vector.
@@ -1451,6 +1452,10 @@ namespace graphick::math {
    * @param eps The epsilon value for comparison (default is math::epsilon).
    * @return True if the three vectors are collinear, false otherwise.
    */
-  bool collinear(const vec2 v1, const vec2 v2, const vec2 v3, const float eps = math::epsilon);
+  template <typename T>
+  inline bool collinear(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const T eps = epsilon<T>) {
+    const T t = v1.x * (v2.y - v3.y) + v2.x * (v3.y - v1.y) + v3.x * (v1.y - v2.y);
+    return std::abs(t) <= eps;
+  }
 
 }

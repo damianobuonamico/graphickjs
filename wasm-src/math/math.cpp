@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief Calculates the x-coordinate of the intersection point between two lines defined by their endpoints.
@@ -88,19 +88,19 @@ namespace Graphick::Math {
     return static_cast<f24x8>(num / den);
   }
 
-  QuadraticSolutions solve_quadratic(double a, double b, double c) {
-    if (Math::is_almost_zero(a)) {
+  QuadraticSolutions<double> solve_quadratic(const double a, const double b, const double c) {
+    if (is_almost_zero(a)) {
       /* It is a linear equation */
 
       return { solve_linear(b, c) };
     }
 
-    double discriminant = b * b - 4.0 * a * c;
+    const double discriminant = b * b - 4.0 * a * c;
 
-    if (Math::is_almost_zero(discriminant)) {
+    if (is_almost_zero(discriminant)) {
       /* One real root. */
 
-      double root = -b / (2.0 * a);
+      const double root = -b / (2.0 * a);
 
       return { root, root };
     } else if (discriminant < 0.0) {
@@ -111,20 +111,20 @@ namespace Graphick::Math {
 
     /* Two real roots. */
 
-    double q = std::sqrt(discriminant);
-    double a2 = 2.0 * a;
+    const double q = std::sqrt(discriminant);
+    const double a2 = 2.0 * a;
 
     return { (q - b) / a2, (-b - q) / a2 };
   }
 
-  CubicSolutions solve_cubic(double a, double b, double c, double d) {
-    if (Math::is_almost_zero(a)) {
+  CubicSolutions<double> solve_cubic(const double a, const double b, const double c, const double d) {
+    if (is_almost_zero(a)) {
       /* It is a quadratic equation */
 
       return solve_quadratic(b, c, d);
     }
 
-    if (Math::is_almost_zero(d)) {
+    if (is_almost_zero(d)) {
       /* One root is 0. */
 
       CubicSolutions solutions = solve_quadratic(a, b, c);
@@ -134,36 +134,36 @@ namespace Graphick::Math {
     }
 
     /* Calculate coefficients of the depressed cubic equation: y^3 + py + q = 0 */
-    double p = (3 * a * c - b * b) / (3 * a * a);
-    double q = (2 * b * b * b - 9 * a * b * c + 27 * a * a * d) / (27 * a * a * a);
+    const double p = (3.0 * a * c - b * b) / (3.0 * a * a);
+    const double q = (2.0 * b * b * b - 9.0 * a * b * c + 27.0 * a * a * d) / (27.0 * a * a * a);
 
     /* Calculate discriminant */
-    double discriminant = (q * q) / 4 + (p * p * p) / 27;
+    const double discriminant = (q * q) / 4.0 + (p * p * p) / 27.0;
 
-    if (Math::is_almost_zero(discriminant)) {
-      double u = std::cbrt(-q / 2);
+    if (is_almost_zero(discriminant)) {
+      const double u = std::cbrt(-q / 2.0);
       /* Three real roots, two of them are equal */
-      double realRoot1 = 2 * u - b / (3 * a);
-      double realRoot2 = -u - b / (3 * a);
+      const double realRoot1 = 2.0 * u - b / (3.0 * a);
+      const double realRoot2 = -u - b / (3.0 * a);
 
       return { realRoot1, realRoot2, realRoot2 };
     } else if (discriminant > 0) {
-      double u = std::cbrt(-q / 2 + std::sqrt(discriminant));
+      const double u = std::cbrt(-q / 2.0 + std::sqrt(discriminant));
 
       /* One real root and two complex roots */
-      double v = std::cbrt(-q / 2 - std::sqrt(discriminant));
-      double realRoot = u + v - b / (3 * a);
+      const double v = std::cbrt(-q / 2.0 - std::sqrt(discriminant));
+      const double realRoot = u + v - b / (3.0 * a);
 
       return { realRoot };
     } else {
-      double phi = std::acos(-q / 2 * std::sqrt(-27 / (p * p * p)));
-      double b1 = -b / (3.0 * a);
-      double xi = 2.0 * std::sqrt(-p / 3);
+      const double phi = std::acos(-q / 2.0 * std::sqrt(-27.0 / (p * p * p)));
+      const double b1 = -b / (3.0 * a);
+      const double xi = 2.0 * std::sqrt(-p / 3.0);
 
       /* Three distinct real roots */
-      double root1 = xi * std::cos(phi / 3) + b1;
-      double root2 = xi * std::cos((phi + 2 * MATH_F_PI) / 3) + b1;
-      double root3 = xi * std::cos((phi + 4 * MATH_F_PI) / 3) + b1;
+      const double root1 = xi * std::cos(phi / 3.0) + b1;
+      const double root2 = xi * std::cos((phi + two_pi<double>) / 3.0) + b1;
+      const double root3 = xi * std::cos((phi + 2.0 * two_pi<double>) / 3.0) + b1;
 
       return { root1, root2, root3 };
     }
@@ -884,5 +884,5 @@ namespace Graphick::Math {
 
     return { Paaa, Paab, Pabb, Pbbb };
   }
-  
+
 }

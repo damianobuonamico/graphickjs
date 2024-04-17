@@ -6,7 +6,7 @@
 
 #include "vec4.h"
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief A 4D matrix struct.
@@ -78,6 +78,16 @@ namespace Graphick::Math {
       Vec4<T>(m[2]),
       Vec4<T>(m[3])
     } {}
+
+    /* -- Static constructors -- */
+
+    static constexpr Mat4<T> zero() {
+      return Mat4<T>(T(0));
+    }
+
+    static constexpr Mat4<T> identity() {
+      return Mat4<T>(T(1));
+    }
 
     /* -- Assign operator -- */
 
@@ -338,20 +348,20 @@ namespace Graphick::Math {
   }
 }
 
-namespace Graphick::Math {
+namespace graphick::math {
 
-  using mat4 = Math::Mat4<float>;
-  using dmat4 = Math::Mat4<double>;
-  using imat4 = Math::Mat4<int32_t>;
-  using umat4 = Math::Mat4<uint8_t>;
+  using mat4 = math::Mat4<float>;
+  using dmat4 = math::Mat4<double>;
+  using imat4 = math::Mat4<int32_t>;
+  using umat4 = math::Mat4<uint8_t>;
 
 }
 
-namespace Graphick {
+namespace graphick {
 
-  using mat4 = Math::mat4;
-  using dmat4 = Math::dmat4;
-  using imat4 = Math::imat4;
-  using umat4 = Math::umat4;
+  using mat4 = math::mat4;
+  using dmat4 = math::dmat4;
+  using imat4 = math::imat4;
+  using umat4 = math::umat4;
 
 }

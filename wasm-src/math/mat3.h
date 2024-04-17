@@ -7,7 +7,7 @@
 
 #include "vec3.h"
 
-namespace Graphick::Math {
+namespace graphick::math {
 
   /**
    * @brief A 3D matrix struct.
@@ -45,9 +45,9 @@ namespace Graphick::Math {
     } {}
 
     constexpr explicit Mat3(T scalar) : value{
-       Vec3<T>(scalar, 0, 0),
-       Vec3<T>(0, scalar, 0),
-       Vec3<T>(0, 0, scalar)
+      Vec3<T>(scalar, 0, 0),
+      Vec3<T>(0, scalar, 0),
+      Vec3<T>(0, 0, scalar)
     } {}
 
     constexpr Mat3(const Vec3<T>& v0, const Vec3<T>& v1, const Vec3<T>& v2) : value{
@@ -71,6 +71,16 @@ namespace Graphick::Math {
       Vec3<T>(m[0]),
       Vec3<T>(m[1]),
       Vec3<T>(m[2]) } {}
+
+    /* -- Static constructors -- */
+
+    static constexpr Mat3<T> zero() {
+      return Mat3<T>(T(0));
+    }
+
+    static constexpr Mat3<T> identity() {
+      return Mat3<T>(T(1));
+    }
 
     /* -- Assign operator -- */
 
@@ -295,20 +305,20 @@ namespace Graphick::Math {
   }
 }
 
-namespace Graphick::Math {
+namespace graphick::math {
 
-  using mat3 = Math::Mat3<float>;
-  using dmat3 = Math::Mat3<double>;
-  using imat3 = Math::Mat3<int32_t>;
-  using umat3 = Math::Mat3<uint8_t>;
+  using mat3 = math::Mat3<float>;
+  using dmat3 = math::Mat3<double>;
+  using imat3 = math::Mat3<int32_t>;
+  using umat3 = math::Mat3<uint8_t>;
 
 }
 
-namespace Graphick {
+namespace graphick {
 
-  using mat3 = Math::mat3;
-  using dmat3 = Math::dmat3;
-  using imat3 = Math::imat3;
-  using umat3 = Math::umat3;
+  using mat3 = math::mat3;
+  using dmat3 = math::dmat3;
+  using imat3 = math::imat3;
+  using umat3 = math::umat3;
 
 }

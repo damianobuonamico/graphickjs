@@ -21,6 +21,9 @@ constexpr T two_pi = T(2) * pi<T>;
 template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
 constexpr T epsilon = std::numeric_limits<T>::epsilon();
 
+template <typename T, typename = std::enable_if<std::is_integral<T>::value>>
+constexpr T epsilon = T(0);
+
 namespace graphick::math {
 
   /**
