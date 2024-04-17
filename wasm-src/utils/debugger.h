@@ -4,14 +4,14 @@
 #define GK_USE_DEBUGGER 1
 #define GK_DEBUGGER_OVERLAYS 1
 
-#define GK_DEBUGGER_INIT() Graphick::Utils::Debugger::init()
-#define GK_DEBUGGER_SHUTDOWN() Graphick::Utils::Debugger::shutdown()
-#define GK_DEBUGGER_RENDER(...) Graphick::Utils::Debugger::render(__VA_ARGS__)
-#define GK_DEBUGGER_CLEAR() Graphick::Utils::Debugger::clear()
-#define GK_DEBUGGER_LOG(...) Graphick::Utils::Debugger::log(__VA_ARGS__)
+#define GK_DEBUGGER_INIT() graphick::Utils::Debugger::init()
+#define GK_DEBUGGER_SHUTDOWN() graphick::Utils::Debugger::shutdown()
+#define GK_DEBUGGER_RENDER(...) graphick::Utils::Debugger::render(__VA_ARGS__)
+#define GK_DEBUGGER_CLEAR() graphick::Utils::Debugger::clear()
+#define GK_DEBUGGER_LOG(...) graphick::Utils::Debugger::log(__VA_ARGS__)
 
 #if GK_DEBUGGER_OVERLAYS
-#define GK_DEBUGGER_DRAW(...) Graphick::Utils::Debugger::draw(__VA_ARGS__)
+#define GK_DEBUGGER_DRAW(...) graphick::Utils::Debugger::draw(__VA_ARGS__)
 #else
 #define GK_DEBUGGER_DRAW(...) ((void)0)
 #endif
@@ -39,15 +39,15 @@
 #include <vector>
 #include <string>
 
-namespace Graphick::Renderer {
+namespace graphick::renderer {
   struct Drawable;
 }
 
-namespace Graphick::Renderer::Geometry {
+namespace graphick::renderer::geometry {
   class Contour;
 }
 
-namespace Graphick::Utils {
+namespace graphick::utils {
   class Debugger {
   public:
     static void init();

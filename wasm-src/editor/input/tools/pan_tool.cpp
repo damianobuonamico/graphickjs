@@ -9,7 +9,7 @@
 
 #include "../../editor.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   PanTool::PanTool() : Tool(ToolType::Pan, CategoryImmediate) {}
 

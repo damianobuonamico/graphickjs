@@ -12,11 +12,11 @@
 #include <optional>
 #include <memory>
 
-namespace Graphick::Editor {
+namespace graphick::editor {
   class Entity;
 }
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The HoverState class represents the state of the pointer hover.

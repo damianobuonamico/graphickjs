@@ -13,7 +13,7 @@
 #include <variant>
 #include <optional>
 
-namespace Graphick::Renderer::GPU {
+namespace graphick::renderer::GPU {
 
   /**
    * @brief The version/dialect of OpenGL we should render with.

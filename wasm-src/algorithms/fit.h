@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "../vec2.h"
+#include "../math/vec2.h"
 
 #include <vector>
 
-namespace Graphick::Math::Algorithms {
+namespace graphick::algorithms {
 
   /**
    * @brief Represents a cubic Bezier curve.

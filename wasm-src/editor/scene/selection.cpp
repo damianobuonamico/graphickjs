@@ -14,7 +14,7 @@
 
 #include "../../utils/console.h"
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   Selection::Selection(Scene* scene) : m_scene(scene) {}
 

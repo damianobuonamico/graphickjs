@@ -12,7 +12,7 @@
 
 #include "../../utils/console.h"
 
-namespace Graphick::Renderer::Geometry {
+namespace graphick::renderer::geometry {
 
   static constexpr unsigned int curve_recursion_limit = 32;
 
@@ -30,10 +30,12 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Contour::move_to(const dvec2 p0) {
-    m_p0 = { Math::double_to_f24x8(p0.x), Math::double_to_f24x8(p0.y) };
+#if 0
+    m_p0 = { math::double_to_f24x8(p0.x), math::double_to_f24x8(p0.y) };
     m_d_p0 = p0;
 
     points.push_back(m_p0);
+#endif
   }
 
   void Contour::line_to(const f24x8x2 p1) {
@@ -42,26 +44,29 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Contour::line_to(const dvec2 p1) {
-    m_p0 = { Math::double_to_f24x8(p1.x), Math::double_to_f24x8(p1.y) };
+#if 0
+    m_p0 = { math::double_to_f24x8(p1.x), math::double_to_f24x8(p1.y) };
     m_d_p0 = p1;
 
     points.push_back(m_p0);
+#endif
   }
 
   void Contour::cubic_to(const f24x8x2 p1, const f24x8x2 p2, const f24x8x2 p3) {
+#if 0
     GK_TOTAL("Contour::cubic_to");
 
-    vec2 fp0 = { Math::f24x8_to_float(m_p0.x), Math::f24x8_to_float(m_p0.y) };
-    vec2 fp1 = { Math::f24x8_to_float(p1.x), Math::f24x8_to_float(p1.y) };
-    vec2 fp2 = { Math::f24x8_to_float(p2.x), Math::f24x8_to_float(p2.y) };
-    vec2 fp3 = { Math::f24x8_to_float(p3.x), Math::f24x8_to_float(p3.y) };
+    vec2 fp0 = { math::f24x8_to_float(m_p0.x), math::f24x8_to_float(m_p0.y) };
+    vec2 fp1 = { math::f24x8_to_float(p1.x), math::f24x8_to_float(p1.y) };
+    vec2 fp2 = { math::f24x8_to_float(p2.x), math::f24x8_to_float(p2.y) };
+    vec2 fp3 = { math::f24x8_to_float(p3.x), math::f24x8_to_float(p3.y) };
 
     vec2 a = -fp0 + 3.0f * fp1 - 3.0f * fp2 + fp3;
     vec2 b = 3.0f * fp0 - 6.0f * fp1 + 3.0f * fp2;
     vec2 c = -3.0f * fp0 + 3.0f * fp1;
     vec2 p;
 
-    float conc = std::max(Math::length(b), Math::length(a + b));
+    float conc = std::max(math::length(b), math::length(a + b));
     float dt = std::sqrtf((std::sqrtf(8.0f) * m_tolerance) / conc);
     float t = dt;
 
@@ -71,7 +76,7 @@ namespace Graphick::Renderer::Geometry {
       float t_sq = t * t;
 
       p = a * t_sq * t + b * t_sq + c * t + fp0;
-      points.emplace_back(Math::float_to_f24x8(p.x), Math::float_to_f24x8(p.y));
+      points.emplace_back(math::float_to_f24x8(p.x), math::float_to_f24x8(p.y));
 
       t += dt;
     }
@@ -79,9 +84,11 @@ namespace Graphick::Renderer::Geometry {
     points.push_back(p3);
 
     m_p0 = p3;
+#endif
   }
 
   void Contour::cubic_to(const dvec2 p1, const dvec2 p2, const dvec2 p3) {
+#if 0
     GK_TOTAL("Contour::cubic_to");
 
     dvec2 a = -m_d_p0 + 3.0 * p1 - 3.0 * p2 + p3;
@@ -99,18 +106,20 @@ namespace Graphick::Renderer::Geometry {
       double t_sq = t * t;
 
       p = a * t_sq * t + b * t_sq + c * t + m_d_p0;
-      points.emplace_back(Math::float_to_f24x8(p.x), Math::float_to_f24x8(p.y));
+      points.emplace_back(math::float_to_f24x8(p.x), math::float_to_f24x8(p.y));
 
       t += dt;
     }
 
     m_d_p0 = p3;
-    m_p0 = { Math::float_to_f24x8(p3.x), Math::float_to_f24x8(p3.y) };
+    m_p0 = { math::float_to_f24x8(p3.x), math::float_to_f24x8(p3.y) };
 
     points.push_back(m_p0);
+#endif
   }
 
   std::unique_ptr<Contour::Parameterization> Contour::offset_cubic(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const dvec2 end_normal, const double radius) {
+#if 0
     GK_TOTAL("Contour::offset_cubic");
 
     std::unique_ptr<Parameterization> parameterization = std::make_unique<Parameterization>();
@@ -125,15 +134,15 @@ namespace Graphick::Renderer::Geometry {
     const double radix = t_cusp * t_cusp - (b.y * c.x - b.x * c.y) / (a.y * b.x - a.x * b.y) / 3;
 
     if (t_cusp > curve_cusp_limit_t && t_cusp < 1.0 - curve_cusp_limit_t && std::abs(radix) <= curve_cusp_limit) {
-      const dvec2 p01 = Math::lerp(p0, p1, t_cusp - curve_cusp_limit_t);
-      const dvec2 p12 = Math::lerp(p1, p2, t_cusp);
-      const dvec2 p23 = Math::lerp(p2, p3, t_cusp + curve_cusp_limit_t);
+      const dvec2 p01 = math::lerp(p0, p1, t_cusp - curve_cusp_limit_t);
+      const dvec2 p12 = math::lerp(p1, p2, t_cusp);
+      const dvec2 p23 = math::lerp(p2, p3, t_cusp + curve_cusp_limit_t);
 
-      const dvec2 p012 = Math::lerp(p01, p12, t_cusp - curve_cusp_limit_t);
-      const dvec2 p123 = Math::lerp(p12, p23, t_cusp + curve_cusp_limit_t);
+      const dvec2 p012 = math::lerp(p01, p12, t_cusp - curve_cusp_limit_t);
+      const dvec2 p123 = math::lerp(p12, p23, t_cusp + curve_cusp_limit_t);
 
-      const dvec2 p0123a = Math::lerp(p012, p123, t_cusp - curve_cusp_limit_t);
-      const dvec2 p0123b = Math::lerp(p012, p123, t_cusp + curve_cusp_limit_t);
+      const dvec2 p0123a = math::lerp(p012, p123, t_cusp - curve_cusp_limit_t);
+      const dvec2 p0123b = math::lerp(p012, p123, t_cusp + curve_cusp_limit_t);
 
       recursive_cubic_offset(p0, p01, p012, p0123a, 1, angular_tolerance, *parameterization);
       recursive_cubic_offset(p0123b, p123, p23, p3, 1, angular_tolerance, *parameterization);
@@ -148,6 +157,7 @@ namespace Graphick::Renderer::Geometry {
     line_to(p3 + end_normal * radius);
 
     return std::move(parameterization);
+#endif
   }
 
   void Contour::offset_cubic(const Parameterization& parameterization, const dvec2 end_point, const double radius) {
@@ -159,6 +169,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   void Contour::add_cap(const dvec2 from, const dvec2 to, const dvec2 n, const double radius, const LineCap cap) {
+#if 0
     switch (cap) {
     case LineCap::Butt: {
       line_to(to);
@@ -178,9 +189,11 @@ namespace Graphick::Renderer::Geometry {
       break;
     }
     }
+#endif
   }
 
   void Contour::add_join(const dvec2 from, const dvec2 to, const dvec2 pivot, const dvec2 from_normal, const dvec2 to_normal, const double radius, const double inv_miter_limit, LineJoin join) {
+#if 0
     const dvec2 center = from - from_normal * radius;
     const dvec2 a = from - center;
     const dvec2 b = to - center;
@@ -220,6 +233,7 @@ namespace Graphick::Renderer::Geometry {
       }
     }
     }
+#endif
   }
 
   void Contour::close() {
@@ -233,6 +247,7 @@ namespace Graphick::Renderer::Geometry {
   }
 
   int Contour::winding_of(const f24x8x2 point) {
+#if 0
     if (points.size() < 3) return 0;
 
     int winding = 0;
@@ -260,9 +275,11 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return winding;
+#endif
   }
 
   void Contour::arc(const dvec2 center, const dvec2 from, const double radius, const dvec2 to) {
+#if 0
     const double ang1 = std::atan2(from.y - center.y, from.x - center.x);
     const double ang2 = std::atan2(to.y - center.y, to.x - center.x);
     const double dt = std::sqrtf(0.5 * m_tolerance / radius);
@@ -279,9 +296,11 @@ namespace Graphick::Renderer::Geometry {
 
       line_to(point);
     }
+#endif
   }
 
   void Contour::recursive_cubic_offset(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const unsigned int level, const double angular_tolerance, Parameterization& parameterization) {
+#if 0
     if (level > curve_recursion_limit) return;
 
     /* Calculate all the mid-points of the line segments */
@@ -309,8 +328,8 @@ namespace Graphick::Renderer::Geometry {
       k = d.x * d.x + d.y * d.y;
 
       if (k == 0.0) {
-        d2 = Math::squared_distance(p0, p1);
-        d3 = Math::squared_distance(p2, p3);
+        d2 = math::squared_distance(p0, p1);
+        d3 = math::squared_distance(p2, p3);
       } else {
         k = 1 / k;
         da1 = p1.x - p0.x;
@@ -325,23 +344,23 @@ namespace Graphick::Renderer::Geometry {
           return;
         }
 
-        if (d2 <= 0) d2 = Math::squared_distance(p0, p1);
-        else if (d2 >= 1) d2 = Math::squared_distance(p1, p3);
-        else d2 = Math::squared_distance(p1, p0 + d2 * d);
+        if (d2 <= 0) d2 = math::squared_distance(p0, p1);
+        else if (d2 >= 1) d2 = math::squared_distance(p1, p3);
+        else d2 = math::squared_distance(p1, p0 + d2 * d);
 
-        if (d3 <= 0) d3 = Math::squared_distance(p0, p2);
-        else if (d3 >= 1) d3 = Math::squared_distance(p0, p3);
-        else d3 = Math::squared_distance(p2, p0 + d3 * d);
+        if (d3 <= 0) d3 = math::squared_distance(p0, p2);
+        else if (d3 >= 1) d3 = math::squared_distance(p0, p3);
+        else d3 = math::squared_distance(p2, p0 + d3 * d);
       }
 
       if (d2 > d3) {
         if (d2 < tolerance_sq) {
-          parameterization.push_back(std::make_pair(p1, Math::normal(p0, p1)));
+          parameterization.push_back(std::make_pair(p1, math::normal(p0, p1)));
           return;
         }
       } else {
         if (d3 < tolerance_sq) {
-          parameterization.push_back(std::make_pair(p2, Math::normal(p2, p3)));
+          parameterization.push_back(std::make_pair(p2, math::normal(p2, p3)));
           return;
         }
       }
@@ -352,7 +371,7 @@ namespace Graphick::Renderer::Geometry {
 
       if (d3 * d3 <= tolerance_sq * (d.x * d.x + d.y * d.y)) {
         if (m_tolerance < curve_angle_tolerance_epsilon) {
-          parameterization.push_back(std::make_pair(p12, Math::normal(p1, p2)));
+          parameterization.push_back(std::make_pair(p12, math::normal(p1, p2)));
           return;
         }
 
@@ -362,8 +381,8 @@ namespace Graphick::Renderer::Geometry {
         if (da1 >= MATH_PI) da1 = MATH_TWO_PI - da1;
 
         if (da1 < angular_tolerance) {
-          parameterization.push_back(std::make_pair(p1, Math::normal(p0, p2)));
-          parameterization.push_back(std::make_pair(p2, Math::normal(p2, p3)));
+          parameterization.push_back(std::make_pair(p1, math::normal(p0, p2)));
+          parameterization.push_back(std::make_pair(p2, math::normal(p2, p3)));
           return;
         }
       }
@@ -374,7 +393,7 @@ namespace Graphick::Renderer::Geometry {
 
       if (d2 * d2 <= tolerance_sq * (d.x * d.x + d.y * d.y)) {
         if (angular_tolerance < curve_angle_tolerance_epsilon) {
-          parameterization.push_back(std::make_pair(p12, Math::normal(p1, p2)));
+          parameterization.push_back(std::make_pair(p12, math::normal(p1, p2)));
           return;
         }
 
@@ -384,8 +403,8 @@ namespace Graphick::Renderer::Geometry {
         if (da1 >= MATH_PI) da1 = MATH_TWO_PI - da1;
 
         if (da1 < angular_tolerance) {
-          parameterization.push_back(std::make_pair(p1, Math::normal(p0, p1)));
-          parameterization.push_back(std::make_pair(p2, Math::normal(p1, p2)));
+          parameterization.push_back(std::make_pair(p1, math::normal(p0, p1)));
+          parameterization.push_back(std::make_pair(p2, math::normal(p1, p2)));
           return;
         }
       }
@@ -398,7 +417,7 @@ namespace Graphick::Renderer::Geometry {
         /* If the curvature doesn't exceed the distance_tolerance value, we tend to finish subdivision */
 
         if (angular_tolerance < curve_angle_tolerance_epsilon) {
-          parameterization.push_back(std::make_pair(p12, Math::normal(p1, p2)));
+          parameterization.push_back(std::make_pair(p12, math::normal(p1, p2)));
           return;
         }
 
@@ -414,7 +433,7 @@ namespace Graphick::Renderer::Geometry {
         if (da1 + da2 < angular_tolerance) {
           /* Finally we can stop the recursion */
 
-          parameterization.push_back(std::make_pair(p12, Math::normal(p1, p2)));
+          parameterization.push_back(std::make_pair(p12, math::normal(p1, p2)));
           return;
         }
       }
@@ -423,6 +442,7 @@ namespace Graphick::Renderer::Geometry {
 
     recursive_cubic_offset(p0, p01, p012, p0123, level + 1, angular_tolerance, parameterization);
     recursive_cubic_offset(p0123, p123, p23, p3, level + 1, angular_tolerance, parameterization);
+#endif
   }
 
   /* -- OutlineContour -- */

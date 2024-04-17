@@ -1,5 +1,5 @@
 /**
- * @file Mat2x3.h
+ * @file math/mat2x3.h
  * @brief This file contains the Mat2x3 struct, a templated 2x3 matrix.
  */
 
@@ -333,9 +333,9 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using mat2x3 = math::mat2x3;
-  using dmat2x3 = math::dmat2x3;
-  using imat2x3 = math::imat2x3;
-  using umat2x3 = math::umat2x3;
+  using math::mat2x3;
+  using math::dmat2x3;
+  using math::imat2x3;
+  using math::umat2x3;
 
 }

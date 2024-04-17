@@ -15,11 +15,11 @@
 
 #include "../../lib/entt/entt.hpp"
 
-namespace Graphick::Renderer::Geometry {
+namespace graphick::geom {
   class Path;
 }
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   class Entity;
 

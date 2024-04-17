@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   class Entity;
 

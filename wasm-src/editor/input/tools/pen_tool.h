@@ -12,7 +12,7 @@
 #include <memory>
 #include <optional>
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The PenTool class represents a tool used for drawing paths with a pen.

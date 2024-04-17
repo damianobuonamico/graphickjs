@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <cstdint>
 
-namespace Graphick::Utils {
+namespace graphick::utils {
 
   /**
    * @brief The class that represents an universally unique identifier.
@@ -45,15 +45,15 @@ namespace Graphick::Utils {
 
 }
 
-namespace Graphick {
-  using uuid = Utils::uuid;
+namespace graphick {
+  using uuid = utils::uuid;
 }
 
 namespace std {
 
   template <>
-  struct hash<Graphick::Utils::uuid> {
-    std::size_t operator()(const Graphick::Utils::uuid& uuid) const {
+  struct hash<graphick::utils::uuid> {
+    std::size_t operator()(const graphick::utils::uuid& uuid) const {
       return hash<uint64_t>()((uint64_t)uuid);
     }
   };

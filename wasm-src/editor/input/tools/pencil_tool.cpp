@@ -10,7 +10,7 @@
 
 #include "../../editor.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   PencilTool::PencilTool() : Tool(ToolType::Pencil, CategoryImmediate) {}
 

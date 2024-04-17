@@ -10,7 +10,7 @@
 
 #define DUMMY_TEXTURE_LENGTH 16
 
-namespace Graphick::Renderer::GPU::GL {
+namespace graphick::renderer::GPU::GL {
 
   static constexpr GLint gl_internal_format(TextureFormat format) {
     switch (format) {

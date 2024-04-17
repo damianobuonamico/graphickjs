@@ -7,11 +7,11 @@
 
 #include "quadratic_path.h"
 
-#include "../../math/vec2.h"
-#include "../../math/rect.h"
-#include "../../math/mat2x3.h"
+#include "../math/vec2.h"
+#include "../math/rect.h"
+#include "../math/mat2x3.h"
 
-#include "../../io/encode/encode.h"
+#include "../io/encode/encode.h"
 
 #include <unordered_set>
 #include <functional>
@@ -19,12 +19,14 @@
 #include <vector>
 #include <tuple>
 
-namespace Graphick::Renderer {
+namespace graphick::renderer {
   struct Fill;
   struct Stroke;
 };
 
-namespace Graphick::Renderer::Geometry {
+// TODO: move in path namespace
+
+namespace graphick::geom {
 
   /**
    * @brief The Path class represents the path representation used throughout the graphick editor.
@@ -129,7 +131,7 @@ namespace Graphick::Renderer::Geometry {
        *
        * @return The bounding rectangle of the segment.
        */
-      Math::rect bounding_rect() const;
+      math::rect bounding_rect() const;
 
       /**
        * @brief Calculates the bounding rectangle of the segment in the fixed reference system.
@@ -137,14 +139,14 @@ namespace Graphick::Renderer::Geometry {
        * @param transform The transformation matrix to apply to the segment.
        * @return The bounding rectangle of the segment.
        */
-      Math::rect bounding_rect(const mat2x3& transform) const;
+      math::rect bounding_rect(const mat2x3& transform) const;
 
       /**
        * @brief Calculates the approximate bounding rectangle of the segment considering all control points as vertices.
        *
        * @return The approximate bounding rectangle of the segment.
        */
-      Math::rect approx_bounding_rect() const;
+      math::rect approx_bounding_rect() const;
     };
 
     /**
@@ -661,7 +663,7 @@ namespace Graphick::Renderer::Geometry {
      *
      * @return The bounding rectangle of the path.
      */
-    Math::rect bounding_rect() const;
+    math::rect bounding_rect() const;
 
     /**
      * @brief Calculates the bounding rectangle of the path in the fixed reference system.
@@ -669,14 +671,14 @@ namespace Graphick::Renderer::Geometry {
      * @param transform The transformation matrix to apply to the path.
      * @return The bounding rectangle of the path.
      */
-    Math::rect bounding_rect(const mat2x3& transform) const;
+    math::rect bounding_rect(const mat2x3& transform) const;
 
     /**
      * @brief Calculates the approximate bounding rectangle of the path considering all control points as vertices.
      *
      * @return The approximate bounding rectangle of the path.
      */
-    Math::rect approx_bounding_rect() const;
+    math::rect approx_bounding_rect() const;
 
     /**
      * @brief Checks whether the given point is inside the path or not.
@@ -690,7 +692,7 @@ namespace Graphick::Renderer::Geometry {
      * @param deep_search Whether to include handles in the search or not.
      * @return true if the point is inside the path, false otherwise.
      */
-    bool is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0, const bool depp_search = false) const;
+    bool is_point_inside_path(const vec2 point, const renderer::Fill* fill, const renderer::Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0, const bool depp_search = false) const;
 
     /**
      * @brief Checks whether the given point is inside the specified segment of the path or not.
@@ -703,7 +705,7 @@ namespace Graphick::Renderer::Geometry {
      * @param zoom The zoom level to use for the check.
      * @return true if the point is near the segment, false otherwise.
      */
-    bool is_point_inside_segment(const size_t segment_index, const vec2 point, const Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
+    bool is_point_inside_segment(const size_t segment_index, const vec2 point, const renderer::Stroke* stroke, const mat2x3& transform, const float threshold = 0.0f, const double zoom = 1.0) const;
 
     /**
      * @brief Checks whether the given point is inside the specified path's point or not.
@@ -725,7 +727,7 @@ namespace Graphick::Renderer::Geometry {
      * @param indices An optional set to fill with the indices of the vertices that intersect the rect.
      * @return true if the path intersects the rect, false otherwise.
      */
-    bool intersects(const Math::rect& rect, std::unordered_set<size_t>* indices = nullptr) const;
+    bool intersects(const math::rect& rect, std::unordered_set<size_t>* indices = nullptr) const;
 
     /**
      * @brief Checks whether the path intersects the given rect or not.
@@ -735,7 +737,7 @@ namespace Graphick::Renderer::Geometry {
      * @param indices An optional set to fill with the indices of the vertices that intersect the rect.
      * @return true if the path intersects the rect, false otherwise.
      */
-    bool intersects(const Math::rect& rect, const mat2x3& transform, std::unordered_set<size_t>* indices = nullptr) const;
+    bool intersects(const math::rect& rect, const mat2x3& transform, std::unordered_set<size_t>* indices = nullptr) const;
 
     /**
      * @brief Converts the path to a list of quadratic bezier curves.
@@ -743,7 +745,7 @@ namespace Graphick::Renderer::Geometry {
      * @param tolerance The tolerance to use for the conversion, default is 0.25.
      * @return The quadratic representation of the path.
      */
-    renderer::geometry::QuadraticPath to_quadratics(const float tolerance = 0.25f) const;
+    QuadraticPath to_quadratics(const float tolerance = 0.25f) const;
 
     /**
      * @brief Encodes the path to a list of bytes.

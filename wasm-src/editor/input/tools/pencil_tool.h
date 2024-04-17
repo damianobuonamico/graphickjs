@@ -9,7 +9,7 @@
 
 #include "../tool.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The PencilTool class represents a tool used for drawing freehand entities.

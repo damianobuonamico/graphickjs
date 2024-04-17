@@ -11,7 +11,7 @@
 
 #include <vector>
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   /**
    * @brief The main Graphick Editor singleton.

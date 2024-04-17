@@ -9,10 +9,7 @@
 
 #include "device.h"
 
-namespace Graphick::renderer::GPU {
-
-  //TEMP
-  using namespace Graphick::Renderer::GPU;
+namespace graphick::renderer::GPU {
 
   /**
    * @brief The main shader program.

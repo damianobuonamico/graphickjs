@@ -7,7 +7,7 @@
 
 #include "../tool.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The ZoomTool class represents a tool used for zooming the viewport.

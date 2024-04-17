@@ -7,7 +7,7 @@
 
 #include "../../utils/console.h"
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
 #define DECODE_COMPONENT(component_type) if (component_id == component_type::component_id) { \
   add<component_type>(decoder); \

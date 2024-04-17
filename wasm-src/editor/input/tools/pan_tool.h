@@ -7,7 +7,7 @@
 
 #include "../tool.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The PanTool class represents a tool used for panning the viewport.

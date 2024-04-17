@@ -11,7 +11,7 @@
 #include <fstream>
 #include <stdio.h>
 
-namespace Graphick::Utils {
+namespace graphick::utils {
 
   Debugger* Debugger::s_instance = nullptr;
 

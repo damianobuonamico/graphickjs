@@ -18,7 +18,7 @@
 
 #include <vector>
 
-namespace Graphick::renderer {
+namespace graphick::renderer {
 
   /**
    * @brief Represents the viewport of the renderer.
@@ -120,7 +120,7 @@ namespace Graphick::renderer {
 
     std::vector<vec2> vertices;              /* The vertices of the mesh. */
 
-    Graphick::Renderer::GPU::Primitive primitive;                /* The primitive type of the mesh. */
+    GPU::Primitive primitive;                /* The primitive type of the mesh. */
 
     uuid instance_buffer_id = uuid::null;    /* The ID of the instance buffer. */
     uuid vertex_buffer_id = uuid::null;      /* The ID of the vertex buffer. */
@@ -133,7 +133,7 @@ namespace Graphick::renderer {
      * @param buffer_size The maximum buffer size.
      * @param primitive The primitive type of the mesh.
      */
-    InstancedData(const size_t buffer_size, const Graphick::Renderer::GPU::Primitive primitive = Graphick::Renderer::GPU::Primitive::Triangles) :
+    InstancedData(const size_t buffer_size, const GPU::Primitive primitive = GPU::Primitive::Triangles) :
       primitive(primitive),
       max_instances(static_cast<uint32_t>(buffer_size / sizeof(T)))
     {

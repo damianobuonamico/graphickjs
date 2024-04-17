@@ -7,7 +7,7 @@
 
 #include <initializer_list>
 
-namespace Graphick::Utils {
+namespace graphick::utils {
 
   /**
    * @brief Iterates over two containters and applies a function to each element.

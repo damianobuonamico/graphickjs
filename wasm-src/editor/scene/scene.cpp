@@ -29,7 +29,7 @@
 #include "../../utils/console.h"
 #include "../../utils/misc.h"
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   Scene::Scene() : selection(this), history(this) {}
 

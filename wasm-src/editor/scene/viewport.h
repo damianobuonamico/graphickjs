@@ -10,7 +10,7 @@
 #include "../../math/vec2.h"
 #include "../../math/rect.h"
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   /**
    * @brief The Viewport class represents the viewport (or camera) of the scene.

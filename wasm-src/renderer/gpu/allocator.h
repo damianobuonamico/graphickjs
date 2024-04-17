@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <deque>
 
-namespace Graphick::Renderer::GPU::Memory {
+namespace graphick::renderer::GPU::Memory {
 
   /**
    * @brief The class that represents the GPU memory allocator.

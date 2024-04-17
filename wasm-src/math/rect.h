@@ -1,5 +1,5 @@
 /**
- * @file rect.h
+ * @file math/rect.h
  * @brief This file contains the Rect and RRect structs, templated 2D rects.
  */
 
@@ -108,7 +108,7 @@ namespace graphick::math {
     }
 
     constexpr Vec2<T> center() const {
-      return (min + max) / 2;
+      return (min + max) / T(2);
     }
 
     constexpr T area() const {
@@ -172,7 +172,7 @@ namespace graphick::math {
    *
    * @struct rrect
    */
-  template <typename T>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   struct RRect : public Rect<T> {
     T angle;    /* The angle of rotation of the rectangle. */
 
@@ -322,14 +322,14 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using rect = math::rect;
-  using drect = math::drect;
-  using irect = math::irect;
-  using urect = math::urect;
+  using math::rect;
+  using math::drect;
+  using math::irect;
+  using math::urect;
 
-  using rrect = math::rrect;
-  using drrect = math::drrect;
-  using irrect = math::irrect;
-  using urrect = math::urrect;
+  using math::rrect;
+  using math::drrect;
+  using math::irrect;
+  using math::urrect;
 
 }

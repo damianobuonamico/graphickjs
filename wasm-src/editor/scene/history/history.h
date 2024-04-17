@@ -10,7 +10,7 @@
 #include <vector>
 #include <variant>
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   /**
    * @brief This class represents the history of a scene.

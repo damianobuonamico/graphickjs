@@ -11,11 +11,11 @@
 
 #include "../../../math/mat2x3.h"
 
-namespace Graphick::Editor {
+namespace graphick::Editor {
   struct PathComponent;
 }
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief Translates a control point of a path using the pen or direct selection tool.

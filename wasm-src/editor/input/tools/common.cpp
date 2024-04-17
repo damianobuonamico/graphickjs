@@ -17,7 +17,7 @@
 
 #include "../../../utils/console.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /* -- Methods -- */
 

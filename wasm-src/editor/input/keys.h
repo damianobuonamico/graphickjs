@@ -7,7 +7,7 @@
 
 #pragma once
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The KeyboardKey enum translates platform-specific keycodes to a platform-agnostic set of keynames.

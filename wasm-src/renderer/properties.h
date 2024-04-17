@@ -7,7 +7,7 @@
 
 #include "../math/vec4.h"
 
-namespace Graphick::Renderer {
+namespace graphick::renderer {
 
   /**
    * @brief The line cap used to determine how the ends of a stroke are drawn.

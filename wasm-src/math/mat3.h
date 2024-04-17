@@ -1,5 +1,5 @@
 /**
- * @file mat3.h
+ * @file math/mat3.h
  * @brief This file contains the Mat3 struct, a templated 3D matrix.
  */
 
@@ -316,9 +316,9 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using mat3 = math::mat3;
-  using dmat3 = math::dmat3;
-  using imat3 = math::imat3;
-  using umat3 = math::umat3;
+  using math::mat3;
+  using math::dmat3;
+  using math::imat3;
+  using math::umat3;
 
 }

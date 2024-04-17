@@ -7,10 +7,7 @@
 
 #include "shaders_new.h"
 
-namespace Graphick::renderer::GPU {
-
-  //TEMP
-  using Device = Graphick::Renderer::GPU::Device;
+namespace graphick::renderer::GPU {
 
   /* -- Programs -- */
 

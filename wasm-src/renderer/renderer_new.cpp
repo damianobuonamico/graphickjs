@@ -13,7 +13,7 @@
 #include "gpu/device.h"
 
 #include "geometry/path_builder_new.h"
-#include "geometry/path.h"
+#include "../geom/path.h"
 
 #include "../math/vector.h"
 #include "../math/matrix.h"
@@ -27,7 +27,7 @@
 #include <emscripten/html5.h>
 #endif
 
-namespace Graphick::renderer {
+namespace graphick::renderer {
 
   /* -- Static -- */
 
@@ -39,8 +39,8 @@ namespace Graphick::renderer {
    * @struct FlushData
    */
   struct FlushData {
-    std::vector<Graphick::Renderer::GPU::TextureBinding<Graphick::Renderer::GPU::TextureParameter, const Graphick::Renderer::GPU::Texture&>> textures;    /* The textures to bind. */
-    std::vector<Graphick::Renderer::GPU::UniformBinding<Graphick::Renderer::GPU::Uniform>> uniforms;                        /* The uniforms to bind. */
+    std::vector<GPU::TextureBinding<GPU::TextureParameter, const GPU::Texture&>> textures;    /* The textures to bind. */
+    std::vector<GPU::UniformBinding<GPU::Uniform>> uniforms;                        /* The uniforms to bind. */
 
     vec2 viewport_size;                                                                                                     /* The size of the viewport. */
   };
@@ -154,21 +154,21 @@ namespace Graphick::renderer {
   template <typename T>
   static void init_instanced(InstancedData<T>& data, const uuid vertex_buffer_id = uuid::null) {
     if (data.instance_buffer_id != uuid::null) {
-      Graphick::Renderer::GPU::Memory::Allocator::free_general_buffer(data.instance_buffer_id);
+      GPU::Memory::Allocator::free_general_buffer(data.instance_buffer_id);
     }
 
-    data.instance_buffer_id = Graphick::Renderer::GPU::Memory::Allocator::allocate_general_buffer<T>(data.max_instances, "instanced_data");
+    data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<T>(data.max_instances, "instanced_data");
 
     if (vertex_buffer_id == uuid::null) {
       if (data.vertex_buffer_id != uuid::null) {
-        Graphick::Renderer::GPU::Memory::Allocator::free_general_buffer(data.vertex_buffer_id);
+        GPU::Memory::Allocator::free_general_buffer(data.vertex_buffer_id);
       }
 
-      data.vertex_buffer_id = Graphick::Renderer::GPU::Memory::Allocator::allocate_general_buffer<vec2>(data.vertices.size(), "instance_vertices");
+      data.vertex_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<vec2>(data.vertices.size(), "instance_vertices");
 
-      const Graphick::Renderer::GPU::Buffer& vertex_buffer = Graphick::Renderer::GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
+      const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
 
-      Graphick::Renderer::GPU::Device::upload_to_buffer(vertex_buffer, 0, data.vertices, Graphick::Renderer::GPU::BufferTarget::Vertex);
+      GPU::Device::upload_to_buffer(vertex_buffer, 0, data.vertices, GPU::BufferTarget::Vertex);
     } else {
       data.vertex_buffer_id = vertex_buffer_id;
     }
@@ -189,14 +189,14 @@ namespace Graphick::renderer {
       return;
     }
 
-    const Graphick::Renderer::GPU::Buffer& instance_buffer = Graphick::Renderer::GPU::Memory::Allocator::get_general_buffer(data.instance_buffer_id);
-    const Graphick::Renderer::GPU::Buffer& vertex_buffer = Graphick::Renderer::GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
+    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(data.instance_buffer_id);
+    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
 
-    Graphick::Renderer::GPU::Device::upload_to_buffer(instance_buffer, 0, data.instances, Graphick::Renderer::GPU::BufferTarget::Vertex);
+    GPU::Device::upload_to_buffer(instance_buffer, 0, data.instances, GPU::BufferTarget::Vertex);
 
     V vertex_array(program, instance_buffer, vertex_buffer);
 
-    Graphick::Renderer::GPU::RenderState state = {
+    GPU::RenderState state = {
       nullptr,
       program.program,
       *vertex_array.vertex_array,
@@ -209,12 +209,12 @@ namespace Graphick::renderer {
         flush_data.viewport_size
       },
       {
-        Graphick::Renderer::GPU::BlendState{
-          Graphick::Renderer::GPU::BlendFactor::One,
-          Graphick::Renderer::GPU::BlendFactor::OneMinusSrcAlpha,
-          Graphick::Renderer::GPU::BlendFactor::One,
-          Graphick::Renderer::GPU::BlendFactor::OneMinusSrcAlpha,
-          Graphick::Renderer::GPU::BlendOp::Add,
+        GPU::BlendState{
+          GPU::BlendFactor::One,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendFactor::One,
+          GPU::BlendFactor::OneMinusSrcAlpha,
+          GPU::BlendOp::Add,
         },
         std::nullopt,
         std::nullopt,
@@ -227,7 +227,7 @@ namespace Graphick::renderer {
       }
     };
 
-    Graphick::Renderer::GPU::Device::draw_arrays_instanced(data.vertices.size(), data.instances.size(), state);
+    GPU::Device::draw_arrays_instanced(data.vertices.size(), data.instances.size(), state);
 
     data.instances.clear();
   }
@@ -256,11 +256,11 @@ namespace Graphick::renderer {
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
     emscripten_webgl_make_context_current(ctx);
 
-    Graphick::Renderer::GPU::Device::init(Graphick::Renderer::GPU::DeviceVersion::GLES3, 0);
+    GPU::Device::init(GPU::DeviceVersion::GLES3, 0);
 #else
-    Graphick::Renderer::GPU::Device::init(Graphick::Renderer::GPU::DeviceVersion::GL3, 0);
+    GPU::Device::init(GPU::DeviceVersion::GL3, 0);
 #endif
-    Graphick::Renderer::GPU::Memory::Allocator::init();
+    GPU::Memory::Allocator::init();
 
     s_instance = new Renderer();
 
@@ -277,10 +277,10 @@ namespace Graphick::renderer {
     init_instanced(get()->m_white_vertex_instances, get()->m_path_instances.vertex_buffer_id);
 
     if (get()->m_path_instances.curves_texture_id != uuid::null) {
-      Graphick::Renderer::GPU::Memory::Allocator::free_texture(get()->m_path_instances.curves_texture_id);
+      GPU::Memory::Allocator::free_texture(get()->m_path_instances.curves_texture_id);
     }
     if (get()->m_path_instances.bands_texture_id != uuid::null) {
-      Graphick::Renderer::GPU::Memory::Allocator::free_texture(get()->m_path_instances.bands_texture_id);
+      GPU::Memory::Allocator::free_texture(get()->m_path_instances.bands_texture_id);
     }
 
     get()->m_path_instances.curves_texture_id = GPU::Memory::Allocator::allocate_texture({ 512, 512 }, GPU::TextureFormat::RGBA32F, "Curves");
@@ -293,8 +293,8 @@ namespace Graphick::renderer {
     delete s_instance;
     s_instance = nullptr;
 
-    Graphick::Renderer::GPU::Memory::Allocator::shutdown();
-    Graphick::Renderer::GPU::Device::shutdown();
+    GPU::Memory::Allocator::shutdown();
+    GPU::Device::shutdown();
 
 #ifdef EMSCRIPTEN
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_get_current_context();
@@ -311,16 +311,16 @@ namespace Graphick::renderer {
 
     get()->m_transforms.clear();
 
-    Graphick::Renderer::GPU::Device::begin_commands();
-    Graphick::Renderer::GPU::Device::set_viewport(viewport.size);
-    Graphick::Renderer::GPU::Device::clear({ viewport.background, 1.0f, std::nullopt });
+    GPU::Device::begin_commands();
+    GPU::Device::set_viewport(viewport.size);
+    GPU::Device::clear({ viewport.background, 1.0f, std::nullopt });
   }
 
   void Renderer::end_frame() {
     get()->flush_meshes();
 
-    Graphick::Renderer::GPU::Memory::Allocator::purge_if_needed();
-    size_t time = Graphick::Renderer::GPU::Device::end_commands();
+    GPU::Memory::Allocator::purge_if_needed();
+    size_t time = GPU::Device::end_commands();
 
     console::log("GPU", static_cast<double>(time) / 1000000.0);
   }
@@ -337,7 +337,7 @@ namespace Graphick::renderer {
       return;
     }
 
-    const float radius_safe = 0.5f * stroke.width * (stroke.join == Graphick::Renderer::LineJoin::Miter ? stroke.miter_limit : 1.0f);
+    const float radius_safe = 0.5f * stroke.width * (stroke.join == LineJoin::Miter ? stroke.miter_limit : 1.0f);
     rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
 
     bounds.min -= radius_safe;
@@ -347,7 +347,7 @@ namespace Graphick::renderer {
     const geometry::PathBuilder::StrokeOutline stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
     const Fill fill = {
       stroke.color,
-      Graphick::Renderer::FillRule::NonZero,
+      FillRule::NonZero,
       stroke.z_index
     };
 
@@ -563,7 +563,7 @@ namespace Graphick::renderer {
     geometry::PathBuilder(path, transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
-  void Renderer::draw_outline(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline(const geom::Path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
     if (path.size() == 1) {
       const vec2 p0 = transform * path.point_at(0);
       const vec2 p1 = transform * path.point_at(1);
@@ -601,7 +601,7 @@ namespace Graphick::renderer {
     geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
-  void Renderer::draw_outline_vertices(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline_vertices(const geom::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
     if (path.vacant()) {
       return;
     }
@@ -622,7 +622,7 @@ namespace Graphick::renderer {
         white.push_back(last);
       }
 
-      const vec2 out_handle = path.point_at(Graphick::Renderer::Geometry::Path::out_handle_index);
+      const vec2 out_handle = path.point_at(geom::Path::out_handle_index);
 
       if (out_handle != last_raw) {
         const vec2 h = transform * out_handle;
@@ -643,7 +643,7 @@ namespace Graphick::renderer {
         }
 
         if (!path.closed()) {
-          vec2 in_handle = path.point_at(Graphick::Renderer::Geometry::Path::in_handle_index);
+          vec2 in_handle = path.point_at(geom::Path::in_handle_index);
 
           if (in_handle != p0) {
             const vec2 h = transform * in_handle;

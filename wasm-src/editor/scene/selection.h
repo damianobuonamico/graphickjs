@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <unordered_map>
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   class Scene;
 

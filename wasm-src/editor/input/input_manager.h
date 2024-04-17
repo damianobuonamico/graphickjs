@@ -8,11 +8,11 @@
 #include "tool.h"
 #include "hover_state.h"
 
-namespace Graphick::Editor {
+namespace graphick::editor {
   class Entity;
 };
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The InputManager class is a singleton class that manages input events.

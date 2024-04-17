@@ -13,7 +13,7 @@
 #include "gl/gl_device.h"
 #endif
 
-namespace Graphick::Renderer::GPU {
+namespace graphick::renderer::GPU {
 
   /**
    * @brief The device is the main entry point for the GPU rendering. It is responsible for creating and managing the GPU resources.

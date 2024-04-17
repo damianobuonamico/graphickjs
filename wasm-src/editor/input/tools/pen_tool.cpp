@@ -20,7 +20,7 @@
 
 #include "../../../renderer/renderer_new.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
 

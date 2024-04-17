@@ -32,7 +32,7 @@
 
 #define RECORDS_SIZE 100
 
-namespace Graphick::Utils {
+namespace graphick::utils {
 
   /**
    * @brief The class that represents the console utility.
@@ -311,19 +311,19 @@ namespace Graphick::Utils {
 namespace std {
 
   template <typename T>
-  inline ostream& operator<<(ostream& os, const Graphick::Math::Vec2<T> v) {
+  inline ostream& operator<<(ostream& os, const graphick::math::Vec2<T> v) {
     os << "(" << v.x << ", " << v.y << ")";
     return os;
   }
 
   template <typename T>
-  inline ostream& operator<<(ostream& os, const Graphick::Math::Vec3<T>& v) {
+  inline ostream& operator<<(ostream& os, const graphick::math::Vec3<T>& v) {
     os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << ")";
     return os;
   }
 
   template <typename T>
-  inline ostream& operator<<(ostream& os, const Graphick::Math::Vec4<T>& v) {
+  inline ostream& operator<<(ostream& os, const graphick::math::Vec4<T>& v) {
     os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
     return os;
   }
@@ -335,11 +335,11 @@ namespace std {
 #define GK_AVERAGE(...) ((void)0)
 #define GK_FRAME(...) ((void)0)
 #else
-#define GK_TOTAL(name) Graphick::Utils::ScopedTimer __scoped_timer(name, true)
-#define GK_AVERAGE(name) Graphick::Utils::ScopedTimer __scoped_timer(name) 
-#define GK_FRAME(name) Graphick::Utils::console::frame(name); GK_TOTAL("MainThread")
+#define GK_TOTAL(name) graphick::utils::ScopedTimer __scoped_timer(name, true)
+#define GK_AVERAGE(name) graphick::utils::ScopedTimer __scoped_timer(name) 
+#define GK_FRAME(name) graphick::utils::console::frame(name); GK_TOTAL("MainThread")
 #endif
 
-namespace Graphick {
-  using console = Utils::console;
+namespace graphick {
+  using console = utils::console;
 }

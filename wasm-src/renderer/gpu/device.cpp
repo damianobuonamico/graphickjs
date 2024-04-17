@@ -7,7 +7,7 @@
 
 #include "../../utils/console.h"
 
-namespace Graphick::Renderer::GPU {
+namespace graphick::renderer::GPU {
 
   DeviceBackend* Device::s_device = nullptr;
 

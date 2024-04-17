@@ -7,7 +7,7 @@
 
 #include "keys.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The Tool class represents a tool used in the editor.

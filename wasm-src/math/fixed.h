@@ -1,5 +1,5 @@
 /**
- * @file fixed.h
+ * @file math/fixed.h
  * @brief This file contains templated fixed point number types.
  *
  * The f8x8 type is a 16 bit fixed point number with 8 bits for the integer part and 8 bits for the fractional part.
@@ -128,12 +128,12 @@ namespace graphick::math {
 
     /* -- Type conversion operators -- */
 
-    template <typename U, typename = std::enable_if<std::is_floating_point<U>::value>>
+    template <typename U, typename = std::enable_if<std::is_floating_point_v<U>>>
     constexpr explicit operator U() const {
       return static_cast<U>(this->x) / FRACUNIT;
     }
 
-    template <typename U, typename = std::enable_if<std::is_integral<U>::value>>
+    template <typename U, typename = std::enable_if<std::is_integral_v<U>>>
     constexpr explicit operator U() const {
       return static_cast<U>(this->x >> FRACBITS);
     }
@@ -291,12 +291,12 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using f8x8 = math::f8x8;
-  using f8x8x2 = math::f8x8x2;
-  using f8x8x4 = math::f8x8x4;
+  using math::f8x8;
+  using math::f8x8x2;
+  using math::f8x8x4;
 
-  using f24x8 = math::f24x8;
-  using f24x8x2 = math::f24x8x2;
-  using f24x8x4 = math::f24x8x4;
+  using math::f24x8;
+  using math::f24x8x2;
+  using math::f24x8x4;
 
 }

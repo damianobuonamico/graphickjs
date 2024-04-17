@@ -20,7 +20,7 @@
 #include "../../../math/vector.h"
 #include "../../../math/matrix.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   DirectSelectTool::DirectSelectTool() : Tool(ToolType::DirectSelect, CategoryDirect) {}
 

@@ -21,7 +21,7 @@
 #include <optional>
 #include <sstream>
 
-namespace Graphick::Renderer::GPU::GL {
+namespace graphick::renderer::GPU::GL {
 
   /**
    * @brief Clears all OpenGL errors.

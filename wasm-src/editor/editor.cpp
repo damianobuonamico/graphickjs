@@ -22,7 +22,7 @@
 #include <emscripten/html5.h>
 #endif
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   int render_callback(double time, void* user_data) {
     Editor::get()->render_frame(time);

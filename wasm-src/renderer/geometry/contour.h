@@ -7,8 +7,7 @@
 
 #pragma once
 
-#include "../../math/f8x8.h"
-#include "../../math/f24x8.h"
+#include "../../math/fixed.h"
 #include "../../math/vec2.h"
 
 #include "../../utils/defines.h"
@@ -18,7 +17,7 @@
 #include <vector>
 #include <memory>
 
-namespace Graphick::Renderer::Geometry {
+namespace graphick::renderer::geometry {
 
   /**
    * @brief A Contour is a sequence of points used for rendering filled line strips.
@@ -157,8 +156,8 @@ namespace Graphick::Renderer::Geometry {
      */
     void recursive_cubic_offset(const dvec2 p0, const dvec2 p1, const dvec2 p2, const dvec2 p3, const unsigned int level, const double angular_tolerance, Parameterization& parameterization);
   private:
-    f24x8x2 m_p0 = { 0, 0 };    /* The last point added in fixed point notation. */
-    dvec2 m_d_p0 = { 0, 0 };    /* The last point added in double precision. */
+    f24x8x2 m_p0 = f24x8x2::zero();    /* The last point added in fixed point notation. */
+    dvec2 m_d_p0 = dvec2::zero();      /* The last point added in double precision. */
 
     double m_tolerance;         /* The tessellation tolerance. */
   };

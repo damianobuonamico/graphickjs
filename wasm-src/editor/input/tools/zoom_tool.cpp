@@ -11,7 +11,7 @@
 
 #include "../../../utils/defines.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   ZoomTool::ZoomTool() : Tool(ToolType::Zoom, CategoryImmediate) {}
 

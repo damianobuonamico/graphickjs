@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace Graphick::Utils {
+namespace graphick::utils {
 
   /**
    * @brief The class that represents the resource manager.

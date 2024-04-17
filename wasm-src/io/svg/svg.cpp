@@ -17,7 +17,7 @@
 #include "../../editor/editor.h"
 #include "../../editor/scene/entity.h"
 
-#include "../../renderer/geometry/path.h"
+#include "../../geom/path.h"
 
 #include <iostream>
 
@@ -28,7 +28,7 @@
 #define IS_STARTNAMECHAR(c) (IS_ALPHA(c) ||  (c) == '_' || (c) == ':')
 #define IS_NAMECHAR(c) (IS_STARTNAMECHAR(c) || IS_NUM(c) || (c) == '-' || (c) == '.')
 
-namespace Graphick::io::svg {
+namespace graphick::io::svg {
 
   static const char* rtrim(const char* start, const char* end) {
     while (end > start && IS_WS(end[-1])) {
@@ -340,11 +340,11 @@ namespace Graphick::io::svg {
     return true;
   }
 
-  static Renderer::Geometry::Path parse_path(const std::string& string) {
+  static geom::Path parse_path(const std::string& string) {
     const char* ptr = string.data();
     const char* end = ptr + string.size();
 
-    Renderer::Geometry::Path path{};
+    geom::Path path{};
 
     if (ptr >= end || !(*ptr == 'M' || *ptr == 'm')) return path;
 
@@ -743,7 +743,7 @@ namespace Graphick::io::svg {
           // if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 1.0f }) {
           decode_text(start, rtrim(start, ptr), value);
           // History::CommandHistory::disable();
-          Renderer::Geometry::Path path = parse_path(value);
+          geom::Path path = parse_path(value);
           // History::CommandHistory::enable();
 
           if (!path.empty()) {

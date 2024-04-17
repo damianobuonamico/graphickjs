@@ -7,7 +7,7 @@
 
 #include "../../../utils/console.h"
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   History::History(Scene* scene) :
     m_scene(scene),

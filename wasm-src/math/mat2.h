@@ -1,5 +1,5 @@
 /**
- * @file mat2.h
+ * @file math/mat2.h
  * @brief This file contains the Mat2 struct, a templated 2D matrix.
  */
 
@@ -301,9 +301,9 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using mat2 = math::mat2;
-  using dmat2 = math::dmat2;
-  using imat2 = math::imat2;
-  using umat2 = math::umat2;
+  using math::mat2;
+  using math::dmat2;
+  using math::imat2;
+  using math::umat2;
 
 }

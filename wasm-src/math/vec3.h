@@ -1,5 +1,5 @@
 /**
- * @file vec3.h
+ * @file math/vec3.h
  * @brief This file contains the Vec3 struct, a templated 3D vector.
  */
 
@@ -360,9 +360,9 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using vec3 = math::vec3;
-  using dvec3 = math::dvec3;
-  using ivec3 = math::ivec3;
-  using uvec3 = math::uvec3;
+  using math::vec3;
+  using math::dvec3;
+  using math::ivec3;
+  using math::uvec3;
 
 }

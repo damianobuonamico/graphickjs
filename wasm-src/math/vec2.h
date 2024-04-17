@@ -1,5 +1,5 @@
 /**
- * @file vec2.h
+ * @file math/vec2.h
  * @brief This file contains the Vec2 struct, a templated 2D vector.
  */
 
@@ -347,9 +347,9 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using vec2 = math::vec2;
-  using dvec2 = math::dvec2;
-  using ivec2 = math::ivec2;
-  using uvec2 = math::uvec2;
+  using math::vec2;
+  using math::dvec2;
+  using math::ivec2;
+  using math::uvec2;
 
 }

@@ -1,5 +1,5 @@
 /**
- * @file scalar.h
+ * @file math/scalar.h
  * @brief This file contains scalar math functions.
  */
 
@@ -10,21 +10,33 @@
 #include <cfloat>
 #include <cmath>
 
-/* -- Defines -- */
-
-template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
-constexpr T pi = T(3.14159265358979323846);
-
-template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
-constexpr T two_pi = T(2) * pi<T>;
-
-template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
-constexpr T epsilon = std::numeric_limits<T>::epsilon();
-
-template <typename T, typename = std::enable_if<std::is_integral<T>::value>>
-constexpr T epsilon = T(0);
-
 namespace graphick::math {
+
+  /* -- Defines -- */
+
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  constexpr T pi = T(3.14159265358979323846);
+
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  constexpr T two_pi = T(2) * pi<T>;
+
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  constexpr T epsilon = std::numeric_limits<T>::epsilon();
+
+  template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
+  constexpr T epsilon = T(0);
+
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  constexpr T geometric_epsilon = T(1e-3);
+
+  template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
+  constexpr T geometric_epsilon = T(0);
+
+  template <typename T>
+  constexpr T newton_raphson_iterations = T(5);
+
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  constexpr T circle_ratio = T(0.55228474983079339840);
 
   /**
    * @brief Rounds a scalar to a certain number of decimals.
@@ -84,7 +96,7 @@ namespace graphick::math {
    * @param max The maximum value.
    * @return The wrapped value.
    */
-  template <typename T, typename = std::enable_if<std::is_integral<T>::value>>
+  template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
   inline T wrap(T t, const T min, const T max) {
 
     const T range_size = max - min + 1;
@@ -103,7 +115,7 @@ namespace graphick::math {
    * @param eps The precision to check with.
    * @return Whether the scalar is almost zero.
    */
-  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline bool is_almost_zero(const T t, const T eps = epsilon<T>) {
     return std::abs(t) <= eps;
   }
@@ -116,7 +128,7 @@ namespace graphick::math {
    * @param eps The precision to check with.
    * @return Whether the scalars are almost equal.
    */
-  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>) {
     return std::abs(t1 - t2) <= eps;
   }
@@ -128,7 +140,7 @@ namespace graphick::math {
    * @param include_ends Whether to include the ends of the range, defaults to true.
    * @return Whether the scalar is normalized.
    */
-  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline bool is_normalized(const T t, const bool include_ends = true) {
     return include_ends ? (t >= T(0) && t <= T(1)) : (t > T(0) && t < T(1));
   }
@@ -153,7 +165,7 @@ namespace graphick::math {
    * @param a The angle in degrees.
    * @return The angle in radians.
    */
-  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline T degrees_to_radians(const T a) {
     return a * pi<T> / T(180);
   }
@@ -164,7 +176,7 @@ namespace graphick::math {
    * @param a The angle in radians.
    * @return The angle in degrees.
    */
-  template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline T radians_to_degrees(const T a) {
     return a * T(180) / pi<T>;
   }
@@ -175,7 +187,7 @@ namespace graphick::math {
    * @param n The scalar to calculate the next power of two of.
    * @return The next power of two.
    */
-  template <typename T, typename = std::enable_if<std::is_integral<T>::value>>
+  template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
   inline T next_power_of_two(T n) {
     n--;
 

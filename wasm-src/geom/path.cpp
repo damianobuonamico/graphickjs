@@ -7,25 +7,21 @@
 
 #include "path.h"
 
-#include "path_builder_new.h"
-#include "contour.h"
+#include "intersections.h"
+#include "curve_ops.h"
+// #include "path_builder_new.h"
+// #include "contour.h"
 
-#include "../properties.h"
+#include "../renderer/properties.h"
 
-#include "../../math/algorithms/fit.h"
-#include "../../math/matrix.h"
-#include "../../math/vector.h"
-#include "../../math/scalar.h"
-#include "../../math/mat2x3.h"
-#include "../../math/mat2.h"
-#include "../../math/math.h"
+// #include "../algorithms/fit.h"
+#include "../math/matrix.h"
+#include "../math/math.h"
 
-#include "../../math/cubic_bezier.h"
+#include "../utils/console.h"
+#include "../utils/assert.h"
 
-#include "../../utils/console.h"
-#include "../../utils/assert.h"
-
-namespace Graphick::Renderer::Geometry {
+namespace graphick::geom {
 
   /* -- Static -- */
 
@@ -39,15 +35,15 @@ namespace Graphick::Renderer::Geometry {
    * @return The p1 control point of the quadratic bezier curve, p0 and p2 are the start and end points of the cubic curve.
    */
   static vec2 single_quadratic_approximation(const Path::Segment& cubic) {
-    if (Math::is_almost_equal(cubic.p0, cubic.p1)) {
+    if (math::is_almost_equal(cubic.p0, cubic.p1)) {
       return cubic.p2;
-    } else if (Math::is_almost_equal(cubic.p2, cubic.p3)) {
+    } else if (math::is_almost_equal(cubic.p2, cubic.p3)) {
       return cubic.p1;
     }
 
     // const vec2 ab = cubic.p1 - cubic.p0;
     // const vec2 cd = cubic.p3 - cubic.p2;
-    // const float pcd = Math::cross(ab, cd);
+    // const float pcd = math::cross(ab, cd);
 
     dvec2 p0 = dvec2(cubic.p0);
     dvec2 p1 = dvec2(cubic.p1);
@@ -56,8 +52,8 @@ namespace Graphick::Renderer::Geometry {
 
     double d = (p0.x - p1.x) * (p2.y - p3.y) - (p0.y - p1.y) * (p2.x - p3.x);
 
-    if (Math::is_almost_zero(d, 0.000001)) {
-    // if (Math::is_almost_zero(pcd)) {
+    if (math::is_almost_zero(d, 0.000001)) {
+    // if (math::is_almost_zero(pcd)) {
       // return std::nullopt;
       const dvec2 p1 = (p1 * 3.0 - p0) * 0.5;
       const dvec2 p2 = (p2 * 3.0 - p3) * 0.5;
@@ -72,7 +68,7 @@ namespace Graphick::Renderer::Geometry {
 
     return vec2(dvec2{ x, y });
 
-    // const float h = Math::cross(ab, (cubic.p0 - cubic.p2) / pcd);
+    // const float h = math::cross(ab, (cubic.p0 - cubic.p2) / pcd);
     // return cubic.p2 + cd * h;
   }
 
@@ -86,10 +82,10 @@ namespace Graphick::Renderer::Geometry {
    * @return The maximum distance between the cubic and its quadratic approximation.
    */
   static float single_quadratic_approximation_error(const Path::Segment& cubic) {
-    return std::sqrtf(3.0f) / 36.0f * Math::length((cubic.p3 - cubic.p2 * 3.0f) + (cubic.p1 * 3.0f - cubic.p0));
+    return std::sqrtf(3.0f) / 36.0f * math::length((cubic.p3 - cubic.p2 * 3.0f) + (cubic.p1 * 3.0f - cubic.p0));
   }
 
-  static void degenerate_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, renderer::geometry::QuadraticPath& sink) {
+  static void degenerate_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, QuadraticPath& sink) {
     // Path::Segment sub_curve = cubic;
 
     // float t_min = 0.0f;
@@ -109,7 +105,7 @@ namespace Graphick::Renderer::Geometry {
     //     t_max = (t_min + t_max) / 2.0f;
     //   }
 
-    //   const auto& [p0, p1, p2, p3] = Math::split_bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t_min, t_max);
+    //   const auto& [p0, p1, p2, p3] = math::split_bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t_min, t_max);
 
     //   sub_curve = { p0, p1, p2, p3 };
     // }
@@ -122,9 +118,9 @@ namespace Graphick::Renderer::Geometry {
    * @param tolerance The maximum error tolerance.
    * @param sink The quadratic path to append the approximated segments to.
    */
-  static void monotonic_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, renderer::geometry::QuadraticPath& sink) {
+  static void monotonic_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, QuadraticPath& sink) {
     // degenerate_cubic_to_quadratics(cubic, tolerance, sink);
-  // if (Math::is_almost_equal(cubic.p2, cubic.p3)) {
+  // if (math::is_almost_equal(cubic.p2, cubic.p3)) {
     // return;
   // }
 
@@ -147,9 +143,11 @@ namespace Graphick::Renderer::Geometry {
         t_max = (t_min + t_max) / 2.0f;
       }
 
-      const auto& [p0, p1, p2, p3] = Math::split_bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t_min, t_max);
+#if REDO
+      const auto& [p0, p1, p2, p3] = math::split_bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t_min, t_max);
 
       sub_curve = { p0, p1, p2, p3 };
+#endif
     }
   }
 
@@ -169,27 +167,27 @@ namespace Graphick::Renderer::Geometry {
   vec2 Path::Segment::sample(const float t) const {
     switch (type) {
     case Command::Cubic:
-      return Math::bezier(p0, p1, p2, p3, t);
+      return cubic({ p0, p1, p2, p3 }, t);
     case Command::Quadratic:
-      return Math::quadratic(p0, p1, p2, t);
+      return quadratic({ p0, p1, p2 }, t);
     case Command::Line:
-      return Math::lerp(p0, p1, t);
+      return math::lerp(p0, p1, t);
     default:
     case Command::Move:
       return p0;
     }
   }
 
-  Math::rect Path::Segment::bounding_rect() const {
+  math::rect Path::Segment::bounding_rect() const {
     switch (type) {
     case Command::Cubic: {
-      return Math::cubic_bounding_rect(p0, p1, p2, p3);
+      return geom::bounding_rect(cubic_bezier{ p0, p1, p2, p3 });
     }
     case Command::Quadratic: {
-      return Math::quadratic_bounding_rect(p0, p1, p2);
+      return geom::bounding_rect(quadratic_bezier{ p0, p1, p2 });
     }
     case Command::Line: {
-      return Math::linear_bounding_rect(p0, p1);
+      return math::rect::from_vectors(p0, p1);
     }
     default:
     case Command::Move: {
@@ -198,7 +196,7 @@ namespace Graphick::Renderer::Geometry {
     }
   }
 
-  Math::rect Path::Segment::bounding_rect(const mat2x3& transform) const {
+  math::rect Path::Segment::bounding_rect(const mat2x3& transform) const {
     const vec2 a = transform * p0;
     const vec2 b = transform * p1;
 
@@ -207,48 +205,35 @@ namespace Graphick::Renderer::Geometry {
       const vec2 c = transform * p2;
       const vec2 d = transform * p3;
 
-      return Math::cubic_bounding_rect(a, b, c, d);
+      return geom::bounding_rect(cubic_bezier{ a, b, c, d });
     }
     case Command::Quadratic: {
       const vec2 c = transform * p2;
 
-      return Math::quadratic_bounding_rect(a, b, c);
+      return geom::bounding_rect(quadratic_bezier{ a, b, c });
     }
     case Command::Line: {
-      return Math::linear_bounding_rect(a, b);
+      return math::rect::from_vectors(a, b);
     }
     default:
       return { a, a };
     }
   }
 
-  Math::rect Path::Segment::approx_bounding_rect() const {
-    Math::rect rect = { p0, p0 };
-
+  math::rect Path::Segment::approx_bounding_rect() const {
     switch (type) {
     case Command::Cubic: {
-      Math::min(rect.min, p1, rect.min);
-      Math::min(rect.min, p2, rect.min);
-      Math::min(rect.min, p3, rect.min);
-      Math::max(rect.max, p1, rect.max);
-      Math::max(rect.max, p2, rect.max);
-      Math::max(rect.max, p3, rect.max);
+      return geom::approx_bounding_rect(cubic_bezier{ p0, p1, p2, p3 });
     }
     case Command::Quadratic: {
-      Math::min(rect.min, p1, rect.min);
-      Math::min(rect.min, p2, rect.min);
-      Math::max(rect.max, p1, rect.max);
-      Math::max(rect.max, p2, rect.max);
+      return geom::approx_bounding_rect(quadratic_bezier{ p0, p1, p2 });
     }
     case Command::Line: {
-      Math::min(rect.min, p1, rect.min);
-      Math::max(rect.max, p1, rect.max);
+      return math::rect::from_vectors(p0, p1);
     }
     default:
-      break;
+      return {};
     }
-
-    return rect;
   }
 
   /* -- Iterator -- */
@@ -1080,8 +1065,8 @@ namespace Graphick::Renderer::Geometry {
 
     vec2 r = radius;
 
-    const float sin_th = std::sinf(Math::degrees_to_radians(x_axis_rotation));
-    const float cos_th = std::cosf(Math::degrees_to_radians(x_axis_rotation));
+    const float sin_th = std::sinf(math::degrees_to_radians(x_axis_rotation));
+    const float cos_th = std::cosf(math::degrees_to_radians(x_axis_rotation));
 
     const vec2 d0 = (center - point) / 2.0f;
     const vec2 d1 = {
@@ -1100,16 +1085,16 @@ namespace Graphick::Renderer::Geometry {
       -sin_th / r.y, cos_th / r.y
     };
     vec2 p1 = {
-      Math::dot(a[0], point),
-      Math::dot(a[1], point)
+      math::dot(a[0], point),
+      math::dot(a[1], point)
     };
 
     const vec2 p0 = {
-      Math::dot(a[0], center),
-      Math::dot(a[1], center)
+      math::dot(a[0], center),
+      math::dot(a[1], center)
     };
 
-    const float d = Math::squared_length(p1 - p0);
+    const float d = math::squared_length(p1 - p0);
 
     float sfactor_sq = 1.0f / d - 0.25f;
     if (sfactor_sq < 0.0f) sfactor_sq = 0.0f;
@@ -1126,10 +1111,10 @@ namespace Graphick::Renderer::Geometry {
     const float th1 = std::atan2f(p1.y - c1.y, p1.x - c1.x);
 
     float th_arc = th1 - th0;
-    if (th_arc < 0.0f && sweep_flag) th_arc += MATH_F_TWO_PI;
-    else if (th_arc > 0.0f && !sweep_flag) th_arc -= MATH_F_TWO_PI;
+    if (th_arc < 0.0f && sweep_flag) th_arc += math::two_pi<float>;
+    else if (th_arc > 0.0f && !sweep_flag) th_arc -= math::two_pi<float>;
 
-    int n_segs = static_cast<int>(std::ceilf(std::fabsf(th_arc / (MATH_F_PI * 0.5f + 0.001f))));
+    int n_segs = static_cast<int>(std::ceilf(std::fabsf(th_arc / (0.5f * math::pi<float> +math::geometric_epsilon<float>))));
     for (int i = 0; i < n_segs; i++) {
       const float th2 = th0 + i * th_arc / n_segs;
       const float th3 = th0 + (i + 1) * th_arc / n_segs;
@@ -1163,16 +1148,16 @@ namespace Graphick::Renderer::Geometry {
       };
 
       const vec2 bez1 = {
-        Math::dot(a[0], p1),
-        Math::dot(a[1], p1)
+        math::dot(a[0], p1),
+        math::dot(a[1], p1)
       };
       const vec2 bez2 = {
-        Math::dot(a[0], p2),
-        Math::dot(a[1], p2)
+        math::dot(a[0], p2),
+        math::dot(a[1], p2)
       };
       const vec2 bez3 = {
-        Math::dot(a[0], p3),
-        Math::dot(a[1], p3)
+        math::dot(a[0], p3),
+        math::dot(a[1], p3)
       };
 
       cubic_to(bez1, bez2, bez3, reverse);
@@ -1182,7 +1167,7 @@ namespace Graphick::Renderer::Geometry {
   void Path::ellipse(const vec2 center, const vec2 radius) {
     const vec2 top_left = center - radius;
     const vec2 bottom_right = center + radius;
-    const vec2 cp = radius * GEOMETRY_CIRCLE_RATIO;
+    const vec2 cp = radius * math::circle_ratio<float>;
 
     move_to({ center.x, top_left.y });
     cubic_to({ center.x + cp.x, top_left.y }, { bottom_right.x, center.y - cp.y }, { bottom_right.x, center.y });
@@ -1223,13 +1208,13 @@ namespace Graphick::Renderer::Geometry {
 
     move_to({ p.x + r, p.y });
     line_to({ p.x + size.x - r, p.y });
-    cubic_to({ p.x + size.x - r * GEOMETRY_CIRCLE_RATIO, p.y }, { p.x + size.x, p.y + r * GEOMETRY_CIRCLE_RATIO }, { p.x + size.x, p.y + r });
+    cubic_to({ p.x + size.x - r * math::circle_ratio<float>, p.y }, { p.x + size.x, p.y + r * math::circle_ratio<float> }, { p.x + size.x, p.y + r });
     line_to({ p.x + size.x, p.y + size.y - r });
-    cubic_to({ p.x + size.x, p.y + size.y - r * GEOMETRY_CIRCLE_RATIO }, { p.x + size.x - r * GEOMETRY_CIRCLE_RATIO, p.y + size.y }, { p.x + size.x - r, p.y + size.y });
+    cubic_to({ p.x + size.x, p.y + size.y - r * math::circle_ratio<float> }, { p.x + size.x - r * math::circle_ratio<float>, p.y + size.y }, { p.x + size.x - r, p.y + size.y });
     line_to({ p.x + r, p.y + size.y });
-    cubic_to({ p.x + r * GEOMETRY_CIRCLE_RATIO, p.y + size.y }, { p.x, p.y + size.y - r * GEOMETRY_CIRCLE_RATIO }, { p.x, p.y + size.y - r });
+    cubic_to({ p.x + r * math::circle_ratio<float>, p.y + size.y }, { p.x, p.y + size.y - r * math::circle_ratio<float> }, { p.x, p.y + size.y - r });
     line_to({ p.x, p.y + r });
-    cubic_to({ p.x, p.y + r * GEOMETRY_CIRCLE_RATIO }, { p.x + r * GEOMETRY_CIRCLE_RATIO, p.y }, { p.x + r, p.y });
+    cubic_to({ p.x, p.y + r * math::circle_ratio<float> }, { p.x + r * math::circle_ratio<float>, p.y }, { p.x + r, p.y });
     close();
   }
 
@@ -1238,7 +1223,7 @@ namespace Graphick::Renderer::Geometry {
 
     const vec2 p = m_points.front();
 
-    if (Math::is_almost_equal(m_points.back(), p, GK_POINT_EPSILON)) {
+    if (math::is_almost_equal(m_points.back(), p, math::geometric_epsilon<float>)) {
       m_points[m_points.size() - 1] = p;
     } else {
       const bool has_in = has_in_handle();
@@ -1359,7 +1344,8 @@ namespace Graphick::Renderer::Geometry {
       return;
     }
 
-    Math::Algorithms::CubicBezier cubic;
+#if 0
+    math::Algorithms::CubicBezier cubic;
 
     if (keep_shape) {
       std::vector<vec2> points(GK_FIT_RESOLUTION * 2 + 2);
@@ -1371,7 +1357,7 @@ namespace Graphick::Renderer::Geometry {
         points[GK_FIT_RESOLUTION + i + 1] = next_segment.sample(t);
       }
 
-      cubic = Math::Algorithms::fit_points_to_cubic(points, GK_PATH_TOLERANCE);
+      cubic = math::Algorithms::fit_points_to_cubic(points, GK_PATH_TOLERANCE);
     } else {
       const vec2 p1 = segment.type == Command::Line ? segment.p0 : segment.p1;
 
@@ -1474,6 +1460,7 @@ namespace Graphick::Renderer::Geometry {
     if (cubic.p0 == cubic.p1 && cubic.p2 == cubic.p3) {
       to_line(new_command_index);
     }
+#endif
   }
 
   size_t Path::split(const size_t segment_index, const float t) {
@@ -1487,7 +1474,7 @@ namespace Graphick::Renderer::Geometry {
 
     switch (segment.type) {
     case Command::Line: {
-      const vec2 p = Math::lerp(segment.p0, segment.p1, t);
+      const vec2 p = math::lerp(segment.p0, segment.p1, t);
 
       m_points.insert(m_points.begin() + point_i, p);
       insert_command(Command::Line, segment_index + 1);
@@ -1498,7 +1485,8 @@ namespace Graphick::Renderer::Geometry {
       return point_i + 1;
     case Command::Cubic: {
 
-      const auto [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(
+#if 0
+      const auto [p, in_p1, in_p2, out_p1, out_p2] = math::split_bezier(
         m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], t
       );
 
@@ -1507,6 +1495,7 @@ namespace Graphick::Renderer::Geometry {
 
       m_points.insert(m_points.begin() + point_i + 1, { in_p2, p, out_p1 });
       insert_command(Command::Cubic, segment_index + 1);
+#endif
 
       return point_i + 2;
     }
@@ -1518,13 +1507,13 @@ namespace Graphick::Renderer::Geometry {
     return 0;
   }
 
-  Math::rect Path::bounding_rect() const {
+  math::rect Path::bounding_rect() const {
     if (empty()) {
       if (vacant()) return {};
       return { m_points[0], m_points[0] };
     }
 
-    Math::rect rect{};
+    math::rect rect{};
 
     for (size_t i = 0, j = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
@@ -1537,10 +1526,10 @@ namespace Graphick::Renderer::Geometry {
         const vec2 p2 = m_points[j + 1];
         const vec2 p3 = m_points[j + 2];
 
-        Math::rect r = Math::cubic_bounding_rect(p0, p1, p2, p3);
+        math::rect r = geom::bounding_rect(cubic_bezier{ p0, p1, p2, p3 });
 
-        Math::min(rect.min, r.min, rect.min);
-        Math::max(rect.max, r.max, rect.max);
+        math::min(rect.min, r.min, rect.min);
+        math::max(rect.max, r.max, rect.max);
 
         j += 3;
 
@@ -1554,10 +1543,10 @@ namespace Graphick::Renderer::Geometry {
         const vec2 p1 = m_points[j];
         const vec2 p2 = m_points[j + 1];
 
-        Math::rect r = Math::quadratic_bounding_rect(p0, p1, p2);
+        math::rect r = geom::bounding_rect(quadratic_bezier{ p0, p1, p2 });
 
-        Math::min(rect.min, r.min, rect.min);
-        Math::max(rect.max, r.max, rect.max);
+        math::min(rect.min, r.min, rect.min);
+        math::max(rect.max, r.max, rect.max);
 
         j += 2;
 
@@ -1567,8 +1556,8 @@ namespace Graphick::Renderer::Geometry {
         GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
         GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
 
-        Math::min(rect.min, m_points[j], rect.min);
-        Math::max(rect.max, m_points[j], rect.max);
+        math::min(rect.min, m_points[j], rect.min);
+        math::max(rect.max, m_points[j], rect.max);
 
         j += 1;
 
@@ -1577,8 +1566,8 @@ namespace Graphick::Renderer::Geometry {
       case Command::Move: {
         GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
 
-        Math::min(rect.min, m_points[j], rect.min);
-        Math::max(rect.max, m_points[j], rect.max);
+        math::min(rect.min, m_points[j], rect.min);
+        math::max(rect.max, m_points[j], rect.max);
 
         j += 1;
 
@@ -1590,7 +1579,7 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  Math::rect Path::bounding_rect(const mat2x3& transform) const {
+  math::rect Path::bounding_rect(const mat2x3& transform) const {
     if (empty()) {
       if (vacant()) return {};
 
@@ -1598,7 +1587,7 @@ namespace Graphick::Renderer::Geometry {
       return { p, p };
     }
 
-    Math::rect rect{};
+    math::rect rect{};
 
     for (size_t i = 0, j = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
@@ -1611,10 +1600,10 @@ namespace Graphick::Renderer::Geometry {
         const vec2 p2 = transform * m_points[j + 1];
         const vec2 p3 = transform * m_points[j + 2];
 
-        Math::rect r = Math::cubic_bounding_rect(p0, p1, p2, p3);
+        math::rect r = geom::bounding_rect(cubic_bezier{ p0, p1, p2, p3 });
 
-        Math::min(rect.min, r.min, rect.min);
-        Math::max(rect.max, r.max, rect.max);
+        math::min(rect.min, r.min, rect.min);
+        math::max(rect.max, r.max, rect.max);
 
         j += 3;
 
@@ -1628,10 +1617,10 @@ namespace Graphick::Renderer::Geometry {
         const vec2 p1 = transform * m_points[j];
         const vec2 p2 = transform * m_points[j + 1];
 
-        Math::rect r = Math::quadratic_bounding_rect(p0, p1, p2);
+        math::rect r = geom::bounding_rect(quadratic_bezier{ p0, p1, p2 });
 
-        Math::min(rect.min, r.min, rect.min);
-        Math::max(rect.max, r.max, rect.max);
+        math::min(rect.min, r.min, rect.min);
+        math::max(rect.max, r.max, rect.max);
 
         j += 2;
 
@@ -1643,8 +1632,8 @@ namespace Graphick::Renderer::Geometry {
 
         const vec2 p1 = transform * m_points[j];
 
-        Math::min(rect.min, p1, rect.min);
-        Math::max(rect.max, p1, rect.max);
+        math::min(rect.min, p1, rect.min);
+        math::max(rect.max, p1, rect.max);
 
         j += 1;
 
@@ -1655,8 +1644,8 @@ namespace Graphick::Renderer::Geometry {
 
         const vec2 p0 = transform * m_points[j];
 
-        Math::min(rect.min, p0, rect.min);
-        Math::max(rect.max, p0, rect.max);
+        math::min(rect.min, p0, rect.min);
+        math::max(rect.max, p0, rect.max);
 
         j += 1;
 
@@ -1668,28 +1657,28 @@ namespace Graphick::Renderer::Geometry {
     return rect;
   }
 
-  Math::rect Path::approx_bounding_rect() const {
+  math::rect Path::approx_bounding_rect() const {
     if (empty()) {
       if (vacant()) return {};
       return { m_points[0], m_points[0] };
     }
 
-    Math::rect rect{};
+    math::rect rect{};
 
     for (vec2 p : m_points) {
-      Math::min(rect.min, p, rect.min);
-      Math::max(rect.max, p, rect.max);
+      math::min(rect.min, p, rect.min);
+      math::max(rect.max, p, rect.max);
     }
 
-    Math::min(rect.min, m_in_handle, rect.min);
-    Math::max(rect.max, m_in_handle, rect.max);
-    Math::min(rect.min, m_out_handle, rect.min);
-    Math::max(rect.max, m_out_handle, rect.max);
+    math::min(rect.min, m_in_handle, rect.min);
+    math::max(rect.max, m_in_handle, rect.max);
+    math::min(rect.min, m_out_handle, rect.min);
+    math::max(rect.max, m_out_handle, rect.max);
 
     return rect;
   }
 
-  bool Path::is_point_inside_path(const vec2 point, const Fill* fill, const Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom, const bool deep_search) const {
+  bool Path::is_point_inside_path(const vec2 point, const renderer::Fill* fill, const renderer::Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom, const bool deep_search) const {
     GK_TOTAL("Path::is_point_inside_path");
 
     if (empty()) {
@@ -1697,23 +1686,24 @@ namespace Graphick::Renderer::Geometry {
         return false;
       }
 
-      return (Math::is_point_in_circle(point, transform * m_points[0], threshold) || (deep_search && (
-        Math::is_point_in_circle(point, transform * m_in_handle, threshold) ||
-        Math::is_point_in_circle(point, transform * m_out_handle, threshold)))
+      return (is_point_in_circle(point, transform * m_points[0], threshold) || (deep_search && (
+        is_point_in_circle(point, transform * m_in_handle, threshold) ||
+        is_point_in_circle(point, transform * m_out_handle, threshold)))
       );
     }
 
-    const Math::rect bounds = approx_bounding_rect();
-    const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) && (stroke->width > threshold) : false;
+#if 0
+    const math::rect bounds = approx_bounding_rect();
+    const bool consider_miters = stroke ? (stroke->join == renderer::LineJoin::Miter) && (stroke->width > threshold) : false;
 
-    if (!Math::is_point_in_rect(Math::inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
+    if (!is_point_in_rect(math::inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width * (consider_miters ? stroke->miter_limit : 1.0f) + threshold : threshold)) return false;
 
-    const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
-    const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
+    const math::rect threshold_box = { point - threshold - math::geometric_epsilon<float> / zoom, point + threshold + math::geometric_epsilon<float> / zoom };
+    const f24x8x2 p = { math::float_to_f24x8(point.x), math::float_to_f24x8(point.y) };
 
     const renderer::geometry::QuadraticPath quadratics = to_quadratics();
 
-    Graphick::renderer::geometry::PathBuilder builder{ quadratics, transform, &bounds };
+    graphick::renderer::geometry::PathBuilder builder{ quadratics, transform, &bounds };
 
     // PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
 
@@ -1762,7 +1752,7 @@ namespace Graphick::Renderer::Geometry {
     if (!contours.inner.empty()) {
       std::vector<vec4> lines;
 
-      Graphick::renderer::geometry::PathBuilder stroke_builder{ contours.inner, { } };
+      graphick::renderer::geometry::PathBuilder stroke_builder{ contours.inner, { } };
 
       stroke_builder.flatten(threshold_box, GK_PATH_TOLERANCE / zoom, lines);
 
@@ -1783,7 +1773,7 @@ namespace Graphick::Renderer::Geometry {
     if (!contours.outer.empty()) {
       std::vector<vec4> lines;
 
-      Graphick::renderer::geometry::PathBuilder stroke_builder{ contours.outer, { } };
+      graphick::renderer::geometry::PathBuilder stroke_builder{ contours.outer, { } };
 
       stroke_builder.flatten(threshold_box, GK_PATH_TOLERANCE / zoom, lines);
 
@@ -1814,7 +1804,7 @@ namespace Graphick::Renderer::Geometry {
     // }
 
     for (size_t point_index = 0; point_index < m_points.size(); point_index++) {
-      if (Math::is_point_in_circle(point, transform * m_points[point_index], threshold)) {
+      if (math::is_point_in_circle(point, transform * m_points[point_index], threshold)) {
         if (deep_search || point_index == 0) return true;
 
         for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
@@ -1852,19 +1842,21 @@ namespace Graphick::Renderer::Geometry {
     }
 
     return (deep_search && (
-      Math::is_point_in_circle(point, transform * m_in_handle, threshold) ||
-      Math::is_point_in_circle(point, transform * m_out_handle, threshold))
+      math::is_point_in_circle(point, transform * m_in_handle, threshold) ||
+      math::is_point_in_circle(point, transform * m_out_handle, threshold))
     );
+#endif
   }
 
-  bool Path::is_point_inside_segment(const size_t segment_index, const vec2 point, const Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom) const {
+  bool Path::is_point_inside_segment(const size_t segment_index, const vec2 point, const renderer::Stroke* stroke, const mat2x3& transform, const float threshold, const double zoom) const {
+#if 0
     const Segment segment = at(segment_index);
-    const Math::rect bounds = segment.approx_bounding_rect();
+    const math::rect bounds = segment.approx_bounding_rect();
 
-    if (!Math::is_point_in_rect(Math::inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width + threshold : threshold)) return false;
+    if (!math::is_point_in_rect(math::inverse(transform) * point, bounds, stroke ? 0.5f * stroke->width + threshold : threshold)) return false;
 
-    const Math::rect threshold_box = { point - threshold - GK_POINT_EPSILON / zoom, point + threshold + GK_POINT_EPSILON / zoom };
-    const f24x8x2 p = { Math::float_to_f24x8(point.x), Math::float_to_f24x8(point.y) };
+    const math::rect threshold_box = { point - threshold - math::geometric_epsilon<float> / zoom, point + threshold + math::geometric_epsilon<float> / zoom };
+    const f24x8x2 p = { math::float_to_f24x8(point.x), math::float_to_f24x8(point.y) };
 
     // PathBuilder builder{ threshold_box, dmat2x3(transform), GK_PATH_TOLERANCE / zoom };
 
@@ -1891,7 +1883,7 @@ namespace Graphick::Renderer::Geometry {
 
     return segment_path.is_point_inside_path(point, nullptr, &s, transform, threshold, zoom, false);
 
-    // Graphick::renderer::geometry::PathBuilder builder{ segment_path.to_quadratics(), transform, &bounds };
+    // graphick::renderer::geometry::PathBuilder builder{ segment_path.to_quadratics(), transform, &bounds };
 
     // Drawable drawable = builder.stroke(segment_path, s);
 
@@ -1904,12 +1896,13 @@ namespace Graphick::Renderer::Geometry {
     // }
 
     // return false;
+#endif
   }
 
   bool Path::is_point_inside_point(const size_t point_index, const vec2 point, const mat2x3& transform, const float threshold) const {
     const vec2 p = transform * point_at(point_index);
 
-    if (Math::is_point_in_circle(point, p, threshold)) {
+    if (is_point_in_circle(point, p, threshold)) {
       if (point_index == 0) return true;
 
       for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
@@ -1969,11 +1962,11 @@ namespace Graphick::Renderer::Geometry {
     return false;
   }
 
-  bool Path::intersects(const Math::rect& rect, std::unordered_set<size_t>* indices) const {
+  bool Path::intersects(const math::rect& rect, std::unordered_set<size_t>* indices) const {
     if (m_commands_size == 0) {
       return false;
     } else if (m_commands_size == 1) {
-      if (Math::is_point_in_rect(m_points[0], rect)) {
+      if (is_point_in_rect(m_points[0], rect)) {
         if (indices) indices->insert(0);
         return true;
       }
@@ -1981,7 +1974,7 @@ namespace Graphick::Renderer::Geometry {
       return false;
     }
 
-    if (!Math::does_rect_intersect_rect(rect, approx_bounding_rect())) {
+    if (!does_rect_intersect_rect(rect, approx_bounding_rect())) {
       return false;
     }
 
@@ -1990,7 +1983,7 @@ namespace Graphick::Renderer::Geometry {
     for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
       case Command::Move:
-        if (Math::is_point_in_rect(m_points[point_i], rect)) {
+        if (is_point_in_rect(m_points[point_i], rect)) {
           if (indices) indices->insert(point_i);
           found = true;
         }
@@ -1998,30 +1991,30 @@ namespace Graphick::Renderer::Geometry {
         point_i += 1;
         break;
       case Command::Line:
-        if (Math::is_point_in_rect(m_points[point_i], rect)) {
+        if (is_point_in_rect(m_points[point_i], rect)) {
           if (indices) indices->insert(point_i);
           found = true;
-        } else if (!found && Math::does_line_intersect_rect(m_points[point_i - 1], m_points[point_i], rect)) {
+        } else if (!found && does_line_intersect_rect({ m_points[point_i - 1], m_points[point_i] }, rect)) {
           found = true;
         }
 
         point_i += 1;
         break;
       case Command::Quadratic:
-        if (Math::is_point_in_rect(m_points[point_i + 1], rect)) {
+        if (is_point_in_rect(m_points[point_i + 1], rect)) {
           if (indices) indices->insert(point_i + 1);
           found = true;
-        } else if (!found && Math::does_quadratic_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], rect)) {
+        } else if (!found && does_quadratic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1] }, rect)) {
           found = true;
         }
 
         point_i += 2;
         break;
       case Command::Cubic:
-        if (Math::is_point_in_rect(m_points[point_i + 2], rect)) {
+        if (is_point_in_rect(m_points[point_i + 2], rect)) {
           if (indices) indices->insert(point_i + 2);
           found = true;
-        } else if (!found && Math::does_cubic_intersect_rect(m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2], rect)) {
+        } else if (!found && does_cubic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2] }, rect)) {
           found = true;
         }
 
@@ -2037,11 +2030,11 @@ namespace Graphick::Renderer::Geometry {
     return found;
   }
 
-  bool Path::intersects(const Math::rect& rect, const mat2x3& transform, std::unordered_set<size_t>* indices) const {
+  bool Path::intersects(const math::rect& rect, const mat2x3& transform, std::unordered_set<size_t>* indices) const {
     if (m_commands_size == 0) {
       return false;
     } else if (m_commands_size == 1) {
-      if (Math::is_point_in_rect(transform * m_points[0], rect)) {
+      if (is_point_in_rect(transform * m_points[0], rect)) {
         if (indices) indices->insert(0);
         return true;
       }
@@ -2051,7 +2044,7 @@ namespace Graphick::Renderer::Geometry {
 
     vec2 last = { 0.0f, 0.0f };
 
-    if (!Math::does_rect_intersect_rect(rect, transform * approx_bounding_rect())) {
+    if (!does_rect_intersect_rect(rect, transform * approx_bounding_rect())) {
       return false;
     }
 
@@ -2062,7 +2055,7 @@ namespace Graphick::Renderer::Geometry {
       case Command::Move: {
         const vec2 p0 = transform * m_points[point_i];
 
-        if (Math::is_point_in_rect(p0, rect)) {
+        if (is_point_in_rect(p0, rect)) {
           if (indices) indices->insert(point_i);
           found = true;
         }
@@ -2075,10 +2068,10 @@ namespace Graphick::Renderer::Geometry {
       case Command::Line: {
         const vec2 p1 = transform * m_points[point_i];
 
-        if (Math::is_point_in_rect(p1, rect)) {
+        if (is_point_in_rect(p1, rect)) {
           if (indices) indices->insert(point_i);
           found = true;
-        } else if (!found && Math::does_line_intersect_rect(last, p1, rect)) {
+        } else if (!found && does_line_intersect_rect({ last, p1 }, rect)) {
           found = true;
         }
 
@@ -2088,10 +2081,10 @@ namespace Graphick::Renderer::Geometry {
       case Command::Quadratic: {
         const vec2 p2 = transform * m_points[point_i + 1];
 
-        if (Math::is_point_in_rect(p2, rect)) {
+        if (is_point_in_rect(p2, rect)) {
           if (indices) indices->insert(point_i + 1);
           found = true;
-        } else if (!found && Math::does_quadratic_intersect_rect(last, transform * m_points[point_i], p2, rect)) {
+        } else if (!found && does_quadratic_intersect_rect({ last, transform * m_points[point_i], p2 }, rect)) {
           found = true;
         }
 
@@ -2105,10 +2098,10 @@ namespace Graphick::Renderer::Geometry {
         const vec2 p2 = transform * m_points[point_i + 1];
         const vec2 p3 = transform * m_points[point_i + 2];
 
-        if (Math::is_point_in_rect(p3, rect)) {
+        if (is_point_in_rect(p3, rect)) {
           if (indices) indices->insert(point_i + 2);
           found = true;
-        } else if (!found && Math::does_cubic_intersect_rect(last, p1, p2, p3, rect)) {
+        } else if (!found && does_cubic_intersect_rect({ last, p1, p2, p3 }, rect)) {
           found = true;
         }
 
@@ -2173,10 +2166,10 @@ namespace Graphick::Renderer::Geometry {
   //   const vec2 d12 = c.p2 - c.p1;
   //   const vec2 d23 = c.p3 - c.p2;
 
-  //   float det_012 = Math::cross(d01, d02);
-  //   float det_123 = Math::cross(d12, d23);
-  //   float det_013 = Math::cross(d01, d03);
-  //   float det_023 = Math::cross(d02, d03);
+  //   float det_012 = math::cross(d01, d02);
+  //   float det_123 = math::cross(d12, d23);
+  //   float det_013 = math::cross(d01, d03);
+  //   float det_023 = math::cross(d02, d03);
 
   //   if (det_012 * det_123 > 0.0f && det_012 * det_013 < 0.0f && det_012 * det_023 < 0.0f) {
   //     Path::Segment q = deriv(c);
@@ -2207,27 +2200,27 @@ namespace Graphick::Renderer::Geometry {
   // static Path::Segment regularize(Path::Segment c, const float dimension) {
   //   const float dim2 = dimension * dimension;
 
-  //   if (Math::squared_distance(c.p0, c.p1) < dim2) {
-  //     const float d02 = Math::squared_distance(c.p0, c.p2);
+  //   if (math::squared_distance(c.p0, c.p1) < dim2) {
+  //     const float d02 = math::squared_distance(c.p0, c.p2);
 
   //     if (d02 >= dim2) {
-  //       c.p1 = Math::lerp(c.p0, c.p2, std::sqrtf(dim2 / d02));
+  //       c.p1 = math::lerp(c.p0, c.p2, std::sqrtf(dim2 / d02));
   //     } else {
-  //       c.p1 = Math::lerp(c.p0, c.p3, 1.0f / 3.0f);
-  //       c.p2 = Math::lerp(c.p3, c.p0, 1.0f / 3.0f);
+  //       c.p1 = math::lerp(c.p0, c.p3, 1.0f / 3.0f);
+  //       c.p2 = math::lerp(c.p3, c.p0, 1.0f / 3.0f);
 
   //       return c;
   //     }
   //   }
 
-  //   if (Math::squared_distance(c.p3, c.p2) < dim2) {
-  //     const float d13 = Math::squared_distance(c.p1, c.p2);
+  //   if (math::squared_distance(c.p3, c.p2) < dim2) {
+  //     const float d13 = math::squared_distance(c.p1, c.p2);
 
   //     if (d13 >= dim2) {
-  //       c.p2 = Math::lerp(c.p3, c.p1, std::sqrtf(dim2 / d13));
+  //       c.p2 = math::lerp(c.p3, c.p1, std::sqrtf(dim2 / d13));
   //     } else {
-  //       c.p1 = Math::lerp(c.p0, c.p3, 1.0f / 3.0f);
-  //       c.p2 = Math::lerp(c.p3, c.p0, 1.0f / 3.0f);
+  //       c.p1 = math::lerp(c.p0, c.p3, 1.0f / 3.0f);
+  //       c.p2 = math::lerp(c.p3, c.p0, 1.0f / 3.0f);
 
   //       return c;
   //     }
@@ -2263,13 +2256,13 @@ namespace Graphick::Renderer::Geometry {
   // static std::optional<vec2> crossing_point(rect& l, rect& other) {
   //   const vec2 ab = l.max - l.min;
   //   const vec2 cd = other.max - other.min;
-  //   const float pcd = Math::cross(ab, cd);
+  //   const float pcd = math::cross(ab, cd);
 
   //   if (pcd == 0.0f) {
   //     return std::nullopt;
   //   }
 
-  //   const float h = Math::cross(ab, (l.min - other.min) / pcd);
+  //   const float h = math::cross(ab, (l.min - other.min) / pcd);
   //   return other.min + cd * h;
   // }
 
@@ -2312,7 +2305,7 @@ namespace Graphick::Renderer::Geometry {
   //   const vec2 p1x2 = 3.0f * c.p1 - c.p0;
   //   const vec2 p2x2 = 3.0f * c.p2 - c.p3;
 
-  //   const float err = Math::squared_length(p2x2 - p1x2);
+  //   const float err = math::squared_length(p2x2 - p1x2);
   //   const int n = std::max(1, static_cast<int>(std::ceilf(std::powf(err / max_hypot2, 1.0f / 6.0f))));
 
   //   if (n == 1) {
@@ -2323,10 +2316,10 @@ namespace Graphick::Renderer::Geometry {
 
   // }
 
-  renderer::geometry::QuadraticPath Path::to_quadratics(const float tolerance) const {
+  QuadraticPath Path::to_quadratics(const float tolerance) const {
     GK_TOTAL("Path::to_quadratics");
 
-    renderer::geometry::QuadraticPath path;
+    QuadraticPath path;
 
     if (empty()) {
       return path;
@@ -2347,15 +2340,16 @@ namespace Graphick::Renderer::Geometry {
         j += 2;
         break;
       case Command::Cubic: {
-        Math::CubicBezier cubic{ m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
+#if 0
+        math::CubicBezier cubic{ m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
 
-        std::vector<vec2> quads = Math::to_quads(cubic, 0.25f);
+        std::vector<vec2> quads = math::to_quads(cubic, 0.25f);
 
         if (!quads.empty()) {
           path.points.insert(path.points.end(), quads.begin() + 1, quads.end());
         }
-
-#if 0
+#endif
+#if 1
         Segment curve = { m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
         Segment sub_curve = curve;
 
@@ -2365,15 +2359,15 @@ namespace Graphick::Renderer::Geometry {
 
         // To get the inflections C'(t) cross C''(t) = at^2 + bt + c = 0 needs to be solved for 't'.
         // The first cooefficient of the quadratic formula is also the denominator.
-        const float den = Math::cross(b, a);
+        const float den = math::cross(b, a);
 
         float tc = -1.0f;
         float tl = -1.0f;
 
         if (den != 0.0f) {
           // Two roots might exist, solve with quadratic formula ('tl' is real).
-          tc = Math::cross(a, c) / den;
-          tl = tc * tc + Math::cross(b, c) / den;
+          tc = math::cross(a, c) / den;
+          tl = tc * tc + math::cross(b, c) / den;
 
           // If 'tl < 0' there are two complex roots (no need to solve).
           // If 'tl == 0' there is a real double root at tc (cusp case).
@@ -2386,8 +2380,8 @@ namespace Graphick::Renderer::Geometry {
             tl = std::sqrtf(tl);
           }
 
-          // if (tl == 0 && tc > GK_POINT_EPSILON && tc < 1.0 - GK_POINT_EPSILON) {
-          //   const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
+          // if (tl == 0 && tc > math::geometric_epsilon<float> && tc < 1.0 - math::geometric_epsilon<float>) {
+          //   const auto& [p, in_p1, in_p2, out_p1, out_p2] = math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
 
           //   // path.quadratic_to(single_quadratic_approximation({ curve.p0, in_p1, in_p2, p }), p);
           //   // path.quadratic_to(single_quadratic_approximation({ p, out_p1, out_p2, curve.p3 }), curve.p3);
@@ -2400,10 +2394,10 @@ namespace Graphick::Renderer::Geometry {
           // }
         } else {
           // One real root might exist, solve linear case ('tl' is NaN).
-          tc = -0.5f * Math::cross(c, b) / Math::cross(c, a);
+          tc = -0.5f * math::cross(c, b) / math::cross(c, a);
 
-          // if (tc > GK_POINT_EPSILON && tc < 1.0 - GK_POINT_EPSILON) {
-          //   const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
+          // if (tc > math::geometric_epsilon<float> && tc < 1.0 - math::geometric_epsilon<float>) {
+          //   const auto& [p, in_p1, in_p2, out_p1, out_p2] = math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
 
           //   monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
           //   monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
@@ -2414,46 +2408,50 @@ namespace Graphick::Renderer::Geometry {
           // }
         }
 
-        const bool tc_in = tc > GK_POINT_EPSILON && tc < 1.0f - GK_POINT_EPSILON;
-        const bool tl_in = tl > GK_POINT_EPSILON && tl < 1.0f - GK_POINT_EPSILON;
+        const bool tc_in = tc > math::geometric_epsilon<float> && tc < 1.0f - math::geometric_epsilon<float>;
+        const bool tl_in = tl > math::geometric_epsilon<float> && tl < 1.0f - math::geometric_epsilon<float>;
 
+#if 0
         if (tc_in && tl_in) {
           monotonic_cubic_to_quadratics(curve, tolerance, path);
           // if (tc > tl) {
           //   std::swap(tc, tl);
           // }
 
-          // const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
+          // const auto& [p, in_p1, in_p2, out_p1, out_p2] = math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
 
           // monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
 
-          // const auto& [p1, in_p1_1, in_p2_1, out_p1_1, out_p2_1] = Math::split_bezier(p, out_p1, out_p2, curve.p3, tl * tc);
+          // const auto& [p1, in_p1_1, in_p2_1, out_p1_1, out_p2_1] = math::split_bezier(p, out_p1, out_p2, curve.p3, tl * tc);
 
           // monotonic_cubic_to_quadratics({ p, in_p1_1, in_p2_1, p1 }, tolerance, path);
           // monotonic_cubic_to_quadratics({ p1, out_p1_1, out_p2_1, curve.p3 }, tolerance, path);
 
-          console::log("cusp 1");
-          console::log(tc);
-          console::log(tl);
+          // console::log("cusp 1");
+          // console::log(tc);
+          // console::log(tl);
         } else if (tc_in) {
-          const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
+          const auto& [p, in_p1, in_p2, out_p1, out_p2] = math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tc);
 
           monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
           monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
 
-          console::log("cusp 2");
-          console::log(tc);
+          // console::log("cusp 2");
+          // console::log(tc);
         } else if (tl_in) {
-          const auto& [p, in_p1, in_p2, out_p1, out_p2] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tl);
+          const auto& [p, in_p1, in_p2, out_p1, out_p2] = math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, tl);
 
           monotonic_cubic_to_quadratics({ curve.p0, in_p1, in_p2, p }, tolerance, path);
           monotonic_cubic_to_quadratics({ p, out_p1, out_p2, curve.p3 }, tolerance, path);
 
-          console::log("cusp 3");
-          console::log(tl);
+          // console::log("cusp 3");
+          // console::log(tl);
         } else {
+#endif
           monotonic_cubic_to_quadratics(curve, tolerance, path);
+#if 0
         }
+#endif
       //   float t_min = 0.0f;
       //   float t_max = 1.0f;
 
@@ -2471,7 +2469,7 @@ namespace Graphick::Renderer::Geometry {
       //       t_max = (t_min + t_max) / 2.0f;
       //     }
 
-      //     const auto& [p0, p1, p2, p3] = Math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, t_min, t_max);
+      //     const auto& [p0, p1, p2, p3] = math::split_bezier(curve.p0, curve.p1, curve.p2, curve.p3, t_min, t_max);
 
       //     sub_curve = { p0, p1, p2, p3 };
       //   }

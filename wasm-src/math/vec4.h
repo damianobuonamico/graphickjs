@@ -1,5 +1,5 @@
 /**
- * @file vec4.h
+ * @file math/vec4.h
  * @brief This file contains the Vec4 struct, a templated 4D vector.
  */
 
@@ -390,9 +390,9 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using vec4 = math::vec4;
-  using dvec4 = math::dvec4;
-  using ivec4 = math::ivec4;
-  using uvec4 = math::uvec4;
+  using math::vec4;
+  using math::dvec4;
+  using math::ivec4;
+  using math::uvec4;
 
 }

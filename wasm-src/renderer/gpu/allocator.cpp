@@ -16,7 +16,7 @@
 /* Number of milliseconds before we can reuse an object buffer, used to avoid stalling the GPU. */
 #define REUSE_TIME 15u
 
-namespace Graphick::Renderer::GPU::Memory {
+namespace graphick::renderer::GPU::Memory {
 
   Allocator* Allocator::s_instance = nullptr;
 

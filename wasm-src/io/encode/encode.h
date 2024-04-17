@@ -14,11 +14,11 @@
 #include <vector>
 #include <string>
 
-namespace Graphick::Renderer::Geometry {
+namespace graphick::geom {
   class Path;
 }
 
-namespace Graphick::io {
+namespace graphick::io {
 
   /**
    * @brief A class to encode data in binary format.
@@ -192,31 +192,31 @@ namespace Graphick::io {
     }
 
     /**
-     * @brief Encodes a Math::vec2.
+     * @brief Encodes a math::vec2.
      *
      * A vec2 is encoded as a sequence of 32-bit floating point numbers.
      *
      * @param t The vec2 to encode.
      */
-    inline EncodedData& vec2(const Math::vec2& t) {
-      data.insert(data.end(), reinterpret_cast<const uint8_t*>(&t), reinterpret_cast<const uint8_t*>(&t) + sizeof(Math::vec2));
+    inline EncodedData& vec2(const math::vec2& t) {
+      data.insert(data.end(), reinterpret_cast<const uint8_t*>(&t), reinterpret_cast<const uint8_t*>(&t) + sizeof(math::vec2));
       return *this;
     }
 
     /**
-     * @brief Encodes a Math::mat2x3.
+     * @brief Encodes a math::mat2x3.
      *
      * A mat2x3 is encoded as a sequence of 32-bit floating point numbers.
      *
      * @param t The mat2x3 to encode.
      */
-    inline EncodedData& mat2x3(const Math::mat2x3& t) {
-      data.insert(data.end(), reinterpret_cast<const uint8_t*>(&t), reinterpret_cast<const uint8_t*>(&t) + sizeof(Math::mat2x3));
+    inline EncodedData& mat2x3(const math::mat2x3& t) {
+      data.insert(data.end(), reinterpret_cast<const uint8_t*>(&t), reinterpret_cast<const uint8_t*>(&t) + sizeof(math::mat2x3));
       return *this;
     }
 
     /**
-     * @brief Encodes a Math::vec4 representing an RGB color.
+     * @brief Encodes a math::vec4 representing an RGB color.
      *
      * A vec4 is encoded as a sequence of 8-bit unsigned integers.
      *
@@ -483,47 +483,47 @@ namespace Graphick::io {
     }
 
     /**
-     * @brief Decodes a Math::vec2.
+     * @brief Decodes a math::vec2.
      *
      * @return The decoded vec2.
      */
-    inline Math::vec2 vec2() {
-      GK_ASSERT(has_bytes(sizeof(Math::vec2)), "Not enough bytes to decode vec2!");
-      if (!has_bytes(sizeof(Math::vec2))) return Math::vec2();
+    inline math::vec2 vec2() {
+      GK_ASSERT(has_bytes(sizeof(math::vec2)), "Not enough bytes to decode vec2!");
+      if (!has_bytes(sizeof(math::vec2))) return math::vec2();
 
-      Math::vec2 t;
-      std::memcpy(&t, m_data->data.data() + m_index, sizeof(Math::vec2));
-      m_index += sizeof(Math::vec2);
+      math::vec2 t;
+      std::memcpy(&t, m_data->data.data() + m_index, sizeof(math::vec2));
+      m_index += sizeof(math::vec2);
 
       return t;
     }
 
     /**
-     * @brief Decodes a Math::mat2x3.
+     * @brief Decodes a math::mat2x3.
      *
      * @return The decoded mat2x3.
      */
-    inline Math::mat2x3 mat2x3() {
-      GK_ASSERT(has_bytes(sizeof(Math::mat2x3)), "Not enough bytes to decode mat2x3!");
-      if (!has_bytes(sizeof(Math::mat2x3))) return Math::mat2x3();
+    inline math::mat2x3 mat2x3() {
+      GK_ASSERT(has_bytes(sizeof(math::mat2x3)), "Not enough bytes to decode mat2x3!");
+      if (!has_bytes(sizeof(math::mat2x3))) return math::mat2x3();
 
-      Math::mat2x3 t;
-      std::memcpy(&t, m_data->data.data() + m_index, sizeof(Math::mat2x3));
-      m_index += sizeof(Math::mat2x3);
+      math::mat2x3 t;
+      std::memcpy(&t, m_data->data.data() + m_index, sizeof(math::mat2x3));
+      m_index += sizeof(math::mat2x3);
 
       return t;
     }
 
     /**
-     * @brief Decodes a Math::vec4 representing an RGB color.
+     * @brief Decodes a math::vec4 representing an RGB color.
      *
      * @return The decoded vec4.
      */
-    inline Math::vec4 color() {
+    inline math::vec4 color() {
       GK_ASSERT(has_bytes(4 * sizeof(uint8_t)), "Not enough bytes to decode color!");
-      if (!has_bytes(4 * sizeof(uint8_t))) return Math::vec4();
+      if (!has_bytes(4 * sizeof(uint8_t))) return math::vec4();
 
-      Math::vec4 t;
+      math::vec4 t;
       t.r = uint8() / 255.0f;
       t.g = uint8() / 255.0f;
       t.b = uint8() / 255.0f;

@@ -12,7 +12,7 @@
 #include "../../../utils/console.h"
 #include "../../../utils/assert.h"
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   Action::Action(uuid entity_id, Target target, Type type, const io::EncodedData& data) :
     type(type),

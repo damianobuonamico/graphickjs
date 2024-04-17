@@ -9,7 +9,7 @@
 
 #include "tools/common.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   class PenTool;
 

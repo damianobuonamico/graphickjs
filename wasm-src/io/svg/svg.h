@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace Graphick::io::svg {
+namespace graphick::io::svg {
 
   /**
    * @brief Parse an SVG string and add the elements to the scene.

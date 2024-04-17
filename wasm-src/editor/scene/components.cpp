@@ -19,7 +19,7 @@
 
 #include "../../utils/console.h"  
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   /* -- IDComponent -- */
 

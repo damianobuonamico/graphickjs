@@ -14,7 +14,7 @@
 #include <memory>
 #include <optional>
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The DirectSelectTool class represents a tool used for selecting and manipulating entities.

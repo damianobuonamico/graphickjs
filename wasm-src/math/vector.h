@@ -1,6 +1,6 @@
 /**
- * @file vector.h
- * @brief Contains methods for vector manipulation.
+ * @file math/vector.h
+ * @brief This file contains methods for vector manipulation.
  */
 
 #pragma once
@@ -494,8 +494,6 @@ namespace graphick::math {
       v1.w + t * (v2.w - v1.w)
     );
   }
-
-  //TODO: implement quadratic(), quadratic_derivative(), cubic(), cubic_derivative(), cubic_second_derivative(), cubic_extrema()
 
   /* -- midpoint -- */
 
@@ -1278,8 +1276,6 @@ namespace graphick::math {
 
   /* -- angle -- */
 
-  // TODO: move here with template std::enable_if<std::is_floating_point<T>::value, T>::type
-
   /**
    * @brief Computes the angle in radians between two Vec2s.
    *
@@ -1287,7 +1283,7 @@ namespace graphick::math {
    * @param v2 The second vector.
    * @return The angle in radians between the two vectors.
    */
-  template <typename T, typename = std::enable_if_t<std::is_floating_point<T>::value>>
+  template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
   inline T angle(const Vec2<T> v1, const Vec2<T> v2) {
     return sign(cross(v1, v2)) * std::acos(dot(v1, v2) / std::sqrt(squared_length(v1) * squared_length(v2)))
   }

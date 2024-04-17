@@ -16,15 +16,15 @@
 #include <vector>
 
 //TEMP
-namespace Graphick::Renderer::Geometry {
+namespace graphick::geom {
   class Path;
 }
 
-namespace Graphick::Renderer {
+namespace graphick::renderer {
   struct Stroke;
 }
 
-namespace Graphick::renderer::geometry {
+namespace graphick::renderer::geometry {
 
   /**
    * @brief A class to generate drawables from a path.
@@ -43,8 +43,8 @@ namespace Graphick::renderer::geometry {
      * @struct StrokeOutline
      */
     struct StrokeOutline {
-      QuadraticPath outer;    /* The outer outline of the stroke. */
-      QuadraticPath inner;    /* The inner outline of the stroke, in reverse order. */
+      geom::QuadraticPath outer;    /* The outer outline of the stroke. */
+      geom::QuadraticPath inner;    /* The inner outline of the stroke, in reverse order. */
     };
   public:
     /**
@@ -54,7 +54,7 @@ namespace Graphick::renderer::geometry {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    PathBuilder(const QuadraticPath& path, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    PathBuilder(const geom::QuadraticPath& path, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Default destructor.
@@ -68,7 +68,7 @@ namespace Graphick::renderer::geometry {
      * @param tolerance The offset error tolerance.
      * @return The output fill.
      */
-    StrokeOutline stroke(const Graphick::Renderer::Stroke& stroke, const float tolerance) const;
+    StrokeOutline stroke(const graphick::renderer::Stroke& stroke, const float tolerance) const;
 
     /**
      * @brief Flattens a path and outputs the line segments to a sink vector.
@@ -98,7 +98,7 @@ namespace Graphick::renderer::geometry {
      */
     void flatten_unclipped(const float tolerance, std::vector<vec4>& sink) const;
   private:
-    const QuadraticPath& m_path;    /* The path to process. */
+    const geom::QuadraticPath& m_path;    /* The path to process. */
     const mat2x3& m_transform;      /* The transformation matrix to apply to the path. */
     const rect m_bounding_rect;     /* The bounding rectangle of the path. */
   };

@@ -9,13 +9,11 @@
 
 #include "fit.h"
 
-#include "../mat2.h"
-#include "../vector.h"
-#include "../matrix.h"
+#include "../math/matrix.h"
 
 #define MAX_POINTS 1000
 
-namespace Graphick::Math::Algorithms {
+namespace graphick::algorithms {
 
   vec2& CubicBezier::operator[](uint8_t i) {
     switch (i) {
@@ -74,7 +72,7 @@ namespace Graphick::Math::Algorithms {
   /**
    * @brief Calculates the second basis function for a cubic B-spline.
    *
-   * @param u The parameter value to evaluate the basis function at. 
+   * @param u The parameter value to evaluate the basis function at.
    * @return The value of the second basis function at the given parameter value.
    */
   static float B2(float u) {
@@ -316,7 +314,7 @@ namespace Graphick::Math::Algorithms {
    * @brief Computes the right tangent of a point in a vector of points.
    *
    * @param points The vector of points.
-   * @param end The index of the point to compute the right tangent for. 
+   * @param end The index of the point to compute the right tangent for.
    * @return The right tangent of the specified point.
    */
   static vec2 compute_right_tangent(const std::vector<vec2>& points, size_t end) {
@@ -459,18 +457,18 @@ namespace Graphick::Math::Algorithms {
 
     /* If error not too large, try some reparameterization and iteration */
     //if (max_error < iteration_error) {
-      for (size_t i = 0; i < max_iterations; i++) {
-        u_prime = reparameterize(points, first, last, u, bez_curve);
-        bez_curve = generate_bezier(points, first, last, u_prime, t_hat_1, t_hat_2);
-        max_error = compute_max_error(points, first, last, bez_curve, u_prime, &split_point);
+    for (size_t i = 0; i < max_iterations; i++) {
+      u_prime = reparameterize(points, first, last, u, bez_curve);
+      bez_curve = generate_bezier(points, first, last, u_prime, t_hat_1, t_hat_2);
+      max_error = compute_max_error(points, first, last, bez_curve, u_prime, &split_point);
 
-        if (max_error < error) {
-          return bez_curve;
-        }
-
-        u.swap(u_prime);
+      if (max_error < error) {
+        return bez_curve;
       }
-    //}
+
+      u.swap(u_prime);
+    }
+  //}
 
     return bez_curve;
   }

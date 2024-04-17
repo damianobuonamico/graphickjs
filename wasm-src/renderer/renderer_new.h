@@ -19,15 +19,15 @@
 
 #include <unordered_set>
 
-namespace Graphick::Renderer::Geometry {
+namespace graphick::Renderer::Geometry {
   class Path;
 };
 
-namespace Graphick::renderer {
+namespace graphick::renderer {
 
   // TEMP
-  using Stroke = Graphick::Renderer::Stroke;
-  using Fill = Graphick::Renderer::Fill;
+  using Stroke = graphick::Renderer::Stroke;
+  using Fill = graphick::Renderer::Fill;
 
   /**
    * @brief The main Graphick renderer.
@@ -123,7 +123,7 @@ namespace Graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the vertices of a Path's outline.
@@ -134,7 +134,7 @@ namespace Graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline_vertices(const Graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline_vertices(const graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
   private:
     /**
      * @brief Default constructor and destructor.
@@ -164,7 +164,7 @@ namespace Graphick::renderer {
     std::vector<mat4> m_transforms;                  /* The model-view-projection matrices of the paths. */
 
     PathInstancedData m_path_instances;              /* The path instances to render. */
-    
+
     InstancedData<vec4> m_line_instances;            /* The line instances to render. */
     InstancedData<vec2> m_handle_instances;          /* The handle instances to render. */
     InstancedData<vec2> m_vertex_instances;          /* The vertex instances to render. */

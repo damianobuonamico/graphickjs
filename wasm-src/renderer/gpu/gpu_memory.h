@@ -11,7 +11,7 @@
 
 #include <chrono>
 
-namespace Graphick::Renderer::GPU::Memory {
+namespace graphick::renderer::GPU::Memory {
 
   using time_point = std::chrono::steady_clock::time_point;
 

@@ -1,6 +1,6 @@
 /**
- * @file matrix.h
- * @brief This file contains the definition of the matrix functions.
+ * @file math/matrix.h
+ * @brief This file contains methods for matrix operations.
  */
 
 #pragma once

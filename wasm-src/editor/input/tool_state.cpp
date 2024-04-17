@@ -34,7 +34,7 @@ void update_tool_ui(int type) {}
 void update_tool_ui(int type) {}
 #endif
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   ToolState::ToolState() :
     m_current(Tool::ToolType::Select), m_active(m_current), m_last_tool(m_current),

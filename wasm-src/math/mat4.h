@@ -1,5 +1,5 @@
 /**
- * @file mat4.h
+ * @file math/mat4.h
  * @brief This file contains the Mat4 struct, a templated 4D matrix.
  */
 #pragma once
@@ -359,9 +359,9 @@ namespace graphick::math {
 
 namespace graphick {
 
-  using mat4 = math::mat4;
-  using dmat4 = math::dmat4;
-  using imat4 = math::imat4;
-  using umat4 = math::umat4;
+  using math::mat4;
+  using math::dmat4;
+  using math::imat4;
+  using math::umat4;
 
 }

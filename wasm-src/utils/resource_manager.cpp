@@ -13,7 +13,7 @@ static constexpr const char* shader_names[SHADERS_LENGTH] = {
   "path", "line", "square", "circle"
 };
 
-namespace Graphick::Utils {
+namespace graphick::utils {
 
   ResourceManager* ResourceManager::s_instance = nullptr;
 

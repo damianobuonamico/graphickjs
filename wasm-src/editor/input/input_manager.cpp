@@ -20,7 +20,7 @@
 
 #include "../../utils/console.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   InputManager* InputManager::s_instance = nullptr;
   InputManager::Pointer InputManager::pointer{};

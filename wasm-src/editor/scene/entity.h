@@ -14,7 +14,7 @@
 
 #include <vector>
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   /**
    * @brief The Entity class represents an entity in the scene.

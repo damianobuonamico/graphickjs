@@ -13,7 +13,7 @@
 
 #include <optional>
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
   /**
    * @brief The SelectTool class represents a tool used for selecting entities.

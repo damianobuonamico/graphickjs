@@ -12,7 +12,7 @@
 #include "../../utils/defines.h"
 #include "../../utils/console.h"
 
-namespace Graphick::Editor {
+namespace graphick::editor {
 
   Viewport::Viewport()
     : m_position({ 0.0f, 0.0f }), m_zoom(1.0f), m_rotation(0.0f), m_size({ 0, 0 }) {}

@@ -7,7 +7,7 @@
 
 #include "gl_data.h"
 
-namespace Graphick::Renderer::GPU::GL {
+namespace graphick::renderer::GPU::GL {
 
   /**
    * @brief The class that represents the OpenGL GPU device.
@@ -472,7 +472,7 @@ namespace Graphick::Renderer::GPU::GL {
 
 }
 
-namespace Graphick::Renderer::GPU {
+namespace graphick::Renderer::GPU {
 
   using DeviceBackend = GL::GLDevice;
   using Texture = GL::GLTexture;
