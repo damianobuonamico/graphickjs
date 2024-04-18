@@ -40,18 +40,19 @@ namespace graphick::utils {
     get()->m_messages.push_back(text);
   }
 
-  void Debugger::draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform, const vec4& color) {
+  void Debugger::draw(const renderer::geometry::Contour& contour, const mat2x3& transform, const vec4& color) {
     // Renderer::Renderer::draw_outline(contour, transform, color);
   }
 
-  void Debugger::draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform) {
+  void Debugger::draw(const renderer::geometry::Contour& contour, const mat2x3& transform) {
     // Renderer::Renderer::draw_outline(contour, transform);
   }
 
-  void Debugger::draw(const Renderer::Geometry::Contour& contour) {
+  void Debugger::draw(const renderer::geometry::Contour& contour) {
     // Renderer::Renderer::draw_outline(contour);
   }
 
+#if 0
   void Debugger::draw(const Renderer::Drawable& drawable, const mat2x3& transform, const vec4& color) {
     // for (auto& contour : drawable.contours) {
     //   draw(contour, transform, color);
@@ -69,9 +70,10 @@ namespace graphick::utils {
     //   draw(contour);
     // }
   }
+#endif
 
   void Debugger::draw(const rect& rect) {
-    // Renderer::Geometry::Contour contour;
+    // renderer::geometry::Contour contour;
 
     // contour.move_to(dvec2(rect.min));
     // contour.line_to(dvec2{ rect.max.x, rect.min.y });
@@ -83,7 +85,7 @@ namespace graphick::utils {
   }
 
   void Debugger::render(const vec2 viewport_size) {
-    // Renderer::Geometry::Path rect;
+    // renderer::geometry::Path rect;
     // rect.move_to({ visible.max.x - 200.0f / zoom, visible.min.y });
     // rect.line_to({ visible.max.x, visible.min.y });
     // rect.line_to({ visible.max.x, visible.min.y + 200.0f / zoom });
@@ -103,9 +105,9 @@ namespace graphick::utils {
     //   Renderer::Renderer::debug_text(get()->m_messages[i], { viewport_size.x - 340.0f, 18.0f + i * 20.0f }, vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
     // }
 
-    // Math::rect bounding_rect = get()->m_glyphs['a' - 32].bounding_rect();
-    // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);
-    // Renderer::Geometry::Path rect;
+    // math::rect bounding_rect = get()->m_glyphs['a' - 32].bounding_rect();
+    // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
+    // renderer::geometry::Path rect;
     // rect.move_to(lines[0].min);
 
     // for (auto& line : lines) {
@@ -124,7 +126,7 @@ namespace graphick::utils {
   //   for (int i = 0; i < 96; i++) {
   //     num_vertices = stbtt_GetCodepointShape(&m_font_info, i + 32, &vertices);
 
-  //     Renderer::Geometry::Path& path = m_glyphs[i];
+  //     renderer::geometry::Path& path = m_glyphs[i];
   //     bool is_first_move = true;
   //     bool should_break = false;
 

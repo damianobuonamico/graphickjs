@@ -34,7 +34,7 @@ namespace graphick::geom {
    * @param cubic The cubic bezier segment to approximate.
    * @return The p1 control point of the quadratic bezier curve, p0 and p2 are the start and end points of the cubic curve.
    */
-  static vec2 single_quadratic_approximation(const Path::Segment& cubic) {
+  static vec2 single_quadratic_approximation(const cubic_bezier& cubic) {
     if (math::is_almost_equal(cubic.p0, cubic.p1)) {
       return cubic.p2;
     } else if (math::is_almost_equal(cubic.p2, cubic.p3)) {
@@ -81,11 +81,11 @@ namespace graphick::geom {
    * @param cubic The cubic bezier segment to evaluate.
    * @return The maximum distance between the cubic and its quadratic approximation.
    */
-  static float single_quadratic_approximation_error(const Path::Segment& cubic) {
+  static float single_quadratic_approximation_error(const cubic_bezier& cubic) {
     return std::sqrtf(3.0f) / 36.0f * math::length((cubic.p3 - cubic.p2 * 3.0f) + (cubic.p1 * 3.0f - cubic.p0));
   }
 
-  static void degenerate_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, QuadraticPath& sink) {
+  static void degenerate_cubic_to_quadratics(const cubic_bezier& cubic, const float tolerance, QuadraticPath& sink) {
     // Path::Segment sub_curve = cubic;
 
     // float t_min = 0.0f;
@@ -118,13 +118,13 @@ namespace graphick::geom {
    * @param tolerance The maximum error tolerance.
    * @param sink The quadratic path to append the approximated segments to.
    */
-  static void monotonic_cubic_to_quadratics(const Path::Segment& cubic, const float tolerance, QuadraticPath& sink) {
+  static void monotonic_cubic_to_quadratics(const cubic_bezier& cubic, const float tolerance, QuadraticPath& sink) {
     // degenerate_cubic_to_quadratics(cubic, tolerance, sink);
   // if (math::is_almost_equal(cubic.p2, cubic.p3)) {
     // return;
   // }
 
-    Path::Segment sub_curve = cubic;
+    cubic_bezier sub_curve = cubic;
 
     float t_min = 0.0f;
     float t_max = 1.0f;
@@ -143,11 +143,7 @@ namespace graphick::geom {
         t_max = (t_min + t_max) / 2.0f;
       }
 
-#if REDO
-      const auto& [p0, p1, p2, p3] = math::split_bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t_min, t_max);
-
-      sub_curve = { p0, p1, p2, p3 };
-#endif
+      sub_curve = geom::extract(cubic, t_min, t_max);
     }
   }
 
@@ -1897,6 +1893,7 @@ namespace graphick::geom {
 
     // return false;
 #endif
+    return false;
   }
 
   bool Path::is_point_inside_point(const size_t point_index, const vec2 point, const mat2x3& transform, const float threshold) const {
@@ -2350,8 +2347,8 @@ namespace graphick::geom {
         }
 #endif
 #if 1
-        Segment curve = { m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
-        Segment sub_curve = curve;
+        cubic_bezier curve = { m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
+        cubic_bezier sub_curve = curve;
 
         const vec2 a = 3 * (-curve.p0 + 3 * curve.p1 - 3 * curve.p2 + curve.p3);
         const vec2 b = 6 * (curve.p0 - 2 * curve.p1 + curve.p2);

@@ -6,6 +6,7 @@
 #include "curve_ops.h"
 
 #include "../math/vector.h"
+#include "../math/math.h"
 
 namespace graphick::geom {
 
@@ -193,7 +194,7 @@ namespace graphick::geom {
   /* -- Curve Extraction -- */
 
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  QuadraticBezier<T> extract(const QuadraticBezier<T>& cubic, const T t1, const T t2) {
+  QuadraticBezier<T> extract(const QuadraticBezier<T>& quad, const T t1, const T t2) {
     const math::Vec2<T> q1 = math::lerp(quad.p0, quad.p1, t1);
     const math::Vec2<T> q2 = math::lerp(quad.p0, quad.p1, t2);
 
@@ -210,7 +211,28 @@ namespace graphick::geom {
 
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   CubicBezier<T> extract(const CubicBezier<T>& cubic, const T t1, const T t2) {
+    const math::Vec2<T> q1 = math::lerp(cubic.p0, cubic.p1, t1);
+    const math::Vec2<T> q2 = math::lerp(cubic.p0, cubic.p1, t2);
 
+    const math::Vec2<T> r1 = math::lerp(cubic.p1, cubic.p2, t1);
+    const math::Vec2<T> r2 = math::lerp(cubic.p1, cubic.p2, t2);
+
+    const math::Vec2<T> s1 = math::lerp(cubic.p2, cubic.p3, t1);
+    const math::Vec2<T> s2 = math::lerp(cubic.p2, cubic.p3, t2);
+
+    const math::Vec2<T> qr1 = math::lerp(q1, r1, t1);
+    const math::Vec2<T> qr2 = math::lerp(q2, r2, t1);
+
+    const math::Vec2<T> rs1 = math::lerp(r1, s1, t1);
+    const math::Vec2<T> rs2 = math::lerp(r2, s2, t1);
+
+    const math::Vec2<T> p1 = math::lerp(qr1, rs1, t1);
+    const math::Vec2<T> p2 = math::lerp(qr2, rs2, t1);
+
+    const math::Vec2<T> q = math::lerp(qr1, rs1, t2);
+    const math::Vec2<T> r = math::lerp(qr2, rs2, t2);
+
+    return CubicBezier<T>(p1, q, r, p2);
   }
 
   /* -- Template Instantiation -- */

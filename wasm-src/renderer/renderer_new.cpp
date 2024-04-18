@@ -325,14 +325,14 @@ namespace graphick::renderer {
     console::log("GPU", static_cast<double>(time) / 1000000.0);
   }
 
-  void Renderer::draw(const geometry::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
+  void Renderer::draw(const geom::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
     const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
 
     draw(path, fill, transform, &bounds);
     draw(path, stroke, transform, &bounds);
   }
 
-  void Renderer::draw(const geometry::QuadraticPath& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect) {
+  void Renderer::draw(const geom::QuadraticPath& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect) {
     if (path.empty()) {
       return;
     }
@@ -377,7 +377,7 @@ namespace graphick::renderer {
     }
   }
 
-  void Renderer::draw(const geometry::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
+  void Renderer::draw(const geom::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
     GK_TOTAL("Renderer::draw(fill)");
 
     if (path.empty()) {
@@ -559,7 +559,7 @@ namespace graphick::renderer {
     }
   }
 
-  void Renderer::draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline(const geom::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
     geometry::PathBuilder(path, transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 

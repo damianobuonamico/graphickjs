@@ -55,7 +55,7 @@ namespace graphick::editor::input {
 
   PenTool* ToolState::pen() const {
     if (m_active == Tool::ToolType::Pen || m_current == Tool::ToolType::Pen) {
-      return static_cast<Editor::Input::PenTool*>(m_tools[static_cast<int>(Tool::ToolType::Pen)]);
+      return static_cast<editor::input::PenTool*>(m_tools[static_cast<int>(Tool::ToolType::Pen)]);
     }
 
     return nullptr;

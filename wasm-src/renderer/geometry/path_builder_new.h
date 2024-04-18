@@ -11,7 +11,7 @@
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
 
-#include "quadratic_path.h"
+#include "../../geom/quadratic_path.h"
 
 #include <vector>
 

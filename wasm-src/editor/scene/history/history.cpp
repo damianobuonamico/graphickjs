@@ -146,7 +146,7 @@ namespace graphick::editor {
   }
 
   void History::seal() {
-    if (m_batch_index + 1 < m_batch_indices.size()) {
+    if (m_batch_index + 1 < static_cast<int64_t>(m_batch_indices.size())) {
       m_actions.erase(m_actions.begin() + m_batch_indices[m_batch_index], m_actions.end());
       m_batch_indices.erase(m_batch_indices.begin() + m_batch_index + 1, m_batch_indices.end());
     }

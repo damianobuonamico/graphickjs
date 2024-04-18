@@ -18,6 +18,8 @@
 
 #include "../../../math/math.h"
 
+#include "../../../geom/intersections.h"
+
 #include "../../../renderer/renderer_new.h"
 
 namespace graphick::editor::input {
@@ -111,7 +113,7 @@ namespace graphick::editor::input {
     Scene& scene = Editor::scene();
 
     if (m_mode == Mode::Sub) {
-      if (m_vertex.has_value() && Math::squared_length(InputManager::pointer.scene.delta) < 10.0f / scene.viewport.zoom()) {
+      if (m_vertex.has_value() && math::squared_length(InputManager::pointer.scene.delta) < 10.0f / scene.viewport.zoom()) {
         PathComponent path = scene.get_entity(m_temp_element).get_component<PathComponent>();
         path.remove(m_vertex.value(), InputManager::keys.shift);
       }
@@ -131,18 +133,18 @@ namespace graphick::editor::input {
     Entity entity = scene.get_entity(m_element);
     PathComponent path = entity.get_component<PathComponent>();
 
-    const Renderer::Geometry::Path::VertexNode node = path.data().node_at(m_vertex.value());
+    const geom::Path::VertexNode node = path.data().node_at(m_vertex.value());
     const float threshold = 2.5f / Editor::scene().viewport.zoom();
 
     if (node.in >= 0) {
       const vec2 in_handle = path.data().point_at(static_cast<size_t>(node.in));
       const vec2 vertex = path.data().point_at(node.vertex);
 
-      if (Math::is_almost_equal(in_handle, vertex, threshold)) {
+      if (math::is_almost_equal(in_handle, vertex, threshold)) {
         path.translate(static_cast<size_t>(node.in), vertex - in_handle);
 
         if (node.in_command >= 0) {
-          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), Renderer::Geometry::Path::IndexType::Command);
+          const geom::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), geom::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.in_command));
@@ -155,11 +157,11 @@ namespace graphick::editor::input {
       const vec2 out_handle = path.data().point_at(static_cast<size_t>(node.out));
       const vec2 vertex = path.data().point_at(node.vertex);
 
-      if (Math::is_almost_equal(out_handle, vertex, threshold)) {
+      if (math::is_almost_equal(out_handle, vertex, threshold)) {
         path.translate(static_cast<size_t>(node.out), vertex - out_handle);
 
         if (node.out_command >= 0) {
-          const Renderer::Geometry::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), Renderer::Geometry::Path::IndexType::Command);
+          const geom::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), geom::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.out_command));
@@ -187,20 +189,20 @@ namespace graphick::editor::input {
 
     if (path.data().vacant() || path.data().closed()) return;
 
-    Renderer::Geometry::Path segment;
+    geom::Path segment;
     std::optional<vec2> handle = std::nullopt;
 
     if (m_reverse) {
       segment.move_to(transform * path.data().point_at(0));
 
       if (path.data().has_in_handle()) {
-        handle = path.data().point_at(Renderer::Geometry::Path::in_handle_index);
+        handle = path.data().point_at(geom::Path::in_handle_index);
       }
     } else {
       segment.move_to(transform * path.data().point_at(path.data().points_size() - 1));
 
       if (path.data().has_out_handle()) {
-        handle = path.data().point_at(Renderer::Geometry::Path::out_handle_index);
+        handle = path.data().point_at(geom::Path::out_handle_index);
       }
     }
 
@@ -253,7 +255,7 @@ namespace graphick::editor::input {
       const bool has_in_handle = path.data().has_in_handle();
 
       if (has_in_handle) {
-        m_vertex = path.cubic_to(path.data().point_at(Renderer::Geometry::Path::in_handle_index), pointer_position, pointer_position, m_reverse);
+        m_vertex = path.cubic_to(path.data().point_at(geom::Path::in_handle_index), pointer_position, pointer_position, m_reverse);
       } else {
         m_vertex = path.line_to(pointer_position, m_reverse);
       }
@@ -261,7 +263,7 @@ namespace graphick::editor::input {
       const bool has_out_handle = path.data().has_out_handle();
 
       if (has_out_handle) {
-        m_vertex = path.cubic_to(path.data().point_at(Renderer::Geometry::Path::out_handle_index), pointer_position, pointer_position, m_reverse);
+        m_vertex = path.cubic_to(path.data().point_at(geom::Path::out_handle_index), pointer_position, pointer_position, m_reverse);
       } else {
         m_vertex = path.line_to(pointer_position, m_reverse);
       }
@@ -294,7 +296,7 @@ namespace graphick::editor::input {
     vec2 in_p1;
 
     if (m_reverse) {
-      in_p1 = first_path.data().has_in_handle() ? first_path.data().point_at(Renderer::Geometry::Path::in_handle_index) : first_path.data().point_at(0);
+      in_p1 = first_path.data().has_in_handle() ? first_path.data().point_at(geom::Path::in_handle_index) : first_path.data().point_at(0);
 
       new_path.move_to(first_transform * first_path.data().point_at(first_path.data().points_size() - 1));
 
@@ -311,7 +313,7 @@ namespace graphick::editor::input {
         }
       );
     } else {
-      in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(Renderer::Geometry::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_size() - 1);
+      in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(geom::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_size() - 1);
 
       first_path.data().for_each(
         [&](const vec2 p0) {
@@ -330,7 +332,7 @@ namespace graphick::editor::input {
     }
 
     if (m_vertex.value() == 0) {
-      const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().point_at(Renderer::Geometry::Path::in_handle_index) : second_path.data().point_at(0);
+      const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().point_at(geom::Path::in_handle_index) : second_path.data().point_at(0);
 
       second_path.data().for_each(
         [&](const vec2 p0) {
@@ -348,7 +350,7 @@ namespace graphick::editor::input {
         }
       );
     } else {
-      const vec2 in_p2 = second_path.data().has_out_handle() ? second_path.data().point_at(Renderer::Geometry::Path::out_handle_index) : second_path.data().point_at(second_path.data().points_size() - 1);
+      const vec2 in_p2 = second_path.data().has_out_handle() ? second_path.data().point_at(geom::Path::out_handle_index) : second_path.data().point_at(second_path.data().points_size() - 1);
 
       new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * second_path.data().point_at(second_path.data().points_size() - 1));
       index = new_path.data().points_size() - 1;
@@ -404,21 +406,21 @@ namespace graphick::editor::input {
     PathComponent path = entity.get_component<PathComponent>();
     TransformComponent transform = entity.get_component<TransformComponent>();
 
-    const Renderer::Geometry::Path::Segment segment = path.data().at(segment_hover.value());
+    const geom::Path::Segment segment = path.data().at(segment_hover.value());
     const mat2x3 inverse_transform = transform.inverse();
     const vec2 p = inverse_transform * InputManager::pointer.scene.position;
 
     float t;
 
     switch (segment.type) {
-    case Renderer::Geometry::Path::Command::Cubic:
-      t = Math::cubic_closest_to(segment.p0, segment.p1, segment.p2, segment.p3, p);
+    case geom::Path::Command::Cubic:
+      t = geom::cubic_closest_to(geom::cubic_bezier{ segment.p0, segment.p1, segment.p2, segment.p3 }, p);
       break;
-    case Renderer::Geometry::Path::Command::Quadratic:
-      t = Math::quadratic_closest_to(segment.p0, segment.p1, segment.p2, p);
+    case geom::Path::Command::Quadratic:
+      t = geom::quadratic_closest_to(geom::quadratic_bezier{ segment.p0, segment.p1, segment.p2 }, p);
       break;
     default:
-      t = Math::linear_closest_to(segment.p0, segment.p1, p);
+      t = geom::line_closest_to(geom::line{ segment.p0, segment.p1 }, p);
       break;
     }
 
@@ -435,13 +437,13 @@ namespace graphick::editor::input {
 
     if (m_reverse) {
       path.translate(
-        Renderer::Geometry::Path::in_handle_index,
-        path.data().point_at(0) - path.data().point_at(Renderer::Geometry::Path::in_handle_index)
+        geom::Path::in_handle_index,
+        path.data().point_at(0) - path.data().point_at(geom::Path::in_handle_index)
       );
     } else {
       path.translate(
-        Renderer::Geometry::Path::out_handle_index,
-        path.data().point_at(path.data().points_size() - 1) - path.data().point_at(Renderer::Geometry::Path::out_handle_index)
+        geom::Path::out_handle_index,
+        path.data().point_at(path.data().points_size() - 1) - path.data().point_at(geom::Path::out_handle_index)
       );
     }
 

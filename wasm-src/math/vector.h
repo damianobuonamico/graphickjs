@@ -1285,7 +1285,7 @@ namespace graphick::math {
    */
   template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
   inline T angle(const Vec2<T> v1, const Vec2<T> v2) {
-    return sign(cross(v1, v2)) * std::acos(dot(v1, v2) / std::sqrt(squared_length(v1) * squared_length(v2)))
+    return sign(cross(v1, v2)) * std::acos(dot(v1, v2) / std::sqrt(squared_length(v1) * squared_length(v2)));
   }
 
   /**

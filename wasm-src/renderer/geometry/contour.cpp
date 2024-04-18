@@ -158,6 +158,7 @@ namespace graphick::renderer::geometry {
 
     return std::move(parameterization);
 #endif
+    return {};
   }
 
   void Contour::offset_cubic(const Parameterization& parameterization, const dvec2 end_point, const double radius) {
@@ -276,6 +277,7 @@ namespace graphick::renderer::geometry {
 
     return winding;
 #endif
+    return 0;
   }
 
   void Contour::arc(const dvec2 center, const dvec2 from, const double radius, const dvec2 to) {
@@ -466,7 +468,7 @@ namespace graphick::renderer::geometry {
     dvec2 p;
 
     double conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
-    double dt = std::sqrtf((std::sqrt(8.0) * m_tolerance) / conc);
+    double dt = std::sqrt((std::sqrt(8.0) * m_tolerance) / conc);
     double t = dt;
 
     points.reserve(static_cast<int>(1.0f / dt) + 1);

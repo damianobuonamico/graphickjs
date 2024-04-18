@@ -28,7 +28,7 @@ namespace graphick::geom {
     /* -- Component accesses -- */
 
     static constexpr uint8_t length() {
-      return 3;
+      return 4;
     }
 
     constexpr math::Vec2<T>& operator[](uint8_t i) {
@@ -63,7 +63,11 @@ namespace graphick::geom {
 
     CubicBezier() = default;
 
-    constexpr CubicBezier(const CubicBezier<T>& l) = default;
+    constexpr CubicBezier(const CubicBezier<T>& c) :
+      p0(c.p0),
+      p1(c.p1),
+      p2(c.p2),
+      p3(c.p3) {}
 
     constexpr CubicBezier(const math::Vec2<T> p0, const math::Vec2<T> p3) :
       p0(p0),

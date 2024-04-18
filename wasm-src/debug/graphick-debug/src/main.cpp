@@ -17,7 +17,7 @@
 #include <stdio.h>
 
 struct PointerState {
-  geaphick::vec2 position;
+  graphick::vec2 position;
   graphick::editor::input::InputManager::PointerButton button;
   bool alt;
   bool ctrl;
@@ -30,7 +30,7 @@ static float dpr;
 static void cursor_position_callback(GLFWwindow* window, double x, double y) {
   OPTICK_EVENT();
 
-  pointer_state.position = geaphick::vec2{ (float)x, (float)y } / dpr;
+  pointer_state.position = graphick::vec2{ (float)x, (float)y } / dpr;
 
   graphick::editor::input::InputManager::on_pointer_event(
     graphick::editor::input::InputManager::PointerTarget::Canvas, graphick::editor::input::InputManager::PointerEvent::Move,
@@ -90,7 +90,7 @@ int main() {
   int width = 800;
   int height = 600;
 
-  window = glfwCreateWindow(width, height, "geaphick", nullptr, nullptr);
+  window = glfwCreateWindow(width, height, "graphick", nullptr, nullptr);
   glfwSetWindowPos(window, 0, 30);
 
   if (!window) {
@@ -118,7 +118,7 @@ int main() {
   glDisable(GL_MULTISAMPLE);
   glEnable(GL_DEPTH);
 
-  geaphick::editor::Editor::init();
+  graphick::editor::Editor::init();
   graphick::editor::input::InputManager::on_resize_event((int)(width / dpr), (int)(height / dpr), dpr, 0, 0);
 
 // #define TIGER
@@ -128,16 +128,16 @@ int main() {
   // std::ifstream ifs("res\\test.svg");
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-  geaphick::io::svg::parse_svg(content);
+  graphick::io::svg::parse_svg(content);
 #elif defined(OBJECTS)
-  geaphick::Renderer::Geometry::Path path1;
+  graphick::geom::Path path1;
 
-  // geaphick::editor::Entity test_entity1 = geaphick::editor::Editor::scene().create_element("Test Entity 1");
+  // graphick::editor::Entity test_entity1 = graphick::editor::Editor::scene().create_element("Test Entity 1");
 
-  // auto& path_component = test_entity.get_component<geaphick::editor::PathComponent>();
-  // auto& path = test_entity.get_component<geaphick::editor::PathComponent>().data;
-  // geaphick::Renderer::Geometry::Path& path = test_entity.get_component<geaphick::editor::PathComponent>().data;
-  // geaphick::Renderer::Geometry::Path& path1 = test_entity1.get_component<geaphick::editor::PathComponent>().path;
+  // auto& path_component = test_entity.get_component<graphick::editor::PathComponent>();
+  // auto& path = test_entity.get_component<graphick::editor::PathComponent>().data;
+  // graphick::geom::Path& path = test_entity.get_component<graphick::editor::PathComponent>().data;
+  // graphick::geom::Path& path1 = test_entity1.get_component<graphick::editor::PathComponent>().path;
 
   // path.move_to({ 360.0f, 20.0f });
   // path1.move_to({ 0.0f, 0.0f });
@@ -192,7 +192,7 @@ int main() {
 
   /* Stroking Robustness */
 
-  using geaphick::vec2;
+  using graphick::vec2;
 
   std::vector<std::array<vec2, 4>> tests = {
     std::array<vec2, 4>{ vec2{ 230.0f, 324.0f }, { 541.0f, 358.0f }, { 351.0f, 160.0f }, { 325.0f, 391.0f } }, // Handled
@@ -214,12 +214,12 @@ int main() {
   };
 
   for (size_t i = 3; i < tests.size(); i++) {
-    geaphick::Renderer::Geometry::Path path;
+    graphick::geom::Path path;
 
-    const geaphick::vec2 delta = { 0.0f, 0.0f };
-    // const geaphick::vec2 delta = { (i / 5) * 300.0f, (i % 5) * 300.0f };
+    const graphick::vec2 delta = { 0.0f, 0.0f };
+    // const graphick::vec2 delta = { (i / 5) * 300.0f, (i % 5) * 300.0f };
 
-    // const auto& [p, in_p1, in_p2, out_p1, out_p2] = geaphick::Math::split_bezier(tests[i][0], tests[i][1], tests[i][2], tests[i][3], 0.5f);
+    // const auto& [p, in_p1, in_p2, out_p1, out_p2] = graphick::math::split_bezier(tests[i][0], tests[i][1], tests[i][2], tests[i][3], 0.5f);
 
     // path.move_to(delta + tests[i][0]);
     // path.cubic_to(delta + in_p1, delta + in_p2, delta + p);
@@ -228,13 +228,13 @@ int main() {
     path.move_to(delta + tests[i][0]);
     path.cubic_to(delta + tests[i][1], delta + tests[i][2], delta + tests[i][3]);
 
-    geaphick::editor::Entity test_entity = geaphick::editor::Editor::scene().create_element(path);
-    geaphick::editor::FillComponent fill = test_entity.add_component<geaphick::editor::FillComponent>(geaphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
-    // geaphick::editor::StrokeComponent stroke = test_entity.add_component<geaphick::editor::StrokeComponent>(geaphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
+    graphick::editor::Entity test_entity = graphick::editor::Editor::scene().create_element(path);
+    graphick::editor::FillComponent fill = test_entity.add_component<graphick::editor::FillComponent>(graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
+    // graphick::editor::StrokeComponent stroke = test_entity.add_component<graphick::editor::StrokeComponent>(graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
 
-    // const_cast<geaphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
-    // const_cast<geaphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = geaphick::Renderer::LineCap::Round;
-    // const_cast<geaphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = geaphick::Renderer::LineJoin::Round;
+    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
+    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = graphick::Renderer::LineCap::Round;
+    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = graphick::Renderer::LineJoin::Round;
 
     break;
   }
@@ -263,17 +263,17 @@ int main() {
 
   // path1.close();
 
-  geaphick::editor::Entity test_entity = geaphick::editor::Editor::scene().create_element(path1);
+  graphick::editor::Entity test_entity = graphick::editor::Editor::scene().create_element(path1);
 
-  test_entity.add_component<geaphick::editor::FillComponent>(geaphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
-  geaphick::editor::StrokeComponent stroke = test_entity.add_component<geaphick::editor::StrokeComponent>(geaphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
+  test_entity.add_component<graphick::editor::FillComponent>(graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
+  graphick::editor::StrokeComponent stroke = test_entity.add_component<graphick::editor::StrokeComponent>(graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
 
-  const_cast<geaphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 20.0f;
-  const_cast<geaphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = geaphick::Renderer::LineCap::Round;
-  const_cast<geaphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = geaphick::Renderer::LineJoin::Round;
+  const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 20.0f;
+  const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = graphick::renderer::LineCap::Round;
+  const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = graphick::renderer::LineJoin::Round;
 
-  // test_entity1.add_component<geaphick::editor::FillComponent>(geaphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });
-  // test_entity1.add_component<geaphick::editor::StrokeComponent>(geaphick::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
+  // test_entity1.add_component<graphick::editor::FillComponent>(graphick::vec4{ 1.0f, 0.3f, 0.3f, 1.0f });
+  // test_entity1.add_component<graphick::editor::StrokeComponent>(graphick::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
 #endif
 
   while (!glfwWindowShouldClose(window)) {
@@ -282,12 +282,12 @@ int main() {
 
     glfwPollEvents();
 
-    geaphick::editor::Editor::render(true);
+    graphick::editor::Editor::render(true);
 
     glfwSwapBuffers(window);
   }
 
-  geaphick::editor::Editor::shutdown();
+  graphick::editor::Editor::shutdown();
 
   glfwDestroyWindow(window);
   glfwTerminate();

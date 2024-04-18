@@ -12,22 +12,18 @@
 
 #include "gpu/shaders_new.h"
 
-#include "geometry/quadratic_path.h"
+#include "../geom/quadratic_path.h"
 
 #include "../math/mat2x3.h"
 #include "../math/mat4.h"
 
 #include <unordered_set>
 
-namespace graphick::Renderer::Geometry {
+namespace graphick::geom {
   class Path;
 };
 
 namespace graphick::renderer {
-
-  // TEMP
-  using Stroke = graphick::Renderer::Stroke;
-  using Fill = graphick::Renderer::Fill;
 
   /**
    * @brief The main Graphick renderer.
@@ -81,7 +77,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const geometry::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const geom::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws a QuadraticPath with the provided Stroke properties.
@@ -91,7 +87,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const geometry::QuadraticPath& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const geom::QuadraticPath& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws a QuadraticPath with the provided Fill properties.
@@ -101,7 +97,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const geometry::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const geom::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the outline of a QuadraticPath.
@@ -112,7 +108,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const geometry::QuadraticPath& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const geom::QuadraticPath& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the outline of a Path.
@@ -123,7 +119,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const geom::Path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the vertices of a Path's outline.
@@ -134,7 +130,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline_vertices(const graphick::Renderer::Geometry::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline_vertices(const geom::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
   private:
     /**
      * @brief Default constructor and destructor.

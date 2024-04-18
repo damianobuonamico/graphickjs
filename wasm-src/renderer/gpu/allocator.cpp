@@ -184,7 +184,7 @@ namespace graphick::renderer::GPU::Memory {
     OPTICK_EVENT();
 
     if (byte_size < MAX_BUFFER_SIZE_CLASS) {
-      byte_size = Math::next_power_of_two(byte_size);
+      byte_size = math::next_power_of_two(byte_size);
     }
 
     time_point now = std::chrono::steady_clock::now();
@@ -215,7 +215,7 @@ namespace graphick::renderer::GPU::Memory {
 
   std::optional<uuid> Allocator::allocate_index_buffer_byte_size(size_t byte_size, const std::string& tag) {
     if (byte_size < MAX_BUFFER_SIZE_CLASS) {
-      byte_size = Math::next_power_of_two(byte_size);
+      byte_size = math::next_power_of_two(byte_size);
     }
 
     time_point now = std::chrono::steady_clock::now();

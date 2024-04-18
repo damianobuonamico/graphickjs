@@ -14,29 +14,31 @@ namespace graphick::math {
 
   /* -- Defines -- */
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  constexpr T pi = T(3.14159265358979323846);
-
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  constexpr T two_pi = T(2) * pi<T>;
-
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  constexpr T epsilon = std::numeric_limits<T>::epsilon();
-
-  template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
-  constexpr T epsilon = T(0);
-
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  constexpr T geometric_epsilon = T(1e-3);
-
-  template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
-  constexpr T geometric_epsilon = T(0);
+  template <typename T>
+  inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> pi = T(3.14159265358979323846);
 
   template <typename T>
-  constexpr T newton_raphson_iterations = T(5);
+  inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> two_pi = T(2) * pi<T>;
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  constexpr T circle_ratio = T(0.55228474983079339840);
+  template <typename T>
+  inline constexpr T epsilon = T(0);
+  template <>
+  inline constexpr float epsilon<float> = std::numeric_limits<float>::epsilon();
+  template <>
+  inline constexpr double epsilon<double> = std::numeric_limits<double>::epsilon();
+
+  template <typename T>
+  inline constexpr T geometric_epsilon = T(0);
+  template <>
+  inline constexpr float geometric_epsilon<float> = 1e-3f;
+  template <>
+  inline constexpr double geometric_epsilon<double> = 1e-3;
+
+  template <typename T>
+  inline constexpr T newton_raphson_iterations = T(5);
+
+  template <typename T>
+  inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> circle_ratio = T(0.55228474983079339840);
 
   /**
    * @brief Rounds a scalar to a certain number of decimals.
@@ -55,6 +57,19 @@ namespace graphick::math {
     const T decimal_part = t - integer_part;
 
     return integer_part + std::round(decimal_part / precision) * precision;
+  }
+
+  /**
+   * @brief Clamps a scalar between a minimum and a maximum.
+   *
+   * @param t The scalar to clamp.
+   * @param min The minimum value.
+   * @param max The maximum value.
+   * @return The clamped scalar.
+   */
+  template <typename T>
+  inline T clamp(const T t, const T min, const T max) {
+    return t < min ? min : (t > max ? max : t);
   }
 
   /**

@@ -20,10 +20,12 @@
 #include "../input/tools/pen_tool.h"
 
 #include "../../renderer/renderer_new.h"
-#include "../../renderer/geometry/path.h"
 
 #include "../../math/matrix.h"
 #include "../../math/math.h"
+
+#include "../../geom/intersections.h"
+#include "../../geom/path.h"
 
 #include "../../utils/debugger.h"
 #include "../../utils/console.h"
@@ -139,7 +141,7 @@ namespace graphick::editor {
     return get_entity(id);
   }
 
-  Entity Scene::create_element(const Renderer::Geometry::Path& path) {
+  Entity Scene::create_element(const geom::Path& path) {
     io::EncodedData data;
     uuid id = uuid();
 
@@ -201,21 +203,21 @@ namespace graphick::editor {
         bool has_fill = false;
         bool has_stroke = false;
 
-        Renderer::Fill fill;
-        Renderer::Stroke stroke;
+        renderer::Fill fill;
+        renderer::Stroke stroke;
 
         if (entity.has_component<FillComponent>()) {
           has_fill = true;
           auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
 
-          fill = Renderer::Fill{ fill_component.color, fill_component.rule, 0.0f };
+          fill = renderer::Fill{ fill_component.color, fill_component.rule, 0.0f };
         }
 
         if (entity.has_component<StrokeComponent>()) {
           has_stroke = true;
           auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
 
-          stroke = Renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0.0f };
+          stroke = renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0.0f };
         }
 
         if (path.is_point_inside_path(position, has_fill ? &fill : nullptr, has_stroke ? &stroke : nullptr, transform, threshold, zoom, deep_search && selection.has(id))) {
@@ -241,7 +243,7 @@ namespace graphick::editor {
     return get_entity(new_id);
   }
 
-  std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const Math::rect& rect, bool deep_search) {
+  std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect, bool deep_search) {
     OPTICK_EVENT();
 
     std::unordered_map<uuid, Selection::SelectionEntry> entities;
@@ -256,14 +258,14 @@ namespace graphick::editor {
       const uuid id = entity.id();
       const TransformComponent transform = entity.get_component<TransformComponent>();
 
-      const float angle = Math::rotation(transform.matrix());
+      const float angle = math::rotation(transform.matrix());
 
-      if (Math::is_almost_zero(std::fmodf(angle, MATH_F_TWO_PI))) {
+      if (math::is_almost_zero(std::fmodf(angle, math::two_pi<float>))) {
         const mat2x3 inverse_transform = transform.inverse();
-        const Math::rect selection_rect = inverse_transform * rect;
+        const math::rect selection_rect = inverse_transform * rect;
 
         if (entity.is_element()) {
-          if (Math::is_rect_in_rect(transform.bounding_rect(), rect)) {
+          if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
             entities.insert({ id, Selection::SelectionEntry() });
             continue;
           }
@@ -282,13 +284,13 @@ namespace graphick::editor {
             }
           }
         } else {
-          if (Math::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
+          if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
             entities.insert({ id, Selection::SelectionEntry() });
           }
         }
       } else {
         if (entity.is_element()) {
-          if (Math::is_rect_in_rect(transform.bounding_rect(), rect)) {
+          if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
             entities.insert({ id, Selection::SelectionEntry() });
             continue;
           }
@@ -307,7 +309,7 @@ namespace graphick::editor {
             }
           }
         } else {
-          if (Math::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
+          if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
             entities.insert({ id, Selection::SelectionEntry() });
           }
         }
@@ -322,10 +324,10 @@ namespace graphick::editor {
     GK_TOTAL("Scene::render");
     OPTICK_EVENT();
 
-    const Math::rect visible_rect = viewport.visible();
+    const math::rect visible_rect = viewport.visible();
 
     renderer::Renderer::begin_frame({
-      Math::round(vec2(viewport.size()) * viewport.dpr()),
+      math::round(vec2(viewport.size()) * viewport.dpr()),
       viewport.position(),
       viewport.zoom() * viewport.dpr(),
       viewport.dpr(),
@@ -345,14 +347,14 @@ namespace graphick::editor {
       auto& selected = selection.selected();
       auto& temp_selected = selection.temp_selected();
 
-      bool draw_vertices = tool_state.active().is_in_category(Input::Tool::CategoryDirect);
+      bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
 
       for (auto it = m_order.begin(); it != m_order.end(); it++) {
         const Entity entity = { *it, const_cast<Scene*>(this) };
         if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
 
         const uuid id = entity.id();
-        const Renderer::Geometry::Path& path = entity.get_component<PathComponent>().data();
+        const geom::Path& path = entity.get_component<PathComponent>().data();
         const TransformComponent transform = entity.get_component<TransformComponent>();
 
         if (!has_entity(id)) return;
@@ -371,7 +373,7 @@ namespace graphick::editor {
           entity_rect.max += vec2{ stroke->width };
         }
 
-        if (!Math::does_rect_intersect_rect(entity_rect, visible_rect)) continue;
+        if (!geom::does_rect_intersect_rect(entity_rect, visible_rect)) continue;
 
         bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
         std::optional<FillComponent::Data> fill = has_fill ? std::optional<FillComponent::Data>(m_registry.get<FillComponent::Data>(*it)) : std::nullopt;
@@ -387,16 +389,16 @@ namespace graphick::editor {
 
         mat2x3 transform_matrix = transform.matrix();
 
-        auto transformation = Math::decompose(transform_matrix);
+        auto transformation = math::decompose(transform_matrix);
         float scale = std::max(transformation.scale.x, transformation.scale.y);
 
-        renderer::geometry::QuadraticPath quadratics = path.to_quadratics(tolerance / scale);
+        geom::QuadraticPath quadratics = path.to_quadratics(tolerance / scale);
 
         if (has_fill && has_stroke) {
           renderer::Renderer::draw(
             quadratics,
-            Renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
-            Renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
+            renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+            renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
             transform_matrix
           );
 
@@ -404,7 +406,7 @@ namespace graphick::editor {
         } else if (has_fill) {
           renderer::Renderer::draw(
             quadratics,
-            Renderer::Fill{ fill->color, fill->rule, z_index / z_far },
+            renderer::Fill{ fill->color, fill->rule, z_index / z_far },
             transform_matrix
           );
 
@@ -412,7 +414,7 @@ namespace graphick::editor {
         } else if (has_stroke) {
           renderer::Renderer::draw(
             quadratics,
-            Renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+            renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
             transform_matrix
           );
 
@@ -454,9 +456,9 @@ namespace graphick::editor {
 
             // draw_vertices,
 
-        // Math::rect bounding_rect = path.bounding_rect();
-        // std::vector<Math::rect> lines = Math::lines_from_rect(bounding_rect);
-        // Renderer::Geometry::Path rect;
+        // math::rect bounding_rect = path.bounding_rect();
+        // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
+        // geom::Path rect;
         // rect.move_to(lines[0].min);
 
         // for (auto& line : lines) {
@@ -468,8 +470,8 @@ namespace graphick::editor {
     }
 
     // {
-    //   std::vector<Math::rect> lines = Math::lines_from_rect(viewport.visible());
-    //   Renderer::Geometry::Path rect;
+    //   std::vector<math::rect> lines = math::lines_from_rect(viewport.visible());
+    //   geom::Path rect;
     //   rect.move_to(lines[0].min);
 
     //   for (auto& line : lines) {
@@ -487,7 +489,9 @@ namespace graphick::editor {
 
     renderer::Renderer::end_frame();
 
+#if 0
     GK_DEBUGGER_RENDER(vec2(viewport.size()) * viewport.dpr());
+#endif
   }
 
   void Scene::add(const uuid id, const io::EncodedData& encoded_data) {

@@ -747,17 +747,17 @@ namespace graphick::io::svg {
           // History::CommandHistory::enable();
 
           if (!path.empty()) {
-            /*if (!path.closed() && Math::is_almost_equal(path.front().p0, path.back().p3, GK_POINT_EPSILON)) {
+            /*if (!path.closed() && math::is_almost_equal(path.front().p0, path.back().p3, GK_POINT_EPSILON)) {
               path.close();
             }*/
 
-            Editor::Entity element = Editor::Editor::scene().create_element(std::move(path));
+            editor::Entity element = editor::Editor::scene().create_element(std::move(path));
 
             if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {
-              element.add_component<Editor::FillComponent>(fill_colors.back());
+              element.add_component<editor::FillComponent>(fill_colors.back());
             }
             if (stroke_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 0.0f }) {
-              element.add_component<Editor::StrokeComponent>(stroke_colors.back());
+              element.add_component<editor::StrokeComponent>(stroke_colors.back());
             }
           }
         }

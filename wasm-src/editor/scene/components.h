@@ -7,12 +7,13 @@
 
 #pragma once
 
-#include "../../renderer/geometry/path.h"
 #include "../../renderer/properties.h"
 
 #include "../../math/vec4.h"
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
+
+#include "../../geom/path.h"
 
 #include "../../utils/uuid.h"
 
@@ -267,7 +268,7 @@ namespace graphick::editor {
     friend class Entity;
   };
 
-  using PathComponentData = Renderer::Geometry::Path;
+  using PathComponentData = geom::Path;
 
   /**
    * @brief PathComponent wrapper.
@@ -288,16 +289,16 @@ namespace graphick::editor {
     PathComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
     /**
-     * @brief Conversion operator to Renderer::Geometry::Path&.
+     * @brief Conversion operator to geom::Path&.
      */
-    inline operator const Renderer::Geometry::Path& () const { return *m_data; }
+    inline operator const geom::Path& () const { return *m_data; }
 
     /**
      * @brief Returns the path data of the entity.
      *
      * @return The path data of the entity.
      */
-    inline const Renderer::Geometry::Path& data() const { return *m_data; }
+    inline const geom::Path& data() const { return *m_data; }
 
     /**
      * @brief Moves the path cursor to the given point.
@@ -574,8 +575,8 @@ namespace graphick::editor {
   struct StrokeComponentData {
     vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };                /* The stroke color. */
 
-    Renderer::LineCap cap = Renderer::LineCap::Butt;        /* The line cap. */
-    Renderer::LineJoin join = Renderer::LineJoin::Miter;    /* The line join. */
+    renderer::LineCap cap = renderer::LineCap::Butt;        /* The line cap. */
+    renderer::LineJoin join = renderer::LineJoin::Miter;    /* The line join. */
 
     float width = 1.0f;                                     /* The line width. */
     float miter_limit = 10.0f;                              /* The miter limit, only used if join is set to miter. */
@@ -639,7 +640,7 @@ namespace graphick::editor {
   struct FillComponentData {
     vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };                  /* The stroke color. */
 
-    Renderer::FillRule rule = Renderer::FillRule::NonZero;    /* The line cap. */
+    renderer::FillRule rule = renderer::FillRule::NonZero;    /* The line cap. */
 
     bool visible = true;                                      /* Whether or not to display the stroke. */
 

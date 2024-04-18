@@ -9,6 +9,8 @@
 #include "../../math/vector.h"
 #include "../../math/scalar.h"
 
+#include "../../geom/intersections.h"
+
 #include "../../utils/defines.h"
 #include "../../utils/console.h"
 
@@ -50,15 +52,15 @@ namespace graphick::editor {
       max_position.y = -(m_max_position.y * m_zoom - m_size.y) / (2 * m_zoom);
     }
 
-    m_position = Math::min(Math::max(position, min_position), max_position);
+    m_position = math::min(math::max(position, min_position), max_position);
   }
 
   void Viewport::zoom_to(float zoom) {
-    m_zoom = Math::round(Math::clamp(zoom, std::max(m_min_zoom, ZOOM_MIN), ZOOM_MAX), 0.0001f);
+    m_zoom = math::round(math::clamp(zoom, std::max(m_min_zoom, ZOOM_MIN), ZOOM_MAX), 0.0001f);
   }
 
   void Viewport::zoom_to(float zoom, const vec2 zoom_origin) {
-    float zoom_value = Math::round(Math::clamp(zoom, std::max(m_min_zoom, ZOOM_MIN), ZOOM_MAX), 0.0001f);
+    float zoom_value = math::round(math::clamp(zoom, std::max(m_min_zoom, ZOOM_MIN), ZOOM_MAX), 0.0001f);
 
     vec2 position_delta = client_to_scene(zoom_origin, zoom_value) - client_to_scene(zoom_origin);
 
@@ -80,7 +82,7 @@ namespace graphick::editor {
   }
 
   bool Viewport::is_visible(const rect& rect) {
-    return Math::does_rect_intersect_rect(rect, visible());
+    return geom::does_rect_intersect_rect(rect, visible());
   }
 
   vec2 Viewport::client_to_scene(const vec2 position) {

@@ -204,11 +204,15 @@ namespace graphick::utils {
      * @param name The name of the frame.
      */
     static inline void frame(const std::string& name) {
+#if 0
       GK_DEBUGGER_CLEAR();
+#endif
 
       for (auto& [name, timer] : m_total_timers) {
         console::log("Total " + name + ": " + std::to_string((float)timer.average() / 1000000.0f) + "ms");
+#if 0
         GK_DEBUGGER_LOG(name + ": " + std::to_string((float)timer.average() / 1000000.0f) + "ms");
+#endif
         timer.next();
       }
     }

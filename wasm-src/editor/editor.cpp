@@ -39,11 +39,13 @@ namespace graphick::editor {
 
     s_instance = new Editor();
 
-    Input::InputManager::init();
-    Utils::ResourceManager::init();
+    input::InputManager::init();
+    utils::ResourceManager::init();
     renderer::Renderer::init();
 
+#if 0
     GK_DEBUGGER_INIT();
+#endif
 
     s_instance->m_scenes.emplace_back();
   }
@@ -62,11 +64,13 @@ namespace graphick::editor {
       return;
     }
 
+#if 0
     GK_DEBUGGER_SHUTDOWN();
+#endif
 
     renderer::Renderer::shutdown();
-    Utils::ResourceManager::shutdown();
-    Input::InputManager::shutdown();
+    utils::ResourceManager::shutdown();
+    input::InputManager::shutdown();
 
     delete s_instance;
     s_instance = nullptr;

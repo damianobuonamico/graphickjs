@@ -644,7 +644,7 @@ namespace graphick::renderer::GPU::GL {
   GLShader GLDevice::create_shader(const std::string& name, const ShaderKind kind) const {
     bool is_vertex = kind == ShaderKind::Vertex;
 
-    std::string source = "#version " + m_glsl_version_spec + "\n" + Utils::ResourceManager::get_shader(name + (is_vertex ? ".vs" : ".fs"));
+    std::string source = "#version " + m_glsl_version_spec + "\n" + utils::ResourceManager::get_shader(name + (is_vertex ? ".vs" : ".fs"));
     const char* ptr = source.c_str();
 
     glCall(GLuint gl_shader = glCreateShader(is_vertex ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER));

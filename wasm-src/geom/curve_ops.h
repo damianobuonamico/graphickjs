@@ -48,7 +48,7 @@ namespace graphick::geom {
    */
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline math::Rect<T> approx_bounding_rect(const QuadraticBezier<T>& quad) {
-    return math::Rect<T>::from_vectors({ quad.p0, quad.p1, quad.p2 })
+    return math::Rect<T>::from_vectors({ quad.p0, quad.p1, quad.p2 });
   }
 
   /**
@@ -59,7 +59,7 @@ namespace graphick::geom {
    */
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline math::Rect<T> approx_bounding_rect(const CubicBezier<T>& cubic) {
-    return math::Rect<T>::from_vectors({ cubic.p0, cubic.p1, cubic.p2, cubic.p3 })
+    return math::Rect<T>::from_vectors({ cubic.p0, cubic.p1, cubic.p2, cubic.p3 });
   }
 
   /* -- Bounding Rectangle -- */

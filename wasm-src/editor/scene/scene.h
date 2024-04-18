@@ -36,7 +36,7 @@ namespace graphick::editor {
     Selection selection;            /* Manages the selection of entities. */
     History history;                /* Manages the history of the scene. */
 
-    Input::ToolState tool_state;    /* Manages the tool state of the scene. */
+    input::ToolState tool_state;    /* Manages the tool state of the scene. */
   public:
     /**
      * @brief Default constructor, copy constructor and move constructor.
@@ -111,7 +111,7 @@ namespace graphick::editor {
      * @param path The underlying path of the element.
      * @return The new element.
      */
-    Entity create_element(const Renderer::Geometry::Path& path);
+    Entity create_element(const geom::Path& path);
 
     /**
      * @brief Deletes an entity.
@@ -152,7 +152,7 @@ namespace graphick::editor {
      * @param deep_search If true, individual vertices and other handles will be checked.
      * @return The entities in the specified rectangle.
      */
-    std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const Math::rect& rect, bool deep_search = false);
+    std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const math::rect& rect, bool deep_search = false);
   private:
     /**
      * @brief Renders the scene.

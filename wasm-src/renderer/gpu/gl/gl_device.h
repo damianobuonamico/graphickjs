@@ -472,7 +472,7 @@ namespace graphick::renderer::GPU::GL {
 
 }
 
-namespace graphick::Renderer::GPU {
+namespace graphick::renderer::GPU {
 
   using DeviceBackend = GL::GLDevice;
   using Texture = GL::GLTexture;

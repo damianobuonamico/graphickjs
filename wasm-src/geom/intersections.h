@@ -303,7 +303,7 @@ namespace graphick::geom {
    */
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline bool does_quadratic_intersect_rect(const QuadraticBezier<T>& quad, const math::Rect<T>& rect) {
-    return !quadratic_rect_intersection_points(quad, rect).empty();
+    return !quadratic_rect_intersections(quad, rect).empty();
   }
 
   /**
@@ -359,7 +359,7 @@ namespace graphick::geom {
    */
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline bool does_cubic_intersect_rect(const CubicBezier<T>& cubic, const math::Rect<T>& rect) {
-    return !cubic_rect_intersection_points(cubic, rect).empty();
+    return !cubic_rect_intersections(cubic, rect).empty();
   }
 
   /**

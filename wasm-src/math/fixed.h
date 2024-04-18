@@ -52,13 +52,13 @@ namespace graphick::math {
 
     constexpr Fixed(const Fixed& x) = default;
 
-    template <typename U, typename = std::enable_if<std::is_base_of<Fixed, U>::value>>
-    constexpr explicit Fixed(U x) :
-      x(static_cast<Base>(x.x)) {}
-
     template <typename U>
     constexpr explicit Fixed(U x) :
       x(static_cast<Base>(x* FRACUNIT)) {}
+
+    template <typename T, typename I, uint8_t F>
+    constexpr explicit Fixed(Fixed<T, I, F> x) :
+      x(static_cast<Base>(x.x)) {}
 
     /* -- Static constructors -- */
 
@@ -128,13 +128,12 @@ namespace graphick::math {
 
     /* -- Type conversion operators -- */
 
-    template <typename U, typename = std::enable_if<std::is_floating_point_v<U>>>
+    template <typename U>
     constexpr explicit operator U() const {
-      return static_cast<U>(this->x) / FRACUNIT;
-    }
+      if constexpr (std::is_floating_point_v<U>) {
+        return static_cast<U>(this->x) / FRACUNIT;
+      }
 
-    template <typename U, typename = std::enable_if<std::is_integral_v<U>>>
-    constexpr explicit operator U() const {
       return static_cast<U>(this->x >> FRACBITS);
     }
 

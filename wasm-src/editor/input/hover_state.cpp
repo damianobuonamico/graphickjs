@@ -94,21 +94,21 @@ namespace graphick::editor::input {
     }
 
     if (path.data().has_in_handle()) {
-      if (path.data().is_point_inside_point(Renderer::Geometry::Path::in_handle_index, position, transform, threshold)) {
+      if (path.data().is_point_inside_point(geom::Path::in_handle_index, position, transform, threshold)) {
         m_type = HoverType::Handle;
         m_segment = -1;
         m_vertex = -1;
-        m_handle = Renderer::Geometry::Path::in_handle_index;
+        m_handle = geom::Path::in_handle_index;
         return;
       }
     }
 
     if (path.data().has_out_handle()) {
-      if (path.data().is_point_inside_point(Renderer::Geometry::Path::out_handle_index, position, transform, threshold)) {
+      if (path.data().is_point_inside_point(geom::Path::out_handle_index, position, transform, threshold)) {
         m_type = HoverType::Handle;
         m_segment = -1;
         m_vertex = -1;
-        m_handle = Renderer::Geometry::Path::out_handle_index;
+        m_handle = geom::Path::out_handle_index;
         return;
       }
     }

@@ -56,13 +56,15 @@ namespace graphick::utils {
     static void clear();
     static void log(const std::string& text);
 
-    static void draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform, const vec4& color);
-    static void draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform);
-    static void draw(const Renderer::Geometry::Contour& contour);
+    static void draw(const renderer::geometry::Contour& contour, const mat2x3& transform, const vec4& color);
+    static void draw(const renderer::geometry::Contour& contour, const mat2x3& transform);
+    static void draw(const renderer::geometry::Contour& contour);
 
+#if 0
     static void draw(const Renderer::Drawable& drawable, const mat2x3& transform, const vec4& color);
     static void draw(const Renderer::Drawable& drawable, const mat2x3& transform);
     static void draw(const Renderer::Drawable& drawable);
+#endif
 
     static void draw(const rect& rect);
 

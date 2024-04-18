@@ -1,7 +1,7 @@
 /**
  * @file selection.cpp
  * @brief This file contains the implementation of the Selection class.
- * 
+ *
  * @todo optimize selection parsing and rendering
  */
 
@@ -27,8 +27,8 @@ namespace graphick::editor {
       const Entity entity = m_scene->get_entity(id);
       const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
 
-      Math::min(selection_rect.min, entity_rect.min, selection_rect.min);
-      Math::max(selection_rect.max, entity_rect.max, selection_rect.max);
+      math::min(selection_rect.min, entity_rect.min, selection_rect.min);
+      math::max(selection_rect.max, entity_rect.max, selection_rect.max);
     }
 
     return selection_rect;

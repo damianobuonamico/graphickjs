@@ -18,6 +18,7 @@
 #include "../../math/math.h"
 #include "../../math/scalar.h"
 
+#include "../../utils/defines.h"
 #include "../../utils/console.h"
 
 namespace graphick::editor::input {
@@ -328,7 +329,7 @@ namespace graphick::editor::input {
     Scene& scene = Editor::scene();
 
     if (keys.ctrl) {
-      scene.viewport.zoom_to(Math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) * scene.viewport.zoom(), pointer.client.position);
+      scene.viewport.zoom_to(math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) * scene.viewport.zoom(), pointer.client.position);
     } else {
       scene.viewport.move(PAN_STEP * vec2{ -delta_x, -delta_y } / scene.viewport.zoom());
     }

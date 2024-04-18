@@ -13,7 +13,8 @@
 #include "../../../math/math.h"
 #include "../../../math/matrix.h"
 
-#include "../../../renderer/geometry/path.h"
+#include "../../../geom/intersections.h"
+#include "../../../geom/path.h"
 
 #include "../../../utils/console.h"
 
@@ -28,11 +29,11 @@ namespace graphick::editor::input {
     bool create_handles, bool keep_in_handle_length, bool translate_in_first,
     int* direction
   ) {
-    const mat2x3 inverse_transform = override_movement ? mat2x3{} : Math::inverse(transform);
+    const mat2x3 inverse_transform = override_movement ? mat2x3{} : math::inverse(transform);
     const vec2 position = inverse_transform * InputManager::pointer.scene.position;
     const vec2 origin = inverse_transform * InputManager::pointer.scene.origin;
 
-    Renderer::Geometry::Path::VertexNode node = path.data().node_at(point_index);
+    geom::Path::VertexNode node = path.data().node_at(point_index);
 
     if (!create_handles && point_index == node.vertex) {
       const vec2 vertex_position = path.data().point_at(node.vertex);
@@ -68,9 +69,9 @@ namespace graphick::editor::input {
         float cos = 0;
 
         if (node.out >= 0) {
-          cos = Math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.out)) - path.data().point_at(static_cast<size_t>(node.vertex)));
+          cos = math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.out)) - path.data().point_at(static_cast<size_t>(node.vertex)));
         } else if (node.vertex > 0) {
-          cos = -Math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.vertex)) - path.data().point_at(static_cast<size_t>(node.vertex - 1)));
+          cos = -math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.vertex)) - path.data().point_at(static_cast<size_t>(node.vertex - 1)));
         }
 
         if (cos > 0) *direction = -1;
@@ -130,10 +131,10 @@ namespace graphick::editor::input {
 
     if (keep_in_handle_length) {
       const vec2 vertex_position = path.data().point_at(node.vertex);
-      const vec2 dir = Math::normalize(vertex_position - path.data().point_at(static_cast<size_t>(node.out)));
+      const vec2 dir = math::normalize(vertex_position - path.data().point_at(static_cast<size_t>(node.out)));
 
-      if (!Math::is_almost_zero(dir)) {
-        const float length = Math::distance(path.data().point_at(static_cast<size_t>(node.in)), vertex_position);
+      if (!math::is_almost_zero(dir)) {
+        const float length = math::distance(path.data().point_at(static_cast<size_t>(node.in)), vertex_position);
         in_position = dir * length + vertex_position;
       } else {
         in_position = path.data().point_at(static_cast<size_t>(node.in));
@@ -163,7 +164,7 @@ namespace graphick::editor::input {
   }
 
   mat2x3 SelectionRect::transform() const {
-    return Math::translate(Math::rotate(Math::scale(mat2x3{ 1.0f }, m_size), m_angle), m_position + m_size / 2.0f);
+    return math::translate(math::rotate(math::scale(mat2x3{ 1.0f }, m_size), m_angle), m_position + m_size / 2.0f);
   }
 
   void SelectionRect::set(const vec2 position) {
@@ -209,7 +210,7 @@ namespace graphick::editor::input {
     for (int i = 0; i < HandleNone; i++) {
       vec2 handle_position = m_handles[i];
 
-      if (Math::is_point_in_ellipse(transformed_position, handle_position, i >= 8 ? handle_size * 2.0f : handle_size)) {
+      if (geom::is_point_in_ellipse(transformed_position, handle_position, i >= 8 ? handle_size * 2.0f : handle_size)) {
 
         switch (i) {
         case N:
@@ -237,7 +238,7 @@ namespace graphick::editor::input {
           m_center = m_handles[NE];
           break;
         default:
-          if (Math::is_point_in_rect(transformed_position, { vec2{ -0.5f }, vec2{ 0.5f } })) return false;
+          if (geom::is_point_in_rect(transformed_position, { vec2{ -0.5f }, vec2{ 0.5f } })) return false;
         }
 
         m_start_bounding_rect = bounding_rect();
@@ -361,8 +362,8 @@ namespace graphick::editor::input {
     vec2 center = m_start_transform * local_center;
 
     rrect new_bounding_rect = {
-      Math::scale(m_start_bounding_rect.min, center, magnitude),
-      Math::scale(m_start_bounding_rect.max, center, magnitude)
+      math::scale(m_start_bounding_rect.min, center, magnitude),
+      math::scale(m_start_bounding_rect.max, center, magnitude)
     };
 
     update_positions(new_bounding_rect);
@@ -379,7 +380,7 @@ namespace graphick::editor::input {
         if (entity.has_component<TransformComponent>()) {
           TransformComponent transform = entity.get_component<TransformComponent>();
 
-          transform.set(Math::scale(m_cache[i], center, magnitude));
+          transform.set(math::scale(m_cache[i], center, magnitude));
         }
       }
 
@@ -388,7 +389,7 @@ namespace graphick::editor::input {
   }
 
   void Manipulator::on_rotate_pointer_move() {
-    float angle = Math::angle(m_handle - m_center, inverse(m_start_transform) * InputManager::pointer.scene.position - m_center);
+    float angle = math::angle(m_handle - m_center, inverse(m_start_transform) * InputManager::pointer.scene.position - m_center);
     float sin_angle = std::sinf(angle);
     float cos_angle = std::cosf(angle);
 
@@ -413,7 +414,7 @@ namespace graphick::editor::input {
         if (entity.has_component<TransformComponent>()) {
           TransformComponent transform = entity.get_component<TransformComponent>();
 
-          transform.set(Math::rotate(m_cache[i], center, sin_angle, cos_angle));
+          transform.set(math::rotate(m_cache[i], center, sin_angle, cos_angle));
         }
       }
 

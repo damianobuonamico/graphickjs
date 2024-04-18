@@ -56,7 +56,10 @@ namespace graphick::geom {
 
     QuadraticBezier() = default;
 
-    constexpr QuadraticBezier(const QuadraticBezier<T>& l) = default;
+    constexpr QuadraticBezier(const QuadraticBezier<T>& q) :
+      p0(q.p0),
+      p1(q.p1),
+      p2(q.p2) {}
 
     constexpr QuadraticBezier(const math::Vec2<T> p0, const math::Vec2<T> p2) :
       p0(p0),

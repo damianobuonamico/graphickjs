@@ -12,10 +12,10 @@
 
 #include "../editor.h"
 
-#include "../../renderer/geometry/path.h"
-
 #include "../../math/matrix.h"
 #include "../../math/math.h"
+
+#include "../../geom/path.h"
 
 #include "../../utils/console.h"  
 
@@ -133,7 +133,7 @@ namespace graphick::editor {
   void PathComponent::translate(const size_t point_index, const vec2 delta) {
     GK_TOTAL("PathComponent::translate");
 
-    if (Math::is_almost_zero(delta)) return;
+    if (math::is_almost_zero(delta)) return;
 
     io::EncodedData backup, data;
 
@@ -249,17 +249,17 @@ namespace graphick::editor {
   TransformComponentData::TransformComponentData(io::DataDecoder& decoder) : matrix(decoder.mat2x3()) {}
 
   mat2x3 TransformComponent::inverse() const {
-    return Math::inverse(m_data->matrix);
+    return math::inverse(m_data->matrix);
   }
 
   rect TransformComponent::bounding_rect() const {
     if (!m_path_ptr) {
-      return Math::translation(m_data->matrix);
+      return math::translation(m_data->matrix);
     }
 
-    const float angle = Math::rotation(m_data->matrix);
+    const float angle = math::rotation(m_data->matrix);
 
-    if (Math::is_almost_zero(std::fmodf(angle, MATH_F_TWO_PI))) {
+    if (math::is_almost_zero(std::fmodf(angle, math::two_pi<float>))) {
       return m_data->matrix * m_path_ptr->bounding_rect();
     } else {
       return m_path_ptr->bounding_rect(m_data->matrix);
@@ -268,7 +268,7 @@ namespace graphick::editor {
 
   rect TransformComponent::approx_bounding_rect() const {
     if (!m_path_ptr) {
-      return Math::translation(m_data->matrix);
+      return math::translation(m_data->matrix);
     }
 
     const rect path_rect = m_path_ptr->approx_bounding_rect();
@@ -283,7 +283,7 @@ namespace graphick::editor {
   void TransformComponent::translate(const vec2 delta) {
     GK_TOTAL("TransformComponent::translate");
 
-    if (Math::is_almost_zero(delta)) return;
+    if (math::is_almost_zero(delta)) return;
 
     io::EncodedData new_data;
     io::EncodedData backup_data;
@@ -291,7 +291,7 @@ namespace graphick::editor {
     encode(backup_data);
 
     new_data.component_id(component_id)
-      .mat2x3(Math::translate(m_data->matrix, delta));
+      .mat2x3(math::translate(m_data->matrix, delta));
 
     m_entity->scene()->history.modify(
       m_entity->id(),
@@ -303,7 +303,7 @@ namespace graphick::editor {
   void TransformComponent::scale(const vec2 delta) {
     GK_TOTAL("TransformComponent::scale");
 
-    if (Math::is_almost_zero(delta)) return;
+    if (math::is_almost_zero(delta)) return;
 
     io::EncodedData new_data;
     io::EncodedData backup_data;
@@ -311,7 +311,7 @@ namespace graphick::editor {
     encode(backup_data);
 
     new_data.component_id(component_id)
-      .mat2x3(Math::scale(m_data->matrix, delta));
+      .mat2x3(math::scale(m_data->matrix, delta));
 
     m_entity->scene()->history.modify(
       m_entity->id(),
@@ -323,7 +323,7 @@ namespace graphick::editor {
   void TransformComponent::rotate(const float angle) {
     GK_TOTAL("TransformComponent::rotate");
 
-    if (Math::is_almost_zero(angle)) return;
+    if (math::is_almost_zero(angle)) return;
 
     io::EncodedData new_data;
     io::EncodedData backup_data;
@@ -331,7 +331,7 @@ namespace graphick::editor {
     encode(backup_data);
 
     new_data.component_id(component_id)
-      .mat2x3(Math::rotate(m_data->matrix, angle));
+      .mat2x3(math::rotate(m_data->matrix, angle));
 
     m_entity->scene()->history.modify(
       m_entity->id(),

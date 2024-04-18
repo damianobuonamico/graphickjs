@@ -73,18 +73,18 @@ namespace graphick::Math {
     const vec2 p1 = c.p0 + (c.p1 - c.p0) * 1.5;
     const vec2 p2 = c.p3 + (c.p2 - c.p3) * 1.5;
 
-    return Math::lerp(p1, p2, t);
+    return math::lerp(p1, p2, t);
   }
 
   static std::pair<CubicBezier, CubicBezier> split(const CubicBezier& c, const float t) {
-    vec2 p = Math::bezier(c.p0, c.p1, c.p2, c.p3, t);
+    vec2 p = math::bezier(c.p0, c.p1, c.p2, c.p3, t);
 
-    vec2 q0 = Math::lerp(c.p0, c.p1, t);
-    vec2 q1 = Math::lerp(c.p1, c.p2, t);
-    vec2 q2 = Math::lerp(c.p2, c.p3, t);
+    vec2 q0 = math::lerp(c.p0, c.p1, t);
+    vec2 q1 = math::lerp(c.p1, c.p2, t);
+    vec2 q2 = math::lerp(c.p2, c.p3, t);
 
-    vec2 r0 = Math::lerp(q0, q1, t);
-    vec2 r1 = Math::lerp(q1, q2, t);
+    vec2 r0 = math::lerp(q0, q1, t);
+    vec2 r1 = math::lerp(q1, q2, t);
 
     return {
       { c.p0, q0, r0, p },
@@ -125,13 +125,13 @@ namespace graphick::Math {
   ///
   /// Rust port of cu2qu [cubic_farthest_fit_inside](https://github.com/fonttools/fonttools/blob/3b9a73ff8379ab49d3ce35aaaaf04b3a7d9d1655/Lib/fontTools/cu2qu/cu2qu.py#L281)
   static bool fit_inside(const CubicBezier& c, const float distance) {
-    if (Math::squared_length(c.p2) <= distance * distance && Math::squared_length(c.p1) <= distance * distance) {
+    if (math::squared_length(c.p2) <= distance * distance && math::squared_length(c.p1) <= distance * distance) {
       return true;
     }
 
     const vec2 mid = (c.p0 + 3.0f * (c.p1 + c.p2) + c.p3) * 0.125f;
 
-    if (Math::squared_length(mid) > distance * distance) {
+    if (math::squared_length(mid) > distance * distance) {
       return false;
     }
 
@@ -144,13 +144,13 @@ namespace graphick::Math {
   static std::optional<vec2> crossing_point(rect& l, rect& other) {
     const vec2 ab = l.max - l.min;
     const vec2 cd = other.max - other.min;
-    const float pcd = Math::cross(ab, cd);
+    const float pcd = math::cross(ab, cd);
 
     if (pcd == 0.0f) {
       return std::nullopt;
     }
 
-    const float h = Math::cross(ab, (l.min - other.min) / pcd);
+    const float h = math::cross(ab, (l.min - other.min) / pcd);
     return other.min + cd * h;
   }
 
@@ -158,8 +158,8 @@ namespace graphick::Math {
     std::optional<vec2> q1 = crossing_point(rect{ c.p0, c.p1 }, rect{ c.p2, c.p3 });
 
     if (q1.has_value()) {
-      const vec2 c1 = Math::lerp(c.p0, q1.value(), 2.0f / 3.0f);
-      const vec2 c2 = Math::lerp(c.p3, q1.value(), 2.0f / 3.0f);
+      const vec2 c1 = math::lerp(c.p0, q1.value(), 2.0f / 3.0f);
+      const vec2 c2 = math::lerp(c.p3, q1.value(), 2.0f / 3.0f);
 
       if (!fit_inside(CubicBezier{ vec2{ 0.0f, 0.0f }, c1 - c.p1, c2 - c.p2, vec2{ 0.0f, 0.0f } }, accuracy)) {
         return {};
@@ -195,7 +195,7 @@ namespace graphick::Math {
         next_q1 = approx_quad_control(next_cubic, static_cast<float>(i) / static_cast<float>(n - 1));
 
         spline.push_back(next_q1);
-        q2 = Math::midpoint(q1, next_q1);
+        q2 = math::midpoint(q1, next_q1);
       } else {
         q2 = current_cubic.p3;
       }
@@ -204,12 +204,12 @@ namespace graphick::Math {
       d1 = q2 - current_cubic.p3;
 
       if (
-        Math::length(d1) > accuracy ||
+        math::length(d1) > accuracy ||
         !fit_inside(
           CubicBezier{
             d0,
-            Math::lerp(q0, q1, 2.0f / 3.0f) - current_cubic.p1,
-            Math::lerp(q2, q1, 2.0f / 3.0f) - current_cubic.p2,
+            math::lerp(q0, q1, 2.0f / 3.0f) - current_cubic.p1,
+            math::lerp(q2, q1, 2.0f / 3.0f) - current_cubic.p2,
             d1
           },
           accuracy
@@ -243,7 +243,7 @@ namespace graphick::Math {
     const vec2 p1x2 = 3.0f * c.p1 - c.p0;
     const vec2 p2x2 = 3.0f * c.p2 - c.p3;
 
-    const float err = Math::squared_length(p2x2 - p1x2);
+    const float err = math::squared_length(p2x2 - p1x2);
     const int n = std::max(1, static_cast<int>(std::ceilf(std::powf(err / max_hypot2, 1.0f / 6.0f))));
 
     return approx_spline_n(c, n, accuracy);
@@ -251,10 +251,10 @@ namespace graphick::Math {
 #endif
 
   static inline float cubic_to_quadratic_distance_at_t(const CubicBezier& cubic, const vec2 q, const float t) {
-    const vec2 p_c = Math::bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t);
-    const vec2 p_q = Math::quadratic(cubic.p0, q, cubic.p3, t);
+    const vec2 p_c = math::bezier(cubic.p0, cubic.p1, cubic.p2, cubic.p3, t);
+    const vec2 p_q = math::quadratic(cubic.p0, q, cubic.p3, t);
 
-    return Math::squared_distance(p_c, p_q);
+    return math::squared_distance(p_c, p_q);
   }
 
   struct ErrorParameter {
@@ -278,9 +278,9 @@ namespace graphick::Math {
     //TODO: d should always be zero
     const float d = d_c.x - c_q.x + d_c.y - c_q.y;
 
-    if (Math::is_almost_zero(a)) {
-      if (Math::is_almost_zero(b)) {
-        if (Math::is_almost_zero(c)) {
+    if (math::is_almost_zero(a)) {
+      if (math::is_almost_zero(b)) {
+        if (math::is_almost_zero(c)) {
           // TODO: implement
           // return -d / 2.0f;
           return { 0.0f, 0.0f };
@@ -288,7 +288,7 @@ namespace graphick::Math {
 
         const float t = -d / c;
 
-        if (!Math::is_normalized(t, false)) return { 0.0f, 0.0f };
+        if (!math::is_normalized(t, false)) return { 0.0f, 0.0f };
 
         return { t, cubic_to_quadratic_distance_at_t(cubic, q, t) };
       } else {
@@ -303,11 +303,11 @@ namespace graphick::Math {
           float d1 = 0.0f;
           float d2 = 0.0f;
 
-          if (Math::is_normalized(t1, false)) {
+          if (math::is_normalized(t1, false)) {
             d1 = cubic_to_quadratic_distance_at_t(cubic, q, t1);
           }
 
-          if (Math::is_normalized(t2, false)) {
+          if (math::is_normalized(t2, false)) {
             d2 = cubic_to_quadratic_distance_at_t(cubic, q, t2);
           }
 
@@ -320,7 +320,7 @@ namespace graphick::Math {
 
         const float t = -c / (2.0f * b);
 
-        if (!Math::is_normalized(t, false)) return { 0.0f, 0.0f };
+        if (!math::is_normalized(t, false)) return { 0.0f, 0.0f };
 
         return { t, cubic_to_quadratic_distance_at_t(cubic, q, t) };
       }
@@ -345,11 +345,11 @@ namespace graphick::Math {
       t1 = (-b + det3) / (3.0f * a);
       t2 = (-b - det3) / (3.0f * a);
 
-      if (Math::is_normalized(t1, false)) {
+      if (math::is_normalized(t1, false)) {
         d1 = cubic_to_quadratic_distance_at_t(cubic, q, t1);
       }
 
-      if (Math::is_normalized(t2, false)) {
+      if (math::is_normalized(t2, false)) {
         d2 = cubic_to_quadratic_distance_at_t(cubic, q, t2);
       }
     }
@@ -359,7 +359,7 @@ namespace graphick::Math {
 
       t3 = coeff2 / (2.0f * std::cbrtf(2.0f) * a) + std::cbrtf(2.0f) * det1 / (3.0f * a * coeff2) - b / (3.0f * a);
 
-      if (Math::is_normalized(t3, false)) {
+      if (math::is_normalized(t3, false)) {
         d3 = cubic_to_quadratic_distance_at_t(cubic, q, t3);
       }
     }
@@ -383,14 +383,14 @@ namespace graphick::Math {
   static void approx_monotonic_cubic(const CubicBezier& c, const float tolerance, std::vector<vec2>& sink) {
     vec2 q;
 
-    if (Math::is_almost_equal(c.p0, c.p1)) {
+    if (math::is_almost_equal(c.p0, c.p1)) {
       q = c.p2;
 
       // sink.push_back(c.p2);
       // sink.push_back(c.p3);
 
       // return;
-    } else if (Math::is_almost_equal(c.p2, c.p3)) {
+    } else if (math::is_almost_equal(c.p2, c.p3)) {
       q = c.p1;
 
       // sink.push_back(c.p1);
@@ -400,13 +400,13 @@ namespace graphick::Math {
     } else {
       float d = (c.p0.x - c.p1.x) * (c.p2.y - c.p3.y) - (c.p0.y - c.p1.y) * (c.p2.x - c.p3.x);
 
-      if (Math::is_almost_zero(d, GK_POINT_EPSILON)) {
+      if (math::is_almost_zero(d, GK_POINT_EPSILON)) {
         const vec2 p1 = (c.p1 * 3.0 - c.p0) * 0.5;
         const vec2 p2 = (c.p2 * 3.0 - c.p3) * 0.5;
 
-        q = Math::midpoint(p1, p2);
+        q = math::midpoint(p1, p2);
 
-        // sink.push_back(Math::midpoint(p1, p2));
+        // sink.push_back(math::midpoint(p1, p2));
         // sink.push_back(c.p3);
 
         // return;
@@ -423,20 +423,20 @@ namespace graphick::Math {
 
 #if 0
     const ErrorParameter max_error = cubic_to_single_quadratic_max_error(c, q);
-    const float max_size = std::max(Math::length(c.p3 - c.p0), Math::length(c.p3 - q));
+    const float max_size = std::max(math::length(c.p3 - c.p0), math::length(c.p3 - q));
 
-    const vec2 d = Math::cubic_derivative(c.p0, c.p1, c.p2, c.p3, max_error.t);
-    const vec2 dd = Math::cubic_second_derivative(c.p0, c.p1, c.p2, c.p3, max_error.t);
+    const vec2 d = math::cubic_derivative(c.p0, c.p1, c.p2, c.p3, max_error.t);
+    const vec2 dd = math::cubic_second_derivative(c.p0, c.p1, c.p2, c.p3, max_error.t);
     const float numerator = d.x * dd.y - d.y * dd.x;
     const float denominator = std::powf(d.x * d.x + d.y * d.y, 1.5f);
 
-    float curvature = Math::is_almost_zero(denominator) ? 100.0f : std::fabsf(numerator / denominator) * 10.0f;
+    float curvature = math::is_almost_zero(denominator) ? 100.0f : std::fabsf(numerator / denominator) * 10.0f;
 
     curvature = std::clamp(curvature, 0.001f, 100.0f);
-    // const float curvature = Math::is_almost_zero(denominator) ? 100.0f : std::clamp(0.01f, curvature, 100.0f);
+    // const float curvature = math::is_almost_zero(denominator) ? 100.0f : std::clamp(0.01f, curvature, 100.0f);
 
-    // const vec2 p_c = Math::bezier(c.p0, c.p1, c.p2, c.p3, max_error_t);
-    // const vec2 p_q = Math::quadratic(c.p0, q, c.p3, max_error_t);
+    // const vec2 p_c = math::bezier(c.p0, c.p1, c.p2, c.p3, max_error_t);
+    // const vec2 p_q = math::quadratic(c.p0, q, c.p3, max_error_t);
 
     // TODO: maybe normalize error based on the length of the curve
     // if (max_error.e / std::max(max_size / 10.0f, GK_EPSILON) <= tolerance * tolerance) {
@@ -523,8 +523,8 @@ namespace graphick::Math {
 
   static float min_distance_sq_to_line(const vec2 point, const vec2 p1, const vec2 p2) {
     const vec2 p1p2 = p2 - p1;
-    const float d = Math::dot(point - p1, p1p2);
-    const float len_sq = Math::squared_length(p1p2);
+    const float d = math::dot(point - p1, p1p2);
+    const float len_sq = math::squared_length(p1p2);
 
     float param = 0;
     vec2 diff;
@@ -539,7 +539,7 @@ namespace graphick::Math {
       diff = point - p1 + p1p2 * param;
     }
 
-    return Math::squared_length(diff);
+    return math::squared_length(diff);
   }
 
   static bool _is_segment_approximation_close(const CubicBezier& c, const float t0, const float t1, const QuadraticBezier& q, const float tolerance) {
@@ -662,12 +662,12 @@ namespace graphick::Math {
 
     // To get the inflections C'(t) cross C''(t) = at^2 + bt + c = 0 needs to be solved for 't'.
     // The first cooefficient of the quadratic formula is also the denominator.
-    const float den = Math::cross(B, A);
+    const float den = math::cross(B, A);
 
     if (den != 0.0f) {
       // Two roots might exist, solve with quadratic formula ('tl' is real).
-      float tc = Math::cross(A, C) / den;
-      float tl = tc * tc + Math::cross(B, C) / den;
+      float tc = math::cross(A, C) / den;
+      float tl = tc * tc + math::cross(B, C) / den;
 
       // If 'tl < 0' there are two complex roots (no need to solve).
       // If 'tl == 0' there is a real double root at tc (cusp case).
@@ -685,7 +685,7 @@ namespace graphick::Math {
       }
     } else {
       // One real root might exist, solve linear case ('tl' is NaN).
-      float tc = -0.5f * Math::cross(C, B) / Math::cross(C, A);
+      float tc = -0.5f * math::cross(C, B) / math::cross(C, A);
 
       if (tc > GK_POINT_EPSILON && tc < 1.0f - GK_POINT_EPSILON)
         extrema.push_back(tc);
@@ -716,12 +716,12 @@ namespace graphick::Math {
 
     // To get the inflections C'(t) cross C''(t) = at^2 + bt + c = 0 needs to be solved for 't'.
     // The first cooefficient of the quadratic formula is also the denominator.
-    const float den = Math::cross(B, A);
+    const float den = math::cross(B, A);
 
     if (den != 0.0f) {
       // Two roots might exist, solve with quadratic formula ('tl' is real).
-      float tc = Math::cross(A, C) / den;
-      float tl = tc * tc + Math::cross(B, C) / den;
+      float tc = math::cross(A, C) / den;
+      float tl = tc * tc + math::cross(B, C) / den;
 
       // If 'tl < 0' there are two complex roots (no need to solve).
       // If 'tl == 0' there is a real double root at tc (cusp case).
@@ -739,7 +739,7 @@ namespace graphick::Math {
       }
     } else {
       // One real root might exist, solve linear case ('tl' is NaN).
-      float tc = -0.5f * Math::cross(C, B) / Math::cross(C, A);
+      float tc = -0.5f * math::cross(C, B) / math::cross(C, A);
 
       if (tc > GK_POINT_EPSILON && tc < 1.0f - GK_POINT_EPSILON)
         extrema.push_back(tc);
@@ -772,13 +772,13 @@ namespace graphick::Math {
     const vec2 p1 = 0.5f * (c.p1 * 3.0f - c.p0);
     const vec2 p2 = 0.5f * (c.p2 * 3.0f - c.p3);
 
-    return Math::midpoint(p1, p2);
+    return math::midpoint(p1, p2);
   }
 
   static int number_of_quadratics(const CubicBezier& c, const float tolerance) {
     const vec2 p = c.p0 - 3.0f * c.p1 + 3.0f * c.p2 - c.p3;
 
-    const float err = Math::squared_length(p);
+    const float err = math::squared_length(p);
     const int n = std::max(1, static_cast<int>(std::ceilf(std::powf(err / (432.0f * tolerance * tolerance), 1.0f / 6.0f))));
 
     return n;
@@ -794,12 +794,12 @@ namespace graphick::Math {
 
     // To get the inflections C'(t) cross C''(t) = at^2 + bt + c = 0 needs to be solved for 't'.
     // The first cooefficient of the quadratic formula is also the denominator.
-    const float den = Math::cross(B, A);
+    const float den = math::cross(B, A);
 
     if (den != 0.0f) {
       // Two roots might exist, solve with quadratic formula ('tl' is real).
-      float tc = Math::cross(A, C) / den;
-      float tl = tc * tc + Math::cross(B, C) / den;
+      float tc = math::cross(A, C) / den;
+      float tl = tc * tc + math::cross(B, C) / den;
 
       // If 'tl < 0' there are two complex roots (no need to solve).
       // If 'tl == 0' there is a real double root at tc (cusp case).
@@ -817,7 +817,7 @@ namespace graphick::Math {
       }
     } else {
       // One real root might exist, solve linear case ('tl' is NaN).
-      float tc = -0.5f * Math::cross(C, B) / Math::cross(C, A);
+      float tc = -0.5f * math::cross(C, B) / math::cross(C, A);
 
       if (tc > GK_POINT_EPSILON && tc < 1.0f - GK_POINT_EPSILON)
         extrema.push_back(tc);
