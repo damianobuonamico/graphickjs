@@ -11,7 +11,7 @@
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
 
-#include "../../geom/quadratic_path.h"
+#include "../../path/quadratic_path.h"
 
 #include <vector>
 
@@ -43,8 +43,8 @@ namespace graphick::renderer::geometry {
      * @struct StrokeOutline
      */
     struct StrokeOutline {
-      geom::QuadraticPath outer;    /* The outer outline of the stroke. */
-      geom::QuadraticPath inner;    /* The inner outline of the stroke, in reverse order. */
+      path::QuadraticPath outer;    /* The outer outline of the stroke. */
+      path::QuadraticPath inner;    /* The inner outline of the stroke, in reverse order. */
     };
   public:
     /**
@@ -54,7 +54,7 @@ namespace graphick::renderer::geometry {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    PathBuilder(const geom::QuadraticPath& path, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    PathBuilder(const path::QuadraticPath& path, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Default destructor.
@@ -98,7 +98,7 @@ namespace graphick::renderer::geometry {
      */
     void flatten_unclipped(const float tolerance, std::vector<vec4>& sink) const;
   private:
-    const geom::QuadraticPath& m_path;    /* The path to process. */
+    const path::QuadraticPath& m_path;    /* The path to process. */
     const mat2x3& m_transform;      /* The transformation matrix to apply to the path. */
     const rect m_bounding_rect;     /* The bounding rectangle of the path. */
   };

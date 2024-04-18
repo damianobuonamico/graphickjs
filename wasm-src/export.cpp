@@ -86,7 +86,7 @@ extern "C" {
   void EMSCRIPTEN_KEEPALIVE init() {
     graphick::editor::Editor::init();
 
-    graphick::geom::Path path;
+    graphick::path::Path path;
 
     path.move_to({ 0.0f, 0.0f });
     path.quadratic_to({ 100.0f, 100.0f }, { 200.0f, 000.0f });

@@ -36,25 +36,21 @@ namespace graphick::renderer::GPU {
   struct LineProgram {
     Program program;               /* The shader program. */
     Uniform vp_uniform;            /* The view projection uniform. */
-    Uniform color_uniform;         /* The color uniform. */
-    Uniform line_width_uniform;    /* The line width uniform. */
     Uniform zoom_uniform;          /* The zoom uniform. */
 
     LineProgram();
   };
 
   /**
-   * @brief Square shader program.
+   * @brief Rect shader program.
    *
-   * @struct SquareProgram
+   * @struct RectProgram
    */
-  struct SquareProgram {
+  struct RectProgram {
     Program program;          /* The shader program. */
     Uniform vp_uniform;       /* The view projection uniform. */
-    Uniform color_uniform;    /* The color uniform. */
-    Uniform size_uniform;     /* The size uniform. */
 
-    SquareProgram();
+    RectProgram();
   };
 
   /**
@@ -65,8 +61,6 @@ namespace graphick::renderer::GPU {
   struct CircleProgram {
     Program program;           /* The shader program. */
     Uniform vp_uniform;        /* The view projection uniform. */
-    Uniform color_uniform;     /* The color uniform. */
-    Uniform radius_uniform;    /* The radius uniform. */
     Uniform zoom_uniform;      /* The zoom uniform. */
 
     CircleProgram();
@@ -80,7 +74,7 @@ namespace graphick::renderer::GPU {
   struct Programs {
     PathProgram path_program;        /* The path shader program. */
     LineProgram line_program;        /* The line shader program. */
-    SquareProgram square_program;    /* The square shader program. */
+    RectProgram rect_program;    /* The square shader program. */
     CircleProgram circle_program;    /* The circle shader program. */
   };
 
@@ -116,15 +110,15 @@ namespace graphick::renderer::GPU {
 
 
   /**
-   * @brief Vertex array to use with SquareProgram.
+   * @brief Vertex array to use with RectProgram.
    *
-   * @struct SquareVertexArray
+   * @struct RectVertexArray
    */
-  struct SquareVertexArray {
+  struct RectVertexArray {
     std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
 
-    SquareVertexArray(
-      const SquareProgram& program,
+    RectVertexArray(
+      const RectProgram& program,
       const Buffer& instance_buffer,
       const Buffer& vertex_buffer
     );

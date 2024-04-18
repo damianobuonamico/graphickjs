@@ -7,19 +7,22 @@
 
 #pragma once
 
-#include "renderer_data_new.h"
+#include "renderer_data.h"
 #include "properties.h"
 
-#include "gpu/shaders_new.h"
+#include "gpu/shaders.h"
 
-#include "../geom/quadratic_path.h"
+#include "../path/quadratic_path.h"
+#include "../geom/cubic_bezier.h"
 
 #include "../math/mat2x3.h"
 #include "../math/mat4.h"
 
+#include "../utils/defines.h"
+
 #include <unordered_set>
 
-namespace graphick::geom {
+namespace graphick::path {
   class Path;
 };
 
@@ -77,7 +80,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const geom::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const path::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws a QuadraticPath with the provided Stroke properties.
@@ -87,7 +90,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const geom::QuadraticPath& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const path::QuadraticPath& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws a QuadraticPath with the provided Fill properties.
@@ -97,7 +100,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const geom::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const path::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the outline of a QuadraticPath.
@@ -108,7 +111,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const geom::QuadraticPath& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const path::QuadraticPath& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the outline of a Path.
@@ -119,7 +122,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const geom::Path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const path::Path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the vertices of a Path's outline.
@@ -130,7 +133,11 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline_vertices(const geom::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline_vertices(const path::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+
+#ifdef GK_DEBUG
+    static void draw_debug_overlays(const geom::cubic_bezier& cubic);
+#endif
   private:
     /**
      * @brief Default constructor and destructor.
@@ -152,19 +159,22 @@ namespace graphick::renderer {
      */
     void flush_meshes();
   private:
-    GPU::Programs m_programs;                        /* The shader programs to use. */
+    GPU::Programs m_programs;                            /* The shader programs to use. */
 
-    Viewport m_viewport;                             /* The viewport to render to. */
-    dmat4 m_vp_matrix;                               /* The view-projection matrix. */
+    Viewport m_viewport;                                 /* The viewport to render to. */
+    dmat4 m_vp_matrix;                                   /* The view-projection matrix. */
 
-    std::vector<mat4> m_transforms;                  /* The model-view-projection matrices of the paths. */
+    std::vector<mat4> m_transforms;                      /* The model-view-projection matrices of the paths. */
 
-    PathInstancedData m_path_instances;              /* The path instances to render. */
+    PathInstancedData m_path_instances;                  /* The path instances to render. */
 
-    InstancedData<vec4> m_line_instances;            /* The line instances to render. */
-    InstancedData<vec2> m_handle_instances;          /* The handle instances to render. */
-    InstancedData<vec2> m_vertex_instances;          /* The vertex instances to render. */
-    InstancedData<vec2> m_white_vertex_instances;    /* The vertex instances to render. */
+    InstancedData<LineInstance> m_line_instances;        /* The line instances to render. */
+    InstancedData<CircleInstance> m_circle_instances;    /* The handle instances to render. */
+    InstancedData<RectInstance> m_rect_instances;        /* The rect instances to render. */
+    // InstancedData<vec2> m_vertex_instances;          /* The vertex instances to render. */
+    // InstancedData<vec2> m_white_vertex_instances;    /* The vertex instances to render. */
+
+    UIOptions m_ui_options;                          /* The UI options (i.e. handle size, colors, etc.). */
   private:
     static Renderer* s_instance;    /* The singleton instance of the renderer. */
   };

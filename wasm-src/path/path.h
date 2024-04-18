@@ -1,5 +1,5 @@
 /**
- * @file path.h
+ * @file path/path.h
  * @brief Path class definition
  */
 
@@ -24,9 +24,7 @@ namespace graphick::renderer {
   struct Stroke;
 };
 
-// TODO: move in path namespace
-
-namespace graphick::geom {
+namespace graphick::path {
 
   /**
    * @brief The Path class represents the path representation used throughout the graphick editor.

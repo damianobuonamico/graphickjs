@@ -12,25 +12,29 @@ namespace graphick::geom {
 
   /* -- Approximate Bounding Rectangle -- */
 
+  template <>
   math::Rect<float> QuadraticBezier<float>::approx_bounding_rect() const {
     return geom::approx_bounding_rect(*this);
   }
 
+  template <>
   math::Rect<double> QuadraticBezier<double>::approx_bounding_rect() const {
     return geom::approx_bounding_rect(*this);
   }
 
+  template <>
   math::Rect<float> CubicBezier<float>::approx_bounding_rect() const {
     return geom::approx_bounding_rect(*this);
   }
 
+  template <>
   math::Rect<double> CubicBezier<double>::approx_bounding_rect() const {
     return geom::approx_bounding_rect(*this);
   }
 
   /* -- Bounding Rectangle -- */
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename _>
   math::Rect<T> bounding_rect(const QuadraticBezier<T>& quad) {
     math::Rect<T> bounds = math::Rect<T>::from_vectors({ quad.p0, quad.p2 });
 
@@ -52,15 +56,17 @@ namespace graphick::geom {
     return bounds;
   }
 
+  template <>
   math::Rect<float> QuadraticBezier<float>::bounding_rect() const {
     return geom::bounding_rect(*this);
   }
 
+  template <>
   math::Rect<double> QuadraticBezier<double>::bounding_rect() const {
     return geom::bounding_rect(*this);
   }
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename _>
   math::Rect<T> bounding_rect(const CubicBezier<T>& cubic) {
     math::Rect<T> bounds = math::Rect<T>::from_vectors({ cubic.p0, cubic.p3 });
 
@@ -101,17 +107,19 @@ namespace graphick::geom {
     return bounds;
   }
 
+  template <>
   math::Rect<float> CubicBezier<float>::bounding_rect() const {
     return geom::bounding_rect(*this);
   }
 
+  template <>
   math::Rect<double> CubicBezier<double>::bounding_rect() const {
     return geom::bounding_rect(*this);
   }
 
   /* -- Curve Splitting -- */
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename _>
   inline std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T>& quad, const T t) {
     const math::Vec2<T> q = math::lerp(quad.p0, quad.p1, t);
     const math::Vec2<T> r = math::lerp(quad.p1, quad.p2, t);
@@ -124,7 +132,7 @@ namespace graphick::geom {
     };
   }
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename _>
   std::array<QuadraticBezier<T>, 3> split(const QuadraticBezier<T>& quad, const T t1, const T t2) {
     const math::Vec2<T> q1 = math::lerp(quad.p0, quad.p1, t1);
     const math::Vec2<T> q2 = math::lerp(quad.p0, quad.p1, t2);
@@ -144,7 +152,7 @@ namespace graphick::geom {
     };
   }
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename _>
   std::array<CubicBezier<T>, 2> split(const CubicBezier<T>& cubic, const T t) {
     const math::Vec2<T> q = math::lerp(cubic.p0, cubic.p1, t);
     const math::Vec2<T> r = math::lerp(cubic.p1, cubic.p2, t);
@@ -161,7 +169,7 @@ namespace graphick::geom {
     };
   }
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename _>
   std::array<CubicBezier<T>, 3> split(const CubicBezier<T>& cubic, const T t1, const T t2) {
     const math::Vec2<T> q1 = math::lerp(cubic.p0, cubic.p1, t1);
     const math::Vec2<T> q2 = math::lerp(cubic.p0, cubic.p1, t2);
@@ -193,7 +201,7 @@ namespace graphick::geom {
 
   /* -- Curve Extraction -- */
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename _>
   QuadraticBezier<T> extract(const QuadraticBezier<T>& quad, const T t1, const T t2) {
     const math::Vec2<T> q1 = math::lerp(quad.p0, quad.p1, t1);
     const math::Vec2<T> q2 = math::lerp(quad.p0, quad.p1, t2);
@@ -209,7 +217,7 @@ namespace graphick::geom {
     return QuadraticBezier<T>(p1, q, p2);
   }
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename _>
   CubicBezier<T> extract(const CubicBezier<T>& cubic, const T t1, const T t2) {
     const math::Vec2<T> q1 = math::lerp(cubic.p0, cubic.p1, t1);
     const math::Vec2<T> q2 = math::lerp(cubic.p0, cubic.p1, t2);

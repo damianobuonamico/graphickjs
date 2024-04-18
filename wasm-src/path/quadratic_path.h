@@ -1,5 +1,5 @@
 /**
- * @file geom/quadratic_path.h
+ * @file path/quadratic_path.h
  * @brief Contains the definition of the QuadraticPath struct.
  *
  * @todo when new renderer is implemented, remove old one and unify namespaces with lower case convention.
@@ -12,7 +12,7 @@
 
 #include <vector>
 
-namespace graphick::geom {
+namespace graphick::path {
 
   /**
    * @brief A quadratic path is a series of control points that are connected by quadratic curves.

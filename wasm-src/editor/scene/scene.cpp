@@ -19,13 +19,13 @@
 #include "../input/input_manager.h"
 #include "../input/tools/pen_tool.h"
 
-#include "../../renderer/renderer_new.h"
+#include "../../renderer/renderer.h"
 
 #include "../../math/matrix.h"
 #include "../../math/math.h"
 
 #include "../../geom/intersections.h"
-#include "../../geom/path.h"
+#include "../../path/path.h"
 
 #include "../../utils/debugger.h"
 #include "../../utils/console.h"
@@ -141,7 +141,7 @@ namespace graphick::editor {
     return get_entity(id);
   }
 
-  Entity Scene::create_element(const geom::Path& path) {
+  Entity Scene::create_element(const path::Path& path) {
     io::EncodedData data;
     uuid id = uuid();
 
@@ -341,151 +341,160 @@ namespace graphick::editor {
 
     bool should_rehydrate = true;
 
-    {
-      OPTICK_EVENT("Render Entities");
+    auto& selected = selection.selected();
+    auto& temp_selected = selection.temp_selected();
 
-      auto& selected = selection.selected();
-      auto& temp_selected = selection.temp_selected();
+    bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
 
-      bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
+    for (auto it = m_order.begin(); it != m_order.end(); it++) {
+      const Entity entity = { *it, const_cast<Scene*>(this) };
+      if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
 
-      for (auto it = m_order.begin(); it != m_order.end(); it++) {
-        const Entity entity = { *it, const_cast<Scene*>(this) };
-        if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
+      const uuid id = entity.id();
+      const path::Path& path = entity.get_component<PathComponent>().data();
+      const TransformComponent transform = entity.get_component<TransformComponent>();
 
-        const uuid id = entity.id();
-        const geom::Path& path = entity.get_component<PathComponent>().data();
-        const TransformComponent transform = entity.get_component<TransformComponent>();
+      if (!has_entity(id)) return;
 
-        if (!has_entity(id)) return;
+      if (should_rehydrate) {
+        // path.rehydrate_cache();
+      }
 
-        if (should_rehydrate) {
-          // path.rehydrate_cache();
-        }
+      bool has_stroke = m_registry.all_of<StrokeComponent::Data>(*it);
+      std::optional<StrokeComponent::Data> stroke = has_stroke ? std::optional<StrokeComponent::Data>(m_registry.get<StrokeComponent::Data>(*it)) : std::nullopt;
 
-        bool has_stroke = m_registry.all_of<StrokeComponent::Data>(*it);
-        std::optional<StrokeComponent::Data> stroke = has_stroke ? std::optional<StrokeComponent::Data>(m_registry.get<StrokeComponent::Data>(*it)) : std::nullopt;
+      rect entity_rect = transform.approx_bounding_rect();
 
-        rect entity_rect = transform.approx_bounding_rect();
+      if (has_stroke) {
+        entity_rect.min -= vec2{ stroke->width };
+        entity_rect.max += vec2{ stroke->width };
+      }
 
-        if (has_stroke) {
-          entity_rect.min -= vec2{ stroke->width };
-          entity_rect.max += vec2{ stroke->width };
-        }
+      if (!geom::does_rect_intersect_rect(entity_rect, visible_rect)) continue;
 
-        if (!geom::does_rect_intersect_rect(entity_rect, visible_rect)) continue;
+      bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
+      std::optional<FillComponent::Data> fill = has_fill ? std::optional<FillComponent::Data>(m_registry.get<FillComponent::Data>(*it)) : std::nullopt;
 
-        bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
-        std::optional<FillComponent::Data> fill = has_fill ? std::optional<FillComponent::Data>(m_registry.get<FillComponent::Data>(*it)) : std::nullopt;
+      if (has_fill && !fill->visible) has_fill = false;
+      if (has_stroke && !stroke->visible) has_stroke = false;
 
-        if (has_fill && !fill->visible) has_fill = false;
-        if (has_stroke && !stroke->visible) has_stroke = false;
+      bool is_selected = selected.find(id) != selected.end();
+      bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
+      bool is_full = false;
 
-        bool is_selected = selected.find(id) != selected.end();
-        bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
-        bool is_full = false;
+      if ((!is_selected && !is_selected) && !has_fill && !has_stroke) continue;
 
-        if ((!is_selected && !is_selected) && !has_fill && !has_stroke) continue;
+      mat2x3 transform_matrix = transform.matrix();
 
-        mat2x3 transform_matrix = transform.matrix();
+      auto transformation = math::decompose(transform_matrix);
+      float scale = std::max(transformation.scale.x, transformation.scale.y);
 
-        auto transformation = math::decompose(transform_matrix);
-        float scale = std::max(transformation.scale.x, transformation.scale.y);
+      path::QuadraticPath quadratics = path.to_quadratics(tolerance / scale);
 
-        geom::QuadraticPath quadratics = path.to_quadratics(tolerance / scale);
-
-        if (has_fill && has_stroke) {
-          renderer::Renderer::draw(
-            quadratics,
-            renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
-            renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
-            transform_matrix
-          );
-
-          z_index += 2;
-        } else if (has_fill) {
-          renderer::Renderer::draw(
-            quadratics,
-            renderer::Fill{ fill->color, fill->rule, z_index / z_far },
-            transform_matrix
-          );
-
-          z_index += 1;
-        } else if (has_stroke) {
-          renderer::Renderer::draw(
-            quadratics,
-            renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
-            transform_matrix
-          );
-
-          z_index += 1;
-        }
-
-        if (!is_selected && !is_temp_selected) continue;
-
-        std::unordered_set<size_t> selected_vertices;
-
-        if (is_selected) {
-          Selection::SelectionEntry entry = selected.at(id);
-
-          is_full = entry.full();
-
-          if (!is_full) {
-            selected_vertices = entry.indices;
-          }
-        }
-
-        if (is_temp_selected && !is_full) {
-          Selection::SelectionEntry entry = temp_selected.at(id);
-
-          is_full = entry.full();
-
-          if (!is_full) {
-            selected_vertices.insert(temp_selected.at(id).indices.begin(), temp_selected.at(id).indices.end());
-          }
-        }
-
-        // TEMP
-        renderer::Renderer::draw_outline(path, transform, outline_tolerance);
-        renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
-        renderer::Renderer::draw_outline_vertices(
-          path, transform,
-          is_full ? nullptr : &selected_vertices
+      if (has_fill && has_stroke) {
+        renderer::Renderer::draw(
+          quadratics,
+          renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+          renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
+          transform_matrix
         );
 
+        z_index += 2;
+      } else if (has_fill) {
+        renderer::Renderer::draw(
+          quadratics,
+          renderer::Fill{ fill->color, fill->rule, z_index / z_far },
+          transform_matrix
+        );
 
-            // draw_vertices,
+        z_index += 1;
+      } else if (has_stroke) {
+        renderer::Renderer::draw(
+          quadratics,
+          renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+          transform_matrix
+        );
 
-        // math::rect bounding_rect = path.bounding_rect();
-        // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
-        // geom::Path rect;
-        // rect.move_to(lines[0].min);
-
-        // for (auto& line : lines) {
-        //   rect.line_to(line.max);
-        // }
-
-        // Renderer::Renderer::draw_outline(id, rect, position);
+        z_index += 1;
       }
+
+      if (!is_selected && !is_temp_selected) continue;
+
+      std::unordered_set<size_t> selected_vertices;
+
+      if (is_selected) {
+        Selection::SelectionEntry entry = selected.at(id);
+
+        is_full = entry.full();
+
+        if (!is_full) {
+          selected_vertices = entry.indices;
+        }
+      }
+
+      if (is_temp_selected && !is_full) {
+        Selection::SelectionEntry entry = temp_selected.at(id);
+
+        is_full = entry.full();
+
+        if (!is_full) {
+          selected_vertices.insert(temp_selected.at(id).indices.begin(), temp_selected.at(id).indices.end());
+        }
+      }
+
+      // TEMP
+      renderer::Renderer::draw_outline(path, transform, outline_tolerance);
+      renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
+      renderer::Renderer::draw_outline_vertices(
+        path, transform,
+        is_full ? nullptr : &selected_vertices
+      );
+
+
+          // draw_vertices,
+
+      // math::rect bounding_rect = path.bounding_rect();
+      // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
+      // path::Path rect;
+      // rect.move_to(lines[0].min);
+
+      // for (auto& line : lines) {
+      //   rect.line_to(line.max);
+      // }
+
+      // Renderer::Renderer::draw_outline(id, rect, position);
     }
 
-    // {
-    //   std::vector<math::rect> lines = math::lines_from_rect(viewport.visible());
-    //   geom::Path rect;
-    //   rect.move_to(lines[0].min);
+  // {
+  //   std::vector<math::rect> lines = math::lines_from_rect(viewport.visible());
+  //   path::Path rect;
+  //   rect.move_to(lines[0].min);
 
-    //   for (auto& line : lines) {
-    //     rect.line_to(line.max);
-    //   }
+  //   for (auto& line : lines) {
+  //     rect.line_to(line.max);
+  //   }
 
-    //   Renderer::Renderer::draw_outline(0, rect, { 0.0f, 0.0f });
-    // }
+  //   Renderer::Renderer::draw_outline(0, rect, { 0.0f, 0.0f });
+  // }
 
     {
       OPTICK_EVENT("Render Overlays");
 
       tool_state.render_overlays(viewport.zoom());
     }
+
+#ifdef GK_DEBUG
+    if (!selected.empty()) {
+      const Entity entity = { m_entities.at(selected.begin()->first), const_cast<Scene*>(this) };
+
+      if (entity.has_component<PathComponent>()) {
+        const path::Path& path = entity.get_component<PathComponent>().data();
+        const path::Path::Segment segment = path.at(0);
+
+        renderer::Renderer::draw_debug_overlays({ segment.p0, segment.p1, segment.p2, segment.p3 });
+      }
+    }
+#endif
 
     renderer::Renderer::end_frame();
 

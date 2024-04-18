@@ -65,7 +65,7 @@ namespace graphick::editor::input {
     const PathComponent path = entity.get_component<PathComponent>();
     const TransformComponent transform = entity.get_component<TransformComponent>();
 
-    threshold /= zoom;
+    threshold = static_cast<float>(static_cast<double>(threshold) / zoom);
 
     const bool deep = deep_search && scene.selection.has(id);
 
@@ -94,21 +94,21 @@ namespace graphick::editor::input {
     }
 
     if (path.data().has_in_handle()) {
-      if (path.data().is_point_inside_point(geom::Path::in_handle_index, position, transform, threshold)) {
+      if (path.data().is_point_inside_point(path::Path::in_handle_index, position, transform, threshold)) {
         m_type = HoverType::Handle;
         m_segment = -1;
         m_vertex = -1;
-        m_handle = geom::Path::in_handle_index;
+        m_handle = path::Path::in_handle_index;
         return;
       }
     }
 
     if (path.data().has_out_handle()) {
-      if (path.data().is_point_inside_point(geom::Path::out_handle_index, position, transform, threshold)) {
+      if (path.data().is_point_inside_point(path::Path::out_handle_index, position, transform, threshold)) {
         m_type = HoverType::Handle;
         m_segment = -1;
         m_vertex = -1;
-        m_handle = geom::Path::out_handle_index;
+        m_handle = path::Path::out_handle_index;
         return;
       }
     }

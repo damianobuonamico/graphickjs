@@ -60,7 +60,11 @@ namespace graphick::math {
 
     Vec4() = default;
 
-    constexpr Vec4(const Vec4<T>& v) = default;
+    constexpr Vec4(const Vec4<T>& v) :
+      x(v.x),
+      y(v.y),
+      z(v.z),
+      w(v.w) {}
 
     constexpr explicit Vec4(T scalar) :
       x(scalar),

@@ -50,7 +50,9 @@ namespace graphick::math {
 
     Vec2() = default;
 
-    constexpr Vec2(const Vec2<T>& v) = default;
+    constexpr Vec2(const Vec2<T>& v) :
+      x(v.x),
+      y(v.y) {}
 
     constexpr explicit Vec2(T scalar) :
       x(scalar),

@@ -12,7 +12,7 @@
 #include "scene/scene.h"
 #include "input/input_manager.h"
 
-#include "../renderer/renderer_new.h"
+#include "../renderer/renderer.h"
 
 #include "../utils/resource_manager.h"
 #include "../utils/debugger.h"

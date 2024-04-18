@@ -7,6 +7,16 @@
 
 #pragma once
 
+#if !defined(GK_CONF_DIST) && !defined(EMSCRIPTEN)
+#define GK_DEBUG 1
+#endif
+
+template <typename T>
+inline constexpr T ui_handle_size = T(5);
+
+template <typename T>
+inline constexpr T ui_line_width = T(2);
+
 #define GK_EPSILON 1e-6f
 #define GK_QUADRATIC_EPSILON 1e-5f
 #define GK_POINT_EPSILON 1e-3f
@@ -26,7 +36,7 @@
 #define PAN_STEP 36.0f
 
 #define INPUT_MOVEMENT_THRESHOLD 4.0f
-constexpr float INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[3] = { 1.0f, 2.0f, 2.0f };
+inline constexpr float INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[3] = { 1.0f, 2.0f, 2.0f };
 
 #define GEOMETRY_SQR_EPSILON 0.1f
 #define GEOMETRY_CURVE_ERROR 0.2f

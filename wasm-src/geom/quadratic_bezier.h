@@ -79,7 +79,7 @@ namespace graphick::geom {
 
     /* -- Coefficients -- */
 
-    std::array<math::Vec2<T>, 3> coefficients() const {
+    constexpr std::array<math::Vec2<T>, 3> coefficients() const {
       return {
         p0 - T(2) * p1 + p2,
         T(2) * (p1 - p0),
@@ -87,7 +87,35 @@ namespace graphick::geom {
       };
     }
 
-    /* -- Methods -- */
+    constexpr std::array<math::Vec2<T>, 2> derivative_coefficients() const {
+      return {
+        T(2) * (p0 - T(2) * p1 + p2),
+        T(2) * (p1 - p0)
+      };
+    }
+
+    /* -- Sample -- */
+
+    constexpr math::Vec2<T> sample(T t) const {
+      const T t_sq = t * t;
+      const T t_inv = T(1) - t;
+      const T t_inv_sq = t_inv * t_inv;
+
+      return
+        t_inv_sq * p0 +
+        T(2) * t * t_inv * p1 +
+        t_sq * p2;
+    }
+
+    constexpr math::Vec2<T> derivative(T t) const {
+      const auto [a, b] = derivative_coefficients();
+
+      return
+        a * t +
+        b;
+    }
+
+    /* -- Bounding Rectangle -- */
 
     math::Rect<T> bounding_rect() const;
 

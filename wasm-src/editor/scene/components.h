@@ -13,7 +13,7 @@
 #include "../../math/rect.h"
 #include "../../math/mat2x3.h"
 
-#include "../../geom/path.h"
+#include "../../path/path.h"
 
 #include "../../utils/uuid.h"
 
@@ -268,7 +268,7 @@ namespace graphick::editor {
     friend class Entity;
   };
 
-  using PathComponentData = geom::Path;
+  using PathComponentData = path::Path;
 
   /**
    * @brief PathComponent wrapper.
@@ -289,16 +289,16 @@ namespace graphick::editor {
     PathComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
     /**
-     * @brief Conversion operator to geom::Path&.
+     * @brief Conversion operator to path::Path&.
      */
-    inline operator const geom::Path& () const { return *m_data; }
+    inline operator const path::Path& () const { return *m_data; }
 
     /**
      * @brief Returns the path data of the entity.
      *
      * @return The path data of the entity.
      */
-    inline const geom::Path& data() const { return *m_data; }
+    inline const path::Path& data() const { return *m_data; }
 
     /**
      * @brief Moves the path cursor to the given point.

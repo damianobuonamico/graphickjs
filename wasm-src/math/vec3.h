@@ -55,7 +55,10 @@ namespace graphick::math {
 
     Vec3() = default;
 
-    constexpr Vec3(const Vec3<T>& v) = default;
+    constexpr Vec3(const Vec3<T>& v) :
+      x(v.x),
+      y(v.y),
+      z(v.z) {}
 
     constexpr explicit Vec3(T scalar) :
       x(scalar),

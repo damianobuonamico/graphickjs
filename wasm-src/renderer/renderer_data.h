@@ -62,6 +62,16 @@ namespace graphick::renderer {
     inline rect visible() const {
       return m_visible;
     }
+
+    /**
+     * @brief Converts a point from client-space to scene-space.
+     *
+     * @param p The point in client-space.
+     * @return The point in scene-space.
+     */
+    inline vec2 project(const vec2 p) const {
+      return p / static_cast<float>(zoom) - position;
+    }
   private:
     rect m_visible;     /* The visible area of the viewport in scene-space coordinates. */
   };
@@ -107,6 +117,69 @@ namespace graphick::renderer {
       curves_data = ((curves_x << 20) >> 8) | ((curves_y << 20) >> 20);
       bands_data = (bands_h << 28) | ((bands_v << 28) >> 4) | ((bands_x << 20) >> 8) | ((bands_y << 20) >> 20);
     }
+  };
+
+  /**
+   * @brief Represents a rect to be rendered using instancing.
+   *
+   * @struct RectInstance
+   */
+  struct RectInstance {
+    vec2 position;           /* position.xy */
+    vec2 size;               /* size.xy */
+    uvec4 color;             /* color.rgba */
+
+    /**
+     * @brief Constructs a new RectInstance object.
+     *
+     * @param position The position of the rect.
+     * @param size The size of the rect.
+     * @param color The color of the rect.
+     */
+    RectInstance(const vec2 position, const vec2 size, const vec4& color) :
+      position(position), size(size), color(color * 255.0f) {}
+  };
+
+  /**
+   * @brief Represents a circle to be rendered using instancing.
+   */
+  struct CircleInstance {
+    vec2 position;           /* position.xy */
+    float radius;            /* radius */
+    uvec4 color;             /* color.rgba */
+
+    /**
+     * @brief Constructs a new CircleInstance object.
+     *
+     * @param position The position of the circle.
+     * @param radius The radius of the circle.
+     * @param color The color of the circle.
+     */
+    CircleInstance(const vec2 position, const float radius, const vec4& color) :
+      position(position), radius(radius), color(color * 255.0f) {}
+  };
+
+  /**
+   * @brief Represents a line to be rendered using instancing.
+   *
+   * @struct LineInstance
+   */
+  struct LineInstance {
+    vec2 start;              /* start.xy */
+    vec2 end;                /* end.xy */
+    float width;             /* width */
+    uvec4 color;             /* color.rgba */
+
+    /**
+     * @brief Constructs a new LineInstance object.
+     *
+     * @param start The start of the line.
+     * @param end The end of the line.
+     * @param width The width of the line.
+     * @param color The color of the line.
+     */
+    LineInstance(const vec2 start, const vec2 end, const float width, const vec4& color) :
+      start(start), end(end), width(width), color(color * 255.0f) {}
   };
 
   /**
@@ -184,6 +257,22 @@ namespace graphick::renderer {
       bands.clear();
       bands_data.clear();
     }
+  };
+
+  /**
+   * @brief Collects all the UI related options.
+   *
+   * @struct UIOptions
+   */
+  struct UIOptions {
+    vec2 vertex_size;          /* The size of a vertex. */
+    vec2 vertex_inner_size;    /* The size of the white part of a vertex. */
+
+    float handle_radius;       /* The radius of an handle. */
+    float line_width;          /* The default width of the lines. */
+
+    vec4 primary_color;        /* The primary color of the UI. */
+    vec4 primary_color_05;     /* The primary color 5% darker. */
   };
 
 }

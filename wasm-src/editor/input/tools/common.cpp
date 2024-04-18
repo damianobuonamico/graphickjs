@@ -14,7 +14,7 @@
 #include "../../../math/matrix.h"
 
 #include "../../../geom/intersections.h"
-#include "../../../geom/path.h"
+#include "../../../path/path.h"
 
 #include "../../../utils/console.h"
 
@@ -33,7 +33,7 @@ namespace graphick::editor::input {
     const vec2 position = inverse_transform * InputManager::pointer.scene.position;
     const vec2 origin = inverse_transform * InputManager::pointer.scene.origin;
 
-    geom::Path::VertexNode node = path.data().node_at(point_index);
+    path::Path::VertexNode node = path.data().node_at(point_index);
 
     if (!create_handles && point_index == node.vertex) {
       const vec2 vertex_position = path.data().point_at(node.vertex);

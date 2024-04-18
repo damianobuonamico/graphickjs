@@ -69,8 +69,8 @@ namespace graphick::math {
       std::min(v1.x, v2.x),
       std::min(v1.y, v2.y),
       std::min(v1.z, v2.z),
-      std::min(v1.w, v2.w),
-      );
+      std::min(v1.w, v2.w)
+    );
   }
 
   /**

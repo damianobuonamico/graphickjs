@@ -15,7 +15,7 @@
 #include "../../math/matrix.h"
 #include "../../math/math.h"
 
-#include "../../geom/path.h"
+#include "../../path/path.h"
 
 #include "../../utils/console.h"  
 

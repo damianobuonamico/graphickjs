@@ -17,7 +17,7 @@
 #include "../../editor/editor.h"
 #include "../../editor/scene/entity.h"
 
-#include "../../geom/path.h"
+#include "../../path/path.h"
 
 #include <iostream>
 
@@ -340,11 +340,11 @@ namespace graphick::io::svg {
     return true;
   }
 
-  static geom::Path parse_path(const std::string& string) {
+  static path::Path parse_path(const std::string& string) {
     const char* ptr = string.data();
     const char* end = ptr + string.size();
 
-    geom::Path path{};
+    path::Path path{};
 
     if (ptr >= end || !(*ptr == 'M' || *ptr == 'm')) return path;
 
@@ -743,7 +743,7 @@ namespace graphick::io::svg {
           // if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 1.0f }) {
           decode_text(start, rtrim(start, ptr), value);
           // History::CommandHistory::disable();
-          geom::Path path = parse_path(value);
+          path::Path path = parse_path(value);
           // History::CommandHistory::enable();
 
           if (!path.empty()) {

@@ -6,10 +6,7 @@
  */
 
 #include "path.h"
-
-#include "intersections.h"
-#include "curve_ops.h"
-// #include "path_builder_new.h"
+// #include "path_builder.h"
 // #include "contour.h"
 
 #include "../renderer/properties.h"
@@ -18,10 +15,13 @@
 #include "../math/matrix.h"
 #include "../math/math.h"
 
+#include "../geom/intersections.h"
+#include "../geom/curve_ops.h"
+
 #include "../utils/console.h"
 #include "../utils/assert.h"
 
-namespace graphick::geom {
+namespace graphick::path {
 
   /* -- Static -- */
 
@@ -163,9 +163,9 @@ namespace graphick::geom {
   vec2 Path::Segment::sample(const float t) const {
     switch (type) {
     case Command::Cubic:
-      return cubic({ p0, p1, p2, p3 }, t);
+      return geom::cubic({ p0, p1, p2, p3 }, t);
     case Command::Quadratic:
-      return quadratic({ p0, p1, p2 }, t);
+      return geom::quadratic({ p0, p1, p2 }, t);
     case Command::Line:
       return math::lerp(p0, p1, t);
     default:
@@ -1682,9 +1682,9 @@ namespace graphick::geom {
         return false;
       }
 
-      return (is_point_in_circle(point, transform * m_points[0], threshold) || (deep_search && (
-        is_point_in_circle(point, transform * m_in_handle, threshold) ||
-        is_point_in_circle(point, transform * m_out_handle, threshold)))
+      return (geom::is_point_in_circle(point, transform * m_points[0], threshold) || (deep_search && (
+        geom::is_point_in_circle(point, transform * m_in_handle, threshold) ||
+        geom::is_point_in_circle(point, transform * m_out_handle, threshold)))
       );
     }
 
@@ -1899,7 +1899,7 @@ namespace graphick::geom {
   bool Path::is_point_inside_point(const size_t point_index, const vec2 point, const mat2x3& transform, const float threshold) const {
     const vec2 p = transform * point_at(point_index);
 
-    if (is_point_in_circle(point, p, threshold)) {
+    if (geom::is_point_in_circle(point, p, threshold)) {
       if (point_index == 0) return true;
 
       for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
@@ -1963,7 +1963,7 @@ namespace graphick::geom {
     if (m_commands_size == 0) {
       return false;
     } else if (m_commands_size == 1) {
-      if (is_point_in_rect(m_points[0], rect)) {
+      if (geom::is_point_in_rect(m_points[0], rect)) {
         if (indices) indices->insert(0);
         return true;
       }
@@ -1971,7 +1971,7 @@ namespace graphick::geom {
       return false;
     }
 
-    if (!does_rect_intersect_rect(rect, approx_bounding_rect())) {
+    if (!geom::does_rect_intersect_rect(rect, approx_bounding_rect())) {
       return false;
     }
 
@@ -1980,7 +1980,7 @@ namespace graphick::geom {
     for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
       case Command::Move:
-        if (is_point_in_rect(m_points[point_i], rect)) {
+        if (geom::is_point_in_rect(m_points[point_i], rect)) {
           if (indices) indices->insert(point_i);
           found = true;
         }
@@ -1988,30 +1988,30 @@ namespace graphick::geom {
         point_i += 1;
         break;
       case Command::Line:
-        if (is_point_in_rect(m_points[point_i], rect)) {
+        if (geom::is_point_in_rect(m_points[point_i], rect)) {
           if (indices) indices->insert(point_i);
           found = true;
-        } else if (!found && does_line_intersect_rect({ m_points[point_i - 1], m_points[point_i] }, rect)) {
+        } else if (!found && geom::does_line_intersect_rect({ m_points[point_i - 1], m_points[point_i] }, rect)) {
           found = true;
         }
 
         point_i += 1;
         break;
       case Command::Quadratic:
-        if (is_point_in_rect(m_points[point_i + 1], rect)) {
+        if (geom::is_point_in_rect(m_points[point_i + 1], rect)) {
           if (indices) indices->insert(point_i + 1);
           found = true;
-        } else if (!found && does_quadratic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1] }, rect)) {
+        } else if (!found && geom::does_quadratic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1] }, rect)) {
           found = true;
         }
 
         point_i += 2;
         break;
       case Command::Cubic:
-        if (is_point_in_rect(m_points[point_i + 2], rect)) {
+        if (geom::is_point_in_rect(m_points[point_i + 2], rect)) {
           if (indices) indices->insert(point_i + 2);
           found = true;
-        } else if (!found && does_cubic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2] }, rect)) {
+        } else if (!found && geom::does_cubic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2] }, rect)) {
           found = true;
         }
 
@@ -2031,7 +2031,7 @@ namespace graphick::geom {
     if (m_commands_size == 0) {
       return false;
     } else if (m_commands_size == 1) {
-      if (is_point_in_rect(transform * m_points[0], rect)) {
+      if (geom::is_point_in_rect(transform * m_points[0], rect)) {
         if (indices) indices->insert(0);
         return true;
       }
@@ -2041,7 +2041,7 @@ namespace graphick::geom {
 
     vec2 last = { 0.0f, 0.0f };
 
-    if (!does_rect_intersect_rect(rect, transform * approx_bounding_rect())) {
+    if (!geom::does_rect_intersect_rect(rect, transform * approx_bounding_rect())) {
       return false;
     }
 
@@ -2052,7 +2052,7 @@ namespace graphick::geom {
       case Command::Move: {
         const vec2 p0 = transform * m_points[point_i];
 
-        if (is_point_in_rect(p0, rect)) {
+        if (geom::is_point_in_rect(p0, rect)) {
           if (indices) indices->insert(point_i);
           found = true;
         }
@@ -2065,10 +2065,10 @@ namespace graphick::geom {
       case Command::Line: {
         const vec2 p1 = transform * m_points[point_i];
 
-        if (is_point_in_rect(p1, rect)) {
+        if (geom::is_point_in_rect(p1, rect)) {
           if (indices) indices->insert(point_i);
           found = true;
-        } else if (!found && does_line_intersect_rect({ last, p1 }, rect)) {
+        } else if (!found && geom::does_line_intersect_rect({ last, p1 }, rect)) {
           found = true;
         }
 
@@ -2078,10 +2078,10 @@ namespace graphick::geom {
       case Command::Quadratic: {
         const vec2 p2 = transform * m_points[point_i + 1];
 
-        if (is_point_in_rect(p2, rect)) {
+        if (geom::is_point_in_rect(p2, rect)) {
           if (indices) indices->insert(point_i + 1);
           found = true;
-        } else if (!found && does_quadratic_intersect_rect({ last, transform * m_points[point_i], p2 }, rect)) {
+        } else if (!found && geom::does_quadratic_intersect_rect({ last, transform * m_points[point_i], p2 }, rect)) {
           found = true;
         }
 
@@ -2095,10 +2095,10 @@ namespace graphick::geom {
         const vec2 p2 = transform * m_points[point_i + 1];
         const vec2 p3 = transform * m_points[point_i + 2];
 
-        if (is_point_in_rect(p3, rect)) {
+        if (geom::is_point_in_rect(p3, rect)) {
           if (indices) indices->insert(point_i + 2);
           found = true;
-        } else if (!found && does_cubic_intersect_rect({ last, p1, p2, p3 }, rect)) {
+        } else if (!found && geom::does_cubic_intersect_rect({ last, p1, p2, p3 }, rect)) {
           found = true;
         }
 

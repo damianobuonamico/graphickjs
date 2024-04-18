@@ -10,7 +10,7 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
-#include "../../../renderer/renderer_new.h"
+#include "../../../renderer/renderer.h"
 
 #include "../../../utils/console.h"
 

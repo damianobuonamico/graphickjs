@@ -88,7 +88,7 @@ namespace graphick::editor {
     size_t batch_start = m_batch_indices[m_batch_index];
 
     if (batch_start < m_actions.size()) {
-      size_t batch_end = m_batch_index >= m_batch_indices.size() - 1 ? m_actions.size() : m_batch_indices[m_batch_index + 1];
+      size_t batch_end = m_batch_index >= static_cast<int64_t>(m_batch_indices.size()) - 1 ? m_actions.size() : m_batch_indices[m_batch_index + 1];
 
       for (size_t i = batch_start; i < batch_end; i++) {
         m_actions[i].execute(m_scene);

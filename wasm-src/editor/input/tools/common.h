@@ -7,7 +7,7 @@
 
 #include "../keys.h"
 
-#include "../../../geom/path.h"
+#include "../../../path/path.h"
 
 #include "../../../math/mat2x3.h"
 
@@ -89,9 +89,9 @@ namespace graphick::editor::input {
     /**
      * @brief Returns the path of the selection rectangle.
      *
-     * @return A geom::Path object representing the path of the selection rectangle.
+     * @return A path::Path object representing the path of the selection rectangle.
      */
-    inline const geom::Path& path() const { return m_path; }
+    inline const path::Path& path() const { return m_path; }
 
     /**
      * @brief Returns the transform matrix of the selection rectangle.
@@ -141,7 +141,7 @@ namespace graphick::editor::input {
     vec2 m_size = { 1.0f, 1.0f };       /* Size of the selection rectangle. */
     float m_angle = 0.0f;               /* Angle of the selection rectangle. */
 
-    geom::Path m_path;    /* The path to render. */
+    path::Path m_path;    /* The path to render. */
   };
 
   class Manipulator : public SelectionRect {

@@ -96,16 +96,64 @@ namespace graphick::geom {
 
     /* -- Coefficients -- */
 
-    std::array<math::Vec2<T>, 4> coefficients() const {
+    constexpr std::array<math::Vec2<T>, 4> coefficients() const {
       return {
-        p0 - T(3) * p1 + T(3) * p2 - p3,
-        T(3) * (p1 - T(2) * p2 + p3),
-        T(3) * (p2 - p1),
+        -p0 + T(3) * p1 - T(3) * p2 + p3,
+        T(3) * (p0 - T(2) * p1 + p2),
+        T(3) * (p1 - p0),
         p0
       };
     }
 
-    /* -- Methods -- */
+    constexpr std::array<math::Vec2<T>, 3> derivative_coefficients() const {
+      return {
+        T(3) * (T(3) * p1 - T(3) * p2 + p3 - p0),
+        T(6) * (p0 - T(2) * p1 + p2),
+        T(3) * (p1 - p0)
+      }
+    }
+
+    constexpr std::array<math::Vec2<T>, 2> second_derivative_coefficients() const {
+      return {
+        T(6) * (T(3) * p1 - T(3) * p2 + p3 - p0),
+        T(6) * (p0 - T(2) * p1 + p2)
+      }
+    }
+
+    /* -- Sample -- */
+
+    constexpr math::Vec2<T> sample(T t) const {
+      const T t_sq = t * t;
+      const T t_cb = t_sq * t;
+      const T t_inv = T(1) - t;
+      const T t_inv_sq = t_inv * t_inv;
+      const T t_inv_cb = t_inv_sq * t_inv;
+
+      return
+        p0 * t_inv_cb +
+        p1 * T(3) * t * t_inv_sq +
+        p2 * T(3) * t_sq * t_inv +
+        p3 * t_cb;
+    }
+
+    constexpr math::Vec2<T> derivative(T t) const {
+      const auto [a, b, c] = derivative_coefficients();
+
+      return
+        a * t * t +
+        b * t +
+        c;
+    }
+
+    constexpr math::Vec2<T> second_derivative(T t) const {
+      const auto [a, b] = second_derivative_coefficients();
+
+      return
+        a * t +
+        b;
+    }
+
+    /* -- Bounding Rectangle -- */
 
     math::Rect<T> bounding_rect() const;
 

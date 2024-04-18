@@ -10,7 +10,7 @@
 #define SHADERS_LENGTH 4
 
 static constexpr const char* shader_names[SHADERS_LENGTH] = {
-  "path", "line", "square", "circle"
+  "path", "line", "rect", "circle"
 };
 
 namespace graphick::utils {
@@ -44,9 +44,9 @@ namespace graphick::utils {
       ,
       #include "../renderer/gpu/shaders/line.fs.glsl"
       ,
-      #include "../renderer/gpu/shaders/square.vs.glsl"
+      #include "../renderer/gpu/shaders/rect.vs.glsl"
       ,
-      #include "../renderer/gpu/shaders/square.fs.glsl"
+      #include "../renderer/gpu/shaders/rect.fs.glsl"
       ,
       #include "../renderer/gpu/shaders/circle.vs.glsl"
       ,
