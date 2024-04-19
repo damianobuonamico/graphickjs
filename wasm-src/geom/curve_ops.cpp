@@ -243,6 +243,39 @@ namespace graphick::geom {
     return CubicBezier<T>(p1, q, r, p2);
   }
 
+  /* -- Conversion -- */
+
+  template <typename T, typename _>
+  std::vector<QuadraticBezier<T>> cubic_to_quadratics(const CubicBezier<T>& cubic) {
+    const auto [A, B, C, D] = cubic.coefficients();
+
+    math::Vec2<T> A_quad, B_quad, C_quad;
+
+    for (int i = 0; i < 2; i++) {
+      const T a = A[i];
+      const T b = B[i];
+      const T c = C[i];
+      const T d = D[i];
+
+      const T t0 = T(0);
+      const T t0_sq = t0 * t0;
+      const T t0_cb = t0_sq * t0;
+
+      const T f = a * t0_cb + b * t0_sq + c * t0 + d;
+      const T f_prime = T(3) * a * t0_sq + T(2) * b * t0 + c;
+      const T f_second = T(6) * a * t0 + T(2) * b;
+
+      // Taylor series expansion
+      A_quad[i] = f_second / T(2);
+      B_quad[i] = f_prime - t0 * f_second;
+      C_quad[i] = f - t0 * f_prime + t0_sq * f_second / T(2);
+    }
+
+    return {
+      QuadraticBezier<T>::from_coefficients(A_quad, B_quad, C_quad)
+    };
+  }
+
   /* -- Template Instantiation -- */
 
   template math::Rect<float> bounding_rect(const QuadraticBezier<float>& quad);
@@ -268,5 +301,8 @@ namespace graphick::geom {
 
   template CubicBezier<float> extract(const CubicBezier<float>& cubic, const float t1, const float t2);
   template CubicBezier<double> extract(const CubicBezier<double>& cubic, const double t1, const double t2);
+
+  template std::vector<QuadraticBezier<float>> cubic_to_quadratics(const CubicBezier<float>& cubic);
+  template std::vector<QuadraticBezier<double>> cubic_to_quadratics(const CubicBezier<double>& cubic);
 
 }

@@ -77,6 +77,16 @@ namespace graphick::geom {
       p1(q.p1),
       p2(q.p2) {}
 
+    /* -- Static Constructors -- */
+
+    static constexpr QuadraticBezier<T> from_coefficients(const math::Vec2<T> a, const math::Vec2<T> b, const math::Vec2<T> c) {
+      return QuadraticBezier<T>(
+        c,
+        c + b / 2,
+        c + b + a
+      );
+    }
+
     /* -- Coefficients -- */
 
     constexpr std::array<math::Vec2<T>, 3> coefficients() const {

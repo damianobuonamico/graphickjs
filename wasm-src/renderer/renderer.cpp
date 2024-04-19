@@ -13,10 +13,13 @@
 #include "gpu/device.h"
 
 #include "geometry/path_builder.h"
-#include "../path/path.h"
 
 #include "../math/vector.h"
 #include "../math/matrix.h"
+
+#include "../geom/curve_ops.h"
+
+#include "../path/path.h"
 
 #include "../utils/defines.h"
 #include "../utils/assert.h"
@@ -763,7 +766,7 @@ namespace graphick::renderer {
 
       get()->m_rect_instances.instances.emplace_back(
         get()->m_viewport.project(graph_position + xy_graph_size / 2.0f),
-        xy_graph_size * get()->m_viewport.dpr / get()->m_viewport.zoom,
+        xy_graph_size / get()->m_viewport.zoom,
         vec4{ 0.0f, 0.0f, 0.0f, 0.5f }
       );
 
@@ -785,7 +788,36 @@ namespace graphick::renderer {
         get()->m_line_instances.instances.emplace_back(p0, p1, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f));
       }
 
-      cursor += vec2(0.0f, -xy_graph_size.y + padding / 2.0f);
+      cursor += vec2(0.0f, -xy_graph_size.y + padding / 4.0f);
+    }
+
+    cursor = vec2::zero();
+
+    const std::vector<geom::quadratic_bezier> quads = geom::cubic_to_quadratics(cubic);
+
+    for (int j = 0; j < 2; j++) {
+      const vec2 graph_position = vec2(get()->m_viewport.size.x - xy_graph_size.x, -xy_graph_size.y) + cursor;
+      const vec2 graph_safe_position = graph_position + vec2(padding, -padding);
+
+      const rect curve_bounds = cubic.bounding_rect();
+      const vec2 bounds_size = curve_bounds.size();
+
+      for (const geom::quadratic_bezier& quad : quads) {
+        for (int i = 0; i < static_cast<int>(resolution); i++) {
+          const float t0 = static_cast<float>(i) / resolution;
+          const float t1 = static_cast<float>(i + 1) / resolution;
+
+          const vec2 p0_norm = (quad.sample(t0) - curve_bounds.min) / bounds_size;
+          const vec2 p1_norm = (quad.sample(t1) - curve_bounds.min) / bounds_size;
+
+          const vec2 p0 = get()->m_viewport.project(vec2(t0, p0_norm[j]) * graph_safe_size + graph_safe_position);
+          const vec2 p1 = get()->m_viewport.project(vec2(t1, p1_norm[j]) * graph_safe_size + graph_safe_position);
+
+          get()->m_line_instances.instances.emplace_back(p0, p1, get()->m_ui_options.line_width * 2.0f, vec4(0.8f, 0.2f, 0.2f, 1.0f));
+        }
+      }
+
+      cursor += vec2(0.0f, -xy_graph_size.y + padding / 4.0f);
     }
   }
 #endif

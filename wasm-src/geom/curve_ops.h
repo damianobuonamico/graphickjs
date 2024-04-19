@@ -7,6 +7,8 @@
 #include "quadratic_bezier.h"
 #include "cubic_bezier.h"
 
+#include <vector>
+
 namespace graphick::geom {
 
   /* -- Sample -- */
@@ -149,5 +151,10 @@ namespace graphick::geom {
    */
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   CubicBezier<T> extract(const CubicBezier<T>& cubic, const T t1, const T t2);
+
+  /* -- Conversion -- */
+
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  std::vector<QuadraticBezier<T>> cubic_to_quadratics(const CubicBezier<T>& cubic);
 
 }

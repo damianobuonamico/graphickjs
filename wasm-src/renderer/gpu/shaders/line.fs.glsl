@@ -11,9 +11,8 @@ R"(
   out vec4 oFragColor;
 
   void main() {
-    float factor = vLineWidth * (1.0 - abs(2.0 * vTexCoord.y - 1.0));
-    float alpha = smoothstep(vLineWidth - 1.25 / uZoom, vLineWidth, factor);
-    
+    float alpha = smoothstep(0.0, 1.25 / uZoom / vLineWidth, 1.0 - abs(vTexCoord.y));
+
     oFragColor = vColor * alpha;
   }
 

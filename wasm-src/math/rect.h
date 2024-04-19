@@ -7,6 +7,8 @@
 
 #include "vec2.h"
 
+#include <initializer_list>
+
 namespace graphick::math {
 
   /**
