@@ -323,7 +323,7 @@ namespace graphick::renderer {
       vec2(viewport.dpr / viewport.zoom * ui_handle_size<double>),
       vec2(viewport.dpr / viewport.zoom * (ui_handle_size<double> -2.0)),
       static_cast<float>(viewport.dpr / viewport.zoom / 2.0 * ui_handle_size<double>),
-      static_cast<float>(viewport.dpr / viewport.zoom * ui_line_width<double>),
+      static_cast<float>(viewport.dpr * ui_line_width<double>),
       vec4(0.22f, 0.76f, 0.95f, 1.0f),
       vec4(0.22f, 0.76f, 0.95f, 1.0f) * vec4(0.95f, 0.95f, 0.95f, 1.0f),
     };

@@ -16,7 +16,7 @@ R"(
   out float vLineWidth;
 
   void main() {
-    float elongation = clamp(aInstanceWidth / 2.0, 0.5, 5.0) / uZoom;
+    float elongation = 0.5 / uZoom;
 
     vec2 dir = aInstanceTo - aInstanceFrom;
     vec2 normalized_dir = normalize(dir);
@@ -25,7 +25,7 @@ R"(
     vec2 position = 
       aInstanceFrom + aPosition.x * dir + 
       elongation * (2.0 * aPosition.x - 1.0) * normalized_dir + 
-      normal * (1.0 - 2.0 * aPosition.y);
+      normal * (1.0 - 2.0 * aPosition.y) / uZoom;
 
     gl_Position = vec4((uViewProjection * vec4(position, 0.0, 1.0)).xyz, 1.0);
     vColor = vec4(aInstanceColor) / 255.0;
