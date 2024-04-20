@@ -12,7 +12,7 @@ R"(
 
   void main() {
     float factor = vLineWidth * (1.0 - abs(vTexCoord.y));
-    float alpha = smoothstep(vLineWidth / uZoom - 1.25 / uZoom, vLineWidth / uZoom, factor);
+    float alpha = smoothstep(vLineWidth - 1.25, vLineWidth, factor);
     // float alpha = smoothstep(0.0, 1.25 / uZoom / vLineWidth, 1.0 - abs(vTexCoord.y));
 
     // float factor = fwidth(vTexCoord.y);

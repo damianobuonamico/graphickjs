@@ -155,7 +155,17 @@ namespace graphick::geom {
   /* -- Conversion -- */
 
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  std::vector<QuadraticBezier<T>> cubic_to_quadratics(const CubicBezier<T>& cubic);
+  std::vector<QuadraticBezier<T>> cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance);
+
+  // /**
+  //  * @brief Converts a cubic bezier curve into a sequence of quadratic bezier curves.
+  //  *
+  //  * @param cubic The cubic bezier curve.
+  //  * @param tolerance The maximum distance between the cubic and the resulting quadratics.
+  //  * @param sink The vector to store the resulting quadratic bezier curves.
+  //  */
+  // template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  // void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, std::vector<QuadraticBezier<T>>& sink);
 
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> cubic_to_quadratics_with_intervals(const CubicBezier<T>& cubic);

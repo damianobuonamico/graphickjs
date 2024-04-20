@@ -2337,6 +2337,13 @@ namespace graphick::path {
         j += 2;
         break;
       case Command::Cubic: {
+        const geom::cubic_bezier cubic{ m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
+
+        std::vector<quadratic_bezier> quads = geom::cubic_to_quadratics(cubic, 2e-2f);
+
+        for (const quadratic_bezier& quad : quads) {
+          path.quadratic_to(quad.p1, quad.p2);
+        }
 #if 0
         math::CubicBezier cubic{ m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
 
@@ -2346,7 +2353,7 @@ namespace graphick::path {
           path.points.insert(path.points.end(), quads.begin() + 1, quads.end());
         }
 #endif
-#if 1
+#if 0
         cubic_bezier curve = { m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2] };
         cubic_bezier sub_curve = curve;
 

@@ -585,38 +585,38 @@ namespace graphick::renderer {
   void Renderer::draw_outline(const path::Path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
     // TODO: fix
 
-    // if (path.size() == 1) {
-    //   const vec2 p0 = transform * path.point_at(0);
-    //   const vec2 p1 = transform * path.point_at(1);
-    //   const vec2 p2 = transform * path.point_at(2);
-    //   const vec2 p3 = transform * path.point_at(3);
+    if (path.size() == 1) {
+      const vec2 p0 = transform * path.point_at(0);
+      const vec2 p1 = transform * path.point_at(1);
+      const vec2 p2 = transform * path.point_at(2);
+      const vec2 p3 = transform * path.point_at(3);
 
-    //   vec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
-    //   vec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
-    //   vec2 c = -3.0 * p0 + 3.0 * p1;
-    //   vec2 p;
+      vec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
+      vec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
+      vec2 c = -3.0 * p0 + 3.0 * p1;
+      vec2 p;
 
-    //   float conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
-    //   float dt = std::sqrtf((std::sqrt(8.0) * tolerance) / conc);
-    //   float t = dt;
+      float conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
+      float dt = std::sqrtf((std::sqrt(8.0) * tolerance) / conc);
+      float t = dt;
 
-    //   while (t < 1.0f) {
-    //     float t_sq = t * t;
+      vec2 last = p0;
 
-    //     p = a * t_sq * t + b * t_sq + c * t + p0;
+      while (t < 1.0f) {
+        float t_sq = t * t;
 
-    //     const float last_x = get()->m_line_instances.instances.size() ? get()->m_line_instances.instances.back().b : p0.x;
-    //     const float last_y = get()->m_line_instances.instances.size() ? get()->m_line_instances.instances.back().a : p0.y;
+        p = a * t_sq * t + b * t_sq + c * t + p0;
 
-    //     get()->m_line_instances.instances.emplace_back(last_x, last_y, p.x, p.y);
+        get()->m_line_instances.instances.emplace_back(last, p, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-    //     t += dt;
-    //   }
+        last = p;
+        t += dt;
+      }
 
-    //   get()->m_line_instances.instances.emplace_back(get()->m_line_instances.instances.back().b, get()->m_line_instances.instances.back().a, p3.x, p3.y);
+      get()->m_line_instances.instances.emplace_back(last, p3, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-    //   return;
-    // }
+      return;
+    }
 
 
     // geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
@@ -758,10 +758,10 @@ namespace graphick::renderer {
     const float padding = 10.0f;
     const float resolution = 100;
 
-    const vec2 xy_graph_size = vec2(400.0f, -400.0f);
+    const vec2 xy_graph_size = vec2(250.0f, -250.0f);
     const vec2 graph_safe_size = xy_graph_size + 2.0f * vec2(-padding, padding);
 
-    for (int j = 0; j < 1; j++) {
+    for (int j = 0; j < 2; j++) {
       const vec2 graph_position = vec2(get()->m_viewport.size.x - xy_graph_size.x, -xy_graph_size.y) + cursor;
 
       get()->m_rect_instances.instances.emplace_back(
@@ -793,9 +793,24 @@ namespace graphick::renderer {
 
     cursor = vec2::zero();
 
+    // const std::vector<geom::quadratic_bezier> quads_d = geom::cubic_to_quadratics(cubic);
+    // const std::vector<std::pair<geom::quadratic_bezier, vec2>> quads_d = geom::cubic_to_quadratics_with_intervals(cubic);
+
+    // for (const auto& quad : quads_d) {
+    //   for (int i = 0; i < static_cast<int>(resolution); i++) {
+    //     const float t0 = static_cast<float>(i) / resolution;
+    //     const float t1 = static_cast<float>(i + 1) / resolution;
+
+    //     const vec2 p0 = quad.sample(t0);
+    //     const vec2 p1 = quad.sample(t1);
+
+    //     get()->m_line_instances.instances.emplace_back(p0, p1, get()->m_ui_options.line_width * 2.0f, get()->m_ui_options.primary_color_05);
+    //   }
+    // }
+
     const std::vector<std::pair<geom::quadratic_bezier, vec2>> quads = geom::cubic_to_quadratics_with_intervals(cubic);
 
-    for (int j = 0; j < 1; j++) {
+    for (int j = 0; j < 2; j++) {
       const vec2 graph_position = vec2(get()->m_viewport.size.x - xy_graph_size.x, -xy_graph_size.y) + cursor;
       const vec2 graph_safe_position = graph_position + vec2(padding, -padding);
 
@@ -803,7 +818,6 @@ namespace graphick::renderer {
       const vec2 bounds_size = curve_bounds.size();
 
       for (const auto& [quad, interval] : quads) {
-        // for (int i = 0; i < static_cast<int>(resolution); i++) {
         for (int i = static_cast<int>(resolution * interval[0]); i < static_cast<int>(resolution * interval[1]); i++) {
           const float t0 = static_cast<float>(i) / resolution;
           const float t1 = static_cast<float>(i + 1) / resolution;
@@ -811,15 +825,22 @@ namespace graphick::renderer {
           const vec2 p0_norm = (quad.sample(t0) - curve_bounds.min) / bounds_size;
           const vec2 p1_norm = (quad.sample(t1) - curve_bounds.min) / bounds_size;
 
-          // const vec2 p0 = get()->m_viewport.project(vec2(math::lerp(interval[0], interval[1], t0), p0_norm[j]) * graph_safe_size + graph_safe_position);
-          // const vec2 p1 = get()->m_viewport.project(vec2(math::lerp(interval[0], interval[1], t1), p1_norm[j]) * graph_safe_size + graph_safe_position);
-
           const vec2 p0 = get()->m_viewport.project(vec2(t0, p0_norm[j]) * graph_safe_size + graph_safe_position);
           const vec2 p1 = get()->m_viewport.project(vec2(t1, p1_norm[j]) * graph_safe_size + graph_safe_position);
 
           get()->m_line_instances.instances.emplace_back(p0, p1, get()->m_ui_options.line_width * 2.0f, vec4(0.8f, 0.2f, 0.2f, 1.0f));
         }
+
+        const vec2 p0_norm = (quad.sample(interval[0]) - curve_bounds.min) / bounds_size;
+        const vec2 p0 = get()->m_viewport.project(vec2(interval[0], p0_norm[j]) * graph_safe_size + graph_safe_position);
+
+        get()->m_circle_instances.instances.emplace_back(p0, get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f));
       }
+
+      const vec2 p1_norm = (quads.back().first.sample(1.0f) - curve_bounds.min) / bounds_size;
+      const vec2 p1 = get()->m_viewport.project(vec2(1.0f, p1_norm[j]) * graph_safe_size + graph_safe_position);
+
+      get()->m_circle_instances.instances.emplace_back(p1, get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
       cursor += vec2(0.0f, -xy_graph_size.y + padding / 4.0f);
     }

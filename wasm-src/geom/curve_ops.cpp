@@ -8,6 +8,8 @@
 #include "../math/vector.h"
 #include "../math/math.h"
 
+#include "../utils/console.h"
+
 namespace graphick::geom {
 
   /* -- Approximate Bounding Rectangle -- */
@@ -137,8 +139,8 @@ namespace graphick::geom {
     const math::Vec2<T> q1 = math::lerp(quad.p0, quad.p1, t1);
     const math::Vec2<T> q2 = math::lerp(quad.p0, quad.p1, t2);
 
-    const math::Vec2<T> r1 = math::lerp(q1, q2, t1);
-    const math::Vec2<T> r2 = math::lerp(q1, q2, t2);
+    const math::Vec2<T> r1 = math::lerp(quad.p1, quad.p2, t1);
+    const math::Vec2<T> r2 = math::lerp(quad.p1, quad.p2, t2);
 
     const math::Vec2<T> p1 = math::lerp(q1, r1, t1);
     const math::Vec2<T> p2 = math::lerp(q2, r2, t2);
@@ -206,11 +208,11 @@ namespace graphick::geom {
     const math::Vec2<T> q1 = math::lerp(quad.p0, quad.p1, t1);
     const math::Vec2<T> q2 = math::lerp(quad.p0, quad.p1, t2);
 
-    const math::Vec2<T> r1 = math::lerp(q1, q2, t1);
-    const math::Vec2<T> r2 = math::lerp(q1, q2, t2);
+    const math::Vec2<T> r1 = math::lerp(quad.p1, quad.p2, t1);
+    const math::Vec2<T> r2 = math::lerp(quad.p1, quad.p2, t2);
 
     const math::Vec2<T> p1 = math::lerp(q1, r1, t1);
-    const math::Vec2<T> p2 = math::lerp(r1, r2, t2);
+    const math::Vec2<T> p2 = math::lerp(q2, r2, t2);
 
     const math::Vec2<T> q = math::lerp(q2, r2, t1);
 
@@ -312,57 +314,160 @@ namespace graphick::geom {
     };
   }
 
-  // TODO: handle cusp case
-  template <typename T, typename _>
-  std::vector<QuadraticBezier<T>> cubic_to_quadratics(const CubicBezier<T>& cubic) {
-    const auto [a, b, c, d] = cubic.coefficients();
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  void cubic_range_to_quadratics(const std::array<T, 4>& cubic_coefficients, const T t1, const T t2, std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>>& sink) {
+    const T t0 = (t1 + t2) / T(2);
 
-    const std::array<T, 4> x_coefficients = { a[0], b[0], c[0], d[0] };
-    const std::array<T, 4> y_coefficients = { a[1], b[1], c[1], d[1] };
+    const auto [quad_coefficients, t_error] = taylor_expansion_at_t(cubic_coefficients, t0, T(1e-2));
+    const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(math::Vec2<T>(quad_coefficients[0]), math::Vec2<T>(quad_coefficients[1]), math::Vec2<T>(quad_coefficients[2]));
 
-    // Find local min/max points
-    const math::QuadraticSolutions<T> extrema = math::solve_quadratic(T(3) * a[0], T(2) * b[0], c[0]);
+    math::Vec2<T> quad_range = { std::max(t1, t_error[0]), std::min(t2, t_error[1]) };
 
-    std::vector<QuadraticBezier<T>> quads;
-    std::vector<T> t_values = { T(0) };
+    if (t_error[0] > t1) {
+      cubic_range_to_quadratics(cubic_coefficients, t1, t_error[0], sink);
+    }
 
-    for (uint8_t i = 0; i < extrema.count; i++) {
-      const T t = extrema.solutions[i];
+    sink.emplace_back(quad, quad_range);
 
-      if (math::is_normalized(t, false)) {
-        t_values.push_back(t);
+    if (t_error[1] < t2) {
+      cubic_range_to_quadratics(cubic_coefficients, t_error[1], t2, sink);
+    }
+  }
+
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  std::array<math::Vec2<T>, 3> taylor_expand(const std::array<math::Vec2<T>, 4>& coefficients, const T t0) {
+    const math::Vec2<T> a = coefficients[0];
+    const math::Vec2<T> b = coefficients[1];
+    const math::Vec2<T> c = coefficients[2];
+    const math::Vec2<T> d = coefficients[3];
+
+    const T t0_sq = t0 * t0;
+    const T t0_cb = t0_sq * t0;
+
+    // Taylor coefficients at t=t0
+    const math::Vec2<T> f = a * t0_cb + b * t0_sq + c * t0 + d;
+    const math::Vec2<T> f_prime = T(3) * a * t0_sq + T(2) * b * t0 + c;
+    const math::Vec2<T> f_second = T(6) * a * t0 + T(2) * b;
+
+    // Taylor series expansion at t=t0
+    return {
+      f_second / T(2),
+      f_prime - t0 * f_second,
+      f - t0 * f_prime + t0_sq * f_second / T(2)
+    };
+  }
+
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  T taylor_expansion_error(const math::Vec2<T> a, const T t0, const T tolerance) {
+    const T t0_sq = t0 * t0;
+    const T t0_cb = t0_sq * t0;
+
+    const math::Vec2<T> b = -T(3) * a * t0;
+    const math::Vec2<T> c = T(3) * a * t0_sq;
+    const math::Vec2<T> d = -a * t0_cb;
+
+    T t_e = T(2);
+
+    for (uint8_t i = 0; i < 2; i++) {
+
+      const math::CubicSolutions<T> t_errors_negative = math::solve_cubic(a[i], b[i], c[i], d[i] + tolerance);
+      const math::CubicSolutions<T> t_errors_positive = math::solve_cubic(a[i], b[i], c[i], d[i] - tolerance);
+
+      for (uint8_t i = 0; i < 3; i++) {
+        const T t_negative = t_errors_negative.solutions[i];
+        const T t_positive = t_errors_positive.solutions[i];
+
+        if (t_negative > t0 && t_negative < t_e) t_e = t_negative;
+        if (t_positive > t0 && t_positive < t_e) t_e = t_positive;
       }
     }
 
-    t_values.push_back(T(1));
+    return t_e;
+  }
 
-    for (T t0 : t_values) {
-      const auto [quad_coefficients, t_error] = taylor_expansion_at_t(x_coefficients, t0, T(1));
-      const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(math::Vec2<T>(quad_coefficients[0]), math::Vec2<T>(quad_coefficients[1]), math::Vec2<T>(quad_coefficients[2]));
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  T next_taylor_center(const math::Vec2<T> a, const T t_e, const T tolerance) {
+    const T t_e_sq = t_e * t_e;
+    const T t_e_cb = t_e_sq * t_e;
 
-      quads.push_back(extract(quad, std::max(T(0), t_error[0]), std::min(T(1), t_error[1])));
-      // math::Vec2<T> A_quad, B_quad, C_quad;
+    const math::Vec2<T> b = T(3) * a * t_e;
+    const math::Vec2<T> c = -T(3) * a * t_e_sq;
+    const math::Vec2<T> d = a * t_e_cb;
 
-      // for (int i = 0; i < 2; i++) {
-      //   const T a = A[i];
-      //   const T b = B[i];
-      //   const T c = C[i];
-      //   const T d = D[i];
+    T t0_prime = T(2);
 
-      //   const T t0_sq = t0 * t0;
-      //   const T t0_cb = t0_sq * t0;
+    for (uint8_t i = 0; i < 2; i++) {
 
-      //   const T f = a * t0_cb + b * t0_sq + c * t0 + d;
-      //   const T f_prime = T(3) * a * t0_sq + T(2) * b * t0 + c;
-      //   const T f_second = T(6) * a * t0 + T(2) * b;
+      const math::CubicSolutions<T> t_centers_negative = math::solve_cubic(-a[i], b[i], c[i], d[i] + tolerance);
+      const math::CubicSolutions<T> t_centers_positive = math::solve_cubic(-a[i], b[i], c[i], d[i] - tolerance);
 
-      //   // Taylor series expansion
-      //   A_quad[i] = f_second / T(2);
-      //   B_quad[i] = f_prime - t0 * f_second;
-      //   C_quad[i] = f - t0 * f_prime + t0_sq * f_second / T(2);
-      // }
+      for (uint8_t i = 0; i < 3; i++) {
+        const T t_negative = t_centers_negative.solutions[i];
+        const T t_positive = t_centers_positive.solutions[i];
 
-      // quads.push_back(QuadraticBezier<T>::from_coefficients(A_quad, B_quad, C_quad));
+        if (t_negative > t_e && t_negative < t0_prime) t0_prime = t_negative;
+        if (t_positive > t_e && t_positive < t0_prime) t0_prime = t_positive;
+      }
+    }
+
+    return t0_prime;
+  }
+
+  // TODO: handle cusp case
+  template <typename T, typename _>
+  std::vector<QuadraticBezier<T>> cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance) {
+    GK_TOTAL("geom::cubic_to_quadratics");
+
+    const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
+
+    std::vector<QuadraticBezier<T>> quads;
+
+    T t0 = T(0);
+    T t_e = T(0);
+
+    math::Vec2<T> p2 = cubic.p0;
+
+    while (t0 < T(1)) {
+      // Taylor expansion coefficients at t=t0
+      const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
+
+      // Value of t at which the Taylor approximation error equals the tolerance
+      const T t_e_prime = taylor_expansion_error(cubic_coefficients[0], t0, tolerance);
+
+      // Value of t at which the next Taylor approximation should start from
+      // in order to mantain the max error at t=t_e
+      const T t0_prime = next_taylor_center(cubic_coefficients[0], t_e_prime, tolerance);
+
+      // Quadratic Bezier curve from t_e to t_e_prime
+      const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients[0], quad_coefficients[1], quad_coefficients[2]);
+      QuadraticBezier<T> extracted_quad = extract(quad, t_e, std::min(T(1), t_e_prime));
+
+      if (!quads.empty()) {
+        const math::Vec2<T> p0 = math::midpoint(p2, extracted_quad.p0);
+
+        extracted_quad.p0 = p0;
+        quads.back().p2 = p0;
+      }
+
+      quads.push_back(extracted_quad);
+
+      t0 = t0_prime;
+      t_e = t_e_prime;
+      p2 = extracted_quad.p2;
+    }
+
+    // Close the approximation with one last quadratic curve if needed
+    if (t_e < T(1)) {
+      const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
+      QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients[0], quad_coefficients[1], quad_coefficients[2]);
+      QuadraticBezier<T> extracted_quad = extract(quad, t_e, T(1));
+
+      const math::Vec2<T> p0 = math::midpoint(p2, extracted_quad.p0);
+
+      extracted_quad.p0 = p0;
+      quads.back().p2 = p0;
+
+      quads.push_back(extracted_quad);
     }
 
     return quads;
@@ -370,15 +475,44 @@ namespace graphick::geom {
 
   template <typename T, typename _>
   std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> cubic_to_quadratics_with_intervals(const CubicBezier<T>& cubic) {
-    const auto [a, b, c, d] = cubic.coefficients();
+    const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
 
-    const std::array<T, 4> x_coefficients = { a[0], b[0], c[0], d[0] };
-    const std::array<T, 4> y_coefficients = { a[1], b[1], c[1], d[1] };
+    std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> quads;
 
+    T t0 = T(0);
+    T t_e = T(0);
+
+    while (t0 < T(1)) {
+      // Taylor expansion coefficients at t=t0
+      const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
+
+      // Value of t at which the Taylor approximation error equals the tolerance
+      const T t_e_prime = taylor_expansion_error(cubic_coefficients[0], t0, T(1e-2));
+
+      // Value of t at which the next Taylor approximation should start from
+      // in order to mantain the max error at t=t_e
+      const T t0_prime = next_taylor_center(cubic_coefficients[0], t_e_prime, T(1e-2));
+
+      // Quadratic Bezier curve from t_e to t_e_prime
+      const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients[0], quad_coefficients[1], quad_coefficients[2]);
+      quads.emplace_back(quad, math::Vec2<T>{ t_e, std::min(T(1), t_e_prime) });
+
+      t0 = t0_prime;
+      t_e = t_e_prime;
+    }
+
+    // Close the approximation with one last quadratic curve if needed
+    if (t_e < T(1)) {
+      const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
+      const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients[0], quad_coefficients[1], quad_coefficients[2]);
+
+      quads.emplace_back(quad, math::Vec2<T>{ t_e, T(1) });
+    }
+
+#if 0
     // Find local min/max points
     const math::QuadraticSolutions<T> extrema = math::solve_quadratic(T(3) * a[0], T(2) * b[0], c[0]);
 
-    std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> quads;
     std::vector<T> t_values = { T(0) };
 
     for (uint8_t i = 0; i < extrema.count; i++) {
@@ -391,16 +525,46 @@ namespace graphick::geom {
 
     t_values.push_back(T(1));
 
-    for (T t0 : t_values) {
-      const auto [quad_coefficients, t_error] = taylor_expansion_at_t(x_coefficients, t0, T(1e-1));
-      const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(math::Vec2<T>(quad_coefficients[0]), math::Vec2<T>(quad_coefficients[1]), math::Vec2<T>(quad_coefficients[2]));
+    const auto [quad_coefficients_start, t_error_start] = taylor_expansion_at_t(x_coefficients, T(0), T(1e-2));
+    // const auto [quad_coefficients_end, t_error_start] = taylor_expansion_at_t(x_coefficients, T(1), T(1e-2));
 
-      const T min_t = std::max(T(0), t_error[0]);
-      const T max_t = std::min(T(1), t_error[1]);
+    const QuadraticBezier<T> quad_start = QuadraticBezier<T>::from_coefficients(math::Vec2<T>(quad_coefficients_start[0]), math::Vec2<T>(quad_coefficients_start[1]), math::Vec2<T>(quad_coefficients_start[2]));
+    // const QuadraticBezier<T> quad_end = QuadraticBezier<T>::from_coefficients(math::Vec2<T>(quad_coefficients_end[0]), math::Vec2<T>(quad_coefficients_end[1]), math::Vec2<T>(quad_coefficients_end[2]));
 
-      quads.emplace_back(quad, math::Vec2<T>{ min_t, max_t });
-      // quads.emplace_back(extract(quad, min_t, max_t), math::Vec2<T>{ min_t, max_t });
+    quads.emplace_back(quad_start, math::Vec2<T>{ T(0), t_error_start[1] });
+
+    for (int i = 0; i < t_values.size() - 1; i++) {
+      const T t0 = t_values[i];
+      const T t1 = t_values[i + 1];
+
+      const auto [quad_coefficients_0, t_error_0] = taylor_expansion_at_t(x_coefficients, t0, T(1e-2));
+      const auto [quad_coefficients_1, t_error_1] = taylor_expansion_at_t(x_coefficients, t1, T(1e-2));
+
+      const QuadraticBezier<T> quad_0 = QuadraticBezier<T>::from_coefficients(math::Vec2<T>(quad_coefficients_0[0]), math::Vec2<T>(quad_coefficients_0[1]), math::Vec2<T>(quad_coefficients_0[2]));
+      const QuadraticBezier<T> quad_1 = QuadraticBezier<T>::from_coefficients(math::Vec2<T>(quad_coefficients_1[0]), math::Vec2<T>(quad_coefficients_1[1]), math::Vec2<T>(quad_coefficients_1[2]));
+
+      const T new_t0 = t_error_0[1];
+      const T new_t1 = t_error_1[0];
+
+      // TODO: should not add this again
+      // quads.emplace_back(quad_0, math::Vec2<T>{ t0, new_t0 });
+
+      if (new_t0 < new_t1) {
+        cubic_range_to_quadratics(x_coefficients, new_t0, new_t1, quads);
+      }
+
+      quads.emplace_back(quad_1, math::Vec2<T>{ new_t1, t1 });
+
+      // const auto [quad_coefficients, t_error] = taylor_expansion_at_t(x_coefficients, t0, T(1e-2));
+      // const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(math::Vec2<T>(quad_coefficients[0]), math::Vec2<T>(quad_coefficients[1]), math::Vec2<T>(quad_coefficients[2]));
+
+      // const T min_t = std::max(T(0), t_error[0]);
+      // const T max_t = std::min(T(1), t_error[1]);
+
+      // quads.emplace_back(quad, math::Vec2<T>{ min_t, max_t });
+      // // quads.emplace_back(extract(quad, min_t, max_t), math::Vec2<T>{ min_t, max_t });
     }
+#endif 
 
     return quads;
   }
@@ -431,8 +595,8 @@ namespace graphick::geom {
   template CubicBezier<float> extract(const CubicBezier<float>& cubic, const float t1, const float t2);
   template CubicBezier<double> extract(const CubicBezier<double>& cubic, const double t1, const double t2);
 
-  template std::vector<QuadraticBezier<float>> cubic_to_quadratics(const CubicBezier<float>& cubic);
-  template std::vector<QuadraticBezier<double>> cubic_to_quadratics(const CubicBezier<double>& cubic);
+  template std::vector<QuadraticBezier<float>> cubic_to_quadratics(const CubicBezier<float>& cubic, const float tolerance);
+  template std::vector<QuadraticBezier<double>> cubic_to_quadratics(const CubicBezier<double>& cubic, const double tolerance);
 
   template std::vector<std::pair<QuadraticBezier<float>, math::Vec2<float>>> cubic_to_quadratics_with_intervals(const CubicBezier<float>& cubic);
   template std::vector<std::pair<QuadraticBezier<double>, math::Vec2<double>>> cubic_to_quadratics_with_intervals(const CubicBezier<double>& cubic);
