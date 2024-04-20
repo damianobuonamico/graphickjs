@@ -758,10 +758,10 @@ namespace graphick::renderer {
     const float padding = 10.0f;
     const float resolution = 100;
 
-    const vec2 xy_graph_size = vec2(200.0f, -200.0f);
+    const vec2 xy_graph_size = vec2(400.0f, -400.0f);
     const vec2 graph_safe_size = xy_graph_size + 2.0f * vec2(-padding, padding);
 
-    for (int j = 0; j < 2; j++) {
+    for (int j = 0; j < 1; j++) {
       const vec2 graph_position = vec2(get()->m_viewport.size.x - xy_graph_size.x, -xy_graph_size.y) + cursor;
 
       get()->m_rect_instances.instances.emplace_back(
@@ -793,22 +793,26 @@ namespace graphick::renderer {
 
     cursor = vec2::zero();
 
-    const std::vector<geom::quadratic_bezier> quads = geom::cubic_to_quadratics(cubic);
+    const std::vector<std::pair<geom::quadratic_bezier, vec2>> quads = geom::cubic_to_quadratics_with_intervals(cubic);
 
-    for (int j = 0; j < 2; j++) {
+    for (int j = 0; j < 1; j++) {
       const vec2 graph_position = vec2(get()->m_viewport.size.x - xy_graph_size.x, -xy_graph_size.y) + cursor;
       const vec2 graph_safe_position = graph_position + vec2(padding, -padding);
 
       const rect curve_bounds = cubic.bounding_rect();
       const vec2 bounds_size = curve_bounds.size();
 
-      for (const geom::quadratic_bezier& quad : quads) {
-        for (int i = 0; i < static_cast<int>(resolution); i++) {
+      for (const auto& [quad, interval] : quads) {
+        // for (int i = 0; i < static_cast<int>(resolution); i++) {
+        for (int i = static_cast<int>(resolution * interval[0]); i < static_cast<int>(resolution * interval[1]); i++) {
           const float t0 = static_cast<float>(i) / resolution;
           const float t1 = static_cast<float>(i + 1) / resolution;
 
           const vec2 p0_norm = (quad.sample(t0) - curve_bounds.min) / bounds_size;
           const vec2 p1_norm = (quad.sample(t1) - curve_bounds.min) / bounds_size;
+
+          // const vec2 p0 = get()->m_viewport.project(vec2(math::lerp(interval[0], interval[1], t0), p0_norm[j]) * graph_safe_size + graph_safe_position);
+          // const vec2 p1 = get()->m_viewport.project(vec2(math::lerp(interval[0], interval[1], t1), p1_norm[j]) * graph_safe_size + graph_safe_position);
 
           const vec2 p0 = get()->m_viewport.project(vec2(t0, p0_norm[j]) * graph_safe_size + graph_safe_position);
           const vec2 p1 = get()->m_viewport.project(vec2(t1, p1_norm[j]) * graph_safe_size + graph_safe_position);

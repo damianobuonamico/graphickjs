@@ -157,4 +157,7 @@ namespace graphick::geom {
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   std::vector<QuadraticBezier<T>> cubic_to_quadratics(const CubicBezier<T>& cubic);
 
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> cubic_to_quadratics_with_intervals(const CubicBezier<T>& cubic);
+
 }
