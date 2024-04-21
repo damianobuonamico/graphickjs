@@ -183,13 +183,58 @@ namespace graphick::renderer {
   };
 
   /**
+   * @brief Represents a buffer of instances.
+   *
+   * @struct InstanceBuffer
+   */
+  template <typename T>
+  struct InstanceBuffer {
+    std::vector<std::vector<T>> batches;    /* The instances. */
+
+    uint32_t max_instances_per_batch;       /* The maximum number of instances for each batch. */
+
+    /**
+     * @brief Constructs a new InstanceBuffer object.
+     *
+     * @param max_instances_per_batch The maximum number of instances for each batch.
+     */
+    InstanceBuffer(const uint32_t max_instances_per_batch) :
+      max_instances_per_batch(max_instances_per_batch) {
+      batches.resize(1);
+      batches[0].reserve(max_instances_per_batch);
+    }
+
+    /**
+     * @brief Clears the instance batches.
+     */
+    inline void clear() {
+      batches.resize(1);
+      batches[0].clear();
+    }
+
+    /**
+     * @brief Adds a new instance to the buffer.
+     *
+     * @param instance The instance to add.
+     */
+    inline void push_back(T&& instance) {
+      if (batches.back().size() >= max_instances_per_batch) {
+        batches.push_back({});
+        batches.back().reserve(max_instances_per_batch);
+      }
+
+      batches.back().push_back(std::move(instance));
+    }
+  };
+
+  /**
    * @brief Represents a mesh to be rendered using instancing.
    *
    * @struct InstancedData
    */
   template <typename T>
   struct InstancedData {
-    std::vector<T> instances;                /* The per-instance data. */
+    InstanceBuffer<T> instances;             /* The per-instance data. */
 
     std::vector<vec2> vertices;              /* The vertices of the mesh. */
 
@@ -197,8 +242,6 @@ namespace graphick::renderer {
 
     uuid instance_buffer_id = uuid::null;    /* The ID of the instance buffer. */
     uuid vertex_buffer_id = uuid::null;      /* The ID of the vertex buffer. */
-
-    uint32_t max_instances;                  /* The maximum number of instances. */
 
     /**
      * @brief Initializes the instance data.
@@ -208,16 +251,22 @@ namespace graphick::renderer {
      */
     InstancedData(const size_t buffer_size, const GPU::Primitive primitive = GPU::Primitive::Triangles) :
       primitive(primitive),
-      max_instances(static_cast<uint32_t>(buffer_size / sizeof(T)))
-    {
-      instances.reserve(max_instances);
-    }
+      instances(static_cast<uint32_t>(buffer_size / sizeof(T))) {}
 
     InstancedData(const InstancedData&) = delete;
     InstancedData(InstancedData&&) = delete;
 
     InstancedData& operator=(const InstancedData&) = delete;
     InstancedData& operator=(InstancedData&&) = delete;
+
+    /**
+     * @brief Gets the maximum number of instances for each batch.
+     *
+     * @return The maximum number of instances for each batch.
+     */
+    inline uint32_t max_instances() const {
+      return instances.max_instances_per_batch;
+    }
 
     /**
      * @brief Clears the instance data.

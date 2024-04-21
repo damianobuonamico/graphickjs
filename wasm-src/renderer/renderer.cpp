@@ -160,7 +160,7 @@ namespace graphick::renderer {
       GPU::Memory::Allocator::free_general_buffer(data.instance_buffer_id);
     }
 
-    data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<T>(data.max_instances, "instanced_data");
+    data.instance_buffer_id = GPU::Memory::Allocator::allocate_general_buffer<T>(data.max_instances(), "instanced_data");
 
     if (vertex_buffer_id == uuid::null) {
       if (data.vertex_buffer_id != uuid::null) {
@@ -188,49 +188,51 @@ namespace graphick::renderer {
    */
   template <typename T, typename S, typename V>
   static void flush(InstancedData<T>& data, const S& program, const FlushData flush_data) {
-    if (data.instances.empty()) {
+    if (data.instances.batches[0].empty()) {
       return;
     }
 
     const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(data.instance_buffer_id);
     const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
 
-    GPU::Device::upload_to_buffer(instance_buffer, 0, data.instances, GPU::BufferTarget::Vertex);
+    for (const std::vector<T>& batch : data.instances.batches) {
+      GPU::Device::upload_to_buffer(instance_buffer, 0, batch, GPU::BufferTarget::Vertex);
 
-    V vertex_array(program, instance_buffer, vertex_buffer);
+      V vertex_array(program, instance_buffer, vertex_buffer);
 
-    GPU::RenderState state = {
-      nullptr,
-      program.program,
-      *vertex_array.vertex_array,
-      data.primitive,
-      flush_data.textures,
-      {},
-      flush_data.uniforms,
-      {
-        { 0.0f, 0.0f },
-        flush_data.viewport_size
-      },
-      {
-        GPU::BlendState{
-          GPU::BlendFactor::One,
-          GPU::BlendFactor::OneMinusSrcAlpha,
-          GPU::BlendFactor::One,
-          GPU::BlendFactor::OneMinusSrcAlpha,
-          GPU::BlendOp::Add,
-        },
-        std::nullopt,
-        std::nullopt,
+      GPU::RenderState state = {
+        nullptr,
+        program.program,
+        *vertex_array.vertex_array,
+        data.primitive,
+        flush_data.textures,
+        {},
+        flush_data.uniforms,
         {
-          std::nullopt,
-          std::nullopt,
-          std::nullopt
+          { 0.0f, 0.0f },
+          flush_data.viewport_size
         },
-        true
-      }
-    };
+        {
+          GPU::BlendState{
+            GPU::BlendFactor::One,
+            GPU::BlendFactor::OneMinusSrcAlpha,
+            GPU::BlendFactor::One,
+            GPU::BlendFactor::OneMinusSrcAlpha,
+            GPU::BlendOp::Add,
+          },
+          std::nullopt,
+          std::nullopt,
+          {
+            std::nullopt,
+            std::nullopt,
+            std::nullopt
+          },
+          true
+        }
+      };
 
-    GPU::Device::draw_arrays_instanced(data.vertices.size(), data.instances.size(), state);
+      GPU::Device::draw_arrays_instanced(data.vertices.size(), batch.size(), state);
+    }
 
     data.instances.clear();
   }
@@ -370,7 +372,8 @@ namespace graphick::renderer {
 
     // TODO: actually render both inner and outer
 
-    draw(stroked_path.outer, fill, transform, &bounds);
+    // draw(stroked_path.outer, fill, transform, &bounds);
+
     // draw_outline(stroked_path.outer, transform, 0.25f, nullptr, nullptr);
 
     // for (size_t i = 0; i < stroked_path.outer.size(); i++) {
@@ -389,7 +392,7 @@ namespace graphick::renderer {
       const vec2 p2 = path[i * 2 + 2];
 
       // get()->m_vertex_instances.instances.push_back(transform * p0);
-      get()->m_circle_instances.instances.emplace_back(transform * p1, get()->m_ui_options.handle_radius, vec4(0.2f, 0.8f, 0.2f, 1.0f));
+      get()->m_circle_instances.instances.push_back({ transform * p1, get()->m_ui_options.handle_radius, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
       // get()->m_vertex_instances.instances.push_back(transform * p2);
     }
   }
@@ -558,11 +561,11 @@ namespace graphick::renderer {
 
     /* Push instance. */
 
-    data.instances.emplace_back(
+    data.instances.push_back({
       transform, bounds.min, bounds_size, fill.color,
       curves_start_index, bands_start_index,
       horizontal_bands, vertical_bands
-    );
+    });
 
     for (size_t i = 0; i < path.size(); i++) {
       const vec2 p0 = path[i * 2];
@@ -572,7 +575,7 @@ namespace graphick::renderer {
       // get()->m_vertex_instances.instances.push_back(transform * p0);
       // get()->m_handle_instances.instances.push_back(transform * p1);
       // get()->m_vertex_instances.instances.push_back(transform * p2);
-      get()->m_circle_instances.instances.emplace_back(transform * p2, get()->m_ui_options.handle_radius, vec4(0.2f, 0.8f, 0.2f, 1.0f));
+      get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
       // get()->m_handle_instances.instances.push_back(transform * p2);
     }
   }
@@ -607,13 +610,13 @@ namespace graphick::renderer {
 
         p = a * t_sq * t + b * t_sq + c * t + p0;
 
-        get()->m_line_instances.instances.emplace_back(last, p, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        get()->m_line_instances.instances.push_back({ last, p, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
 
         last = p;
         t += dt;
       }
 
-      get()->m_line_instances.instances.emplace_back(last, p3, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f));
+      get()->m_line_instances.instances.push_back({ last, p3, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
 
       return;
     }
@@ -629,22 +632,22 @@ namespace graphick::renderer {
 
     const UIOptions& ui_options = get()->m_ui_options;
 
-    std::vector<LineInstance>& lines = get()->m_line_instances.instances;
-    std::vector<RectInstance>& rects = get()->m_rect_instances.instances;
+    InstanceBuffer<LineInstance>& lines = get()->m_line_instances.instances;
+    InstanceBuffer<RectInstance>& rects = get()->m_rect_instances.instances;
     // std::vector<vec2>& filled = get()->m_vertex_instances.instances;
     // std::vector<vec2>& white = get()->m_white_vertex_instances.instances;
-    std::vector<CircleInstance>& circles = get()->m_circle_instances.instances;
+    InstanceBuffer<CircleInstance>& circles = get()->m_circle_instances.instances;
 
     size_t i = path.points_size() - 1;
     vec2 last_raw = path.point_at(i);
     vec2 last = transform * last_raw;
 
     if (!path.closed()) {
-      rects.emplace_back(last, ui_options.vertex_size, ui_options.primary_color);
+      rects.push_back({ last, ui_options.vertex_size, ui_options.primary_color });
       // filled.push_back(last);
 
       if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
-        rects.emplace_back(last, ui_options.vertex_inner_size, vec4::identity());
+        rects.push_back({ last, ui_options.vertex_inner_size, vec4::identity() });
         // white.push_back(last);
       }
 
@@ -653,8 +656,8 @@ namespace graphick::renderer {
       if (out_handle != last_raw) {
         const vec2 h = transform * out_handle;
 
-        circles.emplace_back(h, ui_options.handle_radius, ui_options.primary_color);
-        lines.emplace_back(h, last, ui_options.line_width, ui_options.primary_color_05);
+        circles.push_back({ h, ui_options.handle_radius, ui_options.primary_color });
+        lines.push_back({ h, last, ui_options.line_width, ui_options.primary_color_05 });
       }
     }
 
@@ -662,11 +665,11 @@ namespace graphick::renderer {
       [&](const vec2 p0) {
         const vec2 p = transform * p0;
 
-        rects.emplace_back(p, ui_options.vertex_size, ui_options.primary_color);
+        rects.push_back({ p, ui_options.vertex_size, ui_options.primary_color });
         // filled.push_back(p);
 
         if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
-          rects.emplace_back(p, ui_options.vertex_inner_size, vec4::identity());
+          rects.push_back({ p, ui_options.vertex_inner_size, vec4::identity() });
           // white.push_back(p);
         }
 
@@ -676,8 +679,8 @@ namespace graphick::renderer {
           if (in_handle != p0) {
             const vec2 h = transform * in_handle;
 
-            circles.emplace_back(h, ui_options.handle_radius, ui_options.primary_color);
-            lines.emplace_back(h, p, ui_options.line_width, ui_options.primary_color_05);
+            circles.push_back({ h, ui_options.handle_radius, ui_options.primary_color });
+            lines.push_back({ h, p, ui_options.line_width, ui_options.primary_color_05 });
           }
         }
 
@@ -687,11 +690,11 @@ namespace graphick::renderer {
       [&](const vec2 p0, const vec2 p1) {
         const vec2 p = transform * p0;
 
-        rects.emplace_back(p, ui_options.vertex_size, ui_options.primary_color);
+        rects.push_back({ p, ui_options.vertex_size, ui_options.primary_color });
         // filled.push_back(p);
 
         if (selected_vertices && selected_vertices->find(i - 1) == selected_vertices->end()) {
-          rects.emplace_back(p, ui_options.vertex_inner_size, vec4::identity());
+          rects.push_back({ p, ui_options.vertex_inner_size, vec4::identity() });
           // white.push_back(p);
         }
 
@@ -701,20 +704,20 @@ namespace graphick::renderer {
       [&](const vec2 p0, const vec2 p1, const vec2 p2) {
         const vec2 p = transform * p0;
 
-        rects.emplace_back(p, ui_options.vertex_size, ui_options.primary_color);
+        rects.push_back({ p, ui_options.vertex_size, ui_options.primary_color });
         // filled.push_back(p);
 
         if (selected_vertices && selected_vertices->find(i - 2) == selected_vertices->end()) {
-          rects.emplace_back(p, ui_options.vertex_inner_size, vec4::identity());
+          rects.push_back({ p, ui_options.vertex_inner_size, vec4::identity() });
           // white.push_back(p);
         }
 
         if (p1 != p0 && p2 != p0) {
           const vec2 h = transform * p1;
 
-          circles.emplace_back(h, ui_options.handle_radius, ui_options.primary_color);
-          lines.emplace_back(h, p, ui_options.line_width, ui_options.primary_color_05);
-          lines.emplace_back(h, last, ui_options.line_width, ui_options.primary_color_05);
+          circles.push_back({ h, ui_options.handle_radius, ui_options.primary_color });
+          lines.push_back({ h, p, ui_options.line_width, ui_options.primary_color_05 });
+          lines.push_back({ h, last, ui_options.line_width, ui_options.primary_color_05 });
         }
 
         last = p;
@@ -723,26 +726,26 @@ namespace graphick::renderer {
       [&](const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
         const vec2 p = transform * p0;
 
-        rects.emplace_back(p, ui_options.vertex_size, ui_options.primary_color);
+        rects.push_back({ p, ui_options.vertex_size, ui_options.primary_color });
         // filled.push_back(p);
 
         if (selected_vertices && selected_vertices->find(i - 3) == selected_vertices->end()) {
-          rects.emplace_back(p, ui_options.vertex_inner_size, vec4::identity());
+          rects.push_back({ p, ui_options.vertex_inner_size, vec4::identity() });
           // white.push_back(p);
         }
 
         if (p2 != p3) {
           const vec2 h = transform * p2;
 
-          circles.emplace_back(h, ui_options.handle_radius, ui_options.primary_color);
-          lines.emplace_back(h, last, ui_options.line_width, ui_options.primary_color_05);
+          circles.push_back({ h, ui_options.handle_radius, ui_options.primary_color });
+          lines.push_back({ h, last, ui_options.line_width, ui_options.primary_color_05 });
         }
 
         if (p1 != p0) {
           const vec2 h = transform * p1;
 
-          circles.emplace_back(h, ui_options.handle_radius, ui_options.primary_color);
-          lines.emplace_back(h, p, ui_options.line_width, ui_options.primary_color_05);
+          circles.push_back({ h, ui_options.handle_radius, ui_options.primary_color });
+          lines.push_back({ h, p, ui_options.line_width, ui_options.primary_color_05 });
         }
 
         last = p;
@@ -764,11 +767,11 @@ namespace graphick::renderer {
     for (int j = 0; j < 2; j++) {
       const vec2 graph_position = vec2(get()->m_viewport.size.x - xy_graph_size.x, -xy_graph_size.y) + cursor;
 
-      get()->m_rect_instances.instances.emplace_back(
+      get()->m_rect_instances.instances.push_back({
         get()->m_viewport.project(graph_position + xy_graph_size / 2.0f),
         xy_graph_size / get()->m_viewport.zoom,
         vec4{ 0.0f, 0.0f, 0.0f, 0.5f }
-      );
+      });
 
       const vec2 graph_safe_position = graph_position + vec2(padding, -padding);
 
@@ -785,7 +788,7 @@ namespace graphick::renderer {
         const vec2 p0 = get()->m_viewport.project(vec2(t0, p0_norm[j]) * graph_safe_size + graph_safe_position);
         const vec2 p1 = get()->m_viewport.project(vec2(t1, p1_norm[j]) * graph_safe_size + graph_safe_position);
 
-        get()->m_line_instances.instances.emplace_back(p0, p1, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        get()->m_line_instances.instances.push_back({ p0, p1, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
       }
 
       cursor += vec2(0.0f, -xy_graph_size.y + padding / 4.0f);
@@ -804,7 +807,7 @@ namespace graphick::renderer {
     //     const vec2 p0 = quad.sample(t0);
     //     const vec2 p1 = quad.sample(t1);
 
-    //     get()->m_line_instances.instances.emplace_back(p0, p1, get()->m_ui_options.line_width * 2.0f, get()->m_ui_options.primary_color_05);
+    //     get()->m_line_instances.instances.push_back(p0, p1, get()->m_ui_options.line_width * 2.0f, get()->m_ui_options.primary_color_05);
     //   }
     // }
 
@@ -828,19 +831,19 @@ namespace graphick::renderer {
           const vec2 p0 = get()->m_viewport.project(vec2(t0, p0_norm[j]) * graph_safe_size + graph_safe_position);
           const vec2 p1 = get()->m_viewport.project(vec2(t1, p1_norm[j]) * graph_safe_size + graph_safe_position);
 
-          get()->m_line_instances.instances.emplace_back(p0, p1, get()->m_ui_options.line_width * 2.0f, vec4(0.8f, 0.2f, 0.2f, 1.0f));
+          get()->m_line_instances.instances.push_back({ p0, p1, get()->m_ui_options.line_width * 2.0f, vec4(0.8f, 0.2f, 0.2f, 1.0f) });
         }
 
         const vec2 p0_norm = (quad.sample(interval[0]) - curve_bounds.min) / bounds_size;
         const vec2 p0 = get()->m_viewport.project(vec2(interval[0], p0_norm[j]) * graph_safe_size + graph_safe_position);
 
-        get()->m_circle_instances.instances.emplace_back(p0, get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        get()->m_circle_instances.instances.push_back({ p0, get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
       }
 
       const vec2 p1_norm = (quads.back().first.sample(1.0f) - curve_bounds.min) / bounds_size;
       const vec2 p1 = get()->m_viewport.project(vec2(1.0f, p1_norm[j]) * graph_safe_size + graph_safe_position);
 
-      get()->m_circle_instances.instances.emplace_back(p1, get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f));
+      get()->m_circle_instances.instances.push_back({ p1, get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
 
       cursor += vec2(0.0f, -xy_graph_size.y + padding / 4.0f);
     }
