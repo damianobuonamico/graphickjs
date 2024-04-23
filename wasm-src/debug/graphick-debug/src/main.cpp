@@ -1,3 +1,5 @@
+#include "wasm-src/geom/path.h"
+
 #include "wasm-src/editor/editor.h"
 #include "wasm-src/editor/scene/entity.h"
 #include "wasm-src/editor/input/input_manager.h"
@@ -80,6 +82,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 int main() {
+  graphick::geom::Path<float> pppp;
+
   GLFWwindow* window;
 
   if (!glfwInit()) {

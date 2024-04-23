@@ -1,18 +1,15 @@
 /**
- * @file path/quadratic_path.h
+ * @file geom/quadratic_path.h
  * @brief Contains the definition of the QuadraticPath struct.
- *
- * @todo when new renderer is implemented, remove old one and unify namespaces with lower case convention.
  */
 
 #pragma once
 
-#include "../math/vec2.h"
 #include "../math/rect.h"
 
 #include <vector>
 
-namespace graphick::path {
+namespace graphick::geom {
 
   /**
    * @brief A quadratic path is a series of control points that are connected by quadratic curves.
@@ -22,8 +19,9 @@ namespace graphick::path {
    *
    * @struct QuadraticPath
    */
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   struct QuadraticPath {
-    std::vector<vec2> points;    /* The control points of the path. */
+    std::vector<math::Vec2<T>> points;    /* The control points of the path. */
 
     /**
      * @brief Returns whether the path is empty.
@@ -62,16 +60,16 @@ namespace graphick::path {
      * @param i The index of the control point.
      * @return The i-th control point.
      */
-    inline vec2 operator[](const size_t i) const {
+    inline math::Vec2<T> operator[](const size_t i) const {
       return points[i];
     }
 
-    inline rect approx_bounding_rect() const {
+    inline math::Rect<T> approx_bounding_rect() const {
       if (empty()) {
-        return rect{};
+        return math::Rect<T>{};
       }
 
-      rect bounds{ points[0], points[0] };
+      math::Rect<T> bounds{ points[0], points[0] };
 
       for (size_t i = 1; i < points.size(); i += 2) {
         bounds.min.x = std::min({ bounds.min.x, points[i].x, points[i + 1].x });
@@ -88,7 +86,7 @@ namespace graphick::path {
      *
      * @param p The point to move the cursor to.
      */
-    inline void move_to(const vec2 p) {
+    inline void move_to(const math::Vec2<T> p) {
       points.push_back(p);
     }
 
@@ -99,7 +97,7 @@ namespace graphick::path {
      *
      * @param p The end point of the line.
      */
-    inline void line_to(const vec2 p) {
+    inline void line_to(const math::Vec2<T> p) {
       points.push_back(p);
       points.push_back(p);
     }
@@ -110,7 +108,7 @@ namespace graphick::path {
      * @param p1 The first control point of the curve.
      * @param p2 The end point of the curve.
      */
-    inline void quadratic_to(const vec2 p1, const vec2 p2) {
+    inline void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2) {
       points.push_back(p1);
       points.push_back(p2);
     }

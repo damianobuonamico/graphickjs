@@ -9,8 +9,6 @@
 
 #include <array>
 
-//TODO: implement quadratic(), quadratic_derivative(), cubic(), cubic_derivative(), cubic_second_derivative(), cubic_extrema()
-
 namespace graphick::geom {
 
   /**
