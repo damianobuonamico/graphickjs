@@ -489,7 +489,7 @@ namespace graphick::editor {
 
       if (entity.has_component<PathComponent>()) {
         const path::Path& path = entity.get_component<PathComponent>().data();
-        const path::Path::Segment segment = path.at(0);
+        const path::Path::Segment segment = path.segment_at(0);
 
         renderer::Renderer::draw_debug_overlays({ segment.p0, segment.p1, segment.p2, segment.p3 });
       }

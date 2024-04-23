@@ -144,7 +144,7 @@ namespace graphick::editor::input {
         path.translate(static_cast<size_t>(node.in), vertex - in_handle);
 
         if (node.in_command >= 0) {
-          const path::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), path::Path::IndexType::Command);
+          const path::Path::Segment segment = path.data().segment_at(static_cast<size_t>(node.in_command), path::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.in_command));
@@ -161,7 +161,7 @@ namespace graphick::editor::input {
         path.translate(static_cast<size_t>(node.out), vertex - out_handle);
 
         if (node.out_command >= 0) {
-          const path::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), path::Path::IndexType::Command);
+          const path::Path::Segment segment = path.data().segment_at(static_cast<size_t>(node.out_command), path::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.out_command));
@@ -199,7 +199,7 @@ namespace graphick::editor::input {
         handle = path.data().point_at(path::Path::in_handle_index);
       }
     } else {
-      segment.move_to(transform * path.data().point_at(path.data().points_size() - 1));
+      segment.move_to(transform * path.data().point_at(path.data().points_count() - 1));
 
       if (path.data().has_out_handle()) {
         handle = path.data().point_at(path::Path::out_handle_index);
@@ -298,7 +298,7 @@ namespace graphick::editor::input {
     if (m_reverse) {
       in_p1 = first_path.data().has_in_handle() ? first_path.data().point_at(path::Path::in_handle_index) : first_path.data().point_at(0);
 
-      new_path.move_to(first_transform * first_path.data().point_at(first_path.data().points_size() - 1));
+      new_path.move_to(first_transform * first_path.data().point_at(first_path.data().points_count() - 1));
 
       first_path.data().for_each_reversed(
         nullptr,
@@ -313,7 +313,7 @@ namespace graphick::editor::input {
         }
       );
     } else {
-      in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(path::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_size() - 1);
+      in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(path::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_count() - 1);
 
       first_path.data().for_each(
         [&](const vec2 p0) {
@@ -337,7 +337,7 @@ namespace graphick::editor::input {
       second_path.data().for_each(
         [&](const vec2 p0) {
           new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * p0);
-          index = new_path.data().points_size() - 1;
+          index = new_path.data().points_count() - 1;
         },
         [&](const vec2 p1) {
           new_path.line_to(second_transform * p1);
@@ -350,10 +350,10 @@ namespace graphick::editor::input {
         }
       );
     } else {
-      const vec2 in_p2 = second_path.data().has_out_handle() ? second_path.data().point_at(path::Path::out_handle_index) : second_path.data().point_at(second_path.data().points_size() - 1);
+      const vec2 in_p2 = second_path.data().has_out_handle() ? second_path.data().point_at(path::Path::out_handle_index) : second_path.data().point_at(second_path.data().points_count() - 1);
 
-      new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * second_path.data().point_at(second_path.data().points_size() - 1));
-      index = new_path.data().points_size() - 1;
+      new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * second_path.data().point_at(second_path.data().points_count() - 1));
+      index = new_path.data().points_count() - 1;
 
       second_path.data().for_each_reversed(
         nullptr,
@@ -406,7 +406,7 @@ namespace graphick::editor::input {
     PathComponent path = entity.get_component<PathComponent>();
     TransformComponent transform = entity.get_component<TransformComponent>();
 
-    const path::Path::Segment segment = path.data().at(segment_hover.value());
+    const path::Path::Segment segment = path.data().segment_at(segment_hover.value());
     const mat2x3 inverse_transform = transform.inverse();
     const vec2 p = inverse_transform * InputManager::pointer.scene.position;
 
@@ -443,7 +443,7 @@ namespace graphick::editor::input {
     } else {
       path.translate(
         path::Path::out_handle_index,
-        path.data().point_at(path.data().points_size() - 1) - path.data().point_at(path::Path::out_handle_index)
+        path.data().point_at(path.data().points_count() - 1) - path.data().point_at(path::Path::out_handle_index)
       );
     }
 

@@ -10,6 +10,20 @@
 #include "cubic_bezier.h"
 #include "line.h"
 
+#include <functional>
+
+/* -- Forward declarations -- */
+
+namespace graphick::io {
+  struct EncodedData;
+  struct DataDecoder;
+}
+
+namespace graphick::math {
+  template <typename T>
+  struct Mat2x3;
+}
+
 namespace graphick::geom {
 
   /**
@@ -25,7 +39,7 @@ namespace graphick::geom {
     /**
      * @brief The Command enum represents the type of commands used to traverse the path.
      */
-    enum Command {
+    enum class Command {
       Move = 0,         /* Move to a point. */
       Line = 1,         /* Linear segment. */
       Quadratic = 2,    /* Quadratic bezier curve. */
@@ -267,7 +281,622 @@ namespace graphick::geom {
       const Path<T>& m_path;     /* The path to iterate over. */
     };
   public:
-  
+    /**
+     * @brief Constructors, copy constructor and move constructor.
+     */
+    Path();
+    Path(const Path<T>& other);
+    Path(Path<T>&& other) noexcept;
+
+    /**
+     * @brief Type conversion constructor.
+     *
+     * @param other The path to convert from.
+     */
+    template <typename U>
+    explicit Path(const Path<U>& other);
+
+    /**
+     * @brief Constructs a path from encoded data.
+     *
+     * @param data The encoded data to construct the path from.
+     */
+    Path(io::DataDecoder& decoder);
+
+    /**
+     * @brief Default destructor.
+     */
+    ~Path() = default;
+
+    /**
+     * @brief Copy and move assignment operators.
+     */
+    Path& operator=(const Path& other);
+    Path& operator=(Path&& other) noexcept;
+
+
+    /**
+     * @brief Returns a segment iterator to the beginning of the path.
+     *
+     * @return An iterator to the beginning of the path.
+     */
+    Iterator begin() const { return Iterator(*this, 1); }
+
+    /**
+     * @brief Returns a segment iterator to the end of the path.
+     *
+     * @return An iterator to the end of the path.
+     */
+    Iterator end() const { return Iterator(*this, m_commands_size); }
+
+    /**
+     * @brief Returns a reverse segment iterator to the end of the path.
+     *
+     * @return A reverse iterator to the end of the path.
+     */
+    ReverseIterator rbegin() const { return ReverseIterator(*this, m_commands_size - 1); }
+
+    /**
+     * @brief Returns a reverse segment iterator to the beginning of the path.
+     *
+     * @return A reverse iterator to the beginning of the path.
+     */
+    ReverseIterator rend() const { return ReverseIterator(*this, 0); }
+
+    /**
+     * @brief Returns the first segment of the path.
+     *
+     * @return The first segment of the path.
+     */
+    inline Segment front() const { return *begin(); }
+
+    /**
+     * @brief Whether the path is empty or not.
+     *
+     * A path is considered empty if it has less than two points. An empty path can also be vacant.
+     * When a move command is added to a vacant path, it becomes empty.
+     *
+     * @return true if the path is empty, false otherwise.
+     */
+    inline bool empty() const { return m_points.size() < 2; }
+
+    /**
+     * @brief Whether the path is vacant or not.
+     *
+     * A path is considered vacant if it has no points. A vacant path is always empty.
+     * When a move command is added to a vacant path, it becomes empty.
+     *
+     * @return true if the path is vacant, false otherwise.
+     */
+    inline bool vacant() const { return m_points.empty(); }
+
+    /**
+     * @brief Checks whether the path is closed or not.
+     *
+     * @return true if the path is closed, false otherwise.
+     */
+    inline bool closed() const { return !empty() && m_closed; }
+
+    /**
+     * @brief Returns the number of segments in the path.
+     *
+     * @return The number of segments in the path.
+     */
+    inline uint32_t size() const { return std::max(1, m_commands_size) - 1; }
+
+    /**
+     * @brief Returns the number of control points in the path.
+     *
+     * @param include_handles Whether or not to count the handles when counting the points, default is true.
+     * @return The number of points in the path.
+     */
+    inline uint32_t points_size(const bool include_handles = true) const {
+      return include_handles ? static_cast<uint32_t>(m_points.size()) : m_commands_size;
+    }
+
+    /**
+     * @brief Returns the last segment of the path.
+     *
+     * @return The last segment of the path.
+     */
+    inline Segment back() const { return *rbegin(); }
+
+    /**
+     * @brief Checks whether the path has an incoming handle or not.
+     *
+     * @return true if the path has an incoming handle, false otherwise.
+     */
+    inline bool has_in_handle() const { return !vacant() && !closed() && m_in_handle != m_points.front(); }
+
+    /**
+     * @brief Checks whether the path has an outgoing handle or not.
+     *
+     * @return true if the path has an outgoing handle, false otherwise.
+     */
+    inline bool has_out_handle() const { return !vacant() && !closed() && m_out_handle != m_points.back(); }
+
+    /**
+     * @brief Returns the incoming handle of the path.
+     *
+     * @return The incoming handle of the path.
+     */
+    inline math::Vec2<T> in_handle() const { return m_in_handle; }
+
+    /**
+     * @brief Returns the outgoing handle of the path.
+     *
+     * @return The outgoing handle of the path.
+     */
+    inline math::Vec2<T> out_handle() const { return m_out_handle; }
+
+    /**
+     * @brief Returns the ith control point of the path.
+     *
+     * To retrieve the position of the incoming handle, use the Path::in_handle_index constant or the in_handle() method.
+     * To retrieve the position of the outgoing handle, use the Path::out_handle_index constant or the out_handle() method.
+     *
+     * @param point_index The index of the point to return.
+     * @return The ith control point of the path.
+     */
+    inline math::Vec2<T> at(const uint32_t point_index) const {
+      switch (point_index) {
+      case in_handle_index:
+        return m_in_handle;
+      case out_handle_index:
+        return m_out_handle;
+      default: {
+        GK_ASSERT(point_index < m_points.size(), "Point index out of range.");
+        return m_points[point_index];
+      }
+      }
+    }
+
+    /**
+     * @brief Returns the ith control point of the path.
+     *
+     * To retrieve the position of the incoming handle, use the Path::in_handle_index constant or the in_handle() method.
+     * To retrieve the position of the outgoing handle, use the Path::out_handle_index constant or the out_handle() method.
+     *
+     * @param point_index The index of the point to return.
+     * @return The ith control point of the path.
+     */
+    inline math::Vec2<T> operator[](const uint32_t point_index) const { return at(point_index); }
+
+    /**
+     * @brief Returns the ith segment of the path.
+     *
+     * @param index The index of the segment to return;
+     * @param index_type The type of index to use, default is IndexType::Segment.
+     * @return The ith segment of the path.
+     */
+    inline Segment segment_at(const uint32_t index, const IndexType index_type = IndexType::Segment) const { return *Iterator(*this, index, index_type); }
+
+    /**
+     * @brief Returns the ith command of the path.
+     *
+     * @param command_index The index of the command to return.
+     * @return The ith command of the path.
+     */
+    inline Command command_at(const uint32_t command_index) const { return get_command(command_index); }
+
+    /**
+     * @brief Iterates over the commands of the path, calling the given callbacks for each command.
+     *
+     * @param move_callback The callback to call for each move command.
+     * @param line_callback The callback to call for each line command.
+     * @param quadratic_callback The callback to call for each quadratic command.
+     * @param cubic_callback The callback to call for each cubic command.
+     */
+    void for_each(
+      std::function<void(const math::Vec2<T>)> move_callback = nullptr,
+      std::function<void(const math::Vec2<T>)> line_callback = nullptr,
+      std::function<void(const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback = nullptr,
+      std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback = nullptr
+    ) const;
+
+    /**
+     * @brief Reverse iterates over the commands of the path, calling the given callbacks for each command.
+     *
+     * @param move_callback The callback to call for each move command.
+     * @param line_callback The callback to call for each line command.
+     * @param quadratic_callback The callback to call for each quadratic command.
+     * @param cubic_callback The callback to call for each cubic command.
+     */
+    void for_each_reversed(
+      std::function<void(const math::Vec2<T>)> move_callback = nullptr,
+      std::function<void(const math::Vec2<T>, const math::Vec2<T>)> line_callback = nullptr,
+      std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback = nullptr,
+      std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback = nullptr
+    ) const;
+
+    /**
+     * @brief Returns a vector containing the incdices of all of the vertex control points.
+     *
+     * Closing vertices are not included in the vector.
+     *
+     * @return The vector of indices.
+    */
+    std::vector<uint32_t> vertex_indices() const;
+
+    /**
+     * @brief Checks whether the given point is a vertex or not.
+     *
+     * A point is considered a vertex if it is the destination of a command.
+     *
+     * @param point_index The index of the point to check.
+     * @return true if the point is a vertex, false otherwise.
+     */
+    bool is_vertex(const uint32_t point_index) const;
+
+    /**
+     * @brief Checks whether the given point is a handle or not.
+     *
+     * A point is considered a handle if it is not a vertex, i.e. it is a control point of a curve.
+     *
+     * @param point_index The index of the point to check.
+     * @return true if the point is a handle, false otherwise.
+     */
+    inline bool is_handle(const uint32_t point_index) const { return !is_vertex(point_index); }
+
+    /**
+     * @brief Checks whether the given point is the first or last point of an open path.
+     *
+     * @param point_index The index of the point to check.
+     * @return true if the point is an open end, false otherwise.
+     */
+    bool is_open_end(const uint32_t point_index) const {
+      return (point_index == 0 || point_index == m_points.size() - 1) && !closed();
+    }
+
+    /**
+     * @brief Returns the vertex node the given control point is part of.
+     *
+     * @param point_index The index of the point to check.
+     * @return The vertex node the given control point is part of.
+     */
+    VertexNode node_at(const uint32_t point_index) const;
+
+    /**
+     * @brief Moves the path cursor to the given point.
+     *
+     * @param point The point to move the cursor to.
+     */
+    void move_to(const math::Vec2<T> point);
+
+    /**
+     * @brief Adds a line segment to the path.
+     *
+     * @param point The point to add to the path.
+     * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
+     */
+    void line_to(const math::Vec2<T> point, const bool reverse = false);
+
+    /**
+     * @brief Adds a line segment to the path.
+     *
+     * @param line The line to add to the path, only p2 is added.
+     * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
+     */
+    inline void line_to(const geom::Line<T> line, const bool reverse = false) {
+      line_to(line.p1, reverse);
+    }
+
+    /**
+     * @brief Adds a quadratic bezier curve to the path.
+     *
+     * @param control The control point of the curve.
+     * @param point The point to add to the path.
+     * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
+     */
+    void quadratic_to(const math::Vec2<T> control, const math::Vec2<T> point, const bool reverse = false);
+
+    /**
+     * @brief Adds a quadratic bezier curve to the path.
+     *
+     * @param quadratic The quadratic bezier curve to add to the path, only p1 and p2 are added.
+     * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
+     */
+    inline void quadratic_to(const geom::QuadraticBezier<T> quadratic, const bool reverse = false) {
+      quadratic_to(quadratic.p1, quadratic.p2, reverse);
+    }
+
+    /**
+     * @brief Adds a cubic bezier curve to the path.
+     *
+     * @param control_1 The first control point of the curve.
+     * @param control_2 The second control point of the curve.
+     * @param point The point to add to the path.
+     * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
+     */
+    void cubic_to(const math::Vec2<T> control_1, const math::Vec2<T> control_2, const math::Vec2<T> point, const bool reverse = false);
+
+    /**
+     * @brief Adds a cubic bezier curve to the path.
+     *
+     * @param control The control point of the curve.
+     * @param point The point to add to the path.
+     * @param is_control_1 Whether the control point is the first or the second one.
+     * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
+     */
+    void cubic_to(const math::Vec2<T> control, const math::Vec2<T> point, const bool is_control_1 = true, const bool reverse = false);
+
+    /**
+     * @brief Adds a cubic bezier curve to the path.
+     *
+     * @param cubic The cubic bezier curve to add to the path, only p1, p2 and p3 are added.
+     * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
+     */
+    inline void cubic_to(const geom::CubicBezier<T> cubic, const bool reverse = false) {
+      cubic_to(cubic.p1, cubic.p2, cubic.p3, reverse);
+    }
+
+    /**
+     * @brief Adds an arc to the path.
+     *
+     * @param center The center of the arc.
+     * @param radius The radius of the arc.
+     * @param x_axis_rotation The rotation of the arc over the x-axis.
+     * @param large_arc_flag Whether the arc is large or not.
+     * @param sweep_flag Whether the arc is clockwise or not.
+     * @param point The end point of the arc.
+     * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
+     */
+    void arc_to(const math::Vec2<T> center, const math::Vec2<T> radius, const T x_axis_rotation, const bool large_arc_flag, const bool sweep_flag, const math::Vec2<T> point, const bool reverse = false);
+
+    /**
+     * @brief Adds an ellipse to the path.
+     *
+     * @param center The center of the ellipse.
+     * @param radius The radius of the ellipse.
+     */
+    void ellipse(const math::Vec2<T> center, const math::Vec2<T> radius);
+
+    /**
+     * @brief Adds a circle to the path.
+     *
+     * @param center The center of the circle.
+     * @param radius The radius of the circle.
+     */
+    void circle(const math::Vec2<T> center, const T radius);
+
+    /**
+     * @brief Adds a rectangle to the path.
+     *
+     * @param point The top-left or center point of the rectangle.
+     * @param size The size of the rectangle.
+     * @param centered Whether the rectangle is centered or not.
+     */
+    void rect(const math::Vec2<T> point, const math::Vec2<T> size, const bool centered = false);
+
+    /**
+     * @brief Adds a rounded rectangle to the path.
+     *
+     * @param point The top-left or center point of the rectangle.
+     * @param size The size of the rectangle.
+     * @param radius The corner radius of the rectangle.
+     * @param centered Whether the rectangle is centered or not.
+     */
+    void round_rect(const math::Vec2<T> point, const math::Vec2<T> size, const T radius, const bool centered = false);
+
+    /**
+     * @brief Closes the path.
+     */
+    void close();
+
+    /**
+     * @brief Translates the ith point of the path by the given delta.
+     *
+     * This method takes care of updating the control points of the curves if the point is a vertex.
+     *
+     * @param point_index The index of the point to translate.
+     * @param delta The delta to translate the point by.
+    */
+    void translate(const uint32_t point_index, const math::Vec2<T> delta) {
+      switch (point_index) {
+      case in_handle_index:
+        m_in_handle += delta;
+        break;
+      case out_handle_index:
+        m_out_handle += delta;
+        break;
+      default: {
+        GK_ASSERT(point_index < m_points.size(), "Point index out of range.");
+        m_points[point_index] += delta;
+        break;
+      }
+      }
+    }
+
+    /**
+     * @brief Converts the given command to a line command.
+     *
+     * @param command_index The index of the command to convert.
+     * @param reference_point The control point to return the updated index of.
+     * @return The updated index of the reference point.
+     */
+    uint32_t to_line(const uint32_t command_index, uint32_t reference_point = 0);
+
+    /**
+     * @brief Converts the given command to a quadratic command.
+     *
+     * Only line commands can be converted to quadratic commands.
+     *
+     * @param command_index The index of the command to convert.
+     * @param reference_point The control point to return the updated index of.
+     * @return The updated index of the reference point.
+     */
+    uint32_t to_quadratic(const uint32_t command_index, uint32_t reference_point = 0);
+
+    /**
+     * @brief Converts the given command to a cubic command.
+     *
+     * @param command_index The index of the command to convert.
+     * @param reference_point The control point to return the updated index of.
+     * @return The updated index of the reference point.
+     */
+    uint32_t to_cubic(const uint32_t command_index, uint32_t reference_point = 0);
+
+      /**
+     * @brief Removes the ith control point from the path.
+     *
+     * @param point_index The index of the control point to remove.
+     * @param keep_shape Whether to keep the shape of the path after removing the control point. Default is false.
+     */
+    void remove(const uint32_t point_index, const bool keep_shape = false);
+
+    /**
+     * @brief Splits the segment at the given index at the given t value.
+     *
+     * @param segment_index The index of the segment to split.
+     * @param t The t value to split the segment at.
+     * @return The index of the newly added vertex.
+     */
+    uint32_t split(const uint32_t segment_index, const T t);
+
+     /**
+     * @brief Calculates the bounding rectangle of the path.
+     *
+     * @return The bounding rectangle of the path.
+     */
+    math::Rect<T> bounding_rect() const;
+
+    /**
+     * @brief Calculates the bounding rectangle of the path in the fixed reference system.
+     *
+     * @param transform The transformation matrix to apply to the path.
+     * @return The bounding rectangle of the path.
+     */
+    math::Rect<T> bounding_rect(const math::Mat2x3<T>& transform) const;
+
+    /**
+     * @brief Calculates the approximate bounding rectangle of the path considering all control points as vertices.
+     *
+     * @return The approximate bounding rectangle of the path.
+     */
+    math::Rect<T> approx_bounding_rect() const;
+
+    /**
+     * @brief Checks whether the given point is inside the path or not.
+     *
+     * @param point The point to check.
+     * @param fill The fill of the path, can be nullptr.
+     * @param stroke The stroke of the path, can be nullptr.
+     * @param transform The transformation matrix to apply to the path.
+     * @param threshold The threshold to use for the check.
+     * @param zoom The zoom level to use for the check.
+     * @param deep_search Whether to include handles in the search or not.
+     * @return true if the point is inside the path, false otherwise.
+     */
+    // bool is_point_inside_path(const vec2 point, const renderer::Fill* fill, const renderer::Stroke* stroke, const math::Mat2x3<T>& transform, const T threshold = 0.0f, const double zoom = 1.0, const bool depp_search = false) const;
+
+    /**
+     * @brief Checks whether the given point is inside the specified segment of the path or not.
+     *
+     * @param segment_index The index of the segment to check.
+     * @param point The point to check.
+     * @param stroke The stroke of the path, can be nullptr.
+     * @param transform The transformation matrix to apply to the path.
+     * @param threshold The threshold to use for the check.
+     * @param zoom The zoom level to use for the check.
+     * @return true if the point is near the segment, false otherwise.
+     */
+    // bool is_point_inside_segment(const uint32_t segment_index, const vec2 point, const renderer::Stroke* stroke, const math::Mat2x3<T>& transform, const T threshold = 0.0f, const double zoom = 1.0) const;
+
+    /**
+     * @brief Checks whether the given point is inside the specified path's point or not.
+     *
+     * A point can be either a vertex or a handle, to check use the is_vertex() or is_handle() methods.
+     *
+     * @param point_index The index of the point to check.
+     * @param point The point to check.
+     * @param transform The transformation matrix to apply to the path.
+     * @param threshold The threshold to use for the check.
+     * @return true if the two points are near each other, false otherwise.
+    */
+    // bool is_point_inside_point(const uint32_t point_index, const vec2 point, const math::Mat2x3<T>& transform, const T threshold = T(0)) const;
+
+    /**
+     * @brief Checks whether the path intersects the given rect or not.
+     *
+     * @param rect The rect to check.
+     * @param indices An optional set to fill with the indices of the vertices that intersect the rect.
+     * @return true if the path intersects the rect, false otherwise.
+     */
+    bool intersects(const math::Rect<T>& rect, std::unordered_set<uint32_t>* indices = nullptr) const;
+
+    /**
+     * @brief Checks whether the path intersects the given rect or not.
+     *
+     * @param rect The rect to check.
+     * @param transform The transformation matrix to apply to the path.
+     * @param indices An optional set to fill with the indices of the vertices that intersect the rect.
+     * @return true if the path intersects the rect, false otherwise.
+     */
+    bool intersects(const math::Rect<T>& rect, const math::Mat2x3<T>& transform, std::unordered_set<uint32_t>* indices = nullptr) const;
+
+    /**
+     * @brief Converts the path to a list of quadratic bezier curves.
+     *
+     * @param tolerance The tolerance to use for the conversion, default is 0.25.
+     * @return The quadratic representation of the path.
+     */
+    QuadraticPath to_quadratics(const T tolerance = T(2e-2)) const;
+
+    /**
+     * @brief Encodes the path to a list of bytes.
+     *
+     * @return The encoded path.
+     */
+    io::EncodedData& encode(io::EncodedData& data) const;
+  private:
+    /**
+     * @brief Returns the ith command of the path.
+     *
+     * @param index The index of the command to return.
+     * @return The ith command of the path.
+     */
+    inline Command get_command(const uint32_t index) const {
+      return static_cast<Command>((m_commands[index / 4] >> (6 - (index % 4) * 2)) & 0b00000011);
+    }
+
+    /**
+     * @brief Pushes a command to the path, handling the packing logic.
+     *
+     * @param command The command to push.
+     */
+    void push_command(const Command command);
+
+    /**
+     * @brief Inserts a command to the path, handling the packing logic.
+     *
+     * @param command The command to insert.
+     * @param index The index to insert the command at.
+     */
+    void insert_command(const Command command, const uint32_t index);
+
+    /**
+     * @brief Replaces the ith command of the path with the given one.
+     *
+     * @param index The index of the command to replace.
+     * @param command The command to replace the ith command with.
+     */
+    void replace_command(const uint32_t index, const Command command);
+
+    /**
+     * @brief Removes the ith command of the path.
+     *
+     * @param index The index of the command to remove.
+     */
+    void remove_command(const uint32_t index);
+  private:
+    std::vector<uint8_t> m_commands;        /* The commands used to traverse the path. */
+    std::vector<math::Vec2<T>> m_points;    /* The points of the path. */
+
+    uint32_t m_commands_size = 0;           /* The effective number of commands in the path. */
+    bool m_closed = false;                  /* Whether the path is closed or not. */
+
+    math::Vec2<T> m_in_handle;              /* The incoming handle of the path, its index is Path::in_handle_index. */
+    math::Vec2<T> m_out_handle;             /* The outgoing handle of the path, its index is Path::out_handle_index. */
   };
 
 }

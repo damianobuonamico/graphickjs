@@ -142,6 +142,28 @@ namespace graphick::io {
     }
 
     /**
+     * @brief Encodes a bitfield.
+     *
+     * A bitfield is treated as a 8-bit unsigned integer.
+     *
+     * @param t The bitfield to encode.
+     */
+    inline EncodedData& bitfield(std::initializer_list<bool> field) {
+      std::initializer_list<bool>::const_iterator b = field.begin();
+      uint8_t data = 0;
+
+      for (uint8_t i = 0; i < field.size(); i++) {
+        if (*b) {
+          data |= (1 << i);
+        }
+
+        b++;
+      }
+
+      return uint8(data);
+    }
+
+    /**
      * @brief Encodes a component id.
      *
      * A component id is treated as a 8-bit unsigned integer.
@@ -426,6 +448,24 @@ namespace graphick::io {
       m_index += sizeof(double);
 
       return t;
+    }
+
+    /**
+     * @brief Decodes a bitfield.
+     *
+     * @tparam N The number of properties in the bitfield.
+     * @return The decoded bitfield.
+     */
+    template <uint8_t N>
+    inline std::array<bool, N> bitfield() {
+      const uint8_t data = uint8();
+      std::array<bool, N> field;
+
+      for (uint8_t i = 0; i < N; i++) {
+        field[i] = data & (1 << i);
+      }
+
+      return field;
     }
 
     /**

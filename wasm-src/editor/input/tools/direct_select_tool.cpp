@@ -483,7 +483,7 @@ namespace graphick::editor::input {
         path.translate(static_cast<size_t>(node.in), vertex - in_handle);
 
         if (node.in_command >= 0) {
-          const path::Path::Segment segment = path.data().at(static_cast<size_t>(node.in_command), path::Path::IndexType::Command);
+          const path::Path::Segment segment = path.data().segment_at(static_cast<size_t>(node.in_command), path::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.in_command));
@@ -500,7 +500,7 @@ namespace graphick::editor::input {
         path.translate(static_cast<size_t>(node.out), vertex - out_handle);
 
         if (node.out_command >= 0) {
-          const path::Path::Segment segment = path.data().at(static_cast<size_t>(node.out_command), path::Path::IndexType::Command);
+          const path::Path::Segment segment = path.data().segment_at(static_cast<size_t>(node.out_command), path::Path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.out_command));

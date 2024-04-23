@@ -93,7 +93,7 @@ namespace graphick::editor {
       return 0;
     });
 
-    return reverse ? 0 : (m_data->points_size() - 1);
+    return reverse ? 0 : (m_data->points_count() - 1);
   }
 
   size_t PathComponent::quadratic_to(const vec2 p1, const vec2 p2, const bool reverse) {
@@ -102,7 +102,7 @@ namespace graphick::editor {
       return 0;
     });
 
-    return reverse ? 0 : (m_data->points_size() - 1);
+    return reverse ? 0 : (m_data->points_count() - 1);
   }
 
   size_t PathComponent::cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse) {
@@ -111,7 +111,7 @@ namespace graphick::editor {
       return 0;
     });
 
-    return reverse ? 0 : (m_data->points_size() - 1);
+    return reverse ? 0 : (m_data->points_count() - 1);
   }
 
   size_t PathComponent::close(const bool reverse) {
@@ -122,12 +122,12 @@ namespace graphick::editor {
 
     if (reverse) {
       return std::min(
-        m_data->points_size() - 1,
-        m_data->points_size() - static_cast<size_t>(m_data->back().type) - 1
+        m_data->points_count() - 1,
+        m_data->points_count() - static_cast<size_t>(m_data->back().type) - 1
       );
     }
 
-    return m_data->points_size() - 1;
+    return m_data->points_count() - 1;
   }
 
   void PathComponent::translate(const size_t point_index, const vec2 delta) {

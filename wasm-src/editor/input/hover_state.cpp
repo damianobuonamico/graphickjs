@@ -75,7 +75,7 @@ namespace graphick::editor::input {
       return;
     }
 
-    for (size_t i = 0; i < path.data().points_size(); i++) {
+    for (size_t i = 0; i < path.data().points_count(); i++) {
       if (path.data().is_point_inside_point(i, position, transform, threshold)) {
         m_segment = -1;
 

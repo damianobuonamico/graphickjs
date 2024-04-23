@@ -638,7 +638,7 @@ namespace graphick::renderer {
     // std::vector<vec2>& white = get()->m_white_vertex_instances.instances;
     InstanceBuffer<CircleInstance>& circles = get()->m_circle_instances.instances;
 
-    size_t i = path.points_size() - 1;
+    size_t i = path.points_count() - 1;
     vec2 last_raw = path.point_at(i);
     vec2 last = transform * last_raw;
 
