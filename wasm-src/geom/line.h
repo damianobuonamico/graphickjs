@@ -64,6 +64,12 @@ namespace graphick::geom {
       p0(l.p0),
       p1(l.p1) {}
 
+    /* -- Sample -- */
+
+    constexpr math::Vec2<T> sample(T t) const {
+      return p0 + t * (p1 - p0);
+    }
+
     /* -- Methods -- */
 
     constexpr math::Rect<T> bounding_rect() {

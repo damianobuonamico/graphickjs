@@ -7,12 +7,17 @@
 
 #include "path.h"
 
+#include "curve_ops.h"
+#include "path_builder.h"
+
 #include "../math/vector.h"
 #include "../math/mat2x3.h"
 
 #include "../io/encode/encode.h"
 
 #include "../utils/assert.h"
+
+#define FIT_RESOLUTION 10
 
 namespace graphick::geom {
 
@@ -414,7 +419,14 @@ namespace graphick::geom {
   template <typename T, typename _>
   Path<T, _>::Path(io::DataDecoder& decoder) {
     // Commands and points are always present, is_closed is encoded in the properties bitfield.
-    const auto [is_closed, has_in_handle, has_out_handle] = decoder.bitfield<3>();
+    const auto [is_vacant, is_closed, has_in_handle, has_out_handle] = decoder.bitfield<3>();
+
+    if (is_vacant) {
+      m_commands_size = 0;
+      m_closed = false;
+
+      return;
+    }
 
     // Commands are stored in encoded form.
     m_commands = decoder.vector<uint8_t>();
@@ -1149,20 +1161,19 @@ namespace graphick::geom {
       return;
     }
 
-    geom::CubicBezier<T> cubic;
+    CubicBezier<T> cubic;
 
     if (keep_shape) {
-      // TODO: implement settings and unify algorithms::CubicBezier and geom::cubic_bezier
-      std::vector<math::Vec2<T>> points(GK_FIT_RESOLUTION * 2 + 2);
+      std::vector<math::Vec2<T>> points(FIT_RESOLUTION * 2 + 2);
 
-      for (size_t i = 0; i <= GK_FIT_RESOLUTION; i++) {
-        float t = static_cast<float>(i) / static_cast<float>(GK_FIT_RESOLUTION);
+      for (int i = 0; i <= FIT_RESOLUTION; i++) {
+        T t = static_cast<T>(i) / T(FIT_RESOLUTION);
 
         points[i] = segment.sample(t);
-        points[GK_FIT_RESOLUTION + i + 1] = next_segment.sample(t);
+        points[FIT_RESOLUTION + i + 1] = next_segment.sample(t);
       }
 
-      cubic = math::Algorithms::fit_points_to_cubic(points, GK_PATH_TOLERANCE);
+      cubic = math::algorithms::fit_points_to_cubic(points, math::geometric_epsilon<T>);
     } else {
       const math::Vec2<T> p1 = segment.type == Command::Line ? segment.p0 : segment.p1;
 
@@ -1175,7 +1186,7 @@ namespace graphick::geom {
       }
     }
 
-    size_t new_command_index = 0;
+    uint32_t new_command_index = 0;
 
     if (to_remove == 0) {
       switch (segment.type) {
@@ -1269,22 +1280,691 @@ namespace graphick::geom {
 
   template <typename T, typename _>
   uint32_t Path<T, _>::split(const uint32_t segment_index, const T t) {
+    GK_ASSERT(segment_index < m_commands_size - 1, "Segment index out of range.");
 
+    if (empty()) return 0;
+
+    const Iterator it = { *this, segment_index, IndexType::Segment };
+    const Segment segment = *it;
+    const uint32_t point_i = it.point_index();
+
+    switch (segment.type) {
+    case Command::Line: {
+      const math::Vec2<T> p = math::lerp(segment.p0, segment.p1, t);
+
+      m_points.insert(m_points.begin() + point_i, p);
+      insert_command(Command::Line, segment_index + 1);
+
+      return point_i;
+    }
+    case Command::Quadratic: {
+      const auto& [left, right] = split(
+        { m_points[point_i - 1], m_points[point_i], m_points[point_i + 1] }, t
+      );
+
+      m_points[point_i] = left.p1;
+
+      m_points.insert(m_points.begin() + point_i, [left.p2, right.p1]);
+      insert_command(Command::Quadratic, segment_index + 1);
+
+      return point_i + 1;
+    }
+    case Command::Cubic: {
+      const auto& [left, right] = split(
+        { m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2] }, t
+      );
+
+      m_points[point_i] = left.p1;
+      m_points[point_i + 1] = right.p2;
+
+      m_points.insert(m_points.begin() + point_i + 1, { left.p2, left.p3, right.p1 });
+      insert_command(Command::Cubic, segment_index + 1);
+
+      return point_i + 2;
+    }
+    case Command::Move:
+    default:
+      break;
+    };
+
+    return 0;
   }
 
   template <typename T, typename _>
   math::Rect<T> Path<T, _>::bounding_rect() const {
+    if (empty()) {
+      if (vacant()) return {};
+      return { m_points[0], m_points[0] };
+    }
 
+    math::Rect<T> rect{};
+
+    for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+
+        const CubicBezier<T> cubic = {
+          m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]
+        };
+
+        rect = math::Rect<T>::from_rects(rect, bounding_rect(cubic));
+
+        j += 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+
+        const QuadraticBezier<T> quadratic = {
+          m_points[j - 1], m_points[j], m_points[j + 1]
+        };
+
+        rect = math::Rect<T>::from_rects(rect, bounding_rect(quadratic));
+
+        j += 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{ m_points[j], m_points[j] });
+
+        j += 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{ m_points[j], m_points[j] });
+
+        j += 1;
+
+        break;
+      }
+      }
+    }
+
+    return rect;
   }
 
   template <typename T, typename _>
   math::Rect<T> Path<T, _>::bounding_rect(const math::Mat2x3<T>& transform) const {
+    if (empty()) {
+      if (vacant()) return {};
 
+      const math::Vec2<T> p = transform * m_points[0];
+      return { p, p };
+    }
+
+    math::Rect<T> rect{};
+
+    for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Cubic: {
+        GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+
+        const CubicBezier<T> cubic = {
+          transform * m_points[j - 1], transform * m_points[j], transform * m_points[j + 1], transform * m_points[j + 2]
+        };
+
+        rect = math::Rect<T>::from_rects(rect, bounding_rect(cubic));
+
+        j += 3;
+
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+
+        const QuadraticBezier<T> quadratic = {
+          transform * m_points[j - 1], transform * m_points[j], transform * m_points[j + 1]
+        };
+
+        rect = math::Rect<T>::from_rects(rect, bounding_rect(quadratic));
+
+        j += 2;
+
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+
+        const math::Vec2<T> p1 = transform * m_points[j];
+
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{ p1, p1 });
+
+        j += 1;
+
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+
+        const math::Vec2<T> p0 = transform * m_points[j];
+
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{ p0, p0 });
+
+        j += 1;
+
+        break;
+      }
+      }
+    }
+
+    return rect;
   }
 
   template <typename T, typename _>
   math::Rect<T> Path<T, _>::approx_bounding_rect() const {
+    if (empty()) {
+      if (vacant()) return {};
+      return { m_points[0], m_points[0] };
+    }
 
+    math::rect rect{};
+
+    for (math::Vec2<T> p : m_points) {
+      math::min(rect.min, p, rect.min);
+      math::max(rect.max, p, rect.max);
+    }
+
+    math::min(rect.min, m_in_handle, rect.min);
+    math::max(rect.max, m_in_handle, rect.max);
+    math::min(rect.min, m_out_handle, rect.min);
+    math::max(rect.max, m_out_handle, rect.max);
+
+    return rect;
+  }
+
+  template <typename T, typename _>
+  bool Path<T, _>::is_point_inside_path(
+      const math::Vec2<T> point,
+      const FillingOptions* fill, const StrokingOptions<T>* stroke,
+      const math::Mat2x3<T>& transform,
+      const T threshold, const T zoom, const bool deep_search
+  ) const {
+    if (empty()) {
+      if (vacant()) {
+        return false;
+      }
+
+      return (is_point_in_circle(point, transform * m_points[0], threshold) || (deep_search && (
+        is_point_in_circle(point, transform * m_in_handle, threshold) ||
+        is_point_in_circle(point, transform * m_out_handle, threshold)))
+      );
+    }
+
+    const math::Rect<T> bounds = approx_bounding_rect();
+    const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) && (stroke->width > threshold) : false;
+
+    if (!is_point_in_rect(
+      math::inverse(transform) * point, bounds,
+      stroke ? stroke->width / T(2) * (consider_miters ? stroke->miter_limit : T(1)) + threshold : threshold
+    )) return false;
+
+    const QuadraticPath<T> path = to_quadratic_path();
+
+    // TODO: implement
+
+    return true;
+  }
+
+  template <typename T, typename _>
+  bool Path<T, _>::is_point_inside_segment(
+    const uint32_t segment_index, const math::Vec2<T> point,
+    const StrokingOptions<T>* stroke,
+    const math::Mat2x3<T>& transform,
+    const T threshold, const T zoom
+  ) const {
+    const Segment segment = get_segment(segment_index);
+
+    Path<T> path;
+
+    switch (segment.type) {
+    case Command::Line: {
+      path.line_to(segment.to_line());
+      break;
+    }
+    case Command::Quadratic: {
+      path.quadratic_to(segment.to_quadratic());
+      break;
+    }
+    case Command::Cubic: {
+      path.cubic_to(segment.to_cubic());
+      break;
+    }
+    }
+
+    return path.is_point_inside_path(
+      point, nullptr, stroke, transform, threshold, zoom, false
+    );
+  }
+
+  template <typename T, typename _>
+  bool Path<T, _>::is_point_inside_point(
+    const uint32_t point_index, const math::Vec2<T> point,
+    const math::Mat2x3<T>& transform,
+    const T threshold
+  ) const {
+    const math::Vec2<T> p = transform * point_at(point_index);
+
+    if (is_point_in_circle(point, p, threshold)) {
+      if (point_index == 0) return true;
+
+      for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+        switch (get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          if (point_i == point_index) {
+            return true;
+          }
+
+          point_i += 1;
+
+          break;
+        case Command::Quadratic:
+          if (point_i == point_index) {
+            if (m_points[point_i] == m_points[point_i - 1] || m_points[point_i] == m_points[point_i + 1]) {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 1 == point_index) {
+            return true;
+          }
+
+          point_i += 2;
+
+          break;
+        case Command::Cubic:
+          if (point_i == point_index) {
+            if (m_points[point_i] == m_points[point_i - 1] || m_points[point_i] == m_points[point_i + 2]) {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 1 == point_index) {
+            if (m_points[point_i + 1] == m_points[point_i - 1] || m_points[point_i + 1] == m_points[point_i + 2]) {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 2 == point_index) {
+            return true;
+          }
+
+          point_i += 3;
+
+          break;
+        }
+      }
+
+      if (point_index == in_handle_index && !has_in_handle()) return false;
+      if (point_index == out_handle_index && !has_out_handle()) return false;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  template <typename T, typename _>
+  bool Path<T, _>::intersects(
+    const math::Rect<T>& rect,
+    std::vector<uint32_t>* indices
+  ) const {
+    if (m_commands_size == 0) {
+      return false;
+    } else if (m_commands_size == 1) {
+      if (is_point_in_rect(m_points[0], rect)) {
+        if (indices) indices->insert(0);
+        return true;
+      }
+
+      return false;
+    }
+
+    if (!does_rect_intersect_rect(rect, approx_bounding_rect())) {
+      return false;
+    }
+
+    bool found = false;
+
+    for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        if (is_point_in_rect(m_points[point_i], rect)) {
+          if (indices) indices->insert(point_i);
+          found = true;
+        }
+
+        point_i += 1;
+        break;
+      case Command::Line:
+        if (is_point_in_rect(m_points[point_i], rect)) {
+          if (indices) indices->insert(point_i);
+          found = true;
+        } else if (!found && does_line_intersect_rect({ m_points[point_i - 1], m_points[point_i] }, rect)) {
+          found = true;
+        }
+
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        if (is_point_in_rect(m_points[point_i + 1], rect)) {
+          if (indices) indices->insert(point_i + 1);
+          found = true;
+        } else if (!found && does_quadratic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1] }, rect)) {
+          found = true;
+        }
+
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        if (is_point_in_rect(m_points[point_i + 2], rect)) {
+          if (indices) indices->insert(point_i + 2);
+          found = true;
+        } else if (!found && does_cubic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2] }, rect)) {
+          found = true;
+        }
+
+        point_i += 3;
+        break;
+      }
+    }
+
+    if (indices && closed()) {
+      indices->erase(m_points.size() - 1);
+    }
+
+    return found;
+  }
+
+  template <typename T, typename _>
+  bool Path<T, _>::intersects(
+    const math::Rect<T>& rect, const math::Mat2x3<T>& transform,
+    std::vector<uint32_t>* indices
+  ) const {
+    if (m_commands_size == 0) {
+      return false;
+    } else if (m_commands_size == 1) {
+      if (is_point_in_rect(transform * m_points[0], rect)) {
+        if (indices) indices->insert(0);
+        return true;
+      }
+
+      return false;
+    }
+
+    math::Vec2<T> last = math::Vec2<T>::zero();
+
+    if (!does_rect_intersect_rect(rect, transform * approx_bounding_rect())) {
+      return false;
+    }
+
+    bool found = false;
+
+    for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move: {
+        const math::Vec2<T> p0 = transform * m_points[point_i];
+
+        if (is_point_in_rect(p0, rect)) {
+          if (indices) indices->insert(point_i);
+          found = true;
+        }
+
+        point_i += 1;
+        last = p0;
+
+        break;
+      }
+      case Command::Line: {
+        const math::Vec2<T> p1 = transform * m_points[point_i];
+
+        if (is_point_in_rect(p1, rect)) {
+          if (indices) indices->insert(point_i);
+          found = true;
+        } else if (!found && does_line_intersect_rect({ last, p1 }, rect)) {
+          found = true;
+        }
+
+        point_i += 1;
+        break;
+      }
+      case Command::Quadratic: {
+        const math::Vec2<T> p2 = transform * m_points[point_i + 1];
+
+        if (is_point_in_rect(p2, rect)) {
+          if (indices) indices->insert(point_i + 1);
+          found = true;
+        } else if (!found && does_quadratic_intersect_rect({ last, transform * m_points[point_i], p2 }, rect)) {
+          found = true;
+        }
+
+        point_i += 2;
+        last = p2;
+
+        break;
+      }
+      case Command::Cubic: {
+        const math::Vec2<T> p1 = transform * m_points[point_i];
+        const math::Vec2<T> p2 = transform * m_points[point_i + 1];
+        const math::Vec2<T> p3 = transform * m_points[point_i + 2];
+
+        if (is_point_in_rect(p3, rect)) {
+          if (indices) indices->insert(point_i + 2);
+          found = true;
+        } else if (!found && does_cubic_intersect_rect({ last, p1, p2, p3 }, rect)) {
+          found = true;
+        }
+
+        point_i += 3;
+        last = p3;
+
+        break;
+      }
+      }
+    }
+
+    if (indices && closed()) {
+      indices->erase(m_points.size() - 1);
+    }
+
+    return found;
+  }
+
+  template <typename T, typename _>
+  QuadraticPath<T> Path<T, _>::to_quadratic_path(const T tolerance) const {
+    QuadraticPath<T> path;
+
+    if (empty()) {
+      return path;
+    }
+
+    for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        path.move_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Line:
+        path.line_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Quadratic:
+        path.quadratic_to(m_points[j], m_points[j + 1]);
+        j += 2;
+        break;
+      case Command::Cubic: {
+        cubic_to_quadratics({
+          m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]
+        }, tolerance, path);
+
+        j += 3;
+        break;
+      }
+      }
+    }
+
+    return path;
+  }
+
+  template <typename T, typename _>
+  io::EncodedData& Path<T, _>::encode(io::EncodedData& data) const {
+    if (vacant()) {
+      // The first bit is set to true to indicate that the path is vacant.
+      return data.bitfield({ true, false, false, false });
+    }
+
+    bool has_in = has_in_handle();
+    bool has_out = has_out_handle();
+
+    // Bitfield [vacant, closed, has_in_handle, has_out_handle]
+    data.bitfield({ false, closed(), has_in, has_out });
+
+    data.vector(m_commands);
+    data.vector(m_points);
+
+    if (has_in) data.math::Vec2<T>(m_in_handle);
+    if (has_out) data.math::Vec2<T>(m_out_handle);
+
+    return data;
+  }
+
+  template <typename T, typename _>
+  void Path<T, _>::push_command(const Command command) {
+    uint32_t rem = m_commands_size % 4;
+
+    if (rem == 0) {
+      m_commands.push_back(static_cast<uint8_t>(command) << 6);
+    } else {
+      m_commands[m_commands_size / 4] |= static_cast<uint8_t>(command) << (6 - rem * 2);
+    }
+
+    m_commands_size += 1;
+  }
+
+  template <typename T, typename _>
+  void Path<T, _>::insert_command(const Command command, const uint32_t index) {
+    if (index >= m_commands_size) {
+      return push_command(command);
+    } else if (index == 0) {
+      std::vector<Command> commands(m_commands_size + 1);
+
+      for (uint32_t i = 0; i < m_commands_size; i++) {
+        commands[i + 1] = get_command(i);
+      }
+
+      commands[0] = Command::Move;
+      commands[1] = command;
+
+      m_commands.clear();
+      m_commands_size = 0;
+
+      for (uint32_t i = 0; i < commands.size(); i++) {
+        push_command(commands[i]);
+      }
+
+      return;
+    }
+
+    std::vector<Command> commands_before(index + 1);
+    std::vector<Command> commands_after;
+
+    for (uint32_t i = 0; i < index; i++) {
+      commands_before[i] = get_command(i);
+    }
+
+    commands_before[index] = command;
+
+    for (uint32_t i = index; i < m_commands_size; i++) {
+      commands_after.push_back(get_command(i));
+    }
+
+    m_commands.clear();
+    m_commands_size = 0;
+
+    for (uint32_t i = 0; i < commands_before.size(); i++) {
+      push_command(commands_before[i]);
+    }
+
+    for (uint32_t i = 0; i < commands_after.size(); i++) {
+      push_command(commands_after[i]);
+    }
+  }
+
+  template <typename T, typename _>
+  void Path<T, _>::replace_command(const uint32_t index, const Command command) {
+    GK_ASSERT(index < m_commands_size, "Command index out of range.");
+
+    uint32_t rem = index % 4;
+
+    m_commands[index / 4] &= ~(0b00000011 << (6 - rem * 2));
+    m_commands[index / 4] |= command << (6 - rem * 2);
+  }
+
+  template <typename T, typename _>
+  void Path<T, _>::remove_command(const uint32_t index) {
+    GK_ASSERT(index < m_commands_size, "Command index out of range.");
+
+    if (index == m_commands_size - 1) {
+      uint32_t rem = (m_commands_size - 1) % 4;
+
+      if (rem == 0) {
+        m_commands.pop_back();
+      } else {
+        m_commands[(m_commands_size - 1) / 4] &= ~(0b00000011 << (6 - rem * 2));
+      }
+
+      m_commands_size -= 1;
+
+      return;
+    } else if (index == 0) {
+      std::vector<Command> commands(m_commands_size - 1);
+
+      for (uint32_t i = 0; i < m_commands_size - 1; i++) {
+        commands[i] = get_command(i + 1);
+      }
+
+      commands[0] = Command::Move;
+
+      m_commands.clear();
+      m_commands_size = 0;
+
+      for (uint32_t i = 0; i < commands.size(); i++) {
+        push_command(commands[i]);
+      }
+
+      return;
+    }
+
+    std::vector<Command> commands(m_commands_size - 1);
+
+    for (uint32_t i = 0; i < index; i++) {
+      commands[i] = get_command(i);
+    }
+
+    for (uint32_t i = index + 1; i < m_commands_size; i++) {
+      commands[i - 1] = get_command(i);
+    }
+
+    m_commands.clear();
+    m_commands_size = 0;
+
+    for (uint32_t i = 0; i < commands.size(); i++) {
+      push_command(commands[i]);
+    }
   }
 
   /* -- Template Instantiation -- */

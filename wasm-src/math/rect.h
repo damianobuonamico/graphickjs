@@ -66,22 +66,22 @@ namespace graphick::math {
 
     /* -- Static constructors -- */
 
-    static constexpr Rect<T> from_size(Vec2<T> size) {
+    static constexpr Rect<T> from_size(const Vec2<T> size) {
       return Rect<T>(Vec2<T>::zero(), size);
     }
 
-    static constexpr Rect<T> from_center(Vec2<T> center, Vec2<T> size) {
+    static constexpr Rect<T> from_center(const Vec2<T> center, const Vec2<T> size) {
       return Rect<T>(center - size / 2, center + size / 2);
     }
 
-    static constexpr Rect<T> from_vectors(Vec2<T> v1, Vec2<T> v2) {
+    static constexpr Rect<T> from_vectors(const Vec2<T> v1, const Vec2<T> v2) {
       return Rect<T>(
         { v1.x < v2.x ? v1.x : v2.x, v1.y < v2.y ? v1.y : v2.y },
         { v1.x > v2.x ? v1.x : v2.x, v1.y > v2.y ? v1.y : v2.y }
       );
     }
 
-    static constexpr Rect<T> from_vectors(std::initializer_list<Vec2<T>> vectors) {
+    static constexpr Rect<T> from_vectors(const std::initializer_list<Vec2<T>> vectors) {
       Vec2<T> min = std::numeric_limits<Vec2<T>>::max();
       Vec2<T> max = std::numeric_limits<Vec2<T>>::lowest();
 
@@ -90,6 +90,20 @@ namespace graphick::math {
         min.y = min.y > v.y ? v.y : min.y;
         max.x = max.x < v.x ? v.x : max.x;
         max.y = max.y < v.y ? v.y : max.y;
+      }
+
+      return Rect<T>(min, max);
+    }
+
+    static constexpr Rect<T> from_rects(const Rect<T> r1, const Rect<T> r2) {
+      Vec2<T> min = r1.min;
+      Vec2<T> max = r1.max;
+
+      for (uint8_t i = 0; i < 2; i++) {
+        min.x = min.x > r2[i].x ? r2[i].x : min.x;
+        min.y = min.y > r2[i].y ? r2[i].y : min.y;
+        max.x = max.x < r2[i].x ? r2[i].x : max.x;
+        max.y = max.y < r2[i].y ? r2[i].y : max.y;
       }
 
       return Rect<T>(min, max);

@@ -325,12 +325,10 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  std::vector<QuadraticBezier<T>> cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance) {
+  void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink) {
     GK_TOTAL("geom::cubic_to_quadratics");
 
     const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
-    
-    std::vector<QuadraticBezier<T>> quads;
 
     T t0 = T(0);
     T t_e = T(0);
@@ -350,16 +348,13 @@ namespace graphick::geom {
 
       // Quadratic Bezier curve from t_e to t_e_prime
       const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
-      QuadraticBezier<T> extracted_quad = extract(quad, t_e, std::min(T(1), t_e_prime));
+      const QuadraticBezier<T> extracted_quad = extract(quad, t_e, std::min(T(1), t_e_prime));
 
-      if (!quads.empty()) {
-        const math::Vec2<T> p0 = math::midpoint(p2, extracted_quad.p0);
-
-        extracted_quad.p0 = p0;
-        quads.back().p2 = p0;
+      if (t0 != T(0)) {
+        sink.points.back() = math::midpoint(p2, extracted_quad.p0);
       }
 
-      quads.push_back(extracted_quad);
+      sink.quadratic_to(extracted_quad.p1, extracted_quad.p2);
 
       t0 = t0_prime;
       t_e = t_e_prime;
@@ -369,18 +364,14 @@ namespace graphick::geom {
     // Close the approximation with one last quadratic curve if needed
     if (t_e < T(1)) {
       const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
-      QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
-      QuadraticBezier<T> extracted_quad = extract(quad, t_e, T(1));
 
-      const math::Vec2<T> p0 = math::midpoint(p2, extracted_quad.p0);
+      const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
+      const QuadraticBezier<T> extracted_quad = extract(quad, t_e, T(1));
 
-      extracted_quad.p0 = p0;
-      quads.back().p2 = p0;
+      sink.points.back() = math::midpoint(p2, extracted_quad.p0);
 
-      quads.push_back(extracted_quad);
+      sink.quadratic_to(extracted_quad.p1, extracted_quad.p2);
     }
-
-    return quads;
   }
 
   template <typename T, typename _>
@@ -448,8 +439,8 @@ namespace graphick::geom {
   template CubicBezier<float> extract(const CubicBezier<float>& cubic, const float t1, const float t2);
   template CubicBezier<double> extract(const CubicBezier<double>& cubic, const double t1, const double t2);
 
-  template std::vector<QuadraticBezier<float>> cubic_to_quadratics(const CubicBezier<float>& cubic, const float tolerance);
-  template std::vector<QuadraticBezier<double>> cubic_to_quadratics(const CubicBezier<double>& cubic, const double tolerance);
+  template void cubic_to_quadratics(const CubicBezier<float>& cubic, const float tolerance, QuadraticPath<float>& sink);
+  template void cubic_to_quadratics(const CubicBezier<double>& cubic, const double tolerance, QuadraticPath<double>& sink);
 
   template std::vector<std::pair<QuadraticBezier<float>, math::Vec2<float>>> cubic_to_quadratics_with_intervals(const CubicBezier<float>& cubic);
   template std::vector<std::pair<QuadraticBezier<double>, math::Vec2<double>>> cubic_to_quadratics_with_intervals(const CubicBezier<double>& cubic);

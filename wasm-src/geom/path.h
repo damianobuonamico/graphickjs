@@ -26,6 +26,10 @@ namespace graphick::math {
 
 namespace graphick::geom {
 
+  template <typename T>
+  struct StrokingOptions;
+  struct FillingOptions;
+
   /**
    * @brief The Path class represents the path representation used throughout the graphick editor.
    *
@@ -131,6 +135,25 @@ namespace graphick::geom {
       inline operator geom::Line<T>() { return to_line(); }
       inline operator geom::QuadraticBezier<T>() { return to_quadratic(); }
       inline operator geom::CubicBezier<T>() { return to_cubic(); }
+
+      /**
+       * @brief Samples the segment at the given t value.
+       *
+       * @param t The t value to sample the segment at.
+       * @return The sampled point.
+       */
+      inline math::Vec2<T> sample(const T t) const {
+        switch (type) {
+        case Command::Line:
+          return to_line().sample(t);
+        case Command::Quadratic:
+          return to_quadratic().sample(t);
+        case Command::Cubic:
+          return to_cubic().sample(t);
+        default:
+          return p0;
+        }
+      }
     };
 
      /**
@@ -566,10 +589,10 @@ namespace graphick::geom {
     /**
      * @brief Adds a line segment to the path.
      *
-     * @param point The point to add to the path.
+     * @param p1 The point to add to the path.
      * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
      */
-    void line_to(const math::Vec2<T> point, const bool reverse = false);
+    void line_to(const math::Vec2<T> p1, const bool reverse = false);
 
     /**
      * @brief Adds a line segment to the path.
@@ -584,11 +607,11 @@ namespace graphick::geom {
     /**
      * @brief Adds a quadratic bezier curve to the path.
      *
-     * @param control The control point of the curve.
-     * @param point The point to add to the path.
+     * @param p1 The control point of the curve.
+     * @param p2 The point to add to the path.
      * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
      */
-    void quadratic_to(const math::Vec2<T> control, const math::Vec2<T> point, const bool reverse = false);
+    void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const bool reverse = false);
 
     /**
      * @brief Adds a quadratic bezier curve to the path.
@@ -603,22 +626,22 @@ namespace graphick::geom {
     /**
      * @brief Adds a cubic bezier curve to the path.
      *
-     * @param control_1 The first control point of the curve.
-     * @param control_2 The second control point of the curve.
-     * @param point The point to add to the path.
+     * @param p1 The first control point of the curve.
+     * @param p2 The second control point of the curve.
+     * @param p3 The point to add to the path.
      * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
      */
-    void cubic_to(const math::Vec2<T> control_1, const math::Vec2<T> control_2, const math::Vec2<T> point, const bool reverse = false);
+    void cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3, const bool reverse = false);
 
     /**
      * @brief Adds a cubic bezier curve to the path.
      *
-     * @param control The control point of the curve.
-     * @param point The point to add to the path.
-     * @param is_control_1 Whether the control point is the first or the second one.
+     * @param p The control point of the curve.
+     * @param p3 The point to add to the path.
+     * @param is_p1 Whether the control point is the first or the second one.
      * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
      */
-    void cubic_to(const math::Vec2<T> control, const math::Vec2<T> point, const bool is_control_1 = true, const bool reverse = false);
+    void cubic_to(const math::Vec2<T> p, const math::Vec2<T> p3, const bool is_p1 = true, const bool reverse = false);
 
     /**
      * @brief Adds a cubic bezier curve to the path.
@@ -641,7 +664,11 @@ namespace graphick::geom {
      * @param point The end point of the arc.
      * @param reverse Whether to add the point at the beginning of the path, instead of the end. Default is false.
      */
-    void arc_to(const math::Vec2<T> center, const math::Vec2<T> radius, const T x_axis_rotation, const bool large_arc_flag, const bool sweep_flag, const math::Vec2<T> point, const bool reverse = false);
+    void arc_to(
+      const math::Vec2<T> center, const math::Vec2<T> radius,
+      const T x_axis_rotation, const bool large_arc_flag, const bool sweep_flag,
+      const math::Vec2<T> point, const bool reverse = false
+    );
 
     /**
      * @brief Adds an ellipse to the path.
@@ -666,7 +693,10 @@ namespace graphick::geom {
      * @param size The size of the rectangle.
      * @param centered Whether the rectangle is centered or not.
      */
-    void rect(const math::Vec2<T> point, const math::Vec2<T> size, const bool centered = false);
+    void rect(
+      const math::Vec2<T> point, const math::Vec2<T> size,
+      const bool centered = false
+    );
 
     /**
      * @brief Adds a rounded rectangle to the path.
@@ -676,7 +706,10 @@ namespace graphick::geom {
      * @param radius The corner radius of the rectangle.
      * @param centered Whether the rectangle is centered or not.
      */
-    void round_rect(const math::Vec2<T> point, const math::Vec2<T> size, const T radius, const bool centered = false);
+    void round_rect(
+      const math::Vec2<T> point, const math::Vec2<T> size,
+      const T radius, const bool centered = false
+    );
 
     /**
      * @brief Closes the path.
@@ -787,7 +820,12 @@ namespace graphick::geom {
      * @param deep_search Whether to include handles in the search or not.
      * @return true if the point is inside the path, false otherwise.
      */
-    // bool is_point_inside_path(const vec2 point, const renderer::Fill* fill, const renderer::Stroke* stroke, const math::Mat2x3<T>& transform, const T threshold = 0.0f, const double zoom = 1.0, const bool depp_search = false) const;
+    bool is_point_inside_path(
+      const math::Vec2<T> point,
+      const FillingOptions* fill, const StrokingOptions<T>* stroke,
+      const math::Mat2x3<T>& transform,
+      const T threshold = T(0), const T zoom = T(1), const bool deep_search = false
+    ) const;
 
     /**
      * @brief Checks whether the given point is inside the specified segment of the path or not.
@@ -800,7 +838,12 @@ namespace graphick::geom {
      * @param zoom The zoom level to use for the check.
      * @return true if the point is near the segment, false otherwise.
      */
-    // bool is_point_inside_segment(const uint32_t segment_index, const vec2 point, const renderer::Stroke* stroke, const math::Mat2x3<T>& transform, const T threshold = 0.0f, const double zoom = 1.0) const;
+    bool is_point_inside_segment(
+      const uint32_t segment_index, const math::Vec2<T> point,
+      const StrokingOptions<T>* stroke,
+      const math::Mat2x3<T>& transform,
+      const T threshold = T(0), const T zoom = T(1)
+    ) const;
 
     /**
      * @brief Checks whether the given point is inside the specified path's point or not.
@@ -813,26 +856,36 @@ namespace graphick::geom {
      * @param threshold The threshold to use for the check.
      * @return true if the two points are near each other, false otherwise.
     */
-    // bool is_point_inside_point(const uint32_t point_index, const vec2 point, const math::Mat2x3<T>& transform, const T threshold = T(0)) const;
+    bool is_point_inside_point(
+      const uint32_t point_index, const math::Vec2<T> point,
+      const math::Mat2x3<T>& transform,
+      const T threshold = T(0)
+    ) const;
 
     /**
      * @brief Checks whether the path intersects the given rect or not.
      *
      * @param rect The rect to check.
-     * @param indices An optional set to fill with the indices of the vertices that intersect the rect.
+     * @param indices An optional vector to fill with the indices of the vertices that intersect the rect.
      * @return true if the path intersects the rect, false otherwise.
      */
-    bool intersects(const math::Rect<T>& rect, std::unordered_set<uint32_t>* indices = nullptr) const;
+    bool intersects(
+      const math::Rect<T>& rect,
+      std::vector<uint32_t>* indices = nullptr
+    ) const;
 
     /**
      * @brief Checks whether the path intersects the given rect or not.
      *
      * @param rect The rect to check.
      * @param transform The transformation matrix to apply to the path.
-     * @param indices An optional set to fill with the indices of the vertices that intersect the rect.
+     * @param indices An optional vector to fill with the indices of the vertices that intersect the rect.
      * @return true if the path intersects the rect, false otherwise.
      */
-    bool intersects(const math::Rect<T>& rect, const math::Mat2x3<T>& transform, std::unordered_set<uint32_t>* indices = nullptr) const;
+    bool intersects(
+      const math::Rect<T>& rect, const math::Mat2x3<T>& transform,
+      std::vector<uint32_t>* indices = nullptr
+    ) const;
 
     /**
      * @brief Converts the path to a list of quadratic bezier curves.
@@ -840,7 +893,7 @@ namespace graphick::geom {
      * @param tolerance The tolerance to use for the conversion, default is 0.25.
      * @return The quadratic representation of the path.
      */
-    QuadraticPath to_quadratics(const T tolerance = T(2e-2)) const;
+    QuadraticPath<T> to_quadratic_path(const T tolerance = T(2e-2)) const;
 
     /**
      * @brief Encodes the path to a list of bytes.
@@ -907,12 +960,5 @@ namespace graphick::geom {
 
   using path = Path<float>;
   using dpath = Path<double>;
-
-}
-
-namespace graphick {
-
-  using geom::path;
-  using geom::dpath;
 
 }

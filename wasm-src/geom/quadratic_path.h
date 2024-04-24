@@ -115,3 +115,12 @@ namespace graphick::geom {
   };
 
 }
+
+/* -- Aliases -- */
+
+namespace graphick::geom {
+
+  using quadratic_path = QuadraticPath<float>;
+  using dquadratic_path = QuadraticPath<double>;
+
+}

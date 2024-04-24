@@ -1,5 +1,5 @@
 /**
- * @file fit.cpp
+ * @file algorithms/fit.cpp
  * @brief Implementation of the least-squares method to find CubicBezier control points for a given set of points.
  *
  * This file contains the implementation of the least-squares method to find CubicBezier control points for a given set of points.
@@ -15,46 +15,15 @@
 
 namespace graphick::algorithms {
 
-  vec2& CubicBezier::operator[](uint8_t i) {
-    switch (i) {
-    default:
-    case 0:
-      return p0;
-    case 1:
-      return p1;
-    case 2:
-      return p2;
-    case 3:
-      return p3;
-    }
-  }
-
-  const vec2& CubicBezier::operator[](uint8_t i) const {
-    switch (i) {
-    default:
-    case 0:
-      return p0;
-    case 1:
-      return p1;
-    case 2:
-      return p2;
-    case 3:
-      return p3;
-    }
-  }
-
-  const vec2* CubicBezier::operator&() const {
-    return (vec2*)&(p0);
-  }
-
   /**
    * @brief Calculates the value of the B-spline basis function of degree 0 at the given parameter value.
    *
    * @param u The parameter value.
    * @return The value of the B-spline basis function of degree 0 at the given parameter value.
    */
-  static float B0(float u) {
-    float tmp = 1.0f - u;
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static T B0(const T u) {
+    T tmp = T(1) - u;
     return (tmp * tmp * tmp);
   }
 
@@ -64,9 +33,10 @@ namespace graphick::algorithms {
    * @param u The parameter value.
    * @return The value of the first basis function at the given parameter value.
    */
-  static float B1(float u) {
-    float tmp = 1.0f - u;
-    return (3.0f * u * (tmp * tmp));
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static T B1(const T u) {
+    T tmp = T(1) - u;
+    return (T(3) * u * (tmp * tmp));
   }
 
   /**
@@ -75,9 +45,10 @@ namespace graphick::algorithms {
    * @param u The parameter value to evaluate the basis function at.
    * @return The value of the second basis function at the given parameter value.
    */
-  static float B2(float u) {
-    float tmp = 1.0f - u;
-    return (3.0f * u * u * tmp);
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static T B2(const T u) {
+    T tmp = T(1) - u;
+    return (T(3) * u * u * tmp);
   }
 
   /**
@@ -86,7 +57,8 @@ namespace graphick::algorithms {
    * @param u The parameter value.
    * @return The value of the cubic B-spline basis function at the given parameter value.
    */
-  static float B3(float u) {
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static T B3(const T u) {
     return (u * u * u);
   }
 
@@ -101,91 +73,87 @@ namespace graphick::algorithms {
    * @param t_hat_2 The tangent vector at the last control point.
    * @return A cubic Bezier curve.
    */
-  static CubicBezier generate_bezier(
-    const std::vector<vec2>& points, const size_t first, const size_t last,
-    const std::vector<float>& u_prime,
-    const vec2& t_hat_1, const vec2& t_hat_2
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static geom::CubicBezier<T> generate_bezier(
+    const std::vector<math::Vec2<T>>& points,
+    const size_t first, const size_t last,
+    const std::vector<T>& u_prime,
+    const math::Vec2<T> t_hat_1, const math::Vec2<T> t_hat_2
   ) {
     size_t i;
-    size_t n_pts;                           /* Number of pts in sub-curve */
+    size_t n_pts;                               /* Number of pts in sub-curve */
 
-    mat2 C{ 0.0f };                         /* Matrix C */
-    vec2 X{ 0.0f };                         /* Matrix X */
-    vec2 A[MAX_POINTS][2];	                /* Precomputed rhs for eqn */
+    math::Mat2<T> C = math::Mat2<T>::zero();    /* Matrix C */
+    math::Vec2<T> X = math::Vec2<T>::zero();    /* Matrix X */
+    math::Vec2<T> A[MAX_POINTS][2];             /* Precomputed rhs for eqn */
 
-    float det_C0_C1, det_C0_X, det_X_C1;    /* Determinants of matrices */
-    float alpha_l, alpha_r;                 /* Alpha values, left and right	*/
+    T det_C0_C1, det_C0_X, det_X_C1;            /* Determinants of matrices */
+    T alpha_l, alpha_r;                         /* Alpha values, left and right	*/
 
-    vec2 tmp;			                          /* Utility variable	*/
-    CubicBezier bez_curve;	                /* Return bezier curve ctl pts */
+    math::Vec2<T> tmp;                          /* Utility variable	*/
+    geom::CubicBezier<T> bez_curve;             /* Return bezier curve ctl pts */
 
-    float seg_length;
-    float epsilon;
+    T seg_length;
+    T epsilon;
 
     n_pts = last - first + 1;
 
-    /* Compute the A's */
+    // Compute the A's.
     for (i = 0; i < n_pts; i++) {
       A[i][0] = t_hat_1 * B1(u_prime[i]);
       A[i][1] = t_hat_2 * B2(u_prime[i]);
     }
 
     for (i = 0; i < n_pts; i++) {
-      C[0][0] += dot(A[i][0], A[i][0]);
-      C[0][1] += dot(A[i][0], A[i][1]);
+      C[0][0] += math::dot(A[i][0], A[i][0]);
+      C[0][1] += math::dot(A[i][0], A[i][1]);
       C[1][0] = C[0][1];
-      C[1][1] += dot(A[i][1], A[i][1]);
+      C[1][1] += math::dot(A[i][1], A[i][1]);
 
       tmp = points[first + i] - (
         points[first] * B0(u_prime[i]) +
         points[first] * B1(u_prime[i]) +
         points[last] * B2(u_prime[i]) + points[last] * B3(u_prime[i]));
 
-      X[0] += dot(A[i][0], tmp);
-      X[1] += dot(A[i][1], tmp);
+      X[0] += math::dot(A[i][0], tmp);
+      X[1] += math::dot(A[i][1], tmp);
     }
 
-    /* Compute the determinants of C and X (Cramer)	*/
-    det_C0_C1 = determinant(C);
+    // Compute the determinants of C and X (Cramer).
+    det_C0_C1 = math::determinant(C);
     det_C0_X = C[0][0] * X[1] - C[1][0] * X[0];
     det_X_C1 = X[0] * C[1][1] - X[1] * C[0][1];
 
-    /* Finally, derive alpha values	*/
-    alpha_l = (det_C0_C1 == 0.0f) ? 0.0f : det_X_C1 / det_C0_C1;
-    alpha_r = (det_C0_C1 == 0.0f) ? 0.0f : det_C0_X / det_C0_C1;
+    // Finally, derive alpha values.
+    alpha_l = math::is_almost_zero(det_C0_C1) ? T(0) : det_X_C1 / det_C0_C1;
+    alpha_r = math::is_almost_zero(det_C0_C1) ? T(0) : det_C0_X / det_C0_C1;
 
-    /* If alpha negative, use the Wu/Barsky heuristic (see text)
-     * (if alpha is 0, you get coincident control points that lead to
-     * divide by zero in any subsequent NewtonRaphsonRootFind() call. */
-    seg_length = distance(points[last], points[first]);
-    epsilon = 1.0e-6f * seg_length;
+    // If alpha negative, use the Wu/Barsky heuristic (see text)
+    // (if alpha is 0, you get coincident control points that lead to
+    // divide by zero in any subsequent NewtonRaphsonRootFind() call.
+    seg_length = math::distance(points[last], points[first]);
+    epsilon = T(1e-6) * seg_length;
 
     if (alpha_l < epsilon || alpha_r < epsilon) {
-      /* fall back on standard (probably inaccurate) formula, and subdivide further if needed. */
-      float dist = seg_length / 3.0f;
+      // Fall back on standard (probably inaccurate) formula, and subdivide further if needed.
+      T dist = seg_length / T(3);
 
       bez_curve.p0 = points[first];
       bez_curve.p3 = points[last];
       bez_curve.p1 = bez_curve.p0 + t_hat_1 * dist;
       bez_curve.p2 = bez_curve.p3 + t_hat_2 * dist;
 
-      bez_curve.start_index = first;
-      bez_curve.end_index = last;
-
       return bez_curve;
     }
 
-    /* First and last control points of the CubicBezier curve are
-     * positioned exactly at the first and last data points
-     * Control points 1 and 2 are positioned an alpha distance out
-     * on the tangent vectors, left and right, respectively */
+    // First and last control points of the CubicBezier curve are
+    // positioned exactly at the first and last data points
+    // Control points 1 and 2 are positioned an alpha distance out
+    // on the tangent vectors, left and right, respectively.
     bez_curve.p0 = points[first];
     bez_curve.p3 = points[last];
     bez_curve.p1 = bez_curve.p0 + t_hat_1 * alpha_l;
     bez_curve.p2 = bez_curve.p3 + t_hat_2 * alpha_r;
-
-    bez_curve.start_index = first;
-    bez_curve.end_index = last;
 
     return bez_curve;
   }
@@ -198,22 +166,23 @@ namespace graphick::algorithms {
    * @param t The parameter value at which to evaluate the basis function.
    * @return The value of the B-spline basis function at parameter value `t`.
    */
-  static vec2 BII(int degree, const vec2* V, float t) {
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static math::Vec2<T> BII(const int degree, const math::Vec2<T>* V, T t) {
     int i, j;
-    vec2 Q;
-    vec2* V_temp;
+    math::Vec2<T> Q;
+    math::Vec2<T>* V_temp;
 
-    V_temp = new vec2[degree + 1];
+    V_temp = new math::Vec2<T>[degree + 1];
 
     for (i = 0; i <= degree; i++) {
       V_temp[i] = V[i];
     }
 
-    /* Triangle computation	*/
+    // Triangle computation.
     for (i = 1; i <= degree; i++) {
       for (j = 0; j <= degree - i; j++) {
-        V_temp[j].x = (1.0f - t) * V_temp[j].x + t * V_temp[j + 1].x;
-        V_temp[j].y = (1.0f - t) * V_temp[j].y + t * V_temp[j + 1].y;
+        V_temp[j].x = (T(1) - t) * V_temp[j].x + t * V_temp[j + 1].x;
+        V_temp[j].y = (T(1) - t) * V_temp[j].y + t * V_temp[j + 1].y;
       }
     }
 
@@ -231,41 +200,42 @@ namespace graphick::algorithms {
    * @param u The initial guess for the root.
    * @return The root of the cubic bezier curve.
    */
-  static float newton_raphson_root_find(const CubicBezier& Q, const vec2& P, const float u) {
-    float numerator, denominator;
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static T newton_raphson_root_find(const geom::CubicBezier<T>& Q, const math::Vec2<T> P, const T u) {
+    T numerator, denominator;
 
-    vec2 Q1[3], Q2[2];      /* Q' and Q'' */
-    vec2 Q_u, Q1_u, Q2_u;   /* u evaluated at Q, Q', & Q'' */
+    math::Vec2<T> Q1[3], Q2[2];       /* Q' and Q'' */
+    math::Vec2<T> Q_u, Q1_u, Q2_u;    /* u evaluated at Q, Q', & Q'' */
 
-    float u_prime;          /* Improved u */
+    T u_prime;                        /* Improved u */
 
-    /* Compute Q(u)	*/
+    // Compute Q(u).
     Q_u = BII(3, &Q, u);
 
-    /* Generate control vertices for Q'	*/
+    // Generate control vertices for Q'.
     for (int i = 0; i <= 2; i++) {
-      Q1[i].x = (Q[i + 1].x - Q[i].x) * 3.0f;
-      Q1[i].y = (Q[i + 1].y - Q[i].y) * 3.0f;
+      Q1[i].x = (Q[i + 1].x - Q[i].x) * T(3);
+      Q1[i].y = (Q[i + 1].y - Q[i].y) * T(3);
     }
 
-    /* Generate control vertices for Q'' */
+    // Generate control vertices for Q''.
     for (int i = 0; i <= 1; i++) {
-      Q2[i].x = (Q1[i + 1].x - Q1[i].x) * 2.0f;
-      Q2[i].y = (Q1[i + 1].y - Q1[i].y) * 2.0f;
+      Q2[i].x = (Q1[i + 1].x - Q1[i].x) * T(2);
+      Q2[i].y = (Q1[i + 1].y - Q1[i].y) * T(2);
     }
 
-    /* Compute Q'(u) and Q''(u)	*/
+    // Compute Q'(u) and Q''(u).
     Q1_u = BII(2, Q1, u);
     Q2_u = BII(1, Q2, u);
 
-    /* Compute f(u)/f'(u) */
+    // Compute f(u)/f'(u).
     numerator = (Q_u.x - P.x) * (Q1_u.x) + (Q_u.y - P.y) * (Q1_u.y);
     denominator = (Q1_u.x) * (Q1_u.x) + (Q1_u.y) * (Q1_u.y) +
       (Q_u.x - P.x) * (Q2_u.x) + (Q_u.y - P.y) * (Q2_u.y);
 
-    if (denominator == 0.0f) return u;
+    if (math::is_almost_zero(denominator)) return u;
 
-    /* u = u - f(u)/f'(u) */
+    // u = u - f(u)/f'(u).
     u_prime = u - (numerator / denominator);
 
     return u_prime;
@@ -281,12 +251,14 @@ namespace graphick::algorithms {
    * @param bez_curve The cubic Bezier curve to reparameterize.
    * @return A vector of new parameter values for the section.
    */
-  static std::vector<float> reparameterize(
-    const std::vector<vec2>& points, const size_t first, const size_t last,
-    const std::vector<float>& u, const CubicBezier& bez_curve
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static std::vector<T> reparameterize(
+    const std::vector<math::Vec2<T>>& points,
+    const size_t first, const size_t last,
+    const std::vector<T>& u, const geom::CubicBezier<T>& bez_curve
   ) {
     size_t n_pts = last - first + 1;
-    std::vector<float> u_prime(n_pts); /* New parameter values */
+    std::vector<T> u_prime(n_pts);    /* New parameter values */
 
     for (size_t i = first; i <= last; i++) {
       u_prime[i - first] = newton_raphson_root_find(bez_curve, points[i], u[i - first]);
@@ -299,13 +271,14 @@ namespace graphick::algorithms {
    *
    * @param points A vector of points defining the curve.
    * @param end The index of the point to compute the left tangent for.
-   * @return A vec2 representing the left tangent of the specified point.
+   * @return A math::Vec2<T> representing the left tangent of the specified point.
    */
-  static vec2 compute_left_tangent(const std::vector<vec2>& points, size_t end) {
-    vec2 t_hat_1;
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static math::Vec2<T> compute_left_tangent(const std::vector<math::Vec2<T>>& points, size_t end) {
+    math::Vec2<T> t_hat_1;
 
     t_hat_1 = points[end + 1] - points[end];
-    t_hat_1 = normalize(t_hat_1);
+    t_hat_1 = math::normalize(t_hat_1);
 
     return t_hat_1;
   }
@@ -317,11 +290,12 @@ namespace graphick::algorithms {
    * @param end The index of the point to compute the right tangent for.
    * @return The right tangent of the specified point.
    */
-  static vec2 compute_right_tangent(const std::vector<vec2>& points, size_t end) {
-    vec2 t_hat_2;
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static math::Vec2<T> compute_right_tangent(const std::vector<math::Vec2<T>>& points, size_t end) {
+    math::Vec2<T> t_hat_2;
 
     t_hat_2 = points[end - 1] - points[end];
-    t_hat_2 = normalize(t_hat_2);
+    t_hat_2 = math::normalize(t_hat_2);
 
     return t_hat_2;
   }
@@ -331,16 +305,17 @@ namespace graphick::algorithms {
    *
    * @param points The vector of points to compute the center tangent for.
    * @param center The index of the center point to compute the tangent around.
-   * @return The center tangent as a vec2.
+   * @return The center tangent as a math::Vec2<T>.
    */
-  static vec2 compute_center_tangent(const std::vector<vec2>& points, size_t center) {
-    vec2	v1, v2, t_hat_center;
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static math::Vec2<T> compute_center_tangent(const std::vector<math::Vec2<T>>& points, size_t center) {
+    math::Vec2<T>	v1, v2, t_hat_center;
 
     v1 = points[center - 1] - points[center];
     v2 = points[center] - points[center + 1];
 
-    t_hat_center = (v1 + v2) / 2.0f;
-    t_hat_center = normalize(t_hat_center);
+    t_hat_center = (v1 + v2) / T(2);
+    t_hat_center = math::normalize(t_hat_center);
 
     return t_hat_center;
   }
@@ -351,15 +326,16 @@ namespace graphick::algorithms {
    * @param points The vector of 2D points to parameterize.
    * @param first The index of the first point to parameterize.
    * @param last The index of the last point to parameterize.
-   * @return A vector of floats representing the chord length parameterization.
+   * @return A vector of Ts representing the chord length parameterization.
    */
-  static std::vector<float> chord_length_parameterize(const std::vector<vec2>& points, size_t first, size_t last) {
-    std::vector<float> u(last - first + 1);   /* Parameterization */
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static std::vector<T> chord_length_parameterize(const std::vector<math::Vec2<T>>& points, size_t first, size_t last) {
+    std::vector<T> u(last - first + 1);    /* Parameterization */
     size_t i;
 
-    u[0] = 0.0f;
+    u[0] = T(0);
     for (i = first + 1; i <= last; i++) {
-      u[i - first] = u[i - first - 1] + distance(points[i], points[i - 1]);
+      u[i - first] = u[i - first - 1] + math::distance(points[i], points[i - 1]);
     }
 
     for (i = first + 1; i <= last; i++) {
@@ -380,23 +356,26 @@ namespace graphick::algorithms {
    * @param split_point A pointer to the index of the point where the curve should be split (maximum error index).
    * @return The maximum error between the curve and the points.
    */
-  static float compute_max_error(
-    const std::vector<vec2>& points, const size_t first, const size_t last,
-    const CubicBezier& bez_curve, const std::vector<float>& u, size_t* split_point
+  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  inline static T compute_max_error(
+    const std::vector<math::Vec2<T>>& points,
+    const size_t first, const size_t last,
+    const geom::CubicBezier<T>& bez_curve,
+    const std::vector<T>& u, size_t* split_point
   ) {
     size_t i;
-    float	max_dist;   /* Maximum error */
-    float	dist;       /* Current error */
-    vec2 P;           /* Point on curve	*/
-    vec2 v;           /* Vector from point to curve	*/
+    T	max_dist;         /* Maximum error */
+    T	dist;             /* Current error */
+    math::Vec2<T> P;    /* Point on curve	*/
+    math::Vec2<T> v;    /* Vector from point to curve	*/
 
     *split_point = (last - first + 1) / 2;
-    max_dist = 0.0f;
+    max_dist = T(0);
 
     for (i = first + 1; i < last; i++) {
       P = BII(3, &bez_curve, u[i - first]);
       v = P - points[i];
-      dist = squared_length(v);
+      dist = math::squared_length(v);
 
       if (dist >= max_dist) {
         max_dist = dist;
@@ -407,56 +386,53 @@ namespace graphick::algorithms {
     return max_dist;
   }
 
-  CubicBezier fit_points_to_cubic(
-    const std::vector<vec2>& points,
-    float error
+  template <typename T, typename _>
+  geom::CubicBezier<T> fit_points_to_cubic(
+    const std::vector<math::Vec2<T>>& points,
+    const T error
   ) {
-    uint32_t first = 0;                       /* Index of first control point */
-    uint32_t last = (int)points.size() - 1;   /* Index of last control point */
+    uint32_t first = 0;                                          /* Index of first control point */
+    uint32_t last = static_cast<uint32_t>(points.size()) - 1;    /* Index of last control point */
 
-    CubicBezier bez_curve;                    /* Control points of fitted CubicBezier curve */
+    geom::CubicBezier<T> bez_curve;                              /* Control points of fitted CubicBezier curve */
 
-    std::vector<float> u;                     /* Parameter values for point */
-    std::vector<float> u_prime;               /* Improved parameter values */
+    std::vector<T> u;                                            /* Parameter values for point */
+    std::vector<T> u_prime;                                      /* Improved parameter values */
 
-    float	max_error;                          /* Maximum fitting error */
-    float	iteration_error = error * 4.0f;     /* Error below which you try iterating */
-    int max_iterations = 8;                   /* Max times to try iterating */
+    T	max_error;                                                 /* Maximum fitting error */
+    T	iteration_error = error * T(4);                            /* Error below which you try iterating */
+    int max_iterations = 8;                                      /* Max times to try iterating */
 
-    size_t split_point;                       /* Point to split point set at */
-    size_t n_pts = last - first + 1;          /* Number of points in subset */
+    size_t split_point;                                          /* Point to split point set at */
+    size_t n_pts = last - first + 1;                             /* Number of points in subset */
 
-    /* Unit tangent vectors at endpoints */
-    vec2 t_hat_1 = compute_left_tangent(points, first);
-    vec2 t_hat_2 = compute_right_tangent(points, last);
+    // Unit tangent vectors at endpoints.
+    math::Vec2<T> t_hat_1 = compute_left_tangent(points, first);
+    math::Vec2<T> t_hat_2 = compute_right_tangent(points, last);
 
-    /* Use heuristic if region only has two points in it */
+    // Use heuristic if region only has two points in it.
     if (n_pts == 2) {
-      float dist = distance(points[last], points[first]) / 3.0f;
+      T dist = math::distance(points[last], points[first]) / T(3);
 
       bez_curve.p0 = points[first];
       bez_curve.p3 = points[last];
       bez_curve.p1 = bez_curve.p0;
       bez_curve.p2 = bez_curve.p3;
 
-      bez_curve.start_index = first;
-      bez_curve.end_index = last;
-
       return bez_curve;
     }
 
-    /* Parameterize points, and attempt to fit curve */
+    // Parameterize points, and attempt to fit curve.
     u = chord_length_parameterize(points, first, last);
     bez_curve = generate_bezier(points, first, last, u, t_hat_1, t_hat_2);
 
-    /* Find max deviation of points to fitted curve */
+    // Find max deviation of points to fitted curve.
     max_error = compute_max_error(points, first, last, bez_curve, u, &split_point);
     if (max_error < error) {
       return bez_curve;
     }
 
-    /* If error not too large, try some reparameterization and iteration */
-    //if (max_error < iteration_error) {
+    // If error not too large, try some reparameterization and iteration.
     for (size_t i = 0; i < max_iterations; i++) {
       u_prime = reparameterize(points, first, last, u, bez_curve);
       bez_curve = generate_bezier(points, first, last, u_prime, t_hat_1, t_hat_2);
@@ -468,9 +444,13 @@ namespace graphick::algorithms {
 
       u.swap(u_prime);
     }
-  //}
 
     return bez_curve;
   }
+
+  /* -- Template Instantiation -- */
+
+  template geom::CubicBezier<float> fit_points_to_cubic(const std::vector<math::Vec2<float>>& points, const float tolerance);
+  template geom::CubicBezier<double> fit_points_to_cubic(const std::vector<math::Vec2<double>>& points, const double tolerance);
 
 }
