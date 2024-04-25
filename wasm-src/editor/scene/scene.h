@@ -15,10 +15,6 @@
 
 #include "../../lib/entt/entt.hpp"
 
-namespace graphick::geom {
-  class Path;
-}
-
 namespace graphick::editor {
 
   class Entity;
@@ -111,7 +107,7 @@ namespace graphick::editor {
      * @param path The underlying path of the element.
      * @return The new element.
      */
-    Entity create_element(const path::Path& path);
+    Entity create_element(const geom::path& path);
 
     /**
      * @brief Deletes an entity.

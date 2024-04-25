@@ -137,7 +137,7 @@ namespace graphick::editor::input {
       const mat2x3 inverse_transform = math::inverse(transform.matrix());
 
       const vec2 position = inverse_transform * InputManager::pointer.scene.position;
-      const vec2 vertex_position = path.data().point_at(m_vertex.value());
+      const vec2 vertex_position = path.data().at(m_vertex.value());
 
       absolute_movenent = InputManager::pointer.scene.position - transform.transform(vertex_position);
       movement = position - vertex_position;
@@ -232,10 +232,10 @@ namespace graphick::editor::input {
     }
 
     const PathComponent path = entity.get_component<PathComponent>();
-    const path::Path::Iterator it(path.data(), m_segment.value(), path::Path::IndexType::Segment);
-    const path::Path::Segment segment = *it;
+    const geom::path::Iterator it(path.data(), m_segment.value(), geom::path::IndexType::Segment);
+    const geom::path::Segment segment = *it;
 
-    const size_t start_index = std::max(size_t(1), it.point_index()) - 1;
+    const size_t start_index = std::max(uint32_t(1), it.point_index()) - 1;
     const size_t end_index = start_index + static_cast<size_t>(segment.type);
 
     m_mode = Mode::Bezier;
@@ -248,7 +248,7 @@ namespace graphick::editor::input {
       return;
     }
 
-    if (segment.type == path::Path::Command::Cubic) {
+    if (segment.type == geom::path::Command::Cubic) {
       if (InputManager::keys.shift) {
         m_is_entity_added_to_selection = true;
       } else {
@@ -417,10 +417,10 @@ namespace graphick::editor::input {
     Entity entity = scene.get_entity(m_entity);
 
     const PathComponent path = entity.get_component<PathComponent>();
-    const path::Path::Iterator it(path.data(), m_segment.value(), path::Path::IndexType::Segment);
-    const path::Path::Segment segment = *it;
+    const geom::path::Iterator it(path.data(), m_segment.value(), geom::path::IndexType::Segment);
+    const geom::path::Segment segment = *it;
 
-    const size_t start_index = std::max(size_t(1), it.point_index()) - 1;
+    const size_t start_index = std::max(uint32_t(1), it.point_index()) - 1;
     const size_t end_index = start_index + static_cast<size_t>(segment.type);
 
     if (m_should_evaluate_selection) {
@@ -472,18 +472,18 @@ namespace graphick::editor::input {
     Entity entity = Editor::scene().get_entity(m_entity);
     PathComponent path = entity.get_component<PathComponent>();
 
-    const path::Path::VertexNode node = path.data().node_at(m_handle.value());
+    const geom::path::VertexNode node = path.data().node_at(m_handle.value());
     const float threshold = 2.5f / Editor::scene().viewport.zoom();
 
     if (node.in >= 0) {
-      const vec2 in_handle = path.data().point_at(static_cast<size_t>(node.in));
-      const vec2 vertex = path.data().point_at(node.vertex);
+      const vec2 in_handle = path.data().at(static_cast<size_t>(node.in));
+      const vec2 vertex = path.data().at(node.vertex);
 
       if (math::is_almost_equal(in_handle, vertex, threshold)) {
         path.translate(static_cast<size_t>(node.in), vertex - in_handle);
 
         if (node.in_command >= 0) {
-          const path::Path::Segment segment = path.data().segment_at(static_cast<size_t>(node.in_command), path::Path::IndexType::Command);
+          const geom::path::Segment segment = path.data().segment_at(static_cast<size_t>(node.in_command), geom::path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.in_command));
@@ -493,14 +493,14 @@ namespace graphick::editor::input {
     }
 
     if (node.out >= 0) {
-      const vec2 out_handle = path.data().point_at(static_cast<size_t>(node.out));
-      const vec2 vertex = path.data().point_at(node.vertex);
+      const vec2 out_handle = path.data().at(static_cast<size_t>(node.out));
+      const vec2 vertex = path.data().at(node.vertex);
 
       if (math::is_almost_equal(out_handle, vertex, threshold)) {
         path.translate(static_cast<size_t>(node.out), vertex - out_handle);
 
         if (node.out_command >= 0) {
-          const path::Path::Segment segment = path.data().segment_at(static_cast<size_t>(node.out_command), path::Path::IndexType::Command);
+          const geom::path::Segment segment = path.data().segment_at(static_cast<size_t>(node.out_command), geom::path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.out_command));

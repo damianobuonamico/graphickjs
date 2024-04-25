@@ -39,8 +39,8 @@ namespace graphick::editor {
         Element        /* An element selection entry has children (e.g. vertices). */
       };
 
-      std::unordered_set<size_t> indices;    /* The indices of the children. */
-      Type type;                             /* The type of the selection entry. */
+      std::unordered_set<uint32_t> indices;    /* The indices of the children. */
+      Type type;                               /* The type of the selection entry. */
 
       /**
        * @brief Constructs a selection entry.
@@ -55,7 +55,7 @@ namespace graphick::editor {
        * @param type The type of the selection entry.
        * @param indices The indices of the children.
        */
-      SelectionEntry(std::unordered_set<size_t> indices, const Type type = Type::Element) : indices(indices), type(type) {}
+      SelectionEntry(std::unordered_set<uint32_t> indices, const Type type = Type::Element) : indices(indices), type(type) {}
 
       /**
        * @brief Checks if the selection entry is empty.
@@ -147,7 +147,7 @@ namespace graphick::editor {
      * @param include_temp Whether to include temporarily selected entities, default is false.
      * @return true if the child is selected, false otherwise.
      */
-    bool has_child(const uuid element_id, const size_t child_index, bool include_temp = false) const;
+    bool has_child(const uuid element_id, const uint32_t child_index, bool include_temp = false) const;
 
     /**
      * @brief Clears the selection.
@@ -169,7 +169,7 @@ namespace graphick::editor {
      * @param id The ID of the element the child belongs to.
      * @param child_index The index of the child within the element.
      */
-    void select_child(const uuid element_id, const size_t child_index);
+    void select_child(const uuid element_id, const uint32_t child_index);
 
     /**
      * @brief Deselects the entity with the given ID.
@@ -184,7 +184,7 @@ namespace graphick::editor {
      * @param id The ID of the element the child belongs to.
      * @param child_index The index of the child within the element.
      */
-    void deselect_child(const uuid element_id, const size_t child_index);
+    void deselect_child(const uuid element_id, const uint32_t child_index);
 
     /**
      * @brief Adds all of the provided selection entries to the temporarily selected ones.

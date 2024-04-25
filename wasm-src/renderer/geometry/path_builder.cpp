@@ -7,7 +7,7 @@
 
 #include "path_builder.h"
 
-#include "../../path/path.h"
+#include "../../geom/path.h"
 #include "../../geom/curve_ops.h"
 #include "../../geom/intersections.h"
 
@@ -35,7 +35,7 @@ namespace graphick::renderer::geometry {
    * @param sink The output path.
    * @param reverse Whether to fill the arc angle or not
    */
-  static void quadratic_arc(const dvec2 center, const dvec2 from, const dvec2 to, const double radius, const double tolerance, path::QuadraticPath& sink, const bool reverse = false) {
+  static void quadratic_arc(const dvec2 center, const dvec2 from, const dvec2 to, const double radius, const double tolerance, geom::quadratic_path& sink, const bool reverse = false) {
     const double ang1 = std::atan2(from.y - center.y, from.x - center.x);
     const double ang2 = std::atan2(to.y - center.y, to.x - center.x);
     const double dphi = 4 * std::acos(std::sqrt(2 + tolerance - std::sqrt(tolerance * (2.0f + tolerance))) / std::sqrt(2.0f));
@@ -73,7 +73,7 @@ namespace graphick::renderer::geometry {
    * @param cap The cap type.
    * @param sink The contour to add the cap to.
    */
-  void add_cap(const dvec2 from, const dvec2 to, const dvec2 n, const double radius, const LineCap cap, path::QuadraticPath& sink) {
+  void add_cap(const dvec2 from, const dvec2 to, const dvec2 n, const double radius, const LineCap cap, geom::quadratic_path& sink) {
     switch (cap) {
     case LineCap::Round: {
       // TODO: angular tolerance
@@ -111,7 +111,7 @@ namespace graphick::renderer::geometry {
    * @param sink The contour to add the join to.
    * @param reverse Whether to consider the complementary angle.
    */
-  static void add_join(const dvec2 from, const dvec2 to, const dvec2 pivot, const dvec2 from_normal, const dvec2 to_normal, const double radius, const double inv_miter_limit, LineJoin join, path::QuadraticPath& sink, const bool reverse = false) {
+  static void add_join(const dvec2 from, const dvec2 to, const dvec2 pivot, const dvec2 from_normal, const dvec2 to_normal, const double radius, const double inv_miter_limit, LineJoin join, geom::quadratic_path& sink, const bool reverse = false) {
     if (math::is_almost_equal(from, to, math::geometric_epsilon<double>)) {
       return;
     }
@@ -410,7 +410,7 @@ namespace graphick::renderer::geometry {
 
   /* -- PathBuilder -- */
 
-  PathBuilder::PathBuilder(const path::QuadraticPath& path, const mat2x3& transform, const rect* bounding_rect) :
+  PathBuilder::PathBuilder(const geom::quadratic_path& path, const mat2x3& transform, const rect* bounding_rect) :
     m_path(path), m_transform(transform), m_bounding_rect(transform* (bounding_rect ? *bounding_rect : path.approx_bounding_rect())) {}
 
   PathBuilder::StrokeOutline PathBuilder::stroke(const Stroke& stroke, const float tolerance) const {

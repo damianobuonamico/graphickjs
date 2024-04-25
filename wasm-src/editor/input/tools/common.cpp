@@ -14,7 +14,6 @@
 #include "../../../math/matrix.h"
 
 #include "../../../geom/intersections.h"
-#include "../../../path/path.h"
 
 #include "../../../utils/console.h"
 
@@ -33,10 +32,10 @@ namespace graphick::editor::input {
     const vec2 position = inverse_transform * InputManager::pointer.scene.position;
     const vec2 origin = inverse_transform * InputManager::pointer.scene.origin;
 
-    path::Path::VertexNode node = path.data().node_at(point_index);
+    geom::path::VertexNode node = path.data().node_at(point_index);
 
     if (!create_handles && point_index == node.vertex) {
-      const vec2 vertex_position = path.data().point_at(node.vertex);
+      const vec2 vertex_position = path.data().at(node.vertex);
       const vec2 movement = override_movement ? *override_movement : position - vertex_position;
 
       path.translate(node.vertex, movement);
@@ -47,7 +46,7 @@ namespace graphick::editor::input {
 
       return point_index;
     } else if (InputManager::keys.space) {
-      const vec2 out_position = path.data().point_at(node.out);
+      const vec2 out_position = path.data().at(node.out);
       const vec2 movement = override_movement ? *override_movement : position - out_position;
 
       path.translate(node.vertex, movement);
@@ -60,7 +59,7 @@ namespace graphick::editor::input {
     }
 
     vec2 out_position = position;
-    vec2 in_position = 2.0f * path.data().point_at(node.vertex) - position;
+    vec2 in_position = 2.0f * path.data().at(node.vertex) - position;
 
     bool swap_in_out = false;
 
@@ -69,9 +68,9 @@ namespace graphick::editor::input {
         float cos = 0;
 
         if (node.out >= 0) {
-          cos = math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.out)) - path.data().point_at(static_cast<size_t>(node.vertex)));
+          cos = math::dot(origin - position, path.data().at(static_cast<size_t>(node.out)) - path.data().at(static_cast<size_t>(node.vertex)));
         } else if (node.vertex > 0) {
-          cos = -math::dot(origin - position, path.data().point_at(static_cast<size_t>(node.vertex)) - path.data().point_at(static_cast<size_t>(node.vertex - 1)));
+          cos = -math::dot(origin - position, path.data().at(static_cast<size_t>(node.vertex)) - path.data().at(static_cast<size_t>(node.vertex - 1)));
         }
 
         if (cos > 0) *direction = -1;
@@ -108,7 +107,7 @@ namespace graphick::editor::input {
       }
     }
 
-    const vec2 old_out_position = path.data().point_at(static_cast<size_t>(node.out));
+    const vec2 old_out_position = path.data().at(static_cast<size_t>(node.out));
     const vec2 movement = override_movement ? *override_movement : out_position - old_out_position;
 
     path.translate(static_cast<size_t>(node.out), movement);
@@ -130,18 +129,18 @@ namespace graphick::editor::input {
     }
 
     if (keep_in_handle_length) {
-      const vec2 vertex_position = path.data().point_at(node.vertex);
-      const vec2 dir = math::normalize(vertex_position - path.data().point_at(static_cast<size_t>(node.out)));
+      const vec2 vertex_position = path.data().at(node.vertex);
+      const vec2 dir = math::normalize(vertex_position - path.data().at(static_cast<size_t>(node.out)));
 
       if (!math::is_almost_zero(dir)) {
-        const float length = math::distance(path.data().point_at(static_cast<size_t>(node.in)), vertex_position);
+        const float length = math::distance(path.data().at(static_cast<size_t>(node.in)), vertex_position);
         in_position = dir * length + vertex_position;
       } else {
-        in_position = path.data().point_at(static_cast<size_t>(node.in));
+        in_position = path.data().at(static_cast<size_t>(node.in));
       }
     }
 
-    path.translate(static_cast<size_t>(static_cast<size_t>(node.in)), in_position - path.data().point_at(static_cast<size_t>(node.in)));
+    path.translate(static_cast<size_t>(static_cast<size_t>(node.in)), in_position - path.data().at(static_cast<size_t>(node.in)));
 
     return new_point_index;
   }

@@ -21,7 +21,7 @@ namespace graphick::algorithms {
    * @param u The parameter value.
    * @return The value of the B-spline basis function of degree 0 at the given parameter value.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static T B0(const T u) {
     T tmp = T(1) - u;
     return (tmp * tmp * tmp);
@@ -33,7 +33,7 @@ namespace graphick::algorithms {
    * @param u The parameter value.
    * @return The value of the first basis function at the given parameter value.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static T B1(const T u) {
     T tmp = T(1) - u;
     return (T(3) * u * (tmp * tmp));
@@ -45,7 +45,7 @@ namespace graphick::algorithms {
    * @param u The parameter value to evaluate the basis function at.
    * @return The value of the second basis function at the given parameter value.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static T B2(const T u) {
     T tmp = T(1) - u;
     return (T(3) * u * u * tmp);
@@ -57,7 +57,7 @@ namespace graphick::algorithms {
    * @param u The parameter value.
    * @return The value of the cubic B-spline basis function at the given parameter value.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static T B3(const T u) {
     return (u * u * u);
   }
@@ -73,7 +73,7 @@ namespace graphick::algorithms {
    * @param t_hat_2 The tangent vector at the last control point.
    * @return A cubic Bezier curve.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static geom::CubicBezier<T> generate_bezier(
     const std::vector<math::Vec2<T>>& points,
     const size_t first, const size_t last,
@@ -166,7 +166,7 @@ namespace graphick::algorithms {
    * @param t The parameter value at which to evaluate the basis function.
    * @return The value of the B-spline basis function at parameter value `t`.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static math::Vec2<T> BII(const int degree, const math::Vec2<T>* V, T t) {
     int i, j;
     math::Vec2<T> Q;
@@ -200,7 +200,7 @@ namespace graphick::algorithms {
    * @param u The initial guess for the root.
    * @return The root of the cubic bezier curve.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static T newton_raphson_root_find(const geom::CubicBezier<T>& Q, const math::Vec2<T> P, const T u) {
     T numerator, denominator;
 
@@ -210,7 +210,7 @@ namespace graphick::algorithms {
     T u_prime;                        /* Improved u */
 
     // Compute Q(u).
-    Q_u = BII(3, &Q, u);
+    Q_u = BII(3, &Q.p0, u);
 
     // Generate control vertices for Q'.
     for (int i = 0; i <= 2; i++) {
@@ -251,7 +251,7 @@ namespace graphick::algorithms {
    * @param bez_curve The cubic Bezier curve to reparameterize.
    * @return A vector of new parameter values for the section.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static std::vector<T> reparameterize(
     const std::vector<math::Vec2<T>>& points,
     const size_t first, const size_t last,
@@ -273,7 +273,7 @@ namespace graphick::algorithms {
    * @param end The index of the point to compute the left tangent for.
    * @return A math::Vec2<T> representing the left tangent of the specified point.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static math::Vec2<T> compute_left_tangent(const std::vector<math::Vec2<T>>& points, size_t end) {
     math::Vec2<T> t_hat_1;
 
@@ -290,7 +290,7 @@ namespace graphick::algorithms {
    * @param end The index of the point to compute the right tangent for.
    * @return The right tangent of the specified point.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static math::Vec2<T> compute_right_tangent(const std::vector<math::Vec2<T>>& points, size_t end) {
     math::Vec2<T> t_hat_2;
 
@@ -307,7 +307,7 @@ namespace graphick::algorithms {
    * @param center The index of the center point to compute the tangent around.
    * @return The center tangent as a math::Vec2<T>.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static math::Vec2<T> compute_center_tangent(const std::vector<math::Vec2<T>>& points, size_t center) {
     math::Vec2<T>	v1, v2, t_hat_center;
 
@@ -328,7 +328,7 @@ namespace graphick::algorithms {
    * @param last The index of the last point to parameterize.
    * @return A vector of Ts representing the chord length parameterization.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static std::vector<T> chord_length_parameterize(const std::vector<math::Vec2<T>>& points, size_t first, size_t last) {
     std::vector<T> u(last - first + 1);    /* Parameterization */
     size_t i;
@@ -356,7 +356,7 @@ namespace graphick::algorithms {
    * @param split_point A pointer to the index of the point where the curve should be split (maximum error index).
    * @return The maximum error between the curve and the points.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline static T compute_max_error(
     const std::vector<math::Vec2<T>>& points,
     const size_t first, const size_t last,
@@ -373,7 +373,7 @@ namespace graphick::algorithms {
     max_dist = T(0);
 
     for (i = first + 1; i < last; i++) {
-      P = BII(3, &bez_curve, u[i - first]);
+      P = BII(3, &bez_curve.p0, u[i - first]);
       v = P - points[i];
       dist = math::squared_length(v);
 

@@ -133,18 +133,18 @@ namespace graphick::editor::input {
     Entity entity = scene.get_entity(m_element);
     PathComponent path = entity.get_component<PathComponent>();
 
-    const path::Path::VertexNode node = path.data().node_at(m_vertex.value());
+    const geom::path::VertexNode node = path.data().node_at(m_vertex.value());
     const float threshold = 2.5f / Editor::scene().viewport.zoom();
 
     if (node.in >= 0) {
-      const vec2 in_handle = path.data().point_at(static_cast<size_t>(node.in));
-      const vec2 vertex = path.data().point_at(node.vertex);
+      const vec2 in_handle = path.data().at(static_cast<size_t>(node.in));
+      const vec2 vertex = path.data().at(node.vertex);
 
       if (math::is_almost_equal(in_handle, vertex, threshold)) {
         path.translate(static_cast<size_t>(node.in), vertex - in_handle);
 
         if (node.in_command >= 0) {
-          const path::Path::Segment segment = path.data().segment_at(static_cast<size_t>(node.in_command), path::Path::IndexType::Command);
+          const geom::path::Segment segment = path.data().segment_at(static_cast<size_t>(node.in_command), geom::path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.in_command));
@@ -154,14 +154,14 @@ namespace graphick::editor::input {
     }
 
     if (node.out >= 0) {
-      const vec2 out_handle = path.data().point_at(static_cast<size_t>(node.out));
-      const vec2 vertex = path.data().point_at(node.vertex);
+      const vec2 out_handle = path.data().at(static_cast<size_t>(node.out));
+      const vec2 vertex = path.data().at(node.vertex);
 
       if (math::is_almost_equal(out_handle, vertex, threshold)) {
         path.translate(static_cast<size_t>(node.out), vertex - out_handle);
 
         if (node.out_command >= 0) {
-          const path::Path::Segment segment = path.data().segment_at(static_cast<size_t>(node.out_command), path::Path::IndexType::Command);
+          const geom::path::Segment segment = path.data().segment_at(static_cast<size_t>(node.out_command), geom::path::IndexType::Command);
 
           if (segment.is_line()) {
             path.to_cubic(static_cast<size_t>(node.out_command));
@@ -189,20 +189,20 @@ namespace graphick::editor::input {
 
     if (path.data().vacant() || path.data().closed()) return;
 
-    path::Path segment;
+    geom::path segment;
     std::optional<vec2> handle = std::nullopt;
 
     if (m_reverse) {
-      segment.move_to(transform * path.data().point_at(0));
+      segment.move_to(transform * path.data().at(0));
 
       if (path.data().has_in_handle()) {
-        handle = path.data().point_at(path::Path::in_handle_index);
+        handle = path.data().at(geom::path::in_handle_index);
       }
     } else {
-      segment.move_to(transform * path.data().point_at(path.data().points_count() - 1));
+      segment.move_to(transform * path.data().at(path.data().points_count() - 1));
 
       if (path.data().has_out_handle()) {
-        handle = path.data().point_at(path::Path::out_handle_index);
+        handle = path.data().at(geom::path::out_handle_index);
       }
     }
 
@@ -255,7 +255,7 @@ namespace graphick::editor::input {
       const bool has_in_handle = path.data().has_in_handle();
 
       if (has_in_handle) {
-        m_vertex = path.cubic_to(path.data().point_at(path::Path::in_handle_index), pointer_position, pointer_position, m_reverse);
+        m_vertex = path.cubic_to(path.data().at(geom::path::in_handle_index), pointer_position, pointer_position, m_reverse);
       } else {
         m_vertex = path.line_to(pointer_position, m_reverse);
       }
@@ -263,7 +263,7 @@ namespace graphick::editor::input {
       const bool has_out_handle = path.data().has_out_handle();
 
       if (has_out_handle) {
-        m_vertex = path.cubic_to(path.data().point_at(path::Path::out_handle_index), pointer_position, pointer_position, m_reverse);
+        m_vertex = path.cubic_to(path.data().at(geom::path::out_handle_index), pointer_position, pointer_position, m_reverse);
       } else {
         m_vertex = path.line_to(pointer_position, m_reverse);
       }
@@ -296,9 +296,9 @@ namespace graphick::editor::input {
     vec2 in_p1;
 
     if (m_reverse) {
-      in_p1 = first_path.data().has_in_handle() ? first_path.data().point_at(path::Path::in_handle_index) : first_path.data().point_at(0);
+      in_p1 = first_path.data().has_in_handle() ? first_path.data().at(geom::path::in_handle_index) : first_path.data().at(0);
 
-      new_path.move_to(first_transform * first_path.data().point_at(first_path.data().points_count() - 1));
+      new_path.move_to(first_transform * first_path.data().at(first_path.data().points_count() - 1));
 
       first_path.data().for_each_reversed(
         nullptr,
@@ -313,7 +313,7 @@ namespace graphick::editor::input {
         }
       );
     } else {
-      in_p1 = first_path.data().has_out_handle() ? first_path.data().point_at(path::Path::out_handle_index) : first_path.data().point_at(first_path.data().points_count() - 1);
+      in_p1 = first_path.data().has_out_handle() ? first_path.data().at(geom::path::out_handle_index) : first_path.data().at(first_path.data().points_count() - 1);
 
       first_path.data().for_each(
         [&](const vec2 p0) {
@@ -332,7 +332,7 @@ namespace graphick::editor::input {
     }
 
     if (m_vertex.value() == 0) {
-      const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().point_at(path::Path::in_handle_index) : second_path.data().point_at(0);
+      const vec2 in_p2 = second_path.data().has_in_handle() ? second_path.data().at(geom::path::in_handle_index) : second_path.data().at(0);
 
       second_path.data().for_each(
         [&](const vec2 p0) {
@@ -350,9 +350,9 @@ namespace graphick::editor::input {
         }
       );
     } else {
-      const vec2 in_p2 = second_path.data().has_out_handle() ? second_path.data().point_at(path::Path::out_handle_index) : second_path.data().point_at(second_path.data().points_count() - 1);
+      const vec2 in_p2 = second_path.data().has_out_handle() ? second_path.data().at(geom::path::out_handle_index) : second_path.data().at(second_path.data().points_count() - 1);
 
-      new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * second_path.data().point_at(second_path.data().points_count() - 1));
+      new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * second_path.data().at(second_path.data().points_count() - 1));
       index = new_path.data().points_count() - 1;
 
       second_path.data().for_each_reversed(
@@ -406,17 +406,17 @@ namespace graphick::editor::input {
     PathComponent path = entity.get_component<PathComponent>();
     TransformComponent transform = entity.get_component<TransformComponent>();
 
-    const path::Path::Segment segment = path.data().segment_at(segment_hover.value());
+    const geom::path::Segment segment = path.data().segment_at(segment_hover.value());
     const mat2x3 inverse_transform = transform.inverse();
     const vec2 p = inverse_transform * InputManager::pointer.scene.position;
 
     float t;
 
     switch (segment.type) {
-    case path::Path::Command::Cubic:
+    case geom::path::Command::Cubic:
       t = geom::cubic_closest_to(geom::cubic_bezier{ segment.p0, segment.p1, segment.p2, segment.p3 }, p);
       break;
-    case path::Path::Command::Quadratic:
+    case geom::path::Command::Quadratic:
       t = geom::quadratic_closest_to(geom::quadratic_bezier{ segment.p0, segment.p1, segment.p2 }, p);
       break;
     default:
@@ -437,13 +437,13 @@ namespace graphick::editor::input {
 
     if (m_reverse) {
       path.translate(
-        path::Path::in_handle_index,
-        path.data().point_at(0) - path.data().point_at(path::Path::in_handle_index)
+        geom::path::in_handle_index,
+        path.data().at(0) - path.data().at(geom::path::in_handle_index)
       );
     } else {
       path.translate(
-        path::Path::out_handle_index,
-        path.data().point_at(path.data().points_count() - 1) - path.data().point_at(path::Path::out_handle_index)
+        geom::path::out_handle_index,
+        path.data().at(path.data().points_count() - 1) - path.data().at(geom::path::out_handle_index)
       );
     }
 

@@ -38,7 +38,7 @@ namespace graphick::editor {
     return m_selected.find(id) != m_selected.end() || (include_temp && m_temp_selected.find(id) != m_temp_selected.end());
   }
 
-  bool Selection::has_child(const uuid element_id, const size_t child_index, bool include_temp) const {
+  bool Selection::has_child(const uuid element_id, const uint32_t child_index, bool include_temp) const {
     auto it = m_selected.find(element_id);
 
     if (it == m_selected.end()) {
@@ -71,7 +71,7 @@ namespace graphick::editor {
     }
   }
 
-  void Selection::select_child(const uuid element_id, const size_t child_index) {
+  void Selection::select_child(const uuid element_id, const uint32_t child_index) {
     auto it = m_selected.find(element_id);
 
     if (it == m_selected.end()) {
@@ -88,7 +88,7 @@ namespace graphick::editor {
     m_selected.erase(id);
   }
 
-  void Selection::deselect_child(const uuid element_id, const size_t child_index) {
+  void Selection::deselect_child(const uuid element_id, const uint32_t child_index) {
     auto it = m_selected.find(element_id);
 
     if (it == m_selected.end()) return;
@@ -99,7 +99,7 @@ namespace graphick::editor {
       it->second.indices.clear();
       it->second.type = SelectionEntry::Type::Element;
 
-      for (size_t i : element.get_component<PathComponent>().data().vertex_indices()) {
+      for (uint32_t i : element.get_component<PathComponent>().data().vertex_indices()) {
         if (i == child_index) continue;
 
         it->second.indices.insert(i);
@@ -125,7 +125,7 @@ namespace graphick::editor {
         if (it != m_selected.end() && it->second.type == SelectionEntry::Type::Element) {
           if (it->second.full()) continue;
 
-          for (size_t child_index : entry.indices) {
+          for (uint32_t child_index : entry.indices) {
             it->second.indices.insert(child_index);
           }
         } else {

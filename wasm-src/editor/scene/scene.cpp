@@ -25,7 +25,8 @@
 #include "../../math/math.h"
 
 #include "../../geom/intersections.h"
-#include "../../path/path.h"
+#include "../../geom/path_builder.h"
+#include "../../geom/path.h"
 
 #include "../../utils/debugger.h"
 #include "../../utils/console.h"
@@ -141,7 +142,7 @@ namespace graphick::editor {
     return get_entity(id);
   }
 
-  Entity Scene::create_element(const path::Path& path) {
+  Entity Scene::create_element(const geom::path& path) {
     io::EncodedData data;
     uuid id = uuid();
 
@@ -220,7 +221,23 @@ namespace graphick::editor {
           stroke = renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0.0f };
         }
 
-        if (path.is_point_inside_path(position, has_fill ? &fill : nullptr, has_stroke ? &stroke : nullptr, transform, threshold, zoom, deep_search && selection.has(id))) {
+        geom::FillingOptions filling_options = !has_fill ? geom::FillingOptions{} : geom::FillingOptions{
+          fill.rule
+        };
+
+        geom::StrokingOptions<float> stroking_options = !has_stroke ? geom::StrokingOptions<float>{} : geom::StrokingOptions<float>{
+          stroke.width, stroke.miter_limit, stroke.cap, stroke.join
+        };
+
+        if (path.is_point_inside_path(
+          position, 
+          has_fill ? &filling_options : nullptr,
+          has_stroke ? &stroking_options : nullptr,
+          transform, 
+          // TODO: remove zoom
+          threshold, zoom, 
+          deep_search && selection.has(id)
+        )) {
           return id;
         }
       }
@@ -247,7 +264,7 @@ namespace graphick::editor {
     OPTICK_EVENT();
 
     std::unordered_map<uuid, Selection::SelectionEntry> entities;
-    std::unordered_set<size_t> vertices;
+    std::vector<uint32_t> vertices;
 
     auto view = get_all_entities_with<IDComponent::Data, TransformComponent::Data>();
 
@@ -276,7 +293,7 @@ namespace graphick::editor {
             vertices.clear();
 
             if (path.data().intersects(selection_rect, &vertices)) {
-              entities.insert({ id, Selection::SelectionEntry{ vertices } });
+              entities.insert({ id, Selection::SelectionEntry{ std::unordered_set<uint32_t>(vertices.begin(), vertices.end()) } });
             }
           } else {
             if (path.data().intersects(selection_rect)) {
@@ -301,7 +318,7 @@ namespace graphick::editor {
             vertices.clear();
 
             if (path.data().intersects(rect, transform, &vertices)) {
-              entities.insert({ id, Selection::SelectionEntry{ vertices } });
+              entities.insert({ id, Selection::SelectionEntry{ std::unordered_set<uint32_t>(vertices.begin(), vertices.end()) } });
             }
           } else {
             if (path.data().intersects(rect, transform)) {
@@ -351,7 +368,7 @@ namespace graphick::editor {
       if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
 
       const uuid id = entity.id();
-      const path::Path& path = entity.get_component<PathComponent>().data();
+      const geom::path& path = entity.get_component<PathComponent>().data();
       const TransformComponent transform = entity.get_component<TransformComponent>();
 
       if (!has_entity(id)) return;
@@ -389,7 +406,7 @@ namespace graphick::editor {
       auto transformation = math::decompose(transform_matrix);
       float scale = std::max(transformation.scale.x, transformation.scale.y);
 
-      path::QuadraticPath quadratics = path.to_quadratics(tolerance / scale);
+      geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
 
       if (has_fill && has_stroke) {
         renderer::Renderer::draw(
@@ -420,7 +437,7 @@ namespace graphick::editor {
 
       if (!is_selected && !is_temp_selected) continue;
 
-      std::unordered_set<size_t> selected_vertices;
+      std::unordered_set<uint32_t> selected_vertices;
 
       if (is_selected) {
         Selection::SelectionEntry entry = selected.at(id);
@@ -455,7 +472,7 @@ namespace graphick::editor {
 
       // math::rect bounding_rect = path.bounding_rect();
       // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
-      // path::Path rect;
+      // geom::path rect;
       // rect.move_to(lines[0].min);
 
       // for (auto& line : lines) {
@@ -467,7 +484,7 @@ namespace graphick::editor {
 
   // {
   //   std::vector<math::rect> lines = math::lines_from_rect(viewport.visible());
-  //   path::Path rect;
+  //   geom::path rect;
   //   rect.move_to(lines[0].min);
 
   //   for (auto& line : lines) {
@@ -488,8 +505,8 @@ namespace graphick::editor {
       const Entity entity = { m_entities.at(selected.begin()->first), const_cast<Scene*>(this) };
 
       if (entity.has_component<PathComponent>()) {
-        const path::Path& path = entity.get_component<PathComponent>().data();
-        const path::Path::Segment segment = path.segment_at(0);
+        const geom::path& path = entity.get_component<PathComponent>().data();
+        const geom::path::Segment segment = path.segment_at(0);
 
         renderer::Renderer::draw_debug_overlays({ segment.p0, segment.p1, segment.p2, segment.p3 });
       }

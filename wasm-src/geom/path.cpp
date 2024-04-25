@@ -7,11 +7,13 @@
 
 #include "path.h"
 
-#include "curve_ops.h"
+#include "intersections.h"
 #include "path_builder.h"
+#include "curve_ops.h"
 
-#include "../math/vector.h"
-#include "../math/mat2x3.h"
+#include "../math/matrix.h"
+
+#include "../algorithms/fit.h"
 
 #include "../io/encode/encode.h"
 
@@ -130,9 +132,8 @@ namespace graphick::geom {
     }
   }
 
-
   template <typename T, typename _>
-  Path<T, _>::Iterator& Path<T, _>::Iterator::operator++() {
+  typename Path<T, _>::Iterator& Path<T, _>::Iterator::operator++() {
     GK_ASSERT(m_index < m_path.m_commands_size, "Cannot increment the end iterator.");
 
     switch (m_path.get_command(m_index)) {
@@ -156,7 +157,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::Iterator Path<T, _>::Iterator::operator++(int) {
+  typename Path<T, _>::Iterator Path<T, _>::Iterator::operator++(int) {
     Iterator tmp = *this;
     ++(*this);
 
@@ -164,7 +165,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::Iterator Path<T, _>::Iterator::operator+(const uint32_t n) const {
+  typename Path<T, _>::Iterator Path<T, _>::Iterator::operator+(const uint32_t n) const {
     Iterator tmp = *this;
 
     for (uint32_t i = 0; i < n; i++) {
@@ -175,7 +176,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::Iterator& Path<T, _>::Iterator::operator--() {
+  typename Path<T, _>::Iterator& Path<T, _>::Iterator::operator--() {
     GK_ASSERT(m_index > 0, "Cannot decrement the begin iterator.");
 
     m_index -= 1;
@@ -198,7 +199,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::Iterator Path<T, _>::Iterator::operator--(int) {
+  typename Path<T, _>::Iterator Path<T, _>::Iterator::operator--(int) {
     Iterator tmp = *this;
     --(*this);
 
@@ -206,7 +207,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::Iterator Path<T, _>::Iterator::operator-(const uint32_t n) const {
+  typename Path<T, _>::Iterator Path<T, _>::Iterator::operator-(const uint32_t n) const {
     Iterator tmp = *this;
 
     for (uint32_t i = 0; i < n; i++) {
@@ -217,26 +218,26 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::Iterator::value_type Path<T, _>::Iterator::operator*() const {
+  typename Path<T, _>::Iterator::value_type Path<T, _>::Iterator::operator*() const {
     const Command command = m_path.get_command(m_index);
 
     switch (command) {
     case Command::Cubic: {
       GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
-      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2] };
+      return Segment{ m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2] };
     }
     case Command::Quadratic: {
       GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
-      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1] };
+      return Segment{ m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1] };
     }
     case Command::Line: {
       GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index] };
+      return Segment{ m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index] };
     }
     default:
     case Command::Move:
-      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-      return { m_path.m_points[m_point_index] };
+      Iterator temp = operator+(1);
+      return *temp;
     }
   }
 
@@ -286,7 +287,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::ReverseIterator& Path<T, _>::ReverseIterator::operator++() {
+  typename Path<T, _>::ReverseIterator& Path<T, _>::ReverseIterator::operator++() {
     GK_ASSERT(m_index > 0, "Cannot increment the rend iterator.");
 
     m_index -= 1;
@@ -309,7 +310,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator++(int) {
+  typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator++(int) {
     ReverseIterator tmp = *this;
     ++(*this);
 
@@ -317,7 +318,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator+(const uint32_t n) const {
+  typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator+(const uint32_t n) const {
     ReverseIterator tmp = *this;
 
     for (uint32_t i = 0; i < n; i++) {
@@ -328,7 +329,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::ReverseIterator& Path<T, _>::ReverseIterator::operator--() {
+  typename Path<T, _>::ReverseIterator& Path<T, _>::ReverseIterator::operator--() {
     GK_ASSERT(m_index < m_path.m_commands_size, "Cannot decrement the rbegin iterator.");
 
     switch (m_path.get_command(m_index)) {
@@ -352,7 +353,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator--(int) {
+  typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator--(int) {
     ReverseIterator tmp = *this;
     --(*this);
 
@@ -360,7 +361,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator-(const uint32_t n) const {
+  typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator-(const uint32_t n) const {
     ReverseIterator tmp = *this;
 
     for (uint32_t i = 0; i < n; i++) {
@@ -371,26 +372,26 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::ReverseIterator::value_type Path<T, _>::ReverseIterator::operator*() const {
+  typename Path<T, _>::ReverseIterator::value_type Path<T, _>::ReverseIterator::operator*() const {
     const Command command = m_path.get_command(m_index);
 
     switch (command) {
     case Command::Cubic: {
       GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
-      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2] };
+      return Segment{ m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1], m_path.m_points[m_point_index + 2] };
     }
     case Command::Quadratic: {
       GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
-      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1] };
+      return Segment{ m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1] };
     }
     case Command::Line: {
       GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-      return { m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index] };
+      return Segment{ m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index] };
     }
     default:
     case Command::Move:
-      GK_ASSERT(m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-      return { m_path.m_points[m_point_index] };
+      ReverseIterator temp = operator-(1);
+      return *temp;
     }
   }
 
@@ -398,7 +399,8 @@ namespace graphick::geom {
 
   template <typename T, typename _>
   Path<T, _>::Path() :
-    m_commands_size(0), m_points_size(0) {}
+    m_points(), m_commands(), m_commands_size(0),
+    m_closed(false), m_in_handle(math::Vec2<T>::zero()), m_out_handle(math::Vec2<T>::zero()) {}
 
   template <typename T, typename _>
   Path<T, _>::Path(const Path<T>& other) :
@@ -419,7 +421,7 @@ namespace graphick::geom {
   template <typename T, typename _>
   Path<T, _>::Path(io::DataDecoder& decoder) {
     // Commands and points are always present, is_closed is encoded in the properties bitfield.
-    const auto [is_vacant, is_closed, has_in_handle, has_out_handle] = decoder.bitfield<3>();
+    const auto [is_vacant, is_closed, has_in_handle, has_out_handle] = decoder.bitfield<4>();
 
     if (is_vacant) {
       m_commands_size = 0;
@@ -442,8 +444,8 @@ namespace graphick::geom {
     m_points = decoder.vector<math::Vec2<T>>();
     m_closed = is_closed;
 
-    if (has_in_handle) m_in_handle = decoder.math::Vec2<T>();
-    if (has_out_handle) m_out_handle = decoder.math::Vec2<T>();
+    if (has_in_handle) m_in_handle = math::Vec2<T>(decoder.vec2());
+    if (has_out_handle) m_out_handle = math::Vec2<T>(decoder.vec2());
 
     uint32_t point_index = 0;
     uint32_t last_index = 0;
@@ -509,10 +511,10 @@ namespace graphick::geom {
 
   template <typename T, typename _>
   void Path<T, _>::for_each(
-    std::function<void(const math::Vec2<T>)> move_callback = nullptr,
-    std::function<void(const math::Vec2<T>)> line_callback = nullptr,
-    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback = nullptr,
-    std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback = nullptr
+    std::function<void(const math::Vec2<T>)> move_callback,
+    std::function<void(const math::Vec2<T>)> line_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback
   ) const {
     for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
@@ -558,10 +560,10 @@ namespace graphick::geom {
 
   template <typename T, typename _>
   void Path<T, _>::for_each_reversed(
-    std::function<void(const math::Vec2<T>)> move_callback = nullptr,
-    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> line_callback = nullptr,
-    std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback = nullptr,
-    std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback = nullptr
+    std::function<void(const math::Vec2<T>)> move_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> line_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback
   ) const {
     for (int64_t i = static_cast<int64_t>(m_commands_size) - 1, j = static_cast<int32_t>(m_points.size()); i >= 0; i--) {
       switch (get_command(i)) {
@@ -609,7 +611,7 @@ namespace graphick::geom {
   std::vector<uint32_t> Path<T, _>::vertex_indices() const {
     std::vector<uint32_t> indices;
 
-    indices.reserve(points_size(false));
+    indices.reserve(points_count(false));
 
     for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
@@ -668,7 +670,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  Path<T, _>::VertexNode Path<T, _>::node_at(const uint32_t point_index) const {
+  typename Path<T, _>::VertexNode Path<T, _>::node_at(const uint32_t point_index) const {
     GK_ASSERT(point_index < m_points.size() || point_index == in_handle_index || point_index == out_handle_index, "Point index out of range.");
 
     VertexNode node = { 0, -1, -1, -1, -1, -1 };
@@ -909,7 +911,7 @@ namespace graphick::geom {
     const T check = sq_p.x / sq_r.x + sq_p.y / sq_r.y;
     if (check > T(1)) r *= std::sqrt(check);
 
-    mat2 a = {
+    math::Mat2<T> a = {
       cos_th / r.x, sin_th / r.x,
       -sin_th / r.y, cos_th / r.y
     };
@@ -1052,7 +1054,29 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  uint32_t Path<T, _>::to_line(const uint32_t command_index, uint32_t reference_point = 0) {
+  void Path<T, _>::close() {
+    if (empty() || m_commands.empty() || (size() == 1 && get_command(1) == Command::Line)) return;
+
+    const math::Vec2<T> p = m_points.front();
+
+    if (math::is_almost_equal(m_points.back(), p, math::geometric_epsilon<T>)) {
+      m_points[m_points.size() - 1] = p;
+    } else {
+      const bool has_in = has_in_handle();
+      const bool has_out = has_out_handle();
+
+      if (!has_in && !has_out) {
+        line_to(p);
+      } else {
+        cubic_to(m_out_handle, m_in_handle, p);
+      }
+    }
+
+    m_closed = true;
+  }
+
+  template <typename T, typename _>
+  uint32_t Path<T, _>::to_line(const uint32_t command_index, uint32_t reference_point) {
     GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
 
     const Command command = get_command(command_index);
@@ -1078,7 +1102,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  uint32_t Path<T, _>::to_quadratic(const uint32_t command_index, uint32_t reference_point = 0) {
+  uint32_t Path<T, _>::to_quadratic(const uint32_t command_index, uint32_t reference_point) {
     GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
 
     const Command command = get_command(command_index);
@@ -1096,7 +1120,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  uint32_t Path<T, _>::to_cubic(const uint32_t command_index, uint32_t reference_point = 0) {
+  uint32_t Path<T, _>::to_cubic(const uint32_t command_index, uint32_t reference_point) {
     GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
 
     const Command command = get_command(command_index);
@@ -1130,7 +1154,7 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
-  void Path<T, _>::remove(const uint32_t point_index, const bool keep_shape = false) {
+  void Path<T, _>::remove(const uint32_t point_index, const bool keep_shape) {
     GK_ASSERT(point_index < m_points.size(), "Point index out of range.");
 
     uint32_t to_remove = point_index == m_points.size() - 1 ? 0 : point_index;
@@ -1173,7 +1197,7 @@ namespace graphick::geom {
         points[FIT_RESOLUTION + i + 1] = next_segment.sample(t);
       }
 
-      cubic = math::algorithms::fit_points_to_cubic(points, math::geometric_epsilon<T>);
+      cubic = algorithms::fit_points_to_cubic(points, math::geometric_epsilon<T>);
     } else {
       const math::Vec2<T> p1 = segment.type == Command::Line ? segment.p0 : segment.p1;
 
@@ -1298,20 +1322,20 @@ namespace graphick::geom {
       return point_i;
     }
     case Command::Quadratic: {
-      const auto& [left, right] = split(
-        { m_points[point_i - 1], m_points[point_i], m_points[point_i + 1] }, t
+      const auto& [left, right] = geom::split(
+        QuadraticBezier<T>{ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1] }, t
       );
 
       m_points[point_i] = left.p1;
 
-      m_points.insert(m_points.begin() + point_i, [left.p2, right.p1]);
+      m_points.insert(m_points.begin() + point_i, { left.p2, right.p1 });
       insert_command(Command::Quadratic, segment_index + 1);
 
       return point_i + 1;
     }
     case Command::Cubic: {
-      const auto& [left, right] = split(
-        { m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2] }, t
+      const auto& [left, right] = geom::split(
+        CubicBezier<T>{ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2] }, t
       );
 
       m_points[point_i] = left.p1;
@@ -1349,7 +1373,7 @@ namespace graphick::geom {
           m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]
         };
 
-        rect = math::Rect<T>::from_rects(rect, bounding_rect(cubic));
+        rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(cubic));
 
         j += 3;
 
@@ -1363,7 +1387,7 @@ namespace graphick::geom {
           m_points[j - 1], m_points[j], m_points[j + 1]
         };
 
-        rect = math::Rect<T>::from_rects(rect, bounding_rect(quadratic));
+        rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(quadratic));
 
         j += 2;
 
@@ -1415,7 +1439,7 @@ namespace graphick::geom {
           transform * m_points[j - 1], transform * m_points[j], transform * m_points[j + 1], transform * m_points[j + 2]
         };
 
-        rect = math::Rect<T>::from_rects(rect, bounding_rect(cubic));
+        rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(cubic));
 
         j += 3;
 
@@ -1429,7 +1453,7 @@ namespace graphick::geom {
           transform * m_points[j - 1], transform * m_points[j], transform * m_points[j + 1]
         };
 
-        rect = math::Rect<T>::from_rects(rect, bounding_rect(quadratic));
+        rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(quadratic));
 
         j += 2;
 
@@ -1471,7 +1495,7 @@ namespace graphick::geom {
       return { m_points[0], m_points[0] };
     }
 
-    math::rect rect{};
+    math::Rect<T> rect{};
 
     for (math::Vec2<T> p : m_points) {
       math::min(rect.min, p, rect.min);
@@ -1537,11 +1561,11 @@ namespace graphick::geom {
     };
 
     stroking_options.width += threshold;
-    stroking_options.miter_limit = consider_miters ? stroking_options->miter_limit : T(0);
+    stroking_options.miter_limit = consider_miters ? stroking_options.miter_limit : T(0);
 
     // TODO: implement stroking
     for (uint32_t point_index = 0; point_index < m_points.size(); point_index++) {
-      if (math::is_point_in_circle(point, transform * m_points[point_index], threshold)) {
+      if (is_point_in_circle(point, transform * m_points[point_index], threshold)) {
         if (deep_search || point_index == 0) return true;
 
         for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
@@ -1576,8 +1600,8 @@ namespace graphick::geom {
     }
 
     return (deep_search && (
-      math::is_point_in_circle(point, transform * m_in_handle, threshold) ||
-      math::is_point_in_circle(point, transform * m_out_handle, threshold))
+      is_point_in_circle(point, transform * m_in_handle, threshold) ||
+      is_point_in_circle(point, transform * m_out_handle, threshold))
     );
   }
 
@@ -1588,7 +1612,7 @@ namespace graphick::geom {
     const math::Mat2x3<T>& transform,
     const T threshold, const T zoom
   ) const {
-    const Segment segment = get_segment(segment_index);
+    const Segment segment = segment_at(segment_index);
 
     Path<T> path;
 
@@ -1618,7 +1642,7 @@ namespace graphick::geom {
     const math::Mat2x3<T>& transform,
     const T threshold
   ) const {
-    const math::Vec2<T> p = transform * point_at(point_index);
+    const math::Vec2<T> p = transform * at(point_index);
 
     if (is_point_in_circle(point, p, threshold)) {
       if (point_index == 0) return true;
@@ -1686,7 +1710,7 @@ namespace graphick::geom {
       return false;
     } else if (m_commands_size == 1) {
       if (is_point_in_rect(m_points[0], rect)) {
-        if (indices) indices->insert(0);
+        if (indices) indices->push_back(0);
         return true;
       }
 
@@ -1697,13 +1721,15 @@ namespace graphick::geom {
       return false;
     }
 
+    indices->reserve(points_count(false));
+
     bool found = false;
 
     for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
       switch (get_command(i)) {
       case Command::Move:
         if (is_point_in_rect(m_points[point_i], rect)) {
-          if (indices) indices->insert(point_i);
+          if (indices) indices->push_back(point_i);
           found = true;
         }
 
@@ -1711,7 +1737,7 @@ namespace graphick::geom {
         break;
       case Command::Line:
         if (is_point_in_rect(m_points[point_i], rect)) {
-          if (indices) indices->insert(point_i);
+          if (indices) indices->push_back(point_i);
           found = true;
         } else if (!found && does_line_intersect_rect({ m_points[point_i - 1], m_points[point_i] }, rect)) {
           found = true;
@@ -1721,7 +1747,7 @@ namespace graphick::geom {
         break;
       case Command::Quadratic:
         if (is_point_in_rect(m_points[point_i + 1], rect)) {
-          if (indices) indices->insert(point_i + 1);
+          if (indices) indices->push_back(point_i + 1);
           found = true;
         } else if (!found && does_quadratic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1] }, rect)) {
           found = true;
@@ -1731,7 +1757,7 @@ namespace graphick::geom {
         break;
       case Command::Cubic:
         if (is_point_in_rect(m_points[point_i + 2], rect)) {
-          if (indices) indices->insert(point_i + 2);
+          if (indices) indices->push_back(point_i + 2);
           found = true;
         } else if (!found && does_cubic_intersect_rect({ m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2] }, rect)) {
           found = true;
@@ -1742,8 +1768,8 @@ namespace graphick::geom {
       }
     }
 
-    if (indices && closed()) {
-      indices->erase(m_points.size() - 1);
+    if (indices && closed() && !indices->empty() && indices->back() == m_points.size() - 1) {
+      indices->pop_back();
     }
 
     return found;
@@ -1758,7 +1784,7 @@ namespace graphick::geom {
       return false;
     } else if (m_commands_size == 1) {
       if (is_point_in_rect(transform * m_points[0], rect)) {
-        if (indices) indices->insert(0);
+        if (indices) indices->push_back(0);
         return true;
       }
 
@@ -1771,6 +1797,8 @@ namespace graphick::geom {
       return false;
     }
 
+    indices->reserve(points_count(false));
+
     bool found = false;
 
     for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
@@ -1779,7 +1807,7 @@ namespace graphick::geom {
         const math::Vec2<T> p0 = transform * m_points[point_i];
 
         if (is_point_in_rect(p0, rect)) {
-          if (indices) indices->insert(point_i);
+          if (indices) indices->push_back(point_i);
           found = true;
         }
 
@@ -1792,7 +1820,7 @@ namespace graphick::geom {
         const math::Vec2<T> p1 = transform * m_points[point_i];
 
         if (is_point_in_rect(p1, rect)) {
-          if (indices) indices->insert(point_i);
+          if (indices) indices->push_back(point_i);
           found = true;
         } else if (!found && does_line_intersect_rect({ last, p1 }, rect)) {
           found = true;
@@ -1805,7 +1833,7 @@ namespace graphick::geom {
         const math::Vec2<T> p2 = transform * m_points[point_i + 1];
 
         if (is_point_in_rect(p2, rect)) {
-          if (indices) indices->insert(point_i + 1);
+          if (indices) indices->push_back(point_i + 1);
           found = true;
         } else if (!found && does_quadratic_intersect_rect({ last, transform * m_points[point_i], p2 }, rect)) {
           found = true;
@@ -1822,7 +1850,7 @@ namespace graphick::geom {
         const math::Vec2<T> p3 = transform * m_points[point_i + 2];
 
         if (is_point_in_rect(p3, rect)) {
-          if (indices) indices->insert(point_i + 2);
+          if (indices) indices->push_back(point_i + 2);
           found = true;
         } else if (!found && does_cubic_intersect_rect({ last, p1, p2, p3 }, rect)) {
           found = true;
@@ -1836,8 +1864,8 @@ namespace graphick::geom {
       }
     }
 
-    if (indices && closed()) {
-      indices->erase(m_points.size() - 1);
+    if (indices && closed() && !indices->empty() && indices->back() == m_points.size() - 1) {
+      indices->pop_back();
     }
 
     return found;
@@ -1895,8 +1923,8 @@ namespace graphick::geom {
     data.vector(m_commands);
     data.vector(m_points);
 
-    if (has_in) data.math::Vec2<T>(m_in_handle);
-    if (has_out) data.math::Vec2<T>(m_out_handle);
+    if (has_in) data.vec2(vec2(m_in_handle));
+    if (has_out) data.vec2(vec2(m_out_handle));
 
     return data;
   }
@@ -1970,7 +1998,7 @@ namespace graphick::geom {
     uint32_t rem = index % 4;
 
     m_commands[index / 4] &= ~(0b00000011 << (6 - rem * 2));
-    m_commands[index / 4] |= command << (6 - rem * 2);
+    m_commands[index / 4] |= static_cast<uint8_t>(command) << (6 - rem * 2);
   }
 
   template <typename T, typename _>

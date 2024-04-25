@@ -10,7 +10,7 @@
 
 #include "../geom/cubic_bezier.h"
 
-#include <vector.h>
+#include <vector>
 
 namespace graphick::algorithms {
 
@@ -21,7 +21,7 @@ namespace graphick::algorithms {
    * @param tolerance The maximum allowed error between the curve and the points.
    * @return A cubic Bezier curve that approximates the given points.
    */
-  template <typename T, std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   geom::CubicBezier<T> fit_points_to_cubic(
     const std::vector<math::Vec2<T>>& points,
     const T tolerance

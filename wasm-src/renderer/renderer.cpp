@@ -19,7 +19,7 @@
 
 #include "../geom/curve_ops.h"
 
-#include "../path/path.h"
+#include "../geom/path.h"
 
 #include "../utils/defines.h"
 #include "../utils/assert.h"
@@ -344,14 +344,14 @@ namespace graphick::renderer {
     console::log("GPU", static_cast<double>(time) / 1000000.0);
   }
 
-  void Renderer::draw(const path::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
+  void Renderer::draw(const geom::quadratic_path& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
     const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
 
     draw(path, fill, transform, &bounds);
     draw(path, stroke, transform, &bounds);
   }
 
-  void Renderer::draw(const path::QuadraticPath& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect) {
+  void Renderer::draw(const geom::quadratic_path& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect) {
     if (path.empty()) {
       return;
     }
@@ -397,7 +397,7 @@ namespace graphick::renderer {
     }
   }
 
-  void Renderer::draw(const path::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
+  void Renderer::draw(const geom::quadratic_path& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
     GK_TOTAL("Renderer::draw(fill)");
 
     if (path.empty()) {
@@ -580,19 +580,19 @@ namespace graphick::renderer {
     }
   }
 
-  void Renderer::draw_outline(const path::QuadraticPath& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline(const geom::quadratic_path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
     // TODO: fix
     // geometry::PathBuilder(path, transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
-  void Renderer::draw_outline(const path::Path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline(const geom::path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
     // TODO: fix
 
     if (path.size() == 1) {
-      const vec2 p0 = transform * path.point_at(0);
-      const vec2 p1 = transform * path.point_at(1);
-      const vec2 p2 = transform * path.point_at(2);
-      const vec2 p3 = transform * path.point_at(3);
+      const vec2 p0 = transform * path.at(0);
+      const vec2 p1 = transform * path.at(1);
+      const vec2 p2 = transform * path.at(2);
+      const vec2 p3 = transform * path.at(3);
 
       vec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
       vec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
@@ -625,7 +625,7 @@ namespace graphick::renderer {
     // geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
-  void Renderer::draw_outline_vertices(const path::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline_vertices(const geom::path& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
     if (path.vacant()) {
       return;
     }
@@ -638,8 +638,8 @@ namespace graphick::renderer {
     // std::vector<vec2>& white = get()->m_white_vertex_instances.instances;
     InstanceBuffer<CircleInstance>& circles = get()->m_circle_instances.instances;
 
-    size_t i = path.points_count() - 1;
-    vec2 last_raw = path.point_at(i);
+    uint32_t i = path.points_count() - 1;
+    vec2 last_raw = path.at(i);
     vec2 last = transform * last_raw;
 
     if (!path.closed()) {
@@ -651,7 +651,7 @@ namespace graphick::renderer {
         // white.push_back(last);
       }
 
-      const vec2 out_handle = path.point_at(path::Path::out_handle_index);
+      const vec2 out_handle = path.at(geom::path::out_handle_index);
 
       if (out_handle != last_raw) {
         const vec2 h = transform * out_handle;
@@ -674,7 +674,7 @@ namespace graphick::renderer {
         }
 
         if (!path.closed()) {
-          vec2 in_handle = path.point_at(path::Path::in_handle_index);
+          vec2 in_handle = path.at(geom::path::in_handle_index);
 
           if (in_handle != p0) {
             const vec2 h = transform * in_handle;

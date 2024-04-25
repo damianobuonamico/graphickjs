@@ -14,10 +14,6 @@
 #include <vector>
 #include <string>
 
-namespace graphick::geom {
-  class Path;
-}
-
 namespace graphick::io {
 
   /**

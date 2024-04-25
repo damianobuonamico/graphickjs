@@ -15,8 +15,6 @@
 #include "../../math/matrix.h"
 #include "../../math/math.h"
 
-#include "../../path/path.h"
-
 #include "../../utils/console.h"  
 
 namespace graphick::editor {
@@ -123,7 +121,7 @@ namespace graphick::editor {
     if (reverse) {
       return std::min(
         m_data->points_count() - 1,
-        m_data->points_count() - static_cast<size_t>(m_data->back().type) - 1
+        m_data->points_count() - static_cast<uint32_t>(m_data->back().type) - 1
       );
     }
 
@@ -137,7 +135,7 @@ namespace graphick::editor {
 
     io::EncodedData backup, data;
 
-    vec2 backup_position = m_data->point_at(point_index);
+    vec2 backup_position = m_data->at(point_index);
     vec2 position = backup_position + delta;
 
     m_data->translate(point_index, delta);
@@ -205,7 +203,7 @@ namespace graphick::editor {
     switch (type) {
     case PathModifyType::ModifyPoint: {
       size_t point_index = decoder.uint32();
-      vec2 old_position = m_data->point_at(point_index);
+      vec2 old_position = m_data->at(point_index);
       vec2 new_position = decoder.vec2();
 
       m_data->translate(point_index, new_position - old_position);

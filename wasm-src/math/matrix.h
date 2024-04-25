@@ -802,7 +802,7 @@ namespace graphick::math {
    * @brief Overloaded multiplication operator to multiply a 2x3 matrix by a 2D rect.
    */
   template <typename T>
-  rect operator*(const Mat2x3<T>& m, const rect& r) {
+  math::Rect<T> operator*(const Mat2x3<T>& m, const math::Rect<T>& r) {
     Vec2<T> r1 = m * r.min;
     Vec2<T> r2 = m * Vec2<T>{ r.min.x, r.max.y };
     Vec2<T> r3 = m * r.max;
@@ -818,7 +818,7 @@ namespace graphick::math {
    * @brief Overloaded division operator to divide a 2x3 matrix by a 2D rect.
    */
   template <typename T>
-  rect operator/(const Mat2x3<T>& m, const rect& r) {
+  math::Rect<T> operator/(const Mat2x3<T>& m, const math::Rect<T>& r) {
     return inverse(m) * r;
   }
 

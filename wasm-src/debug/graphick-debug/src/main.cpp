@@ -8,7 +8,7 @@
 
 #include "wasm-src/utils/console.h"
 
-#include "wasm-src/path/path.h"
+#include "wasm-src/geom/path.h"
 
 #include "wasm-src/math/math.h"
 
@@ -134,14 +134,14 @@ int main() {
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   graphick::io::svg::parse_svg(content);
 #elif defined(OBJECTS)
-  graphick::path::Path path1;
+  graphick::geom::path path1;
 
   // graphick::editor::Entity test_entity1 = graphick::editor::Editor::scene().create_element("Test Entity 1");
 
   // auto& path_component = test_entity.get_component<graphick::editor::PathComponent>();
   // auto& path = test_entity.get_component<graphick::editor::PathComponent>().data;
-  // graphick::path::Path& path = test_entity.get_component<graphick::editor::PathComponent>().data;
-  // graphick::path::Path& path1 = test_entity1.get_component<graphick::editor::PathComponent>().path;
+  // graphick::geom::path& path = test_entity.get_component<graphick::editor::PathComponent>().data;
+  // graphick::geom::path& path1 = test_entity1.get_component<graphick::editor::PathComponent>().path;
 
   // path.move_to({ 360.0f, 20.0f });
   // path1.move_to({ 0.0f, 0.0f });
@@ -218,7 +218,7 @@ int main() {
   };
 
   for (size_t i = 3; i < tests.size(); i++) {
-    graphick::path::Path path;
+    graphick::geom::path path;
 
     const graphick::vec2 delta = { 0.0f, 0.0f };
     // const graphick::vec2 delta = { (i / 5) * 300.0f, (i % 5) * 300.0f };

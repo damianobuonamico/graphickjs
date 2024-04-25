@@ -415,7 +415,7 @@ namespace graphick::geom {
 
   /* -- Winding Number -- */
 
-  template <typename T, typename std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   static inline int winding_of(const QuadraticBezier<T>& quad, const math::Vec2<T> p) {
     // TODO: implement the rendering algorithm
 
@@ -431,12 +431,12 @@ namespace graphick::geom {
     int winding = 0;
 
     for (size_t i = 0; i < size(); i++) {
-      const QuadraticBezier<float> quad(points[i * 2], points[i * 2 + 1], points[i * 2 + 2]);
-
       winding += geom::winding_of(
         QuadraticBezier<float>{ points[i * 2], points[i * 2 + 1], points[i * 2 + 2] }, p
       );
     }
+
+    return winding;
   }
 
   template <>
@@ -447,7 +447,13 @@ namespace graphick::geom {
 
     int winding = 0;
 
+    for (size_t i = 0; i < size(); i++) {
+      winding += geom::winding_of(
+        QuadraticBezier<double>{ points[i * 2], points[i * 2 + 1], points[i * 2 + 2] }, p
+      );
+    }
 
+    return winding;
   }
 
   /* -- Template Instantiation -- */

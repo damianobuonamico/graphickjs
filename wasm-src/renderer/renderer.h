@@ -12,7 +12,7 @@
 
 #include "gpu/shaders.h"
 
-#include "../path/quadratic_path.h"
+#include "../geom/quadratic_path.h"
 #include "../geom/cubic_bezier.h"
 
 #include "../math/mat2x3.h"
@@ -22,7 +22,8 @@
 
 #include <unordered_set>
 
-namespace graphick::path {
+namespace graphick::geom {
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   class Path;
 };
 
@@ -80,7 +81,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const path::QuadraticPath& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const geom::quadratic_path& path, const Stroke& stroke, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws a QuadraticPath with the provided Stroke properties.
@@ -90,7 +91,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const path::QuadraticPath& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const geom::quadratic_path& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws a QuadraticPath with the provided Fill properties.
@@ -100,7 +101,7 @@ namespace graphick::renderer {
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const path::QuadraticPath& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(const geom::quadratic_path& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the outline of a QuadraticPath.
@@ -111,7 +112,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const path::QuadraticPath& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const geom::quadratic_path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the outline of a Path.
@@ -122,7 +123,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const path::Path& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const geom::Path<float>& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the vertices of a Path's outline.
@@ -133,7 +134,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline_vertices(const path::Path& path, const mat2x3& transform, const std::unordered_set<size_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline_vertices(const geom::Path<float>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
 #ifdef GK_DEBUG
     static void draw_debug_overlays(const geom::cubic_bezier& cubic);

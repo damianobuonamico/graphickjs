@@ -10,6 +10,8 @@
 #include "cubic_bezier.h"
 #include "line.h"
 
+#include "../utils/assert.h"
+
 #include <functional>
 
 /* -- Forward declarations -- */
@@ -405,7 +407,7 @@ namespace graphick::geom {
      *
      * @return The number of segments in the path.
      */
-    inline uint32_t size() const { return std::max(1, m_commands_size) - 1; }
+    inline uint32_t size() const { return m_commands_size > 1 ? m_commands_size - 1 : 0; }
 
     /**
      * @brief Returns the number of control points in the path.
@@ -413,7 +415,7 @@ namespace graphick::geom {
      * @param include_handles Whether or not to count the handles when counting the points, default is true.
      * @return The number of points in the path.
      */
-    inline uint32_t points_size(const bool include_handles = true) const {
+    inline uint32_t points_count(const bool include_handles = true) const {
       return include_handles ? static_cast<uint32_t>(m_points.size()) : m_commands_size;
     }
 
