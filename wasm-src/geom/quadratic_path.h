@@ -55,6 +55,24 @@ namespace graphick::geom {
     }
 
     /**
+     * @brief Returns the first control point of the path.
+     *
+     * @return The first control point.
+     */
+    inline math::Vec2<T>& front() {
+      return points.front();
+    }
+
+    /**
+     * @brief Returns the last control point of the path.
+     *
+     * @return The last control point.
+     */
+    inline math::Vec2<T>& back() {
+      return points.back();
+    }
+
+    /**
      * @brief Returns the i-th control point of the path.
      *
      * @param i The index of the control point.
@@ -64,6 +82,13 @@ namespace graphick::geom {
       return points[i];
     }
 
+    /**
+     * @brief Returns an approximate bounding rectangle of the path.
+     *
+     * The bounding rectangle is computed by taking the minimum and maximum x and y values of the control points.
+     *
+     * @return An approximate bounding rectangle of the path.
+     */
     inline math::Rect<T> approx_bounding_rect() const {
       if (empty()) {
         return math::Rect<T>{};
@@ -112,6 +137,14 @@ namespace graphick::geom {
       points.push_back(p1);
       points.push_back(p2);
     }
+
+    /**
+     * @brief Returns the winding number of a point with respect to the path.
+     *
+     * @param p The point to compute the winding number for.
+     * @return The winding number of the point.
+     */
+    int winding_of(const math::Vec2<T> p) const;
   };
 
 }

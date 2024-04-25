@@ -1505,18 +1505,80 @@ namespace graphick::geom {
     }
 
     const math::Rect<T> bounds = approx_bounding_rect();
+    const math::Mat2x3<T> inverse_transform = math::inverse(transform);
+    const math::Vec2<T> local_point = inverse_transform * point;
+
     const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) && (stroke->width > threshold) : false;
 
     if (!is_point_in_rect(
-      math::inverse(transform) * point, bounds,
+      local_point, bounds,
       stroke ? stroke->width / T(2) * (consider_miters ? stroke->miter_limit : T(1)) + threshold : threshold
     )) return false;
 
-    const QuadraticPath<T> path = to_quadratic_path();
+    QuadraticPath<T> path = to_quadratic_path();
 
-    // TODO: implement
+    if (fill) {
+      if (!closed()) {
+        path.line_to(path.back());
+      }
 
-    return true;
+      const int winding = path.winding_of(local_point);
+
+      if (
+        (fill->rule == FillRule::NonZero && winding != 0) ||
+        (fill->rule == FillRule::EvenOdd && winding % 2 != 0)
+      ) {
+        return true;
+      }
+    }
+
+    StrokingOptions<T> stroking_options = stroke ? *stroke : StrokingOptions<T>{
+      T(0), T(0), LineCap::Butt, LineJoin::Round
+    };
+
+    stroking_options.width += threshold;
+    stroking_options.miter_limit = consider_miters ? stroking_options->miter_limit : T(0);
+
+    // TODO: implement stroking
+    for (uint32_t point_index = 0; point_index < m_points.size(); point_index++) {
+      if (math::is_point_in_circle(point, transform * m_points[point_index], threshold)) {
+        if (deep_search || point_index == 0) return true;
+
+        for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
+          switch (get_command(i)) {
+          case Command::Move:
+          case Command::Line:
+            if (point_i == point_index) {
+              return true;
+            }
+
+            point_i += 1;
+            break;
+          case Command::Quadratic:
+            if (point_i + 1 == point_index) {
+              return true;
+            }
+
+            point_i += 2;
+            break;
+          case Command::Cubic:
+            if (point_i + 2 == point_index) {
+              return true;
+            }
+
+            point_i += 3;
+            break;
+          }
+        }
+
+        return false;
+      }
+    }
+
+    return (deep_search && (
+      math::is_point_in_circle(point, transform * m_in_handle, threshold) ||
+      math::is_point_in_circle(point, transform * m_out_handle, threshold))
+    );
   }
 
   template <typename T, typename _>
@@ -1561,7 +1623,7 @@ namespace graphick::geom {
     if (is_point_in_circle(point, p, threshold)) {
       if (point_index == 0) return true;
 
-      for (size_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
         switch (get_command(i)) {
         case Command::Move:
         case Command::Line:
@@ -1570,7 +1632,6 @@ namespace graphick::geom {
           }
 
           point_i += 1;
-
           break;
         case Command::Quadratic:
           if (point_i == point_index) {
@@ -1584,7 +1645,6 @@ namespace graphick::geom {
           }
 
           point_i += 2;
-
           break;
         case Command::Cubic:
           if (point_i == point_index) {
@@ -1604,7 +1664,6 @@ namespace graphick::geom {
           }
 
           point_i += 3;
-
           break;
         }
       }

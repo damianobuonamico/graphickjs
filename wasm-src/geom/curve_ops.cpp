@@ -351,7 +351,7 @@ namespace graphick::geom {
       const QuadraticBezier<T> extracted_quad = extract(quad, t_e, std::min(T(1), t_e_prime));
 
       if (t0 != T(0)) {
-        sink.points.back() = math::midpoint(p2, extracted_quad.p0);
+        sink.back() = math::midpoint(p2, extracted_quad.p0);
       }
 
       sink.quadratic_to(extracted_quad.p1, extracted_quad.p2);
@@ -368,7 +368,7 @@ namespace graphick::geom {
       const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
       const QuadraticBezier<T> extracted_quad = extract(quad, t_e, T(1));
 
-      sink.points.back() = math::midpoint(p2, extracted_quad.p0);
+      sink.back() = math::midpoint(p2, extracted_quad.p0);
 
       sink.quadratic_to(extracted_quad.p1, extracted_quad.p2);
     }
@@ -411,6 +411,43 @@ namespace graphick::geom {
     }
 
     return quads;
+  }
+
+  /* -- Winding Number -- */
+
+  template <typename T, typename std::enable_if<std::is_floating_point_v<T>>>
+  static inline int winding_of(const QuadraticBezier<T>& quad, const math::Vec2<T> p) {
+    // TODO: implement the rendering algorithm
+
+    return 0;
+  }
+
+  template <>
+  int QuadraticPath<float>::winding_of(const vec2 p) const {
+    if (points.size() < 3) {
+      return 0;
+    }
+
+    int winding = 0;
+
+    for (size_t i = 0; i < size(); i++) {
+      const QuadraticBezier<float> quad(points[i * 2], points[i * 2 + 1], points[i * 2 + 2]);
+
+      winding += geom::winding_of(
+        QuadraticBezier<float>{ points[i * 2], points[i * 2 + 1], points[i * 2 + 2] }, p
+      );
+    }
+  }
+
+  template <>
+  int QuadraticPath<double>::winding_of(const dvec2 p) const {
+    if (points.size() < 3) {
+      return 0;
+    }
+
+    int winding = 0;
+
+
   }
 
   /* -- Template Instantiation -- */
