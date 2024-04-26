@@ -14,7 +14,7 @@ R"(
     float dist = 2.0 * vRadius * length(vTexCoord);
     float alpha = smoothstep(vRadius, vRadius - 1.0 / uZoom, dist) ;
 
-    oFragColor = vColor * alpha;
+    oFragColor = vec4(vColor.rgb * vColor.a, vColor.a) * alpha;
   }
 
 )"

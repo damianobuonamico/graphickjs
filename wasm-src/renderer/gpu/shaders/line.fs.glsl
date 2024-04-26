@@ -22,7 +22,7 @@ R"(
     // float aa_factor = 0.5;
     // float alpha = 1.0 - smoothstep(1.0 - ((2.0 * aa_factor) / vLineWidth),  1.0, abs(vTexCoord.y / vLineWidth) );
 
-    oFragColor = vColor * alpha;
+    oFragColor = vec4(vColor.rgb * vColor.a, vColor.a) * alpha;
   }
 
 )"

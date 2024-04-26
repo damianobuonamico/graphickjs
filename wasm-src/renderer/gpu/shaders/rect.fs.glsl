@@ -7,7 +7,7 @@ R"(
   out vec4 oFragColor;
 
   void main() {
-    oFragColor = vColor;
+    oFragColor = vec4(vColor.rgb * vColor.a, vColor.a);
   }
 
 )"
