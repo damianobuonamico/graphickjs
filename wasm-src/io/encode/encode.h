@@ -204,7 +204,7 @@ namespace graphick::io {
      */
     template <typename T>
     inline EncodedData& vector(const std::vector<T>& t) {
-      uint32(t.size());
+      uint32(static_cast<uint32_t>(t.size()));
       data.insert(data.end(), reinterpret_cast<const uint8_t*>(t.data()), reinterpret_cast<const uint8_t*>(t.data()) + t.size() * sizeof(T));
       return *this;
     }

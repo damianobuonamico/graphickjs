@@ -595,7 +595,7 @@ namespace graphick::renderer {
     geom::path_builder(path, transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, sink_callback);
   }
 
-  void Renderer::draw_outline(const geom::path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
     // TODO: fix
 
     if (path.size() == 1) {
@@ -635,7 +635,7 @@ namespace graphick::renderer {
     // geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
-  void Renderer::draw_outline_vertices(const geom::path& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
+  void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
     if (path.vacant()) {
       return;
     }

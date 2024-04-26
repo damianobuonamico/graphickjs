@@ -75,7 +75,7 @@ namespace graphick::editor::input {
       return;
     }
 
-    for (size_t i = 0; i < path.data().points_count(); i++) {
+    for (uint32_t i = 0; i < path.data().points_count(); i++) {
       if (path.data().is_point_inside_point(i, position, transform, threshold)) {
         m_segment = -1;
 
@@ -114,7 +114,7 @@ namespace graphick::editor::input {
     }
 
     if (!path.data().empty()) {
-      for (size_t i = 0; i < path.data().size(); i++) {
+      for (uint32_t i = 0; i < path.data().size(); i++) {
         if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom)) {
           m_type = HoverType::Segment;
           m_segment = i;

@@ -24,9 +24,9 @@
 #include <optional>
 
 namespace graphick::geom {
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename>
   class Path;
-};
+}
 
 namespace graphick::renderer {
 
@@ -124,7 +124,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const geom::Path<float>& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the vertices of a Path's outline.
@@ -135,7 +135,7 @@ namespace graphick::renderer {
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline_vertices(const geom::Path<float>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws a rectangle with the provided color.

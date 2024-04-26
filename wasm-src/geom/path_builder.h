@@ -16,8 +16,8 @@ namespace graphick::geom {
 
   /* -- Forward Declarations -- */
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  class QuadraticPath;
+  template <typename T, typename>
+  struct QuadraticPath;
 
   /**
    * @brief The PathBuilder class is used to build strokes and flatten paths.
@@ -25,7 +25,7 @@ namespace graphick::geom {
    * @tparam T The input and output type of the path builder, intermediate operations are carried out in double precision.
    * @class PathBuilder
    */
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  template <typename T, typename Enable = std::enable_if<std::is_floating_point_v<T>>>
   class PathBuilder {
   public:
     /**
@@ -36,7 +36,7 @@ namespace graphick::geom {
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
     PathBuilder(
-      const QuadraticPath<T>& path,
+      const QuadraticPath<T, Enable>& path,
       const math::Mat2x3<T>& transform,
       const math::Rect<T>* bounding_rect = nullptr
     );
@@ -80,9 +80,9 @@ namespace graphick::geom {
       std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback
     ) const;
   private:
-    const QuadraticPath<T>& m_path;    /* The path to process. */
+    const QuadraticPath<T, Enable>& m_path;    /* The path to process. */
     const dmat2x3 m_transform;         /* The transformation matrix to apply to the path. */
-    
+
     drect m_bounding_rect;             /* The bounding rectangle of the path. */
   };
 

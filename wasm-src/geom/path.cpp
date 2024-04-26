@@ -575,7 +575,7 @@ namespace graphick::geom {
     std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback
   ) const {
     for (int64_t i = static_cast<int64_t>(m_commands_size) - 1, j = static_cast<int32_t>(m_points.size()); i >= 0; i--) {
-      switch (get_command(i)) {
+      switch (get_command(static_cast<uint32_t>(i))) {
       case Command::Cubic:
         GK_ASSERT(j - 4 >= 0, "Not enough points for a cubic bezier.");
 

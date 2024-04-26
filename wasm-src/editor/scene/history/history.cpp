@@ -105,7 +105,7 @@ namespace graphick::editor {
     m_actions.erase(m_actions.begin() + m_batch_indices[m_batch_indices.size() - 2], m_actions.end());
     m_batch_indices.pop_back();
 
-    if (m_batch_index > m_batch_indices.size() - 1) m_batch_index = m_batch_indices.size() - 1;
+    if (m_batch_index > static_cast<int64_t>(m_batch_indices.size()) - 1) m_batch_index = m_batch_indices.size() - 1;
   }
 
   void History::end_batch() {

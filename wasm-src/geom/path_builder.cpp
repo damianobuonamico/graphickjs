@@ -104,7 +104,7 @@ namespace graphick::geom {
 
   template <typename T, typename _>
   PathBuilder<T, _>::PathBuilder(
-    const QuadraticPath<T>& path,
+    const QuadraticPath<T, _>& path,
     const math::Mat2x3<T>& transform,
     const math::Rect<T>* bounding_rect
   ) :
