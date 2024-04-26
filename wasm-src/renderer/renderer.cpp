@@ -19,6 +19,7 @@
 
 #include "../geom/curve_ops.h"
 
+#include "../geom/path_builder.h"
 #include "../geom/path.h"
 
 #include "../utils/defines.h"
@@ -392,7 +393,7 @@ namespace graphick::renderer {
       const vec2 p2 = path[i * 2 + 2];
 
       // get()->m_vertex_instances.instances.push_back(transform * p0);
-      get()->m_circle_instances.instances.push_back({ transform * p1, get()->m_ui_options.handle_radius, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
+      // get()->m_circle_instances.instances.push_back({ transform * p1, get()->m_ui_options.handle_radius / 2.0f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
       // get()->m_vertex_instances.instances.push_back(transform * p2);
     }
   }
@@ -575,14 +576,23 @@ namespace graphick::renderer {
       // get()->m_vertex_instances.instances.push_back(transform * p0);
       // get()->m_handle_instances.instances.push_back(transform * p1);
       // get()->m_vertex_instances.instances.push_back(transform * p2);
-      get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
+      get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius / 1.75f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
       // get()->m_handle_instances.instances.push_back(transform * p2);
     }
   }
 
   void Renderer::draw_outline(const geom::quadratic_path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
-    // TODO: fix
-    // geometry::PathBuilder(path, transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
+    const float line_width = get()->m_ui_options.line_width;
+    const vec4 color = get()->m_ui_options.primary_color_05;
+
+    int count = 0;
+
+    const auto sink_callback = [&](const vec2 p0, const vec2 p1) {
+      get()->m_line_instances.instances.push_back({ p0, p1, line_width, color });
+      count++;
+      };
+
+    geom::path_builder(path, transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, sink_callback);
   }
 
   void Renderer::draw_outline(const geom::path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
@@ -651,7 +661,7 @@ namespace graphick::renderer {
         // white.push_back(last);
       }
 
-      const vec2 out_handle = path.at(geom::path::out_handle_index);
+      const vec2 out_handle = path.out_handle();
 
       if (out_handle != last_raw) {
         const vec2 h = transform * out_handle;
@@ -674,7 +684,7 @@ namespace graphick::renderer {
         }
 
         if (!path.closed()) {
-          vec2 in_handle = path.at(geom::path::in_handle_index);
+          vec2 in_handle = path.in_handle();
 
           if (in_handle != p0) {
             const vec2 h = transform * in_handle;
@@ -752,6 +762,14 @@ namespace graphick::renderer {
         i -= 3;
       }
     );
+  }
+
+  void Renderer::draw_rect(const rect& rect, const std::optional<vec4> color) {
+    get()->m_rect_instances.instances.push_back({ rect.center(), rect.size(), color.value_or(get()->m_ui_options.primary_color) });
+  }
+
+  void Renderer::draw_rect(const vec2 center, const vec2 size, const std::optional<vec4> color) {
+    get()->m_rect_instances.instances.push_back({ center, size, color.value_or(get()->m_ui_options.primary_color) });
   }
 
 #ifdef GK_DEBUG

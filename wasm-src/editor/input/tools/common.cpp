@@ -203,14 +203,13 @@ namespace graphick::editor::input {
       return false;
     }
 
-    vec2 transformed_position = inverse(transform()) * InputManager::pointer.scene.position;
+    vec2 transformed_position = math::inverse(m_start_transform) * InputManager::pointer.scene.position;
     vec2 handle_size = vec2{ threshold } / m_size;
 
     for (int i = 0; i < HandleNone; i++) {
       vec2 handle_position = m_handles[i];
 
       if (geom::is_point_in_ellipse(transformed_position, handle_position, i >= 8 ? handle_size * 2.0f : handle_size)) {
-
         switch (i) {
         case N:
           m_center = m_handles[S];

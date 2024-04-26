@@ -7,7 +7,7 @@
 
 #include "../math/vec4.h"
 
-#include "../geom/path_builder.h"
+#include "../geom/options.h"
 
 namespace graphick::renderer {
 

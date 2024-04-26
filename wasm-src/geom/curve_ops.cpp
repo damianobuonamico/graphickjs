@@ -336,17 +336,17 @@ namespace graphick::geom {
     math::Vec2<T> p2 = cubic.p0;
 
     while (t0 < T(1)) {
-      // Taylor expansion coefficients at t=t0
+      // Taylor expansion coefficients at t=t0.
       const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
 
-      // Value of t at which the Taylor approximation error equals the tolerance
+      // Value of t at which the Taylor approximation error equals the tolerance.
       const T t_e_prime = taylor_expansion_error(cubic_coefficients[0], t0, tolerance);
 
       // Value of t at which the next Taylor approximation should start from
-      // in order to mantain the max error at t=t_e
+      // in order to mantain the max error at t=t_e.
       const T t0_prime = next_taylor_center(cubic_coefficients[0], t_e_prime, tolerance);
 
-      // Quadratic Bezier curve from t_e to t_e_prime
+      // Quadratic Bezier curve from t_e to t_e_prime.
       const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
       const QuadraticBezier<T> extracted_quad = extract(quad, t_e, std::min(T(1), t_e_prime));
 
@@ -361,7 +361,7 @@ namespace graphick::geom {
       p2 = extracted_quad.p2;
     }
 
-    // Close the approximation with one last quadratic curve if needed
+    // Close the approximation with one last quadratic curve if needed.
     if (t_e < T(1)) {
       const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
 
@@ -370,7 +370,9 @@ namespace graphick::geom {
 
       sink.back() = math::midpoint(p2, extracted_quad.p0);
 
-      sink.quadratic_to(extracted_quad.p1, extracted_quad.p2);
+      sink.quadratic_to(extracted_quad.p1, cubic.p3);
+    } else {
+      sink.back() = cubic.p3;
     }
   }
 
@@ -384,14 +386,14 @@ namespace graphick::geom {
     T t_e = T(0);
 
     while (t0 < T(1)) {
-      // Taylor expansion coefficients at t=t0
+      // Taylor expansion coefficients at t=t0.
       const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
 
-      // Value of t at which the Taylor approximation error equals the tolerance
+      // Value of t at which the Taylor approximation error equals the tolerance.
       const T t_e_prime = taylor_expansion_error(cubic_coefficients[0], t0, T(1e-2));
 
       // Value of t at which the next Taylor approximation should start from
-      // in order to mantain the max error at t=t_e
+      // in order to mantain the max error at t=t_e.
       const T t0_prime = next_taylor_center(cubic_coefficients[0], t_e_prime, T(1e-2));
 
       // Quadratic Bezier curve from t_e to t_e_prime
@@ -402,7 +404,7 @@ namespace graphick::geom {
       t_e = t_e_prime;
     }
 
-    // Close the approximation with one last quadratic curve if needed
+    // Close the approximation with one last quadratic curve if needed.
     if (t_e < T(1)) {
       const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
       const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
@@ -415,9 +417,44 @@ namespace graphick::geom {
 
   /* -- Winding Number -- */
 
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  static inline int winding_of(const QuadraticBezier<T>& quad, const math::Vec2<T> p) {
-    // TODO: implement the rendering algorithm
+  static inline int winding_of(const dquadratic_bezier& quad, const dvec2 p) {
+    if (std::max(std::max(quad.p0.x, quad.p1.x), quad.p2.x) < p.x) {
+      // The curve is entirely on the left of the point.
+      return 0;
+    }
+
+    if (std::min(std::min(quad.p0.y, quad.p1.y), quad.p2.y) > p.y) {
+      // The curve is entirely below the point.
+      return 0;
+    }
+
+    if (std::max(std::max(quad.p0.y, quad.p1.y), quad.p2.y) < p.y) {
+      // The curve is entirely above the point.
+      return 0;
+    }
+
+    const auto [a, b, c] = quad.coefficients();
+    const math::QuadraticSolutions<double> solutions = math::solve_quadratic(a.y, b.y, c.y - p.y);
+
+    if (solutions.count == 0) {
+      return 0;
+    }
+
+    const int delta = quad.p0.y < quad.p2.y ? 1 : -1;
+
+    for (uint8_t i = 0; i < solutions.count; i++) {
+      const double t = solutions.solutions[i];
+
+      if (!math::is_normalized(t, false)) {
+        continue;
+      }
+
+      const double x = a.x * t * t + b.x * t + c.x;
+
+      if (x > p.x) {
+        return delta;
+      }
+    }
 
     return 0;
   }
@@ -432,7 +469,7 @@ namespace graphick::geom {
 
     for (size_t i = 0; i < size(); i++) {
       winding += geom::winding_of(
-        QuadraticBezier<float>{ points[i * 2], points[i * 2 + 1], points[i * 2 + 2] }, p
+        dquadratic_bezier{ dvec2(points[i * 2]), dvec2(points[i * 2 + 1]), dvec2(points[i * 2 + 2]) }, dvec2(p)
       );
     }
 
@@ -449,7 +486,7 @@ namespace graphick::geom {
 
     for (size_t i = 0; i < size(); i++) {
       winding += geom::winding_of(
-        QuadraticBezier<double>{ points[i * 2], points[i * 2 + 1], points[i * 2 + 2] }, p
+        dquadratic_bezier{ points[i * 2], points[i * 2 + 1], points[i * 2 + 2] }, p
       );
     }
 

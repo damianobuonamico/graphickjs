@@ -38,6 +38,9 @@ namespace graphick::math {
   inline constexpr T newton_raphson_iterations = T(5);
 
   template <typename T>
+  inline constexpr T max_recursion_depth = T(16);
+
+  template <typename T>
   inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> circle_ratio = T(0.55228474983079339840);
 
   /**

@@ -421,9 +421,9 @@ namespace graphick::geom {
   template <typename T, typename _>
   Path<T, _>::Path(io::DataDecoder& decoder) {
     // Commands and points are always present, is_closed is encoded in the properties bitfield.
-    const auto [is_vacant, is_closed, has_in_handle, has_out_handle] = decoder.bitfield<4>();
+    const auto [not_vacant, is_closed, has_in_handle, has_out_handle] = decoder.bitfield<4>();
 
-    if (is_vacant) {
+    if (!not_vacant) {
       m_commands_size = 0;
       m_closed = false;
 
@@ -443,9 +443,6 @@ namespace graphick::geom {
     // Points are just stored as a list of coordinates.
     m_points = decoder.vector<math::Vec2<T>>();
     m_closed = is_closed;
-
-    if (has_in_handle) m_in_handle = math::Vec2<T>(decoder.vec2());
-    if (has_out_handle) m_out_handle = math::Vec2<T>(decoder.vec2());
 
     uint32_t point_index = 0;
     uint32_t last_index = 0;
@@ -482,6 +479,18 @@ namespace graphick::geom {
       // Trim the points in case the last command was a move command.
       m_commands_size = last_index + 1;
       m_points.resize(last_point_index);
+    }
+
+    if (has_in_handle) {
+      m_in_handle = math::Vec2<T>(decoder.vec2());
+    } else {
+      m_in_handle = m_points.front();
+    }
+
+    if (has_out_handle) {
+      m_out_handle = math::Vec2<T>(decoder.vec2());
+    } else {
+      m_out_handle = m_points.back();
     }
   }
 
@@ -1616,6 +1625,8 @@ namespace graphick::geom {
 
     Path<T> path;
 
+    path.move_to(segment.p0);
+
     switch (segment.type) {
     case Command::Line: {
       path.line_to(segment.to_line());
@@ -1721,7 +1732,7 @@ namespace graphick::geom {
       return false;
     }
 
-    indices->reserve(points_count(false));
+    if (indices) indices->reserve(points_count(false));
 
     bool found = false;
 
@@ -1797,7 +1808,7 @@ namespace graphick::geom {
       return false;
     }
 
-    indices->reserve(points_count(false));
+    if (indices) indices->reserve(points_count(false));
 
     bool found = false;
 
@@ -1911,14 +1922,14 @@ namespace graphick::geom {
   io::EncodedData& Path<T, _>::encode(io::EncodedData& data) const {
     if (vacant()) {
       // The first bit is set to true to indicate that the path is vacant.
-      return data.bitfield({ true, false, false, false });
+      return data.uint8(0);
     }
 
     bool has_in = has_in_handle();
     bool has_out = has_out_handle();
 
-    // Bitfield [vacant, closed, has_in_handle, has_out_handle]
-    data.bitfield({ false, closed(), has_in, has_out });
+    // Bitfield [not_vacant, is_closed, has_in_handle, has_out_handle]
+    data.bitfield({ true, closed(), has_in, has_out });
 
     data.vector(m_commands);
     data.vector(m_points);

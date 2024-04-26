@@ -16,7 +16,7 @@ R"(
   out float vLineWidth;
 
   void main() {
-    float elongation = 0.5 / uZoom;
+    float elongation = 0.25 / uZoom;
 
     vec2 dir = aInstanceTo - aInstanceFrom;
     vec2 normalized_dir = normalize(dir);

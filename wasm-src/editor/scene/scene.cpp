@@ -119,7 +119,7 @@ namespace graphick::editor {
       .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
 
     data.component_id(PathComponent::component_id)
-      .uint32(0);
+      .uint8(0);
 
     data.component_id(TransformComponent::component_id)
       .mat2x3(mat2x3(1.0f));
@@ -230,12 +230,12 @@ namespace graphick::editor {
         };
 
         if (path.is_point_inside_path(
-          position, 
+          position,
           has_fill ? &filling_options : nullptr,
           has_stroke ? &stroking_options : nullptr,
-          transform, 
+          transform,
           // TODO: remove zoom
-          threshold, zoom, 
+          threshold, zoom,
           deep_search && selection.has(id)
         )) {
           return id;
@@ -460,7 +460,7 @@ namespace graphick::editor {
       }
 
       // TEMP
-      renderer::Renderer::draw_outline(path, transform, outline_tolerance);
+      // renderer::Renderer::draw_outline(path, transform, outline_tolerance);
       renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
       renderer::Renderer::draw_outline_vertices(
         path, transform,
@@ -506,9 +506,11 @@ namespace graphick::editor {
 
       if (entity.has_component<PathComponent>()) {
         const geom::path& path = entity.get_component<PathComponent>().data();
-        const geom::path::Segment segment = path.segment_at(0);
 
-        renderer::Renderer::draw_debug_overlays({ segment.p0, segment.p1, segment.p2, segment.p3 });
+        if (!path.empty()) {
+          const geom::path::Segment segment = path.segment_at(0);
+          renderer::Renderer::draw_debug_overlays({ segment.p0, segment.p1, segment.p2, segment.p3 });
+        }
       }
     }
 #endif

@@ -119,7 +119,7 @@ namespace graphick::editor::input {
   void DirectSelectTool::render_overlays() const {
     if (!m_selection_rect.active()) return;
 
-    renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
+    renderer::Renderer::draw_outline(m_selection_rect.path().to_quadratic_path(), m_selection_rect.transform());
   }
 
   void DirectSelectTool::translate_selected() {

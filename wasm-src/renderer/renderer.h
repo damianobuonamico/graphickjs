@@ -21,6 +21,7 @@
 #include "../utils/defines.h"
 
 #include <unordered_set>
+#include <optional>
 
 namespace graphick::geom {
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
@@ -135,6 +136,23 @@ namespace graphick::renderer {
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
     static void draw_outline_vertices(const geom::Path<float>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+
+    /**
+     * @brief Draws a rectangle with the provided color.
+     *
+     * @param rect The rectangle to draw.
+     * @param color The color to use.
+     */
+    static void draw_rect(const rect& rect, const std::optional<vec4> color = std::nullopt);
+
+    /**
+     * @brief Draws a rectangle with the provided color.
+     *
+     * @param center The center of the rectangle.
+     * @param size The size of the rectangle.
+     * @param color The color to use.
+     */
+    static void draw_rect(const vec2 center, const vec2 size, const std::optional<vec4> color = std::nullopt);
 
 #ifdef GK_DEBUG
     static void draw_debug_overlays(const geom::cubic_bezier& cubic);

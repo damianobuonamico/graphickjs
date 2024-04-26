@@ -212,7 +212,7 @@ namespace graphick::editor::input {
       segment.line_to(InputManager::pointer.scene.position);
     }
 
-    renderer::Renderer::draw_outline(segment, mat2x3(1.0f));
+    renderer::Renderer::draw_outline(segment.to_quadratic_path(), mat2x3::identity(), 0.25f / Editor::scene().viewport.zoom());
   }
 
   void PenTool::set_pen_element(const uuid id) {

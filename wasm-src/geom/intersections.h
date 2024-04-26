@@ -32,7 +32,7 @@ namespace graphick::geom {
     const math::Vec2<T> diff = point - center;
     const math::Vec2<T> rad = radius + threshold;
 
-    return diff.x * diff.x / rad.x * rad.x + diff.y * diff.y / rad.y * rad.y <= T(1);
+    return diff.x * diff.x / (rad.x * rad.x) + diff.y * diff.y / (rad.y * rad.y) <= T(1);
   }
 
   /**
