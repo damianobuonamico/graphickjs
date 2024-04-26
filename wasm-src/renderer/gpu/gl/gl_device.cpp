@@ -402,11 +402,15 @@ namespace graphick::renderer::GPU::GL {
   }
 
   void GLDevice::begin_commands() const {
+#ifndef EMSCRIPTEN
     glCall(glBeginQuery(GL_TIME_ELAPSED, m_timer_query));
+#endif
   }
 
   size_t GLDevice::end_commands() const {
     glCall(glFlush());
+
+#ifndef EMSCRIPTEN
     glCall(glEndQuery(GL_TIME_ELAPSED));
 
     GLuint64 time;
@@ -414,6 +418,9 @@ namespace graphick::renderer::GPU::GL {
     glCall(glGetQueryObjectui64v(m_timer_query, GL_QUERY_RESULT, &time));
 
     return static_cast<size_t>(time);
+#else
+    return 0;
+#endif
   }
 
   void GLDevice::draw_arrays(const size_t vertex_count, const GLRenderState& render_state) const {

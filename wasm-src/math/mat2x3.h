@@ -88,13 +88,10 @@ namespace graphick::math {
       );
     }
 
-    static constexpr Mat2x3<T> from_rotation(T angle) {
-      const T s = std::sin(angle);
-      const T c = std::cos(angle);
-
+    static constexpr Mat2x3<T> from_rotation(const T sin, const T cos) {
       return Mat2x3<T>(
-        c, -s, 0,
-        s, c, 0
+        cos, -sin, 0,
+        sin, cos, 0
       );
     }
 
@@ -105,13 +102,10 @@ namespace graphick::math {
       );
     }
 
-    static constexpr Mat2x3<T> from_translation_rotation_scale(const Vec2<T>& translation, T rotation, const Vec2<T>& scale) {
-      const T s = std::sin(rotation);
-      const T c = std::cos(rotation);
-
+    static constexpr Mat2x3<T> from_translation_rotation_scale(const Vec2<T>& translation, const T sin, const T cos, const Vec2<T>& scale) {
       return Mat2x3<T>(
-        scale.x * c, -scale.y * s, translation.x,
-        scale.x * s, scale.y * c, translation.y
+        scale.x * cos, -scale.y * sin, translation.x,
+        scale.x * sin, scale.y * cos, translation.y
       );
     }
 

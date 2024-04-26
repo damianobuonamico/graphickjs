@@ -108,14 +108,14 @@ namespace graphick::geom {
         T(3) * (T(3) * p1 - T(3) * p2 + p3 - p0),
         T(6) * (p0 - T(2) * p1 + p2),
         T(3) * (p1 - p0)
-      }
+      };
     }
 
     constexpr std::array<math::Vec2<T>, 2> second_derivative_coefficients() const {
       return {
         T(6) * (T(3) * p1 - T(3) * p2 + p3 - p0),
         T(6) * (p0 - T(2) * p1 + p2)
-      }
+      };
     }
 
     /* -- Sample -- */

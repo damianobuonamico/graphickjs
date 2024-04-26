@@ -95,7 +95,7 @@ namespace graphick::geom {
    * @return The resulting quadratic bezier curves.
    */
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  inline std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T>& quad, const T t);
+  std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T>& quad, const T t);
 
   /**
    * @brief Splits a cubic bezier curve into three at two a given t values.

@@ -12,15 +12,15 @@
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
+#include <emscripten/bind.h>
+
+using namespace emscripten;
+
 #endif
 
 #ifdef __INTELLISENSE__
 #define EMSCRIPTEN_KEEPALIVE
 #endif
-
-#include <emscripten/bind.h>
-
-using namespace emscripten;
 
 extern "C" {
   bool EMSCRIPTEN_KEEPALIVE on_pointer_event(

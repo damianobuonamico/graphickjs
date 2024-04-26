@@ -1640,6 +1640,9 @@ namespace graphick::geom {
       path.cubic_to(segment.to_cubic());
       break;
     }
+    default:
+    case Command::Move:
+      break;
     }
 
     return path.is_point_inside_path(
@@ -2067,7 +2070,7 @@ namespace graphick::geom {
 
   /* -- Template Instantiation -- */
 
-  template Path<float>;
-  template Path<double>;
+  template class Path<float>;
+  template class Path<double>;
 
 }
