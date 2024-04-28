@@ -105,7 +105,7 @@ namespace graphick::geom {
 
   /**
    * @brief Determines if a set of points is in clockwise order.
-   * 
+   *
    * @param points The points to check.
    * @return True if the points are in clockwise order, false otherwise.
    */

@@ -1406,7 +1406,7 @@ namespace graphick::geom {
         GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
         GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
 
-        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{ m_points[j], m_points[j] });
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{ m_points[j - 1], m_points[j] });
 
         j += 1;
 

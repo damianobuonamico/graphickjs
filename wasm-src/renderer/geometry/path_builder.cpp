@@ -214,17 +214,16 @@ namespace graphick::renderer::geometry {
         t = 1.0;
       }
 
-#if 0
-      const auto [p, q1, q2] = math::split_quadratic(p0, p1, p2, t);
+      const auto& [left, right] = geom::split(geom::dquadratic_bezier{ p0, p1, p2 }, t);
 
-      const dvec2 end_n = math::normal(q1, p);
+      const dvec2 end_n = math::normal(left.p1, left.p2);
       const dvec2 n = start_n + end_n;
 
       const dvec2 nr1 = n * (2.0 * radius / math::squared_length(n));
       const dvec2 nr2 = end_n * radius;
 
-      sink.inner.quadratic_to(vec2(q1 - nr1), vec2(p - nr2));
-      sink.outer.quadratic_to(vec2(q1 + nr1), vec2(p + nr2));
+      sink.inner.quadratic_to(vec2(left.p1 - nr1), vec2(left.p2 - nr2));
+      sink.outer.quadratic_to(vec2(left.p1 + nr1), vec2(left.p2 + nr2));
 
       start_n = end_n;
 
@@ -232,9 +231,8 @@ namespace graphick::renderer::geometry {
         break;
       }
 
-      p0 = p;
-      p1 = q2;
-#endif
+      p0 = left.p2;
+      p1 = right.p1;
     }
 
     return start_n;
@@ -308,30 +306,28 @@ namespace graphick::renderer::geometry {
     const uint8_t code = static_cast<uint8_t>(math::is_normalized(t1, false)) |
       (static_cast<uint8_t>(math::is_normalized(t2, false)) << 1);
 
-#if 0
     switch (code) {
     case 1: {
-      const auto [p, q1, q2] = math::split_quadratic(p0, p1, p2, t1);
-      offset_monotonic_quadratic(p0, q1, p, radius, tolerance, sink);
-      return offset_monotonic_quadratic(p, q2, p2, radius, tolerance, sink);
+      const auto& [left, right] = geom::split(geom::dquadratic_bezier{ p0, p1, p2 }, t1);
+      offset_monotonic_quadratic(left.p0, left.p1, left.p2, radius, tolerance, sink);
+      return offset_monotonic_quadratic(right.p0, right.p1, right.p2, radius, tolerance, sink);
     }
     case 2: {
-      const auto [p, q1, q2] = math::split_quadratic(p0, p1, p2, t2);
-      offset_monotonic_quadratic(p0, q1, p, radius, tolerance, sink);
-      return offset_monotonic_quadratic(p, q2, p2, radius, tolerance, sink);
+      const auto& [left, right] = geom::split(geom::dquadratic_bezier{ p0, p1, p2 }, t2);
+      offset_monotonic_quadratic(left.p0, left.p1, left.p2, radius, tolerance, sink);
+      return offset_monotonic_quadratic(right.p0, right.p1, right.p2, radius, tolerance, sink);
     }
     case 3: {
-      const auto [q1, p01, q, p02, q2] = math::split_quadratic(p0, p1, p2, t1, t2);
-      offset_monotonic_quadratic(p0, q1, p01, radius, tolerance, sink);
-      offset_monotonic_quadratic(p01, q, p02, radius, tolerance, sink);
-      return offset_monotonic_quadratic(p02, q2, p2, radius, tolerance, sink);
+      const auto& [left, center, right] = geom::split(geom::dquadratic_bezier{ p0, p1, p2 }, t1, t2);
+      offset_monotonic_quadratic(left.p0, left.p1, left.p2, radius, tolerance, sink);
+      offset_monotonic_quadratic(center.p0, center.p1, center.p2, radius, tolerance, sink);
+      return offset_monotonic_quadratic(right.p0, right.p1, right.p2, radius, tolerance, sink);
     }
     case 0:
     default: {
       return offset_monotonic_quadratic(p0, p1, p2, radius, tolerance, sink);
     }
     }
-#endif
 
     return dvec2::zero();
   }

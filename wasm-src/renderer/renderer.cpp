@@ -353,6 +353,8 @@ namespace graphick::renderer {
   }
 
   void Renderer::draw(const geom::quadratic_path& path, const Stroke& stroke, const mat2x3& transform, const rect* bounding_rect) {
+    return;
+
     if (path.empty()) {
       return;
     }
@@ -363,8 +365,16 @@ namespace graphick::renderer {
     bounds.min -= radius_safe;
     bounds.max += radius_safe;
 
+    auto transformation = math::decompose(transform);
+    float scale = std::max(transformation.scale.x, transformation.scale.y);
+
     // TODO: iterate quadraticpaths returned
-    const geometry::PathBuilder::StrokeOutline stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
+    const geom::StrokeOutline stroked_path = geom::path_builder(path, transform, &bounds).stroke(
+      geom::StrokingOptions<float>{ stroke.width, stroke.miter_limit, geom::LineCap::Round, stroke.join },
+      0.25f / scale
+    );
+
+      // const geometry::PathBuilder::StrokeOutline stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
     const Fill fill = {
       stroke.color,
       FillRule::NonZero,
@@ -373,7 +383,8 @@ namespace graphick::renderer {
 
     // TODO: actually render both inner and outer
 
-    // draw(stroked_path.outer, fill, transform, &bounds);
+    // TODO: check if is translation only, in that case transform on the GPU
+    draw(stroked_path.outer, fill, mat2x3::identity(), &bounds);
 
     // draw_outline(stroked_path.outer, transform, 0.25f, nullptr, nullptr);
 
@@ -576,7 +587,7 @@ namespace graphick::renderer {
       // get()->m_vertex_instances.instances.push_back(transform * p0);
       // get()->m_handle_instances.instances.push_back(transform * p1);
       // get()->m_vertex_instances.instances.push_back(transform * p2);
-      get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius / 1.75f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
+      get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
       // get()->m_handle_instances.instances.push_back(transform * p2);
     }
   }
@@ -636,6 +647,40 @@ namespace graphick::renderer {
   }
 
   void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
+    {
+      if (path.empty()) {
+        return;
+      }
+
+      const float radius_safe = 0.5f * 20.0f * (false ? 10.0f : 1.0f);
+      rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
+
+      bounds.min -= radius_safe;
+      bounds.max += radius_safe;
+
+      auto transformation = math::decompose(transform);
+      float scale = std::max(transformation.scale.x, transformation.scale.y);
+
+      // TODO: iterate quadraticpaths returned
+      const geom::StrokeOutline stroked_path = geom::path_builder(path.to_quadratic_path(), transform, nullptr).stroke(
+        path,
+        geom::StrokingOptions<float>{ 20.0f, 10.0f, geom::LineCap::Round, geom::LineJoin::Round },
+        1e-4f / scale
+      );
+
+        // const geometry::PathBuilder::StrokeOutline stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
+      const Fill fill = {
+        vec4(0.6f, 0.3f, 0.3f, 1.0f),
+        FillRule::NonZero,
+        1
+      };
+
+      // TODO: actually render both inner and outer
+
+      // TODO: check if is translation only, in that case transform on the GPU
+      draw(stroked_path.outer, fill, mat2x3::identity(), nullptr);
+    }
+
     if (path.vacant()) {
       return;
     }

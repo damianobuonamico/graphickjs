@@ -217,7 +217,7 @@ int main() {
     std::array<vec2, 4>{ vec2{ 100.0f, 100.0f }, { 200.0f, 200.0f }, { 529.0f, 160.0f }, { 400.0f, 400.0f } } // Not Handled
   };
 
-  for (size_t i = 3; i < tests.size(); i++) {
+  for (size_t i = 0; i < tests.size(); i++) {
     graphick::geom::path path;
 
     const graphick::vec2 delta = { 0.0f, 0.0f };
@@ -229,18 +229,23 @@ int main() {
     // path.cubic_to(delta + in_p1, delta + in_p2, delta + p);
     //path.cubic_to(delta + out_p1, delta + out_p2, delta + tests[i][3]);
 
+    // path.move_to(vec2(100.0f, 100.0f));
+    // path.line_to(vec2(200.0f, 200.0f));
+    // path.line_to(vec2(80.0f, 190.0f));
+    // path.close();
+
     path.move_to(delta + tests[i][0]);
     path.cubic_to(delta + tests[i][1], delta + tests[i][2], delta + tests[i][3]);
 
     graphick::editor::Entity test_entity = graphick::editor::Editor::scene().create_element(path);
     graphick::editor::FillComponent fill = test_entity.add_component<graphick::editor::FillComponent>(graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
-    // graphick::editor::StrokeComponent stroke = test_entity.add_component<graphick::editor::StrokeComponent>(graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
+    graphick::editor::StrokeComponent stroke = test_entity.add_component<graphick::editor::StrokeComponent>(graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
 
-    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
-    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = graphick::Renderer::LineCap::Round;
-    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = graphick::Renderer::LineJoin::Round;
+    const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
+    const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = graphick::geom::LineCap::Round;
+    const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = graphick::geom::LineJoin::Round;
 
-    break;
+    // break;
   }
 
   // path1.move_to({ 0.0f, 0.0f });

@@ -952,6 +952,9 @@ namespace graphick::geom {
 
     math::Vec2<T> m_in_handle;              /* The incoming handle of the path, its index is Path::in_handle_index. */
     math::Vec2<T> m_out_handle;             /* The outgoing handle of the path, its index is Path::out_handle_index. */
+  private:
+    template <typename T, typename _>
+    friend class PathBuilder;
   };
 
 }

@@ -115,13 +115,13 @@ namespace graphick::editor::input {
 
     if (!path.data().empty()) {
       for (uint32_t i = 0; i < path.data().size(); i++) {
-        if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom)) {
-          m_type = HoverType::Segment;
-          m_segment = i;
-          m_vertex = -1;
-          m_handle = -1;
-          return;
-        }
+        // if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom)) {
+        m_type = HoverType::Segment;
+        m_segment = i;
+        m_vertex = -1;
+        m_handle = -1;
+        return;
+      // }
       }
     }
   }
