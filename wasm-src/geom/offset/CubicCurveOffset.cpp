@@ -1,12 +1,13 @@
 
 #include "CubicCurveOffset.h"
-#include "Quicksort.h"
 
 #include "../intersections.h"
 #include "../curve_ops.h"
 #include "../geom.h"
 
 #include "../../math/math.h"
+
+#include <algorithm>
 
 namespace graphick::geom {
 
@@ -619,7 +620,7 @@ namespace graphick::geom {
     for (int i = 0; i < count; i++) {
       const double v = a[i];
 
-      if (IsEqualWithEpsilon(value, v, epsilon)) {
+      if (math::is_almost_equal(value, v, epsilon)) {
         return true;
       }
     }
@@ -640,7 +641,7 @@ namespace graphick::geom {
         continue;
       }
 
-      if (IsEqualWithEpsilon(v, 1.0, epsilon)) {
+      if (math::is_almost_equal(v, 1.0, epsilon)) {
         continue;
       }
 
@@ -970,7 +971,7 @@ namespace graphick::geom {
 
     static constexpr double kPrecision = CuspDerivativeLengthSquared * 2.0;
 
-    double t = Max(InterpolateLinear(previousT, currentT, 0.8), currentT - 0.05);
+    double t = std::max(math::lerp(previousT, currentT, 0.8), currentT - 0.05);
 
     for (int i = 0; i < NearCuspPointSearchMaxIterationCount; i++) {
       const dvec2 derivative = curve.derivative(t);
@@ -996,7 +997,7 @@ namespace graphick::geom {
 
     static constexpr double kPrecision = CuspDerivativeLengthSquared * 2.0;
 
-    double t = std::min(InterpolateLinear(currentT, nextT, 0.2), currentT + 0.05);
+    double t = std::min(math::lerp(currentT, nextT, 0.2), currentT + 0.05);
 
     for (int i = 0; i < NearCuspPointSearchMaxIterationCount; i++) {
       const dvec2 derivative = curve.derivative(t);
@@ -1102,9 +1103,7 @@ namespace graphick::geom {
     const int count = MergeCurvePositions(t, count0, maximumCurvaturePositions.solutions,
         numMaximumCurvaturePositions, 1e-5);
 
-    Quicksort(t, count, [](const double a, const double b) -> bool {
-      return a < b;
-    });
+    std::sort(t, t + count);
 
     if (count == 0) {
         // No initial subdivision suggestions.
