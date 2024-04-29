@@ -373,7 +373,7 @@ namespace graphick::geom {
     const double B = b + (3.0 * D - 2.0 * c);
     const double C = c - (3.0 * D);
 
-    return math::solve_cubic(A, B, C, D);
+    return math::solve_cubic_normalized(A, B, C, D);
   }
 
   /**
@@ -742,6 +742,21 @@ namespace graphick::geom {
     return true;
   }
 
+  static std::optional<dvec2> IntersectSimple(const dline& l1, const dline& l2) {
+    const dvec2 a = l1.p1 - l1.p0;
+    const dvec2 b = l2.p0 - l2.p1;
+    const double denominator = a.y * b.x - a.x * b.y;
+
+    if (denominator == 0) {
+      return std::nullopt;
+    }
+
+    const dvec2 c = l1.p0 - l2.p0;
+    const double reciprocal = 1.0 / denominator;
+    const double na = (b.y * c.x - b.x * c.y) * reciprocal;
+
+    return l1.p0 + a * na;
+  }
 
   /**
    * Attempts to use circular arc offsetting method on a given curve.
@@ -795,7 +810,7 @@ namespace graphick::geom {
     const dline E1(d.StartTangent.p0, d.StartTangent.p0 -
         d.StartTangent.raw_normal());
 
-    const std::optional<dvec2> C1 = line_line_intersection_point(E, E1);
+    const std::optional<dvec2> C1 = IntersectSimple(E, E1);
 
     if (!C1.has_value()) {
       return false;
@@ -818,7 +833,7 @@ namespace graphick::geom {
     const dline F1(d.EndTangent.p0, d.EndTangent.p0 +
         d.EndTangent.raw_normal());
 
-    const std::optional<dvec2> C2 = line_line_intersection_point(F, F1);
+    const std::optional<dvec2> C2 = IntersectSimple(F, F1);
 
     if (!C2.has_value()) {
       return false;

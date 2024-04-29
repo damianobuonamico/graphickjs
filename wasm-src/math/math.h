@@ -102,6 +102,29 @@ namespace graphick::math {
   }
 
   /**
+   * @brief Solves a quadratic equation of the form x^2 + ax + b = 0 and returns only normalized solutions.
+   *
+   * @param a The coefficient of x^2.
+   * @param b The coefficient of x.
+   * @param c The constant term.
+   * @return A struct containing the normalized solutions to the equation.
+   */
+  template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+  inline QuadraticSolutions<T> solve_quadratic_normalized(const T a, const T b, const T c) {
+    const QuadraticSolutions<T> solutions = solve_quadratic(a, b, c);
+
+    QuadraticSolutions<T> normalized_solutions;
+
+    for (uint8_t i = 0; i < solutions.count; i++) {
+      if (math::is_normalized(solutions.solutions[i])) {
+        normalized_solutions.solutions[normalized_solutions.count++] = solutions.solutions[i];
+      }
+    }
+
+    return normalized_solutions;
+  }
+
+  /**
    * @brief Solves a cubic equation of the form ax^3 + bx^2 + cx + d = 0.
    *
    * @param a The coefficient of x^3.
@@ -123,6 +146,29 @@ namespace graphick::math {
    */
   inline CubicSolutions<float> solve_cubic(const float a, const float b, const float c, const float d) {
     return solve_cubic(static_cast<double>(a), static_cast<double>(b), static_cast<double>(c), static_cast<double>(d));
+  }
+
+  /**
+   * @brief Solves a cubic equation of the form x^3 + ax^2 + bx + c = 0 and returns only normalized solutions.
+   *
+   * @param a The coefficient of x^2.
+   * @param b The coefficient of x.
+   * @param c The constant term.
+   * @return A struct containing the normalized solutions of the cubic equation.
+   */
+  template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+  inline CubicSolutions<T> solve_cubic_normalized(const T a, const T b, const T c, const T d) {
+    const CubicSolutions<T> solutions = solve_cubic(a, b, c, d);
+
+    CubicSolutions<T> normalized_solutions;
+
+    for (uint8_t i = 0; i < solutions.count; i++) {
+      if (math::is_normalized(solutions.solutions[i])) {
+        normalized_solutions.solutions[normalized_solutions.count++] = solutions.solutions[i];
+      }
+    }
+
+    return normalized_solutions;
   }
 
   /**

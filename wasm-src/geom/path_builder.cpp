@@ -507,7 +507,7 @@ namespace graphick::geom {
     const double B = b + (3.0 * D - 2.0 * c);
     const double C = c - (3.0 * D);
 
-    return math::solve_cubic(A, B, C, D);
+    return math::solve_cubic_normalized(A, B, C, D);
   }
 
   /**

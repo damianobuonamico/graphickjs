@@ -117,7 +117,7 @@ namespace graphick::geom {
     const T coe2 = cox2 + coy2;
     const T coe3 = cox3 + coy3;
 
-    return math::solve_cubic(coe0, coe1, coe2, coe3);
+    return math::solve_cubic_normalized(coe0, coe1, coe2, coe3);
   }
 
   template <typename T, typename _>
@@ -130,7 +130,7 @@ namespace graphick::geom {
     const T cx = cubic.p3.x + T(3) * (cubic.p1.x - cubic.p2.x) - cubic.p0.x;
     const T cy = cubic.p3.y + T(3) * (cubic.p1.y - cubic.p2.y) - cubic.p0.y;
 
-    return math::solve_quadratic(bx * cy - by * cx, ax * cy - ay * cx,
+    return math::solve_quadratic_normalized(bx * cy - by * cx, ax * cy - ay * cx,
         ax * by - ay * bx);
   }
 
