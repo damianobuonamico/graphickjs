@@ -8,6 +8,8 @@
 #include "cubic_bezier.h"
 #include "line.h"
 
+#include "../math/math.h"
+
 #include <vector>
 
 namespace graphick::geom {
@@ -40,6 +42,16 @@ namespace graphick::geom {
     const T t_sq = t * t;
     return a * t * t_sq + b * t_sq + c * t + d;
   }
+
+  /* -- Curvature -- */
+
+  // TODO: doc
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  math::CubicSolutions<T> max_curvature(const CubicBezier<T>& cubic);
+
+  // TODO: doc
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  math::QuadraticSolutions<T> inflections(const CubicBezier<T>& cubic);
 
   /* -- Approximate Bounding Rectangle -- */
 

@@ -104,10 +104,57 @@ namespace graphick::geom {
   /* -- Polygon -- */
 
   /**
+   * @brief Value returned when trying to determine orientation of 3 points.
+   */
+  enum class TriangleOrientation : uint8_t {
+    Clockwise,           /* Points are in clockwise orientation. */
+    CounterClockwise,    /* Points are in counter-clockwise orientation. */
+    Collinear            /* Points are collinear and orientation cannot be determined. */
+  };
+
+  /**
+   * @brief Determines the orientation of a triangle.
+   *
+   * @param p0 The first point.
+   * @param p1 The second point.
+   * @param p2 The third point.
+   * @return The orientation of the triangle.
+   */
+  template <typename T>
+  inline TriangleOrientation triangle_orientation(
+    const math::Vec2<T> p0, const math::Vec2<T> p1, const math::Vec2<T> p2
+  ) {
+    const T turn = math::cross(p1 - p0, p2 - p0);
+
+    if (math::is_almost_zero(turn)) {
+      return TriangleOrientation::Collinear;
+    } else if (turn > T(0)) {
+      return TriangleOrientation::Clockwise;
+    }
+
+    return TriangleOrientation::CounterClockwise;
+  }
+
+  /**
+   * @brief Determines if a set of points is in clockwise order.
+   *
+   * @param p0 The first point.
+   * @param p1 The second point.
+   * @param p2 The third point.
+   * @return true if the points are in clockwise order, false otherwise.
+   */
+  template <typename T>
+  inline bool clockwise(
+    const math::Vec2<T> p0, const math::Vec2<T> p1, const math::Vec2<T> p2
+  ) {
+    return triangle_orientation(p0, p1, p2) == TriangleOrientation::Clockwise;
+  }
+
+  /**
    * @brief Determines if a set of points is in clockwise order.
    *
    * @param points The points to check.
-   * @return True if the points are in clockwise order, false otherwise.
+   * @return true if the points are in clockwise order, false otherwise.
    */
   template <typename T>
   inline bool clockwise(const std::vector<math::Vec2<T>>& points) {

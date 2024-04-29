@@ -1,58 +1,62 @@
 
 #pragma once
 
-
-#include "CubicCurve.h"
 #include <new>
 #include <cstring>
 
+#include "Utils.h"
+
+#include "../cubic_bezier.h"
+#include "../line.h"
+
+namespace graphick::geom {
 
 /**
  * Used for parallel curve construction.
  */
-class CubicCurveBuilder final {
-public:
+  class CubicCurveBuilder final {
+  public:
     CubicCurveBuilder() {
     }
-public:
-   ~CubicCurveBuilder();
-public:
+  public:
+    ~CubicCurveBuilder();
+  public:
 
-    /**
-     * Adds line.
-     */
-    void AddLine(const FloatPoint &p0, const FloatPoint &p1);
+      /**
+       * Adds line.
+       */
+    void AddLine(const dvec2 p0, const dvec2 p1);
 
 
     /**
      * Adds cubic curve.
      */
-    void AddCubic(const FloatPoint &p0, const FloatPoint &cp1,
-        const FloatPoint &cp2, const FloatPoint &to);
+    void AddCubic(const dvec2 p0, const dvec2 cp1,
+        const dvec2 cp2, const dvec2 to);
 
 
     /**
      * Returns the first point.
      */
-    FloatPoint GetFirstPoint() const;
+    dvec2 GetFirstPoint() const;
 
 
     /**
      * Returns the last point.
      */
-    FloatPoint GetLastPoint() const;
+    dvec2 GetLastPoint() const;
 
 
     /**
      * Returns start tangent.
      */
-    FloatLine GetStartTangent() const;
+    dline GetStartTangent() const;
 
 
     /**
      * Returns end tangent.
      */
-    FloatLine GetEndTangent() const;
+    dline GetEndTangent() const;
 
 
     /**
@@ -67,7 +71,7 @@ public:
      * @param index Segment index. Must be equal or greater than zero and less
      * than the value returned by GetSegmentCount.
      */
-    const CubicCurve *GetSegmentAt(const int index) const;
+    const dcubic_bezier* GetSegmentAt(const int index) const;
 
 
     /**
@@ -75,125 +79,127 @@ public:
      */
     void Reset();
 
-private:
+  private:
     void MakeRoomForCurve();
-private:
+  private:
     static constexpr int EmbeddedCurveCount = 32;
 
-    char mEmbeddedMemory[SIZE_OF(CubicCurve) * EmbeddedCurveCount];
-    CubicCurve *mCurves = reinterpret_cast<CubicCurve *>(mEmbeddedMemory);
+    char mEmbeddedMemory[SIZE_OF(dcubic_bezier) * EmbeddedCurveCount];
+    dcubic_bezier* mCurves = reinterpret_cast<dcubic_bezier*>(mEmbeddedMemory);
 
     // How many curves there are.
     int mCurveCount = 0;
 
     // For how many curves memory was allocated.
     int mCurveCapacity = EmbeddedCurveCount;
-private:
+  private:
     DISABLE_COPY_AND_ASSIGN(CubicCurveBuilder);
-};
+  };
 
 
-FORCE_INLINE CubicCurveBuilder::~CubicCurveBuilder() {
-    if (mCurves != reinterpret_cast<CubicCurve *>(mEmbeddedMemory)) {
-        free(mCurves);
+  FORCE_INLINE CubicCurveBuilder::~CubicCurveBuilder() {
+    if (mCurves != reinterpret_cast<dcubic_bezier*>(mEmbeddedMemory)) {
+      free(mCurves);
     }
-}
+  }
 
 
-FORCE_INLINE void CubicCurveBuilder::AddLine(const FloatPoint &p0, const FloatPoint &p1) {
+  FORCE_INLINE void CubicCurveBuilder::AddLine(const dvec2 p0, const dvec2 p1) {
     MakeRoomForCurve();
-    void *p = mCurves + mCurveCount;
-    new (p) CubicCurve(p0, p1);
+    void* p = mCurves + mCurveCount;
+    new (p) dcubic_bezier(p0, p1);
     mCurveCount++;
-}
+  }
 
 
-FORCE_INLINE void CubicCurveBuilder::AddCubic(const FloatPoint &p0, const FloatPoint &cp1, const FloatPoint &cp2, const FloatPoint &to) {
+  FORCE_INLINE void CubicCurveBuilder::AddCubic(const dvec2 p0, const dvec2 cp1, const dvec2 cp2, const dvec2 to) {
     MakeRoomForCurve();
-    void *p = mCurves + mCurveCount;
-    new (p) CubicCurve(p0, cp1, cp2, to);
+    void* p = mCurves + mCurveCount;
+    new (p) dcubic_bezier(p0, cp1, cp2, to);
     mCurveCount++;
-}
+  }
 
 
-FORCE_INLINE FloatPoint CubicCurveBuilder::GetFirstPoint() const {
+  FORCE_INLINE dvec2 CubicCurveBuilder::GetFirstPoint() const {
     ASSERT(mCurveCount > 0);
 
-    return mCurves->P0;
-}
+    return mCurves->p0;
+  }
 
 
-FORCE_INLINE FloatPoint CubicCurveBuilder::GetLastPoint() const {
+  FORCE_INLINE dvec2 CubicCurveBuilder::GetLastPoint() const {
     ASSERT(mCurveCount > 0);
 
-    return mCurves[mCurveCount - 1].P3;
-}
+    return mCurves[mCurveCount - 1].p3;
+  }
 
 
-FORCE_INLINE FloatLine CubicCurveBuilder::GetStartTangent() const {
+  FORCE_INLINE dline CubicCurveBuilder::GetStartTangent() const {
     ASSERT(mCurveCount > 0);
 
-    return mCurves->StartTangent();
-}
+    return mCurves->start_tangent();
+  }
 
 
-FORCE_INLINE FloatLine CubicCurveBuilder::GetEndTangent() const {
+  FORCE_INLINE dline CubicCurveBuilder::GetEndTangent() const {
     ASSERT(mCurveCount > 0);
 
-    return mCurves[mCurveCount - 1].EndTangent();
-}
+    return mCurves[mCurveCount - 1].end_tangent();
+  }
 
 
-FORCE_INLINE void CubicCurveBuilder::MakeRoomForCurve() {
+  FORCE_INLINE void CubicCurveBuilder::MakeRoomForCurve() {
     if (mCurveCapacity == mCurveCount) {
-        const int newCapacity = mCurveCapacity * 2;
+      const int newCapacity = mCurveCapacity * 2;
 
-        CubicCurve *curves = reinterpret_cast<CubicCurve *>(
-            malloc(SIZE_OF(CubicCurve) * newCapacity));
+      dcubic_bezier* curves = reinterpret_cast<dcubic_bezier*>(
+          malloc(SIZE_OF(dcubic_bezier) * newCapacity));
 
-        memcpy(curves, mCurves, SIZE_OF(CubicCurve) * mCurveCount);
+      memcpy(curves, mCurves, SIZE_OF(dcubic_bezier) * mCurveCount);
 
-        if (mCurves != reinterpret_cast<CubicCurve *>(mEmbeddedMemory)) {
-            free(mCurves);
-        }
+      if (mCurves != reinterpret_cast<dcubic_bezier*>(mEmbeddedMemory)) {
+        free(mCurves);
+      }
 
-        mCurves = curves;
-        mCurveCapacity = newCapacity;
+      mCurves = curves;
+      mCurveCapacity = newCapacity;
     }
-}
+  }
 
 
-FORCE_INLINE int CubicCurveBuilder::GetSegmentCount() const {
+  FORCE_INLINE int CubicCurveBuilder::GetSegmentCount() const {
     return mCurveCount;
-}
+  }
 
 
-FORCE_INLINE const CubicCurve *CubicCurveBuilder::GetSegmentAt(const int index) const {
+  FORCE_INLINE const dcubic_bezier* CubicCurveBuilder::GetSegmentAt(const int index) const {
     ASSERT(index >= 0);
     ASSERT(index < mCurveCount);
 
     return mCurves + index;
-}
+  }
 
 
-FORCE_INLINE void CubicCurveBuilder::Reset() {
+  FORCE_INLINE void CubicCurveBuilder::Reset() {
     mCurveCount = 0;
+  }
+
+
+  /**
+   * Find a set of segments that approximate parallel curve.
+   *
+   * @param curve Input curve.
+   *
+   * @param offset Offset amount. If it is zero, resulting curve will be
+   * identical to input curve. Can be negative.
+   *
+   * @param maximumError Maximum error. Lower value means better precision and
+   * more output segments. Larger value means worse precision, but fewer output
+   * segments.
+   *
+   * @param builder Output receiver.
+   */
+  extern void OffsetCurve(const dcubic_bezier& curve, const double offset,
+      const double maximumError, CubicCurveBuilder& builder);
+
 }
-
-
-/**
- * Find a set of segments that approximate parallel curve.
- *
- * @param curve Input curve.
- *
- * @param offset Offset amount. If it is zero, resulting curve will be
- * identical to input curve. Can be negative.
- *
- * @param maximumError Maximum error. Lower value means better precision and
- * more output segments. Larger value means worse precision, but fewer output
- * segments.
- *
- * @param builder Output receiver.
- */
-extern void OffsetCurve(const CubicCurve &curve, const double offset,
-    const double maximumError, CubicCurveBuilder &builder);

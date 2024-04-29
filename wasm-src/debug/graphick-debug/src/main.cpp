@@ -217,7 +217,7 @@ int main() {
     std::array<vec2, 4>{ vec2{ 100.0f, 100.0f }, { 200.0f, 200.0f }, { 529.0f, 160.0f }, { 400.0f, 400.0f } } // Not Handled
   };
 
-  for (size_t i = 0; i < tests.size(); i++) {
+  for (size_t i = 3; i < tests.size(); i++) {
     graphick::geom::path path;
 
     const graphick::vec2 delta = { 0.0f, 0.0f };
@@ -245,7 +245,7 @@ int main() {
     const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = graphick::geom::LineCap::Round;
     const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = graphick::geom::LineJoin::Round;
 
-    // break;
+    break;
   }
 
   // path1.move_to({ 0.0f, 0.0f });

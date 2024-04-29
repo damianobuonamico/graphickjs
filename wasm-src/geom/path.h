@@ -45,7 +45,7 @@ namespace graphick::geom {
     /**
      * @brief The Command enum represents the type of commands used to traverse the path.
      */
-    enum class Command {
+    enum class Command : uint8_t {
       Move = 0,         /* Move to a point. */
       Line = 1,         /* Linear segment. */
       Quadratic = 2,    /* Quadratic bezier curve. */

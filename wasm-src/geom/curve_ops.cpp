@@ -6,11 +6,134 @@
 #include "curve_ops.h"
 
 #include "../math/vector.h"
-#include "../math/math.h"
 
 #include "../utils/console.h"
 
 namespace graphick::geom {
+
+  /* -- Cubic Bezier -- */
+
+  template <typename T, typename _>
+  bool CubicBezier<T, _>::is_point(const T tolerance) const {
+    return (
+      math::is_almost_equal(p0, p3, tolerance) &&
+      math::is_almost_equal(p0, p1, tolerance) &&
+      math::is_almost_equal(p0, p2, tolerance)
+    );
+  }
+
+  template <typename T, typename _>
+  math::Vec2<T> CubicBezier<T, _>::normal(const T t) const {
+    return math::normalize(raw_normal(t));
+  }
+
+  template <typename T, typename _>
+  Line<T> CubicBezier<T, _>::start_tangent() const {
+    if (math::is_almost_equal(p0, p1)) {
+      if (math::is_almost_equal(p0, p2)) {
+        return Line<T>(p0, p3);
+      }
+
+      return Line<T>(p0, p2);
+    }
+
+    return Line<T>(p0, p1);
+  }
+
+  template <typename T, typename _>
+  Line<T> CubicBezier<T, _>::end_tangent() const {
+    if (math::is_almost_equal(p2, p3)) {
+      if (math::is_almost_equal(p1, p2)) {
+        return Line<T>(p3, p0);
+      }
+
+      return Line<T>(p3, p1);
+    }
+
+    return Line<T>(p3, p2);
+  }
+
+  /* -- Line -- */
+
+  template <typename T>
+  math::Vec2<T> Line<T>::direction() const {
+    return math::normalize(p1 - p0);
+  }
+
+  template <typename T>
+  math::Vec2<T> Line<T>::normal() const {
+    return math::normalize(raw_normal());
+  }
+
+  template <typename T>
+  T Line<T>::angle() const {
+    const math::Vec2<T> delta = p1 - p0;
+
+    const T theta = std::atan2(-delta.y, delta.x);
+    const T theta_norm = theta < T(0) ? theta + math::two_pi<T> : theta;
+
+    if (math::is_almost_equal(theta_norm, math::two_pi<T>)) {
+      return 0;
+    }
+
+    if (math::is_almost_zero(theta_norm)) {
+      // In case theta=-0, return positive zero.
+      return 0;
+    }
+
+    return theta_norm;
+  }
+
+  template <typename T>
+  T Line<T>::length() const {
+    return math::length(p1 - p0);
+  }
+
+  /* -- Curvature -- */
+
+  template <typename T, typename _>
+  math::CubicSolutions<T> max_curvature(const CubicBezier<T>& cubic) {
+    // TODO: optimize and template
+    const T axx = cubic.p1.x - cubic.p0.x;
+    const T bxx = cubic.p2.x - T(2) * cubic.p1.x + cubic.p0.x;
+    const T cxx = cubic.p3.x + T(3) * (cubic.p1.x - cubic.p2.x) - cubic.p0.x;
+
+    const T cox0 = cxx * cxx;
+    const T cox1 = T(3) * bxx * cxx;
+    const T cox2 = T(2) * bxx * bxx + cxx * axx;
+    const T cox3 = axx * bxx;
+
+    const T ayy = cubic.p1.y - cubic.p0.y;
+    const T byy = cubic.p2.y - T(2) * cubic.p1.y + cubic.p0.y;
+    const T cyy = cubic.p3.y + T(3) * (cubic.p1.y - cubic.p2.y) - cubic.p0.y;
+
+    const T coy0 = cyy * cyy;
+    const T coy1 = T(3) * byy * cyy;
+    const T coy2 = T(2) * byy * byy + cyy * ayy;
+    const T coy3 = ayy * byy;
+
+    const T coe0 = cox0 + coy0;
+    const T coe1 = cox1 + coy1;
+    const T coe2 = cox2 + coy2;
+    const T coe3 = cox3 + coy3;
+
+    return math::solve_cubic(coe0, coe1, coe2, coe3);
+  }
+
+  template <typename T, typename _>
+  math::QuadraticSolutions<T> inflections(const CubicBezier<T>& cubic) {
+    // TODO: optimize and template
+    const T ax = cubic.p1.x - cubic.p0.x;
+    const T ay = cubic.p1.y - cubic.p0.y;
+    const T bx = cubic.p2.x - T(2) * cubic.p1.x + cubic.p0.x;
+    const T by = cubic.p2.y - T(2) * cubic.p1.y + cubic.p0.y;
+    const T cx = cubic.p3.x + T(3) * (cubic.p1.x - cubic.p2.x) - cubic.p0.x;
+    const T cy = cubic.p3.y + T(3) * (cubic.p1.y - cubic.p2.y) - cubic.p0.y;
+
+    return math::solve_quadratic(bx * cy - by * cx, ax * cy - ay * cx,
+        ax * by - ay * bx);
+  }
+
 
   /* -- Approximate Bounding Rectangle -- */
 
@@ -494,6 +617,18 @@ namespace graphick::geom {
   }
 
   /* -- Template Instantiation -- */
+
+  template struct Line<float>;
+  template struct Line<double>;
+
+  template struct CubicBezier<float>;
+  template struct CubicBezier<double>;
+
+  template math::CubicSolutions<float> max_curvature(const CubicBezier<float>& cubic);
+  template math::CubicSolutions<double> max_curvature(const CubicBezier<double>& cubic);
+
+  template math::QuadraticSolutions<float> inflections(const CubicBezier<float>& cubic);
+  template math::QuadraticSolutions<double> inflections(const CubicBezier<double>& cubic);
 
   template math::Rect<float> bounding_rect(const QuadraticBezier<float>& quad);
   template math::Rect<double> bounding_rect(const QuadraticBezier<double>& quad);

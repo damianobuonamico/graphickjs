@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../math/rect.h"
+#include "line.h"
 
 #include <array>
 
@@ -120,7 +120,7 @@ namespace graphick::geom {
 
     /* -- Sample -- */
 
-    constexpr math::Vec2<T> sample(T t) const {
+    constexpr math::Vec2<T> sample(const T t) const {
       const T t_sq = t * t;
       const T t_cb = t_sq * t;
       const T t_inv = T(1) - t;
@@ -134,7 +134,7 @@ namespace graphick::geom {
         p3 * t_cb;
     }
 
-    constexpr math::Vec2<T> derivative(T t) const {
+    constexpr math::Vec2<T> derivative(const T t) const {
       const auto [a, b, c] = derivative_coefficients();
 
       return
@@ -143,7 +143,7 @@ namespace graphick::geom {
         c;
     }
 
-    constexpr math::Vec2<T> second_derivative(T t) const {
+    constexpr math::Vec2<T> second_derivative(const T t) const {
       const auto [a, b] = second_derivative_coefficients();
 
       return
@@ -151,11 +151,29 @@ namespace graphick::geom {
         b;
     }
 
+    constexpr math::Vec2<T> raw_normal(const T t) const {
+      const math::Vec2<T> d = derivative(t);
+
+      // TODO: potential error on ends
+      return { d.y, -d.x };
+    }
+
     /* -- Bounding Rectangle -- */
 
     math::Rect<T> bounding_rect() const;
 
     math::Rect<T> approx_bounding_rect() const;
+
+    /* -- Methods -- */
+
+    // TODO: move all of these methods to curve_ops and introduce default tolerance value
+    bool is_point(const T tolerance) const;
+
+    math::Vec2<T> normal(const T t) const;
+
+    Line<T> start_tangent() const;
+
+    Line<T> end_tangent() const;
   };
 
 }

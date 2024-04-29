@@ -21,7 +21,7 @@ namespace graphick::geom {
 
     /* -- Component accesses -- */
 
-    static constexpr uint8_t length() {
+    static constexpr uint8_t size() {
       return 2;
     }
 
@@ -70,11 +70,33 @@ namespace graphick::geom {
       return p0 + t * (p1 - p0);
     }
 
-    /* -- Methods -- */
+    /* -- Bounding Rectangle -- */
 
     constexpr math::Rect<T> bounding_rect() {
       return math::Rect<T>::from_vectors(p0, p1);
     }
+
+    /* -- Methods -- */
+
+    constexpr math::Vec2<T> midpoint() const {
+      return (p0 + p1) / T(2);
+    }
+
+    constexpr math::Vec2<T> raw_normal() const {
+      return math::Vec2<T>(p1.y - p0.y, p0.x - p1.x);
+    }
+
+    constexpr T squared_length() const {
+      return (p1.x - p0.x) * (p1.x - p0.x) + (p1.y - p0.y) * (p1.y - p0.y);
+    }
+
+    math::Vec2<T> direction() const;
+
+    math::Vec2<T> normal() const;
+
+    T angle() const;
+
+    T length() const;
   };
 
 }
