@@ -196,6 +196,20 @@ namespace graphick::geom {
     }
   }
 
+  static void QuadraticTo(OutputBuilder& builder, const dvec2 cp, const dvec2 to)
+  {
+    const dvec2 previous = builder.PreviousPoint;
+
+    if (previous != cp || previous != to) {
+      const dvec2 c = (cp * builder.Scale) + builder.Translation;
+      const dvec2 t = (to * builder.Scale) + builder.Translation;
+
+      builder.Builder.AddQuadratic(builder.PreviousPointT, c, t);
+
+      builder.PreviousPoint = to;
+      builder.PreviousPointT = t;
+    }
+  }
 
   /**
    * Called when a new cubic curve needs to be added to the output. Curve starts
@@ -271,79 +285,38 @@ namespace graphick::geom {
     return 0;
   }
 
-  /**
-   * Called when a circular arc needs to be added to the output. Arc starts at
-   * the last point of previously added segment or point set by a call to MoveTo
-   * and goes to a given end point.
-   */
   static void ArcTo(OutputBuilder& builder, const dvec2 center,
-      const dvec2 to, const bool clockwise)
-  {
-    const dvec2 arcFrom = builder.PreviousPoint;
+      const dvec2 to, const bool clockwise) {
+    const dvec2 from = builder.PreviousPoint;
+    const double radius = math::distance(center, from);
+    const double tolerance = 0.1;
 
-    const double arcRadius = math::distance(center, arcFrom);
+    const double ang1 = std::atan2(from.y - center.y, from.x - center.x);
+    const double ang2 = std::atan2(to.y - center.y, to.x - center.x);
+    const double dphi = 4.0 * std::acos(std::sqrt(2.0 + tolerance - std::sqrt(tolerance * (2.0 + tolerance))) / std::sqrt(2.0));
 
-    if (arcRadius < MinimumArcRadius) {
-      return;
-    }
+    double diff = std::abs(ang2 - ang1);
 
-    const dline centerToCurrentPoint(center, arcFrom);
-    const dline centerToEndPoint(center, to);
-    const double startAngle = centerToCurrentPoint.angle();
+    if (diff > math::pi<double>) diff = math::two_pi<double> -diff;
+    if (!clockwise) diff = -diff;
 
-    double sweepAngle = GetRadiansToLine(centerToCurrentPoint, centerToEndPoint);
+    const double diff_abs = std::abs(diff);
 
-    if (math::is_almost_zero(sweepAngle)) {
-      return;
-    }
+    const int segments = static_cast<int>(std::ceil(diff_abs / dphi));
+    const double inc = diff / segments;
+    const double b = (std::cos(inc) - 1.0) / std::sin(inc);
 
-    const TriangleOrientation determinedOrientation = triangle_orientation(center, arcFrom, to);
+    for (int i = 0; i <= segments; i++) {
+      const double angle = ang1 + i * inc;
+      const double sin = std::sin(angle);
+      const double cos = std::cos(angle);
 
-    if (determinedOrientation != TriangleOrientation::Collinear) {
-      // If our three points are not collinear, we check if they are
-      // clockwise. If we see that their orientation is opposite of what we
-      // are told to draw, we draw large arc.
-      const bool determinedClockwise =
-        determinedOrientation == TriangleOrientation::Clockwise;
+      const dvec2 p1 = center + radius * dvec2{ cos - b * sin, sin + b * cos };
+      const dvec2 p2 = center + radius * dvec2{ cos, sin };
 
-      if (determinedClockwise != clockwise) {
-        sweepAngle = -sweepAngle + math::two_pi<double>;
-      }
-    }
-
-    const int nSteps = std::ceil(sweepAngle / (math::pi<double> / 2.0));
-    const double step = sweepAngle / nSteps * (clockwise ? -1.0 : 1.0);
-
-    double s = -std::sin(startAngle);
-    double c = std::cos(startAngle);
-
-    for (int i = 1; i <= nSteps; i++) {
-      const double a1 = startAngle + step * double(i);
-
-      const double s1 = -std::sin(a1);
-      const double c1 = std::cos(a1);
-
-      const dcubic_bezier unitCurve = FindUnitCubicCurveForArc(
-          dvec2(c, s), dvec2(c1, s1));
-
-      const dvec2 p1 = (unitCurve.p1 * arcRadius) + center;
-      const dvec2 p2 = (unitCurve.p2 * arcRadius) + center;
-
-      if (i < nSteps) {
-        const dvec2 p3 = (unitCurve.p3 * arcRadius) + center;
-
-        CubicTo(builder, p1, p2, p3);
-      } else {
-          // Last point. Make sure we end with it. This is quite important
-          // thing to do.
-        CubicTo(builder, p1, p2, to);
-      }
-
-      s = s1;
-      c = c1;
+      QuadraticTo(builder, p1, p2);
     }
   }
-
 
   static void MaybeAddCuspArc(OutputBuilder& builder, const dvec2 toPoint)
   {
@@ -1191,8 +1164,6 @@ namespace graphick::geom {
   void OffsetCurve(const dcubic_bezier& curve, const double offset,
       const double maximumError, CubicCurveBuilder& builder)
   {
-    builder.Reset();
-
     const double minx = std::min({ curve.p0.x, curve.p1.x, curve.p2.x, curve.p3.x });
     const double maxx = std::max({ curve.p0.x, curve.p1.x, curve.p2.x, curve.p3.x });
     const double miny = std::min({ curve.p0.y, curve.p1.y, curve.p2.y, curve.p3.y });

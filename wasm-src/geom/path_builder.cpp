@@ -1256,47 +1256,14 @@ namespace graphick::geom {
         const dvec2 end_nr = end_n * radius;
 
         {
-          CubicCurveBuilder builder;
+          CubicCurveBuilder builder((quadratic_path&)outline.outer);
 
           OffsetCurve(dcubic_bezier{ p0, p1, p2, p3 }, radius, tolerance, builder);
-          // OffsetCurve(CubicCurve{ p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y }, radius, tolerance, builder);
-          // offset_cubic(dcubic_bezier{ p0, p1, p2, p3 }, radius, tolerance, outline);
-
-          const size_t count = builder.GetSegmentCount();
-
-          for (size_t i = 0; i < count; i++) {
-            const dcubic_bezier* curve = builder.GetSegmentAt(i);
-            const CubicBezier<T> cubic = {
-              math::Vec2<T>(curve->p0),
-              math::Vec2<T>(curve->p1),
-              math::Vec2<T>(curve->p2),
-              math::Vec2<T>(curve->p3)
-            };
-
-            geom::cubic_to_quadratics(cubic, T(2e-2), outline.outer);
-          }
         }
 
         {
-          CubicCurveBuilder builder;
-
+          CubicCurveBuilder builder((quadratic_path&)outline.inner);
           OffsetCurve(dcubic_bezier{ p0, p1, p2, p3 }, -radius, tolerance, builder);
-          // OffsetCurve(CubicCurve{ p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y }, -radius, tolerance, builder);
-          // offset_cubic(dcubic_bezier{ p0, p1, p2, p3 }, radius, tolerance, outline);
-
-          const size_t count = builder.GetSegmentCount();
-
-          for (size_t i = 0; i < count; i++) {
-            const dcubic_bezier* curve = builder.GetSegmentAt(i);
-            const CubicBezier<T> cubic = {
-              math::Vec2<T>(curve->p0),
-              math::Vec2<T>(curve->p1),
-              math::Vec2<T>(curve->p2),
-              math::Vec2<T>(curve->p3)
-            };
-
-            geom::cubic_to_quadratics(cubic, T(2e-2), outline.inner);
-          }
         }
 
         last_n = end_n;

@@ -3,6 +3,8 @@
  * @brief This file contains the declaration of methods related to bezier curves.
  */
 
+#pragma once
+
 #include "quadratic_bezier.h"
 #include "quadratic_path.h"
 #include "cubic_bezier.h"
