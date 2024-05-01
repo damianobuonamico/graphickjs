@@ -538,6 +538,46 @@ namespace graphick::geom {
     return quads;
   }
 
+  template <typename T, typename _>
+  void QuadraticPath<T, _>::cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3, const T tolerance) {
+    GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
+
+    cubic_to_quadratics(CubicBezier<T>{ back(), p1, p2, p3 }, tolerance, * this);
+  }
+
+  template <typename T, typename _>
+  void QuadraticPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise, const T tolerance) {
+    const math::Vec2<T> from = back();
+    const T radius = math::distance(center, from);
+
+    const T ang1 = std::atan2(from.y - center.y, from.x - center.x);
+    const T ang2 = std::atan2(to.y - center.y, to.x - center.x);
+    const T error = std::sqrt(tolerance * (2.0 + tolerance));
+    const T dphi = 4.0 * std::acos(std::sqrt(2.0 + tolerance - error) / std::sqrt(2.0));
+
+    T diff = std::abs(ang2 - ang1);
+
+    if (diff > math::pi<T>) diff = math::two_pi<T> -diff;
+    if (!clockwise) diff = -diff;
+
+    const T diff_abs = std::abs(diff);
+
+    const int segments = static_cast<int>(std::ceil(diff_abs / dphi));
+    const T inc = diff / segments;
+    const T b = (std::cos(inc) - 1.0) / std::sin(inc);
+
+    for (int i = 0; i <= segments; i++) {
+      const T angle = ang1 + i * inc;
+      const T sin = std::sin(angle);
+      const T cos = std::cos(angle);
+
+      const math::Vec2<T> p1 = center + radius * math::Vec2<T>{ cos - b * sin, sin + b * cos };
+      const math::Vec2<T> p2 = center + radius * math::Vec2<T>{ cos, sin };
+
+      quadratic_to(p1, p2);
+    }
+  }
+
   /* -- Winding Number -- */
 
   static inline int winding_of(const dquadratic_bezier& quad, const dvec2 p) {
@@ -624,40 +664,42 @@ namespace graphick::geom {
   template struct CubicBezier<float>;
   template struct CubicBezier<double>;
 
-  template math::CubicSolutions<float> max_curvature(const CubicBezier<float>& cubic);
-  template math::CubicSolutions<double> max_curvature(const CubicBezier<double>& cubic);
+  template math::CubicSolutions<float> max_curvature(const CubicBezier<float>&);
+  template math::CubicSolutions<double> max_curvature(const CubicBezier<double>&);
 
-  template math::QuadraticSolutions<float> inflections(const CubicBezier<float>& cubic);
-  template math::QuadraticSolutions<double> inflections(const CubicBezier<double>& cubic);
+  template math::QuadraticSolutions<float> inflections(const CubicBezier<float>&);
+  template math::QuadraticSolutions<double> inflections(const CubicBezier<double>&);
 
-  template math::Rect<float> bounding_rect(const QuadraticBezier<float>& quad);
-  template math::Rect<double> bounding_rect(const QuadraticBezier<double>& quad);
+  template math::Rect<float> bounding_rect(const QuadraticBezier<float>&);
+  template math::Rect<double> bounding_rect(const QuadraticBezier<double>&);
 
-  template math::Rect<float> bounding_rect(const CubicBezier<float>& cubic);
-  template math::Rect<double> bounding_rect(const CubicBezier<double>& cubic);
+  template math::Rect<float> bounding_rect(const CubicBezier<float>&);
+  template math::Rect<double> bounding_rect(const CubicBezier<double>&);
 
-  template std::array<QuadraticBezier<float>, 2> split(const QuadraticBezier<float>& quad, const float t);
-  template std::array<QuadraticBezier<double>, 2> split(const QuadraticBezier<double>& quad, const double t);
+  template std::array<QuadraticBezier<float>, 2> split(const QuadraticBezier<float>&, const float);
+  template std::array<QuadraticBezier<double>, 2> split(const QuadraticBezier<double>&, const double);
 
-  template std::array<QuadraticBezier<float>, 3> split(const QuadraticBezier<float>& quad, const float t1, const float t2);
-  template std::array<QuadraticBezier<double>, 3> split(const QuadraticBezier<double>& quad, const double t1, const double t2);
+  template std::array<QuadraticBezier<float>, 3> split(const QuadraticBezier<float>&, const float, const float);
+  template std::array<QuadraticBezier<double>, 3> split(const QuadraticBezier<double>&, const double, const double);
 
-  template std::array<CubicBezier<float>, 2> split(const CubicBezier<float>& cubic, const float t);
-  template std::array<CubicBezier<double>, 2> split(const CubicBezier<double>& cubic, const double t);
+  template std::array<CubicBezier<float>, 2> split(const CubicBezier<float>&, const float);
+  template std::array<CubicBezier<double>, 2> split(const CubicBezier<double>&, const double);
 
-  template std::array<CubicBezier<float>, 3> split(const CubicBezier<float>& cubic, const float t1, const float t2);
-  template std::array<CubicBezier<double>, 3> split(const CubicBezier<double>& cubic, const double t1, const double t2);
+  template std::array<CubicBezier<float>, 3> split(const CubicBezier<float>&, const float, const float);
+  template std::array<CubicBezier<double>, 3> split(const CubicBezier<double>&, const double, const double);
 
-  template QuadraticBezier<float> extract(const QuadraticBezier<float>& cubic, const float t1, const float t2);
-  template QuadraticBezier<double> extract(const QuadraticBezier<double>& cubic, const double t1, const double t2);
+  template QuadraticBezier<float> extract(const QuadraticBezier<float>&, const float, const float);
+  template QuadraticBezier<double> extract(const QuadraticBezier<double>&, const double, const double);
 
-  template CubicBezier<float> extract(const CubicBezier<float>& cubic, const float t1, const float t2);
-  template CubicBezier<double> extract(const CubicBezier<double>& cubic, const double t1, const double t2);
+  template CubicBezier<float> extract(const CubicBezier<float>&, const float, const float);
+  template CubicBezier<double> extract(const CubicBezier<double>&, const double, const double);
 
-  template void cubic_to_quadratics(const CubicBezier<float>& cubic, const float tolerance, QuadraticPath<float>& sink);
-  template void cubic_to_quadratics(const CubicBezier<double>& cubic, const double tolerance, QuadraticPath<double>& sink);
+  template void cubic_to_quadratics(const CubicBezier<float>&, const float, QuadraticPath<float>&);
+  template void cubic_to_quadratics(const CubicBezier<double>&, const double, QuadraticPath<double>&);
 
-  template std::vector<std::pair<QuadraticBezier<float>, math::Vec2<float>>> cubic_to_quadratics_with_intervals(const CubicBezier<float>& cubic);
-  template std::vector<std::pair<QuadraticBezier<double>, math::Vec2<double>>> cubic_to_quadratics_with_intervals(const CubicBezier<double>& cubic);
+  template std::vector<std::pair<QuadraticBezier<float>, math::Vec2<float>>> cubic_to_quadratics_with_intervals(const CubicBezier<float>&);
+  template std::vector<std::pair<QuadraticBezier<double>, math::Vec2<double>>> cubic_to_quadratics_with_intervals(const CubicBezier<double>&);
 
+  template struct QuadraticPath<float>;
+  template struct QuadraticPath<double>;
 }

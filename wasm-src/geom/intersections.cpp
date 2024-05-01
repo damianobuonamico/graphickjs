@@ -60,7 +60,7 @@ namespace graphick::geom {
     return std::nullopt;
   }
 
-  std::vector<dvec2> line_circle_intersection_points(const dline& line, const dvec2 center, const double radius) {
+  math::QuadraticSolutions<dvec2> line_circle_intersection_points(const dline& line, const dvec2 center, const double radius) {
     const dvec2 ldir = line.p1 - line.p0;
     const dvec2 tvec = line.p0 - center;
 

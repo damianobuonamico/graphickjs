@@ -22,7 +22,7 @@ namespace graphick::math {
    *
    * @struct QuadraticSolutions
    */
-  template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+  template <typename T>
   struct QuadraticSolutions {
     T solutions[2];    /* The solutions. */
     uint8_t count;     /* The number of solutions. */
@@ -37,7 +37,7 @@ namespace graphick::math {
     template <typename U>
     QuadraticSolutions(const QuadraticSolutions<U>& quadratic) :
       count(quadratic.count),
-      solutions{ static_cast<T>(quadratic.solutions[0]), static_cast<T>(quadratic.solutions[1]) } {}
+      solutions{ T(quadratic.solutions[0]), T(quadratic.solutions[1]) } {}
   };
 
   /**
@@ -45,7 +45,7 @@ namespace graphick::math {
    *
    * @struct CubicSolutions
    */
-  template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+  template <typename T>
   struct CubicSolutions {
     T solutions[3];    /* The solutions. */
     uint8_t count;          /* The number of solutions. */

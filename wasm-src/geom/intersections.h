@@ -11,6 +11,7 @@
 
 #include "../math/vector.h"
 #include "../math/rect.h"
+#include "../math/math.h"
 
 #include <optional>
 
@@ -147,6 +148,48 @@ namespace graphick::geom {
   /* -- Line -- */
 
   /**
+   * @brief Calculates the intersection t value of two infinite lines.
+   *
+   * The t value is relative to the first line.
+   *
+   * @param a The first line segment.
+   * @param b The second line segment.
+   * @return The intersection t value if it exists, std::nullopt otherwise.
+   */
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  inline std::optional<T> line_line_intersection_infinite(const geom::Line<T>& a, const geom::Line<T>& b) {
+    const math::Vec2<T> v1 = a.p1 - a.p0;
+    const math::Vec2<T> v2 = b.p0 - b.p1;
+    const T denominator = v1.y * v2.x - v1.x * v2.y;
+
+    if (denominator == 0) {
+      return std::nullopt;
+    }
+
+    const math::Vec2<T> c = a.p0 - b.p0;
+    const T reciprocal = T(1) / denominator;
+    const T t = (v2.y * c.x - v2.x * c.y) * reciprocal;
+
+    return t;
+  }
+
+  /**
+   * @brief Calculates the intersection point of two infinite lines.
+   *
+   * @param a The first line segment.
+   * @param b The second line segment.
+   * @return The intersection point if it exists, std::nullopt otherwise.
+   */
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  inline std::optional<math::Vec2<T>> line_line_intersection_point_infinite(const geom::Line<T>& a, const geom::Line<T>& b) {
+    if (std::optional<T> t = line_line_intersection_infinite(a, b); t.has_value()) {
+      return a.sample(t.value());
+    }
+
+    return std::nullopt;
+  }
+
+  /**
    * @brief Calculates the intersection t value of two lines.
    *
    * The t value is relative to the first line.
@@ -171,7 +214,7 @@ namespace graphick::geom {
   }
 
   /**
-   * @brief Calculates the intersection points of two lines.
+   * @brief Calculates the intersection point of two lines.
    *
    * @param a The first line segment.
    * @param b The second line segment.
@@ -202,7 +245,7 @@ namespace graphick::geom {
    * @param radius The radius of the circle.
    * @return The intersection points.
    */
-  std::vector<dvec2> line_circle_intersection_points(const dline& line, const dvec2 center, const double radius);
+  math::QuadraticSolutions<dvec2> line_circle_intersection_points(const dline& line, const dvec2 center, const double radius);
 
   /**
    * @brief Calculates the intersection points of a line and a circle.
@@ -212,10 +255,10 @@ namespace graphick::geom {
    * @param radius The radius of the circle.
    * @return The intersection points.
    */
-  inline std::vector<vec2> line_circle_intersection_points(const line& line, const vec2 center, const float radius) {
-    std::vector<dvec2> points = line_circle_intersection_points(dline(line), dvec2(center), radius);
+  inline math::QuadraticSolutions<vec2> line_circle_intersection_points(const line& line, const vec2 center, const float radius) {
+    math::QuadraticSolutions<dvec2> points = line_circle_intersection_points(dline(line), dvec2(center), radius);
 
-    return std::vector<vec2>(points.begin(), points.end());
+    return math::QuadraticSolutions<vec2>(points);
   }
 
   /**
@@ -249,6 +292,19 @@ namespace graphick::geom {
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
   inline bool does_line_intersect_rect(const Line<T>& line, const math::Rect<T>& rect) {
     return !line_rect_intersection_points(line, rect).empty();
+  }
+
+  /**
+   * @brief Checks whether or not a linear segment intersects a circle.
+   *
+   * @param line The line segment.
+   * @param center The center of the circle.
+   * @param radius The radius of the circle.
+   * @return true if they intersect, false otherwise.
+   */
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  inline bool does_line_intersect_circle(const Line<T>& line, const math::Vec2<T>& center, const T radius) {
+    return line_circle_intersection_points(line, center, radius).count > 0;
   }
 
   /**

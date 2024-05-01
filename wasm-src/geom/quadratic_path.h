@@ -167,6 +167,24 @@ namespace graphick::geom {
     }
 
     /**
+     * @brief Adds a cubic bezier curve to the path.
+     *
+     * @param p1 The first control point of the curve.
+     * @param p2 The second control point of the curve.
+     * @param p3 The end point of the curve.
+     */
+    void cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3, const T tolerance = T(2e-2));
+
+    /**
+     * @brief Adds an arc to the path.
+     *
+     * @param center The center of the arc.
+     * @param to The end point of the arc.
+     * @param clockwise Whether the arc is drawn clockwise or counter-clockwise.
+     */
+    void arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise = true, const T tolerance = T(1e-2));
+
+    /**
      * @brief Returns the winding number of a point with respect to the path.
      *
      * @param p The point to compute the winding number for.
