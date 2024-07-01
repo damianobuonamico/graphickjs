@@ -174,7 +174,7 @@ namespace graphick::math {
    * @return A struct containing the normalized solutions of the cubic equation.
    */
   inline CubicSolutions<float> solve_cubic_normalized(const float a, const float b, const float c, const float d, const bool include_coincident_roots = false) {
-    return solve_cubic_normalized(static_cast<float>(a), static_cast<float>(b), static_cast<float>(c), static_cast<float>(d), include_coincident_roots);
+    return solve_cubic_normalized(static_cast<double>(a), static_cast<double>(b), static_cast<double>(c), static_cast<double>(d), include_coincident_roots);
   }
 
   /**

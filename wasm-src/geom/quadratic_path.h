@@ -142,28 +142,27 @@ namespace graphick::geom {
     inline void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2) {
       GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
-      // TODO: test if it is monotone
-      // const math::Vec2<T> c = points.back();
-      // const math::Vec2<T> b = T(2) * (p1 - c);
-      // const math::Vec2<T> a = c - T(2) * p1 + p2;
+      const math::Vec2<T> c = points.back();
+      const math::Vec2<T> b = T(2) * (p1 - c);
+      const math::Vec2<T> a = c - T(2) * p1 + p2;
 
-      // const T turning_point_t = -b.y / (T(2) * a.y);
+      const T turning_point_t = -b.y / (T(2) * a.y);
 
-      // if (turning_point_t < T(0) || turning_point_t > T(1)) {
-      points.push_back(p1);
-      points.push_back(p2);
-    //   return;
-    // }
+      if (turning_point_t < T(0) || turning_point_t > T(1)) {
+        points.push_back(p1);
+        points.push_back(p2);
+        return;
+      }
 
-    // const math::Vec2<T> turning_point = a * turning_point_t * turning_point_t + b * turning_point_t + c;
+      const math::Vec2<T> turning_point = a * turning_point_t * turning_point_t + b * turning_point_t + c;
 
-    // const T lambda0 = (turning_point.y - c.y) / b.y;
-    // const T lambda1 = (turning_point.y - p2.y) / (T(2) * a.y + b.y);
+      const T lambda0 = (turning_point.y - c.y) / b.y;
+      const T lambda1 = (turning_point.y - p2.y) / (T(2) * a.y + b.y);
 
-    // const math::Vec2<T> left_p1 = c + lambda0 * b;
-    // const math::Vec2<T> right_p1 = p2 + lambda1 * (T(2) * a + b);
+      const math::Vec2<T> left_p1 = c + lambda0 * b;
+      const math::Vec2<T> right_p1 = p2 + lambda1 * (T(2) * a + b);
 
-    // points.insert(points.end(), { left_p1, turning_point, right_p1, p2 });
+      points.insert(points.end(), { left_p1, turning_point, right_p1, p2 });
     }
 
     /**

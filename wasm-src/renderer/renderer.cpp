@@ -385,6 +385,7 @@ namespace graphick::renderer {
 
     // TODO: check if is translation only, in that case transform on the GPU
     draw(stroked_path.outer, fill, mat2x3::identity(), &bounds);
+    draw(stroked_path.inner, fill, mat2x3::identity(), &bounds);
 
     // draw_outline(stroked_path.outer, transform, 0.25f, nullptr, nullptr);
 
@@ -679,6 +680,7 @@ namespace graphick::renderer {
 
       // TODO: check if is translation only, in that case transform on the GPU
       draw(stroked_path.outer, fill, mat2x3::identity(), nullptr);
+      draw(stroked_path.inner, fill, mat2x3::identity(), nullptr);
     }
 
     if (path.vacant()) {
