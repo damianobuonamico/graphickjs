@@ -1922,6 +1922,38 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
+  CubicPath<T> Path<T, _>::to_cubic_path() const {
+    CubicPath<T> path;
+
+    if (empty()) {
+      return path;
+    }
+
+    for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+      case Command::Move:
+        path.move_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Line:
+        path.line_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Quadratic:
+        path.quadratic_to(m_points[j], m_points[j + 1]);
+        j += 2;
+        break;
+      case Command::Cubic:
+        path.cubic_to(m_points[j], m_points[j + 1], m_points[j + 2]);
+        j += 3;
+        break;
+      }
+    }
+
+    return path;
+  }
+
+  template <typename T, typename _>
   io::EncodedData& Path<T, _>::encode(io::EncodedData& data) const {
     if (vacant()) {
       // The first bit is set to true to indicate that the path is vacant.

@@ -6,10 +6,14 @@
 #include "curve_ops.h"
 
 #include "intersections.h"
+#include "cubic_path.h"
+#include "geom.h"
 
 #include "../math/vector.h"
 
 #include "../utils/console.h"
+
+#include <algorithm>
 
 namespace graphick::geom {
 
@@ -837,6 +841,35 @@ namespace graphick::geom {
   }
 
   template <typename T, typename _>
+  void QuadraticPath<T, _>::quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2) {
+    GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
+
+    const QuadraticBezier<T> quad = { back(), p1, p2 };
+    const auto& [a, b] = quad.derivative_coefficients();
+
+    std::vector<float> split_points = { T(0), T(1) };
+
+    for (uint8_t i = 0; i < 2; i++) {
+      const T t = math::solve_linear(a[i], b[i]);
+
+      if (math::is_normalized(t, false)) {
+        split_points.push_back(t);
+      }
+    }
+
+    std::sort(split_points.begin(), split_points.end());
+
+    for (size_t i = 0; i < split_points.size() - 1; i++) {
+      const T t0 = split_points[i];
+      const T t1 = split_points[i + 1];
+
+      const QuadraticBezier<T> sub = extract(quad, t0, t1);
+
+      points.insert(points.end(), { sub.p1, sub.p2 });
+    }
+  }
+
+  template <typename T, typename _>
   void QuadraticPath<T, _>::cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3, const T tolerance) {
     GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
@@ -845,6 +878,8 @@ namespace graphick::geom {
 
   template <typename T, typename _>
   void QuadraticPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise, const T tolerance) {
+    GK_ASSERT(!points.empty(), "Cannot add an arc to an empty path.");
+
     const math::Vec2<T> from = back();
     const T radius = math::distance(center, from);
 
@@ -873,6 +908,98 @@ namespace graphick::geom {
       const math::Vec2<T> p2 = center + radius * math::Vec2<T>{ cos, sin };
 
       quadratic_to(p1, p2);
+    }
+  }
+
+  template <typename T, typename _>
+  void CubicPath<T, _>::cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3) {
+    GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
+
+    const CubicBezier<T> cubic = { back(), p1, p2, p3 };
+    const auto& [a, b, c] = cubic.derivative_coefficients();
+
+    std::vector<float> split_points = { T(0), T(1) };
+
+    for (uint8_t i = 0; i < 2; i++) {
+      const math::QuadraticSolutions<T> solutions = math::solve_quadratic(a[i], b[i], c[i]);
+
+      for (uint8_t j = 0; j < solutions.count; j++) {
+        const T t = solutions.solutions[j];
+
+        if (math::is_normalized(t, false)) {
+          split_points.push_back(t);
+        }
+      }
+    }
+
+    std::sort(split_points.begin(), split_points.end());
+
+    for (size_t i = 0; i < split_points.size() - 1; i++) {
+      const T t0 = split_points[i];
+      const T t1 = split_points[i + 1];
+
+      const CubicBezier<T> sub = extract(cubic, t0, t1);
+
+      points.insert(points.end(), { sub.p1, sub.p2, sub.p3 });
+    }
+  }
+
+  template <typename T, typename _>
+  void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise, const T tolerance) {
+    GK_ASSERT(!points.empty(), "Cannot add an arc to an empty path.");
+
+    const math::Vec2<T> from = back();
+    const T radius = math::distance(center, from);
+
+    const T ang1 = std::atan2(from.y - center.y, from.x - center.x);
+    const T ang2 = std::atan2(to.y - center.y, to.x - center.x);
+
+    T angle = std::abs(ang2 - ang1);
+
+    if (math::is_almost_zero(angle)) {
+      return;
+    }
+
+    const TriangleOrientation orientation = triangle_orientation(center, from, to);
+
+    if (orientation != TriangleOrientation::Collinear) {
+      const bool is_clockwise = orientation == TriangleOrientation::Clockwise;
+
+      if (is_clockwise != clockwise) {
+        angle = math::two_pi<T> -angle;
+      }
+    }
+
+    const int segments = std::ceil(angle / (math::pi<T> / T(2)));
+    const T step = angle / segments * (clockwise ? -T(1) : T(1));
+
+    T s = -std::sin(ang1);
+    T c = std::cos(ang1);
+
+    for (int i = 1; i <= segments; i++) {
+      const T a1 = ang1 + step * T(i);
+
+      const T s1 = -std::sin(a1);
+      const T c1 = std::cos(a1);
+
+      const math::Vec2<T> a = math::Vec2<T>(c, s);
+      const math::Vec2<T> b = math::Vec2<T>(c1, s1);
+
+      const T q1 = math::squared_length(a);
+      const T q2 = q1 + math::dot(a, b);
+      const T k2 = T(4) / T(3) * (std::sqrt(T(2) * q1 * q2) - q2) / (a.x * b.y - a.y * b.x);
+
+      const math::Vec2<T> p1 = a + k2 * math::Vec2<T>(-a.y, a.x);
+      const math::Vec2<T> p2 = b + k2 * math::Vec2<T>(b.y, -b.x);
+
+      if (i < segments) {
+        cubic_to(center + p1 * radius, center + p2 * radius, center + b * radius);
+      } else {
+        cubic_to(center + p1 * radius, center + p2 * radius, to);
+      }
+
+      s = s1;
+      c = c1;
     }
   }
 
@@ -1000,4 +1127,7 @@ namespace graphick::geom {
 
   template struct QuadraticPath<float>;
   template struct QuadraticPath<double>;
+
+  template struct CubicPath<float>;
+  template struct CubicPath<double>;
 }

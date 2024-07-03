@@ -1,6 +1,6 @@
 /**
- * @file geom/quadratic_path.h
- * @brief Contains the definition of the QuadraticPath struct.
+ * @file geom/cubic_path.h
+ * @brief Contains the definition of the CubicPath struct.
  */
 
 #pragma once
@@ -11,20 +11,21 @@
 
 #include <vector>
 
+
 namespace graphick::geom {
 
   /**
-   * @brief A quadratic path is a series of control points that are connected by quadratic curves.
+   * @brief A cubic path is a series of control points that are connected by cubic curves.
    *
    * The last control point of a curve is the first control point of the next curve.
-   * Linear segments are treated as quadratic curves with p1 = p2.
+   * Linear segments are treated as cubic curves with p1 = p2 = p3.
    *
    * All curves are splitted in monotone segments for efficient winding number computation (and rendering).
    *
-   * @struct QuadraticPath
+   * @struct CubicPath
    */
   template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  struct QuadraticPath {
+  struct CubicPath {
     std::vector<math::Vec2<T>> points;    /* The control points of the path. */
 
     /**
@@ -35,7 +36,7 @@ namespace graphick::geom {
      * @return true if the path is empty, false otherwise.
      */
     inline bool empty() const {
-      return points.size() < 3;
+      return points.size() < 4;
     }
 
     /**
@@ -44,7 +45,7 @@ namespace graphick::geom {
      * @return The number of curves in the path.
     */
     inline size_t size() const {
-      return empty() ? 0 : (points.size() - 1) / 2;
+      return empty() ? 0 : (points.size() - 1) / 3;
     }
 
     /**
@@ -100,11 +101,11 @@ namespace graphick::geom {
 
       math::Rect<T> bounds{ points[0], points[0] };
 
-      for (size_t i = 1; i < points.size(); i += 2) {
-        bounds.min.x = std::min({ bounds.min.x, points[i].x, points[i + 1].x });
-        bounds.min.y = std::min({ bounds.min.y, points[i].y, points[i + 1].y });
-        bounds.max.x = std::max({ bounds.max.x, points[i].x, points[i + 1].x });
-        bounds.max.y = std::max({ bounds.max.y, points[i].y, points[i + 1].y });
+      for (size_t i = 1; i < points.size(); i += 3) {
+        bounds.min.x = std::min({ bounds.min.x, points[i].x, points[i + 1].x, points[i + 2].x });
+        bounds.min.y = std::min({ bounds.min.y, points[i].y, points[i + 1].y, points[i + 2].y });
+        bounds.max.x = std::max({ bounds.max.x, points[i].x, points[i + 1].x, points[i + 2].x });
+        bounds.max.y = std::max({ bounds.max.y, points[i].y, points[i + 1].y, points[i + 2].y });
       }
 
       return bounds;
@@ -122,24 +123,31 @@ namespace graphick::geom {
     /**
      * @brief Adds a line to the path.
      *
-     * Lineare segments are treated as quadratic curves with p1 = p2.
+     * Lineare segments are treated as cubic curves with p1 = p2.
      *
      * @param p The end point of the line.
      */
     inline void line_to(const math::Vec2<T> p) {
       GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
-      points.push_back(p);
-      points.push_back(p);
+      points.insert(points.end(), { p, p, p });
     }
 
     /**
-     * @brief Adds a quadratic bezier curve to the path.
+     * @brief Adds a cubic bezier curve to the path.
      *
      * @param p1 The first control point of the curve.
      * @param p2 The end point of the curve.
      */
-    inline void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2);
+    inline void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2) {
+      GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
+
+      const math::Vec2<T> p0 = points.back();
+      const math::Vec2<T> cp1 = p0 + (p1 - p0) * T(2) / T(3);
+      const math::Vec2<T> cp2 = p2 + (p1 - p2) * T(2) / T(3);
+
+      cubic_to(cp1, cp2, p2);
+    }
 
     /**
      * @brief Adds a cubic bezier curve to the path.
@@ -148,8 +156,7 @@ namespace graphick::geom {
      * @param p2 The second control point of the curve.
      * @param p3 The end point of the curve.
      */
-    void cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3, const T tolerance = T(2e-2));
-
+    void cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3);
     /**
      * @brief Adds an arc to the path.
      *
@@ -174,7 +181,7 @@ namespace graphick::geom {
 
 namespace graphick::geom {
 
-  using quadratic_path = QuadraticPath<float>;
-  using dquadratic_path = QuadraticPath<double>;
+  using cubic_path = CubicPath<float>;
+  using dcubic_path = CubicPath<double>;
 
 }

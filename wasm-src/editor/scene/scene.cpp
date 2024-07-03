@@ -419,7 +419,7 @@ namespace graphick::editor {
         z_index += 2;
       } else if (has_fill) {
         renderer::Renderer::draw(
-          quadratics,
+          path.to_cubic_path(),
           renderer::Fill{ fill->color, fill->rule, z_index / z_far },
           transform_matrix
         );

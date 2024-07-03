@@ -77,22 +77,20 @@ R"(
     return -99999.0;
   }
 
-  float calculateCubicRoot(float a, float b, float c, float d, float t0) {
-    const float epsilon = 1e-3;
+  float calculateCubicRoot(float a, float b, float c, float d) {
+    const float epsilon = 1e-5;
     
-    // if (abs(b + c) < epsilon && abs(3 * a + b) < epsilon) {
-    //   return t0;
-    // }
+    if (abs(a) < epsilon) {
+      return 999.99;
+      if (c != 0) return -d / c;
+    }
 
-    float t = t0;
+    float t = 0.5;
 
     for (int i = 0; i < 5; i++) {
       float t_sq = t * t;
-      float f_prime = 3 * a * t_sq + 2 * b * t + c;
-
-      if (abs(f_prime) < epsilon) break;
-
       float f = a * t_sq * t + b * t_sq + c * t + d;
+      float f_prime = 3 * a * t_sq + 2 * b * t + c;
 
       t = t - f / f_prime;
     }
@@ -100,6 +98,9 @@ R"(
     return t;
   }
 
+  // Calculate the fraction [0,1] of the pixel that is covered by the glyph (along the x axis).
+  // This is done by looking at the distances to the intersection points of a horizontal ray
+  // (at the pixel pos) with all the curves of the glyph.
   float quadratic_horizontal_coverage(vec2 pixelPos, float pixelSize) {
     float coverage = 0 + float(uMinSamples + uMaxSamples) / 10000000.0;
     float invPixelSize = 1 / pixelSize;
@@ -128,9 +129,11 @@ R"(
     uint hBandDataStart = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U)).x + bandsIndexOffset;
     uint hBandCurvesCount = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U + 1U)).x;
 
+    // Loop over all contours.
     for (uint curve = 0U; curve < hBandCurvesCount; curve++) {
       uint curveOffset = curvesIndexOffset + texture(uBandsTexture, toCoords(hBandDataStart + curve)).x;
 
+      // Get positions of curve's control points relative to the current pixel.
       vec4 p01 = (texture(uCurvesTexture, toCoords(curveOffset))
         - vec4(vPosition, vPosition)) / vec4(vSize, vSize) 
         - vec4(pixelPos, pixelPos);
@@ -139,8 +142,16 @@ R"(
       vec2 p1 = p01.zw;
       vec2 p0 = p01.xy;
 
+      // Check if curve segment is going downwards (this means that a ray crossing
+      // it from left to right would be exiting the shape at this point).
+      // Note: curves are assumed to be monotonic (strictly increasing or decreasing on the y axis).
       bool isDownwardCurve = p0.y > 0 || p2.y < 0;
 
+      // Skip curves that are entirely above or below the ray.
+      // When two curves are in the same direction (upward or downward), only one of them should be
+      // counted at their meeting point to avoid double-counting. When in opposite directions, however,
+      // the curve is not crossing the contour (but rather just grazing it) and so the curves should
+      // either both be skipped, or both counted (so as not to affect the end result).
       if (isDownwardCurve) {
         if (p0.y < 0 && p2.y <= 0) continue;
         if (p0.y > 0 && p2.y >= 0) continue;
@@ -149,17 +160,26 @@ R"(
         if (p0.y >= 0 && p2.y > 0) continue;
       }
 
+      // Calculate a,b,c of quadratic equation for current bezier curve.
       vec2 a = p0 - 2 * p1 + p2;
       vec2 b = 2 * (p1 - p0);
       vec2 c = p0;
 
+      // Calculate roots to see if ray intersects curve segment.
+      // Note: intersection is allowed slightly outside of [0, 1] segment to tolerate precision issues.
       const float epsilon = 1e-4;
+
       float root = calculateQuadraticRoot(a.y, b.y, c.y);
 
       if (root >= -epsilon && root <= 1 + epsilon) {
+        // Calculate distance to intersection (negative if to left of ray)
         float t = clamp(root, 0.0, 1.0);
         float intersect = a.x * t * t + b.x * t + c.x;
 
+        // Calculate the fraction of the ray that passes through the glyph (within the current pixel):
+        // A value [0, 1] is calculated based on where the intersection occurs: 0 at the left edge of
+        // the pixel, increasing to 1 at the right edge. This value is added to the total coverage
+        // value when the ray exits a shape, and subtracted when the ray enters a shape.
         int sign_correction = isDownwardCurve ? 1 : -1;
 
         coverage += clamp(0.5 + intersect * invPixelSize, 0.0, 1.0) * sign_correction;
@@ -197,9 +217,11 @@ R"(
     uint hBandDataStart = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U)).x + bandsIndexOffset;
     uint hBandCurvesCount = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U + 1U)).x;
 
+    // Loop over all contours
     for (uint curve = 0U; curve < hBandCurvesCount; curve++) {
       uint curveOffset = curvesIndexOffset + texture(uBandsTexture, toCoords(hBandDataStart + curve)).x * 2U;
 
+      // Get positions of curve's control points relative to the current pixel
       vec4 p01 = (texture(uCurvesTexture, toCoords(curveOffset))
         - vec4(vPosition, vPosition)) / vec4(vSize, vSize) 
         - vec4(pixelPos, pixelPos);
@@ -212,8 +234,16 @@ R"(
       vec2 p2 = p23.xy;
       vec2 p3 = p23.zw;
 
+      // Check if curve segment is going downwards (this means that a ray crossing
+      // it from left to right would be exiting the shape at this point).
+      // Note: curves are assumed to be monotonic (strictly increasing or decreasing on the y axis)
       bool isDownwardCurve = p0.y > 0 || p3.y < 0;
 
+      // Skip curves that are entirely above or below the ray
+      // When two curves are in the same direction (upward or downward), only one of them should be
+      // counted at their meeting point to avoid double-counting. When in opposite directions, however,
+      // the curve is not crossing the contour (but rather just grazing it) and so the curves should
+      // either both be skipped, or both counted (so as not to affect the end result).
       if (isDownwardCurve) {
         if (p0.y < 0 && p3.y <= 0) continue; 
         if (p0.y > 0 && p3.y >= 0) continue;
@@ -222,6 +252,7 @@ R"(
         if (p0.y >= 0 && p3.y > 0) continue;
       }
 
+      // Note: intersection is allowed slightly outside of [0, 1] segment to tolerate precision issues.
       const float epsilon = 1e-4;
 
       // vec2 a = p0 - 2 * p2 + p3;
@@ -247,37 +278,47 @@ R"(
         vec2 c = 3 * (p1 - p0);
         vec2 d = p0;
 
-        float root = calculateCubicRoot(a.y, b.y, c.y, d.y, (p3.y - p0.y) / (p3.y - pixelPos.y));
+        // Calculate roots to see if ray intersects curve segment.
+        
+        float root = calculateCubicRoot(a.y, b.y, c.y, d.y);
+        // float root = calculateQuadraticRoot(a.y, b.y, c.y);
 
         if (root == 999.99) return 999.99;
 
         if (root >= -epsilon && root <= 1 + epsilon) {
+          // Calculate distance to intersection (negative if to left of ray)
           float t = clamp(root, 0.0, 1.0);
           float t_sq = t * t;
           float intersect = a.x * t_sq * t + b.x * t_sq + c.x * t + d.x;
+          // float intersect = a.x * t_sq + b.x * t + c.x;
+
+          // Calculate the fraction of the ray that passes through the glyph (within the current pixel):
+          // A value [0, 1] is calculated based on where the intersection occurs: 0 at the left edge of
+          // the pixel, increasing to 1 at the right edge. This value is added to the total coverage
+          // value when the ray exits a shape, and subtracted when the ray enters a shape.
           int sign_correction = isDownwardCurve ? 1 : -1;
 
           coverage += clamp(0.5 + intersect * invPixelSize, 0.0, 1.0) * sign_correction;
         }
       }
+    // }
 
     return coverage;
   }
 
   float quadratic_coverage() {
     // Size of pixel in glyph space
-    vec2 pixelSize = vec2(fwidth(vTexCoord.x), fwidth(vTexCoord.y));
+    float pixelSize = fwidth(vTexCoord.x);
     float alphaSum = 0.0;
 
     // Render 3 times (with slight y offset) for anti-aliasing
     for (int yOffset = -1; yOffset <= 1; yOffset++) {
-      vec2 samplePos = vTexCoord + vec2(0, yOffset) * pixelSize.y / 3.0;
-      float coverage = quadratic_horizontal_coverage(samplePos, pixelSize.x);
+      vec2 samplePos = vTexCoord + vec2(0, yOffset) * pixelSize / 3.0;
+      float coverage = quadratic_horizontal_coverage(samplePos, pixelSize);
 
-      // if (coverage == 999.99) return 999.99;
+      if (coverage == 999.99) return 999.99;
 
       alphaSum += coverage;
-      // return coverage;
     }
 
     return alphaSum / 3.0;
@@ -285,16 +326,13 @@ R"(
 
   float cubic_coverage() {
     // Size of pixel in glyph space
-    vec2 pixelSize = vec2(fwidth(vTexCoord.x), fwidth(vTexCoord.y));
+    float pixelSize = fwidth(vTexCoord.x);
     float alphaSum = 0.0;
 
     // Render 3 times (with slight y offset) for anti-aliasing
     for (int yOffset = -1; yOffset <= 1; yOffset++) {
-      vec2 samplePos = vTexCoord + vec2(0, yOffset) * pixelSize.y / 3.0;
-      float coverage = cubic_horizontal_coverage(samplePos, pixelSize.x);
-
-      if (coverage == 999.99) return 999.99;
-      // return coverage;
+      vec2 samplePos = vTexCoord + vec2(0, yOffset) * pixelSize / 3.0;
+      float coverage = cubic_horizontal_coverage(samplePos, pixelSize);
 
       alphaSum += coverage;
     }
@@ -311,138 +349,8 @@ R"(
     //   return;
     // }
 
-    if (!is_quadratic) {
-      float pixelSize = fwidth(vTexCoord.x);
-      vec2 pixelPos = vTexCoord;
-
-      float coverage = 0 + float(uMinSamples + uMaxSamples) / 10000000.0;
-      float invPixelSize = 1 / pixelSize;
-
-      uint hBands = (vBandsData >> 28) + 1U;
-      uint vBands = ((vBandsData >> 24) & 0xFU) + 1U;
-
-      uvec2 minBandIndex = uvec2(
-        clamp(uint(floor(pixelPos.y * float(hBands))), 0U, hBands - 1U),
-        clamp(uint(floor(pixelPos.y * float(vBands))), 0U, vBands - 1U)
-      );
-
-      uvec2 maxBandIndex = uvec2(
-        clamp(uint(floor(pixelPos.y * float(hBands))), 0U, hBands - 1U),
-        clamp(uint(floor(pixelPos.x * float(vBands))), 0U, vBands - 1U)
-      );
-
-      uint xBandsOffset = (vBandsData >> 12) & 0xFFFU;
-      uint yBandsOffset = vBandsData & 0xFFFU;
-      uint xCurvesOffset = (vCurvesData >> 12) & 0xFFFU;
-      uint yCurvesOffset = vCurvesData & 0xFFFU;
-
-      uint bandsIndexOffset = xBandsOffset + yBandsOffset * 512U;
-      uint curvesIndexOffset = xCurvesOffset + yCurvesOffset * 512U;
-
-      uint hBandDataStart = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U)).x + bandsIndexOffset;
-      uint hBandCurvesCount = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U + 1U)).x;
-
-      for (uint curve = 0U; curve < hBandCurvesCount; curve++) {
-        uint curveOffset = curvesIndexOffset + texture(uBandsTexture, toCoords(hBandDataStart + curve)).x * 2U;
-
-        vec4 p01 = (texture(uCurvesTexture, toCoords(curveOffset))
-          - vec4(vPosition, vPosition)) / vec4(vSize, vSize);
-        vec4 p23 = (texture(uCurvesTexture, toCoords(curveOffset + 1U)) 
-          - vec4(vPosition, vPosition)) / vec4(vSize, vSize);
-
-        vec2 p0 = p01.xy - pixelPos;
-        vec2 p1 = p01.zw - pixelPos;
-        vec2 p2 = p23.xy - pixelPos;
-        vec2 p3 = p23.zw - pixelPos;
-
-        bool isDownwardCurve = p0.y > 0 || p3.y < 0;
-
-        if (isDownwardCurve) {
-          if (p0.y < 0 && p3.y <= 0) continue; 
-          if (p0.y > 0 && p3.y >= 0) continue;
-        } else {
-          if (p0.y <= 0 && p3.y < 0) continue;
-          if (p0.y >= 0 && p3.y > 0) continue;
-        }
-
-        const float epsilon = 1e-4;
-        float intersect = 0.0;
-
-        if (abs(p1.y - p3.y) + abs(p2.y - p3.y) < epsilon) {
-          vec2 a = p3 - p0;
-          vec2 b = p0;
-          
-          float t = - b.y / a.y;
-          
-          intersect = a.x * t + b.x;
-        } else {
-          vec2 a = -p0 + 3 * p1 - 3 * p2 + p3;
-          vec2 b = 3 * (p0 - 2 * p1 + p2);
-          vec2 c = 3 * (p1 - p0);
-          vec2 d = p0;
-          
-          float t0 = abs((pixelPos.y - p01.y) / (p23.w - p01.y));
-          // if (curve == 1U) {
-
-          //   if (t0 < 0.1) {
-          //     oFragColor = vec4(1.0, 0.0, 0.0, 1.0);
-          //     return;
-          //   } else if (t0 > 1.0) {
-          //     oFragColor = vec4(0.0, 1.0, 0.0, 1.0);
-          //     return;
-          //   }
-
-          //   oFragColor = vec4(t0, t0, t0, 1.0);
-          //   return;
-          // }
-
-          // float root = calculateCubicRoot(a.y, b.y, c.y, d.y, t0);
-          float root = t0;
-
-          for (int i = 0; i < 5; i++) {
-            float t_sq = root * root;
-            float f_prime = 3 * a.y * t_sq + 2 * b.y * root + c.y;
-
-            if (abs(b.y) < epsilon) {
-              oFragColor = vec4(0.0, 1.0, 0.0, 1.0);
-              return;
-            }
-
-            float f = a.y * t_sq * root + b.y * t_sq + c.y * root + d.y;
-
-            root = root - f / f_prime;
-          }
-
-          // NOTE: removing this line could cause some artifacts, need to investigate
-          // if (root < -epsilon || root > 1 + epsilon) continue;
-          // float t = clamp(root, 0.0, 1.0);
-
-          float t_sq = root * root;
-          
-          intersect = a.x * t_sq * root + b.x * t_sq + c.x * root + d.x;
-        }
-
-        // oFragColor = vec4(root, root, root, 1.0);
-        // return;
-
-
-        int sign_correction = isDownwardCurve ? 1 : -1;
-        
-        coverage += clamp(0.5 + intersect * invPixelSize, 0.0, 1.0) * sign_correction;  
-      }
-
-      float alpha = vColor.a * abs(coverage - 2.0 * round(0.5 * coverage));
-      oFragColor = vec4(vColor.rgb, 1.0) * alpha;
-      return;
-    }
-
     // TODO: if this works out well, add linear coverage too.
     float coverage = is_quadratic ? quadratic_coverage() : cubic_coverage();
-
-    // if (!is_quadratic) {
-    //   oFragColor = vec4(coverage, coverage, coverage, 1.0);
-    //   return;
-    // }
 
     if (coverage == 999.99) {
       oFragColor = vec4(0.0, 1.0, 0.0, 1.0);

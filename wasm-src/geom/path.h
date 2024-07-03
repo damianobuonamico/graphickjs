@@ -8,6 +8,7 @@
 #include "quadratic_bezier.h"
 #include "quadratic_path.h"
 #include "cubic_bezier.h"
+#include "cubic_path.h"
 #include "line.h"
 
 #include "../utils/assert.h"
@@ -896,6 +897,13 @@ namespace graphick::geom {
      * @return The quadratic representation of the path.
      */
     QuadraticPath<T> to_quadratic_path(const T tolerance = T(2e-2)) const;
+
+    /**
+     * @brief Converts the path to a list of cubic bezier curves.
+     *
+     * @return The cubic representation of the path.
+     */
+    CubicPath<T> to_cubic_path() const;
 
     /**
      * @brief Encodes the path to a list of bytes.

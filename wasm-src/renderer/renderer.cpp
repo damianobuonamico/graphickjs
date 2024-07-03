@@ -454,6 +454,8 @@ namespace graphick::renderer {
 
     const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
     const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
+    // const uint8_t horizontal_bands = 1;
+    // const uint8_t vertical_bands = 1;
 
     /* Cache min and max x and y for each curve. */
 
@@ -473,6 +475,194 @@ namespace graphick::renderer {
       max_x_y[i] = vec2{
         std::max({ p0.x, p1.x, p2.x }),
         std::max({ p0.y, p1.y, p2.y }),
+      };
+    }
+
+    if (!closed) {
+      const vec2 p0 = path.points.back();
+      const vec2 p1 = path[0];
+
+      min_x_y.back() = vec2{
+        std::min(p0.x, p1.x),
+        std::min(p0.y, p1.y)
+      };
+
+      max_x_y.back() = vec2{
+        std::max(p0.x, p1.x),
+        std::max(p0.y, p1.y)
+      };
+    }
+
+    /* Sort curves by descending max x and y. */
+
+    std::vector<uint16_t> h_indices(len);
+    std::vector<uint16_t> v_indices(len);
+
+    std::iota(h_indices.begin(), h_indices.end(), 0);
+    std::iota(v_indices.begin(), v_indices.end(), 0);
+
+    std::sort(h_indices.begin(), h_indices.end(), [&](const uint16_t a, const uint16_t b) {
+      return max_x_y[a].x > max_x_y[b].x;
+    });
+
+    std::sort(v_indices.begin(), v_indices.end(), [&](const uint16_t a, const uint16_t b) {
+      return max_x_y[a].y > max_x_y[b].y;
+    });
+
+    /* Calculate band metrics. */
+
+    const vec2 band_delta = bounds_size / vec2(uvec2(vertical_bands, horizontal_bands));
+
+    vec2 band_min = bounds.min;
+    vec2 band_max = bounds.min + band_delta;
+
+    /* Preallocate horizontal and vertical bands header. */
+
+    data.bands.resize(data.bands.size() + horizontal_bands * 2 + vertical_bands * 2, 0);
+
+    /* Determine which curves are in each horizontal band. */
+
+    for (int i = 0; i < horizontal_bands; i++) {
+      const size_t band_start = data.bands.size();
+
+      for (uint16_t j = 0; j < h_indices.size(); j++) {
+        const float min_y = min_x_y[h_indices[j]].y;
+        const float max_y = max_x_y[h_indices[j]].y;
+
+        if (min_y == max_y || min_y > band_max.y + math::geometric_epsilon<float> || max_y < band_min.y - math::geometric_epsilon<float>) {
+          continue;
+        }
+
+        data.bands.push_back(h_indices[j]);
+      }
+
+      const size_t band_end = data.bands.size();
+
+      /* Each band header is an offset from this path's bands data start and the number of curves in the band. */
+
+      data.bands[bands_start_index + i * 2] = static_cast<uint16_t>(band_start - bands_start_index);
+      data.bands[bands_start_index + i * 2 + 1] = static_cast<uint16_t>(band_end - band_start);
+
+      band_min.y += band_delta.y;
+      band_max.y += band_delta.y;
+    }
+
+    /* Determine which curves are in each vertical band. */
+
+    for (int i = 0; i < vertical_bands; i++) {
+      const size_t band_start = data.bands.size();
+
+      for (uint16_t j = 0; j < v_indices.size(); j++) {
+        float min_x = min_x_y[v_indices[j]].x;
+        float max_x = max_x_y[v_indices[j]].x;
+
+        if (min_x == max_x || min_x > band_max.x || max_x < band_min.x) {
+          continue;
+        }
+
+        data.bands.push_back(v_indices[j]);
+      }
+
+      const size_t band_end = data.bands.size();
+
+      /* Each band header is an offset from this path's bands data start and the number of curves in the band. */
+
+      data.bands[bands_start_index + (horizontal_bands + i) * 2] = static_cast<uint16_t>(band_start - bands_start_index);
+      data.bands[bands_start_index + (horizontal_bands + i) * 2 + 1] = static_cast<uint16_t>(band_end - band_start);
+
+      band_min.x += band_delta.x;
+      band_max.x += band_delta.x;
+    }
+
+    /* Push instance. */
+
+    data.instances.push_back({
+      transform, bounds.min, bounds_size, fill.color,
+      curves_start_index, bands_start_index,
+      horizontal_bands, vertical_bands,
+      true, fill.rule == FillRule::EvenOdd
+    });
+
+    for (size_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path[i * 2];
+      const vec2 p1 = path[i * 2 + 1];
+      const vec2 p2 = path[i * 2 + 2];
+
+      // get()->m_vertex_instances.instances.push_back(transform * p0);
+      // get()->m_handle_instances.instances.push_back(transform * p1);
+      // get()->m_vertex_instances.instances.push_back(transform * p2);
+      get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
+      // get()->m_handle_instances.instances.push_back(transform * p2);
+    }
+  }
+
+  void Renderer::draw(const geom::cubic_path& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
+    GK_TOTAL("Renderer::draw(fill, cubic)");
+
+    if (path.empty()) {
+      return;
+    }
+
+    const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
+    const vec2 bounds_size = bounds.size();
+
+    PathInstancedData& data = get()->m_path_instances;
+
+    /* Starting indices for this path. */
+
+    const size_t curves_start_index = data.curves.size() / 2;
+    const size_t bands_start_index = data.bands.size();
+
+    /* Copy the curves, close the path and add padding, so that each curve starts at xy and not zw. */
+
+    const bool closed = path.closed();
+    const size_t len = closed ? path.size() : (path.size() + 1);
+
+    // data.curves.insert(data.curves.end(), path.points.begin(), path.points.end());
+
+    data.curves.reserve(path.size() * 4);
+
+    for (size_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path[i * 3];
+      const vec2 p1 = path[i * 3 + 1];
+      const vec2 p2 = path[i * 3 + 2];
+      const vec2 p3 = path[i * 3 + 3];
+
+      data.curves.insert(data.curves.end(), { p0, p1, p2, p3 });
+    }
+
+    if (!closed) {
+      const vec2 p0 = path.points.back();
+
+      data.curves.insert(data.curves.end(), { p0, p0, path[0], path[0] });
+    }
+
+    /* Bands count is always between 1 and 16, based on the number of segments. */
+
+    const float max_size = std::max(bounds_size.x, bounds_size.y);
+
+    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.y / max_size / 2.0f, 1.0f, 16.0f));
+    const uint8_t vertical_bands = static_cast<uint8_t>(std::clamp(len * bounds_size.x / max_size / 2.0f, 1.0f, 16.0f));
+
+    /* Cache min and max x and y for each curve. */
+
+    std::vector<vec2> min_x_y(len);
+    std::vector<vec2> max_x_y(len);
+
+    for (size_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path[i * 3];
+      const vec2 p1 = path[i * 3 + 1];
+      const vec2 p2 = path[i * 3 + 2];
+      const vec2 p3 = path[i * 3 + 3];
+
+      min_x_y[i] = vec2{
+        std::min({ p0.x, p1.x, p2.x, p3.x }),
+        std::min({ p0.y, p1.y, p2.y, p3.y }),
+      };
+
+      max_x_y[i] = vec2{
+        std::max({ p0.x, p1.x, p2.x, p3.x }),
+        std::max({ p0.y, p1.y, p2.y, p3.y }),
       };
     }
 
@@ -577,19 +767,12 @@ namespace graphick::renderer {
     data.instances.push_back({
       transform, bounds.min, bounds_size, fill.color,
       curves_start_index, bands_start_index,
-      horizontal_bands, vertical_bands
+      horizontal_bands, vertical_bands,
+      false, fill.rule == FillRule::EvenOdd
     });
 
     for (size_t i = 0; i < path.size(); i++) {
-      const vec2 p0 = path[i * 2];
-      const vec2 p1 = path[i * 2 + 1];
-      const vec2 p2 = path[i * 2 + 2];
-
-      // get()->m_vertex_instances.instances.push_back(transform * p0);
-      // get()->m_handle_instances.instances.push_back(transform * p1);
-      // get()->m_vertex_instances.instances.push_back(transform * p2);
-      get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
-      // get()->m_handle_instances.instances.push_back(transform * p2);
+      get()->m_circle_instances.instances.push_back({ transform * path[i * 3 + 3], get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
     }
   }
 
@@ -648,40 +831,40 @@ namespace graphick::renderer {
   }
 
   void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
-    {
-      if (path.empty()) {
-        return;
-      }
+    // {
+    //   if (path.empty()) {
+    //     return;
+    //   }
 
-      const float radius_safe = 0.5f * 20.0f * (false ? 10.0f : 1.0f);
-      rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
+    //   const float radius_safe = 0.5f * 20.0f * (false ? 10.0f : 1.0f);
+    //   rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
 
-      bounds.min -= radius_safe;
-      bounds.max += radius_safe;
+    //   bounds.min -= radius_safe;
+    //   bounds.max += radius_safe;
 
-      auto transformation = math::decompose(transform);
-      float scale = std::max(transformation.scale.x, transformation.scale.y);
+    //   auto transformation = math::decompose(transform);
+    //   float scale = std::max(transformation.scale.x, transformation.scale.y);
 
-      // TODO: iterate quadraticpaths returned
-      const geom::StrokeOutline stroked_path = geom::path_builder(path.to_quadratic_path(), transform, nullptr).stroke(
-        path,
-        geom::StrokingOptions<float>{ 20.0f, 10.0f, geom::LineCap::Round, geom::LineJoin::Round },
-        1e-4f / scale
-      );
+    //   // TODO: iterate quadraticpaths returned
+    //   const geom::StrokeOutline stroked_path = geom::path_builder(path.to_quadratic_path(), transform, nullptr).stroke(
+    //     path,
+    //     geom::StrokingOptions<float>{ 20.0f, 10.0f, geom::LineCap::Round, geom::LineJoin::Round },
+    //     1e-4f / scale
+    //   );
 
-        // const geometry::PathBuilder::StrokeOutline stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
-      const Fill fill = {
-        vec4(0.6f, 0.3f, 0.3f, 1.0f),
-        FillRule::NonZero,
-        1
-      };
+    //     // const geometry::PathBuilder::StrokeOutline stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
+    //   const Fill fill = {
+    //     vec4(0.6f, 0.3f, 0.3f, 1.0f),
+    //     FillRule::NonZero,
+    //     1
+    //   };
 
-      // TODO: actually render both inner and outer
+    //   // TODO: actually render both inner and outer
 
-      // TODO: check if is translation only, in that case transform on the GPU
-      draw(stroked_path.outer, fill, mat2x3::identity(), nullptr);
-      draw(stroked_path.inner, fill, mat2x3::identity(), nullptr);
-    }
+    //   // TODO: check if is translation only, in that case transform on the GPU
+    //   draw(stroked_path.outer, fill, mat2x3::identity(), nullptr);
+    //   draw(stroked_path.inner, fill, mat2x3::identity(), nullptr);
+    // }
 
     if (path.vacant()) {
       return;

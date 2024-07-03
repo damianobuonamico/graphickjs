@@ -60,6 +60,7 @@ R"(
 
     // gl_Position = uViewProjection * (vec4(model * transform * vec3(aPosition + vec2(aPosition - 0.5) / vec2(xDist, yDist), 1.0), 1.0));
     gl_Position = m * vec4(p + n * d * 2.0, 1.0, 1.0);
+    // gl_Position = m * vec4(p, 1.0, 1.0);
 
     vColor = vec4(float(aInstanceColor.x) / 255.0, float(aInstanceColor.y) / 255.0 + uViewportSize.x * 0.00000000000000001, float(aInstanceColor.z) / 255.0, float(aInstanceColor.w) / 255.0);
     vTexCoord = aPosition + n * d / aInstanceSize;

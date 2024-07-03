@@ -87,7 +87,7 @@ namespace graphick::renderer {
     vec2 position;           /* position.xy */
     vec2 size;               /* size.xy */
     uvec4 color;             /* color.rgba */
-    uint32_t curves_data;    /* start_x start_y */
+    uint32_t curves_data;    /* is_quadratic is_even_odd start_x start_y */
     uint32_t bands_data;     /* h_count v_count start_x start_y */
 
     /**
@@ -97,11 +97,17 @@ namespace graphick::renderer {
      * @param position The position of the path's bounding rect before transformation, used to normalize the curves.
      * @param size The size of the path's bounding rect before transformation, used to normalize the curves.
      * @param color The color of the path.
+     * @param curves_start_index The index of the first curve in the curves texture.
+     * @param bands_start_index The index of the first band in the bands texture.
+     * @param horizontal_bands The number of horizontal bands.
+     * @param vertical_bands The number of vertical bands.
+     * @param is_quadratic Whether the path is quadratic or cubic.
      */
     PathInstance(
       const mat2x3& transform, const vec2 position, const vec2 size, const vec4& color,
       const size_t curves_start_index, const size_t bands_start_index,
-      const uint8_t horizontal_bands, const uint8_t vertical_bands
+      const uint8_t horizontal_bands, const uint8_t vertical_bands,
+      const bool is_quadratic, const bool is_even_odd
     ) :
       attrib_1(transform[0][0], transform[0][1], transform[0][2], transform[1][0]),
       attrib_2(transform[1][1], transform[1][2]),
@@ -114,7 +120,7 @@ namespace graphick::renderer {
       const uint32_t bands_h = static_cast<uint32_t>(horizontal_bands - 1);
       const uint32_t bands_v = static_cast<uint32_t>(vertical_bands - 1);
 
-      curves_data = ((curves_x << 20) >> 8) | ((curves_y << 20) >> 20);
+      curves_data = (static_cast<uint32_t>(is_quadratic) << 28) | ((static_cast<uint32_t>(is_even_odd) << 28) >> 4) | ((curves_x << 20) >> 8) | ((curves_y << 20) >> 20);
       bands_data = (bands_h << 28) | ((bands_v << 28) >> 4) | ((bands_x << 20) >> 8) | ((bands_y << 20) >> 20);
     }
   };

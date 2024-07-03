@@ -129,8 +129,8 @@ int main() {
 // #define OBJECTS
 
 #ifdef TIGER
-  // std::ifstream ifs("res\\test.svg");
-  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  std::ifstream ifs("res\\test1.svg");
+  // std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   graphick::io::svg::parse_svg(content);
 #elif defined(OBJECTS)
@@ -229,23 +229,28 @@ int main() {
     // path.cubic_to(delta + in_p1, delta + in_p2, delta + p);
     //path.cubic_to(delta + out_p1, delta + out_p2, delta + tests[i][3]);
 
-    // path.move_to(vec2(100.0f, 100.0f));
-    // path.line_to(vec2(200.0f, 200.0f));
-    // path.line_to(vec2(80.0f, 190.0f));
-    // path.close();
+    path.move_to(vec2(100.0f, 100.0f));
+    // path.cubic_to(vec2(150.0f, 200.0f), vec2(300.0f, 300.0f), vec2(350.0f, 100.0f));
+    // path.quadratic_to(vec2(150.0f, 150.0f), vec2(300.0f, 100.0f));
 
-    path.move_to(delta + tests[i][0]);
-    path.cubic_to(delta + tests[i][1], delta + tests[i][2], delta + tests[i][3]);
+    path.line_to(vec2(200.0f, 200.0f));
+    path.line_to(vec2(100.0f, 200.0f));
+    // path.line_to(vec2(140.0f, 100.0f));
+    // path.line_to(vec2(350.0f, 200.0f));
+    path.close();
+
+    // path.move_to(delta + tests[i][0]);
+    // path.cubic_to(delta + tests[i][1], delta + tests[i][2], delta + tests[i][3]);
 
     graphick::editor::Entity test_entity = graphick::editor::Editor::scene().create_element(path);
     graphick::editor::FillComponent fill = test_entity.add_component<graphick::editor::FillComponent>(graphick::vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
-    graphick::editor::StrokeComponent stroke = test_entity.add_component<graphick::editor::StrokeComponent>(graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
+    // graphick::editor::StrokeComponent stroke = test_entity.add_component<graphick::editor::StrokeComponent>(graphick::vec4{ 0.93f, 0.64f, 0.74f, 1.0f });
 
-    const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
-    const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = graphick::geom::LineCap::Round;
-    const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = graphick::geom::LineJoin::Round;
+    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
+    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = graphick::geom::LineCap::Round;
+    // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join = graphick::geom::LineJoin::Round;
 
-    // break;
+    break;
   }
 
   // path1.move_to({ 0.0f, 0.0f });
