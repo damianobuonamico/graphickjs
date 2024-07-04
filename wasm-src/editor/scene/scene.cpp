@@ -409,10 +409,15 @@ namespace graphick::editor {
       geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
 
       if (has_fill && has_stroke) {
+        // renderer::Renderer::draw(
+        //   quadratics,
+        //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+        //   renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
+        //   transform_matrix
+        // );
         renderer::Renderer::draw(
-          quadratics,
-          renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
-          renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
+          path.to_cubic_path(),
+          renderer::Fill{ fill->color, fill->rule, z_index / z_far },
           transform_matrix
         );
 
@@ -426,11 +431,12 @@ namespace graphick::editor {
 
         z_index += 1;
       } else if (has_stroke) {
-        renderer::Renderer::draw(
-          quadratics,
-          renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
-          transform_matrix
-        );
+
+        // renderer::Renderer::draw(
+        //   quadratics,
+        //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+        //   transform_matrix
+        // );
 
         z_index += 1;
       }
@@ -527,7 +533,7 @@ namespace graphick::editor {
 
     m_entities[id] = entity;
     m_order.push_back(entity);
-  }
+}
 
   void Scene::remove(const uuid id) {
     auto it = m_entities.find(id);

@@ -917,11 +917,22 @@ namespace graphick::geom {
 
     const CubicBezier<T> cubic = { back(), p1, p2, p3 };
     const auto& [a, b, c] = cubic.derivative_coefficients();
+    const auto inflection_points = inflections(cubic);
+    // const auto& [a_prime, b_prime] = cubic.second_derivative_coefficients();
 
     std::vector<float> split_points = { T(0), T(1) };
 
+    for (uint8_t j = 0; j < inflection_points.count; j++) {
+      const T t = inflection_points.solutions[j];
+
+      if (math::is_normalized(t, false)) {
+        split_points.push_back(t);
+      }
+    }
+
     for (uint8_t i = 0; i < 2; i++) {
       const math::QuadraticSolutions<T> solutions = math::solve_quadratic(a[i], b[i], c[i]);
+      // const T inflection = math::solve_linear(a_prime[i], b_prime[i]);
 
       for (uint8_t j = 0; j < solutions.count; j++) {
         const T t = solutions.solutions[j];
@@ -930,6 +941,10 @@ namespace graphick::geom {
           split_points.push_back(t);
         }
       }
+
+      // if (math::is_normalized(inflection, false)) {
+      //   split_points.push_back(inflection);
+      // }
     }
 
     std::sort(split_points.begin(), split_points.end());

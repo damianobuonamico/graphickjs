@@ -583,17 +583,17 @@ namespace graphick::renderer {
       true, fill.rule == FillRule::EvenOdd
     });
 
-    for (size_t i = 0; i < path.size(); i++) {
-      const vec2 p0 = path[i * 2];
-      const vec2 p1 = path[i * 2 + 1];
-      const vec2 p2 = path[i * 2 + 2];
+    // for (size_t i = 0; i < path.size(); i++) {
+    //   const vec2 p0 = path[i * 2];
+    //   const vec2 p1 = path[i * 2 + 1];
+    //   const vec2 p2 = path[i * 2 + 2];
 
-      // get()->m_vertex_instances.instances.push_back(transform * p0);
-      // get()->m_handle_instances.instances.push_back(transform * p1);
-      // get()->m_vertex_instances.instances.push_back(transform * p2);
-      get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
-      // get()->m_handle_instances.instances.push_back(transform * p2);
-    }
+    //   // get()->m_vertex_instances.instances.push_back(transform * p0);
+    //   // get()->m_handle_instances.instances.push_back(transform * p1);
+    //   // get()->m_vertex_instances.instances.push_back(transform * p2);
+    //   get()->m_circle_instances.instances.push_back({ transform * p2, get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
+    //   // get()->m_handle_instances.instances.push_back(transform * p2);
+    // }
   }
 
   void Renderer::draw(const geom::cubic_path& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
@@ -771,9 +771,9 @@ namespace graphick::renderer {
       false, fill.rule == FillRule::EvenOdd
     });
 
-    for (size_t i = 0; i < path.size(); i++) {
-      get()->m_circle_instances.instances.push_back({ transform * path[i * 3 + 3], get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
-    }
+    // for (size_t i = 0; i < path.size(); i++) {
+    //   get()->m_circle_instances.instances.push_back({ transform * path[i * 3 + 3], get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
+    // }
   }
 
   void Renderer::draw_outline(const geom::quadratic_path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
