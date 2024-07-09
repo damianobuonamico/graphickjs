@@ -1,5 +1,5 @@
 R"(
-  // BASE: 4.01ms
+  // BASE: 10-12-13ms
 
   precision highp float;
   precision highp sampler2D;
@@ -21,9 +21,9 @@ R"(
 
   out vec4 oFragColor;
 
-  vec2 toCoords(uint x) {
-    return vec2(float(x % 512U) + 0.5, float(x / 512U) + 0.5) / 512.0;
-  }
+  #define H_ONLY 1
+  #define V_ONLY 0
+  #define to_coords(x) (vec2((float((x) % 512U) + 0.5) / 512.0, (float((x) / 512U) + 0.5) / 512.0))
 
   float calculateQuadraticRoot(float a, float b, float c) {
     const float epsilon = 1e-5;
@@ -63,22 +63,20 @@ R"(
     return t;
   }
 
-  float quadratic_horizontal_coverage(vec2 pixelPos, float pixel_size) {
-    // TODO: pass inv_pixel_size directly
-    float inv_pixel_size = 1 / pixel_size;
+  float quadratic_horizontal_coverage(vec2 pixel_pos, float inv_pixel_size) {
     float coverage = 0 + float(uMinSamples + uMaxSamples) / 10000000.0;
 
     uint hBands = (vBandsData >> 28) + 1U;
     uint vBands = ((vBandsData >> 24) & 0xFU) + 1U;
 
     uvec2 minBandIndex = uvec2(
-      clamp(uint(floor(pixelPos.y * float(hBands))), 0U, hBands - 1U),
-      clamp(uint(floor(pixelPos.y * float(vBands))), 0U, vBands - 1U)
+      clamp(uint(floor(pixel_pos.y * float(hBands))), 0U, hBands - 1U),
+      clamp(uint(floor(pixel_pos.y * float(vBands))), 0U, vBands - 1U)
     );
 
     uvec2 maxBandIndex = uvec2(
-      clamp(uint(floor(pixelPos.y * float(hBands))), 0U, hBands - 1U),
-      clamp(uint(floor(pixelPos.x * float(vBands))), 0U, vBands - 1U)
+      clamp(uint(floor(pixel_pos.y * float(hBands))), 0U, hBands - 1U),
+      clamp(uint(floor(pixel_pos.x * float(vBands))), 0U, vBands - 1U)
     );
 
     uint xBandsOffset = (vBandsData >> 12) & 0xFFFU;
@@ -89,17 +87,17 @@ R"(
     uint bandsIndexOffset = xBandsOffset + yBandsOffset * 512U;
     uint curvesIndexOffset = xCurvesOffset + yCurvesOffset * 512U;
 
-    uint hBandDataStart = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U)).x + bandsIndexOffset;
-    uint hBandCurvesCount = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U + 1U)).x;
+    uint hBandDataStart = texture(uBandsTexture, to_coords(bandsIndexOffset + minBandIndex.x * 2U)).x + bandsIndexOffset;
+    uint hBandCurvesCount = texture(uBandsTexture, to_coords(bandsIndexOffset + minBandIndex.x * 2U + 1U)).x;
 
     for (uint curve = 0U; curve < hBandCurvesCount; curve++) {
-      uint curveOffset = curvesIndexOffset + texture(uBandsTexture, toCoords(hBandDataStart + curve)).x;
+      uint curve_offset = curvesIndexOffset + texture(uBandsTexture, to_coords(hBandDataStart + curve)).x;
 
-      vec4 p01 = (texture(uCurvesTexture, toCoords(curveOffset))
+      vec4 p01 = (texture(uCurvesTexture, to_coords(curve_offset))
         - vec4(vPosition, vPosition)) / vec4(vSize, vSize) 
-        - vec4(pixelPos, pixelPos);
-      vec2 p2 = (texture(uCurvesTexture, toCoords(curveOffset + 1U)).xy - vPosition) / vSize 
-        - pixelPos;
+        - vec4(pixel_pos, pixel_pos);
+      vec2 p2 = (texture(uCurvesTexture, to_coords(curve_offset + 1U)).xy - vPosition) / vSize 
+        - pixel_pos;
       
       vec2 p0 = p01.xy;
       vec2 p1 = p01.zw;
@@ -128,57 +126,31 @@ R"(
     return coverage;
   }
 
-  float cubic_horizontal_coverage(vec2 pixelPos, float pixel_size) {
-    float inv_pixel_size = 1 / pixel_size;
+  float cubic_horizontal_coverage(vec2 pixel_pos, float inv_pixel_size, uint curves_offset, uint band_data_start, uint band_curves_count) {
     float coverage = 0.0;
 
-    uint hBands = (vBandsData >> 28) + 1U;
-    uint vBands = ((vBandsData >> 24) & 0xFU) + 1U;
+    vec2 position_delta = vPosition / vSize + pixel_pos;
 
-    uvec2 minBandIndex = uvec2(
-      clamp(uint(floor(pixelPos.y * float(hBands))), 0U, hBands - 1U),
-      clamp(uint(floor(pixelPos.y * float(vBands))), 0U, vBands - 1U)
-    );
+    for (uint curve = 0U; curve < band_curves_count; curve++) {
+      uint curve_offset = curves_offset + texture(uBandsTexture, to_coords(band_data_start + curve)).x * 2U;
 
-    uvec2 maxBandIndex = uvec2(
-      clamp(uint(floor(pixelPos.y * float(hBands))), 0U, hBands - 1U),
-      clamp(uint(floor(pixelPos.x * float(vBands))), 0U, vBands - 1U)
-    );
+      vec4 p01 = texture(uCurvesTexture, to_coords(curve_offset));
+      vec4 p23 = texture(uCurvesTexture, to_coords(curve_offset + 1U));
 
-    uint xBandsOffset = (vBandsData >> 12) & 0xFFFU;
-    uint yBandsOffset = vBandsData & 0xFFFU;
-    uint xCurvesOffset = (vCurvesData >> 12) & 0xFFFU;
-    uint yCurvesOffset = vCurvesData & 0xFFFU;
+      vec2 p0 = p01.xy / vSize - position_delta;
+      vec2 p1 = p01.zw / vSize - position_delta;
+      vec2 p2 = p23.xy / vSize - position_delta;
+      vec2 p3 = p23.zw / vSize - position_delta;
 
-    uint bandsIndexOffset = xBandsOffset + yBandsOffset * 512U;
-    uint curvesIndexOffset = xCurvesOffset + yCurvesOffset * 512U;
-
-    uint hBandDataStart = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U)).x + bandsIndexOffset;
-    uint hBandCurvesCount = texture(uBandsTexture, toCoords(bandsIndexOffset + minBandIndex.x * 2U + 1U)).x;
-
-    for (uint curve = 0U; curve < hBandCurvesCount; curve++) {
-      uint curveOffset = curvesIndexOffset + texture(uBandsTexture, toCoords(hBandDataStart + curve)).x * 2U;
-
-      vec4 p01 = (texture(uCurvesTexture, toCoords(curveOffset))
-        - vec4(vPosition, vPosition)) / vec4(vSize, vSize) 
-        - vec4(pixelPos, pixelPos);
-      vec4 p23 = (texture(uCurvesTexture, toCoords(curveOffset + 1U)) 
-        - vec4(vPosition, vPosition)) / vec4(vSize, vSize)
-        - vec4(pixelPos, pixelPos);
-
-      vec2 p0 = p01.xy;
-      vec2 p1 = p01.zw;
-      vec2 p2 = p23.xy;
-      vec2 p3 = p23.zw;
+      if (max(p0.x, p3.x) * inv_pixel_size < -0.5) break;
 
       bool is_downwards = p0.y > 0 || p3.y < 0;
 
-      if (is_downwards) {
-        if (p0.y < 0 && p3.y <= 0) continue; 
-        if (p0.y > 0 && p3.y >= 0) continue;
-      } else {
-        if (p0.y <= 0 && p3.y < 0) continue;
-        if (p0.y >= 0 && p3.y > 0) continue;
+      if (
+        (is_downwards && ((p0.y < 0 && p3.y <= 0) || (p0.y > 0 && p3.y >= 0))) ||
+        (!is_downwards && ((p0.y <= 0 && p3.y < 0) || (p0.y >= 0 && p3.y > 0)))
+      ) {
+        continue;
       }
 
       const float epsilon = 1e-7;
@@ -187,29 +159,82 @@ R"(
       bool b23 = abs(p3.x - p2.x) + abs(p3.y - p2.y) < epsilon;
       bool b12 = abs(p2.x - p1.x) + abs(p2.y - p1.y) < epsilon;
 
+      vec2 delta = p3 - p0;
+
       float intersect = 0.0;
+      float t0 = -p0.y / delta.y;
 
       if ((b01 && (b23 || b12)) || (b23 && b12)) {
-        vec2 a = p3 - p0;
-        vec2 b = p0;
-          
-        float t = - b.y / a.y;
-
-        intersect = a.x * t + b.x;
+        intersect = delta.x * t0 + p0.x;
       } else {
-        vec2 a = -p0 + 3 * p1 - 3 * p2 + p3;
+        vec2 a = 3 * p1 - 3 * p2 + delta;
         vec2 b = 3 * (p0 - 2 * p1 + p2);
         vec2 c = 3 * (p1 - p0);
-        vec2 d = p0;
 
-        float t0 = abs((-p0.y) / (p3.y - p0.y));
-        float t = calculate_cubic_root(a.y, b.y, c.y, d.y, t0);
+        float t = calculate_cubic_root(a.y, b.y, c.y, p0.y, t0);
         float t_sq = t * t;
 
-        intersect = a.x * t_sq * t + b.x * t_sq + c.x * t + d.x;
+        intersect = a.x * t_sq * t + b.x * t_sq + c.x * t + p0.x;
       }
 
       coverage += clamp(0.5 + intersect * inv_pixel_size, 0.0, 1.0) * (int(is_downwards) * 2 - 1);
+    }
+
+    return coverage;
+  }
+
+  float cubic_vertical_coverage(vec2 pixel_pos, float inv_pixel_size, uint curves_offset, uint band_data_start, uint band_curves_count) {
+    float coverage = 0.0;
+
+    vec2 position_delta = vPosition / vSize + pixel_pos;
+
+    for (uint curve = 0U; curve < band_curves_count; curve++) {
+      uint curve_offset = curves_offset + texture(uBandsTexture, to_coords(band_data_start + curve)).x * 2U;
+
+      vec4 p01 = texture(uCurvesTexture, to_coords(curve_offset));
+      vec4 p23 = texture(uCurvesTexture, to_coords(curve_offset + 1U));
+
+      vec2 p0 = p01.xy / vSize - position_delta;
+      vec2 p1 = p01.zw / vSize - position_delta;
+      vec2 p2 = p23.xy / vSize - position_delta;
+      vec2 p3 = p23.zw / vSize - position_delta;
+
+      if (max(p0.y, p3.y) * inv_pixel_size < -0.5) break;
+
+      bool is_rightwards = p0.x > 0 || p3.x < 0;
+
+      if (
+        (is_rightwards && ((p0.x < 0 && p3.x <= 0) || (p0.x > 0 && p3.x >= 0))) ||
+        (!is_rightwards && ((p0.x <= 0 && p3.x < 0) || (p0.x >= 0 && p3.x > 0)))
+      ) {
+        continue;
+      }
+
+      const float epsilon = 1e-7;
+
+      bool b01 = abs(p1.y - p0.y) + abs(p1.x - p0.x) < epsilon;
+      bool b23 = abs(p3.y - p2.y) + abs(p3.x - p2.x) < epsilon;
+      bool b12 = abs(p2.y - p1.y) + abs(p2.x - p1.x) < epsilon;
+
+      vec2 delta = p3 - p0;
+
+      float intersect = 0.0;
+      float t0 = -p0.x / delta.x;
+
+      if ((b01 && (b23 || b12)) || (b23 && b12)) {
+        intersect = delta.y * t0 + p0.y;
+      } else {
+        vec2 a = 3 * p1 - 3 * p2 + delta;
+        vec2 b = 3 * (p0 - 2 * p1 + p2);
+        vec2 c = 3 * (p1 - p0);
+
+        float t = calculate_cubic_root(a.x, b.x, c.x, p0.x, t0);
+        float t_sq = t * t;
+
+        intersect = a.y * t_sq * t + b.y * t_sq + c.y * t + p0.y;
+      }
+
+      coverage += clamp(0.5 + intersect * inv_pixel_size, 0.0, 1.0) * (1 - int(is_rightwards) * 2);
     }
 
     return coverage;
@@ -221,7 +246,7 @@ R"(
 
     for (int yOffset = -1; yOffset <= 1; yOffset++) {
       vec2 samplePos = vTexCoord + vec2(0, yOffset) * pixel_size.y / 3.0;
-      float coverage = quadratic_horizontal_coverage(samplePos, pixel_size.x);
+      float coverage = quadratic_horizontal_coverage(samplePos, 1 / pixel_size.x);
 
       alphaSum += coverage;
     }
@@ -231,30 +256,118 @@ R"(
 
   float cubic_coverage() {
     vec2 pixel_size = vec2(fwidth(vTexCoord.x), fwidth(vTexCoord.y));
+    float coverage = 0.0;
+
+    uvec2 bands = uvec2(
+      (vBandsData >> 28) + 1U,
+      ((vBandsData >> 24) & 0xFU) + 1U
+    );
+    
+    uint xBandsOffset = (vBandsData >> 12) & 0xFFFU;
+    uint yBandsOffset = vBandsData & 0xFFFU;
+    uint xCurvesOffset = (vCurvesData >> 12) & 0xFFFU;
+    uint yCurvesOffset = vCurvesData & 0xFFFU;
+
+    uint bandsIndexOffset = xBandsOffset + yBandsOffset * 512U;
+    uint curves_index_offset = xCurvesOffset + yCurvesOffset * 512U;
+
     float alphaSum = 0.0;
-
+  
+#if H_ONLY
     for (int yOffset = -1; yOffset <= 1; yOffset++) {
-      vec2 samplePos = vTexCoord + vec2(0, yOffset) * pixel_size.y / 3.0;
-      float coverage = cubic_horizontal_coverage(samplePos, pixel_size.x);
+      vec2 sample_pos = vTexCoord + vec2(0, yOffset) * pixel_size.y / 3.0;
+    
+      uint band_index = clamp(uint(floor(sample_pos.y * float(bands.x))), 0U, bands.x - 1U);
+      uint band_data_start = texture(uBandsTexture, to_coords(bandsIndexOffset + band_index * 2U)).x + bandsIndexOffset;
+      uint band_curves_count = texture(uBandsTexture, to_coords(bandsIndexOffset + band_index * 2U + 1U)).x;
 
-      alphaSum += coverage;
+      float cove = cubic_horizontal_coverage(sample_pos, 1 / pixel_size.x, curves_index_offset, band_data_start, band_curves_count);
+
+      alphaSum += cove;
     }
 
     return alphaSum / 3.0;
+#elif V_ONLY
+    for (int xOffset = -1; xOffset <= 1; xOffset++) {
+      vec2 sample_pos = vTexCoord + vec2(xOffset, 0) * pixel_size.x / 3.0;
+
+      uint band_index = clamp(uint(floor(sample_pos.x * float(bands.y))), 0U, bands.y - 1U);
+      uint band_data_start = texture(uBandsTexture, to_coords(bandsIndexOffset + (bands.x + band_index) * 2U)).x + bandsIndexOffset;
+      uint band_curves_count = texture(uBandsTexture, to_coords(bandsIndexOffset + (bands.x + band_index) * 2U + 1U)).x;
+
+      float cove = cubic_vertical_coverage(sample_pos, 1 / pixel_size.y, curves_index_offset, band_data_start, band_curves_count);
+
+      alphaSum += cove;
+    }
+
+    return alphaSum / 3.0;
+#else
+    for (int yOffset = 0; yOffset <= 0; yOffset++) {
+      vec2 sample_pos = vTexCoord + vec2(0, yOffset) * pixel_size.y / 3.0;
+
+      uint band_index = clamp(uint(floor(sample_pos.y * float(bands.x))), 0U, bands.x - 1U);
+      uint band_data_start = texture(uBandsTexture, to_coords(bandsIndexOffset + band_index * 2U)).x + bandsIndexOffset;
+      uint band_curves_count = texture(uBandsTexture, to_coords(bandsIndexOffset + band_index * 2U + 1U)).x;
+
+      float cove = cubic_horizontal_coverage(sample_pos, 1 / pixel_size.x, curves_index_offset, band_data_start, band_curves_count);
+
+      alphaSum += cove;
+    }
+    
+    for (int xOffset = -0; xOffset <= 0; xOffset++) {
+      vec2 sample_pos = vTexCoord + vec2(xOffset, 0) * pixel_size.x / 3.0;
+
+      uint band_index = clamp(uint(floor(sample_pos.x * float(bands.y))), 0U, bands.y - 1U);
+      uint band_data_start = texture(uBandsTexture, to_coords(bandsIndexOffset + (bands.x + band_index) * 2U)).x + bandsIndexOffset;
+      uint band_curves_count = texture(uBandsTexture, to_coords(bandsIndexOffset + (bands.x + band_index) * 2U + 1U)).x;
+
+      float cove = cubic_vertical_coverage(sample_pos, 1 / pixel_size.y, curves_index_offset, band_data_start, band_curves_count);
+
+      alphaSum += cove;
+    }
+
+    return alphaSum / 2.0;
+#endif
+
+    vec2 sample_pos = vTexCoord;
+
+    uvec2 band_index = uvec2(
+      clamp(uint(floor(sample_pos.y * float(bands.x))), 0U, bands.x - 1U),
+      clamp(uint(floor(sample_pos.x * float(bands.y))), 0U, bands.y - 1U)
+    );
+    uvec2 band_data_start = uvec2(
+      texture(uBandsTexture, to_coords(bandsIndexOffset + band_index.x * 2U)).x + bandsIndexOffset,
+      texture(uBandsTexture, to_coords(bandsIndexOffset + (bands.x + band_index.y) * 2U)).x + bandsIndexOffset
+    );
+    uvec2 band_curves_count = uvec2(
+      texture(uBandsTexture, to_coords(bandsIndexOffset + band_index.x * 2U + 1U)).x,
+      texture(uBandsTexture, to_coords(bandsIndexOffset + (bands.x + band_index.y) * 2U + 1U)).x
+    );
+
+    coverage += cubic_horizontal_coverage(sample_pos - 0.2 * pixel_size.x, 1 / pixel_size.x, curves_index_offset, band_data_start.x, band_curves_count.x);
+    coverage -= cubic_vertical_coverage(sample_pos + 0.2 * pixel_size.y, 1 / pixel_size.y, curves_index_offset, band_data_start.y, band_curves_count.y);
+
+    return coverage * 0.5;
   }
 
   void main() {
     bool is_quadratic = bool(vCurvesData >> 28);
     bool is_even_odd = bool((vCurvesData >> 24) & 0xFU);
-    
-    // TODO: if this works out well, add linear coverage too.
-    float coverage = is_quadratic ? quadratic_coverage() : cubic_coverage();
-    float alpha = vColor.a;
 
-    if (!is_even_odd) {
-      alpha = alpha * abs(coverage - 2.0 * round(0.5 * coverage));
+    // TODO: if this works out well, add linear coverage too.
+    float alpha = vColor.a;
+    float coverage = is_quadratic ? 
+      quadratic_coverage() :
+      cubic_coverage();
+      
+    if (is_even_odd) {
+      alpha = alpha * sqrt(abs(coverage - 2.0 * round(0.5 * coverage)));
     } else {
+#if H_ONLY || V_ONLY
       alpha = alpha * min(abs(coverage), 1.0);
+#else
+      alpha = alpha * sqrt(min(abs(coverage), 1.0));
+#endif
     }
 
     oFragColor = vec4(vColor.rgb, 1.0) * alpha;
