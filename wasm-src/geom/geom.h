@@ -66,8 +66,8 @@ namespace graphick::geom {
     math::Vec2<T> r4 = math::rotate({ r.max.x, r.min.y }, center, sin, cos);
 
     return {
-      math::min(math::min(r1, r2), math;;min(r3, r4)),
-      math::max(math::max(r1, r2), math;;max(r3, r4))
+      math::min(math::min(r1, r2), math::min(r3, r4)),
+      math::max(math::max(r1, r2), math::max(r3, r4))
     };
   }
 

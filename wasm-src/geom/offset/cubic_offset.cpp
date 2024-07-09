@@ -1108,8 +1108,8 @@ namespace graphick::geom {
       double previous_t = 0;
 
       for (int i = 0; i < count; i++) {
-        const double T = t[i];
-        const dvec2 derivative = curve.derivative(T);
+        const double ti = t[i];
+        const dvec2 derivative = curve.derivative(ti);
         const double length_squared = math::squared_length(derivative);
 
         if (length_squared < cusp_derivative_length_squared) {
@@ -1119,20 +1119,20 @@ namespace graphick::geom {
           // circular arc to the next point on curve with large enough
           // derivative.
 
-          const double t1 = find_position_on_curve_with_large_enough_derivative(curve, previous_t, T);
+          const double t1 = find_position_on_curve_with_large_enough_derivative(curve, previous_t, ti);
 
-          GK_ASSERT(t1 < T, "t1 must be less than t.");
+          GK_ASSERT(t1 < ti, "t1 must be less than t.");
 
           const dcubic_bezier k = extract(curve, previous_t, t1);
           const CurveTangentData nd(k);
 
           approximate_bezier(k, nd, builder, offset, tolerance);
 
-          const double t2 = find_position_on_curve_with_large_enough_derivative_start(curve, T, i == (count - 1) ? 1.0 : t[i + 1]);
+          const double t2 = find_position_on_curve_with_large_enough_derivative_start(curve, ti, i == (count - 1) ? 1.0 : t[i + 1]);
 
-          GK_ASSERT(t2 > T, "t2 must be greater than t.");
+          GK_ASSERT(t2 > ti, "t2 must be greater than t.");
 
-          builder.cusp_point = curve.sample(T);
+          builder.cusp_point = curve.sample(ti);
           builder.needs_cusp_arc = true;
           builder.cusp_arc_clockwise = clockwise(
               k.p3, builder.cusp_point, curve.sample(t2));
@@ -1142,12 +1142,12 @@ namespace graphick::geom {
           // Easy, feed subcurve between previous and current t values
           // to offset approximation function.
 
-          const dcubic_bezier k = extract(curve, previous_t, T);
+          const dcubic_bezier k = extract(curve, previous_t, ti);
           const CurveTangentData nd(k);
 
           approximate_bezier(k, nd, builder, offset, tolerance);
 
-          previous_t = T;
+          previous_t = ti;
         }
       }
 

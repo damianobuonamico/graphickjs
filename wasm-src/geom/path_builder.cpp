@@ -384,7 +384,7 @@ namespace graphick::geom {
       return {};
     }
 
-    Path<T>::Segment segment = path.front();
+    auto segment = path.front();
 
     const double radius = static_cast<double>(options.width) * 0.5;
     const double inv_miter_limit = 1.0 / static_cast<double>(options.miter_limit);

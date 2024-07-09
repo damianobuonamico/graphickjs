@@ -139,7 +139,7 @@ namespace graphick::geom {
      * @param p1 The first control point of the curve.
      * @param p2 The end point of the curve.
      */
-    inline void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2);
+    void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2);
 
     /**
      * @brief Adds a cubic bezier curve to the path.
