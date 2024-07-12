@@ -42,6 +42,6 @@ COMMON = [
 ]
 
 if (DEBUG):
-  os.system(' '.join([*COMMON, '-sASSERTIONS=1', '-DGK_CONF_DEBUG=1', '-g', '-fdebug-compilation-dir="../wasm-src"']))
+  os.system(' '.join([*COMMON, '-sASSERTIONS=1', '-sNO_DISABLE_EXCEPTION_CATCHING=1', '-DGK_CONF_DEBUG=1', '-g', '-fdebug-compilation-dir="../wasm-src"']))
 else:
   os.system(' '.join([*COMMON, '-DGK_CONF_DIST=1', '-O3', '-fno-rtti', '-fno-exceptions', '-funsafe-math-optimizations', '-DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0']))
