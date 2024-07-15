@@ -771,9 +771,382 @@ namespace graphick::renderer {
       false, fill.rule == FillRule::EvenOdd
     });
 
-    // for (size_t i = 0; i < path.size(); i++) {
-    //   get()->m_circle_instances.instances.push_back({ transform * path[i * 3 + 3], get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
-    // }
+    /* Culling attempt. */
+
+
+    band_min = bounds.min;
+    band_max = bounds.min + band_delta;
+
+    // get()->m_line_instances.instances.push_back({ bounds.min, bounds.min + vec2(bounds.width(), 0.0f), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+    // get()->m_line_instances.instances.push_back({ bounds.min + vec2(0.0f, band_delta.y), bounds.min + vec2(bounds.width(), band_delta.y), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+
+    // std::vector<float> top_intersections;
+    // std::vector<float> bottom_intersections;
+
+    struct LineIntersections {
+      float line_y;
+      std::vector<float> intersections;
+    };
+
+    std::vector<LineIntersections> lines;
+
+    for (int8_t l = 0; l < horizontal_bands; l++) {
+      const float y = bounds.min.y + l * band_delta.y;
+
+      LineIntersections& line = lines.emplace_back(LineIntersections{ y, {} });
+
+      for (size_t i = 0; i < path.size(); i++) {
+        const vec2 p0 = path[i * 3];
+        const vec2 p1 = path[i * 3 + 1];
+        const vec2 p2 = path[i * 3 + 2];
+        const vec2 p3 = path[i * 3 + 3];
+
+        bool is_downwards = p0.y > y || p3.y < y;
+
+        if (
+          (is_downwards && ((p0.y < y && p3.y <= y) || (p0.y > y && p3.y >= y))) ||
+          (!is_downwards && ((p0.y <= y && p3.y < y) || (p0.y >= y && p3.y > y)))
+        ) {
+          continue;
+        }
+
+        const geom::cubic_bezier curve = geom::cubic_bezier(p0, p1, p2, p3);
+        const auto& [a, b, c, d] = curve.coefficients();
+
+        float t = -(p0.y - y) / (p3.y - p0.y);
+
+        for (int i = 0; i < 3; i++) {
+          float t_sq = t * t;
+          float f = a.y * t_sq * t + b.y * t_sq + c.y * t + d.y - y;
+          float f_prime = 3.0f * a.y * t_sq + 2.0f * b.y * t + c.y;
+          float f_second = 6.0f * a.y * t + 2.0f * b.y;
+          float f_third = 6.0f * a.y;
+
+          t = t - 3.0f * f * (3.0f * f_prime * f_prime - f * f_second) /
+            (9.0f * f_prime * f_prime * f_prime - 9.0f * f * f_prime * f_second + f * f * f_third);
+        }
+
+        if (t >= 0.0f && t <= 1.0f) {
+          line.intersections.push_back(curve.sample(t).x);
+        }
+      }
+    }
+
+    struct Range {
+      float min;
+      float max;
+    };
+
+    std::vector<std::vector<Range>> ranges;
+
+    for (auto& line : lines) {
+      std::sort(line.intersections.begin(), line.intersections.end());
+      std::vector<Range>& line_ranges = ranges.emplace_back();
+
+      int winding = 0;
+
+      for (int j = 0; j < line.intersections.size(); j++) {
+        if (winding % 2 == 0) {
+          line_ranges.emplace_back(Range{ line.intersections[j], line.intersections[j] });
+        } else if (!line_ranges.empty()) {
+          line_ranges.back().max = line.intersections[j];
+        }
+
+        winding++;
+      }
+
+      get()->m_line_instances.instances.push_back({ vec2(bounds.min.x, line.line_y), vec2(bounds.max.x, line.line_y), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+
+      for (float intersection : line.intersections) {
+        get()->m_circle_instances.instances.push_back({ vec2(intersection, line.line_y), get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+      }
+
+      for (const Range& range : line_ranges) {
+        get()->m_line_instances.instances.push_back({ vec2(range.min, line.line_y), vec2(range.max, line.line_y), 1.0f, vec4(0.9f, 0.1f, 0.1f, 1.0f) });
+      }
+    }
+
+    // std::sort(lines[0].intersections.begin(), lines[0].intersections.end());
+
+#if 0
+    enum class PivotType {
+      Top,
+      Middle,
+      Bottom
+    };
+
+    struct Pivot {
+      float x;
+      PivotType type;
+    };
+
+    struct ActiveRect {
+      float in_x;
+      float out_x;
+      float active = false;
+    };
+#endif
+
+    {
+      GK_TOTAL("Calculating Occlusion");
+
+      struct ActivePoint {
+        float x;
+        int index;
+      };
+
+      for (int i = 0; i < lines.size() - 1; i++) {
+        const std::vector<Range> top_ranges = ranges[i];
+        const std::vector<Range> bottom_ranges = ranges[i + 1];
+
+        // std::vector<float> points;
+
+        // for (uint16_t j = data.bands[bands_start_index + i * 2]; j < data.bands[bands_start_index + i * 2] + data.bands[bands_start_index + i * 2 + 1]; j++) {
+        //   const uint16_t curve_index = data.bands[bands_start_index + j];
+
+        //   const vec2 p0 = data.curves[curve_index * 4];
+        //   const vec2 p3 = data.curves[curve_index * 4 + 3];
+
+        //   if (p0.y > lines[i].line_y + math::geometric_epsilon<float> && p0.y < lines[i + 1].line_y - math::geometric_epsilon<float>) {
+        //     points.push_back(p0.x);
+        //   }
+
+        //   if (p3.y > lines[i].line_y + math::geometric_epsilon<float> && p3.y < lines[i + 1].line_y - math::geometric_epsilon<float>) {
+        //     points.push_back(p3.x);
+        //   }
+        // }
+
+        for (const Range& top_range : top_ranges) {
+          for (const Range& bottom_range : bottom_ranges) {
+            Range intersection = { std::max(top_range.min, bottom_range.min), std::min(top_range.max, bottom_range.max) };
+
+#if 0
+            // If the ranges intersect, there could be a filled rect.
+            if (intersection.min < intersection.max) {
+              // To be valid, a range shouldn't have any points inside.
+
+              ActivePoint active_left = { intersection.max, -1 };
+              ActivePoint active_right = { intersection.min, -1 };
+
+              points.insert(points.end(), { intersection.min, intersection.max });
+
+              std::sort(points.begin(), points.end());
+
+              for (int h = 0; h < points.size(); h++) {
+                if (points[h] > intersection.min) break;
+
+                active_left = { points[h], h };
+              }
+
+              for (int h = points.size() - 1; h >= 0; h--) {
+                if (points[h] < intersection.max) break;
+
+                active_right = { points[h], h };
+              }
+
+              bool valid = std::abs(active_left.index - active_right.index) == 1;
+
+              // if (std::abs(active_left.index - active_right.index) == 1) {
+
+              // }
+
+              vec4 color = valid ? vec4(0.1f, 0.9f, 0.1f, 1.0f) : vec4(0.9f, 0.1f, 0.1f, 1.0f);
+
+              get()->m_line_instances.instances.push_back({ vec2(intersection.min, lines[i].line_y), vec2(intersection.max, lines[i].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.min, lines[i + 1].line_y), vec2(intersection.max, lines[i + 1].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.min, lines[i].line_y), vec2(intersection.min, lines[i + 1].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.max, lines[i].line_y), vec2(intersection.max, lines[i + 1].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.min, lines[i].line_y), vec2(intersection.max, lines[i + 1].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.max, lines[i].line_y), vec2(intersection.min, lines[i + 1].line_y), 2.0f, color });
+            }
+#endif
+#if 1
+            // If the ranges intersect, there could be a filled rect.
+            if (intersection.min < intersection.max) {
+              // To check if the intersection is a valid rect, we need to check if there aren't any intersections between the vertical sides and the curves within the band.
+              math::Vec2<bool> valid = { true, true };
+
+              for (uint16_t j = data.bands[bands_start_index + i * 2]; j < data.bands[bands_start_index + i * 2] + data.bands[bands_start_index + i * 2 + 1]; j++) {
+                const uint16_t curve_index = data.bands[bands_start_index + j];
+
+                const vec2 p0 = data.curves[curve_index * 4];
+                const vec2 p1 = data.curves[curve_index * 4 + 1];
+                const vec2 p2 = data.curves[curve_index * 4 + 2];
+                const vec2 p3 = data.curves[curve_index * 4 + 3];
+
+                for (float x : std::array<float, 2>{ intersection.min, intersection.max }) {
+                  if ((p0.x <= x && p3.x <= x) || (p0.x >= x && p3.x >= x)) {
+                    continue;
+                  }
+
+                  geom::cubic_bezier curve = geom::cubic_bezier(p0, p1, p2, p3);
+                  const auto& [a, b, c, d] = curve.coefficients();
+
+                  float t = -(p0.x - x) / (p3.x - p0.x);
+
+                  for (int i = 0; i < 3; i++) {
+                    float t_sq = t * t;
+                    float f = a.x * t_sq * t + b.x * t_sq + c.x * t + d.x - x;
+                    float f_prime = 3.0f * a.x * t_sq + 2.0f * b.x * t + c.x;
+                    float f_second = 6.0f * a.x * t + 2.0f * b.x;
+                    float f_third = 6.0f * a.x;
+
+                    t = t - 3.0f * f * (3.0f * f_prime * f_prime - f * f_second) /
+                      (9.0f * f_prime * f_prime * f_prime - 9.0f * f * f_prime * f_second + f * f * f_third);
+                  }
+
+                  if (t > 0.0f && t < 1.0f) {
+                    vec2 p = curve.sample(t);
+                    get()->m_circle_instances.instances.push_back({ p, get()->m_ui_options.handle_radius, vec4(0.1f, 0.9f, 0.1f, 1.0f) });
+
+                    if (p.y > lines[i].line_y + math::geometric_epsilon<float> && p.y < lines[i + 1].line_y - math::geometric_epsilon<float>) {
+                      // TODO: this check is awful
+                      valid[x == intersection.min ? 0 : 1] = false;
+                    }
+                  }
+                }
+              }
+
+#if 1
+              if (valid.x != valid.y) {
+                // One of the sides is invalid, so we can't draw a rect yet.
+                std::vector<float> points;
+
+                for (uint16_t j = data.bands[bands_start_index + i * 2]; j < data.bands[bands_start_index + i * 2] + data.bands[bands_start_index + i * 2 + 1]; j++) {
+                  const uint16_t curve_index = data.bands[bands_start_index + j];
+
+                  const vec2 p0 = data.curves[curve_index * 4];
+                  const vec2 p1 = data.curves[curve_index * 4 + 1];
+                  const vec2 p2 = data.curves[curve_index * 4 + 2];
+                  const vec2 p3 = data.curves[curve_index * 4 + 3];
+
+                  if (p0.y > lines[i].line_y && p0.y < lines[i + 1].line_y) {
+                    points.push_back(p0.x);
+                  }
+
+                  if (p3.y > lines[i].line_y && p3.y < lines[i + 1].line_y) {
+                    points.push_back(p3.x);
+                  }
+                }
+
+                std::sort(points.begin(), points.end());
+
+                for (float point : points) {
+                  get()->m_circle_instances.instances.push_back({ vec2(point, lines[i].line_y), get()->m_ui_options.handle_radius, vec4(0.9f, 0.1f, 0.1f, 1.0f) });
+                }
+
+                // Starting from the other side, we need to find the first point.
+                if (valid.x) {
+                  for (auto& it = points.begin(); it != points.end(); it++) {
+                    if (*it > intersection.min) {
+                      if (*it < intersection.max) {
+                        intersection.max = *it;
+                        valid.y = true;
+                      }
+
+                      break;
+                    }
+                  }
+                } else {
+                  for (auto& it = points.rbegin(); it != points.rend(); it++) {
+                    if (*it < intersection.min) {
+                      if (*it > intersection.max) {
+                        intersection.min = *it;
+                        valid.x = true;
+                      }
+                    }
+                  }
+                }
+              }
+#endif
+
+              vec4 color = (valid.x && valid.y) ? vec4(0.1f, 0.9f, 0.1f, 1.0f) : vec4(0.9f, 0.1f, 0.1f, 1.0f);
+
+              get()->m_line_instances.instances.push_back({ vec2(intersection.min, lines[i].line_y), vec2(intersection.max, lines[i].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.min, lines[i + 1].line_y), vec2(intersection.max, lines[i + 1].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.min, lines[i].line_y), vec2(intersection.min, lines[i + 1].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.max, lines[i].line_y), vec2(intersection.max, lines[i + 1].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.min, lines[i].line_y), vec2(intersection.max, lines[i + 1].line_y), 2.0f, color });
+              get()->m_line_instances.instances.push_back({ vec2(intersection.max, lines[i].line_y), vec2(intersection.min, lines[i + 1].line_y), 2.0f, color });
+            }
+#endif
+
+          }
+        }
+            // get()->m_line_instances.instances.push_back({ vec2(top_range.min, lines[i].line_y), vec2(bottom_range.min, lines[i + 1].line_y), 1.0f, vec4(0.9f, 0.1f, 0.1f, 1.0f) });
+            // get()->m_line_instances.instances.push_back({ vec2(top_range.max, lines[i].line_y), vec2(bottom_range.max, lines[i + 1].line_y), 1.0f, vec4(0.9f, 0.1f, 0.1f, 1.0f) });
+
+#if 0
+      // std::sort(lines[i + 1].intersections.begin(), lines[i + 1].intersections.end());
+
+        const auto& top = lines[i].intersections;
+        const auto& bottom = lines[i + 1].intersections;
+
+        if (top.empty() || bottom.empty()) {
+          continue;
+        }
+
+        std::vector<Pivot> pivots;
+
+        for (float x : top) {
+          pivots.push_back({ x, PivotType::Top });
+        }
+
+        for (float x : bottom) {
+          pivots.push_back({ x, PivotType::Bottom });
+        }
+
+        for (int j = 0; j < h_indices.size(); j++) {
+          const vec2 p0 = path[h_indices[j] * 3];
+          const vec2 p3 = path[h_indices[j] * 3 + 3];
+
+          if (p0.y > lines[i].line_y && p0.y < lines[i + 1].line_y) {
+            pivots.push_back({ p0.x, PivotType::Middle });
+          }
+        }
+
+        std::sort(pivots.begin(), pivots.end(), [](const Pivot& a, const Pivot& b) {
+          return a.x < b.x;
+          });
+
+        for (const Pivot& pivot : pivots) {
+          get()->m_line_instances.instances.push_back({ vec2(pivot.x, lines[i].line_y), vec2(pivot.x, lines[i + 1].line_y), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+        }
+#endif
+      // ActiveRect active_rect{};
+      // bool last_top = pivots.front().top;
+      // bool in = false;
+
+      // for (const Pivot& pivot : pivots) {
+      //   if (active_rect.active) {
+      //     get()->m_line_instances.instances.push_back({ vec2(pivot.x, lines[i].line_y), vec2(pivot.x, lines[i].line_y), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+
+      //     active_rect.active = false;
+      //   }
+
+      //   if (last_top != pivot.top) {
+      //     get()->m_line_instances.instances.push_back({ vec2(pivot.x, lines[i].line_y), vec2(pivot.x, lines[i + 1].line_y), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+      //     active_rect.active = true;
+      //     active_rect.in_x = pivot.x;
+      //   } else {
+
+      //   }
+
+      //   last_top = pivot.top;
+      //   active_rect.in_x = pivot.x;
+      // }
+
+      // for (float intersection : line.intersections) {
+      //   for (float next_intersection : next_line.intersections) {
+      //     get()->m_line_instances.instances.push_back({ vec2(intersection, line.line_y), vec2(next_intersection, next_line.line_y), 1.0f, vec4(0.9f, 0.1f, 0.1f, 1.0f) });
+      //   }
+      // }
+      }
+
+      // for (size_t i = 0; i < path.size(); i++) {
+      //   get()->m_circle_instances.instances.push_back({ transform * path[i * 3 + 3], get()->m_ui_options.handle_radius / 1.5f, vec4(0.2f, 0.8f, 0.2f, 1.0f) });
+      // }
+    }
   }
 
   void Renderer::draw_outline(const geom::quadratic_path& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
