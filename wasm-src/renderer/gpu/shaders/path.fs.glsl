@@ -46,6 +46,7 @@ R"(
     return -99999.0;
   }
 
+  // TODO: Maybe could stop at Halleys method instead of third order Houseolder.
   float calculate_cubic_root(float a, float b, float c, float d, float t0) {
     float t = t0;
 

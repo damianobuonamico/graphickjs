@@ -176,6 +176,29 @@ namespace graphick::geom {
     Line<T> end_tangent() const;
   };
 
+  /* -- Helper Methods -- */
+
+  /**
+   * @brief Returns the coefficients of a cubic bezier curve given its control points.
+   *
+   * This method is preferred over the CubicBezier constructor when only the coefficients are needed.
+   *
+   * @param p0 The starting point of the cubic bezier.
+   * @param p1 The second control point of the cubic bezier.
+   * @param p2 The third control point of the cubic bezier.
+   * @param p3 The end point of the cubic bezier.
+   * @return The coefficients of the cubic bezier.
+   */
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  inline std::array<math::Vec2<T>, 4> cubic_coefficients(const math::Vec2<T> p0, const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3) {
+    return {
+      -p0 + T(3) * p1 - T(3) * p2 + p3,
+      T(3) * (p0 - T(2) * p1 + p2),
+      T(3) * (p1 - p0),
+      p0
+    };
+  }
+
 }
 
 /* -- Aliases -- */

@@ -387,6 +387,37 @@ namespace graphick::geom {
   /**
    * @brief Calculates the intersection points between a cubic Bezier curve and a rect.
    *
+   * This method uses the third order Householder method to approximate the intersection points.
+   * It works well only if it is guaranteed to have one and only one intersection point (monotonic segoments).
+   * It only supports horizontal or vertical lines.
+   *
+   * @param a, b, c, d The relevant coordinates of the curve's coefficients.
+   * @param l The coordinate of the line to intersect.
+   * @param t0 The initial guess for the intersection point (a good approximation is value obtained by treating
+   * the cubic curve as a line and calculating the intersection point).
+   * @return The t value of the intersection point.
+   */
+  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+  inline T cubic_line_intersect_approx(const T a, const T b, const T c, const T d, const T l, const T t0 = T(0.5)) {
+    T t = t0;
+
+    for (int i = 0; i < 3; i++) {
+      T t_sq = t * t;
+      T f = a * t_sq * t + b * t_sq + c * t + d - l;
+      T f_prime = T(3) * a * t_sq + T(2) * b * t + c;
+      T f_second = T(6) * a * t + T(2) * b;
+      T f_third = T(6) * a;
+
+      t = t - T(3) * f * (T(3) * f_prime * f_prime - f * f_second) /
+        (T(9) * f_prime * f_prime * f_prime - T(9) * f * f_prime * f_second + f * f * f_third);
+    }
+
+    return t;
+  }
+
+  /**
+   * @brief Calculates the intersection points between a cubic Bezier curve and a rect.
+   *
    * @param cubic The cubic bezier curve.
    * @param rect The rect to intersect with the Bezier curve.
    * @return A vector containing the t values of the intersections between the Bezier curve and the rect.
