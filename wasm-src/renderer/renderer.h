@@ -197,12 +197,12 @@ namespace graphick::renderer {
     std::vector<mat4> m_transforms;                      /* The model-view-projection matrices of the paths. */
 
     PathInstancedData m_path_instances;                  /* The path instances to render. */
+    BoundarySpanInstancedData m_boundary_spans;          /* The boundary spans to render. */
 
     InstancedData<LineInstance> m_line_instances;        /* The line instances to render. */
     InstancedData<CircleInstance> m_circle_instances;    /* The handle instances to render. */
     InstancedData<RectInstance> m_rect_instances;        /* The rect instances to render. */
-    // InstancedData<vec2> m_vertex_instances;          /* The vertex instances to render. */
-    // InstancedData<vec2> m_white_vertex_instances;    /* The vertex instances to render. */
+    InstancedData<RectInstance> m_filled_spans;          /* The filled spans to render. */
 
     UIOptions m_ui_options;                          /* The UI options (i.e. handle size, colors, etc.). */
   private:

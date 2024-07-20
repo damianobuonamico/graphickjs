@@ -7,10 +7,10 @@
 
 #include "console.h"
 
-#define SHADERS_LENGTH 4
+#define SHADERS_LENGTH 6
 
 static constexpr const char* shader_names[SHADERS_LENGTH] = {
-  "path", "line", "rect", "circle"
+  "path", "boundary_span", "filled_span", "line", "rect", "circle"
 };
 
 namespace graphick::utils {
@@ -39,6 +39,14 @@ namespace graphick::utils {
       #include "../renderer/gpu/shaders/path.vs.glsl"
       ,
       #include "../renderer/gpu/shaders/path.fs.glsl"
+      ,
+      #include "../renderer/gpu/shaders/boundary_span.vs.glsl"
+      ,
+      #include "../renderer/gpu/shaders/boundary_span.fs.glsl"
+      ,
+      #include "../renderer/gpu/shaders/filled_span.vs.glsl"
+      ,
+      #include "../renderer/gpu/shaders/filled_span.fs.glsl"
       ,
       #include "../renderer/gpu/shaders/line.vs.glsl"
       ,

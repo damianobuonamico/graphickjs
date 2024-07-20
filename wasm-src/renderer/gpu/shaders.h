@@ -29,6 +29,33 @@ namespace graphick::renderer::GPU {
   };
 
   /**
+   * @brief Boundary span shader program.
+   *
+   * @struct BoundarySpanProgram
+   */
+  struct BoundarySpanProgram {
+    Program program;                     /* The shader program. */
+    Uniform vp_uniform;                  /* The view projection uniform. */
+    Uniform viewport_size_uniform;       /* The viewport size uniform. */
+    Uniform max_samples_uniform;         /* The maximum antialiasing samples uniform. */
+    TextureParameter curves_texture;     /* The curves texture. */
+
+    BoundarySpanProgram();
+  };
+
+  /**
+   * @brief Filled span shader program.
+   *
+   * @struct FilledSpanProgram
+   */
+  struct FilledSpanProgram {
+    Program program;                     /* The shader program. */
+    Uniform vp_uniform;                  /* The view projection uniform. */
+
+    FilledSpanProgram();
+  };
+
+  /**
    * @brief Line shader program.
    *
    * @struct LineProgram
@@ -72,10 +99,12 @@ namespace graphick::renderer::GPU {
    * @struct Programs
    */
   struct Programs {
-    PathProgram path_program;        /* The path shader program. */
-    LineProgram line_program;        /* The line shader program. */
-    RectProgram rect_program;    /* The square shader program. */
-    CircleProgram circle_program;    /* The circle shader program. */
+    PathProgram path_program;                     /* The path shader program. */
+    BoundarySpanProgram boundary_span_program;    /* The boundary span shader program. */
+    FilledSpanProgram filled_span_program;        /* The filled span shader program. */
+    LineProgram line_program;                     /* The line shader program. */
+    RectProgram rect_program;                     /* The square shader program. */
+    CircleProgram circle_program;                 /* The circle shader program. */
   };
 
   /**
@@ -88,6 +117,36 @@ namespace graphick::renderer::GPU {
 
     PathVertexArray(
       const PathProgram& program,
+      const Buffer& instance_buffer,
+      const Buffer& vertex_buffer
+    );
+  };
+
+  /**
+   * @brief Vertex array to use with BoundarySpanProgram.
+   *
+   * @struct BoundarySpanVertexArray
+   */
+  struct BoundarySpanVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
+
+    BoundarySpanVertexArray(
+      const BoundarySpanProgram& program,
+      const Buffer& instance_buffer,
+      const Buffer& vertex_buffer
+    );
+  };
+
+  /**
+   * @brief Vertex array to use with FilledSpanProgram.
+   *
+   * @struct FilledSpanVertexArray
+   */
+  struct FilledSpanVertexArray {
+    std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
+
+    FilledSpanVertexArray(
+      const FilledSpanProgram& program,
       const Buffer& instance_buffer,
       const Buffer& vertex_buffer
     );

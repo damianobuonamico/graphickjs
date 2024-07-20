@@ -126,6 +126,51 @@ namespace graphick::renderer {
   };
 
   /**
+   * @brief Represents a boundary span instance (28 bytes + 4 bytes padding).
+   *
+   * @struct BoundarySpanInstance
+   * @note There are 6 bits + 4 bytes of padding left in the struct.
+   */
+  struct BoundarySpanInstance {
+    vec2 position;      /* | position.x (32) | position.y (32) | */
+    vec2 size;          /* | size.x (32) | size.y (32) |*/
+    uvec4 color;        /* | color.rgba (32) | */
+    uint32_t attr_1;    /* | winding (16) - curves_count (16) | */
+    uint32_t attr_2;    /* | (6) - is_quad (1) - is_eodd (1) - start_x (12) - start_y (12) | */
+    uint32_t attr_3;    /* | padding (4) | */
+
+    /**
+     * @brief Constructs a new BoundarySpanInstance object.
+     *
+     * @param position The position of the top-left corner of the span.
+     * @param size The size of the span, can be negative.
+     * @param color The color of the span.
+     * @param winding The left side winding to start from.
+     * @param curves_start_index The index of the first curve in the curves texture.
+     * @param curves_count The number of curves in the span.
+     * @param is_quadratic Whether the curves are quadratic or cubic.
+     * @param is_even_odd Whether the fill rule is even-odd or non-zero.
+     */
+    BoundarySpanInstance(
+      const vec2 position, const vec2 size, const vec4& color,
+      const int16_t winding, const size_t curves_start_index, const uint16_t curves_count,
+      const bool is_quadratic, const bool is_even_odd
+    ) :
+      position(position), size(size), color(color * 255.0f)
+    {
+      const uint32_t u_winding = static_cast<uint32_t>(static_cast<int32_t>(winding) + 32768);
+      const uint32_t u_curves_count = static_cast<uint32_t>(curves_count);
+      const uint32_t u_is_quad = static_cast<uint32_t>(is_quadratic);
+      const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
+      const uint32_t u_start_x = (static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
+      const uint32_t u_start_y = (static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
+
+      attr_1 = (u_winding << 16) | (u_curves_count);
+      attr_2 = (u_is_quad << 25) | (u_is_eodd << 24) | (u_start_x << 12) | (u_start_y);
+    }
+  };
+
+  /**
    * @brief Represents a rect to be rendered using instancing.
    *
    * @struct RectInstance
@@ -242,7 +287,7 @@ namespace graphick::renderer {
   struct InstancedData {
     InstanceBuffer<T> instances;             /* The per-instance data. */
 
-    std::vector<vec2> vertices;              /* The vertices of the mesh. */
+    std::vector<uvec2> vertices;              /* The vertices of the mesh. */
 
     GPU::Primitive primitive;                /* The primitive type of the mesh. */
 
@@ -311,6 +356,28 @@ namespace graphick::renderer {
       curves.clear();
       bands.clear();
       bands_data.clear();
+    }
+  };
+
+  struct BoundarySpanInstancedData : public InstancedData<BoundarySpanInstance> {
+    std::vector<vec2> curves;               /* The control points of the curves. */
+
+    uuid curves_texture_id = uuid::null;    /* The ID of the curves texture. */
+
+    /**
+     * @brief Constructs a new BoundarySpanInstancedData object.
+     *
+     * @param buffer_size The maximum buffer size.
+     */
+    BoundarySpanInstancedData(const size_t buffer_size) : InstancedData<BoundarySpanInstance>(buffer_size) {}
+
+    /**
+     * @brief Clears the instance data.
+     */
+    virtual inline void clear() override {
+      InstancedData<BoundarySpanInstance>::clear();
+
+      curves.clear();
     }
   };
 

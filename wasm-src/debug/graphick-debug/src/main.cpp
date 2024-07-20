@@ -130,7 +130,7 @@ int main() {
 
 #ifdef TIGER
   // std::ifstream ifs("res\\test1.svg");
-  // std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   graphick::io::svg::parse_svg(content);
 #elif defined(OBJECTS)
@@ -233,20 +233,20 @@ int main() {
     // path.cubic_to(vec2(150.0f, 200.0f), vec2(300.0f, 300.0f), vec2(350.0f, 100.0f));
     // path.quadratic_to(vec2(150.0f, 150.0f), vec2(300.0f, 100.0f));
 
-    // path.line_to(vec2(200.0f, 200.0f));
-    // path.line_to(vec2(100.0f, 200.0f));
+    path.line_to(vec2(200.0f, 200.0f));
+    path.line_to(vec2(120.0f, 200.0f));
     // path.line_to(vec2(140.0f, 100.0f));
     // path.line_to(vec2(350.0f, 200.0f));
     path.close();
 
     // path.move_to(vec2(243.839981f, 37.4800110f));
-    path.cubic_to(vec2(243.839981f, 37.4800110f), vec2(252.350464f, 138.025497f), vec2(252.350464f, 138.025528f));
+    // path.cubic_to(vec2(243.839981f, 37.4800110f), vec2(252.350464f, 138.025497f), vec2(252.350464f, 138.025528f));
 
-    path.cubic_to(vec2(252.350464f, 138.025528f), vec2(252.350464f, 138.025528f), vec2(252.350464f, 138.025528f));
+    // path.cubic_to(vec2(252.350464f, 138.025528f), vec2(252.350464f, 138.025528f), vec2(252.350464f, 138.025528f));
 
-    path.cubic_to(vec2(252.350464f, 138.025528f), vec2(265.729980f, 26.1800385f), vec2(265.729980f, 26.1800385f));
+    // path.cubic_to(vec2(252.350464f, 138.025528f), vec2(265.729980f, 26.1800385f), vec2(265.729980f, 26.1800385f));
 
-    path.cubic_to(vec2(265.729980f, 26.1800117f), vec2(265.729980f, 26.1800117f), vec2(265.729980f, 26.1800117f));
+    // path.cubic_to(vec2(265.729980f, 26.1800117f), vec2(265.729980f, 26.1800117f), vec2(265.729980f, 26.1800117f));
 
 
     // path.move_to(vec2(265.729980f, 26.1800117f));
