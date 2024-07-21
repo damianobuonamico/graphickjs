@@ -1005,7 +1005,7 @@ namespace graphick::renderer {
         BoundarySpan& span1 = band.boundary_spans[j];
         BoundarySpan& span2 = band.boundary_spans[j + 1];
 
-        for (winding_k; winding_k < band_bottom_intersections[i].size(); winding_k++) {
+        for (; winding_k < band_bottom_intersections[i].size(); winding_k++) {
           if (band_bottom_intersections[i][winding_k].x > (span1.max + span2.min) * 0.5f) {
             break;
           }
