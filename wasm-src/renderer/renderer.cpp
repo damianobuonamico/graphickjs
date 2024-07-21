@@ -610,6 +610,7 @@ namespace graphick::renderer {
     const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
     const vec2 bounds_size = bounds.size();
 
+#if 0
     PathInstancedData& data = get()->m_path_instances;
 
     /* Starting indices for this path. */
@@ -725,18 +726,20 @@ namespace graphick::renderer {
       horizontal_bands, 0,
       false, fill.rule == FillRule::EvenOdd
     });
+#endif
 
     /* Culling attempt. */
 
-    for (int i = 1; i < horizontal_bands; i++) {
-      const float y = bounds.min.y + i * band_delta;
+    // for (int i = 1; i < horizontal_bands; i++) {
+    //   const float y = bounds.min.y + i * band_delta;
 
-      get()->m_line_instances.instances.push_back({ transform * vec2(bounds.min.x, y), transform * vec2(bounds.max.x, y), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
-    }
+    //   get()->m_line_instances.instances.push_back({ transform * vec2(bounds.min.x, y), transform * vec2(bounds.max.x, y), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+    // }
 
+    // TODO: take ownership of path
     geom::cubic_path path_ = path;
 
-    if (!closed) {
+    if (!path.closed()) {
       path_.line_to(path_.points.front());
     }
 
@@ -785,8 +788,10 @@ namespace graphick::renderer {
 
           vec2 intersection = { std::max(min, boundary_spans[i].min), std::min(max, boundary_spans[i].max) };
 
+          // TODO: fix span joining based on current transform * zoom
+
           /* If there is an intersection, we can perform an union. */
-          if (intersection.x <= intersection.y + math::geometric_epsilon<float>) {
+          if (intersection.x <= intersection.y + 0.1f) {
             boundary_spans[i].indices.insert(index);
             boundary_spans[i].min = std::min(boundary_spans[i].min, min);
             boundary_spans[i].max = std::max(boundary_spans[i].max, max);
@@ -833,11 +838,20 @@ namespace graphick::renderer {
       }
     };
 
+    BoundarySpanInstancedData& data = get()->m_boundary_spans;
+
+    const size_t curves_start_index = data.curves.size() / 2;
+
+    const float max_size = std::max(bounds_size.x, bounds_size.y);
+    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(path_.size() * bounds_size.y / max_size / 2.0f, 3.0f, 16.0f));
+
+    const float band_delta = bounds_size.y / horizontal_bands;
+
     std::vector<Band> bands(horizontal_bands);
     std::vector<std::vector<Intersection>> band_bottom_intersections(horizontal_bands);
 
     for (int i = 0; i < bands.size(); i++) {
-      bands[i].top_y = bounds.min.y + i * band_delta ;
+      bands[i].top_y = bounds.min.y + i * band_delta;
       bands[i].bottom_y = bounds.min.y + (i + 1) * band_delta;
     }
 
@@ -847,20 +861,45 @@ namespace graphick::renderer {
       const vec2 p2 = path_[i * 3 + 2];
       const vec2 p3 = path_[i * 3 + 3];
 
-      const auto& [a, b, c, d] = geom::cubic_coefficients(p0, p1, p2, p3);
-
       const vec2 min = math::min(p0, p3);
       const vec2 max = math::max(p0, p3);
 
       /* Being monotonic, it is straightforward to determine which bands the curve intersects. */
-      const int start_band = std::clamp(static_cast<int>((min.y - bounds.min.y) / band_delta), 0, horizontal_bands - 1);
-      const int end_band = std::clamp(static_cast<int>((max.y - bounds.min.y) / band_delta), 0, horizontal_bands - 1);
+      const float start_band_factor = (min.y - bounds.min.y) / band_delta;
+      const float end_band_factor = (max.y - bounds.min.y) / band_delta;
+      const int start_band = std::clamp(static_cast<int>(start_band_factor), 0, horizontal_bands - 1);
+      const int end_band = std::clamp(static_cast<int>(end_band_factor), 0, horizontal_bands - 1);
+
+      // TODO: fix banding boundaries based on current transform * zoom
+
+      /* To avoid rendering issues near endpoints, we also add segments that lie just outside the bands. */
+      if (start_band > 0 && std::abs(start_band_factor - start_band) < 0.1f) {
+        /* We need to determine which endpoint is closer to the boundary. */
+        const vec2 p = p0.y < p3.y ? p0 : p3;
+
+        bands[start_band - 1].push_curve(p.x - math::geometric_epsilon<float>, p.x + math::geometric_epsilon<float>, i);
+      }
+
+      if (end_band < horizontal_bands - 1 && std::abs(end_band_factor - 1.0f - end_band) < 0.1f) {
+        /* We need to determine which endpoint is closer to the boundary. */
+        const vec2 p = p0.y > p3.y ? p0 : p3;
+
+        bands[end_band + 1].push_curve(p.x - math::geometric_epsilon<float>, p.x + math::geometric_epsilon<float>, i);
+      }
 
       if (start_band >= end_band) {
         /* Curve is within one band. */
         bands[start_band].push_curve(min.x, max.x, i);
         continue;
       }
+
+      const auto& [a, b, c, d] = geom::cubic_coefficients(p0, p1, p2, p3);
+
+      const bool b01 = std::abs(p1.x - p0.x) + std::abs(p1.y - p0.y) < math::geometric_epsilon<float>;
+      const bool b12 = std::abs(p2.x - p1.x) + std::abs(p2.y - p1.y) < math::geometric_epsilon<float>;
+      const bool b23 = std::abs(p3.x - p2.x) + std::abs(p3.y - p2.y) < math::geometric_epsilon<float>;
+
+      const bool linear = (b01 && (b23 || b12)) || (b23 && b12);
 
       std::optional<float> last_intersection = std::nullopt;
 
@@ -902,18 +941,33 @@ namespace graphick::renderer {
         }
 
         const float t0 = (y - p0.y) / (p3.y - p0.y);
-        const float t = geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
 
-        if (t >= -math::geometric_epsilon<float> && t <= 1.0f + math::geometric_epsilon<float>) {
-          const float t_sq = t * t;
-          const float x = a.x * t_sq * t + b.x * t_sq + c.x * t + d.x;
+        if (linear) {
+          if (t0 >= -math::geometric_epsilon<float> && t0 <= 1.0f + math::geometric_epsilon<float>) {
+            const float x = p0.x + t0 * (p3.x - p0.x);
 
-          last_intersection = x;
+            last_intersection = x;
 
-          clipped_min = std::min(clipped_min, x);
-          clipped_max = std::max(clipped_max, x);
+            clipped_min = std::min(clipped_min, x);
+            clipped_max = std::max(clipped_max, x);
 
-          band_bottom_intersections[j].push_back({ x, is_downwards });
+            band_bottom_intersections[j].push_back({ x, is_downwards });
+          }
+        } else {
+          const float t = geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
+
+          if (t >= -math::geometric_epsilon<float> && t <= 1.0f + math::geometric_epsilon<float>) {
+            const float t_sq = t * t;
+            const float x = a.x * t_sq * t + b.x * t_sq + c.x * t + d.x;
+
+            last_intersection = x;
+
+            clipped_min = std::min(clipped_min, x);
+            clipped_max = std::max(clipped_max, x);
+
+            band_bottom_intersections[j].push_back({ x, is_downwards });
+          }
+
         }
 
         bands[j].push_curve(clipped_min, clipped_max, i);
@@ -924,9 +978,9 @@ namespace graphick::renderer {
     band_bottom_intersections.back().clear();
 
     for (int i = 0; i < bands.size(); i++) {
-      for (const Intersection& inter : band_bottom_intersections[i]) {
-        get()->m_circle_instances.instances.push_back({ transform * vec2(inter.x, bands[i].bottom_y), get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
-      }
+      // for (const Intersection& inter : band_bottom_intersections[i]) {
+      //   get()->m_circle_instances.instances.push_back({ transform * vec2(inter.x, bands[i].bottom_y), get()->m_ui_options.handle_radius, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+      // }
 
       Band& band = bands[i];
 
@@ -982,12 +1036,12 @@ namespace graphick::renderer {
           fill.rule == FillRule::EvenOdd
         });
 
-        get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.top_y), transform * vec2(boundary_span.max, band.top_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.bottom_y), transform * vec2(boundary_span.max, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.top_y), transform * vec2(boundary_span.min, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.max, band.top_y), transform * vec2(boundary_span.max, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.top_y), transform * vec2(boundary_span.max, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.max, band.top_y), transform * vec2(boundary_span.min, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.top_y), transform * vec2(boundary_span.max, band.top_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.bottom_y), transform * vec2(boundary_span.max, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.top_y), transform * vec2(boundary_span.min, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.max, band.top_y), transform * vec2(boundary_span.max, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.top_y), transform * vec2(boundary_span.max, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.max, band.top_y), transform * vec2(boundary_span.min, band.bottom_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
 
       }
 
@@ -997,12 +1051,12 @@ namespace graphick::renderer {
           vec2(filled_span.max - filled_span.min, band_delta),
           fill.color
         });
-        get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.top_y), transform * vec2(filled_span.max, band.top_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.bottom_y), transform * vec2(filled_span.max, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.top_y), transform * vec2(filled_span.min, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.max, band.top_y), transform * vec2(filled_span.max, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.top_y), transform * vec2(filled_span.max, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
-        get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.max, band.top_y), transform * vec2(filled_span.min, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.top_y), transform * vec2(filled_span.max, band.top_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.bottom_y), transform * vec2(filled_span.max, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.top_y), transform * vec2(filled_span.min, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.max, band.top_y), transform * vec2(filled_span.max, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.top_y), transform * vec2(filled_span.max, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
+        // get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.max, band.top_y), transform * vec2(filled_span.min, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
       }
     }
   }
@@ -1338,12 +1392,17 @@ namespace graphick::renderer {
     m_filled_spans(GK_BUFFER_SIZE) {}
 
   void Renderer::flush_meshes() {
+    const GPU::Texture& boundary_curves_texture = GPU::Memory::Allocator::get_texture(m_boundary_spans.curves_texture_id);
     const GPU::Texture& curves_texture = GPU::Memory::Allocator::get_texture(m_path_instances.curves_texture_id);
     const GPU::Texture& bands_texture = GPU::Memory::Allocator::get_texture(m_path_instances.bands_texture_id);
 
     // TODO: should preallocate the texture
     if (m_path_instances.curves.size() < 512 * 512 * 2) {
       m_path_instances.curves.resize(512 * 512 * 2);
+    }
+
+    if (m_boundary_spans.curves.size() < 512 * 512 * 2) {
+      m_boundary_spans.curves.resize(512 * 512 * 2);
     }
 
     std::vector<uint16_t> bands;
@@ -1357,6 +1416,15 @@ namespace graphick::renderer {
     if (bands.size() < 512 * 512) {
       bands.resize(512 * 512);
     }
+
+    GPU::Device::upload_to_texture(
+      boundary_curves_texture,
+      {
+        { 0.0f, 0.0f },
+        { 512.0f, 512.0f }
+      },
+      m_boundary_spans.curves.data()
+    );
 
     GPU::Device::upload_to_texture(
       curves_texture,
@@ -1395,6 +1463,36 @@ namespace graphick::renderer {
       }
     );
 
+
+    flush<RectInstance, GPU::FilledSpanProgram, GPU::FilledSpanVertexArray>(
+      m_filled_spans,
+      m_programs.filled_span_program,
+      {
+        {},
+        {
+          { m_programs.filled_span_program.vp_uniform, m_vp_matrix }
+        },
+        m_viewport.size
+      }
+    );
+
+    flush<BoundarySpanInstance, GPU::BoundarySpanProgram, GPU::BoundarySpanVertexArray>(
+      m_boundary_spans,
+      m_programs.boundary_span_program,
+      {
+        {
+          { m_programs.boundary_span_program.curves_texture, boundary_curves_texture },
+        },
+        {
+          { m_programs.boundary_span_program.vp_uniform, m_vp_matrix },
+          { m_programs.boundary_span_program.viewport_size_uniform, m_viewport.size },
+          { m_programs.boundary_span_program.max_samples_uniform, 3 }
+        },
+        m_viewport.size
+      }
+    );
+
+    m_boundary_spans.clear();
     m_path_instances.clear();
 
     flush<LineInstance, GPU::LineProgram, GPU::LineVertexArray>(
@@ -1447,34 +1545,6 @@ namespace graphick::renderer {
         {
           { m_programs.circle_program.vp_uniform, m_vp_matrix },
           { m_programs.circle_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
-        },
-        m_viewport.size
-      }
-    );
-
-    flush<RectInstance, GPU::FilledSpanProgram, GPU::FilledSpanVertexArray>(
-      m_filled_spans,
-      m_programs.filled_span_program,
-      {
-        {},
-        {
-          { m_programs.filled_span_program.vp_uniform, m_vp_matrix }
-        },
-        m_viewport.size
-      }
-    );
-
-    flush<BoundarySpanInstance, GPU::BoundarySpanProgram, GPU::BoundarySpanVertexArray>(
-      m_boundary_spans,
-      m_programs.boundary_span_program,
-      {
-        {
-          { m_programs.boundary_span_program.curves_texture, curves_texture },
-        },
-        {
-          { m_programs.boundary_span_program.vp_uniform, m_vp_matrix },
-          { m_programs.boundary_span_program.viewport_size_uniform, m_viewport.size },
-          { m_programs.boundary_span_program.max_samples_uniform, 3 }
         },
         m_viewport.size
       }

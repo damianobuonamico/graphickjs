@@ -45,12 +45,12 @@ R"(
 
     float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t) * 2.0;
 
-    vec2 p_prime = p + n * d;
+    vec2 p_prime = p + n * d * 0.0000000000000001;
 
     gl_Position = m * vec4(p_prime, 1.0, 1.0);
 
     v_color = vec4(a_instance_color) / 255.0 + vec4(0.0, 0.0, float(a_instance_attr_3 & 0x1U), 0.0) * 0.0000000000000001;
-    v_tex_coord = position + n * d / a_instance_size;
+    v_tex_coord = position + n * d / a_instance_size * 0.0000000000000001;
 
     v_position = a_instance_position;
     v_size = a_instance_size;
