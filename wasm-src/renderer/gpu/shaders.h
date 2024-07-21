@@ -38,6 +38,7 @@ namespace graphick::renderer::GPU {
     Uniform vp_uniform;                  /* The view projection uniform. */
     Uniform viewport_size_uniform;       /* The viewport size uniform. */
     Uniform max_samples_uniform;         /* The maximum antialiasing samples uniform. */
+    Uniform models_uniform;              /* The models uniform. */
     TextureParameter curves_texture;     /* The curves texture. */
 
     BoundarySpanProgram();
@@ -51,6 +52,7 @@ namespace graphick::renderer::GPU {
   struct FilledSpanProgram {
     Program program;                     /* The shader program. */
     Uniform vp_uniform;                  /* The view projection uniform. */
+    Uniform models_uniform;              /* The models uniform. */
 
     FilledSpanProgram();
   };

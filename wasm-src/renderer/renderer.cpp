@@ -189,7 +189,7 @@ namespace graphick::renderer {
    * @param flush_data The flush data to use.
    */
   template <typename T, typename S, typename V>
-  static void flush(InstancedData<T>& data, const S& program, const FlushData flush_data) {
+  static void flush(InstancedData<T>& data, const S& program, const FlushData flush_data, const std::optional<GPU::DepthState> depth_state = std::nullopt) {
     if (data.instances.batches[0].empty()) {
       return;
     }
@@ -222,7 +222,7 @@ namespace graphick::renderer {
             GPU::BlendFactor::OneMinusSrcAlpha,
             GPU::BlendOp::Add,
           },
-          std::nullopt,
+          depth_state,
           std::nullopt,
           {
             std::nullopt,
@@ -323,7 +323,10 @@ namespace graphick::renderer {
     get()->m_viewport = viewport;
     get()->m_vp_matrix = projection_matrix * view_matrix;
 
-    get()->m_transforms.clear();
+    get()->m_transform_vectors.clear();
+    get()->m_transform_vectors.reserve(get()->m_max_transform_vectors);
+    get()->m_transform_vectors.push_back(vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    get()->m_transform_vectors.push_back(vec4(0.0f, 1.0f, 0.0f, 0.0f));
 
     // TODO: fix line width
     get()->m_ui_options = UIOptions{
@@ -838,6 +841,16 @@ namespace graphick::renderer {
       }
     };
 
+    uint32_t transform_index = 0;
+
+    if (math::not_identity(transform)) {
+      // TODO: check if there is space in the transform vector
+      transform_index = static_cast<uint32_t>(get()->m_transform_vectors.size() / 2);
+
+      get()->m_transform_vectors.push_back(vec4(transform[0][0], transform[0][1], transform[0][2], 0.0f));
+      get()->m_transform_vectors.push_back(vec4(transform[1][0], transform[1][1], transform[1][2], 0.0f));
+    }
+
     BoundarySpanInstancedData& data = get()->m_boundary_spans;
 
     const size_t curves_start_index = data.curves.size() / 2;
@@ -1033,7 +1046,9 @@ namespace graphick::renderer {
           curves_start_index,
           static_cast<uint16_t>(boundary_span.indices.size()),
           false,
-          fill.rule == FillRule::EvenOdd
+          fill.rule == FillRule::EvenOdd,
+          fill.z_index,
+          transform_index
         });
 
         // get()->m_line_instances.instances.push_back({ transform * vec2(boundary_span.min, band.top_y), transform * vec2(boundary_span.max, band.top_y), 2.0f, vec4{ boundary_span.winding < 0 ? 0.9f : 0.1f, 0.1f, 0.1f, 1.0f } });
@@ -1049,7 +1064,9 @@ namespace graphick::renderer {
         get()->m_filled_spans.instances.push_back({
           vec2(filled_span.min, band.top_y),
           vec2(filled_span.max - filled_span.min, band_delta),
-          fill.color
+          fill.color,
+          fill.z_index,
+          transform_index
         });
         // get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.top_y), transform * vec2(filled_span.max, band.top_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
         // get()->m_line_instances.instances.push_back({ transform * vec2(filled_span.min, band.bottom_y), transform * vec2(filled_span.max, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
@@ -1389,7 +1406,9 @@ namespace graphick::renderer {
     m_line_instances(GK_LARGE_BUFFER_SIZE),
     m_circle_instances(GK_BUFFER_SIZE),
     m_rect_instances(GK_BUFFER_SIZE),
-    m_filled_spans(GK_BUFFER_SIZE) {}
+    m_filled_spans(GK_BUFFER_SIZE),
+    m_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6),
+    m_max_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6) {}
 
   void Renderer::flush_meshes() {
     const GPU::Texture& boundary_curves_texture = GPU::Memory::Allocator::get_texture(m_boundary_spans.curves_texture_id);
@@ -1463,16 +1482,26 @@ namespace graphick::renderer {
       }
     );
 
+    std::reverse(m_filled_spans.instances.batches.begin(), m_filled_spans.instances.batches.end());
 
-    flush<RectInstance, GPU::FilledSpanProgram, GPU::FilledSpanVertexArray>(
+    for (auto& batch : m_filled_spans.instances.batches) {
+      std::reverse(batch.begin(), batch.end());
+    }
+
+    flush<FilledSpanInstance, GPU::FilledSpanProgram, GPU::FilledSpanVertexArray>(
       m_filled_spans,
       m_programs.filled_span_program,
       {
         {},
         {
-          { m_programs.filled_span_program.vp_uniform, m_vp_matrix }
+          { m_programs.filled_span_program.vp_uniform, m_vp_matrix },
+          { m_programs.filled_span_program.models_uniform, m_transform_vectors }
         },
         m_viewport.size
+      },
+      GPU::DepthState{
+        GPU::DepthFunc::Less,
+        true
       }
     );
 
@@ -1486,9 +1515,14 @@ namespace graphick::renderer {
         {
           { m_programs.boundary_span_program.vp_uniform, m_vp_matrix },
           { m_programs.boundary_span_program.viewport_size_uniform, m_viewport.size },
-          { m_programs.boundary_span_program.max_samples_uniform, 3 }
+          { m_programs.boundary_span_program.max_samples_uniform, 3 },
+          { m_programs.boundary_span_program.models_uniform, m_transform_vectors }
         },
         m_viewport.size
+      },
+      GPU::DepthState{
+        GPU::DepthFunc::Less,
+        false
       }
     );
 

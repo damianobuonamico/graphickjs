@@ -217,6 +217,68 @@ namespace graphick::math {
     );
   }
 
+  /* -- is_identity -- */
+
+  /**
+   * Checks if a 2x2 matrix is an identity matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is an identity matrix, false otherwise.
+   */
+  template <typename T>
+  bool is_identity(const Mat2<T>& m) {
+    return (
+      m[0][0] == T(1) && m[0][1] == T(0) &&
+      m[1][0] == T(0) && m[1][1] == T(1)
+    );
+  }
+
+  /**
+   * Checks if a 3x3 matrix is an identity matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is an identity matrix, false otherwise.
+   */
+  template <typename T>
+  bool is_identity(const Mat3<T>& m) {
+    return (
+      m[0][0] == T(1) && m[0][1] == T(0) && m[0][2] == T(0) &&
+      m[1][0] == T(0) && m[1][1] == T(1) && m[1][2] == T(0) &&
+      m[2][0] == T(0) && m[2][1] == T(0) && m[2][2] == T(1)
+    );
+  }
+
+  /**
+   * Checks if a 4x4 matrix is an identity matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is an identity matrix, false otherwise.
+   */
+  template <typename T>
+  bool is_identity(const Mat4<T>& m) {
+    return (
+      m[0][0] == T(1) && m[0][1] == T(0) && m[0][2] == T(0) && m[0][3] == T(0) &&
+      m[1][0] == T(0) && m[1][1] == T(1) && m[1][2] == T(0) && m[1][3] == T(0) &&
+      m[2][0] == T(0) && m[2][1] == T(0) && m[2][2] == T(1) && m[2][3] == T(0) &&
+      m[3][0] == T(0) && m[3][1] == T(0) && m[3][2] == T(0) && m[3][3] == T(1)
+    );
+  }
+
+  /**
+   * Checks if a 2x3 matrix is an identity matrix.
+   *
+   * @param m The matrix to check.
+   * @return True if the matrix is an identity matrix, false otherwise.
+   */
+  template <typename T>
+  bool is_identity(const Mat2x3<T>& m) {
+    return (
+      m[0][0] == T(1) && m[0][1] == T(0) &&
+      m[1][0] == T(0) && m[1][1] == T(1) &&
+      m[0][2] == T(0) && m[1][2] == T(0)
+    );
+  }
+
   /* -- not_identity -- */
 
   /**

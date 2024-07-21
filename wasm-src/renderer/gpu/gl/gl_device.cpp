@@ -187,6 +187,12 @@ namespace graphick::renderer::GPU::GL {
     return (const char*)glGetString(GL_RENDERER);
   }
 
+  size_t GLDevice::max_vertex_uniform_vectors() {
+    GLint max_vertex_uniform_vectors = 0;
+    glCall(glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &max_vertex_uniform_vectors));
+    return static_cast<size_t>(max_vertex_uniform_vectors);
+  }
+
   void GLDevice::set_viewport(const vec2 size) {
     glCall(glViewport(0, 0, (GLsizei)std::round(size.x), (GLsizei)std::round(size.y)));
   }
@@ -220,6 +226,32 @@ namespace graphick::renderer::GPU::GL {
   GLProgram GLDevice::create_program(const std::string& name) const {
     GLShader vertex_shader = create_shader(name, ShaderKind::Vertex);
     GLShader fragment_shader = create_shader(name, ShaderKind::Fragment);
+
+    GLuint gl_program = glCreateProgram();
+
+    glCall(glAttachShader(gl_program, vertex_shader.gl_shader));
+    glCall(glAttachShader(gl_program, fragment_shader.gl_shader));
+    glCall(glLinkProgram(gl_program));
+
+    GLint link_status = 0;
+    glCall(glGetProgramiv(gl_program, GL_LINK_STATUS, &link_status));
+
+    if (link_status != GL_TRUE) {
+      GLint maxLength = 0;
+      glCall(glGetProgramiv(gl_program, GL_INFO_LOG_LENGTH, &maxLength));
+
+      char* buf = (char*)malloc(maxLength + 1);
+      glCall(glGetProgramInfoLog(gl_program, maxLength, &maxLength, buf));
+
+      console::error("Program " + name + " linking failed", buf);
+    }
+
+    return GLProgram{ gl_program, { vertex_shader, fragment_shader }, { {} } };
+  }
+
+  GLProgram GLDevice::create_program(const std::string& name, const std::vector<std::pair<std::string, std::string>>& variables) const {
+    GLShader vertex_shader = create_shader(name, ShaderKind::Vertex, variables);
+    GLShader fragment_shader = create_shader(name, ShaderKind::Fragment, variables);
 
     GLuint gl_program = glCreateProgram();
 
@@ -578,6 +610,9 @@ namespace graphick::renderer::GPU::GL {
     } else if (std::holds_alternative<mat4>(data)) {
       mat4 mat = std::get<mat4>(data);
       glCall(glUniformMatrix4fv(uniform.location, 1, GL_TRUE, &mat[0].x));
+    } else if (std::holds_alternative<std::vector<vec4>>(data)) {
+      std::vector<vec4> vecs = std::get<std::vector<vec4>>(data);
+      glCall(glUniform4fv(uniform.location, (GLsizei)vecs.size(), &vecs[0].x));
     }
   }
 
@@ -647,12 +682,54 @@ namespace graphick::renderer::GPU::GL {
     }
   }
 
-
   GLShader GLDevice::create_shader(const std::string& name, const ShaderKind kind) const {
     bool is_vertex = kind == ShaderKind::Vertex;
 
     std::string source = "#version " + m_glsl_version_spec + "\n" + utils::ResourceManager::get_shader(name + (is_vertex ? ".vs" : ".fs"));
     const char* ptr = source.c_str();
+
+    glCall(GLuint gl_shader = glCreateShader(is_vertex ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER));
+    glCall(glShaderSource(gl_shader, 1, &ptr, nullptr));
+    glCall(glCompileShader(gl_shader));
+
+    GLint compile_status = 0;
+    glCall(glGetShaderiv(gl_shader, GL_COMPILE_STATUS, &compile_status));
+
+    if (compile_status != GL_TRUE) {
+      GLint maxLength = 0;
+      glCall(glGetShaderiv(gl_shader, GL_INFO_LOG_LENGTH, &maxLength));
+
+      char* buf = (char*)malloc(maxLength + 1);
+      glCall(glGetShaderInfoLog(gl_shader, maxLength, &maxLength, buf));
+
+      console::error("Shader " + name + " compilation failed", buf);
+    }
+
+    return GLShader{ gl_shader };
+  }
+
+  GLShader GLDevice::create_shader(const std::string& name, const ShaderKind kind, const std::vector<std::pair<std::string, std::string>>& variables) const {
+    bool is_vertex = kind == ShaderKind::Vertex;
+
+    std::string source = "#version " + m_glsl_version_spec + "\n" + utils::ResourceManager::get_shader(name + (is_vertex ? ".vs" : ".fs"));
+    const char* ptr = source.c_str();
+
+    for (auto& [name, value] : variables) {
+      std::string variants[4] = {
+        std::string("${") + name + "}",
+        std::string("${ ") + name + " }",
+        std::string("${") + name + "}",
+        std::string("${ ") + name + " }"
+      };
+
+      for (auto& variant : variants) {
+        size_t pos = 0;
+        while ((pos = source.find(variant, pos)) != std::string::npos) {
+          source.replace(pos, variant.length(), value);
+          pos += value.length();
+        }
+      }
+    }
 
     glCall(GLuint gl_shader = glCreateShader(is_vertex ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER));
     glCall(glShaderSource(gl_shader, 1, &ptr, nullptr));

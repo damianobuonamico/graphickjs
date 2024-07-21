@@ -21,15 +21,17 @@ namespace graphick::renderer::GPU {
     bands_texture(Device::get_texture_parameter(program, "uBandsTexture").value()) {}
 
   BoundarySpanProgram::BoundarySpanProgram() :
-    program(Device::create_program("boundary_span")),
+    program(Device::create_program("boundary_span", { { "MAX_MODELS", (std::stringstream() << (Device::max_vertex_uniform_vectors() - 6)).str() } })),
     vp_uniform(Device::get_uniform(program, "u_view_projection").value()),
     viewport_size_uniform(Device::get_uniform(program, "u_viewport_size").value()),
     max_samples_uniform(Device::get_uniform(program, "u_max_samples").value()),
+    models_uniform(Device::get_uniform(program, "u_models").value()),
     curves_texture(Device::get_texture_parameter(program, "u_curves_texture").value()) {}
 
   FilledSpanProgram::FilledSpanProgram() :
-    program(Device::create_program("filled_span")),
-    vp_uniform(Device::get_uniform(program, "u_view_projection").value()) {}
+    program(Device::create_program("filled_span", { { "MAX_MODELS", (std::stringstream() << (Device::max_vertex_uniform_vectors() - 6)).str() } })),
+    vp_uniform(Device::get_uniform(program, "u_view_projection").value()),
+    models_uniform(Device::get_uniform(program, "u_models").value()) {}
 
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
@@ -189,6 +191,7 @@ namespace graphick::renderer::GPU {
     VertexAttr instance_position_attr = Device::get_vertex_attr(program.program, "a_instance_position").value();
     VertexAttr instance_size_attr = Device::get_vertex_attr(program.program, "a_instance_size").value();
     VertexAttr instance_color_attr = Device::get_vertex_attr(program.program, "a_instance_color").value();
+    VertexAttr instance_first_attr = Device::get_vertex_attr(program.program, "a_instance_attr_1").value();
 
     VertexAttrDescriptor position_desc = {
       2, VertexAttrClass::Int, VertexAttrType::U8,
@@ -197,17 +200,22 @@ namespace graphick::renderer::GPU {
 
     VertexAttrDescriptor instance_position_desc = {
       2, VertexAttrClass::Float, VertexAttrType::F32,
-      20, 0, 1, 1
+      24, 0, 1, 1
     };
 
     VertexAttrDescriptor instance_size_desc = {
       2, VertexAttrClass::Float, VertexAttrType::F32,
-      20, 8, 1, 1
+      24, 8, 1, 1
     };
 
     VertexAttrDescriptor instance_color_desc = {
       4, VertexAttrClass::Int, VertexAttrType::U8,
-      20, 16, 1, 1
+      24, 16, 1, 1
+    };
+
+    VertexAttrDescriptor instance_first_desc = {
+      1, VertexAttrClass::Int, VertexAttrType::U32,
+      24, 20, 1, 1
     };
 
     Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
@@ -217,6 +225,7 @@ namespace graphick::renderer::GPU {
     Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
     Device::configure_vertex_attr(*vertex_array, instance_size_attr, instance_size_desc);
     Device::configure_vertex_attr(*vertex_array, instance_color_attr, instance_color_desc);
+    Device::configure_vertex_attr(*vertex_array, instance_first_attr, instance_first_desc);
   }
 
   LineVertexArray::LineVertexArray(

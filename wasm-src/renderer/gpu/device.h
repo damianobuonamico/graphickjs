@@ -60,6 +60,13 @@ namespace graphick::renderer::GPU {
     inline static std::string device_name() { return s_device->device_name(); }
 
     /**
+     * @brief Returns the current device max number of vertex uniform vectors.
+     *
+     * @return The max number of vertex uniform vectors.
+     */
+    inline static size_t max_vertex_uniform_vectors() { return s_device->max_vertex_uniform_vectors(); }
+
+    /**
      * @brief Sets the default framebuffer.
      *
      * This method has to be called before any rendering can be done.
@@ -101,9 +108,11 @@ namespace graphick::renderer::GPU {
      * It calls create_shader() under the hood.
      *
      * @param name The program name to query.
+     * @param variables The list of variables to pass to the program. A variable in the shader is enclosed in ${ _ }.
      * @return The created program.
      */
     inline static Program create_program(const std::string& name) { return s_device->create_program(name); }
+    inline static Program create_program(const std::string& name, const std::vector<std::pair<std::string, std::string>>& variables) { return s_device->create_program(name, variables); }
 
     /**
      * @brief Creates an empty vertex array.

@@ -211,14 +211,14 @@ namespace graphick::editor {
           has_fill = true;
           auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
 
-          fill = renderer::Fill{ fill_component.color, fill_component.rule, 0.0f };
+          fill = renderer::Fill{ fill_component.color, fill_component.rule, 0 };
         }
 
         if (entity.has_component<StrokeComponent>()) {
           has_stroke = true;
           auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
 
-          stroke = renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0.0f };
+          stroke = renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0 };
         }
 
         geom::FillingOptions filling_options = !has_fill ? geom::FillingOptions{} : geom::FillingOptions{
@@ -351,8 +351,8 @@ namespace graphick::editor {
       vec4{0.2f, 0.2f, 0.21f, 1.0f}
     });
 
-    const size_t z_far = m_order.size() * 2 + 1;
-    float z_index = 1.0f;
+    uint32_t z_index = 1;
+
     float tolerance = GK_PATH_TOLERANCE / 2.0f;
     float outline_tolerance = GK_PATH_TOLERANCE / (viewport.zoom() * viewport.dpr());
 
@@ -411,13 +411,13 @@ namespace graphick::editor {
       if (has_fill && has_stroke) {
         // renderer::Renderer::draw(
         //   quadratics,
-        //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
-        //   renderer::Fill{ fill->color, fill->rule, (z_index + 1) / z_far },
+        //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index },
+        //   renderer::Fill{ fill->color, fill->rule, z_index + 1 },
         //   transform_matrix
         // );
         renderer::Renderer::draw(
           path.to_cubic_path(),
-          renderer::Fill{ fill->color, fill->rule, z_index / z_far },
+          renderer::Fill{ fill->color, fill->rule, z_index },
           transform_matrix
         );
 
@@ -425,7 +425,7 @@ namespace graphick::editor {
       } else if (has_fill) {
         renderer::Renderer::draw(
           path.to_cubic_path(),
-          renderer::Fill{ fill->color, fill->rule, z_index / z_far },
+          renderer::Fill{ fill->color, fill->rule, z_index },
           transform_matrix
         );
 
@@ -434,7 +434,7 @@ namespace graphick::editor {
 
         // renderer::Renderer::draw(
         //   quadratics,
-        //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index / z_far },
+        //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index },
         //   transform_matrix
         // );
 
@@ -533,7 +533,7 @@ namespace graphick::editor {
 
     m_entities[id] = entity;
     m_order.push_back(entity);
-}
+  }
 
   void Scene::remove(const uuid id) {
     auto it = m_entities.find(id);

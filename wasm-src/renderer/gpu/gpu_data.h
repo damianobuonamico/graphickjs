@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <variant>
 #include <optional>
+#include <vector>
 
 namespace graphick::renderer::GPU {
 
@@ -214,7 +215,8 @@ namespace graphick::renderer::GPU {
     float,
     vec2,
     vec4,
-    mat4
+    mat4,
+    std::vector<vec4>
   >;
 
   /**

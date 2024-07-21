@@ -21,11 +21,11 @@ namespace graphick::renderer {
    * @struct Fill
    */
   struct Fill {
-    vec4 color;       /* The color used to fill the path. */
+    vec4 color;          /* The color used to fill the path. */
 
-    FillRule rule;    /* The fill rule used to determine how self-intersecting paths are filled. */
+    FillRule rule;       /* The fill rule used to determine how self-intersecting paths are filled. */
 
-    float z_index;    /* The z-index of the fill. */
+    uint32_t z_index;    /* The z-index of the fill. */
 
     /**
      * @brief Default constructor
@@ -33,12 +33,12 @@ namespace graphick::renderer {
     Fill() :
       color(0.0f, 0.0f, 0.0f, 1.0f),
       rule(FillRule::NonZero),
-      z_index(0.0f) {}
+      z_index(0) {}
 
     /**
      * @brief Complete constructor
      */
-    Fill(const vec4& color, FillRule rule, float z_index) :
+    Fill(const vec4& color, FillRule rule, uint32_t z_index) :
       color(color),
       rule(rule),
       z_index(z_index) {}
@@ -57,7 +57,8 @@ namespace graphick::renderer {
 
     float width;          /* The width of the stroke. */
     float miter_limit;    /* The miter limit used to determine whether the join is mitered or beveled. */
-    float z_index;        /* The z-index of the stroke. */
+
+    uint32_t z_index;     /* The z-index of the stroke. */
 
     /**
      * @brief Default constructor
@@ -68,12 +69,12 @@ namespace graphick::renderer {
       join(LineJoin::Miter),
       width(1.0f),
       miter_limit(10.0f),
-      z_index(0.0f) {}
+      z_index(0) {}
 
     /**
      * @brief Complete constructor
      */
-    Stroke(const vec4& color, LineCap cap, LineJoin join, float width, float miter_limit, float z_index) :
+    Stroke(const vec4& color, LineCap cap, LineJoin join, float width, float miter_limit, uint32_t z_index) :
       color(color),
       cap(cap),
       join(join),

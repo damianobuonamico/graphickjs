@@ -194,7 +194,8 @@ namespace graphick::renderer {
     Viewport m_viewport;                                 /* The viewport to render to. */
     dmat4 m_vp_matrix;                                   /* The view-projection matrix. */
 
-    std::vector<mat4> m_transforms;                      /* The model-view-projection matrices of the paths. */
+    std::vector<vec4> m_transform_vectors;               /* The model matrices of the paths decomposed in two vectors each. */
+    size_t m_max_transform_vectors;                      /* The maximum number of vectors in the transforms array (twice the number of transforms). */
 
     PathInstancedData m_path_instances;                  /* The path instances to render. */
     BoundarySpanInstancedData m_boundary_spans;          /* The boundary spans to render. */
@@ -202,9 +203,9 @@ namespace graphick::renderer {
     InstancedData<LineInstance> m_line_instances;        /* The line instances to render. */
     InstancedData<CircleInstance> m_circle_instances;    /* The handle instances to render. */
     InstancedData<RectInstance> m_rect_instances;        /* The rect instances to render. */
-    InstancedData<RectInstance> m_filled_spans;          /* The filled spans to render. */
+    InstancedData<FilledSpanInstance> m_filled_spans;    /* The filled spans to render. */
 
-    UIOptions m_ui_options;                          /* The UI options (i.e. handle size, colors, etc.). */
+    UIOptions m_ui_options;                              /* The UI options (i.e. handle size, colors, etc.). */
   private:
     static Renderer* s_instance;    /* The singleton instance of the renderer. */
   };

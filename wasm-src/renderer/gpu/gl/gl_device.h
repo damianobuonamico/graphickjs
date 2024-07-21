@@ -1,6 +1,9 @@
 /**
  * @file gl_device.h
  * @brief The file contains the definition of the OpenGL GPU device.
+ *
+ * @todo lots of refactoring
+ * @todo cache device name and max vertex uniform vectors
  */
 
 #pragma once
@@ -52,6 +55,13 @@ namespace graphick::renderer::GPU::GL {
      * @return The name of the device.
      */
     static std::string device_name();
+
+    /**
+     * @brief Gets the maximum number of vertex uniform vectors.
+     *
+     * @return The maximum number of vertex uniform vectors.
+     */
+    static size_t max_vertex_uniform_vectors();
 
     /**
      * @brief Sets the default framebuffer.
@@ -110,6 +120,7 @@ namespace graphick::renderer::GPU::GL {
      * @return The new program.
      */
     GLProgram create_program(const std::string& name) const;
+    GLProgram create_program(const std::string& name, const std::vector<std::pair<std::string, std::string>>& variables) const;
 
     /**
      * @brief Creates a new vertex array.
@@ -404,8 +415,11 @@ namespace graphick::renderer::GPU::GL {
      *
      * @param name The name of the shader.
      * @param kind The kind of the shader.
+     * @param variables The variables of the shader.
+     * @return The new shader.
      */
     GLShader create_shader(const std::string& name, const ShaderKind kind) const;
+    GLShader create_shader(const std::string& name, const ShaderKind kind, const std::vector<std::pair<std::string, std::string>>& variables) const;
 
     /**
      * @brief Binds the given shader program.

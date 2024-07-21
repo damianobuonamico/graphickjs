@@ -126,7 +126,39 @@ namespace graphick::renderer {
   };
 
   /**
-   * @brief Represents a boundary span instance (28 bytes + 4 bytes padding).
+   * @brief Represents a filled span instance (24 bytes).
+   *
+   * @struct FilledSpanInstance
+   */
+  struct FilledSpanInstance {
+    vec2 position;      /* | position.x (32) | position.y (32) | */
+    vec2 size;          /* | size.x (32) | size.y (32) | */
+    uvec4 color;        /* | color.rgba (32) | */
+    uint32_t attr_1;    /* | z_index (20) - transform_index (12) | */
+
+    /**
+     * @brief Constructs a new RectInstance object.
+     *
+     * @param position The position of the span.
+     * @param size The size of the span.
+     * @param color The color of the span.
+     * @param z_index The z-index of the span.
+     * @param transform_index The index of the transform to apply to the span.
+     */
+    FilledSpanInstance(
+      const vec2 position, const vec2 size, const vec4& color,
+      const uint32_t z_index, const uint32_t transform_index
+    ) :
+      position(position), size(size), color(color * 255.0f)
+    {
+      const uint32_t u_transform_index = (transform_index << 20) >> 20;
+
+      attr_1 = (z_index << 12) | (u_transform_index);
+    }
+  };
+
+  /**
+   * @brief Represents a boundary span instance (32 bytes).
    *
    * @struct BoundarySpanInstance
    * @note There are 6 bits + 4 bytes of padding left in the struct.
@@ -137,7 +169,7 @@ namespace graphick::renderer {
     uvec4 color;        /* | color.rgba (32) | */
     uint32_t attr_1;    /* | winding (16) - curves_count (16) | */
     uint32_t attr_2;    /* | (6) - is_quad (1) - is_eodd (1) - start_x (12) - start_y (12) | */
-    uint32_t attr_3;    /* | padding (4) | */
+    uint32_t attr_3;    /* | z_index (20) - transform_index (12) | */
 
     /**
      * @brief Constructs a new BoundarySpanInstance object.
@@ -150,11 +182,14 @@ namespace graphick::renderer {
      * @param curves_count The number of curves in the span.
      * @param is_quadratic Whether the curves are quadratic or cubic.
      * @param is_even_odd Whether the fill rule is even-odd or non-zero.
+     * @param z_index The z-index of the span.
+     * @param transform_index The index of the transform to apply to the span.
      */
     BoundarySpanInstance(
       const vec2 position, const vec2 size, const vec4& color,
       const int16_t winding, const size_t curves_start_index, const uint16_t curves_count,
-      const bool is_quadratic, const bool is_even_odd
+      const bool is_quadratic, const bool is_even_odd,
+      const uint32_t z_index, const uint32_t transform_index
     ) :
       position(position), size(size), color(color * 255.0f)
     {
@@ -164,9 +199,11 @@ namespace graphick::renderer {
       const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
       const uint32_t u_start_x = (static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
       const uint32_t u_start_y = (static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
+      const uint32_t u_transform_index = (transform_index << 20) >> 20;
 
       attr_1 = (u_winding << 16) | (u_curves_count);
       attr_2 = (u_is_quad << 25) | (u_is_eodd << 24) | (u_start_x << 12) | (u_start_y);
+      attr_3 = (z_index << 12) | (u_transform_index);
     }
   };
 
@@ -359,6 +396,11 @@ namespace graphick::renderer {
     }
   };
 
+  /**
+   * @brief Represents the data of the boundary span instances to render.
+   *
+   * @struct BoundarySpanInstancedData
+   */
   struct BoundarySpanInstancedData : public InstancedData<BoundarySpanInstance> {
     std::vector<vec2> curves;               /* The control points of the curves. */
 
