@@ -603,7 +603,7 @@ namespace graphick::renderer {
     // }
   }
 
-  void Renderer::draw(const geom::cubic_path& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
+  void Renderer::draw(geom::cubic_path&& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect) {
     GK_TOTAL("Renderer::draw(fill, cubic)");
 
     if (path.empty()) {
@@ -739,11 +739,8 @@ namespace graphick::renderer {
     //   get()->m_line_instances.instances.push_back({ transform * vec2(bounds.min.x, y), transform * vec2(bounds.max.x, y), 1.0f, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
     // }
 
-    // TODO: take ownership of path
-    geom::cubic_path path_ = path;
-
     if (!path.closed()) {
-      path_.line_to(path_.points.front());
+      path.line_to(path.points.front());
     }
 
     struct Intersection {
@@ -856,7 +853,7 @@ namespace graphick::renderer {
     const size_t curves_start_index = data.curves.size() / 2;
 
     const float max_size = std::max(bounds_size.x, bounds_size.y);
-    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(path_.size() * bounds_size.y / max_size / 2.0f, 3.0f, 16.0f));
+    const uint8_t horizontal_bands = static_cast<uint8_t>(std::clamp(path.size() * bounds_size.y / max_size / 2.0f, 3.0f, 16.0f));
 
     const float band_delta = bounds_size.y / horizontal_bands;
 
@@ -868,11 +865,11 @@ namespace graphick::renderer {
       bands[i].bottom_y = bounds.min.y + (i + 1) * band_delta;
     }
 
-    for (uint16_t i = 0; i < path_.size(); i++) {
-      const vec2 p0 = path_[i * 3];
-      const vec2 p1 = path_[i * 3 + 1];
-      const vec2 p2 = path_[i * 3 + 2];
-      const vec2 p3 = path_[i * 3 + 3];
+    for (uint16_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path[i * 3];
+      const vec2 p1 = path[i * 3 + 1];
+      const vec2 p2 = path[i * 3 + 2];
+      const vec2 p3 = path[i * 3 + 3];
 
       const vec2 min = math::min(p0, p3);
       const vec2 max = math::max(p0, p3);
@@ -1029,10 +1026,10 @@ namespace graphick::renderer {
         data.curves.reserve(boundary_span.indices.size() * 4);
 
         for (const uint16_t index : boundary_span.indices) {
-          const vec2 p0 = path_[index * 3];
-          const vec2 p1 = path_[index * 3 + 1];
-          const vec2 p2 = path_[index * 3 + 2];
-          const vec2 p3 = path_[index * 3 + 3];
+          const vec2 p0 = path[index * 3];
+          const vec2 p1 = path[index * 3 + 1];
+          const vec2 p2 = path[index * 3 + 2];
+          const vec2 p3 = path[index * 3 + 3];
 
           data.curves.insert(data.curves.end(), { p0, p1, p2, p3 });
         }

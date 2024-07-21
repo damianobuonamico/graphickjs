@@ -406,7 +406,41 @@ namespace graphick::editor {
       auto transformation = math::decompose(transform_matrix);
       float scale = std::max(transformation.scale.x, transformation.scale.y);
 
-      geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
+      geom::cubic_path cubics = path.to_cubic_path();
+
+      /* First we process outlines, because filling takes ownership of the path. */
+      if (is_selected || is_temp_selected) {
+        std::unordered_set<uint32_t> selected_vertices;
+
+        if (is_selected) {
+          Selection::SelectionEntry entry = selected.at(id);
+
+          is_full = entry.full();
+
+          if (!is_full) {
+            selected_vertices = entry.indices;
+          }
+        }
+
+        if (is_temp_selected && !is_full) {
+          Selection::SelectionEntry entry = temp_selected.at(id);
+
+          is_full = entry.full();
+
+          if (!is_full) {
+            selected_vertices.insert(temp_selected.at(id).indices.begin(), temp_selected.at(id).indices.end());
+          }
+        }
+
+        // TEMP
+        geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
+        // renderer::Renderer::draw_outline(path, transform, outline_tolerance);
+        renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
+        renderer::Renderer::draw_outline_vertices(
+          path, transform,
+          is_full ? nullptr : &selected_vertices
+        );
+      }
 
       if (has_fill && has_stroke) {
         // renderer::Renderer::draw(
@@ -416,7 +450,7 @@ namespace graphick::editor {
         //   transform_matrix
         // );
         renderer::Renderer::draw(
-          path.to_cubic_path(),
+          std::move(cubics),
           renderer::Fill{ fill->color, fill->rule, z_index },
           transform_matrix
         );
@@ -424,7 +458,7 @@ namespace graphick::editor {
         z_index += 2;
       } else if (has_fill) {
         renderer::Renderer::draw(
-          path.to_cubic_path(),
+          std::move(cubics),
           renderer::Fill{ fill->color, fill->rule, z_index },
           transform_matrix
         );
@@ -440,39 +474,6 @@ namespace graphick::editor {
 
         z_index += 1;
       }
-
-      if (!is_selected && !is_temp_selected) continue;
-
-      std::unordered_set<uint32_t> selected_vertices;
-
-      if (is_selected) {
-        Selection::SelectionEntry entry = selected.at(id);
-
-        is_full = entry.full();
-
-        if (!is_full) {
-          selected_vertices = entry.indices;
-        }
-      }
-
-      if (is_temp_selected && !is_full) {
-        Selection::SelectionEntry entry = temp_selected.at(id);
-
-        is_full = entry.full();
-
-        if (!is_full) {
-          selected_vertices.insert(temp_selected.at(id).indices.begin(), temp_selected.at(id).indices.end());
-        }
-      }
-
-      // TEMP
-      // renderer::Renderer::draw_outline(path, transform, outline_tolerance);
-      renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
-      renderer::Renderer::draw_outline_vertices(
-        path, transform,
-        is_full ? nullptr : &selected_vertices
-      );
-
 
           // draw_vertices,
 

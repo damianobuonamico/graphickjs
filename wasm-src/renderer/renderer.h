@@ -108,12 +108,14 @@ namespace graphick::renderer {
     /**
      * @brief Draws a CubicPath with the provided Fill properties.
      *
+     * Takes ownership of the path and caches it for accelerated rendering.
+     *
      * @param path The CubicPath to draw.
      * @param fill The Fill properties to use.
      * @param transform The transformation matrix to apply to the path.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw(const geom::cubic_path& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
+    static void draw(geom::cubic_path&& path, const Fill& fill, const mat2x3& transform, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the outline of a QuadraticPath.
