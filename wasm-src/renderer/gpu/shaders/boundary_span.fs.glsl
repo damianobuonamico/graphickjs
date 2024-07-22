@@ -18,19 +18,21 @@ R"(
 
   #define to_coords(x) (vec2((float((x) % 512U) + 0.5) / 512.0, (float((x) / 512U) + 0.5) / 512.0))
 
-  // TODO: Maybe could stop at Halleys method instead of third order Houseolder.
   float calculate_cubic_root(float a, float b, float c, float d, float t0) {
     float t = t0;
+
+    float a1 = 3.0 * a;
+    float b1 = 2.0 * b;
+    float a2 = 2.0 * a1;
 
     for (int i = 0; i < 3; i++) {
       float t_sq = t * t;
       float f = a * t_sq * t + b * t_sq + c * t + d;
-      float f_prime = 3.0 * a * t_sq + 2.0 * b * t + c;
-      float f_second = 6.0 * a * t + 2.0 * b;
-      float f_third = 6.0 * a;
+      float f_prime = a1 * t_sq + b1 * t + c;
+      float f_second = a2 * t + b1;
       
       t = t - 3.0 * f * (3.0 * f_prime * f_prime - f * f_second) / 
-        (9.0 * f_prime * f_prime * f_prime - 9.0 * f * f_prime * f_second + f * f * f_third);
+        (9.0 * f_prime * f_prime * f_prime - 9.0 * f * f_prime * f_second + f * f * a2);
     }
 
     return t;
@@ -102,15 +104,16 @@ R"(
 
     float right_coverage = float(int(winding) - 32768);
     float coverage = 0.0;
+    float inv_sample_size = 1.0 / float(u_max_samples);
 
-    // TODO: fix and optimize sampling
-    for (int y_offset = -1; y_offset <= u_max_samples - 2; y_offset++) {
-      vec2 sample_pos = v_tex_coord + vec2(0.0, y_offset) * pixel_size.y / 3.0;
+    // TODO: optimize sampling
+    for (int y_offset = -(u_max_samples / 2); y_offset <= (u_max_samples) / 2; y_offset++) {
+      vec2 sample_pos = v_tex_coord + vec2(0.0, y_offset) * pixel_size.y * inv_sample_size;
     
       coverage += cubic_horizontal_coverage(sample_pos, 1.0 / pixel_size.x, curves_index_offset, curves_count);
     }
 
-    return right_coverage + coverage / 3.0;
+    return right_coverage + coverage * inv_sample_size;
   }
 
   void main() {

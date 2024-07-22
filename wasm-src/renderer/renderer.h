@@ -10,7 +10,7 @@
 #include "renderer_data.h"
 #include "properties.h"
 
-#include "gpu/shaders.h"
+#include "gpu_new/shaders.h"
 
 #include "../geom/quadratic_path.h"
 #include "../geom/cubic_path.h"

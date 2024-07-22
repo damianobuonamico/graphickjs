@@ -1,0 +1,152 @@
+/**
+ * @file renderer/gpu/opengl/gl_device.h
+ * @brief The file contains the definition of the OpenGL GPU device.
+ */
+
+#pragma once
+
+#include "gl_data.h"
+
+#include <memory>
+#include <vector>
+#include <string>
+
+namespace graphick::renderer::GPU::GL {
+
+  /**
+   * @brief The class that represents the OpenGL GPU device.
+   *
+   * The device is responsible for creating and managing GPU resources. It is also responsible for executing GPU commands.
+   *
+   * @class GLDevice
+   */
+  class GLDevice {
+  public:
+    /**
+     * @brief This class is a singleton, so every public constructor/destructor is deleted.
+     */
+    GLDevice(const GLDevice&) = delete;
+    GLDevice(GLDevice&&) = delete;
+    GLDevice& operator=(const GLDevice&) = delete;
+    GLDevice& operator=(GLDevice&&) = delete;
+
+    /**
+     * @brief Initializes the device with the given version.
+     *
+     * Will throw if initialization and compile versions are not compatible.
+     *
+     * @param version Backend version to initialize the device with.
+     */
+    static void init(const DeviceVersion version);
+
+    /**
+     * @brief Shuts down the device.
+     *
+     * It is necessary to call this method before reinitializing the device.
+     */
+    static void shutdown();
+
+    /**
+     * @brief Returns the current backend name.
+     *
+     * @return The backend name.
+     */
+    inline static const std::string& backend_name() { return s_device->m_backend_name; }
+
+    /**
+     * @brief Returns the current device name.
+     *
+     * @return The device name.
+     */
+    inline static const std::string& device_name() { return s_device->m_device_name; }
+
+    /**
+     * @brief Gets the maximum number of vertex uniform vectors.
+     *
+     * @return The maximum number of vertex uniform vectors.
+     */
+    inline static size_t max_vertex_uniform_vectors() { return static_cast<size_t>(s_device->m_max_vertex_uniform_vectors); }
+
+    /**
+     * @brief Prepares the GPU to execute commands.
+     */
+    static void begin_commands();
+
+    /**
+     * @brief Flushes the GPU commands.
+     *
+     * @return The GPU time.
+     */
+    static size_t end_commands();
+
+    /**
+     * @brief Sets the viewport size.
+     *
+     * @param size The size of the viewport.
+     */
+    static void set_viewport(const ivec2 size);
+
+    /**
+     * @brief Clears the current render target.
+     *
+     * @param ops The clear operations.
+     */
+    static void clear(const ClearOps& ops);
+
+    /**
+     * @brief Creates a new shader program.
+     *
+     * @param name The name of the program
+     * @return The new program.
+     */
+    static GLProgram create_program(const std::string& name, const std::vector<std::pair<std::string, std::string>>& variables = {});
+
+    /**
+     * @brief Queries the location of the uniform with the given name in the given program.
+     *
+     * @param program The program to search the uniform location into.
+     * @param name The uniform name to query.
+     * @return The location of the given uniform.
+     */
+    static GLUniform get_uniform(const GLProgram& program, const std::string& name);
+
+    /**
+     * @brief Creates a new texture parameter.
+     *
+     * @param program The program to create the texture parameter for.
+     * @param name The name of the texture parameter.
+     * @return The new texture parameter.
+     */
+    static GLTextureUniform get_texture_uniform(GLProgram& program, const std::string& name);
+
+    /**
+     * @brief Queries the location of the attribute with the given name in the given program.
+     *
+     * @param program The program to search the attribute location into.
+     * @param name The attribute name to query.
+     * @return The location of the given attribute or std::nullopt if not found.
+     */
+    static GLVertexAttribute get_vertex_attribute(const GLProgram& program, const std::string& name);
+  private:
+    /**
+     * @brief GLDevice constructor.
+     */
+    GLDevice(const DeviceVersion version);
+
+    /**
+     * @brief GLDevice destructor.
+     */
+    ~GLDevice();
+  private:
+    std::string m_backend_name;            /* The backend name. */
+    std::string m_device_name;             /* The device name. */
+    std::string m_glsl_version_spec;       /* The GLSL version specification. */
+
+    GLuint m_timer_query;                  /* The timer query. */
+    GLint m_max_vertex_uniform_vectors;    /* The maximum number of vertex uniform vectors. */
+
+    GLState m_state;                       /* The current state. */
+  private:
+    static GLDevice* s_device;
+  };
+}

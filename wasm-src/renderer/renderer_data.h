@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "gpu/gpu_data.h"
+#include "gpu_new/device.h"
 
 #include "../math/vec4.h"
 #include "../math/rect.h"
@@ -75,6 +75,20 @@ namespace graphick::renderer {
   private:
     rect m_visible;     /* The visible area of the viewport in scene-space coordinates. */
   };
+
+  /**
+   * @brief Generates the vertices of a quad.
+   *
+   * @param min The minimum point of the quad.
+   * @param max The maximum point of the quad.
+   * @return The vertices of the quad.
+   */
+  inline std::vector<uvec2> quad_vertices(const uvec2 min, const uvec2 max) {
+    return {
+      min, uvec2{ max.x, min.y }, max,
+      max, uvec2{ min.x, max.y }, min
+    };
+  }
 
   /**
    * @brief Represents a path instance, the main building block of the renderer.
@@ -324,22 +338,34 @@ namespace graphick::renderer {
   struct InstancedData {
     InstanceBuffer<T> instances;             /* The per-instance data. */
 
-    std::vector<uvec2> vertices;              /* The vertices of the mesh. */
-
     GPU::Primitive primitive;                /* The primitive type of the mesh. */
 
-    uuid instance_buffer_id = uuid::null;    /* The ID of the instance buffer. */
-    uuid vertex_buffer_id = uuid::null;      /* The ID of the vertex buffer. */
+    GPU::Buffer instance_buffer;             /* The GPU instance buffer. */
+    GPU::Buffer vertex_buffer;               /* The GPU vertex buffer. */
 
     /**
      * @brief Initializes the instance data.
      *
-     * @param buffer_size The maximum buffer size.
+     * @param buffer_size The maximum buffer size in bytes.
      * @param primitive The primitive type of the mesh.
      */
-    InstancedData(const size_t buffer_size, const GPU::Primitive primitive = GPU::Primitive::Triangles) :
+    InstancedData(const size_t buffer_size, const std::vector<vec2>& vertices, const GPU::Primitive primitive = GPU::Primitive::Triangles) :
       primitive(primitive),
-      instances(static_cast<uint32_t>(buffer_size / sizeof(T))) {}
+      instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
+      instance_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Dynamic, buffer_size),
+      vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Static, vertices.size() * sizeof(vec2), vertices.data()) {}
+
+    /**
+     * @brief Initializes the instance data.
+     *
+     * @param buffer_size The maximum buffer size in bytes.
+     * @param primitive The primitive type of the mesh.
+     */
+    InstancedData(const size_t buffer_size, const std::vector<uvec2>& vertices, const GPU::Primitive primitive = GPU::Primitive::Triangles) :
+      primitive(primitive),
+      instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
+      instance_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Dynamic, buffer_size),
+      vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Static, vertices.size() * sizeof(uvec2), vertices.data()) {}
 
     InstancedData(const InstancedData&) = delete;
     InstancedData(InstancedData&&) = delete;
@@ -374,15 +400,18 @@ namespace graphick::renderer {
     std::vector<uint16_t> bands;            /* The bands of the mesh. */
     std::vector<uint16_t> bands_data;       /* The indices of each curve in the bands. */
 
-    uuid curves_texture_id = uuid::null;    /* The ID of the curves texture. */
-    uuid bands_texture_id = uuid::null;     /* The ID of the curves texture. */
+    GPU::Texture curves_texture;
+    GPU::Texture bands_texture;
 
     /**
      * @brief Constructs a new PathInstanceData object.
      *
      * @param buffer_size The maximum buffer size.
      */
-    PathInstancedData(const size_t buffer_size) : InstancedData<PathInstance>(buffer_size) {}
+    PathInstancedData(const size_t buffer_size) :
+      InstancedData<PathInstance>(buffer_size, quad_vertices({ 0, 0 }, { 1, 1 })),
+      curves_texture(GPU::TextureFormat::RGBA32F, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag),
+      bands_texture(GPU::TextureFormat::R16UI, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag) {}
 
     /**
      * @brief Clears the instance data.
@@ -402,16 +431,18 @@ namespace graphick::renderer {
    * @struct BoundarySpanInstancedData
    */
   struct BoundarySpanInstancedData : public InstancedData<BoundarySpanInstance> {
-    std::vector<vec2> curves;               /* The control points of the curves. */
+    std::vector<vec2> curves;       /* The control points of the curves. */
 
-    uuid curves_texture_id = uuid::null;    /* The ID of the curves texture. */
+    GPU::Texture curves_texture;    /* The curves texture. */
 
     /**
      * @brief Constructs a new BoundarySpanInstancedData object.
      *
      * @param buffer_size The maximum buffer size.
      */
-    BoundarySpanInstancedData(const size_t buffer_size) : InstancedData<BoundarySpanInstance>(buffer_size) {}
+    BoundarySpanInstancedData(const size_t buffer_size) :
+      InstancedData<BoundarySpanInstance>(buffer_size, quad_vertices({ 0, 0 }, { 1, 1 })),
+      curves_texture(GPU::TextureFormat::RGBA32F, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag) {}
 
     /**
      * @brief Clears the instance data.
