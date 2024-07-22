@@ -50,8 +50,7 @@ R"(
       vec2 p2 = p23.xy / v_size - position_delta;
       vec2 p3 = p23.zw / v_size - position_delta;
 
-      // TODO: fix CPU and GPU side
-      // if (max(p0.x, p3.x) * inv_pixel_size < -0.5) break;
+      if (max(p0.x, p3.x) * inv_pixel_size < -0.5) break;
 
       bool is_downwards = p0.y > 0.0 || p3.y < 0.0;
 

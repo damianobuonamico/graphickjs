@@ -754,9 +754,18 @@ namespace graphick::renderer {
 
       int winding = 0;
 
-      std::unordered_set<uint16_t> indices;
+      std::vector<uint16_t> indices;
 
-      BoundarySpan(float min, float max, std::unordered_set<uint16_t>&& indices) : min(min), max(max), indices(std::move(indices)) {}
+      BoundarySpan(float min, float max, std::initializer_list<uint16_t> indices_init) : min(min), max(max), indices(indices_init) {}
+
+      inline void pack(const std::vector<float>* max_values) {
+        std::sort(indices.begin(), indices.end());
+        indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+
+        std::sort(indices.begin(), indices.end(), [&](const uint16_t a, const uint16_t b) {
+          return (*max_values)[a] > (*max_values)[b];
+        });
+      }
     };
 
     struct FilledSpan {
@@ -782,7 +791,7 @@ namespace graphick::renderer {
 
         for (int i = 0; i < boundary_spans.size(); i++) {
           if (min >= boundary_spans[i].min && max <= boundary_spans[i].max) {
-            boundary_spans[i].indices.insert(index);
+            boundary_spans[i].indices.push_back(index);
             return;
           }
 
@@ -792,7 +801,7 @@ namespace graphick::renderer {
 
           /* If there is an intersection, we can perform an union. */
           if (intersection.x <= intersection.y + 0.1f) {
-            boundary_spans[i].indices.insert(index);
+            boundary_spans[i].indices.push_back(index);
             boundary_spans[i].min = std::min(boundary_spans[i].min, min);
             boundary_spans[i].max = std::max(boundary_spans[i].max, max);
 
@@ -822,7 +831,7 @@ namespace graphick::renderer {
               span1.min = std::min(span1.min, span2.min);
               span1.max = std::max(span1.max, span2.max);
 
-              span1.indices.insert(span2.indices.begin(), span2.indices.end());
+              span1.indices.insert(span1.indices.end(), span2.indices.begin(), span2.indices.end());
 
               span2.indices.clear();
             }
@@ -860,11 +869,14 @@ namespace graphick::renderer {
     std::vector<Band> bands(horizontal_bands);
     std::vector<std::vector<Intersection>> band_bottom_intersections(horizontal_bands);
 
+    std::vector<float> max_values(path.size());
+
     for (int i = 0; i < bands.size(); i++) {
       bands[i].top_y = bounds.min.y + i * band_delta;
       bands[i].bottom_y = bounds.min.y + (i + 1) * band_delta;
     }
 
+    // TODO: replace max size of path with uint16_t
     for (uint16_t i = 0; i < path.size(); i++) {
       const vec2 p0 = path[i * 3];
       const vec2 p1 = path[i * 3 + 1];
@@ -873,6 +885,8 @@ namespace graphick::renderer {
 
       const vec2 min = math::min(p0, p3);
       const vec2 max = math::max(p0, p3);
+
+      max_values[i] = max.x;
 
       /* Being monotonic, it is straightforward to determine which bands the curve intersects. */
       const float start_band_factor = (min.y - bounds.min.y) / band_delta;
@@ -1020,8 +1034,10 @@ namespace graphick::renderer {
         }
       }
 
-      for (const BoundarySpan& boundary_span : band.boundary_spans) {
+      for (BoundarySpan& boundary_span : band.boundary_spans) {
         const size_t curves_start_index = data.curves.size() / 2;
+
+        boundary_span.pack(&max_values);
 
         data.curves.reserve(boundary_span.indices.size() * 4);
 
