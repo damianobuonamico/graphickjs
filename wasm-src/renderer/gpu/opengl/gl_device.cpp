@@ -12,10 +12,7 @@
 
 namespace graphick::renderer::GPU::GL {
 
-  /**
-   * @brief The singleton instance of the OpenGL device.
-   */
-  GLDevice* GLDevice::s_device = nullptr;
+  /* -- Static methods -- */
 
   /**
    * @brief Creates a shader with the given name, kind and variables.
@@ -72,6 +69,12 @@ namespace graphick::renderer::GPU::GL {
 
     return gl_shader;
   }
+
+  /* -- Static member initialization -- */
+
+  GLDevice* GLDevice::s_device = nullptr;
+
+  /* -- GLDevice -- */
 
   void GLDevice::init(const DeviceVersion version) {
     if (s_device != nullptr) {
@@ -148,14 +151,16 @@ namespace graphick::renderer::GPU::GL {
 #endif
   }
 
-  void GLDevice::set_viewport(const ivec2 size) {
-    if (size == s_device->m_state.viewport_size) {
+  void GLDevice::set_viewport(const irect viewport) {
+    if (viewport == s_device->m_state.viewport) {
       return;
     }
 
-    glCall(glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y));
+    const ivec2 size = viewport.size();
 
-    s_device->m_state.viewport_size = size;
+    glCall(glViewport((GLint)viewport.min.x, (GLint)viewport.min.y, (GLsizei)size.x, (GLsizei)size.y));
+
+    s_device->m_state.viewport = viewport;
   }
 
   void GLDevice::clear(const ClearOps& ops) {
@@ -246,6 +251,115 @@ namespace graphick::renderer::GPU::GL {
     }
 
     return GLVertexAttribute{ static_cast<GLuint>(attribute) };
+  }
+
+  void GLDevice::draw_arrays(const size_t vertex_count, const RenderState& render_state) {
+    s_device->set_render_state(render_state);
+    glCall(glDrawArrays(gl_primitive(render_state.primitive), 0, (GLsizei)vertex_count));
+  }
+
+  void GLDevice::draw_arrays_instanced(const size_t vertex_count, const size_t instance_count, const RenderState& render_state) {
+    s_device->set_render_state(render_state);
+    glCall(glDrawArraysInstanced(gl_primitive(render_state.primitive), 0, (GLsizei)vertex_count, (GLsizei)instance_count));
+  }
+
+  void GLDevice::set_textures(const GLProgram& program, const std::vector<std::pair<GLTextureUniform, const Texture&>>& textures) {
+    size_t textures_bound = 0;
+
+    for (const auto& [texture_parameter, texture] : textures) {
+      texture.bind(texture_parameter.unit);
+      textures_bound |= (size_t)1 << static_cast<size_t>(texture_parameter.unit);
+    }
+
+    for (size_t texture_unit = 0; texture_unit < textures.size(); texture_unit++) {
+      if ((textures_bound & ((size_t)1 << texture_unit)) != 0) {
+        program.textures[texture_unit].set(static_cast<int>(texture_unit));
+      }
+    }
+  }
+
+  void GLDevice::set_uniforms(const GLProgram& program, const std::vector<std::pair<GLUniform, UniformData>>& uniforms) {
+    for (const auto& [uniform, data] : uniforms) {
+      uniform.set(data);
+    }
+  }
+
+  void GLDevice::set_render_state(const RenderState& render_state) {
+    const GLuint program = render_state.program.gl_program;
+
+    set_viewport(render_state.viewport);
+    clear(render_state.clear_ops);
+
+    if (s_device->m_state.program.gl_program != render_state.program.gl_program) {
+      render_state.program.use();
+      s_device->m_state.program = render_state.program;
+    }
+
+    if (s_device->m_state.vertex_array != render_state.vertex_array) {
+      if (render_state.vertex_array != nullptr) {
+        render_state.vertex_array->bind();
+      } else {
+        glCall(glBindVertexArray(0));
+      }
+
+      s_device->m_state.vertex_array = render_state.vertex_array;
+    }
+
+    set_textures(render_state.program, render_state.textures);
+    set_uniforms(render_state.program, render_state.uniforms);
+
+    if (s_device->m_state.blend != render_state.blend) {
+      if (render_state.blend.has_value()) {
+        glCall(glEnable(GL_BLEND));
+        glCall(glBlendFuncSeparate(
+          gl_blend_factor(render_state.blend->src_rgb_factor),
+          gl_blend_factor(render_state.blend->dest_rgb_factor),
+          gl_blend_factor(render_state.blend->src_alpha_factor),
+          gl_blend_factor(render_state.blend->dest_alpha_factor)
+        ));
+        glCall(glBlendEquation(gl_blend_op(render_state.blend->op)));
+        glCall(glEnable(GL_BLEND));
+      } else {
+        glCall(glDisable(GL_BLEND));
+      }
+
+      s_device->m_state.blend = render_state.blend;
+    }
+
+    if (s_device->m_state.depth != render_state.depth) {
+      if (render_state.depth.has_value()) {
+        glCall(glEnable(GL_DEPTH_TEST));
+        glCall(glDepthFunc(gl_depth_func(render_state.depth->func)));
+      } else {
+        glCall(glDisable(GL_DEPTH_TEST));
+      }
+
+      s_device->m_state.depth = render_state.depth;
+    }
+
+    if (s_device->m_state.stencil != render_state.stencil) {
+      if (render_state.stencil.has_value()) {
+        glCall(glStencilFunc(
+          gl_stencil_func(render_state.stencil->func),
+          render_state.stencil->reference,
+          render_state.stencil->mask
+        ));
+
+        if (render_state.stencil->write) {
+          glCall(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
+          glCall(glStencilMask(render_state.stencil->write));
+        } else {
+          glCall(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
+          glCall(glStencilMask(0));
+        }
+
+        glCall(glEnable(GL_STENCIL_TEST));
+      } else {
+        glCall(glDisable(GL_STENCIL_TEST));
+      }
+
+      s_device->m_state.stencil = render_state.stencil;
+    }
   }
 
 }

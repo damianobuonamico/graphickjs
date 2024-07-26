@@ -1,13 +1,13 @@
 /**
- * @file shaders.h
+ * @file renderer/gpu/shaders.h
  * @brief Contains the GPU shaders and vertex arrays definitions.
- *
- * @todo remove temp using declarations
  */
 
 #pragma once
 
-#include "device.h"
+#include "render_state.h"
+
+#include <memory>
 
 namespace graphick::renderer::GPU {
 
@@ -17,13 +17,13 @@ namespace graphick::renderer::GPU {
    * @struct PathProgram
    */
   struct PathProgram {
-    Program program;                     /* The shader program. */
-    Uniform vp_uniform;                  /* The view projection uniform. */
-    Uniform viewport_size_uniform;       /* The viewport size uniform. */
-    Uniform min_samples_uniform;         /* The minimum antialiasing samples uniform. */
-    Uniform max_samples_uniform;         /* The maximum antialiasing samples uniform. */
-    TextureParameter curves_texture;     /* The curves texture. */
-    TextureParameter bands_texture;      /* The bands texture. */
+    Program program;                  /* The shader program. */
+    Uniform vp_uniform;               /* The view projection uniform. */
+    Uniform viewport_size_uniform;    /* The viewport size uniform. */
+    Uniform min_samples_uniform;      /* The minimum antialiasing samples uniform. */
+    Uniform max_samples_uniform;      /* The maximum antialiasing samples uniform. */
+    TextureUniform curves_texture;    /* The curves texture. */
+    TextureUniform bands_texture;     /* The bands texture. */
 
     PathProgram();
   };
@@ -34,12 +34,12 @@ namespace graphick::renderer::GPU {
    * @struct BoundarySpanProgram
    */
   struct BoundarySpanProgram {
-    Program program;                     /* The shader program. */
-    Uniform vp_uniform;                  /* The view projection uniform. */
-    Uniform viewport_size_uniform;       /* The viewport size uniform. */
-    Uniform max_samples_uniform;         /* The maximum antialiasing samples uniform. */
-    Uniform models_uniform;              /* The models uniform. */
-    TextureParameter curves_texture;     /* The curves texture. */
+    Program program;                  /* The shader program. */
+    Uniform vp_uniform;               /* The view projection uniform. */
+    Uniform viewport_size_uniform;    /* The viewport size uniform. */
+    Uniform max_samples_uniform;      /* The maximum antialiasing samples uniform. */
+    Uniform models_uniform;           /* The models uniform. */
+    TextureUniform curves_texture;    /* The curves texture. */
 
     BoundarySpanProgram();
   };
@@ -50,9 +50,9 @@ namespace graphick::renderer::GPU {
    * @struct FilledSpanProgram
    */
   struct FilledSpanProgram {
-    Program program;                     /* The shader program. */
-    Uniform vp_uniform;                  /* The view projection uniform. */
-    Uniform models_uniform;              /* The models uniform. */
+    Program program;           /* The shader program. */
+    Uniform vp_uniform;        /* The view projection uniform. */
+    Uniform models_uniform;    /* The models uniform. */
 
     FilledSpanProgram();
   };
@@ -63,9 +63,9 @@ namespace graphick::renderer::GPU {
    * @struct LineProgram
    */
   struct LineProgram {
-    Program program;               /* The shader program. */
-    Uniform vp_uniform;            /* The view projection uniform. */
-    Uniform zoom_uniform;          /* The zoom uniform. */
+    Program program;         /* The shader program. */
+    Uniform vp_uniform;      /* The view projection uniform. */
+    Uniform zoom_uniform;    /* The zoom uniform. */
 
     LineProgram();
   };
@@ -76,8 +76,8 @@ namespace graphick::renderer::GPU {
    * @struct RectProgram
    */
   struct RectProgram {
-    Program program;          /* The shader program. */
-    Uniform vp_uniform;       /* The view projection uniform. */
+    Program program;       /* The shader program. */
+    Uniform vp_uniform;    /* The view projection uniform. */
 
     RectProgram();
   };
@@ -88,9 +88,9 @@ namespace graphick::renderer::GPU {
    * @struct CircleProgram
    */
   struct CircleProgram {
-    Program program;           /* The shader program. */
-    Uniform vp_uniform;        /* The view projection uniform. */
-    Uniform zoom_uniform;      /* The zoom uniform. */
+    Program program;         /* The shader program. */
+    Uniform vp_uniform;      /* The view projection uniform. */
+    Uniform zoom_uniform;    /* The zoom uniform. */
 
     CircleProgram();
   };
@@ -115,7 +115,7 @@ namespace graphick::renderer::GPU {
    * @struct PathVertexArray
    */
   struct PathVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
+    VertexArray vertex_array;    /* The vertex array. */
 
     PathVertexArray(
       const PathProgram& program,
@@ -130,7 +130,7 @@ namespace graphick::renderer::GPU {
    * @struct BoundarySpanVertexArray
    */
   struct BoundarySpanVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
+    VertexArray vertex_array;    /* The vertex array. */
 
     BoundarySpanVertexArray(
       const BoundarySpanProgram& program,
@@ -145,7 +145,7 @@ namespace graphick::renderer::GPU {
    * @struct FilledSpanVertexArray
    */
   struct FilledSpanVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
+    VertexArray vertex_array;    /* The vertex array. */
 
     FilledSpanVertexArray(
       const FilledSpanProgram& program,
@@ -160,7 +160,7 @@ namespace graphick::renderer::GPU {
    * @struct LineVertexArray
    */
   struct LineVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
+    VertexArray vertex_array;    /* The vertex array. */
 
     LineVertexArray(
       const LineProgram& program,
@@ -176,7 +176,7 @@ namespace graphick::renderer::GPU {
    * @struct RectVertexArray
    */
   struct RectVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
+    VertexArray vertex_array;    /* The vertex array. */
 
     RectVertexArray(
       const RectProgram& program,
@@ -191,13 +191,44 @@ namespace graphick::renderer::GPU {
    * @struct CircleVertexArray
    */
   struct CircleVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;    /* The vertex array. */
+    VertexArray vertex_array;    /* The vertex array. */
 
     CircleVertexArray(
       const CircleProgram& program,
       const Buffer& instance_buffer,
       const Buffer& vertex_buffer
     );
+  };
+
+  /**
+   * @brief Groups all of the available vertex arrays together.
+   *
+   * @struct VertexArrays
+   */
+  struct VertexArrays {
+    std::unique_ptr<PathVertexArray> path_vertex_array;                     /* The path shader vertex array. */
+    std::unique_ptr<BoundarySpanVertexArray> boundary_span_vertex_array;    /* The boundary span shader vertex array. */
+    std::unique_ptr<FilledSpanVertexArray> filled_span_vertex_array;        /* The filled span shader vertex array. */
+    std::unique_ptr<LineVertexArray> line_vertex_array;                     /* The line shader vertex array. */
+    std::unique_ptr<RectVertexArray> rect_vertex_array;                     /* The square shader vertex array. */
+    std::unique_ptr<CircleVertexArray> circle_vertex_array;                 /* The circle shader vertex array. */
+
+    VertexArrays() = default;
+
+    VertexArrays(
+      std::unique_ptr<PathVertexArray> path_vertex_array,
+      std::unique_ptr<BoundarySpanVertexArray> boundary_span_vertex_array,
+      std::unique_ptr<FilledSpanVertexArray> filled_span_vertex_array,
+      std::unique_ptr<LineVertexArray> line_vertex_array,
+      std::unique_ptr<RectVertexArray> rect_vertex_array,
+      std::unique_ptr<CircleVertexArray> circle_vertex_array
+    ) :
+      path_vertex_array(std::move(path_vertex_array)),
+      boundary_span_vertex_array(std::move(boundary_span_vertex_array)),
+      filled_span_vertex_array(std::move(filled_span_vertex_array)),
+      line_vertex_array(std::move(line_vertex_array)),
+      rect_vertex_array(std::move(rect_vertex_array)),
+      circle_vertex_array(std::move(circle_vertex_array)) {}
   };
 
 }

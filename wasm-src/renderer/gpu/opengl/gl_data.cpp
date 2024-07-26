@@ -9,6 +9,8 @@
 
 namespace graphick::renderer::GPU::GL {
 
+  /* -- Static methods -- */
+
   /**
    * @brief Converts the texture format to the OpenGL internal format.
    *
@@ -117,6 +119,91 @@ namespace graphick::renderer::GPU::GL {
     }
   }
 
+  /* -- Methods -- */
+
+  GLenum gl_primitive(Primitive primitive) {
+    switch (primitive) {
+    case Primitive::Triangles: return GL_TRIANGLES;
+    default:
+    case Primitive::Lines: return GL_LINES;
+    }
+  }
+
+  GLenum gl_blend_factor(BlendFactor factor) {
+    switch (factor) {
+    case BlendFactor::Zero: return GL_ZERO;
+    case BlendFactor::One: return GL_ONE;
+    case BlendFactor::SrcAlpha: return GL_SRC_ALPHA;
+    case BlendFactor::OneMinusSrcAlpha: return GL_ONE_MINUS_SRC_ALPHA;
+    case BlendFactor::DestAlpha: return GL_DST_ALPHA;
+    case BlendFactor::OneMinusDestAlpha: return GL_ONE_MINUS_DST_ALPHA;
+    default:
+    case BlendFactor::DestColor: return GL_DST_COLOR;
+    }
+  }
+
+  GLenum gl_blend_op(BlendOp op) {
+    switch (op) {
+    case BlendOp::Add: return GL_FUNC_ADD;
+    case BlendOp::Subtract: return GL_FUNC_SUBTRACT;
+    case BlendOp::ReverseSubtract: return GL_FUNC_REVERSE_SUBTRACT;
+    case BlendOp::Min: return GL_MIN;
+    default:
+    case BlendOp::Max: return GL_MAX;
+    }
+  }
+
+  GLenum gl_depth_func(DepthFunc func) {
+    switch (func) {
+    case DepthFunc::Always: return GL_ALWAYS;
+    case DepthFunc::Less: return GL_LESS;
+    default:
+    case DepthFunc::Lequal: return GL_LEQUAL;
+    }
+  }
+
+  GLenum gl_stencil_func(StencilFunc func) {
+    switch (func) {
+    case StencilFunc::Always: return GL_ALWAYS;
+    default:
+    case StencilFunc::Equal: return GL_EQUAL;
+    }
+  }
+
+  /* -- GLUniform -- */
+
+  void GLUniform::set(const UniformData& data) const {
+    // TODO: make better!
+    if (std::holds_alternative<int>(data)) {
+      glCall(glUniform1i(location, std::get<int>(data)));
+    } else if (std::holds_alternative<uint32_t>(data)) {
+      glCall(glUniform1ui(location, std::get<uint32_t>(data)));
+    } else if (std::holds_alternative<ivec2>(data)) {
+      ivec2 vec = std::get<ivec2>(data);
+      glCall(glUniform2i(location, (GLint)vec.x, (GLint)vec.y));
+    } else if (std::holds_alternative<float>(data)) {
+      glCall(glUniform1f(location, std::get<float>(data)));
+    } else if (std::holds_alternative<vec2>(data)) {
+      vec2 vec = std::get<vec2>(data);
+      glCall(glUniform2f(location, vec.x, vec.y));
+    } else if (std::holds_alternative<vec4>(data)) {
+      vec4 vec = std::get<vec4>(data);
+      glCall(glUniform4f(location, vec.x, vec.y, vec.z, vec.w));
+    } else if (std::holds_alternative<mat4>(data)) {
+      mat4 mat = std::get<mat4>(data);
+      glCall(glUniformMatrix4fv(location, 1, GL_TRUE, &mat[0].x));
+    } else if (std::holds_alternative<std::vector<vec4>>(data)) {
+      std::vector<vec4> vecs = std::get<std::vector<vec4>>(data);
+      glCall(glUniform4fv(location, (GLsizei)vecs.size(), &vecs[0].x));
+    }
+  }
+
+  /* -- GLProgram -- */
+
+  void GLProgram::use() const {
+    glCall(glUseProgram(gl_program));
+  }
+
   /* -- GLVertexArray -- */
 
   GLVertexArray::GLVertexArray() {
@@ -194,6 +281,41 @@ namespace graphick::renderer::GPU::GL {
     glCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, flags & TextureSamplingFlagRepeatV ? GL_REPEAT : GL_CLAMP_TO_EDGE));
   }
 
+  void GLTexture::upload(const void* data, const irect region) const {
+    bind(0);
+
+    GLenum format = gl_format(this->format);
+    GLenum type = gl_type(this->format);
+
+    ivec2 origin = region.min;
+    ivec2 size = region.size();
+
+    glCall(glTexSubImage2D(
+      GL_TEXTURE_2D, 0,
+      (GLint)origin.x, (GLint)origin.y,
+      (GLsizei)size.x, (GLsizei)size.y,
+      format, type, data
+    ));
+  }
+
+  // TODO: try to implement offset
+  void GLTexture::upload(const void* data, const size_t byte_size, const size_t offset) const {
+    bind(0);
+
+    GLenum format = gl_format(this->format);
+    GLenum type = gl_type(this->format);
+
+    ivec2 origin = ivec2::zero();
+    ivec2 size = ivec2(this->size.x, static_cast<int>(byte_size) / this->size.x + 1);
+
+    glCall(glTexSubImage2D(
+      GL_TEXTURE_2D, 0,
+      (GLint)origin.x, (GLint)origin.y,
+      (GLsizei)size.x, (GLsizei)size.y,
+      format, type, data
+    ));
+  }
+
   /* -- GLBuffer -- */
 
   GLBuffer::GLBuffer(const BufferTarget target, const BufferUploadMode mode, const size_t size, const void* data)
@@ -224,6 +346,11 @@ namespace graphick::renderer::GPU::GL {
 
   void GLBuffer::unbind() const {
     glCall(glBindBuffer(gl_target(target), 0));
+  }
+
+  void GLBuffer::upload(const void* data, const size_t size, const size_t offset) const {
+    bind();
+    glCall(glBufferSubData(gl_target(target), (GLintptr)offset, (GLsizeiptr)size, data));
   }
 
 }

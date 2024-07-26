@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "gpu_new/device.h"
+#include "gpu/render_state.h"
 
 #include "../math/vec4.h"
 #include "../math/rect.h"
@@ -15,8 +15,6 @@
 
 #include "../utils/defines.h"
 #include "../utils/uuid.h"
-
-#include <vector>
 
 namespace graphick::renderer {
 
@@ -343,6 +341,8 @@ namespace graphick::renderer {
     GPU::Buffer instance_buffer;             /* The GPU instance buffer. */
     GPU::Buffer vertex_buffer;               /* The GPU vertex buffer. */
 
+    size_t vertex_size;                      /* The size of a vertex in bytes. */
+
     /**
      * @brief Initializes the instance data.
      *
@@ -353,7 +353,8 @@ namespace graphick::renderer {
       primitive(primitive),
       instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
       instance_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Dynamic, buffer_size),
-      vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Static, vertices.size() * sizeof(vec2), vertices.data()) {}
+      vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Static, vertices.size() * sizeof(vec2), vertices.data()),
+      vertex_size(sizeof(vec2)) {}
 
     /**
      * @brief Initializes the instance data.
@@ -365,7 +366,8 @@ namespace graphick::renderer {
       primitive(primitive),
       instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
       instance_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Dynamic, buffer_size),
-      vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Static, vertices.size() * sizeof(uvec2), vertices.data()) {}
+      vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Static, vertices.size() * sizeof(uvec2), vertices.data()),
+      vertex_size(sizeof(uvec2)) {}
 
     InstancedData(const InstancedData&) = delete;
     InstancedData(InstancedData&&) = delete;
@@ -411,7 +413,12 @@ namespace graphick::renderer {
     PathInstancedData(const size_t buffer_size) :
       InstancedData<PathInstance>(buffer_size, quad_vertices({ 0, 0 }, { 1, 1 })),
       curves_texture(GPU::TextureFormat::RGBA32F, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag),
-      bands_texture(GPU::TextureFormat::R16UI, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag) {}
+      bands_texture(GPU::TextureFormat::R16UI, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag)
+    {
+      // curves.reserve(512 * 512);
+      // bands.reserve(512 * 512 / 2);
+      // bands_data.reserve(512 * 512 / 2);
+    }
 
     /**
      * @brief Clears the instance data.
@@ -422,6 +429,10 @@ namespace graphick::renderer {
       curves.clear();
       bands.clear();
       bands_data.clear();
+
+      // curves.reserve(512 * 512 * 2);
+      // bands.reserve(512 * 512 / 2);
+      // bands_data.reserve(512 * 512 / 2);
     }
   };
 
@@ -442,7 +453,10 @@ namespace graphick::renderer {
      */
     BoundarySpanInstancedData(const size_t buffer_size) :
       InstancedData<BoundarySpanInstance>(buffer_size, quad_vertices({ 0, 0 }, { 1, 1 })),
-      curves_texture(GPU::TextureFormat::RGBA32F, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag) {}
+      curves_texture(GPU::TextureFormat::RGBA32F, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag)
+    {
+      curves.reserve(512 * 512 * 2);
+    }
 
     /**
      * @brief Clears the instance data.
@@ -451,6 +465,8 @@ namespace graphick::renderer {
       InstancedData<BoundarySpanInstance>::clear();
 
       curves.clear();
+
+      curves.reserve(512 * 512 * 2);
     }
   };
 

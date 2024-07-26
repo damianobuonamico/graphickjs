@@ -11,7 +11,7 @@
 
 // #include "gpu/allocator.h"
 // #include "gpu/device.h"
-#include "gpu_new/device.h"
+#include "gpu/device.h"
 
 #include "geometry/path_builder.h"
 
@@ -36,23 +36,7 @@
 
 namespace graphick::renderer {
 
-  /* -- Static -- */
-
-#if 0
-  /**
-   * @brief The flush data structure.
-   *
-   * This structure is used to pass data to the flush function.
-   *
-   * @struct FlushData
-   */
-  struct FlushData {
-    std::vector<GPU::TextureBinding<GPU::TextureParameter, const GPU::Texture&>> textures;    /* The textures to bind. */
-    std::vector<GPU::UniformBinding<GPU::Uniform>> uniforms;                        /* The uniforms to bind. */
-
-    vec2 viewport_size;                                                                                                     /* The size of the viewport. */
-  };
-#endif
+  /* -- Static Methods -- */
 
   /**
    * @brief Generates an orthographic projection matrix.
@@ -102,22 +86,6 @@ namespace graphick::renderer {
   }
 
   /**
-   * @brief Generates a model matrix from a 2x3 transformation matrix.
-   *
-   * @param transform The 2x3 transformation matrix.
-   * @return The model matrix.
-   */
-  static dmat4 model_matrix(const mat2x3& transform) {
-    return dmat4{
-      static_cast<double>(transform[0][0]), static_cast<double>(transform[0][1]), static_cast<double>(transform[0][2]), 0.0,
-      static_cast<double>(transform[1][0]), static_cast<double>(transform[1][1]), static_cast<double>(transform[1][2]), 0.0,
-      0.0, 0.0, 1.0, 0.0,
-      0.0, 0.0, 0.0, 1.0
-    };
-  }
-
-#if 0
-  /**
    * @brief Flushes the instanced data to the GPU.
    *
    * Here the GPU draw calls are actually issued.
@@ -126,59 +94,22 @@ namespace graphick::renderer {
    * @param program The shader program to use.
    * @param flush_data The flush data to use.
    */
-  template <typename T, typename S, typename V>
-  static void flush(InstancedData<T>& data, const S& program, const FlushData flush_data, const std::optional<GPU::DepthState> depth_state = std::nullopt) {
+  template <typename T>
+  static void flush(InstancedData<T>& data, const GPU::RenderState render_state) {
     if (data.instances.batches[0].empty()) {
       return;
     }
 
-    const GPU::Buffer& instance_buffer = GPU::Memory::Allocator::get_general_buffer(data.instance_buffer_id);
-    const GPU::Buffer& vertex_buffer = GPU::Memory::Allocator::get_general_buffer(data.vertex_buffer_id);
-
     for (const std::vector<T>& batch : data.instances.batches) {
-      GPU::Device::upload_to_buffer(instance_buffer, 0, batch, GPU::BufferTarget::Vertex);
+      data.instance_buffer.upload(batch.data(), batch.size() * sizeof(T));
 
-      V vertex_array(program, instance_buffer, vertex_buffer);
-
-      GPU::RenderState state = {
-        nullptr,
-        program.program,
-        *vertex_array.vertex_array,
-        data.primitive,
-        flush_data.textures,
-        {},
-        flush_data.uniforms,
-        {
-          { 0.0f, 0.0f },
-          flush_data.viewport_size
-        },
-        {
-          GPU::BlendState{
-            GPU::BlendFactor::One,
-            GPU::BlendFactor::OneMinusSrcAlpha,
-            GPU::BlendFactor::One,
-            GPU::BlendFactor::OneMinusSrcAlpha,
-            GPU::BlendOp::Add,
-          },
-          depth_state,
-          std::nullopt,
-          {
-            std::nullopt,
-            std::nullopt,
-            std::nullopt
-          },
-          true
-        }
-      };
-
-      GPU::Device::draw_arrays_instanced(data.vertices.size(), batch.size(), state);
+      GPU::Device::draw_arrays_instanced(data.vertex_buffer.size / data.vertex_size, batch.size(), render_state);
     }
 
     data.instances.clear();
   }
-#endif
 
-  /* -- Static member initialization -- */
+  /* -- Static Member Initialization -- */
 
   Renderer* Renderer::s_instance = nullptr;
 
@@ -1328,167 +1259,199 @@ namespace graphick::renderer {
     m_rect_instances(GK_BUFFER_SIZE, quad_vertices({ 0, 0 }, { 1, 1 })),
     m_filled_spans(GK_BUFFER_SIZE, quad_vertices({ 0, 0 }, { 1, 1 })),
     m_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6),
-    m_max_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6) {}
+    m_max_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6)
+  {
+    std::unique_ptr<GPU::PathVertexArray> path_vertex_array = std::make_unique<GPU::PathVertexArray>(
+      m_programs.path_program,
+      m_path_instances.instance_buffer,
+      m_path_instances.vertex_buffer
+    );
+
+    std::unique_ptr<GPU::BoundarySpanVertexArray> boundary_span_vertex_array = std::make_unique<GPU::BoundarySpanVertexArray>(
+      m_programs.boundary_span_program,
+      m_boundary_spans.instance_buffer,
+      m_boundary_spans.vertex_buffer
+    );
+
+    std::unique_ptr<GPU::FilledSpanVertexArray> filled_span_vertex_array = std::make_unique<GPU::FilledSpanVertexArray>(
+      m_programs.filled_span_program,
+      m_filled_spans.instance_buffer,
+      m_filled_spans.vertex_buffer
+    );
+
+    std::unique_ptr<GPU::LineVertexArray> line_vertex_array = std::make_unique<GPU::LineVertexArray>(
+      m_programs.line_program,
+      m_line_instances.instance_buffer,
+      m_line_instances.vertex_buffer
+    );
+
+    std::unique_ptr<GPU::RectVertexArray> rect_vertex_array = std::make_unique<GPU::RectVertexArray>(
+      m_programs.rect_program,
+      m_rect_instances.instance_buffer,
+      m_rect_instances.vertex_buffer
+    );
+
+    std::unique_ptr<GPU::CircleVertexArray> circle_vertex_array = std::make_unique<GPU::CircleVertexArray>(
+      m_programs.circle_program,
+      m_circle_instances.instance_buffer,
+      m_circle_instances.vertex_buffer
+    );
+
+    m_vertex_arrays = GPU::VertexArrays{
+      std::move(path_vertex_array),
+      std::move(boundary_span_vertex_array),
+      std::move(filled_span_vertex_array),
+      std::move(line_vertex_array),
+      std::move(rect_vertex_array),
+      std::move(circle_vertex_array)
+    };
+  }
 
   void Renderer::flush_meshes() {
-    // const GPU::Texture& boundary_curves_texture = GPU::Memory::Allocator::get_texture(m_boundary_spans.curves_texture_id);
-    // const GPU::Texture& curves_texture = GPU::Memory::Allocator::get_texture(m_path_instances.curves_texture_id);
-    // const GPU::Texture& bands_texture = GPU::Memory::Allocator::get_texture(m_path_instances.bands_texture_id);
+    // TODO: cache uniform bindings in device.
+    GPU::RenderState render_state;
 
-    // TODO: should preallocate the texture
-    if (m_path_instances.curves.size() < 512 * 512 * 2) {
-      m_path_instances.curves.resize(512 * 512 * 2);
+    render_state.viewport = irect({ 0, 0 }, ivec2(m_viewport.size));
+    render_state.blend = GPU::BlendState{
+      GPU::BlendFactor::One,
+      GPU::BlendFactor::OneMinusSrcAlpha,
+      GPU::BlendFactor::One,
+      GPU::BlendFactor::OneMinusSrcAlpha,
+      GPU::BlendOp::Add
+    };
+
+      // std::vector<uint16_t> bands;
+
+      // bands.insert(bands.end(), m_path_instances.bands.begin(), m_path_instances.bands.end());
+
+      // size_t bands_data_start = bands.size();
+
+      // bands.insert(bands.end(), m_path_instances.bands_data.begin(), m_path_instances.bands_data.end());
+
+      // if (bands.size() < 512 * 512) {
+      //   bands.resize(512 * 512);
+      // }
+
+      // GPU::Device::upload_to_texture(
+      //   boundary_curves_texture,
+      //   {
+      //     { 0.0f, 0.0f },
+      //     { 512.0f, 512.0f }
+      //   },
+      //   m_boundary_spans.curves.data()
+      // );
+
+      // GPU::Device::upload_to_texture(
+      //   curves_texture,
+      //   {
+      //     { 0.0f, 0.0f },
+      //     { 512.0f, 512.0f },
+      //     // { static_cast<float>((m_path_instances.curves.size() / 2) % 512), static_cast<float>((m_path_instances.curves.size() / 2) / 512) }
+      //   },
+      //   m_path_instances.curves.data()
+      //   );
+
+      // GPU::Device::upload_to_texture(
+      //   bands_texture,
+      //   {
+      //     { 0.0f, 0.0f },
+      //     { 512.0f, 512.0f },
+      //   },
+      //   bands.data()
+      //   );
+
+      // flush<PathInstance, GPU::PathProgram, GPU::PathVertexArray>(
+      //   m_path_instances,
+      //   m_programs.path_program,
+      //   {
+      //     {
+      //       { m_programs.path_program.curves_texture, curves_texture },
+      //       { m_programs.path_program.bands_texture, bands_texture }
+      //     },
+      //     {
+      //       { m_programs.path_program.vp_uniform, m_vp_matrix },
+      //       { m_programs.path_program.viewport_size_uniform, m_viewport.size },
+      //       { m_programs.path_program.min_samples_uniform, 4 },
+      //       { m_programs.path_program.max_samples_uniform, 16 }
+      //     },
+      //     m_viewport.size
+      //   }
+      // );
+
+    std::reverse(m_filled_spans.instances.batches.begin(), m_filled_spans.instances.batches.end());
+
+    for (auto& batch : m_filled_spans.instances.batches) {
+      std::reverse(batch.begin(), batch.end());
     }
 
-    if (m_boundary_spans.curves.size() < 512 * 512 * 2) {
-      m_boundary_spans.curves.resize(512 * 512 * 2);
-    }
+    render_state.program = m_programs.filled_span_program.program;
+    render_state.vertex_array = &m_vertex_arrays.filled_span_vertex_array->vertex_array;
+    render_state.primitive = m_filled_spans.primitive;
+    render_state.depth = {
+      GPU::DepthFunc::Less,
+      true
+    };
+    render_state.textures.clear();
+    render_state.uniforms = {
+      { m_programs.filled_span_program.vp_uniform, m_vp_matrix },
+      { m_programs.filled_span_program.models_uniform, m_transform_vectors }
+    };
 
-    std::vector<uint16_t> bands;
+    flush(m_filled_spans, render_state);
 
-    bands.insert(bands.end(), m_path_instances.bands.begin(), m_path_instances.bands.end());
+    m_boundary_spans.curves_texture.upload(m_boundary_spans.curves.data(), m_boundary_spans.curves.size() * sizeof(vec2));
 
-    // size_t bands_data_start = bands.size();
+    render_state.program = m_programs.boundary_span_program.program;
+    render_state.vertex_array = &m_vertex_arrays.boundary_span_vertex_array->vertex_array;
+    render_state.primitive = m_boundary_spans.primitive;
+    render_state.depth = {
+      GPU::DepthFunc::Less,
+      false
+    };
+    render_state.textures = std::vector<GPU::TextureBinding>{
+      { m_programs.boundary_span_program.curves_texture, m_boundary_spans.curves_texture }
+    };
+    render_state.uniforms = {
+      { m_programs.boundary_span_program.vp_uniform, m_vp_matrix },
+      { m_programs.boundary_span_program.viewport_size_uniform, m_viewport.size },
+      { m_programs.boundary_span_program.max_samples_uniform, 3 },
+      { m_programs.boundary_span_program.models_uniform, m_transform_vectors }
+    };
 
-    // bands.insert(bands.end(), m_path_instances.bands_data.begin(), m_path_instances.bands_data.end());
+    flush(m_boundary_spans, render_state);
 
-    if (bands.size() < 512 * 512) {
-      bands.resize(512 * 512);
-    }
+    render_state.program = m_programs.line_program.program;
+    render_state.vertex_array = &m_vertex_arrays.line_vertex_array->vertex_array;
+    render_state.primitive = m_line_instances.primitive;
+    render_state.depth = std::nullopt;
+    render_state.textures.clear();
+    render_state.uniforms = {
+      { m_programs.line_program.vp_uniform, m_vp_matrix },
+      { m_programs.line_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
+    };
 
-    // GPU::Device::upload_to_texture(
-    //   boundary_curves_texture,
-    //   {
-    //     { 0.0f, 0.0f },
-    //     { 512.0f, 512.0f }
-    //   },
-    //   m_boundary_spans.curves.data()
-    // );
+    flush(m_line_instances, render_state);
 
-    // GPU::Device::upload_to_texture(
-    //   curves_texture,
-    //   {
-    //     { 0.0f, 0.0f },
-    //     { 512.0f, 512.0f },
-    //     // { static_cast<float>((m_path_instances.curves.size() / 2) % 512), static_cast<float>((m_path_instances.curves.size() / 2) / 512) }
-    //   },
-    //   m_path_instances.curves.data()
-    //   );
+    render_state.program = m_programs.rect_program.program;
+    render_state.vertex_array = &m_vertex_arrays.rect_vertex_array->vertex_array;
+    render_state.primitive = m_rect_instances.primitive;
+    render_state.uniforms = {
+      { m_programs.rect_program.vp_uniform, m_vp_matrix }
+    };
 
-    // GPU::Device::upload_to_texture(
-    //   bands_texture,
-    //   {
-    //     { 0.0f, 0.0f },
-    //     { 512.0f, 512.0f },
-    //   },
-    //   bands.data()
-    //   );
+    flush(m_rect_instances, render_state);
 
-    // flush<PathInstance, GPU::PathProgram, GPU::PathVertexArray>(
-    //   m_path_instances,
-    //   m_programs.path_program,
-    //   {
-    //     {
-    //       { m_programs.path_program.curves_texture, curves_texture },
-    //       { m_programs.path_program.bands_texture, bands_texture }
-    //     },
-    //     {
-    //       { m_programs.path_program.vp_uniform, m_vp_matrix },
-    //       { m_programs.path_program.viewport_size_uniform, m_viewport.size },
-    //       { m_programs.path_program.min_samples_uniform, 4 },
-    //       { m_programs.path_program.max_samples_uniform, 16 }
-    //     },
-    //     m_viewport.size
-    //   }
-    // );
+    render_state.program = m_programs.circle_program.program;
+    render_state.vertex_array = &m_vertex_arrays.circle_vertex_array->vertex_array;
+    render_state.uniforms = {
+      { m_programs.circle_program.vp_uniform, m_vp_matrix },
+      { m_programs.circle_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
+    };
 
-    // std::reverse(m_filled_spans.instances.batches.begin(), m_filled_spans.instances.batches.end());
-
-    // for (auto& batch : m_filled_spans.instances.batches) {
-    //   std::reverse(batch.begin(), batch.end());
-    // }
-
-    // flush<FilledSpanInstance, GPU::FilledSpanProgram, GPU::FilledSpanVertexArray>(
-    //   m_filled_spans,
-    //   m_programs.filled_span_program,
-    //   {
-    //     {},
-    //     {
-    //       { m_programs.filled_span_program.vp_uniform, m_vp_matrix },
-    //       { m_programs.filled_span_program.models_uniform, m_transform_vectors }
-    //     },
-    //     m_viewport.size
-    //   },
-    //   GPU::DepthState{
-    //     GPU::DepthFunc::Less,
-    //     true
-    //   }
-    // );
-
-    // flush<BoundarySpanInstance, GPU::BoundarySpanProgram, GPU::BoundarySpanVertexArray>(
-    //   m_boundary_spans,
-    //   m_programs.boundary_span_program,
-    //   {
-    //     {
-    //       { m_programs.boundary_span_program.curves_texture, boundary_curves_texture },
-    //     },
-    //     {
-    //       { m_programs.boundary_span_program.vp_uniform, m_vp_matrix },
-    //       { m_programs.boundary_span_program.viewport_size_uniform, m_viewport.size },
-    //       { m_programs.boundary_span_program.max_samples_uniform, 3 },
-    //       { m_programs.boundary_span_program.models_uniform, m_transform_vectors }
-    //     },
-    //     m_viewport.size
-    //   },
-    //   GPU::DepthState{
-    //     GPU::DepthFunc::Less,
-    //     false
-    //   }
-    // );
+    flush(m_circle_instances, render_state);
 
     m_boundary_spans.clear();
     m_path_instances.clear();
-
-    // flush<LineInstance, GPU::LineProgram, GPU::LineVertexArray>(
-    //   m_line_instances,
-    //   m_programs.line_program,
-    //   {
-    //     {},
-    //     {
-    //       { m_programs.line_program.vp_uniform, m_vp_matrix },
-    //       // { m_programs.line_program.line_width_uniform, static_cast<float>((2.0 * m_viewport.dpr) / m_viewport.zoom) },
-    //       { m_programs.line_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
-    //     },
-    //     m_viewport.size
-    //   }
-    // );
-
-    // flush<RectInstance, GPU::RectProgram, GPU::RectVertexArray>(
-    //   m_rect_instances,
-    //   m_programs.rect_program,
-    //   {
-    //     {},
-    //     {
-    //       { m_programs.rect_program.vp_uniform, m_vp_matrix }
-    //       // { m_programs.rect_program.color_uniform, vec4{ 0.22f, 0.76f, 0.95f, 1.0f } },
-    //       // { m_programs.rect_program.size_uniform, static_cast<float>(std::round(5.0 * m_viewport.dpr) / m_viewport.zoom) }
-    //     },
-    //     m_viewport.size
-    //   }
-    // );
-
-    // flush<CircleInstance, GPU::CircleProgram, GPU::CircleVertexArray>(
-    //   m_circle_instances,
-    //   m_programs.circle_program,
-    //   {
-    //     {},
-    //     {
-    //       { m_programs.circle_program.vp_uniform, m_vp_matrix },
-    //       { m_programs.circle_program.zoom_uniform, static_cast<float>(m_viewport.zoom) }
-    //     },
-    //     m_viewport.size
-    //   }
-    // );
   }
 
 }

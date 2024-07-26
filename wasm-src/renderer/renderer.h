@@ -10,7 +10,7 @@
 #include "renderer_data.h"
 #include "properties.h"
 
-#include "gpu_new/shaders.h"
+#include "gpu/shaders.h"
 
 #include "../geom/quadratic_path.h"
 #include "../geom/cubic_path.h"
@@ -192,6 +192,7 @@ namespace graphick::renderer {
     void flush_meshes();
   private:
     GPU::Programs m_programs;                            /* The shader programs to use. */
+    GPU::VertexArrays m_vertex_arrays;                   /* The vertex arrays to use. */
 
     Viewport m_viewport;                                 /* The viewport to render to. */
     dmat4 m_vp_matrix;                                   /* The view-projection matrix. */

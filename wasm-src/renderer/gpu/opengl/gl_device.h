@@ -5,13 +5,20 @@
 
 #pragma once
 
-#include "gl_data.h"
+#include "../render_state.h"
 
 #include <memory>
 #include <vector>
 #include <string>
 
 namespace graphick::renderer::GPU::GL {
+
+  /**
+   * @brief The OpenGL render state
+   */
+  struct GLState : public RenderState {
+    GLState() : RenderState() {}
+  };
 
   /**
    * @brief The class that represents the OpenGL GPU device.
@@ -82,9 +89,9 @@ namespace graphick::renderer::GPU::GL {
     /**
      * @brief Sets the viewport size.
      *
-     * @param size The size of the viewport.
+     * @param viewport The new viewport.
      */
-    static void set_viewport(const ivec2 size);
+    static void set_viewport(const irect viewport);
 
     /**
      * @brief Clears the current render target.
@@ -127,6 +134,23 @@ namespace graphick::renderer::GPU::GL {
      * @return The location of the given attribute or std::nullopt if not found.
      */
     static GLVertexAttribute get_vertex_attribute(const GLProgram& program, const std::string& name);
+
+    /**
+     * @brief Draws the binded vertex array.
+     *
+     * @param vertex_count The number of vertices to draw.
+     * @param render_state The render state to use.
+     */
+    static void draw_arrays(const size_t vertex_count, const RenderState& render_state);
+
+    /**
+     * @brief Draws the binded vertex array with instancing.
+     *
+     * @param vertex_count The number of vertices to draw.
+     * @param instance_count The number of instances to draw.
+     * @param render_state The render state to use.
+     */
+    static void draw_arrays_instanced(const size_t vertex_count, const size_t instance_count, const RenderState& render_state);
   private:
     /**
      * @brief GLDevice constructor.
@@ -137,6 +161,29 @@ namespace graphick::renderer::GPU::GL {
      * @brief GLDevice destructor.
      */
     ~GLDevice();
+
+    /**
+     * @brief Sets the given textures to the correct texture units.
+     *
+     * @param program The program to bind the textures to.
+     * @param textures The textures to set.
+     */
+    void set_textures(const GLProgram& program, const std::vector<std::pair<GLTextureUniform, const Texture&>>& textures);
+
+    /**
+     * @brief Sets the given uniforms to the correct values.
+     *
+     * @param program The program to bind the uniforms to.
+     * @param uniforms The uniforms to set.
+     */
+    void set_uniforms(const GLProgram& program, const std::vector<std::pair<GLUniform, UniformData>>& uniforms);
+
+    /**
+     * @brief Updates the render state if necessary.
+     *
+     * @param render_state The render state to update.
+     */
+    void set_render_state(const RenderState& render_state);
   private:
     std::string m_backend_name;            /* The backend name. */
     std::string m_device_name;             /* The device name. */

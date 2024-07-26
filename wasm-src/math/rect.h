@@ -318,6 +318,17 @@ namespace graphick::math {
     );
   }
 
+  /* -- Boolean operators -- */
+
+  template <typename T>
+  constexpr bool operator==(const Rect<T>& r1, const Rect<T>& r2) {
+    return r1.min == r2.min && r1.max == r2.max;
+  }
+
+  template <typename T>
+  constexpr bool operator!=(const Rect<T>& r1, const Rect<T>& r2) {
+    return !(r1 == r2);
+  }
 }
 
 /* -- Aliases -- */
