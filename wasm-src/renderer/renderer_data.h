@@ -89,51 +89,160 @@ namespace graphick::renderer {
   }
 
   /**
-   * @brief Represents a path instance, the main building block of the renderer.
+   * @brief Represents a path instance (32 bytes), the main building block of the renderer.
    *
    * @struct PathInstance
+   * @note There are 6 bits of padding left in the struct.
    */
   struct PathInstance {
-    vec4 attrib_1;           /* transform[0][0] transform[0][1] transform[0][2] transform[1][0] */
-    vec2 attrib_2;           /* transform[1][1] transform[1][2] */
-    vec2 position;           /* position.xy */
-    vec2 size;               /* size.xy */
-    uvec4 color;             /* color.rgba */
-    uint32_t curves_data;    /* is_quadratic is_even_odd start_x start_y */
-    uint32_t bands_data;     /* h_count v_count start_x start_y */
+    vec2 position;      /* | position.x (32) | position.y (32) | */
+    vec2 size;          /* | size.x (32) | size.y (32) |*/
+    uvec4 color;        /* | color.rgba (32) | */
+    uint32_t attr_1;    /* | (6) - is_quad (1) - is_eodd (1) - curves_x (12) - curves_y (12) | */
+    uint32_t attr_2;    /* | bands_h (8) - bands_x (12) - bands_y (12) | */
+    uint32_t attr_3;    /* | z_index (20) - transform_index (12) | */
 
     /**
      * @brief Constructs a new PathInstance object.
      *
-     * @param transform The transformation matrix of the path.
      * @param position The position of the path's bounding rect before transformation, used to normalize the curves.
      * @param size The size of the path's bounding rect before transformation, used to normalize the curves.
      * @param color The color of the path.
      * @param curves_start_index The index of the first curve in the curves texture.
      * @param bands_start_index The index of the first band in the bands texture.
      * @param horizontal_bands The number of horizontal bands.
-     * @param vertical_bands The number of vertical bands.
-     * @param is_quadratic Whether the path is quadratic or cubic.
+     * @param is_quadratic Whether the curves are quadratic or cubic.
+     * @param is_even_odd Whether the fill rule is even-odd or non-zero.
+     * @param z_index The z-index of the span.
+     * @param transform_index The index of the transform to apply to the span.
      */
     PathInstance(
-      const mat2x3& transform, const vec2 position, const vec2 size, const vec4& color,
-      const size_t curves_start_index, const size_t bands_start_index,
-      const uint8_t horizontal_bands, const uint8_t vertical_bands,
-      const bool is_quadratic, const bool is_even_odd
+      const vec2 position, const vec2 size, const vec4& color,
+      const size_t curves_start_index, const size_t bands_start_index, const uint8_t horizontal_bands,
+      const bool is_quadratic, const bool is_even_odd,
+      const uint32_t z_index, const uint32_t transform_index
     ) :
-      attrib_1(transform[0][0], transform[0][1], transform[0][2], transform[1][0]),
-      attrib_2(transform[1][1], transform[1][2]),
       position(position), size(size), color(color * 255.0f)
     {
-      const uint32_t curves_x = static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE);
-      const uint32_t curves_y = static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE);
-      const uint32_t bands_x = static_cast<uint32_t>(bands_start_index % GK_BANDS_TEXTURE_SIZE);
-      const uint32_t bands_y = static_cast<uint32_t>(bands_start_index / GK_BANDS_TEXTURE_SIZE);
-      const uint32_t bands_h = static_cast<uint32_t>(horizontal_bands - 1);
-      const uint32_t bands_v = static_cast<uint32_t>(vertical_bands - 1);
+      const uint32_t u_curves_x = (static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
+      const uint32_t u_curves_y = (static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
+      const uint32_t u_bands_x = (static_cast<uint32_t>(bands_start_index % GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
+      const uint32_t u_bands_y = (static_cast<uint32_t>(bands_start_index / GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
+      const uint32_t u_bands_h = (horizontal_bands < 1 || horizontal_bands > 256) ? 0 : static_cast<uint32_t>(horizontal_bands - 1);
+      const uint32_t u_is_quad = static_cast<uint32_t>(is_quadratic);
+      const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
+      const uint32_t u_transform_index = (transform_index << 20) >> 20;
 
-      curves_data = (static_cast<uint32_t>(is_quadratic) << 28) | ((static_cast<uint32_t>(is_even_odd) << 28) >> 4) | ((curves_x << 20) >> 8) | ((curves_y << 20) >> 20);
-      bands_data = (bands_h << 28) | ((bands_v << 28) >> 4) | ((bands_x << 20) >> 8) | ((bands_y << 20) >> 20);
+      attr_1 = (u_is_quad << 25) | (u_is_eodd << 24) | (u_curves_x << 12) | (u_curves_y);
+      attr_2 = (u_bands_h << 24) | (u_bands_x << 12) | (u_bands_y);
+      attr_3 = (z_index << 12) | (u_transform_index);
+    }
+  };
+
+  /**
+   * @brief Represents an intersection point.
+   *
+   * @struct Intersection
+   */
+  struct Intersection {
+    float x;           /* The x-coordinate of the intersection. */
+    bool downwards;    /* Whether the intersection is downwards, used for non-zero fill rule. */
+  };
+
+  /**
+   * @brief A range represinting a span.
+   *
+   * @struct Span
+   */
+  struct Span {
+    float min;    /* The minimum x-coordinate of the span. */
+    float max;    /* The maximum x-coordinate of the span. */
+  };
+
+  /**
+   * @brief Represents a band containing the culling data of a path.
+   *
+   * @struct Band
+   */
+  struct Band {
+    float top_y;                         /* The top y-coordinates of the band. */
+    float bottom_y;                      /* The bottom y-coordinates of the band. */
+
+    std::vector<Span> disabled_spans;    /* The filled spans of the band. */
+    std::vector<Span> filled_spans;      /* The filled spans of the band. */
+
+    /**
+     * @brief Disables the spans intersecting with the given curve.
+     *
+     * @param min The minimum x-coordinate of the curve.
+     * @param max The maximum x-coordinate of the curve.
+     */
+    void push_curve(float min, float max) {
+      if (disabled_spans.empty()) {
+        disabled_spans.emplace_back(Span{ min, max });
+        return;
+      }
+
+      int unioned = 0;
+      int potential_index = disabled_spans.size();
+
+      for (int i = 0; i < disabled_spans.size(); i++) {
+        if (min >= disabled_spans[i].min && max <= disabled_spans[i].max) {
+          /* The new span is completely within a larger span. */
+          return;
+        }
+
+        const vec2 intersection = { std::max(min, disabled_spans[i].min), std::min(max, disabled_spans[i].max) };
+
+        if (intersection.x <= intersection.y) {
+          /* If there is an intersection, we can perform an union. */
+
+          disabled_spans[i].min = std::min(disabled_spans[i].min, min);
+          disabled_spans[i].max = std::max(disabled_spans[i].max, max);
+
+          unioned++;
+        } else if (min < disabled_spans[i].min) {
+          potential_index = std::min(potential_index, i);
+        }
+      }
+
+      if (unioned == 0) {
+        /* If there was no union, we can insert the new span at the potensial index. */
+        disabled_spans.insert(disabled_spans.begin() + potential_index, Span{ min, max });
+        return;
+      }
+
+      /* We can now remove the spans that are completely within the new span. */
+
+      for (Span& span1 : disabled_spans) {
+        if (span1.min == span1.max) continue;
+
+        for (Span& span2 : disabled_spans) {
+          if (&span1 == &span2 || span2.min == span2.max) {
+            continue;
+          }
+
+          const vec2 intersection = { std::max(span1.min, span2.min), std::min(span1.max, span2.max) };
+
+          if (intersection.x <= intersection.y) {
+            /* If there is an intersection, we can perform an union and disable the second span. */
+
+            span1.min = std::min(span1.min, span2.min);
+            span1.max = std::max(span1.max, span2.max);
+
+            span2.min = span2.max = 0;
+          }
+        }
+      }
+
+      /* We can erase all the spans that have zero width. */
+
+      disabled_spans.erase(std::remove_if(
+        disabled_spans.begin(), disabled_spans.end(),
+        [](const Span& span) {
+          return span.min == span.max;
+        }
+      ), disabled_spans.end());
     }
   };
 
@@ -173,7 +282,7 @@ namespace graphick::renderer {
    * @brief Represents a boundary span instance (32 bytes).
    *
    * @struct BoundarySpanInstance
-   * @note There are 6 bits + 4 bytes of padding left in the struct.
+   * @note There are 6 bits of padding left in the struct.
    */
   struct BoundarySpanInstance {
     vec2 position;      /* | position.x (32) | position.y (32) | */
@@ -400,7 +509,6 @@ namespace graphick::renderer {
   struct PathInstancedData : public InstancedData<PathInstance> {
     std::vector<vec2> curves;               /* The control points of the curves. */
     std::vector<uint16_t> bands;            /* The bands of the mesh. */
-    std::vector<uint16_t> bands_data;       /* The indices of each curve in the bands. */
 
     GPU::Texture curves_texture;
     GPU::Texture bands_texture;
@@ -415,9 +523,8 @@ namespace graphick::renderer {
       curves_texture(GPU::TextureFormat::RGBA32F, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag),
       bands_texture(GPU::TextureFormat::R16UI, { 512, 512 }, GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag)
     {
-      // curves.reserve(512 * 512);
-      // bands.reserve(512 * 512 / 2);
-      // bands_data.reserve(512 * 512 / 2);
+      curves.reserve(512 * 512 * 2);
+      bands.reserve(512 * 512);
     }
 
     /**
@@ -428,11 +535,9 @@ namespace graphick::renderer {
 
       curves.clear();
       bands.clear();
-      bands_data.clear();
 
-      // curves.reserve(512 * 512 * 2);
-      // bands.reserve(512 * 512 / 2);
-      // bands_data.reserve(512 * 512 / 2);
+      curves.reserve(512 * 512 * 2);
+      bands.reserve(512 * 512);
     }
   };
 

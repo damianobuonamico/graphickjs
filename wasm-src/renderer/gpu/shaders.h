@@ -20,8 +20,8 @@ namespace graphick::renderer::GPU {
     Program program;                  /* The shader program. */
     Uniform vp_uniform;               /* The view projection uniform. */
     Uniform viewport_size_uniform;    /* The viewport size uniform. */
-    Uniform min_samples_uniform;      /* The minimum antialiasing samples uniform. */
-    Uniform max_samples_uniform;      /* The maximum antialiasing samples uniform. */
+    Uniform samples_uniform;          /* The antialiasing samples uniform. */
+    Uniform models_uniform;           /* The models uniform. */
     TextureUniform curves_texture;    /* The curves texture. */
     TextureUniform bands_texture;     /* The bands texture. */
 

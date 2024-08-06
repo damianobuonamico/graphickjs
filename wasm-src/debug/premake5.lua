@@ -68,6 +68,10 @@ workspace "graphick-debug"
     "/NODEFAULTLIB:\"LIBCMT\""
   }
 
+  flags {
+    "MultiProcessorCompile"
+  }
+
   filter "system:windows"
     systemversion "latest"
 

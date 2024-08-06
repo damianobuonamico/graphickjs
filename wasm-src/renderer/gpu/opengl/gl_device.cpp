@@ -158,29 +158,50 @@ namespace graphick::renderer::GPU::GL {
 
     const ivec2 size = viewport.size();
 
-    glCall(glViewport((GLint)viewport.min.x, (GLint)viewport.min.y, (GLsizei)size.x, (GLsizei)size.y));
+    if (viewport != s_device->m_state.viewport) {
+      glCall(glViewport((GLint)viewport.min.x, (GLint)viewport.min.y, (GLsizei)size.x, (GLsizei)size.y));
+      s_device->m_state.viewport = viewport;
+    }
+  }
 
-    s_device->m_state.viewport = viewport;
+  void GLDevice::set_color_mask(const bool red, const bool green, const bool blue, const bool alpha) {
+    glCall(glColorMask(red, green, blue, alpha));
   }
 
   void GLDevice::clear(const ClearOps& ops) {
     GLuint flags = 0;
 
     if (ops.color.has_value()) {
-      glCall(glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
-      glCall(glClearColor(ops.color->r, ops.color->g, ops.color->b, ops.color->a));
+      if (ops.color != s_device->m_state.clear_ops.color) {
+        glCall(glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
+        glCall(glClearColor(ops.color->r, ops.color->g, ops.color->b, ops.color->a));
+
+        s_device->m_state.clear_ops.color = ops.color.value();
+      }
+
       flags |= GL_COLOR_BUFFER_BIT;
     }
 
     if (ops.depth.has_value()) {
       glCall(glDepthMask(GL_TRUE));
-      glCall(glClearDepthf(ops.depth.value()));
+
+      if (ops.depth != s_device->m_state.clear_ops.depth) {
+        glCall(glClearDepthf(ops.depth.value()));
+
+        s_device->m_state.clear_ops.depth = ops.depth.value();
+      }
+
       flags |= GL_DEPTH_BUFFER_BIT;
     }
 
     if (ops.stencil.has_value()) {
-      glCall(glStencilMask(std::numeric_limits<GLuint>::max()));
-      glCall(glClearStencil((GLint)ops.stencil.value()));
+      if (ops.stencil != s_device->m_state.clear_ops.stencil) {
+        glCall(glStencilMask(std::numeric_limits<GLuint>::max()));
+        glCall(glClearStencil((GLint)ops.stencil.value()));
+
+        s_device->m_state.clear_ops.stencil = ops.stencil.value();
+      }
+
       flags |= GL_STENCIL_BUFFER_BIT;
     }
 
@@ -264,17 +285,9 @@ namespace graphick::renderer::GPU::GL {
   }
 
   void GLDevice::set_textures(const GLProgram& program, const std::vector<std::pair<GLTextureUniform, const Texture&>>& textures) {
-    size_t textures_bound = 0;
-
     for (const auto& [texture_parameter, texture] : textures) {
       texture.bind(texture_parameter.unit);
-      textures_bound |= (size_t)1 << static_cast<size_t>(texture_parameter.unit);
-    }
-
-    for (size_t texture_unit = 0; texture_unit < textures.size(); texture_unit++) {
-      if ((textures_bound & ((size_t)1 << texture_unit)) != 0) {
-        program.textures[texture_unit].set(static_cast<int>(texture_unit));
-      }
+      program.textures[texture_parameter.unit].set(static_cast<int>(texture_parameter.unit));
     }
   }
 
@@ -330,6 +343,7 @@ namespace graphick::renderer::GPU::GL {
       if (render_state.depth.has_value()) {
         glCall(glEnable(GL_DEPTH_TEST));
         glCall(glDepthFunc(gl_depth_func(render_state.depth->func)));
+        glCall(glDepthMask(render_state.depth->write));
       } else {
         glCall(glDisable(GL_DEPTH_TEST));
       }

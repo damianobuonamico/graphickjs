@@ -94,6 +94,16 @@ namespace graphick::renderer::GPU::GL {
     static void set_viewport(const irect viewport);
 
     /**
+     * @brief Sets the color mask.
+     *
+     * @param red Whether to enable red color channel.
+     * @param green Whether to enable green color channel.
+     * @param blue Whether to enable blue color channel.
+     * @param alpha Whether to enable alpha color channel.
+     */
+    static void set_color_mask(const bool red, const bool green, const bool blue, const bool alpha);
+
+    /**
      * @brief Clears the current render target.
      *
      * @param ops The clear operations.

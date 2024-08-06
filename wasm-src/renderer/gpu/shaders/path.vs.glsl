@@ -3,75 +3,68 @@ R"(
   precision highp float;
   precision highp int;
 
-  uniform mat4 uViewProjection;
-  uniform vec2 uViewportSize;
+  uniform mat4 u_view_projection;
+  uniform vec2 u_viewport_size;
+  uniform vec4 u_models[${MAX_MODELS}];
 
-  in uvec2 aPosition;
-  in vec4 aInstanceAttrib1;
-  in vec2 aInstanceAttrib2;
-  in vec2 aInstancePosition;
-  in vec2 aInstanceSize;
-  in uvec4 aInstanceColor;
-  in uint aInstanceCurvesData;
-  in uint aInstanceBandsData;
+  in uvec2 a_position;
+  in vec2 a_instance_position;
+  in vec2 a_instance_size;
+  in uvec4 a_instance_color;
 
-  out vec4 vColor;
-  out vec2 vTexCoord;
+  in uint a_instance_attr_1;
+  in uint a_instance_attr_2;
+  in uint a_instance_attr_3;
 
-  flat out vec2 vPosition;
-  flat out vec2 vSize;
-  flat out uint vCurvesData;
-  flat out uint vBandsData;
+  out vec4 v_color;
+  out vec2 v_tex_coord;
+
+  flat out vec2 v_position;
+  flat out vec2 v_size;
+  flat out uint v_attr_1;
+  flat out uint v_attr_2;
 
   void main() {
+    uint model_index = (a_instance_attr_3 & 0xFFFU) * 2U;
+    uint z_index = a_instance_attr_3 >> 12U;
+
     mat3 transform = mat3(
-      aInstanceSize.x,     0.0,                 0.0,
-      0.0,                 aInstanceSize.y,     0.0,
-      aInstancePosition.x, aInstancePosition.y, 1.0
+      a_instance_size.x,     0.0,                   0.0,
+      0.0,                   a_instance_size.y,     0.0,
+      a_instance_position.x, a_instance_position.y, 1.0
     );
-
     mat4 model = mat4(
-      aInstanceAttrib1.x, aInstanceAttrib1.w, 0.0, 0.0,
-      aInstanceAttrib1.y, aInstanceAttrib2.x, 0.0, 0.0,
-      aInstanceAttrib1.z, aInstanceAttrib2.y, 1.0, 0.0,
-      0.0,                0.0,                0.0, 1.0
+      u_models[model_index].x, u_models[model_index + 1U].x, 0.0, 0.0,
+      u_models[model_index].y, u_models[model_index + 1U].y, 0.0, 0.0,
+      0.0,                     0.0,                          1.0, 0.0,
+      u_models[model_index].z, u_models[model_index + 1U].z, 0.0, 1.0
     );
 
-    mat4 m = uViewProjection * model;
+    mat4 m = u_view_projection * model;
 
-    vec2 position = vec2(aPosition);
+    vec2 position = vec2(a_position);
     vec2 p = (transform * vec3(position, 1.0)).xy;
-    vec2 n = normalize(position - 0.5);
+    vec2 normal = vec2(position.x - 0.5 < 0.0 ? -1.0 : 1.0, position.y - 0.5 < 0.0 ? -1.0 : 1.0);
+    vec2 n = normalize(normal);
     
-    float w = uViewportSize.x;
-    float h = uViewportSize.y;
+    float w = u_viewport_size.x;
+    float h = u_viewport_size.y;
     float s = m[0][3] * p.x + m[1][3] * p.y + m[3][3];
     float t = m[0][3] * n.x + m[1][3] * n.y;
     float u = w * (s * (m[0][0] * n.x + m[1][0] * n.y) - t * (m[0][0] * p.x + m[1][0] * p.y + m[3][0]));
     float v = h * (s * (m[0][1] * n.x + m[1][1] * n.y) - t * (m[0][1] * p.x + m[1][1] * p.y + m[3][1]));
 
-    float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t) * 2.0;
+    float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t);
 
-    // vec2 xDilate = (model * transform * vec3(1.0, 0.0, 1.0)).xy;
-    // vec2 yDilate = (model * transform * vec3(0.0, 1.0, 1.0)).xy;
-    // vec2 origin = (model * transform * vec3(0.0, 0.0, 1.0)).xy;
+    gl_Position = m * vec4(p + normal * d, float(z_index) / 1048576.0, 1.0);
 
-    // float xDist = distance(xDilate, origin) * uZoom / 5.0;
-    // float yDist = distance(yDilate, origin) * uZoom / 5.0;
+    v_color = vec4(a_instance_color) / 255.0;
+    v_tex_coord = position + normal * d / a_instance_size;
 
-    // gl_Position = uViewProjection * (vec4(model * transform * vec3(position + vec2(position - 0.5) / vec2(xDist, yDist), 1.0), 1.0));
-    gl_Position = m * vec4(p + n * d * 2.0, 1.0, 1.0);
-    // gl_Position = m * vec4(p, 1.0, 1.0);
-
-    vColor = vec4(float(aInstanceColor.x) / 255.0, float(aInstanceColor.y) / 255.0 + uViewportSize.x * 0.00000000000000001, float(aInstanceColor.z) / 255.0, float(aInstanceColor.w) / 255.0);
-    vTexCoord = position + n * d / aInstanceSize;
-    // vTexCoord = position;
-    // vTexCoord = position + (position - 0.5) / vec2(xDist, yDist);
-
-    vPosition = aInstancePosition;
-    vSize = aInstanceSize;
-    vCurvesData = aInstanceCurvesData;
-    vBandsData = aInstanceBandsData;
+    v_position = a_instance_position;
+    v_size = a_instance_size;
+    v_attr_1 = a_instance_attr_1;
+    v_attr_2 = a_instance_attr_2;
   }
 
 )"

@@ -33,16 +33,17 @@ R"(
       0.0,                   a_instance_size.y,     0.0,
       a_instance_position.x, a_instance_position.y, 1.0
     );
-    mat3 model = mat3(
-      u_models[model_index].x, u_models[model_index + 1U].x, 0.0,
-      u_models[model_index].y, u_models[model_index + 1U].y, 0.0,
-      u_models[model_index].z, u_models[model_index + 1U].z, 1.0
+    mat4 model = mat4(
+      u_models[model_index].x, u_models[model_index + 1U].x, 0.0, 0.0,
+      u_models[model_index].y, u_models[model_index + 1U].y, 0.0, 0.0,
+      0.0,                     0.0,                          1.0, 0.0,
+      u_models[model_index].z, u_models[model_index + 1U].z, 0.0, 1.0
     );
 
-    mat4 m = u_view_projection;
+    mat4 m = u_view_projection * model;
 
     vec2 position = vec2(a_position);
-    vec2 p = (model * transform * vec3(position, 1.0)).xy;
+    vec2 p = (transform * vec3(position, 1.0)).xy;
     vec2 n = normalize(position - 0.5);
     
     float w = u_viewport_size.x;
@@ -52,14 +53,14 @@ R"(
     float u = w * (s * (m[0][0] * n.x + m[1][0] * n.y) - t * (m[0][0] * p.x + m[1][0] * p.y + m[3][0]));
     float v = h * (s * (m[0][1] * n.x + m[1][1] * n.y) - t * (m[0][1] * p.x + m[1][1] * p.y + m[3][1]));
 
-    float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t) * 2.0;
+    float d = s * s * (s * t + sqrt(u * u + v * v)) / (u * u + v * v - s * s * t * t);
 
-    vec2 p_prime = p + n * d * 0.0000000000000001;
+    vec2 p_prime = p + n * d;
 
     gl_Position = m * vec4(p_prime, float(z_index) / 1048576.0, 1.0);
 
     v_color = vec4(a_instance_color) / 255.0;
-    v_tex_coord = position + n * d / a_instance_size * 0.0000000000000001;
+    v_tex_coord = position + n * d / a_instance_size;
 
     v_position = a_instance_position;
     v_size = a_instance_size;

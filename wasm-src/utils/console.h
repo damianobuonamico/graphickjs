@@ -30,7 +30,7 @@
 #define OPTICK_FRAME(...) ((void)0)
 #endif
 
-#define RECORDS_SIZE 100
+#define RECORDS_SIZE 150
 
 namespace graphick::utils {
 
@@ -76,7 +76,16 @@ namespace graphick::utils {
        */
       inline void end() {
         auto duration = std::chrono::high_resolution_clock::now() - last_time;
-        records[index % RECORDS_SIZE] += std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+        end(std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
+      }
+
+      /**
+       * @brief Ends the timer with a specific time.
+       *
+       * @param record The time to record.
+       */
+      inline void end(const size_t record) {
+        records[index % RECORDS_SIZE] += record;
       }
 
       /**
@@ -249,6 +258,26 @@ namespace graphick::utils {
     }
 
     /**
+     * @brief Records an external total timer (e.g. GPU timer).
+     *
+     * @param name The name of the timer.
+     * @param record The time to record.
+     */
+    static inline void total_record(const std::string& name, const size_t record) {
+      auto it = m_total_timers.find(name);
+      auto time = std::chrono::high_resolution_clock::now();
+
+      if (it == m_total_timers.end()) {
+        TotalTimer timer;
+        timer.end(record);
+
+        m_total_timers.insert({ name, timer });
+      } else {
+        it->second.end(record);
+      }
+    }
+
+    /**
      * @brief Starts an average timer.
      *
      * @param name The name of the timer.
@@ -336,10 +365,12 @@ namespace std {
 
 #ifdef GK_CONF_DIST
 #define GK_TOTAL(...) ((void)0)
+#define GK_TOTAL_RECORD(...) ((void)0)
 #define GK_AVERAGE(...) ((void)0)
 #define GK_FRAME(...) ((void)0)
 #else
 #define GK_TOTAL(name) graphick::utils::ScopedTimer __scoped_timer(name, true)
+#define GK_TOTAL_RECORD(name, record) graphick::utils::console::total_record(name, record)
 #define GK_AVERAGE(name) graphick::utils::ScopedTimer __scoped_timer(name) 
 #define GK_FRAME(name) graphick::utils::console::frame(name); GK_TOTAL("MainThread")
 #endif

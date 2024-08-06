@@ -306,7 +306,8 @@ namespace graphick::renderer::GPU::GL {
     GLenum type = gl_type(this->format);
 
     ivec2 origin = ivec2::zero();
-    ivec2 size = ivec2(this->size.x, static_cast<int>(byte_size) / this->size.x + 1);
+    // ivec2 size = ivec2(this->size.x, static_cast<int>(byte_size) / this->size.x + 1);
+    ivec2 size = ivec2(this->size.x, this->size.y);
 
     glCall(glTexSubImage2D(
       GL_TEXTURE_2D, 0,

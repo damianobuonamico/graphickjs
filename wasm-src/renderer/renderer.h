@@ -185,6 +185,45 @@ namespace graphick::renderer {
     static inline Renderer* get() { return s_instance; }
 
     /**
+     * @brief Pushes a new transformation matrix to the renderer if needed.
+     *
+     * If an identical transformation matrix is already present, the index of the existing matrix is returned.
+     *
+     * @param transform The transformation matrix to push.
+     * @return The index of the transformation matrix.
+     */
+    uint32_t push_transform(const mat2x3& transform);
+
+    /**
+     * @brief Draws a CubicPath with the provided Fill properties without performing clipping.
+     *
+     * Takes ownership of the path and caches it for accelerated rendering.
+     * If the screen-space footpring is small, no culling is performed.
+     * This method should be used for elements that are almost completely visible.
+     *
+     * @param path The CubicPath to draw.
+     * @param fill The Fill properties to use.
+     * @param transform The transformation matrix to apply to the path.
+     * @param bounding_rect The bounding rectangle of the path.
+     * @param transformed_bounding_rect The bounding rectangle of the transformed path.
+     * @param culling Whether to perform culling.
+     */
+    void draw_no_clipping(geom::cubic_path&& path, const Fill& fill, const mat2x3& transform, const rect& bounding_rect, const rect& transformed_bounding_rect, const bool culling);
+
+    /**
+     * @brief Draws a CubicPath with the provided Fill properties with clipping and culling.
+     *
+     * Takes ownership of the path and caches it for accelerated rendering.
+     * This method should be used for elements that are mostly occluded.
+     *
+     * @param path The CubicPath to draw.
+     * @param fill The Fill properties to use.
+     * @param transform The transformation matrix to apply to the path.
+     * @param bounding_rect The bounding rectangle of the path.
+     */
+    void draw_with_clipping(geom::cubic_path&& path, const Fill& fill, const mat2x3& transform, const rect& bounding_rect);
+
+    /**
      * @brief Flushes the renderer.
      *
      * This function issues the draw calls to the GPU.

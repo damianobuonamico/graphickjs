@@ -14,13 +14,13 @@ namespace graphick::renderer::GPU {
   /* -- Programs -- */
 
   PathProgram::PathProgram() :
-    program(Device::create_program("path")),
-    vp_uniform(Device::get_uniform(program, "uViewProjection")),
-    viewport_size_uniform(Device::get_uniform(program, "uViewportSize")),
-    min_samples_uniform(Device::get_uniform(program, "uMinSamples")),
-    max_samples_uniform(Device::get_uniform(program, "uMaxSamples")),
-    curves_texture(Device::get_texture_uniform(program, "uCurvesTexture")),
-    bands_texture(Device::get_texture_uniform(program, "uBandsTexture")) {}
+    program(Device::create_program("path", { { "MAX_MODELS", (std::stringstream() << (Device::max_vertex_uniform_vectors() - 6)).str() } })),
+    vp_uniform(Device::get_uniform(program, "u_view_projection")),
+    viewport_size_uniform(Device::get_uniform(program, "u_viewport_size")),
+    samples_uniform(Device::get_uniform(program, "u_samples")),
+    models_uniform(Device::get_uniform(program, "u_models")),
+    curves_texture(Device::get_texture_uniform(program, "u_curves_texture")),
+    bands_texture(Device::get_texture_uniform(program, "u_bands_texture")) {}
 
   BoundarySpanProgram::BoundarySpanProgram() :
     program(Device::create_program("boundary_span", { { "MAX_MODELS", (std::stringstream() << (Device::max_vertex_uniform_vectors() - 6)).str() } })),
@@ -56,66 +56,59 @@ namespace graphick::renderer::GPU {
     const Buffer& instance_buffer,
     const Buffer& vertex_buffer
   ) {
-    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "aPosition");
-    VertexAttribute instance_first_attr = Device::get_vertex_attribute(program.program, "aInstanceAttrib1");
-    VertexAttribute instance_second_attr = Device::get_vertex_attribute(program.program, "aInstanceAttrib2");
-    VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program, "aInstancePosition");
-    VertexAttribute instance_size_attr = Device::get_vertex_attribute(program.program, "aInstanceSize");
-    VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program, "aInstanceColor");
-    VertexAttribute instance_curves_data_attr = Device::get_vertex_attribute(program.program, "aInstanceCurvesData");
-    VertexAttribute instance_bands_data_attr = Device::get_vertex_attribute(program.program, "aInstanceBandsData");
+    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+    VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program, "a_instance_position");
+    VertexAttribute instance_size_attr = Device::get_vertex_attribute(program.program, "a_instance_size");
+    VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program, "a_instance_color");
+    VertexAttribute instance_first_attr = Device::get_vertex_attribute(program.program, "a_instance_attr_1");
+    VertexAttribute instance_second_attr = Device::get_vertex_attribute(program.program, "a_instance_attr_2");
+    VertexAttribute instance_third_attr = Device::get_vertex_attribute(program.program, "a_instance_attr_3");
 
     VertexAttrDescriptor position_desc = {
       VertexAttrClass::Int, VertexAttrType::U8,
       2, 2, 0, 0, 0
     };
 
-    VertexAttrDescriptor instance_first_desc = {
-      VertexAttrClass::Float, VertexAttrType::F32,
-      4, 52, 0, 1, 1
-    };
-
-    VertexAttrDescriptor instance_second_desc = {
-      VertexAttrClass::Float, VertexAttrType::F32,
-      2, 52, 16, 1, 1
-    };
-
     VertexAttrDescriptor instance_position_desc = {
       VertexAttrClass::Float, VertexAttrType::F32,
-      2, 52, 24, 1, 1
+      2, 32, 0, 1, 1
     };
 
     VertexAttrDescriptor instance_size_desc = {
       VertexAttrClass::Float, VertexAttrType::F32,
-      2, 52, 32, 1, 1
+      2, 32, 8, 1, 1
     };
 
     VertexAttrDescriptor instance_color_desc = {
       VertexAttrClass::Int, VertexAttrType::U8,
-      4, 52, 40, 1, 1
+      4, 32, 16, 1, 1
     };
 
-    VertexAttrDescriptor instance_curves_data_desc = {
+    VertexAttrDescriptor instance_first_desc = {
       VertexAttrClass::Int, VertexAttrType::U32,
-      1, 52, 44, 1, 1
+      1, 32, 20, 1, 1
     };
 
-    VertexAttrDescriptor instance_bands_data_desc = {
+    VertexAttrDescriptor instance_second_desc = {
       VertexAttrClass::Int, VertexAttrType::U32,
-      2, 52, 48, 1, 1
+      1, 32, 24, 1, 1
+    };
+
+    VertexAttrDescriptor instance_third_desc = {
+      VertexAttrClass::Int, VertexAttrType::U32,
+      1, 32, 28, 1, 1
     };
 
     vertex_buffer.bind(vertex_array);
     vertex_array.configure_attribute(position_attr, position_desc);
 
     instance_buffer.bind(vertex_array);
-    vertex_array.configure_attribute(instance_first_attr, instance_first_desc);
-    vertex_array.configure_attribute(instance_second_attr, instance_second_desc);
     vertex_array.configure_attribute(instance_position_attr, instance_position_desc);
     vertex_array.configure_attribute(instance_size_attr, instance_size_desc);
     vertex_array.configure_attribute(instance_color_attr, instance_color_desc);
-    vertex_array.configure_attribute(instance_curves_data_attr, instance_curves_data_desc);
-    vertex_array.configure_attribute(instance_bands_data_attr, instance_bands_data_desc);
+    vertex_array.configure_attribute(instance_first_attr, instance_first_desc);
+    vertex_array.configure_attribute(instance_second_attr, instance_second_desc);
+    vertex_array.configure_attribute(instance_third_attr, instance_third_desc);
   }
 
   BoundarySpanVertexArray::BoundarySpanVertexArray(
