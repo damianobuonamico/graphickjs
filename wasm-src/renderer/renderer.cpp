@@ -1327,13 +1327,16 @@ namespace graphick::renderer {
 
     /* Calculate culling data. */
 
+    const int culling_horizontal_bands = std::clamp(static_cast<int>(transformed_bounding_rect.size().y * m_viewport.zoom / 15.0f), 3, 32);
+    const float culling_band_delta = bounds_size.y / culling_horizontal_bands;
+
     // TODO: adjust number of bands based on the screen-space size of the path
-    std::vector<Band> bands(horizontal_bands);
-    std::vector<std::vector<Intersection>> band_bottom_intersections(horizontal_bands);
+    std::vector<Band> bands(culling_horizontal_bands);
+    std::vector<std::vector<Intersection>> band_bottom_intersections(culling_horizontal_bands);
 
     for (int i = 0; i < bands.size(); i++) {
-      bands[i].top_y = bounding_rect.min.y + i * band_delta;
-      bands[i].bottom_y = bounding_rect.min.y + (i + 1) * band_delta;
+      bands[i].top_y = bounding_rect.min.y + i * culling_band_delta;
+      bands[i].bottom_y = bounding_rect.min.y + (i + 1) * culling_band_delta;
     }
 
     for (uint16_t i = 0; i < path.size(); i++) {
@@ -1344,10 +1347,10 @@ namespace graphick::renderer {
 
       /* Being monotonic, it is straightforward to determine which bands the curve intersects. */
 
-      const float start_band_factor = (min[i].y - bounding_rect.min.y) / band_delta;
-      const float end_band_factor = (max[i].y - bounding_rect.min.y) / band_delta;
-      const int start_band = std::clamp(static_cast<int>(start_band_factor), 0, horizontal_bands - 1);
-      const int end_band = std::clamp(static_cast<int>(end_band_factor), 0, horizontal_bands - 1);
+      const float start_band_factor = (min[i].y - bounding_rect.min.y) / culling_band_delta;
+      const float end_band_factor = (max[i].y - bounding_rect.min.y) / culling_band_delta;
+      const int start_band = std::clamp(static_cast<int>(start_band_factor), 0, culling_horizontal_bands - 1);
+      const int end_band = std::clamp(static_cast<int>(end_band_factor), 0, culling_horizontal_bands - 1);
 
       if (start_band >= end_band) {
         /* Curve is within one band. */
@@ -1451,22 +1454,22 @@ namespace graphick::renderer {
         return a.x < b.x;
       });
 
-      if (band.disabled_spans.size() == 0) {
+      // if (band.disabled_spans.size() == 0) {
         /* If for some reason there are no disabled spans, the band is empty. */
 
         // TODO: color mask here
         // m_filled_spans.instances.push_back({
-        //   vec2(bounding_rect.min.x, band.top_y), vec2(bounds_size.x, band_delta),
+        //   vec2(bounding_rect.min.x, band.top_y), vec2(bounds_size.x, culling_band_delta),
         //   vec4(0.0f, 0.0f, 0.0f, 0.0f), fill.z_index, transform_index
         // });
 
-        continue;
-      }
+      //   continue;
+      // }
 
-      if (band.disabled_spans.front().min != bounding_rect.min.x) {
+      // if (band.disabled_spans.front().min != bounding_rect.min.x) {
         // TODO: color mask here
         // m_filled_spans.instances.push_back({
-        //   vec2(bounding_rect.min.x, band.top_y), vec2(band.disabled_spans.front().min - bounding_rect.min.x, band_delta),
+        //   vec2(bounding_rect.min.x, band.top_y), vec2(band.disabled_spans.front().min - bounding_rect.min.x, culling_band_delta),
         //   vec4(0.0f, 0.0f, 0.0f, 0.0f), fill.z_index, transform_index
         // });
 
@@ -1476,7 +1479,7 @@ namespace graphick::renderer {
         // get()->m_line_instances.instances.push_back({ transform * vec2(band.disabled_spans.front().min, band.top_y), transform * vec2(band.disabled_spans.front().min, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
         // get()->m_line_instances.instances.push_back({ transform * vec2(bounding_rect.min.x, band.top_y), transform * vec2(band.disabled_spans.front().min, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
         // get()->m_line_instances.instances.push_back({ transform * vec2(band.disabled_spans.front().min, band.top_y), transform * vec2(bounding_rect.min.x, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
-      }
+      // }
 
       int winding = 0;
       int winding_k = 0;
@@ -1497,7 +1500,7 @@ namespace graphick::renderer {
           // band.filled_spans.push_back({ span1.max, span2.min });
 
           m_filled_spans.instances.push_back({
-            vec2(span1.max, band.top_y), vec2(span2.min - span1.max, band_delta),
+            vec2(span1.max, band.top_y), vec2(span2.min - span1.max, culling_band_delta),
             fill.color, fill.z_index, transform_index
           });
 
@@ -1507,10 +1510,10 @@ namespace graphick::renderer {
           // get()->m_line_instances.instances.push_back({ transform * vec2(span2.min, band.top_y), transform * vec2(span2.min, band.bottom_y), 2.0f, vec4{ 0.9f, 0.1f, 0.1f, 1.0f } });
           // get()->m_line_instances.instances.push_back({ transform * vec2(span1.max, band.top_y), transform * vec2(span2.min, band.bottom_y), 2.0f, vec4{ 0.9f, 0.1f, 0.1f, 1.0f } });
           // get()->m_line_instances.instances.push_back({ transform * vec2(span2.min, band.top_y), transform * vec2(span1.max, band.bottom_y), 2.0f, vec4{ 0.9f, 0.1f, 0.1f, 1.0f } });
-        } else {
+        // } else {
           // TODO: only these should be rendered with color mask set to (false, false, false, false)
           // m_filled_spans.instances.push_back({
-          //   vec2(span1.max, band.top_y), vec2(span2.min - span1.max, band_delta),
+          //   vec2(span1.max, band.top_y), vec2(span2.min - span1.max, culling_band_delta),
           //   vec4(0.0f, 0.0f, 0.0f, 0.0f), fill.z_index, transform_index
           // });
 
@@ -1523,10 +1526,10 @@ namespace graphick::renderer {
         }
       }
 
-      if (band.disabled_spans.back().max != bounding_rect.max.x) {
+      // if (band.disabled_spans.back().max != bounding_rect.max.x) {
         // TODO: color mask here
         // m_filled_spans.instances.push_back({
-        //   vec2(band.disabled_spans.back().max, band.top_y), vec2(bounding_rect.max.x - band.disabled_spans.back().max, band_delta),
+        //   vec2(band.disabled_spans.back().max, band.top_y), vec2(bounding_rect.max.x - band.disabled_spans.back().max, culling_band_delta),
         //   vec4(0.0f, 0.0f, 0.0f, 0.0f), fill.z_index, transform_index
         // });
 
@@ -1536,12 +1539,12 @@ namespace graphick::renderer {
         // get()->m_line_instances.instances.push_back({ transform * vec2(bounding_rect.max.x, band.top_y), transform * vec2(bounding_rect.max.x, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
         // get()->m_line_instances.instances.push_back({ transform * vec2(band.disabled_spans.back().max, band.top_y), transform * vec2(bounding_rect.max.x, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
         // get()->m_line_instances.instances.push_back({ transform * vec2(bounding_rect.max.x, band.top_y), transform * vec2(band.disabled_spans.back().max, band.bottom_y), 2.0f, vec4{ 0.1f, 0.9f, 0.1f, 1.0f } });
-      }
+      // }
 
       // for (const Span& filled_span : band.filled_spans) {
         // get()->m_filled_spans.instances.push_back({
         //   vec2(filled_span.min, band.top_y),
-        //   vec2(filled_span.max - filled_span.min, band_delta),
+        //   vec2(filled_span.max - filled_span.min, culling_band_delta),
         //   fill.color,
         //   fill.z_index,
         //   transform_index
