@@ -92,13 +92,14 @@ namespace graphick::renderer {
    * @brief Represents a path instance (32 bytes), the main building block of the renderer.
    *
    * @struct PathInstance
-   * @note There are 6 bits of padding left in the struct.
+   * @note There are 5 bits of padding left in the struct.
+   * @note The maximum number of bands is currently 256 here and 32 in the renderer, so a few bits are wasted.
    */
   struct PathInstance {
     vec2 position;      /* | position.x (32) | position.y (32) | */
     vec2 size;          /* | size.x (32) | size.y (32) |*/
     uvec4 color;        /* | color.rgba (32) | */
-    uint32_t attr_1;    /* | (6) - is_quad (1) - is_eodd (1) - curves_x (12) - curves_y (12) | */
+    uint32_t attr_1;    /* | (5) - is_cull (1) - is_quad (1) - is_eodd (1) - curves_x (12) - curves_y (12) | */
     uint32_t attr_2;    /* | bands_h (8) - bands_x (12) - bands_y (12) | */
     uint32_t attr_3;    /* | z_index (20) - transform_index (12) | */
 
@@ -113,13 +114,14 @@ namespace graphick::renderer {
      * @param horizontal_bands The number of horizontal bands.
      * @param is_quadratic Whether the curves are quadratic or cubic.
      * @param is_even_odd Whether the fill rule is even-odd or non-zero.
+     * @param is_culling Whether the path is culled.
      * @param z_index The z-index of the span.
      * @param transform_index The index of the transform to apply to the span.
      */
     PathInstance(
       const vec2 position, const vec2 size, const vec4& color,
       const size_t curves_start_index, const size_t bands_start_index, const uint8_t horizontal_bands,
-      const bool is_quadratic, const bool is_even_odd,
+      const bool is_quadratic, const bool is_even_odd, const bool is_culling,
       const uint32_t z_index, const uint32_t transform_index
     ) :
       position(position), size(size), color(color * 255.0f)
@@ -131,9 +133,10 @@ namespace graphick::renderer {
       const uint32_t u_bands_h = (horizontal_bands < 1 || horizontal_bands > 256) ? 0 : static_cast<uint32_t>(horizontal_bands - 1);
       const uint32_t u_is_quad = static_cast<uint32_t>(is_quadratic);
       const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
+      const uint32_t u_is_cull = static_cast<uint32_t>(is_culling);
       const uint32_t u_transform_index = (transform_index << 20) >> 20;
 
-      attr_1 = (u_is_quad << 25) | (u_is_eodd << 24) | (u_curves_x << 12) | (u_curves_y);
+      attr_1 = (u_is_cull << 26) | (u_is_quad << 25) | (u_is_eodd << 24) | (u_curves_x << 12) | (u_curves_y);
       attr_2 = (u_bands_h << 24) | (u_bands_x << 12) | (u_bands_y);
       attr_3 = (z_index << 12) | (u_transform_index);
     }

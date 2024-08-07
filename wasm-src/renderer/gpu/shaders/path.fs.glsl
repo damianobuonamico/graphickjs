@@ -129,7 +129,8 @@ R"(
   float cubic_horizontal_coverage(vec2 pixel_pos, float inv_pixel_size, uint curves_offset, uint band_data_start, uint band_curves_count) {
     float coverage = 0.0;
 
-    vec2 position_delta = v_position / v_size + pixel_pos;
+    // vec2 position_delta = v_position / v_size + pixel_pos;
+    vec2 position_delta = pixel_pos;
 
     for (uint curve = 0U; curve < band_curves_count; curve++) {
       uint curve_offset = curves_offset + texture(u_bands_texture, to_coords(band_data_start + curve)).x * 2U;
@@ -202,6 +203,7 @@ R"(
   float cubic_coverage(int samples) {
     vec2 pixel_size = vec2(fwidth(v_tex_coord.x), fwidth(v_tex_coord.y));
     float coverage = 0.0;
+    bool is_culling = bool((v_attr_1 >> 26) & 0x1U);
 
     uint bands = (v_attr_2 >> 24) + 1U;
     
@@ -216,10 +218,18 @@ R"(
     for (int yOffset = (1 - samples) / 2; yOffset <= (samples - 1) / 2; yOffset++) {
       vec2 sample_pos = v_tex_coord + vec2(0.0, yOffset) * pixel_size.y / float(samples);
     
+      // TODO: try to move bands calculation outside of the loop
       uint band_index = clamp(uint(floor(sample_pos.y * float(bands))), 0U, bands - 1U);
-      uint band_data_start = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 2U)).x + bandsIndexOffset;
-      uint band_curves_count = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 2U + 1U)).x;
-    
+      uint band_data_start = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 4U)).x + bandsIndexOffset;
+      uint band_curves_count = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 4U + 1U)).x;
+
+      if (is_culling) {
+        float band_min_x = float(texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 4U + 2U)).x);
+        float band_max_x = float(texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 4U + 3U)).x);
+
+        if (sample_pos.x * v_size.x < band_min_x || sample_pos.x * v_size.x > band_max_x) discard;
+      }
+
       coverage += cubic_horizontal_coverage(sample_pos, 1.0 / pixel_size.x, curves_index_offset, band_data_start, band_curves_count);
     }
 
