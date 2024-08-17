@@ -490,44 +490,54 @@ namespace graphick::renderer {
     geom::path_builder(path, transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, sink_callback);
   }
 
-  void Renderer::draw_outline(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance, const Stroke* stroke, const rect* bounding_rect) {
-    // TODO: fix
-
-    if (path.size() == 1) {
-      const vec2 p0 = transform * path.at(0);
-      const vec2 p1 = transform * path.at(1);
-      const vec2 p2 = transform * path.at(2);
-      const vec2 p3 = transform * path.at(3);
-
-      vec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
-      vec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
-      vec2 c = -3.0 * p0 + 3.0 * p1;
-      vec2 p;
-
-      float conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
-      float dt = std::sqrtf((std::sqrt(8.0) * tolerance) / conc);
-      float t = dt;
-
-      vec2 last = p0;
-
-      while (t < 1.0f) {
-        float t_sq = t * t;
-
-        p = a * t_sq * t + b * t_sq + c * t + p0;
-
-        get()->m_line_instances.instances.push_back({ last, p, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
-
-        last = p;
-        t += dt;
-      }
-
-      get()->m_line_instances.instances.push_back({ last, p3, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
-
+  void Renderer::draw_outline(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance, const bool draw_vertices, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
+    if (path.empty()) {
       return;
     }
 
+    if (draw_vertices) {
+      get()->draw_outline_with_vertices(path, transform, tolerance, selected_vertices, stroke);
+    } else {
+      get()->draw_outline_no_vertices(path, transform, tolerance, stroke);
+    }
 
-    // geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
+      // TODO: fix
+
+      // if (path.size() == 1) {
+      //   const vec2 p0 = transform * path.at(0);
+      //   const vec2 p1 = transform * path.at(1);
+      //   const vec2 p2 = transform * path.at(2);
+      //   const vec2 p3 = transform * path.at(3);
+
+      //   vec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
+      //   vec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
+      //   vec2 c = -3.0 * p0 + 3.0 * p1;
+      //   vec2 p;
+
+      //   float conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
+      //   float dt = std::sqrtf((std::sqrt(8.0) * tolerance) / conc);
+      //   float t = dt;
+
+      //   vec2 last = p0;
+
+      //   while (t < 1.0f) {
+      //     float t_sq = t * t;
+
+      //     p = a * t_sq * t + b * t_sq + c * t + p0;
+
+      //     get()->m_line_instances.instances.push_back({ last, p, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+
+      //     last = p;
+      //     t += dt;
+      //   }
+
+      //   get()->m_line_instances.instances.push_back({ last, p3, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+
+      //   return;
+      // }
+
+
+      // geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
   void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
@@ -1133,6 +1143,136 @@ namespace graphick::renderer {
 
   void Renderer::draw_with_clipping(geom::cubic_path&& path, const Fill& fill, const mat2x3& transform, const rect& bounding_rect) {
 
+  }
+
+  void Renderer::draw_outline_quadratic(const vec2 p0, const vec2 p1, const vec2 p2, const vec4& color) {
+    
+  }
+
+  void Renderer::draw_outline_cubic(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const vec4& color) {
+
+  }
+
+  void Renderer::draw_outline_no_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance, const Stroke* stroke) {
+
+  }
+
+  void Renderer::draw_outline_with_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke) {
+    InstanceBuffer<LineInstance>& lines = m_line_instances.instances;
+    InstanceBuffer<RectInstance>& rects = m_rect_instances.instances;
+    InstanceBuffer<CircleInstance>& circles = get()->m_circle_instances.instances;
+
+    uint32_t i = path.points_count() - 1;
+    vec2 last_raw = path.at(i);
+    vec2 last = transform * last_raw;
+
+    if (!path.closed()) {
+      rects.push_back({ last, m_ui_options.vertex_size, m_ui_options.primary_color });
+
+      if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+        rects.push_back({ last, m_ui_options.vertex_inner_size, vec4::identity() });
+      }
+
+      const vec2 out_handle = path.out_handle();
+
+      if (out_handle != last_raw) {
+        const vec2 h = transform * out_handle;
+
+        circles.push_back({ h, m_ui_options.handle_radius, m_ui_options.primary_color });
+        lines.push_back({ h, last, m_ui_options.line_width, m_ui_options.primary_color_05 });
+      }
+    }
+
+    /* We draw the vertices in reverse order to be coherent with hit testing. */
+
+    path.for_each_reversed(
+      [&](const vec2 p0_raw) {
+        const vec2 p0 = transform * p0_raw;
+
+        rects.push_back({ p0, m_ui_options.vertex_size, m_ui_options.primary_color });
+
+        if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+          rects.push_back({ p0, m_ui_options.vertex_inner_size, vec4::identity() });
+        }
+
+        if (!path.closed()) {
+          vec2 in_handle = path.in_handle();
+
+          if (in_handle != p0_raw) {
+            const vec2 h = transform * in_handle;
+
+            circles.push_back({ h, m_ui_options.handle_radius, m_ui_options.primary_color });
+            lines.push_back({ h, p0, m_ui_options.line_width, m_ui_options.primary_color_05 });
+          }
+        }
+
+        last = p0;
+        i -= 1;
+      },
+      [&](const vec2 p0_raw, const vec2 p1_raw) {
+        const vec2 p0 = transform * p0_raw;
+
+        lines.push_back({ last, p0, m_ui_options.line_width, m_ui_options.primary_color_05 });
+
+        rects.push_back({ p0, m_ui_options.vertex_size, m_ui_options.primary_color });
+
+        if (selected_vertices && selected_vertices->find(i - 1) == selected_vertices->end()) {
+          rects.push_back({ p0, m_ui_options.vertex_inner_size, vec4::identity() });
+        }
+
+        last = p0;
+        i -= 1;
+      },
+      [&](const vec2 p0_raw, const vec2 p1_raw, const vec2 p2_raw) {
+        const vec2 p0 = transform * p0_raw;
+        const vec2 p1 = transform * p1_raw;
+
+        draw_outline_quadratic(last, p1, p0, m_ui_options.primary_color_05);
+
+        rects.push_back({ p0, m_ui_options.vertex_size, m_ui_options.primary_color });
+
+        if (selected_vertices && selected_vertices->find(i - 2) == selected_vertices->end()) {
+          rects.push_back({ p0, m_ui_options.vertex_inner_size, vec4::identity() });
+        }
+
+        if (p1_raw != p0_raw && p2_raw != p0_raw) {
+          const vec2 h = transform * p1_raw;
+
+          circles.push_back({ p1, m_ui_options.handle_radius, m_ui_options.primary_color });
+          lines.push_back({ p1, p0, m_ui_options.line_width, m_ui_options.primary_color_05 });
+          lines.push_back({ p1, last, m_ui_options.line_width, m_ui_options.primary_color_05 });
+        }
+
+        last = p0;
+        i -= 2;
+      },
+      [&](const vec2 p0_raw, const vec2 p1_raw, const vec2 p2_raw, const vec2 p3_raw) {
+        const vec2 p0 = transform * p0_raw;
+        const vec2 p1 = transform * p1_raw;
+        const vec2 p2 = transform * p2_raw;
+
+        draw_outline_cubic(last, p2, p1, p0, m_ui_options.primary_color_05);
+
+        rects.push_back({ p0, m_ui_options.vertex_size, m_ui_options.primary_color });
+
+        if (selected_vertices && selected_vertices->find(i - 3) == selected_vertices->end()) {
+          rects.push_back({ p0, m_ui_options.vertex_inner_size, vec4::identity() });
+        }
+
+        if (p2_raw != p3_raw) {
+          circles.push_back({ p2, m_ui_options.handle_radius, m_ui_options.primary_color });
+          lines.push_back({ p2, last, m_ui_options.line_width, m_ui_options.primary_color_05 });
+        }
+
+        if (p1_raw != p0_raw) {
+          circles.push_back({ p1, m_ui_options.handle_radius, m_ui_options.primary_color });
+          lines.push_back({ p1, p0, m_ui_options.line_width, m_ui_options.primary_color_05 });
+        }
+
+        last = p0;
+        i -= 3;
+      }
+    );
   }
 
   void Renderer::flush_meshes() {

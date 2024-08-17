@@ -134,10 +134,12 @@ namespace graphick::renderer {
      * @param path The Path to draw.
      * @param transform The transformation matrix to apply to the path.
      * @param tolerance The tolerance to use when approximating the path, default is 0.25.
+     * @param draw_vertices Whether to draw the vertices of the path, default is false.
+     * @param selected_vertices The indices of the selected vertices, if nullptr all vertices are selected.
      * @param stroke The Stroke properties to use, can be nullptr.
      * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
      */
-    static void draw_outline(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance = 0.25f, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
+    static void draw_outline(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance = 0.25f, const bool draw_vertices = false, const std::unordered_set<uint32_t>* selected_vertices = nullptr, const Stroke* stroke = nullptr, const rect* bounding_rect = nullptr);
 
     /**
      * @brief Draws the vertices of a Path's outline.
@@ -222,6 +224,48 @@ namespace graphick::renderer {
      * @param bounding_rect The bounding rectangle of the path.
      */
     void draw_with_clipping(geom::cubic_path&& path, const Fill& fill, const mat2x3& transform, const rect& bounding_rect);
+
+    /**
+     * @brief Draws the outline of a quadratic bezier.
+     *
+     * @param p0 The start point of the bezier.
+     * @param p1 The control point of the bezier.
+     * @param p2 The end point of the bezier.
+     * @param color The color to use.
+     */
+    void draw_outline_quadratic(const vec2 p0, const vec2 p1, const vec2 p2, const vec4& color);
+
+    /**
+     * @brief Draws the outline of a cubic bezier.
+     *
+     * @param p0 The start point of the bezier.
+     * @param p1 The first control point of the bezier.
+     * @param p2 The second control point of the bezier.
+     * @param p3 The end point of the bezier.
+     * @param color The color to use.
+     */
+    void draw_outline_cubic(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const vec4& color);
+
+    /**
+     * @brief Draws the outline of a Path with the provided Stroke properties without drawing the individual vertices.
+     *
+     * @param path The Path to draw.
+     * @param transform The transformation matrix to apply to the path.
+     * @param tolerance The tolerance to use when approximating the path.
+     * @param stroke The Stroke properties to use.
+     */
+    void draw_outline_no_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance, const Stroke* stroke);
+
+    /**
+     * @brief Draws the outline of a Path with the provided Stroke properties and draws the individual vertices.
+     *
+     * @param path The Path to draw.
+     * @param transform The transformation matrix to apply to the path.
+     * @param tolerance The tolerance to use when approximating the path.
+     * @param selected_vertices The indices of the selected vertices, if nullptr all vertices are selected.
+     * @param stroke The Stroke properties to use.
+     */
+    void draw_outline_with_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const float tolerance, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke);
 
     /**
      * @brief Flushes the renderer.

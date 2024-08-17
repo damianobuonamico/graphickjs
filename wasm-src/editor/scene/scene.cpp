@@ -432,14 +432,19 @@ namespace graphick::editor {
           }
         }
 
-        // TEMP
-        geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
-        // renderer::Renderer::draw_outline(path, transform, outline_tolerance);
-        renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
-        renderer::Renderer::draw_outline_vertices(
-          path, transform,
-          is_full ? nullptr : &selected_vertices
+        renderer::Renderer::draw_outline(
+          path, transform, outline_tolerance,
+          true, is_full ? nullptr : &selected_vertices,
+          nullptr, &entity_rect
         );
+
+        // TEMP
+        // geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
+        // renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
+        // renderer::Renderer::draw_outline_vertices(
+        //   path, transform,
+        //   is_full ? nullptr : &selected_vertices
+        // );
       }
 
       if (has_fill && has_stroke) {
