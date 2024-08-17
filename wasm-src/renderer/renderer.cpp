@@ -1029,8 +1029,8 @@ namespace graphick::renderer {
 
         /* An else if here could cause problems when an endpoint lies on a boundary. */
         if (p3.y >= band_top && p3.y <= band_bottom) {
-          clipped_min = p3.x;
-          clipped_max = p3.x;
+          clipped_min = std::min(clipped_min, p3.x);
+          clipped_max = std::max(clipped_max, p3.x);
         }
 
         /* Intersections with the top boundary are cached. */

@@ -12,6 +12,7 @@
 #include "../math/vec4.h"
 #include "../math/rect.h"
 #include "../math/mat2x3.h"
+#include "../math/scalar.h"
 
 #include "../utils/defines.h"
 #include "../utils/uuid.h"
@@ -130,7 +131,7 @@ namespace graphick::renderer {
       const uint32_t u_curves_y = (static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
       const uint32_t u_bands_x = (static_cast<uint32_t>(bands_start_index % GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
       const uint32_t u_bands_y = (static_cast<uint32_t>(bands_start_index / GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
-      const uint32_t u_bands_h = (horizontal_bands < 1 || horizontal_bands > 256) ? 0 : static_cast<uint32_t>(horizontal_bands - 1);
+      const uint32_t u_bands_h = (horizontal_bands < 1) ? 0 : static_cast<uint32_t>(horizontal_bands - 1);
       const uint32_t u_is_quad = static_cast<uint32_t>(is_quadratic);
       const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
       const uint32_t u_is_cull = static_cast<uint32_t>(is_culling);
@@ -181,6 +182,11 @@ namespace graphick::renderer {
      * @param max The maximum x-coordinate of the curve.
      */
     void push_curve(float min, float max) {
+      if (min == max) {
+        min -= math::geometric_epsilon<float>;
+        max += math::geometric_epsilon<float>;
+      }
+
       if (disabled_spans.empty()) {
         disabled_spans.emplace_back(Span{ min, max });
         return;
