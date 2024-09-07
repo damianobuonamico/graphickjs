@@ -129,7 +129,7 @@ namespace graphick::renderer {
     attr.premultipliedAlpha = false;
     attr.majorVersion = 2;
     attr.antialias = false;
-    attr.stencil = false;
+    attr.stencil = true;
     attr.depth = true;
 
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
@@ -229,9 +229,31 @@ namespace graphick::renderer {
         { get()->m_programs.image_program.vp_uniform, get()->m_vp_matrix }
       };
 
+
       flush(get()->m_image_instances, render_state);
 
+      for (const auto& r : cache->get_invalid_rects()) {
+        get()->draw_rect(r, viewport.background);
+        // get()->draw_rect(r, vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        // get()->draw_rect(r, vec4(0.8f, 0.2f, 0.2f, 0.5f));
+      }
 
+      render_state.stencil = render_state.stencil = GPU::StencilState{
+        GPU::StencilFunc::Always,
+        0,
+        0xFF,
+        true
+      };
+
+      render_state.program = get()->m_programs.rect_program.program;
+      render_state.vertex_array = &get()->m_vertex_arrays.rect_vertex_array->vertex_array;
+      render_state.primitive = get()->m_rect_instances.primitive;
+      render_state.textures.clear();
+      render_state.uniforms = {
+        { get()->m_programs.rect_program.vp_uniform, get()->m_vp_matrix }
+      };
+
+      flush(get()->m_rect_instances, render_state);
 
       // get()->draw_rect(last_viewport, vec4(0.2f, 0.8f, 0.2f, 0.5f));
     }

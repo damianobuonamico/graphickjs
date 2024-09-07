@@ -5,8 +5,7 @@
 
 #pragma once
 
-#include "../../math/vec2.h"
-#include "../../math/vec4.h"
+#include "../../math/rect.h"
 
 #include <vector>
 
@@ -27,32 +26,30 @@ namespace graphick::editor {
     void clear();
 
     /**
-     * @brief Returns the size of the rendered scene cache.
-     * @return The size of the cache.
+     * @brief Sets the portion of the screen that is cached.
+     *
+     * @param grid_rect The visible rectangle.
      */
-    inline ivec2 size() const {
-      return m_size;
-    }
+    void set_grid_rect(const rect grid_rect, const ivec2 subdivisions);
 
     /**
-     * @brief Returns the pixels of the rendered scene cache.
-     * @return The pixels of the cache.
+     * @brief Invalidates a rectangle in the cache.
+     *
+     * @param invalidated_rect The rectangle to invalidate.
      */
-    inline uvec4* pixels() {
-      return m_pixels.data();
-    }
+    void invalidate_rect(const rect invalidated_rect);
 
     /**
-     * @brief Resizes the rendered scene cache.
-     * @param size The new size of the cache.
+     * @brief Gets the valid grid cells in the cache.
+     *
+     * @return The valid rectangles.
      */
-    inline void resize(const ivec2 size) {
-      m_pixels.resize(size.x * size.y);
-    }
+    std::vector<rect> get_invalid_rects() const;
   private:
-    ivec2 m_size;                   /* The size of the rendered scene cache. */
+    std::vector<bool> m_grid;    /* When an action is performed, some grid cells are invalidated. */
 
-    std::vector<uvec4> m_pixels;    /* The cached rendered scene. */
+    ivec2 m_subdivisions;        /* The number of subdivisions in the grid. */
+    rect m_grid_rect;            /* The portion of the screen that is cached. */
   };
 
 }

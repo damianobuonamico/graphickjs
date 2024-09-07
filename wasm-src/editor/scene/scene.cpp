@@ -42,13 +42,15 @@ namespace graphick::editor {
     selection(this),
     history(this),
     viewport(other.viewport)
-  {}
+  {
+  }
 
   Scene::Scene(Scene&& other) noexcept :
     m_registry(std::move(other.m_registry)),
     m_entities(std::move(other.m_entities)),
     selection(this),
-    history(this) {}
+    history(this) {
+  }
 
   Scene::~Scene() {}
 
@@ -295,17 +297,20 @@ namespace graphick::editor {
             if (path.data().intersects(selection_rect, &vertices)) {
               entities.insert({ id, Selection::SelectionEntry{ std::unordered_set<uint32_t>(vertices.begin(), vertices.end()) } });
             }
-          } else {
+          }
+          else {
             if (path.data().intersects(selection_rect)) {
               entities.insert({ id, Selection::SelectionEntry() });
             }
           }
-        } else {
+        }
+        else {
           if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
             entities.insert({ id, Selection::SelectionEntry() });
           }
         }
-      } else {
+      }
+      else {
         if (entity.is_element()) {
           if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
             entities.insert({ id, Selection::SelectionEntry() });
@@ -320,12 +325,14 @@ namespace graphick::editor {
             if (path.data().intersects(rect, transform, &vertices)) {
               entities.insert({ id, Selection::SelectionEntry{ std::unordered_set<uint32_t>(vertices.begin(), vertices.end()) } });
             }
-          } else {
+          }
+          else {
             if (path.data().intersects(rect, transform)) {
               entities.insert({ id, Selection::SelectionEntry() });
             }
           }
-        } else {
+        }
+        else {
           if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
             entities.insert({ id, Selection::SelectionEntry() });
           }
@@ -463,7 +470,8 @@ namespace graphick::editor {
         );
 
         z_index += 2;
-      } else if (has_fill) {
+      }
+      else if (has_fill) {
         renderer::Renderer::draw(
           std::move(cubics),
           renderer::Fill{ fill->color, fill->rule, z_index },
@@ -471,7 +479,8 @@ namespace graphick::editor {
         );
 
         z_index += 1;
-      } else if (has_stroke) {
+      }
+      else if (has_stroke) {
 
         // renderer::Renderer::draw(
         //   quadratics,
@@ -482,31 +491,31 @@ namespace graphick::editor {
         z_index += 1;
       }
 
-          // draw_vertices,
+      // draw_vertices,
 
-      // math::rect bounding_rect = path.bounding_rect();
-      // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
-      // geom::path rect;
-      // rect.move_to(lines[0].min);
+  // math::rect bounding_rect = path.bounding_rect();
+  // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
+  // geom::path rect;
+  // rect.move_to(lines[0].min);
 
-      // for (auto& line : lines) {
-      //   rect.line_to(line.max);
-      // }
+  // for (auto& line : lines) {
+  //   rect.line_to(line.max);
+  // }
 
-      // Renderer::Renderer::draw_outline(id, rect, position);
+  // Renderer::Renderer::draw_outline(id, rect, position);
     }
 
-  // {
-  //   std::vector<math::rect> lines = math::lines_from_rect(viewport.visible());
-  //   geom::path rect;
-  //   rect.move_to(lines[0].min);
+    // {
+    //   std::vector<math::rect> lines = math::lines_from_rect(viewport.visible());
+    //   geom::path rect;
+    //   rect.move_to(lines[0].min);
 
-  //   for (auto& line : lines) {
-  //     rect.line_to(line.max);
-  //   }
+    //   for (auto& line : lines) {
+    //     rect.line_to(line.max);
+    //   }
 
-  //   Renderer::Renderer::draw_outline(0, rect, { 0.0f, 0.0f });
-  // }
+    //   Renderer::Renderer::draw_outline(0, rect, { 0.0f, 0.0f });
+    // }
 
     {
       OPTICK_EVENT("Render Overlays");
@@ -530,6 +539,8 @@ namespace graphick::editor {
 #endif
 
     renderer::Renderer::end_frame();
+
+    m_cache.set_grid_rect(viewport.visible(), ivec2(viewport.size() / 128.0f));
 
 #if 0
     GK_DEBUGGER_RENDER(vec2(viewport.size()) * viewport.dpr());

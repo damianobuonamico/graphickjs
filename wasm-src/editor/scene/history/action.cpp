@@ -9,6 +9,8 @@
 
 #include "../entity.h"
 
+#include "../../../math/vector.h"
+
 #include "../../../utils/console.h"
 #include "../../../utils/assert.h"
 
@@ -59,7 +61,8 @@ namespace graphick::editor {
     target(other.target),
     entity_id(other.entity_id),
     m_data(other.m_data),
-    m_backup(other.type == Type::Modify ? other.m_backup : io::EncodedData()) {}
+    m_backup(other.type == Type::Modify ? other.m_backup : io::EncodedData()) {
+  }
 
   Action::Action(Action&& other) noexcept :
     type(other.type),
@@ -136,7 +139,7 @@ namespace graphick::editor {
       entity_id != other.entity_id ||
       type != Type::Modify || other.type != Type::Modify ||
       target != other.target
-    ) {
+      ) {
       return false;
     }
 
@@ -176,51 +179,103 @@ namespace graphick::editor {
   }
 
   void Action::execute_add(Scene* scene) const {
+    rect bounding_rect;
+
     if (target == Target::Entity) {
       scene->add(entity_id, m_data);
-      console::log("add entity");
-    } else {
-      scene->get_entity(entity_id).add(m_data);
-      console::log("add component");
+      bounding_rect = scene->get_entity(entity_id).get_component<TransformComponent>().approx_bounding_rect();
+      // console::log("add entity");
     }
+    else {
+      Entity entity = scene->get_entity(entity_id);
+      rect bounding_rect_before = entity.get_component<TransformComponent>().approx_bounding_rect();
+      entity.add(m_data);
+      rect bounding_rect_after = entity.get_component<TransformComponent>().approx_bounding_rect();
+      // console::log("add component");
+      bounding_rect = rect{ math::min(bounding_rect_before.min, bounding_rect_after.min), math::max(bounding_rect_before.max, bounding_rect_after.max) };
+    }
+
+    scene->m_cache.invalidate_rect(bounding_rect);
   }
 
   void Action::execute_remove(Scene* scene) const {
+    rect bounding_rect;
+
     if (target == Target::Entity) {
+      bounding_rect = scene->get_entity(entity_id).get_component<TransformComponent>().approx_bounding_rect();
       scene->remove(entity_id);
-      console::log("remove entity");
-    } else {
-      scene->get_entity(entity_id).remove(m_data);
-      console::log("remove component");
+      // console::log("remove entity");
     }
+    else {
+      Entity entity = scene->get_entity(entity_id);
+      rect bounding_rect_before = entity.get_component<TransformComponent>().approx_bounding_rect();
+      entity.remove(m_data);
+      rect bounding_rect_after = entity.get_component<TransformComponent>().approx_bounding_rect();
+      // console::log("remove component");
+      bounding_rect = rect{ math::min(bounding_rect_before.min, bounding_rect_after.min), math::max(bounding_rect_before.max, bounding_rect_after.max) };
+    }
+
+    scene->m_cache.invalidate_rect(bounding_rect);
   }
 
   void Action::execute_modify(Scene* scene) const {
-    scene->get_entity(entity_id).modify(m_data);
+    Entity entity = scene->get_entity(entity_id);
+    rect bounding_rect_before = entity.get_component<TransformComponent>().approx_bounding_rect();
+    entity.modify(m_data);
+    rect bounding_rect_after = entity.get_component<TransformComponent>().approx_bounding_rect();
+    rect bounding_rect = rect{ math::min(bounding_rect_before.min, bounding_rect_after.min), math::max(bounding_rect_before.max, bounding_rect_after.max) };
+
+    scene->m_cache.invalidate_rect(bounding_rect);
   }
 
   void Action::revert_add(Scene* scene) const {
+    rect bounding_rect;
+
     if (target == Target::Entity) {
+      bounding_rect = scene->get_entity(entity_id).get_component<TransformComponent>().approx_bounding_rect();
       scene->remove(entity_id);
-      console::log("revert add entity");
-    } else {
-      scene->get_entity(entity_id).remove(m_data);
-      console::log("revert add component");
+      // console::log("revert add entity");
     }
+    else {
+      Entity entity = scene->get_entity(entity_id);
+      rect bounding_rect_before = entity.get_component<TransformComponent>().approx_bounding_rect();
+      scene->get_entity(entity_id).remove(m_data);
+      rect bounding_rect_after = entity.get_component<TransformComponent>().approx_bounding_rect();
+      // console::log("revert add component");
+      bounding_rect = rect{ math::min(bounding_rect_before.min, bounding_rect_after.min), math::max(bounding_rect_before.max, bounding_rect_after.max) };
+    }
+
+    scene->m_cache.invalidate_rect(bounding_rect);
   }
 
   void Action::revert_remove(Scene* scene) const {
+    rect bounding_rect;
+
     if (target == Target::Entity) {
       scene->add(entity_id, m_data);
-      console::log("revert remove entity");
-    } else {
-      scene->get_entity(entity_id).add(m_data);
-      console::log("revert remove component");
+      bounding_rect = scene->get_entity(entity_id).get_component<TransformComponent>().approx_bounding_rect();
+      // console::log("revert remove entity");
     }
+    else {
+      Entity entity = scene->get_entity(entity_id);
+      rect bounding_rect_before = entity.get_component<TransformComponent>().approx_bounding_rect();
+      entity.add(m_data);
+      rect bounding_rect_after = entity.get_component<TransformComponent>().approx_bounding_rect();
+      // console::log("revert remove component");
+      bounding_rect = rect{ math::min(bounding_rect_before.min, bounding_rect_after.min), math::max(bounding_rect_before.max, bounding_rect_after.max) };
+    }
+
+    scene->m_cache.invalidate_rect(bounding_rect);
   }
 
   void Action::revert_modify(Scene* scene) const {
-    scene->get_entity(entity_id).modify(m_backup);
+    Entity entity = scene->get_entity(entity_id);
+    rect bounding_rect_before = entity.get_component<TransformComponent>().approx_bounding_rect();
+    entity.modify(m_backup);
+    rect bounding_rect_after = entity.get_component<TransformComponent>().approx_bounding_rect();
+    rect bounding_rect = rect{ math::min(bounding_rect_before.min, bounding_rect_after.min), math::max(bounding_rect_before.max, bounding_rect_after.max) };
+
+    scene->m_cache.invalidate_rect(bounding_rect);
   }
 
 }
