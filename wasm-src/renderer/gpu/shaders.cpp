@@ -20,7 +20,8 @@ namespace graphick::renderer::GPU {
     samples_uniform(Device::get_uniform(program, "u_samples")),
     models_uniform(Device::get_uniform(program, "u_models")),
     curves_texture(Device::get_texture_uniform(program, "u_curves_texture")),
-    bands_texture(Device::get_texture_uniform(program, "u_bands_texture")) {}
+    bands_texture(Device::get_texture_uniform(program, "u_bands_texture")) {
+  }
 
   BoundarySpanProgram::BoundarySpanProgram() :
     program(Device::create_program("boundary_span", { { "MAX_MODELS", (std::stringstream() << (Device::max_vertex_uniform_vectors() - 6)).str() } })),
@@ -28,26 +29,37 @@ namespace graphick::renderer::GPU {
     viewport_size_uniform(Device::get_uniform(program, "u_viewport_size")),
     max_samples_uniform(Device::get_uniform(program, "u_max_samples")),
     models_uniform(Device::get_uniform(program, "u_models")),
-    curves_texture(Device::get_texture_uniform(program, "u_curves_texture")) {}
+    curves_texture(Device::get_texture_uniform(program, "u_curves_texture")) {
+  }
 
   FilledSpanProgram::FilledSpanProgram() :
     program(Device::create_program("filled_span", { { "MAX_MODELS", (std::stringstream() << (Device::max_vertex_uniform_vectors() - 6)).str() } })),
     vp_uniform(Device::get_uniform(program, "u_view_projection")),
-    models_uniform(Device::get_uniform(program, "u_models")) {}
+    models_uniform(Device::get_uniform(program, "u_models")) {
+  }
 
   LineProgram::LineProgram() :
     program(Device::create_program("line")),
-    vp_uniform(Device::get_uniform(program, "uViewProjection")),
-    zoom_uniform(Device::get_uniform(program, "uZoom")) {}
+    vp_uniform(Device::get_uniform(program, "u_view_projection")),
+    zoom_uniform(Device::get_uniform(program, "u_zoom")) {
+  }
 
   RectProgram::RectProgram() :
     program(Device::create_program("rect")),
-    vp_uniform(Device::get_uniform(program, "uViewProjection")) {}
+    vp_uniform(Device::get_uniform(program, "u_view_projection")) {
+  }
 
   CircleProgram::CircleProgram() :
     program(Device::create_program("circle")),
-    vp_uniform(Device::get_uniform(program, "uViewProjection")),
-    zoom_uniform(Device::get_uniform(program, "uZoom")) {}
+    vp_uniform(Device::get_uniform(program, "u_view_projection")),
+    zoom_uniform(Device::get_uniform(program, "u_zoom")) {
+  }
+
+  ImageProgram::ImageProgram() :
+    program(Device::create_program("image")),
+    vp_uniform(Device::get_uniform(program, "u_view_projection")),
+    image_texture(Device::get_texture_uniform(program, "u_texture")) {
+  }
 
   /* -- VertexArrays -- */
 
@@ -222,11 +234,11 @@ namespace graphick::renderer::GPU {
     const Buffer& instance_buffer,
     const Buffer& vertex_buffer
   ) {
-    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "aPosition");
-    VertexAttribute instance_from_attr = Device::get_vertex_attribute(program.program, "aInstanceFrom");
-    VertexAttribute instance_to_attr = Device::get_vertex_attribute(program.program, "aInstanceTo");
-    VertexAttribute instance_width_attr = Device::get_vertex_attribute(program.program, "aInstanceWidth");
-    VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program, "aInstanceColor");
+    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+    VertexAttribute instance_from_attr = Device::get_vertex_attribute(program.program, "a_instance_from");
+    VertexAttribute instance_to_attr = Device::get_vertex_attribute(program.program, "a_instance_to");
+    VertexAttribute instance_width_attr = Device::get_vertex_attribute(program.program, "a_instance_width");
+    VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program, "a_instance_color");
 
     VertexAttrDescriptor position_desc = {
       VertexAttrClass::Int, VertexAttrType::U8,
@@ -264,14 +276,14 @@ namespace graphick::renderer::GPU {
   }
 
   RectVertexArray::RectVertexArray(
-   const RectProgram& program,
-   const Buffer& instance_buffer,
-   const Buffer& vertex_buffer
+    const RectProgram& program,
+    const Buffer& instance_buffer,
+    const Buffer& vertex_buffer
   ) {
-    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "aPosition");
-    VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program, "aInstancePosition");
-    VertexAttribute instance_size_attr = Device::get_vertex_attribute(program.program, "aInstanceSize");
-    VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program, "aInstanceColor");
+    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+    VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program, "a_instance_position");
+    VertexAttribute instance_size_attr = Device::get_vertex_attribute(program.program, "a_instance_size");
+    VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program, "a_instance_color");
 
     VertexAttrDescriptor position_desc = {
       VertexAttrClass::Int, VertexAttrType::U8,
@@ -303,14 +315,14 @@ namespace graphick::renderer::GPU {
   }
 
   CircleVertexArray::CircleVertexArray(
-   const CircleProgram& program,
-   const Buffer& instance_buffer,
-   const Buffer& vertex_buffer
+    const CircleProgram& program,
+    const Buffer& instance_buffer,
+    const Buffer& vertex_buffer
   ) {
-    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "aPosition");
-    VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program, "aInstancePosition");
-    VertexAttribute instance_radius_attr = Device::get_vertex_attribute(program.program, "aInstanceRadius");
-    VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program, "aInstanceColor");
+    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+    VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program, "a_instance_position");
+    VertexAttribute instance_radius_attr = Device::get_vertex_attribute(program.program, "a_instance_radius");
+    VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program, "a_instance_color");
 
     VertexAttrDescriptor position_desc = {
       VertexAttrClass::Int, VertexAttrType::U8,
@@ -341,4 +353,35 @@ namespace graphick::renderer::GPU {
     vertex_array.configure_attribute(instance_color_attr, instance_color_desc);
   }
 
+  ImageVertexArray::ImageVertexArray(
+    const ImageProgram& program,
+    const Buffer& instance_buffer,
+    const Buffer& vertex_buffer
+  ) {
+    VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+    VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program, "a_instance_position");
+    VertexAttribute instance_size_attr = Device::get_vertex_attribute(program.program, "a_instance_size");
+
+    VertexAttrDescriptor position_desc = {
+      VertexAttrClass::Int, VertexAttrType::U8,
+      2, 2, 0, 0, 0
+    };
+
+    VertexAttrDescriptor instance_position_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32,
+      2, 16, 0, 1, 1
+    };
+
+    VertexAttrDescriptor instance_size_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32,
+      2, 16, 8, 1, 1
+    };
+
+    vertex_buffer.bind(vertex_array);
+    vertex_array.configure_attribute(position_attr, position_desc);
+
+    instance_buffer.bind(vertex_array);
+    vertex_array.configure_attribute(instance_position_attr, instance_position_desc);
+    vertex_array.configure_attribute(instance_size_attr, instance_size_desc);
+  }
 }

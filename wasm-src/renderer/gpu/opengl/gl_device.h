@@ -161,6 +161,16 @@ namespace graphick::renderer::GPU::GL {
      * @param render_state The render state to use.
      */
     static void draw_arrays_instanced(const size_t vertex_count, const size_t instance_count, const RenderState& render_state);
+
+    /**
+     * @brief Blits the given framebuffer to the default framebuffer.
+     *
+     * @param src The source framebuffer.
+     * @param src_rect The source rectangle.
+     * @param dst_rect The destination rectangle.
+     * @param reverse Whether to reverse the blit (default framebuffer to provided framebuffer).
+     */
+    static void blit_framebuffer(const GLFramebuffer& src, const irect src_rect, const irect dst_rect, const bool reverse);
   private:
     /**
      * @brief GLDevice constructor.

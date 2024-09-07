@@ -9,8 +9,8 @@
 
 #include "renderer.h"
 
-// #include "gpu/allocator.h"
-// #include "gpu/device.h"
+ // #include "gpu/allocator.h"
+ // #include "gpu/device.h"
 #include "gpu/device.h"
 
 #include "geometry/path_builder.h"
@@ -23,6 +23,8 @@
 #include "../geom/intersections.h"
 #include "../geom/path_builder.h"
 #include "../geom/path.h"
+
+#include "../editor/scene/cache.h"
 
 #include "../utils/defines.h"
 #include "../utils/console.h"
@@ -155,12 +157,14 @@ namespace graphick::renderer {
 #endif
   }
 
-  void Renderer::begin_frame(const Viewport& viewport) {
+  void Renderer::begin_frame(const Viewport& viewport, editor::Cache* cache) {
     const dmat4 view_matrix = orthographic_translation(viewport.size, viewport.position, viewport.zoom);
     const dmat4 projection_matrix = orthographic_projection(viewport.size, viewport.zoom);
 
+    get()->m_last_viewport = get()->m_viewport;
     get()->m_viewport = viewport;
     get()->m_vp_matrix = projection_matrix * view_matrix;
+    get()->m_cache = cache;
 
     get()->m_transform_vectors.clear();
     get()->m_transform_vectors.reserve(get()->m_max_transform_vectors);
@@ -178,12 +182,94 @@ namespace graphick::renderer {
     };
 
     GPU::Device::begin_commands();
+
+    // TODO: ask the cache (and the viewport) what part of the scene can be reused, blit it to the framebuffer, create a stencil and only render the new parts
+
+    rect last_viewport = get()->m_last_viewport.visible();
+
+    // TODO: separate in a setup_framebuffer function
+    if (get()->m_framebuffer->texture.size != ivec2(1, 1)) {
+
+
+
+    }
+
     GPU::Device::set_viewport(ivec2(math::round(viewport.size)));
-    GPU::Device::clear({ viewport.background, 1.0f, std::nullopt });
+    GPU::Device::clear({ viewport.background, 1.0f, 0 });
+
+    if (geom::does_rect_intersect_rect(last_viewport, get()->m_viewport.visible())) {
+      get()->m_framebuffer->unbind();
+      get()->m_image_instances.instances.push_back({ last_viewport.center(), last_viewport.size() });
+
+      GPU::RenderState render_state;
+
+      render_state.viewport = irect({ 0, 0 }, ivec2(get()->m_viewport.size));
+      render_state.program = get()->m_programs.image_program.program;
+      render_state.vertex_array = &get()->m_vertex_arrays.image_vertex_array->vertex_array;
+      render_state.primitive = get()->m_image_instances.primitive;
+      render_state.depth = std::nullopt;
+      render_state.blend = GPU::BlendState{
+        GPU::BlendFactor::One,
+        GPU::BlendFactor::OneMinusSrcAlpha,
+        GPU::BlendFactor::One,
+        GPU::BlendFactor::OneMinusSrcAlpha,
+        GPU::BlendOp::Add
+      };
+      render_state.stencil = GPU::StencilState{
+        GPU::StencilFunc::Always,
+        1,
+        0xFF,
+        true
+      };
+      render_state.textures.clear();
+      render_state.textures = std::vector<GPU::TextureBinding>{
+        { get()->m_programs.image_program.image_texture, get()->m_framebuffer->texture }
+      };
+      render_state.uniforms = {
+        { get()->m_programs.image_program.vp_uniform, get()->m_vp_matrix }
+      };
+
+      flush(get()->m_image_instances, render_state);
+
+
+
+      // get()->draw_rect(last_viewport, vec4(0.2f, 0.8f, 0.2f, 0.5f));
+    }
+
+    // get()->m_framebuffer->bind();
+
+    // GPU::Device::set_viewport(ivec2(math::round(viewport.size)));
+    // GPU::Device::clear({ viewport.background, 1.0f, std::nullopt });
   }
 
   void Renderer::end_frame() {
     get()->flush_meshes();
+    get()->flush_overlay_meshes();
+
+    // if (get()->m_cache->size() == ivec2(get()->m_viewport.size)) {
+      // GPU::Texture texture(GPU::TextureFormat::RGBA8, get()->m_cache->size(), GPU::TextureSamplingFlagNone);
+      // texture.upload(get()->m_cache->pixels(), get()->m_cache->size());
+
+      // GPU::RenderState render_state;
+
+      // render_state.viewport = irect({ 0, 0 }, get()->m_cache->size());
+      // render_state.blend = std::nullopt;
+
+      // render_state.program = get()->m_programs.filled_span_program.program;
+      // render_state.vertex_array = &m_vertex_arrays.filled_span_vertex_array->vertex_array;
+      // render_state.primitive = m_filled_spans.primitive;
+      // render_state.depth = {
+      //   GPU::DepthFunc::Less,
+      //   true
+      // };
+      // render_state.textures.clear();
+      // render_state.uniforms = {
+      //   { m_programs.filled_span_program.vp_uniform, m_vp_matrix },
+      //   { m_programs.filled_span_program.models_uniform, m_transform_vectors }
+      // };
+    // }
+
+   // get()->m_cache->resize(ivec2(get()->m_viewport.size));
 
     size_t time = GPU::Device::end_commands();
 
@@ -219,7 +305,7 @@ namespace graphick::renderer {
       0.25f / scale
     );
 
-      // const geometry::PathBuilder::StrokeOutline stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
+    // const geometry::PathBuilder::StrokeOutline stroked_path = geometry::PathBuilder(path, transform, bounding_rect).stroke(stroke, 0.5f);
     const Fill fill = {
       stroke.color,
       FillRule::NonZero,
@@ -348,11 +434,11 @@ namespace graphick::renderer {
 
     std::sort(h_indices.begin(), h_indices.end(), [&](const uint16_t a, const uint16_t b) {
       return max[a].x > max[b].x;
-    });
+      });
 
     std::sort(v_indices.begin(), v_indices.end(), [&](const uint16_t a, const uint16_t b) {
       return max[a].y > max[b].y;
-    });
+      });
 
     /* Calculate band metrics. */
 
@@ -427,7 +513,7 @@ namespace graphick::renderer {
       curves_start_index, bands_start_index,
       horizontal_bands, vertical_bands,
       true, fill.rule == FillRule::EvenOdd
-    });
+      });
 #endif
 
     // for (size_t i = 0; i < path.size(); i++) {
@@ -497,47 +583,48 @@ namespace graphick::renderer {
 
     if (draw_vertices) {
       get()->draw_outline_with_vertices(path, transform, tolerance, selected_vertices, stroke);
-    } else {
+    }
+    else {
       get()->draw_outline_no_vertices(path, transform, tolerance, stroke);
     }
 
-      // TODO: fix
+    // TODO: fix
 
-      // if (path.size() == 1) {
-      //   const vec2 p0 = transform * path.at(0);
-      //   const vec2 p1 = transform * path.at(1);
-      //   const vec2 p2 = transform * path.at(2);
-      //   const vec2 p3 = transform * path.at(3);
+    // if (path.size() == 1) {
+    //   const vec2 p0 = transform * path.at(0);
+    //   const vec2 p1 = transform * path.at(1);
+    //   const vec2 p2 = transform * path.at(2);
+    //   const vec2 p3 = transform * path.at(3);
 
-      //   vec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
-      //   vec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
-      //   vec2 c = -3.0 * p0 + 3.0 * p1;
-      //   vec2 p;
+    //   vec2 a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
+    //   vec2 b = 3.0 * p0 - 6.0 * p1 + 3.0 * p2;
+    //   vec2 c = -3.0 * p0 + 3.0 * p1;
+    //   vec2 p;
 
-      //   float conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
-      //   float dt = std::sqrtf((std::sqrt(8.0) * tolerance) / conc);
-      //   float t = dt;
+    //   float conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
+    //   float dt = std::sqrtf((std::sqrt(8.0) * tolerance) / conc);
+    //   float t = dt;
 
-      //   vec2 last = p0;
+    //   vec2 last = p0;
 
-      //   while (t < 1.0f) {
-      //     float t_sq = t * t;
+    //   while (t < 1.0f) {
+    //     float t_sq = t * t;
 
-      //     p = a * t_sq * t + b * t_sq + c * t + p0;
+    //     p = a * t_sq * t + b * t_sq + c * t + p0;
 
-      //     get()->m_line_instances.instances.push_back({ last, p, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+    //     get()->m_line_instances.instances.push_back({ last, p, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
 
-      //     last = p;
-      //     t += dt;
-      //   }
+    //     last = p;
+    //     t += dt;
+    //   }
 
-      //   get()->m_line_instances.instances.push_back({ last, p3, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
+    //   get()->m_line_instances.instances.push_back({ last, p3, get()->m_ui_options.line_width, vec4(1.0f, 1.0f, 1.0f, 1.0f) });
 
-      //   return;
-      // }
+    //   return;
+    // }
 
 
-      // geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
+    // geometry::PathBuilder(path.to_quadratics(tolerance), transform, bounding_rect).flatten(get()->m_viewport.visible(), tolerance, get()->m_line_instances.instances);
   }
 
   void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path, const mat2x3& transform, const std::unordered_set<uint32_t>* selected_vertices, const Stroke* stroke, const rect* bounding_rect) {
@@ -729,7 +816,7 @@ namespace graphick::renderer {
         get()->m_viewport.project(graph_position + xy_graph_size / 2.0f),
         xy_graph_size / get()->m_viewport.zoom,
         vec4{ 0.0f, 0.0f, 0.0f, 0.5f }
-      });
+        });
 
       const vec2 graph_safe_position = graph_position + vec2(padding, -padding);
 
@@ -814,6 +901,7 @@ namespace graphick::renderer {
     m_line_instances(GK_LARGE_BUFFER_SIZE, quad_vertices({ 0, 0 }, { 1, 1 })),
     m_circle_instances(GK_BUFFER_SIZE, quad_vertices({ 0, 0 }, { 1, 1 })),
     m_rect_instances(GK_BUFFER_SIZE, quad_vertices({ 0, 0 }, { 1, 1 })),
+    m_image_instances(GK_BUFFER_SIZE, quad_vertices({ 0, 0 }, { 1, 1 })),
     m_filled_spans(GK_BUFFER_SIZE, quad_vertices({ 0, 0 }, { 1, 1 })),
     m_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6),
     m_max_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6)
@@ -854,14 +942,23 @@ namespace graphick::renderer {
       m_circle_instances.vertex_buffer
     );
 
+    std::unique_ptr<GPU::ImageVertexArray> image_vertex_array = std::make_unique<GPU::ImageVertexArray>(
+      m_programs.image_program,
+      m_image_instances.instance_buffer,
+      m_image_instances.vertex_buffer
+    );
+
     m_vertex_arrays = GPU::VertexArrays{
       std::move(path_vertex_array),
       std::move(boundary_span_vertex_array),
       std::move(filled_span_vertex_array),
       std::move(line_vertex_array),
       std::move(rect_vertex_array),
-      std::move(circle_vertex_array)
+      std::move(circle_vertex_array),
+      std::move(image_vertex_array)
     };
+
+    m_framebuffer = std::make_unique<GPU::Framebuffer>(ivec2{ 1, 1 }, true);
   }
 
   uint32_t Renderer::push_transform(const mat2x3& transform) {
@@ -925,7 +1022,7 @@ namespace graphick::renderer {
     std::iota(h_indices.begin(), h_indices.end(), 0);
     std::sort(h_indices.begin(), h_indices.end(), [&](const uint16_t a, const uint16_t b) {
       return max[a].x > max[b].x;
-    });
+      });
 
     /* Calculate band metrics. */
 
@@ -976,7 +1073,7 @@ namespace graphick::renderer {
       curves_start_index, bands_start_index, horizontal_bands,
       false, fill.rule == FillRule::EvenOdd, culling,
       fill.z_index, transform_index
-    });
+      });
 
     if (!culling) {
       return;
@@ -1056,7 +1153,7 @@ namespace graphick::renderer {
         if (
           (is_downwards && ((p0.y < y && p3.y <= y) || (p0.y > y && p3.y >= y))) ||
           (!is_downwards && ((p0.y <= y && p3.y < y) || (p0.y >= y && p3.y > y)))
-        ) {
+          ) {
           /* Curve does not intersect the band. */
           bands[j].push_curve(clipped_min, clipped_max);
           continue;
@@ -1075,7 +1172,8 @@ namespace graphick::renderer {
 
             band_bottom_intersections[j].push_back({ x, is_downwards });
           }
-        } else {
+        }
+        else {
           const float t = geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
 
           if (t >= -math::geometric_epsilon<float> && t <= 1.0f + math::geometric_epsilon<float>) {
@@ -1106,7 +1204,7 @@ namespace graphick::renderer {
 
       std::sort(band_bottom_intersections[i].begin(), band_bottom_intersections[i].end(), [&](const Intersection& a, const Intersection& b) {
         return a.x < b.x;
-      });
+        });
 
       int winding = 0;
       int winding_k = 0;
@@ -1127,14 +1225,15 @@ namespace graphick::renderer {
           m_filled_spans.instances.push_back({
             vec2(span1.max, band.top_y), vec2(span2.min - span1.max, band_delta),
             fill.color, fill.z_index, transform_index
-          });
+            });
         }
       }
 
       if (band.disabled_spans.empty()) {
         data.bands[bands_start_index + i * 4 + 2] = 0;
         data.bands[bands_start_index + i * 4 + 3] = std::numeric_limits<uint16_t>::max();
-      } else {
+      }
+      else {
         data.bands[bands_start_index + i * 4 + 2] = static_cast<uint16_t>(std::max(std::floor(band.disabled_spans.front().min - bounding_rect.min.x), 0.0f));
         data.bands[bands_start_index + i * 4 + 3] = static_cast<uint16_t>(std::max(std::ceil(band.disabled_spans.back().max - bounding_rect.min.x), 0.0f));
       }
@@ -1146,7 +1245,7 @@ namespace graphick::renderer {
   }
 
   void Renderer::draw_outline_quadratic(const vec2 p0, const vec2 p1, const vec2 p2, const vec4& color) {
-    
+
   }
 
   void Renderer::draw_outline_cubic(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const vec4& color) {
@@ -1280,6 +1379,12 @@ namespace graphick::renderer {
 
     render_state.viewport = irect({ 0, 0 }, ivec2(m_viewport.size));
     render_state.blend = std::nullopt;
+    render_state.stencil = GPU::StencilState{
+      GPU::StencilFunc::Nequal,
+      1,
+      0xFF,
+      false
+    };
 
     std::reverse(m_filled_spans.instances.batches.begin(), m_filled_spans.instances.batches.end());
 
@@ -1332,10 +1437,41 @@ namespace graphick::renderer {
 
     flush(m_path_instances, render_state);
 
+    m_boundary_spans.clear();
+    m_path_instances.clear();
+
+    if (get()->m_framebuffer->size() != ivec2(get()->m_viewport.size)) {
+      get()->m_framebuffer.reset();
+      get()->m_framebuffer = std::make_unique<GPU::Framebuffer>(ivec2(get()->m_viewport.size), true);
+    }
+
+    GPU::Device::blit_framebuffer(
+      *get()->m_framebuffer,
+      irect {
+      ivec2::zero(), get()->m_framebuffer->texture.size
+    },
+      irect{ ivec2::zero(), ivec2(get()->m_viewport.size) },
+      true
+    );
+  }
+
+  void Renderer::flush_overlay_meshes() {
+    GPU::RenderState render_state;
+
+    render_state.viewport = irect({ 0, 0 }, ivec2(m_viewport.size));
+    render_state.stencil = std::nullopt;
+
     render_state.program = m_programs.line_program.program;
     render_state.vertex_array = &m_vertex_arrays.line_vertex_array->vertex_array;
     render_state.primitive = m_line_instances.primitive;
     render_state.depth = std::nullopt;
+    render_state.blend = GPU::BlendState{
+      GPU::BlendFactor::One,
+      GPU::BlendFactor::OneMinusSrcAlpha,
+      GPU::BlendFactor::One,
+      GPU::BlendFactor::OneMinusSrcAlpha,
+      GPU::BlendOp::Add
+    };
     render_state.textures.clear();
     render_state.uniforms = {
       { m_programs.line_program.vp_uniform, m_vp_matrix },
@@ -1361,9 +1497,6 @@ namespace graphick::renderer {
     };
 
     flush(m_circle_instances, render_state);
-
-    m_boundary_spans.clear();
-    m_path_instances.clear();
   }
 
 }

@@ -29,6 +29,10 @@ namespace graphick::geom {
   class Path;
 }
 
+namespace graphick::editor {
+  class Cache;
+}
+
 namespace graphick::renderer {
 
   /**
@@ -64,8 +68,9 @@ namespace graphick::renderer {
      * This function should be called at the beginning of each frame before issuing any draw calls.
      *
      * @param viewport The viewport to render to.
+     * @param cache The cache to use.
      */
-    static void begin_frame(const Viewport& viewport);
+    static void begin_frame(const Viewport& viewport, editor::Cache* cache);
 
     /**
      * @brief Ends the current frame.
@@ -273,12 +278,23 @@ namespace graphick::renderer {
      * This function issues the draw calls to the GPU.
      */
     void flush_meshes();
+
+    /**
+     * @brief Flushes the overlay renderer.
+     *
+     * This function issues the draw calls to the GPU for UI and overlay elements.
+     */
+    void flush_overlay_meshes();
   private:
     GPU::Programs m_programs;                            /* The shader programs to use. */
     GPU::VertexArrays m_vertex_arrays;                   /* The vertex arrays to use. */
 
+    std::unique_ptr<GPU::Framebuffer> m_framebuffer;     /* The framebuffer to render elements to, it is used for caching. */
+
+    Viewport m_last_viewport;                            /* The last viewport, used for diffing. */
     Viewport m_viewport;                                 /* The viewport to render to. */
     dmat4 m_vp_matrix;                                   /* The view-projection matrix. */
+    editor::Cache* m_cache;                              /* The cache to use. */
 
     std::vector<vec4> m_transform_vectors;               /* The model matrices of the paths decomposed in two vectors each. */
     size_t m_max_transform_vectors;                      /* The maximum number of vectors in the transforms array (twice the number of transforms). */
@@ -289,6 +305,7 @@ namespace graphick::renderer {
     InstancedData<LineInstance> m_line_instances;        /* The line instances to render. */
     InstancedData<CircleInstance> m_circle_instances;    /* The handle instances to render. */
     InstancedData<RectInstance> m_rect_instances;        /* The rect instances to render. */
+    InstancedData<ImageInstance> m_image_instances;      /* The image instances to render. */
     InstancedData<FilledSpanInstance> m_filled_spans;    /* The filled spans to render. */
 
     UIOptions m_ui_options;                              /* The UI options (i.e. handle size, colors, etc.). */

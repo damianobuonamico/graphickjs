@@ -2,12 +2,12 @@ R"(
 
   precision highp float;
 
-  in vec4 vColor;
+  in vec4 v_color;
 
-  out vec4 oFragColor;
+  out vec4 o_frag_color;
 
   void main() {
-    oFragColor = vec4(vColor.rgb * vColor.a, vColor.a);
+    o_frag_color = vec4(v_color.rgb * v_color.a, v_color.a);
   }
 
 )"

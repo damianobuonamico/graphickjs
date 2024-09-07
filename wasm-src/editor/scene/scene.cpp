@@ -344,12 +344,14 @@ namespace graphick::editor {
     const math::rect visible_rect = viewport.visible();
 
     renderer::Renderer::begin_frame({
-      math::round(vec2(viewport.size()) * viewport.dpr()),
-      viewport.position(),
-      viewport.zoom() * viewport.dpr(),
-      viewport.dpr(),
-      vec4{0.2f, 0.2f, 0.21f, 1.0f}
-    });
+        math::round(vec2(viewport.size()) * viewport.dpr()),
+        viewport.position(),
+        viewport.zoom() * viewport.dpr(),
+        viewport.dpr(),
+        vec4{0.2f, 0.2f, 0.21f, 1.0f}
+      },
+      &m_cache
+    );
 
     uint32_t z_index = 1;
 

@@ -96,6 +96,19 @@ namespace graphick::renderer::GPU {
   };
 
   /**
+   * @brief Image shader program.
+   *
+   * @struct ImageProgram
+   */
+  struct ImageProgram {
+    Program program;                 /* The shader program. */
+    Uniform vp_uniform;              /* The view projection uniform. */
+    TextureUniform image_texture;    /* The image texture. */
+
+    ImageProgram();
+  };
+
+  /**
    * @brief Groups all of the available shaders together.
    *
    * @struct Programs
@@ -107,6 +120,7 @@ namespace graphick::renderer::GPU {
     LineProgram line_program;                     /* The line shader program. */
     RectProgram rect_program;                     /* The square shader program. */
     CircleProgram circle_program;                 /* The circle shader program. */
+    ImageProgram image_program;                   /* The image shader program. */
   };
 
   /**
@@ -201,6 +215,21 @@ namespace graphick::renderer::GPU {
   };
 
   /**
+   * @brief Vertex array to use with ImageProgram.
+   *
+   * @struct ImageVertexArray
+   */
+  struct ImageVertexArray {
+    VertexArray vertex_array;    /* The vertex array. */
+
+    ImageVertexArray(
+      const ImageProgram& program,
+      const Buffer& instance_buffer,
+      const Buffer& vertex_buffer
+    );
+  };
+
+  /**
    * @brief Groups all of the available vertex arrays together.
    *
    * @struct VertexArrays
@@ -212,6 +241,7 @@ namespace graphick::renderer::GPU {
     std::unique_ptr<LineVertexArray> line_vertex_array;                     /* The line shader vertex array. */
     std::unique_ptr<RectVertexArray> rect_vertex_array;                     /* The square shader vertex array. */
     std::unique_ptr<CircleVertexArray> circle_vertex_array;                 /* The circle shader vertex array. */
+    std::unique_ptr<ImageVertexArray> image_vertex_array;                   /* The image shader vertex array. */
 
     VertexArrays() = default;
 
@@ -221,14 +251,17 @@ namespace graphick::renderer::GPU {
       std::unique_ptr<FilledSpanVertexArray> filled_span_vertex_array,
       std::unique_ptr<LineVertexArray> line_vertex_array,
       std::unique_ptr<RectVertexArray> rect_vertex_array,
-      std::unique_ptr<CircleVertexArray> circle_vertex_array
+      std::unique_ptr<CircleVertexArray> circle_vertex_array,
+      std::unique_ptr<ImageVertexArray> image_vertex_array
     ) :
       path_vertex_array(std::move(path_vertex_array)),
       boundary_span_vertex_array(std::move(boundary_span_vertex_array)),
       filled_span_vertex_array(std::move(filled_span_vertex_array)),
       line_vertex_array(std::move(line_vertex_array)),
       rect_vertex_array(std::move(rect_vertex_array)),
-      circle_vertex_array(std::move(circle_vertex_array)) {}
+      circle_vertex_array(std::move(circle_vertex_array)),
+      image_vertex_array(std::move(image_vertex_array)) {
+    }
   };
 
 }

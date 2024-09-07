@@ -77,7 +77,8 @@ namespace graphick::renderer::GPU {
    */
   enum class StencilFunc {
     Always,
-    Equal
+    Equal,
+    Nequal
   };
 
   /**

@@ -51,7 +51,8 @@ namespace graphick::renderer {
      */
     Viewport(const vec2 size, const vec2 position, const double zoom, const double dpr, const vec4& background) :
       size(size), position(position), zoom(zoom), dpr(dpr), background(background),
-      m_visible({ -position, size / static_cast<float>(zoom) - position }) {}
+      m_visible({ -position, size / static_cast<float>(zoom) - position }) {
+    }
 
     /**
      * @brief Returns the scene-space visible area.
@@ -210,7 +211,8 @@ namespace graphick::renderer {
           disabled_spans[i].max = std::max(disabled_spans[i].max, max);
 
           unioned++;
-        } else if (min < disabled_spans[i].min) {
+        }
+        else if (min < disabled_spans[i].min) {
           potential_index = std::min(potential_index, i);
         }
       }
@@ -355,7 +357,8 @@ namespace graphick::renderer {
      * @param color The color of the rect.
      */
     RectInstance(const vec2 position, const vec2 size, const vec4& color) :
-      position(position), size(size), color(color * 255.0f) {}
+      position(position), size(size), color(color * 255.0f) {
+    }
   };
 
   /**
@@ -374,7 +377,29 @@ namespace graphick::renderer {
      * @param color The color of the circle.
      */
     CircleInstance(const vec2 position, const float radius, const vec4& color) :
-      position(position), radius(radius), color(color * 255.0f) {}
+      position(position), radius(radius), color(color * 255.0f) {
+    }
+  };
+
+  /**
+   * @brief Represents an image to be rendered using instancing.
+   *
+   * @struct ImageInstance
+   */
+  struct ImageInstance {
+    vec2 position;           /* position.xy */
+    vec2 size;               /* size.xy */
+
+    /**
+     * @brief Constructs a new ImageInstance object.
+     *
+     * @param position The position of the rect.
+     * @param size The size of the rect.
+     * @param color The color of the rect.
+     */
+    ImageInstance(const vec2 position, const vec2 size) :
+      position(position), size(size) {
+    }
   };
 
   /**
@@ -397,7 +422,8 @@ namespace graphick::renderer {
      * @param color The color of the line.
      */
     LineInstance(const vec2 start, const vec2 end, const float width, const vec4& color) :
-      start(start), end(end), width(width), color(color * 255.0f) {}
+      start(start), end(end), width(width), color(color * 255.0f) {
+    }
   };
 
   /**
@@ -472,7 +498,8 @@ namespace graphick::renderer {
       instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
       instance_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Dynamic, buffer_size),
       vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Static, vertices.size() * sizeof(vec2), vertices.data()),
-      vertex_size(sizeof(vec2)) {}
+      vertex_size(sizeof(vec2)) {
+    }
 
     /**
      * @brief Initializes the instance data.
@@ -485,7 +512,8 @@ namespace graphick::renderer {
       instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
       instance_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Dynamic, buffer_size),
       vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Static, vertices.size() * sizeof(uvec2), vertices.data()),
-      vertex_size(sizeof(uvec2)) {}
+      vertex_size(sizeof(uvec2)) {
+    }
 
     InstancedData(const InstancedData&) = delete;
     InstancedData(InstancedData&&) = delete;

@@ -58,6 +58,13 @@ namespace graphick::renderer::GPU {
   using Texture = GL::GLTexture;
 
   /**
+   * @brief The framebuffer object.
+   *
+   * @struct Framebuffer
+   */
+  using Framebuffer = GL::GLFramebuffer;
+
+  /**
    * @brief The buffer object.
    *
    * @struct Buffer

@@ -165,6 +165,7 @@ namespace graphick::renderer::GPU::GL {
   GLenum gl_stencil_func(StencilFunc func) {
     switch (func) {
     case StencilFunc::Always: return GL_ALWAYS;
+    case StencilFunc::Nequal: return GL_NOTEQUAL;
     default:
     case StencilFunc::Equal: return GL_EQUAL;
     }
@@ -315,6 +316,49 @@ namespace graphick::renderer::GPU::GL {
       (GLsizei)size.x, (GLsizei)size.y,
       format, type, data
     ));
+  }
+
+  /* -- GLFramebuffer -- */
+
+  GLFramebuffer::GLFramebuffer(const ivec2 size, const bool has_depth)
+    : texture(TextureFormat::RGBA8, size, TextureSamplingFlagNone)
+  {
+    glCall(glGenFramebuffers(1, &gl_framebuffer));
+    bind();
+    glCall(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture.gl_texture, 0));
+
+    if (has_depth) {
+      glCall(glGenRenderbuffers(1, &gl_renderbuffer));
+      glCall(glBindRenderbuffer(GL_RENDERBUFFER, gl_renderbuffer));
+      glCall(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, size.x, size.y));
+      glCall(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+
+      glCall(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl_renderbuffer));
+    }
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+      console::error("Framebuffer is not complete.");
+    }
+
+    unbind();
+  }
+
+  GLFramebuffer::~GLFramebuffer() {
+    unbind();
+
+    if (gl_renderbuffer) {
+      glCall(glDeleteRenderbuffers(1, &gl_renderbuffer));
+    }
+
+    glCall(glDeleteFramebuffers(1, &gl_framebuffer));
+  }
+
+  void GLFramebuffer::bind() const {
+    glCall(glBindFramebuffer(GL_FRAMEBUFFER, gl_framebuffer));
+  }
+
+  void GLFramebuffer::unbind() const {
+    glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
   }
 
   /* -- GLBuffer -- */

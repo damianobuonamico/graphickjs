@@ -7,10 +7,10 @@
 
 #include "console.h"
 
-#define SHADERS_LENGTH 6
+#define SHADERS_LENGTH 7
 
 static constexpr const char* shader_names[SHADERS_LENGTH] = {
-  "path", "boundary_span", "filled_span", "line", "rect", "circle"
+  "path", "boundary_span", "filled_span", "line", "rect", "circle", "image"
 };
 
 namespace graphick::utils {
@@ -59,6 +59,10 @@ namespace graphick::utils {
       #include "../renderer/gpu/shaders/circle.vs.glsl"
       ,
       #include "../renderer/gpu/shaders/circle.fs.glsl"
+      ,
+      #include "../renderer/gpu/shaders/image.vs.glsl"
+      ,
+      #include "../renderer/gpu/shaders/image.fs.glsl"
     };
 
     for (unsigned int i = 0; i < SHADERS_LENGTH; ++i) {

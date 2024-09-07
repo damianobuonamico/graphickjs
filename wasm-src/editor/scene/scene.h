@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "cache.h"
 #include "viewport.h"
 #include "selection.h"
 #include "history/history.h"
@@ -180,6 +181,8 @@ namespace graphick::editor {
     std::vector<entt::entity> m_order;                    /* The z-order of the entities. */
 
     size_t m_entity_tag_number = 0;                       /* The number of unnamed entities created, used for generating tags. */
+
+    mutable Cache m_cache;                                /* The cache of the scene. */
   private:
     friend class Editor;
     friend class Entity;

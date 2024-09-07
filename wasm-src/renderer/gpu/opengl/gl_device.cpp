@@ -158,6 +158,7 @@ namespace graphick::renderer::GPU::GL {
 
     const ivec2 size = viewport.size();
 
+    // TODO: should check which framebuffer is bound and set the viewport accordingly
     if (viewport != s_device->m_state.viewport) {
       glCall(glViewport((GLint)viewport.min.x, (GLint)viewport.min.y, (GLsizei)size.x, (GLsizei)size.y));
       s_device->m_state.viewport = viewport;
@@ -195,12 +196,10 @@ namespace graphick::renderer::GPU::GL {
     }
 
     if (ops.stencil.has_value()) {
-      if (ops.stencil != s_device->m_state.clear_ops.stencil) {
-        glCall(glStencilMask(std::numeric_limits<GLuint>::max()));
-        glCall(glClearStencil((GLint)ops.stencil.value()));
+      glCall(glStencilMask(std::numeric_limits<GLuint>::max()));
+      glCall(glClearStencil((GLint)ops.stencil.value()));
 
-        s_device->m_state.clear_ops.stencil = ops.stencil.value();
-      }
+      s_device->m_state.clear_ops.stencil = ops.stencil.value();
 
       flags |= GL_STENCIL_BUFFER_BIT;
     }
@@ -255,7 +254,8 @@ namespace graphick::renderer::GPU::GL {
 
     if (it != program.textures.end()) {
       unit = static_cast<GLuint>(std::distance(program.textures.begin(), it));
-    } else {
+    }
+    else {
       unit = static_cast<GLuint>(program.textures.size());
       program.textures.push_back(uniform);
     }
@@ -282,6 +282,32 @@ namespace graphick::renderer::GPU::GL {
   void GLDevice::draw_arrays_instanced(const size_t vertex_count, const size_t instance_count, const RenderState& render_state) {
     s_device->set_render_state(render_state);
     glCall(glDrawArraysInstanced(gl_primitive(render_state.primitive), 0, (GLsizei)vertex_count, (GLsizei)instance_count));
+  }
+
+  void GLDevice::blit_framebuffer(const GLFramebuffer& src, const irect src_rect, const irect dst_rect, const bool reverse) {
+    if (reverse) {
+      glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, 0));
+      glCall(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, src.gl_framebuffer));
+
+      glCall(glBlitFramebuffer(
+        dst_rect.min.x, dst_rect.min.y, dst_rect.max.x, dst_rect.max.y,
+        src_rect.min.x, src_rect.min.y, src_rect.max.x, src_rect.max.y,
+        GL_COLOR_BUFFER_BIT, GL_NEAREST
+      ));
+    }
+    else {
+      glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, src.gl_framebuffer));
+      glCall(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+
+      glCall(glBlitFramebuffer(
+        src_rect.min.x, src_rect.min.y, src_rect.max.x, src_rect.max.y,
+        dst_rect.min.x, dst_rect.min.y, dst_rect.max.x, dst_rect.max.y,
+        GL_COLOR_BUFFER_BIT, GL_NEAREST
+      ));
+    }
+
+    glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, 0));
+    glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
   }
 
   void GLDevice::set_textures(const GLProgram& program, const std::vector<std::pair<GLTextureUniform, const Texture&>>& textures) {
@@ -311,7 +337,8 @@ namespace graphick::renderer::GPU::GL {
     if (s_device->m_state.vertex_array != render_state.vertex_array) {
       if (render_state.vertex_array != nullptr) {
         render_state.vertex_array->bind();
-      } else {
+      }
+      else {
         glCall(glBindVertexArray(0));
       }
 
@@ -332,7 +359,8 @@ namespace graphick::renderer::GPU::GL {
         ));
         glCall(glBlendEquation(gl_blend_op(render_state.blend->op)));
         glCall(glEnable(GL_BLEND));
-      } else {
+      }
+      else {
         glCall(glDisable(GL_BLEND));
       }
 
@@ -344,7 +372,8 @@ namespace graphick::renderer::GPU::GL {
         glCall(glEnable(GL_DEPTH_TEST));
         glCall(glDepthFunc(gl_depth_func(render_state.depth->func)));
         glCall(glDepthMask(render_state.depth->write));
-      } else {
+      }
+      else {
         glCall(glDisable(GL_DEPTH_TEST));
       }
 
@@ -362,13 +391,15 @@ namespace graphick::renderer::GPU::GL {
         if (render_state.stencil->write) {
           glCall(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
           glCall(glStencilMask(render_state.stencil->write));
-        } else {
+        }
+        else {
           glCall(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
           glCall(glStencilMask(0));
         }
 
         glCall(glEnable(GL_STENCIL_TEST));
-      } else {
+      }
+      else {
         glCall(glDisable(GL_STENCIL_TEST));
       }
 

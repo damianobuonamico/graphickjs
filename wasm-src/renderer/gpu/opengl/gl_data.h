@@ -202,6 +202,49 @@ namespace graphick::renderer::GPU::GL {
   };
 
   /**
+   * @brief The OpenGL framebuffer object.
+   *
+   * @struct GLFramebuffer
+   */
+  struct GLFramebuffer {
+    GLTexture texture;        /* The texture to render to. */
+    GLuint gl_framebuffer;    /* The OpenGL underlying framebuffer. */
+    GLuint gl_renderbuffer;   /* The OpenGL underlying renderbuffer. */
+
+    bool has_depth;           /* Whether the framebuffer has a depth buffer. */
+
+    GLFramebuffer(const ivec2 size, const bool has_depth);
+    ~GLFramebuffer();
+
+    GLFramebuffer(const GLFramebuffer&) = delete;
+    GLFramebuffer& operator=(const GLFramebuffer&) = delete;
+
+    /**
+     * @brief Returns the size of the framebuffer.
+     *
+     * @return The size of the framebuffer.
+     */
+    inline ivec2 size() const { return texture.size; }
+
+    /**
+     * @brief Binds the framebuffer.
+     */
+    void bind() const;
+
+    /**
+     * @brief Unbinds the framebuffer.
+     */
+    void unbind() const;
+
+    /**
+     * @brief Resizes the framebuffer.
+     *
+     * @param size The new size of the framebuffer.
+     */
+    void resize(const ivec2 size);
+  };
+
+  /**
    * @brief The OpenGL buffer object.
    *
    * @struct GLBuffer
