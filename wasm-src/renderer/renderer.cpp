@@ -157,7 +157,7 @@ namespace graphick::renderer {
 #endif
   }
 
-  void Renderer::begin_frame(const Viewport& viewport, editor::Cache* cache) {
+  void Renderer::begin_frame(const Viewport& viewport, editor::Cache* cache, const bool complete_redraw) {
     const dmat4 view_matrix = orthographic_translation(viewport.size, viewport.position, viewport.zoom);
     const dmat4 projection_matrix = orthographic_projection(viewport.size, viewport.zoom);
 
@@ -207,8 +207,17 @@ namespace graphick::renderer {
     GPU::Device::set_viewport(ivec2(math::round(viewport.size)));
     GPU::Device::clear({ viewport.background, 1.0f, 0 });
 
-    if (geom::does_rect_intersect_rect(last_viewport, new_viewport)) {
-      get()->m_framebuffer->unbind();
+    // TODO: implement
+    if (complete_redraw) {
+      console::log("Complete redraw");
+    }
+    else {
+      console::log("Partial redraw");
+    }
+
+    get()->m_framebuffer->unbind();
+
+    if (/*!complete_redraw && */get()->m_framebuffer->complete && geom::does_rect_intersect_rect(last_viewport, new_viewport)) {
       get()->m_image_instances.instances.push_back({ last_viewport.center(), last_viewport.size() });
 
       GPU::RenderState render_state;
@@ -1506,14 +1515,16 @@ namespace graphick::renderer {
       get()->m_framebuffer = std::make_unique<GPU::Framebuffer>(ivec2(get()->m_viewport.size), true);
     }
 
-    GPU::Device::blit_framebuffer(
-      *get()->m_framebuffer,
-      irect {
-      ivec2::zero(), get()->m_framebuffer->texture.size
-    },
-      irect{ ivec2::zero(), ivec2(get()->m_viewport.size) },
-      true
-    );
+    if (get()->m_framebuffer->complete) {
+      GPU::Device::blit_framebuffer(
+        *get()->m_framebuffer,
+        irect {
+        ivec2::zero(), get()->m_framebuffer->texture.size
+      },
+        irect{ ivec2::zero(), ivec2(get()->m_viewport.size) },
+        true
+      );
+    }
   }
 
   void Renderer::flush_overlay_meshes() {

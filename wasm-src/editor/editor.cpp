@@ -24,8 +24,12 @@
 
 namespace graphick::editor {
 
+  struct RenderUserData {
+    bool complete_redraw;
+  };
+
   int render_callback(double time, void* user_data) {
-    Editor::get()->render_frame(time);
+    Editor::get()->render_frame(time, user_data ? static_cast<RenderUserData*>(user_data)->complete_redraw : false);
     return 0;
   }
 
@@ -92,23 +96,27 @@ namespace graphick::editor {
 
   void Editor::render(
 #ifdef EMSCRIPTEN
+    bool complete_redraw
 #else
+    bool complete_redraw,
     bool is_main_loop
 #endif
   ) {
+    // TODO: implement intelligent redraws through render requests
+    RenderUserData user_data = { complete_redraw };
 #ifdef EMSCRIPTEN
-    emscripten_request_animation_frame(render_callback, nullptr);
+    emscripten_request_animation_frame(render_callback, &user_data);
 #else
     if (is_main_loop) {
-      render_callback(0, nullptr);
+      render_callback(0, &user_data);
     }
 #endif
   }
 
-  void Editor::render_frame(double time) {
+  void Editor::render_frame(double time, bool complete_redraw) {
     OPTICK_EVENT();
 
-    scene().render();
+    scene().render(complete_redraw);
   }
 
 }

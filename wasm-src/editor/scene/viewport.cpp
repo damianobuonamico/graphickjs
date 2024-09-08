@@ -17,10 +17,12 @@
 namespace graphick::editor {
 
   Viewport::Viewport()
-    : m_position({ 0.0f, 0.0f }), m_zoom(1.0f), m_rotation(0.0f), m_size({ 0, 0 }) {}
+    : m_position({ 0.0f, 0.0f }), m_zoom(1.0f), m_rotation(0.0f), m_size({ 0, 0 }) {
+  }
 
   Viewport::Viewport(const vec2 position, float zoom, float rotation)
-    : m_position(position), m_zoom(zoom), m_rotation(rotation), m_size({ 0, 0 }) {}
+    : m_position(position), m_zoom(zoom), m_rotation(rotation), m_size({ 0, 0 }) {
+  }
 
   void Viewport::resize(const ivec2 size, const ivec2 offset, float dpr) {
     m_size = size;

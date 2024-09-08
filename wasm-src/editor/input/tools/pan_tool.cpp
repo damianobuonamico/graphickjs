@@ -11,7 +11,7 @@
 
 namespace graphick::editor::input {
 
-  PanTool::PanTool() : Tool(ToolType::Pan, CategoryImmediate) {}
+  PanTool::PanTool() : Tool(ToolType::Pan, CategoryImmediate | CategoryView) {}
 
   void PanTool::on_pointer_move() {
     Editor::scene().viewport.move(InputManager::pointer.scene.movement);

@@ -13,7 +13,7 @@
 
 namespace graphick::editor::input {
 
-  ZoomTool::ZoomTool() : Tool(ToolType::Zoom, CategoryImmediate) {}
+  ZoomTool::ZoomTool() : Tool(ToolType::Zoom, CategoryImmediate | CategoryView) {}
 
   void ZoomTool::on_pointer_move() {
     Scene& scene = Editor::scene();

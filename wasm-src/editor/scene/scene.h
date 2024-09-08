@@ -155,8 +155,10 @@ namespace graphick::editor {
      * @brief Renders the scene.
      *
      * This method should only be called by the editor.
+     *
+     * @param complete_redraw If true, the entire scene will be redrawn, ignoring the cache. 
      */
-    void render() const;
+    void render(const bool complete_redraw) const;
 
     /**
      * @brief Adds a new entity to the scene from encoded data.

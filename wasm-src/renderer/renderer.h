@@ -69,8 +69,9 @@ namespace graphick::renderer {
      *
      * @param viewport The viewport to render to.
      * @param cache The cache to use.
+     * @param complete_redraw Whether to perform a complete redraw, ignoring the cache, default is false.
      */
-    static void begin_frame(const Viewport& viewport, editor::Cache* cache);
+    static void begin_frame(const Viewport& viewport, editor::Cache* cache, const bool complete_redraw = false);
 
     /**
      * @brief Ends the current frame.

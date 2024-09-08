@@ -177,23 +177,30 @@ namespace graphick::renderer::GPU::GL {
     // TODO: make better!
     if (std::holds_alternative<int>(data)) {
       glCall(glUniform1i(location, std::get<int>(data)));
-    } else if (std::holds_alternative<uint32_t>(data)) {
+    }
+    else if (std::holds_alternative<uint32_t>(data)) {
       glCall(glUniform1ui(location, std::get<uint32_t>(data)));
-    } else if (std::holds_alternative<ivec2>(data)) {
+    }
+    else if (std::holds_alternative<ivec2>(data)) {
       ivec2 vec = std::get<ivec2>(data);
       glCall(glUniform2i(location, (GLint)vec.x, (GLint)vec.y));
-    } else if (std::holds_alternative<float>(data)) {
+    }
+    else if (std::holds_alternative<float>(data)) {
       glCall(glUniform1f(location, std::get<float>(data)));
-    } else if (std::holds_alternative<vec2>(data)) {
+    }
+    else if (std::holds_alternative<vec2>(data)) {
       vec2 vec = std::get<vec2>(data);
       glCall(glUniform2f(location, vec.x, vec.y));
-    } else if (std::holds_alternative<vec4>(data)) {
+    }
+    else if (std::holds_alternative<vec4>(data)) {
       vec4 vec = std::get<vec4>(data);
       glCall(glUniform4f(location, vec.x, vec.y, vec.z, vec.w));
-    } else if (std::holds_alternative<mat4>(data)) {
+    }
+    else if (std::holds_alternative<mat4>(data)) {
       mat4 mat = std::get<mat4>(data);
       glCall(glUniformMatrix4fv(location, 1, GL_TRUE, &mat[0].x));
-    } else if (std::holds_alternative<std::vector<vec4>>(data)) {
+    }
+    else if (std::holds_alternative<std::vector<vec4>>(data)) {
       std::vector<vec4> vecs = std::get<std::vector<vec4>>(data);
       glCall(glUniform4fv(location, (GLsizei)vecs.size(), &vecs[0].x));
     }
@@ -230,7 +237,8 @@ namespace graphick::renderer::GPU::GL {
 
     if (desc.attr_class == VertexAttrClass::Int) {
       glCall(glVertexAttribIPointer(attr.attribute, (GLint)desc.size, attr_type, (GLsizei)desc.stride, (const void*)desc.offset));
-    } else {
+    }
+    else {
       bool normalized = desc.attr_class == VertexAttrClass::FloatNorm;
       glCall(glVertexAttribPointer(attr.attribute, (GLint)desc.size, attr_type, normalized, (GLsizei)desc.stride, (const void*)desc.offset));
     }
@@ -336,9 +344,7 @@ namespace graphick::renderer::GPU::GL {
       glCall(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl_renderbuffer));
     }
 
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-      console::error("Framebuffer is not complete.");
-    }
+    complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 
     unbind();
   }

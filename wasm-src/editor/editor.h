@@ -71,15 +71,18 @@ namespace graphick::editor {
 #ifdef EMSCRIPTEN
     /**
      * @brief Renders the editor's canvases.
+     *
+     * @param complete_redraw Whether the frame should be completely redrawn, ignoring the cache.
      */
-    static void render();
+    static void render(bool complete_redraw = false);
 #else
     /**
      * @brief Renders the editor's canvases.
      *
      * @param is_main_loop Whether the render is the main loop or not.
+     * @param complete_redraw Whether the frame should be completely redrawn, ignoring the cache.
      */
-    static void render(bool is_main_loop = false);
+    static void render(bool complete_redraw = false, bool is_main_loop = false);
 #endif
   private:
     /**
@@ -99,8 +102,9 @@ namespace graphick::editor {
      * @brief Renders a new frame.
      *
      * @param time The current timestamp.
+     * @param complete_redraw Whether the frame should be completely redrawn, ignoring the cache.
      */
-    void render_frame(double time);
+    void render_frame(double time, bool complete_redraw);
   private:
     std::vector<Scene> m_scenes;    /* The scenes managed by the editor. */
   private:

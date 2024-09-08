@@ -344,7 +344,7 @@ namespace graphick::editor {
     return entities;
   }
 
-  void Scene::render() const {
+  void Scene::render(const bool complete_redraw) const {
     GK_TOTAL("Scene::render");
     OPTICK_EVENT();
 
@@ -358,7 +358,8 @@ namespace graphick::editor {
         viewport.dpr(),
         vec4{0.2f, 0.2f, 0.21f, 1.0f}
       },
-      &m_cache
+      &m_cache,
+      complete_redraw
     );
 
     uint32_t z_index = 1;

@@ -272,6 +272,8 @@ namespace graphick::editor::input {
     scene.tool_state.on_pointer_up();
     scene.history.end_batch();
 
+    bool complete_redraw = scene.tool_state.active().is_in_category(Tool::CategoryView);
+
     if (pointer.button == PointerButton::Middle) {
       scene.tool_state.set_active(scene.tool_state.current().type());
     }
@@ -279,7 +281,7 @@ namespace graphick::editor::input {
       scene.tool_state.recalculate_active();
     }
 
-    Editor::render();
+    Editor::render(complete_redraw);
 
     return false;
   }
@@ -341,7 +343,7 @@ namespace graphick::editor::input {
       scene.viewport.zoom_to(math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) * scene.viewport.zoom(), pointer.client.position);
     }
     else {
-      scene.viewport.move(PAN_STEP * vec2{ -delta_x, -delta_y } / scene.viewport.zoom());
+      scene.viewport.move(math::round(PAN_STEP * vec2{ -delta_x, -delta_y }) / scene.viewport.zoom());
     }
 
     Editor::render();

@@ -212,6 +212,7 @@ namespace graphick::renderer::GPU::GL {
     GLuint gl_renderbuffer;   /* The OpenGL underlying renderbuffer. */
 
     bool has_depth;           /* Whether the framebuffer has a depth buffer. */
+    bool complete;            /* Whether the framebuffer was successfully created. */
 
     GLFramebuffer(const ivec2 size, const bool has_depth);
     ~GLFramebuffer();

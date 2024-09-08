@@ -39,6 +39,7 @@ namespace graphick::editor::input {
       CategoryNone = 0,
       CategoryDirect = 1 << 0,
       CategoryImmediate = 1 << 1,
+      CategoryView = 1 << 2,
     };
   public:
     /**

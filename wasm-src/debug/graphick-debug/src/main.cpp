@@ -58,7 +58,7 @@ static void window_resize_callback(GLFWwindow* window, int width, int height) {
 }
 
 static void scroll_callback(GLFWwindow* window, double delta_x, double delta_y) {
-  graphick::editor::input::InputManager::on_wheel_event(graphick::editor::input::InputManager::PointerTarget::Canvas, -(float)delta_x, -(float)delta_y, pointer_state.ctrl);
+  graphick::editor::input::InputManager::on_wheel_event(graphick::editor::input::InputManager::PointerTarget::Canvas, -(float)delta_x * 0.75f, -(float)delta_y * 0.75f, pointer_state.ctrl);
 }
 
 static void cursor_enter_callback(GLFWwindow* window, int entered) {
@@ -315,7 +315,7 @@ int main() {
 
     glfwPollEvents();
 
-    graphick::editor::Editor::render(true);
+    graphick::editor::Editor::render(false, true);
 
     glfwSwapBuffers(window);
   }
