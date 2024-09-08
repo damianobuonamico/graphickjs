@@ -350,8 +350,9 @@ namespace graphick::editor {
 
     const math::rect visible_rect = viewport.visible();
 
+    /* Flooring instead of rounding to avoid banding artifacts. */
     renderer::Renderer::begin_frame({
-        math::round(vec2(viewport.size()) * viewport.dpr()),
+        math::floor(vec2(viewport.size()) * viewport.dpr()),
         viewport.position(),
         viewport.zoom() * viewport.dpr(),
         viewport.dpr(),

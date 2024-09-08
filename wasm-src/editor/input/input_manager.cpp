@@ -76,7 +76,8 @@ namespace graphick::editor::input {
 
     if (key == KeyboardKey::Escape) {
       instance->m_abort = true;
-    } else if (key == KeyboardKey::Space) {
+    }
+    else if (key == KeyboardKey::Space) {
       keys.space_state_changed = keys.space == (event == KeyboardEvent::Up);
       keys.space = event == KeyboardEvent::Down;
     }
@@ -110,6 +111,9 @@ namespace graphick::editor::input {
   }
 
   bool InputManager::on_resize_event(int width, int height, float dpr, int offset_x, int offset_y) {
+    console::log("dpr", dpr);
+    console::log("width", width);
+    console::log("height", height);
     return get()->on_resize(width, height, dpr, offset_x, offset_y);
   }
 
@@ -237,7 +241,8 @@ namespace graphick::editor::input {
         length(pointer.client.delta) > INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type]
         ) {
         m_moving = true;
-      } else {
+      }
+      else {
         return false;
       }
     }
@@ -245,7 +250,8 @@ namespace graphick::editor::input {
     if (m_moving && !m_abort) {
       scene.tool_state.on_pointer_move();
       Editor::render();
-    } else if (!pointer.down) {
+    }
+    else if (!pointer.down) {
       scene.tool_state.on_pointer_hover();
       Editor::render();
     }
@@ -268,7 +274,8 @@ namespace graphick::editor::input {
 
     if (pointer.button == PointerButton::Middle) {
       scene.tool_state.set_active(scene.tool_state.current().type());
-    } else {
+    }
+    else {
       scene.tool_state.recalculate_active();
     }
 
@@ -293,12 +300,14 @@ namespace graphick::editor::input {
     if ((key == KeyboardKey::Z || (int)key == 90 /* TEMP: GLFW */) && keys.ctrl) {
       if (keys.shift) {
         scene.history.redo();
-      } else {
+      }
+      else {
         scene.history.undo();
       }
 
       Editor::render();
-    } else if ((int)key == 259 /* TEMP: GLFW */) {
+    }
+    else if ((int)key == 259 /* TEMP: GLFW */) {
       if (!scene.selection.empty()) {
         scene.delete_entity(scene.selection.selected().begin()->first);
         scene.history.end_batch();
@@ -330,7 +339,8 @@ namespace graphick::editor::input {
 
     if (keys.ctrl) {
       scene.viewport.zoom_to(math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) * scene.viewport.zoom(), pointer.client.position);
-    } else {
+    }
+    else {
       scene.viewport.move(PAN_STEP * vec2{ -delta_x, -delta_y } / scene.viewport.zoom());
     }
 
