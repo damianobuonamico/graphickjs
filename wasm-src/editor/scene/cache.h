@@ -28,6 +28,8 @@ namespace graphick::editor {
     /**
      * @brief Sets the portion of the screen that is cached.
      *
+     * This method should be called at the end of each frame.
+     *
      * @param grid_rect The visible rectangle.
      */
     void set_grid_rect(const rect grid_rect, const ivec2 subdivisions);
@@ -44,12 +46,15 @@ namespace graphick::editor {
      *
      * @return The valid rectangles.
      */
-    std::vector<rect> get_invalid_rects() const;
+    const std::vector<rect>& get_invalid_rects() const {
+      return m_invalid_rects;
+    }
   private:
-    std::vector<bool> m_grid;    /* When an action is performed, some grid cells are invalidated. */
+    std::vector<bool> m_grid;             /* When an action is performed, some grid cells are invalidated. */
+    std::vector<rect> m_invalid_rects;    /* The invalid rectangles. */
 
-    ivec2 m_subdivisions;        /* The number of subdivisions in the grid. */
-    rect m_grid_rect;            /* The portion of the screen that is cached. */
+    ivec2 m_subdivisions;                 /* The number of subdivisions in the grid. */
+    rect m_grid_rect;                     /* The portion of the screen that is cached. */
   };
 
 }

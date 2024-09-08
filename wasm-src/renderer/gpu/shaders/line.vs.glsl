@@ -1,19 +1,19 @@
 R"(
 
-  precision highp float;
+  precision mediump float;
 
-  uniform mat4 u_view_projection;
+  uniform highp mat4 u_view_projection;
   uniform float u_zoom;
 
-  in uvec2 a_position;
-  in vec2 a_instance_from;
-  in vec2 a_instance_to;
-  in float a_instance_width;
-  in uvec4 a_instance_color;
+  in lowp uvec2 a_position;
+  in highp vec2 a_instance_from;
+  in highp vec2 a_instance_to;
+  in lowp float a_instance_width;
+  in lowp uvec4 a_instance_color;
 
-  out vec4 v_color;
-  out vec2 v_tex_coord;
-  out float v_line_width;
+  out lowp vec4 v_color;
+  out lowp vec2 v_tex_coord;
+  out lowp float v_line_width;
 
   void main() {
     float elongation = 0.25 / u_zoom;

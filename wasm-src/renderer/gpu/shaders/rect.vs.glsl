@@ -1,13 +1,13 @@
 R"(
 
-  precision highp float;
+  precision mediump float;
 
-  uniform mat4 u_view_projection;
+  uniform highp mat4 u_view_projection;
 
-  in uvec2 a_position;
-  in vec2 a_instance_position;
-  in vec2 a_instance_size;
-  in uvec4 a_instance_color;
+  in lowp uvec2 a_position;
+  in highp vec2 a_instance_position;
+  in highp vec2 a_instance_size;
+  in lowp uvec4 a_instance_color;
 
   out vec4 v_color;
 

@@ -1,18 +1,18 @@
 R"(
-  precision highp float;
-  precision highp int;
-  precision highp sampler2D;
+  precision mediump float;
+  precision mediump int;
+  precision mediump sampler2D;
 
   uniform sampler2D u_curves_texture;
-  uniform int u_max_samples;
+  uniform lowp int u_max_samples;
 
-  in vec4 v_color;
-  in vec2 v_tex_coord;
+  in lowp vec4 v_color;
+  in lowp vec2 v_tex_coord;
 
-  flat in vec2 v_position;
-  flat in vec2 v_size;
-  flat in uint v_attr_1;
-  flat in uint v_attr_2;
+  flat in highp vec2 v_position;
+  flat in highp vec2 v_size;
+  flat in highp uint v_attr_1;
+  flat in highp uint v_attr_2;
 
   out vec4 o_frag_color;
 

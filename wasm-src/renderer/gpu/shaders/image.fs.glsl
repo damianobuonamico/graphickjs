@@ -1,11 +1,11 @@
 R"(
 
-  precision highp float;
-  precision highp sampler2D;
+  precision mediump float;
+  precision lowp sampler2D;
 
   uniform sampler2D u_texture;
 
-  in vec2 v_tex_coord;
+  in lowp vec2 v_tex_coord;
 
   out vec4 o_frag_color;
 

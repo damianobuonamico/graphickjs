@@ -24,6 +24,8 @@ namespace graphick::editor {
     for (int i = 0; i < m_grid.size(); i++) {
       m_grid[i] = true;
     }
+
+    m_invalid_rects.clear();
   }
 
   void Cache::invalidate_rect(const rect invalidated_rect) {
@@ -34,29 +36,16 @@ namespace graphick::editor {
 
     for (int y = start_coords.y; y < end_coords.y; y++) {
       for (int x = start_coords.x; x < end_coords.x; x++) {
-        m_grid[y * m_subdivisions.x + x] = false;
-      }
-    }
-  }
+        if (m_grid[y * m_subdivisions.x + x] == true) {
+          m_grid[y * m_subdivisions.x + x] = false;
 
-  std::vector<rect> Cache::get_invalid_rects() const {
-    std::vector<rect> valid_rects;
-
-    const vec2 cell_size = m_grid_rect.size() / vec2(m_subdivisions);
-
-    for (int y = 0; y < m_subdivisions.y; y++) {
-      for (int x = 0; x < m_subdivisions.x; x++) {
-        if (m_grid[y * m_subdivisions.x + x] == false) {
-          const vec2 min = m_grid_rect.min + vec2(x, y) * cell_size;
-          const vec2 max = min + cell_size;
-
-          valid_rects.push_back(rect{ min, max });
+          m_invalid_rects.push_back(rect{
+            m_grid_rect.min + vec2(x, y) * cell_size,
+            m_grid_rect.min + vec2(x + 1, y + 1) * cell_size
+            });
         }
       }
     }
-
-    return valid_rects;
   }
-
 
 }

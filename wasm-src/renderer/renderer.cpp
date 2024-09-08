@@ -186,18 +186,28 @@ namespace graphick::renderer {
     // TODO: ask the cache (and the viewport) what part of the scene can be reused, blit it to the framebuffer, create a stencil and only render the new parts
 
     rect last_viewport = get()->m_last_viewport.visible();
+    rect new_viewport = get()->m_viewport.visible();
 
-    // TODO: separate in a setup_framebuffer function
-    if (get()->m_framebuffer->texture.size != ivec2(1, 1)) {
+    get()->m_safe_clip_rect = last_viewport;
 
-
-
+    if (last_viewport.min.y <= new_viewport.min.y) {
+      get()->m_safe_clip_rect.min.y = std::numeric_limits<float>::lowest();
+    }
+    if (last_viewport.min.x <= new_viewport.min.x) {
+      get()->m_safe_clip_rect.min.x = std::numeric_limits<float>::lowest();
+    }
+    if (last_viewport.max.y >= new_viewport.max.y) {
+      get()->m_safe_clip_rect.max.y = std::numeric_limits<float>::max();
+    }
+    if (last_viewport.max.x >= new_viewport.max.x) {
+      get()->m_safe_clip_rect.max.x = std::numeric_limits<float>::max();
     }
 
+    // TODO: separate in a setup_framebuffer function
     GPU::Device::set_viewport(ivec2(math::round(viewport.size)));
     GPU::Device::clear({ viewport.background, 1.0f, 0 });
 
-    if (geom::does_rect_intersect_rect(last_viewport, get()->m_viewport.visible())) {
+    if (geom::does_rect_intersect_rect(last_viewport, new_viewport)) {
       get()->m_framebuffer->unbind();
       get()->m_image_instances.instances.push_back({ last_viewport.center(), last_viewport.size() });
 
@@ -232,7 +242,9 @@ namespace graphick::renderer {
 
       flush(get()->m_image_instances, render_state);
 
-      for (const auto& r : cache->get_invalid_rects()) {
+      get()->m_invalid_rects = get()->m_cache->get_invalid_rects();
+
+      for (const auto& r : get()->m_invalid_rects) {
         get()->draw_rect(r, viewport.background);
         // get()->draw_rect(r, vec4(1.0f, 0.0f, 0.0f, 1.0f));
         // get()->draw_rect(r, vec4(0.8f, 0.2f, 0.2f, 0.5f));
@@ -256,6 +268,9 @@ namespace graphick::renderer {
       flush(get()->m_rect_instances, render_state);
 
       // get()->draw_rect(last_viewport, vec4(0.2f, 0.8f, 0.2f, 0.5f));
+    }
+    else {
+      get()->m_invalid_rects.clear();
     }
 
     // get()->m_framebuffer->bind();
@@ -558,13 +573,29 @@ namespace graphick::renderer {
       return;
     }
 
-    if (!path.closed()) {
-      path.line_to(path.points.front());
-    }
-
     // TODO: use exact bounding box and cache it
     const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
     const rect transformed_bounds = transform * bounds;
+
+    // TODO: implement also in the other draw functions
+    if (geom::is_rect_in_rect(transformed_bounds, get()->m_safe_clip_rect)) {
+      if (get()->m_invalid_rects.empty()) {
+        return;
+      }
+
+      bool intersects = false;
+
+      for (const auto& r : get()->m_invalid_rects) {
+        if (geom::does_rect_intersect_rect(transformed_bounds, r)) {
+          intersects = true;
+          break;
+        }
+      }
+
+      if (!intersects) {
+        return;
+      }
+    }
 
     const float coverage = geom::rect_rect_intersection_area(transformed_bounds, get()->m_viewport.visible()) / transformed_bounds.area();
     const float dimension = transformed_bounds.area() / get()->m_viewport.visible().area();
@@ -578,6 +609,10 @@ namespace graphick::renderer {
     /* If element is too small, it is not worth creating culling data and bounding polygons. */
 
     const bool culling = transformed_bounds.area() * get()->m_viewport.zoom * get()->m_viewport.zoom > 18.0f * 18.0f;
+
+    if (!path.closed()) {
+      path.line_to(path.points.front());
+    }
 
     get()->draw_no_clipping(std::move(path), fill, transform, bounds, transformed_bounds, culling);
 
@@ -1408,12 +1443,6 @@ namespace graphick::renderer {
       false
     };
 
-    std::reverse(m_filled_spans.instances.batches.begin(), m_filled_spans.instances.batches.end());
-
-    for (auto& batch : m_filled_spans.instances.batches) {
-      std::reverse(batch.begin(), batch.end());
-    }
-
     render_state.program = m_programs.filled_span_program.program;
     render_state.vertex_array = &m_vertex_arrays.filled_span_vertex_array->vertex_array;
     render_state.primitive = m_filled_spans.primitive;
@@ -1427,10 +1456,15 @@ namespace graphick::renderer {
       { m_programs.filled_span_program.models_uniform, m_transform_vectors }
     };
 
-    flush(m_filled_spans, render_state);
+    if (!m_filled_spans.instances.batches.empty() & !m_filled_spans.instances.batches.front().empty()) {
+      std::reverse(m_filled_spans.instances.batches.begin(), m_filled_spans.instances.batches.end());
 
-    m_path_instances.curves_texture.upload(m_path_instances.curves.data(), m_path_instances.curves.size() * sizeof(vec2));
-    m_path_instances.bands_texture.upload(m_path_instances.bands.data(), m_path_instances.bands.size() * sizeof(uint16_t));
+      for (auto& batch : m_filled_spans.instances.batches) {
+        std::reverse(batch.begin(), batch.end());
+      }
+
+      flush(m_filled_spans, render_state);
+    }
 
     render_state.program = m_programs.path_program.program;
     render_state.vertex_array = &m_vertex_arrays.path_vertex_array->vertex_array;
@@ -1457,7 +1491,12 @@ namespace graphick::renderer {
       { m_programs.path_program.models_uniform, m_transform_vectors }
     };
 
-    flush(m_path_instances, render_state);
+    if (!m_path_instances.instances.batches.empty() & !m_path_instances.instances.batches.front().empty()) {
+      m_path_instances.curves_texture.upload(m_path_instances.curves.data(), m_path_instances.curves.size() * sizeof(vec2));
+      m_path_instances.bands_texture.upload(m_path_instances.bands.data(), m_path_instances.bands.size() * sizeof(uint16_t));
+
+      flush(m_path_instances, render_state);
+    }
 
     m_boundary_spans.clear();
     m_path_instances.clear();

@@ -1,12 +1,12 @@
 R"(
 
-  precision highp float;
+  precision mediump float;
 
   uniform float u_zoom;
 
-  in vec4 v_color;
-  in vec2 v_tex_coord;
-  in float v_line_width;
+  in lowp vec4 v_color;
+  in lowp vec2 v_tex_coord;
+  in lowp float v_line_width;
 
   out vec4 o_frag_color;
 

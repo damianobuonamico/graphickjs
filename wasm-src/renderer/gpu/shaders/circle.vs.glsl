@@ -1,17 +1,17 @@
 R"(
 
-  precision highp float;
+  precision mediump float;
 
-  uniform mat4 u_view_projection;
+  uniform highp mat4 u_view_projection;
 
-  in uvec2 a_position;
-  in vec2 a_instance_position;
-  in float a_instance_radius;
-  in uvec4 a_instance_color;
+  in lowp uvec2 a_position;
+  in highp vec2 a_instance_position;
+  in highp float a_instance_radius;
+  in lowp uvec4 a_instance_color;
 
-  out vec4 v_color;
-  out vec2 v_tex_coord;
-  out float v_radius;
+  out lowp vec4 v_color;
+  out lowp vec2 v_tex_coord;
+  out lowp float v_radius;
 
   void main() {
     vec2 position = vec2(a_position);

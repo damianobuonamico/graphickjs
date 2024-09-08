@@ -293,6 +293,8 @@ namespace graphick::renderer {
 
     Viewport m_last_viewport;                            /* The last viewport, used for diffing. */
     Viewport m_viewport;                                 /* The viewport to render to. */
+    rect m_safe_clip_rect;                               /* The largest clip rect that can be used. */
+    std::vector<rect> m_invalid_rects;                   /* The invalid rects to clip against. */
     dmat4 m_vp_matrix;                                   /* The view-projection matrix. */
     editor::Cache* m_cache;                              /* The cache to use. */
 

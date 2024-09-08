@@ -1,17 +1,17 @@
 R"(
 
-  precision highp float;
+  precision mediump float;
 
-  uniform mat4 u_view_projection;
-  uniform vec4 u_models[${MAX_MODELS}];
+  uniform highp mat4 u_view_projection;
+  uniform highp vec4 u_models[${MAX_MODELS}];
 
-  in uvec2 a_position;
-  in vec2 a_instance_position;
-  in vec2 a_instance_size;
-  in uvec4 a_instance_color;
-  in uint a_instance_attr_1;
+  in lowp uvec2 a_position;
+  in highp vec2 a_instance_position;
+  in highp vec2 a_instance_size;
+  in lowp uvec4 a_instance_color;
+  in highp uint a_instance_attr_1;
 
-  out vec4 v_color;
+  out lowp vec4 v_color;
 
   void main() {
     uint model_index = (a_instance_attr_1 & 0xFFFU) * 2U;

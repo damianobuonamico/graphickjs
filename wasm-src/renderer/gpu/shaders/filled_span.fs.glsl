@@ -1,8 +1,8 @@
 R"(
 
-  precision highp float;
+  precision mediump float;
 
-  in vec4 v_color;
+  in lowp vec4 v_color;
 
   out vec4 o_frag_color;
 

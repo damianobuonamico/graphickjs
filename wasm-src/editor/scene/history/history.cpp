@@ -11,7 +11,8 @@ namespace graphick::editor {
 
   History::History(Scene* scene) :
     m_scene(scene),
-    m_batch_indices({ 0 }) {}
+    m_batch_indices({ 0 }) {
+  }
 
   void History::add(uuid entity_id, Action::Target target, const io::EncodedData& encoded_data) {
     push(Action{
@@ -19,7 +20,7 @@ namespace graphick::editor {
       target,
       Action::Type::Add,
       encoded_data
-    });
+      });
   }
 
   void History::add(uuid entity_id, Action::Target target, io::EncodedData&& encoded_data) {
@@ -28,7 +29,7 @@ namespace graphick::editor {
       target,
       Action::Type::Add,
       std::move(encoded_data)
-    });
+      });
   }
 
   void History::remove(uuid entity_id, Action::Target target, const io::EncodedData& encoded_data) {
@@ -37,7 +38,7 @@ namespace graphick::editor {
       target,
       Action::Type::Remove,
       encoded_data
-    });
+      });
   }
 
   void History::remove(uuid entity_id, Action::Target target, io::EncodedData&& encoded_data) {
@@ -46,7 +47,7 @@ namespace graphick::editor {
       target,
       Action::Type::Remove,
       std::move(encoded_data)
-    });
+      });
   }
 
   void History::modify(uuid entity_id, const io::EncodedData& encoded_data, const io::EncodedData& backup_data, const bool execute) {
@@ -56,7 +57,7 @@ namespace graphick::editor {
       Action::Type::Modify,
       encoded_data,
       backup_data
-    }, execute);
+      }, execute);
   }
 
   void History::modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data, const bool execute) {
@@ -68,7 +69,7 @@ namespace graphick::editor {
       Action::Type::Modify,
       encoded_data,
       backup_data
-    }, execute);
+      }, execute);
   }
 
   void History::undo() {
@@ -120,9 +121,10 @@ namespace graphick::editor {
   void History::push(Action&& action, const bool execute) {
     bool merged = false;
 
-    if (execute) {
-      action.execute(m_scene);
-    }
+    // TODO: Think of how to implement this.
+    // if (execute) {
+    action.execute(m_scene);
+    // }
 
     seal();
 
