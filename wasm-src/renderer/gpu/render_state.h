@@ -15,120 +15,198 @@
 
 namespace graphick::renderer::GPU {
 
-  /**
-   * @brief The program object.
-   *
-   * @struct Program
-   */
-  using Program = GL::GLProgram;
+/**
+ * @brief The program object.
+ *
+ * @struct Program
+ */
+using Program = GL::GLProgram;
 
-  /**
-   * @brief The uniform object.
-   *
-   * @struct Uniform
-   */
-  using Uniform = GL::GLUniform;
+/**
+ * @brief The uniform object.
+ *
+ * @struct Uniform
+ */
+using Uniform = GL::GLUniform;
 
-  /**
-   * @brief The texture uniform object.
-   *
-   * @struct TextureUniform
-   */
-  using TextureUniform = GL::GLTextureUniform;
+/**
+ * @brief The texture uniform object.
+ *
+ * @struct TextureUniform
+ */
+using TextureUniform = GL::GLTextureUniform;
 
-  /**
-   * @brief The vertex array object.
-   *
-   * @struct VertexArray
-   */
-  using VertexArray = GL::GLVertexArray;
+/**
+ * @brief The vertex array object.
+ *
+ * @struct VertexArray
+ */
+using VertexArray = GL::GLVertexArray;
 
-  /**
-   * @brief The vertex attribute object.
-   *
-   * @struct VertexAttribute
-   */
-  using VertexAttribute = GL::GLVertexAttribute;
+/**
+ * @brief The vertex attribute object.
+ *
+ * @struct VertexAttribute
+ */
+using VertexAttribute = GL::GLVertexAttribute;
 
-  /**
-   * @brief The texture object.
-   *
-   * @struct Texture
-   */
-  using Texture = GL::GLTexture;
+/**
+ * @brief The texture object.
+ *
+ * @struct Texture
+ */
+using Texture = GL::GLTexture;
 
-  /**
-   * @brief The framebuffer object.
-   *
-   * @struct Framebuffer
-   */
-  using Framebuffer = GL::GLFramebuffer;
+/**
+ * @brief The framebuffer object.
+ *
+ * @struct Framebuffer
+ */
+using Framebuffer = GL::GLFramebuffer;
 
-  /**
-   * @brief The buffer object.
-   *
-   * @struct Buffer
-   */
-  using Buffer = GL::GLBuffer;
+/**
+ * @brief The buffer object.
+ *
+ * @struct Buffer
+ */
+using Buffer = GL::GLBuffer;
 
-  /**
-   * @brief A uniform binding is used to bind a uniform to a value.
-   */
-  using UniformBinding = std::pair<Uniform, UniformData>;
+/**
+ * @brief A uniform binding is used to bind a uniform to a value.
+ */
+using UniformBinding = std::pair<Uniform, UniformData>;
 
-  /**
-   * @brief A texture binding is used to bind a texture to a texture unit and uniform.
-   */
-  using TextureBinding = std::pair<TextureUniform, const Texture&>;
+/**
+ * @brief A texture binding is used to bind a texture to a texture unit and uniform.
+ */
+using TextureBinding = std::pair<TextureUniform, const Texture&>;
 
-  /**
-   * @brief The render state.
-   *
-   * The device will keep track of the current render state and update it as needed.
-   *
-   * @struct RenderState
-   */
-  struct RenderState {
-    Program program;                         /* The current program. */
-    VertexArray* vertex_array;               /* The current vertex array. */
-    Primitive primitive;                     /* The current primitive. */
-    irect viewport;                          /* The current viewport. */
+/**
+ * @brief The render state.
+ *
+ * The device will keep track of the current render state and update it as needed.
+ *
+ * @struct RenderState
+ */
+struct RenderState {
+  Program program;                      /* The current program. */
+  VertexArray* vertex_array;            /* The current vertex array. */
+  Primitive primitive;                  /* The current primitive. */
+  irect viewport;                       /* The current viewport. */
 
-    std::vector<UniformBinding> uniforms;    /* The uniform bindings. */
-    std::vector<TextureBinding> textures;    /* The texture bindings. */
+  std::vector<UniformBinding> uniforms; /* The uniform bindings. */
+  std::vector<TextureBinding> textures; /* The texture bindings. */
 
-    ClearOps clear_ops;                      /* The clear operations. */
+  ClearOps clear_ops;                   /* The clear operations. */
 
-    std::optional<BlendState> blend;         /* The blend state, if std::nullopt, blending is disabled. */
-    std::optional<DepthState> depth;         /* The depth state, if std::nullopt, the depth test is disabled. */
-    std::optional<StencilState> stencil;     /* The stencil state, if std::nullopt, the stencil test is disabled. */
+  std::optional<BlendState> blend;      /* The blend state, if std::nullopt, blending is disabled. */
+  std::optional<DepthState> depth;      /* The depth state, if std::nullopt, the depth test is disabled. */
+  std::optional<StencilState> stencil;  /* The stencil state, if std::nullopt, the stencil test is disabled. */
 
-    RenderState() = default;
+  RenderState() = default;
 
-    RenderState(
-      Program program, VertexArray* vertex_array,
-      Primitive primitive, irect viewport,
-      std::vector<UniformBinding> uniforms = {},
-      std::vector<TextureBinding> textures = {}
-    ) :
-      program(program), vertex_array(vertex_array),
-      primitive(primitive), viewport(viewport),
-      uniforms(uniforms), textures(textures) {}
+  RenderState(
+    Program program,
+    VertexArray* vertex_array,
+    Primitive primitive,
+    irect viewport,
+    std::vector<UniformBinding> uniforms = {},
+    std::vector<TextureBinding> textures = {}
+  ) :
+    program(program),
+    vertex_array(vertex_array),
+    primitive(primitive),
+    viewport(viewport),
+    uniforms(uniforms),
+    textures(textures) { }
 
-    RenderState(
-      Program program, VertexArray* vertex_array,
-      Primitive primitive, irect viewport,
-      std::vector<UniformBinding> uniforms,
-      std::vector<TextureBinding> textures,
-      ClearOps clear_ops,
-      std::optional<BlendState> blend = std::nullopt,
-      std::optional<DepthState> depth = std::nullopt,
-      std::optional<StencilState> stencil = std::nullopt
-    ) :
-      program(program), vertex_array(vertex_array),
-      primitive(primitive), viewport(viewport),
-      uniforms(uniforms), textures(textures),
-      clear_ops(clear_ops), blend(blend), depth(depth), stencil(stencil) {}
-  };
+  RenderState(
+    Program program,
+    VertexArray* vertex_array,
+    Primitive primitive,
+    irect viewport,
+    std::vector<UniformBinding> uniforms,
+    std::vector<TextureBinding> textures,
+    ClearOps clear_ops,
+    std::optional<BlendState> blend = std::nullopt,
+    std::optional<DepthState> depth = std::nullopt,
+    std::optional<StencilState> stencil = std::nullopt
+  ) :
+    program(program),
+    vertex_array(vertex_array),
+    primitive(primitive),
+    viewport(viewport),
+    uniforms(uniforms),
+    textures(textures),
+    clear_ops(clear_ops),
+    blend(blend),
+    depth(depth),
+    stencil(stencil) { }
+
+  RenderState& operator=(const RenderState& other) {
+    program = other.program;
+    vertex_array = other.vertex_array;
+    primitive = other.primitive;
+    viewport = other.viewport;
+    clear_ops = other.clear_ops;
+    blend = other.blend;
+    depth = other.depth;
+    stencil = other.stencil;
+
+    uniforms.clear();
+    textures.clear();
+
+    return *this;
+  }
+
+  RenderState& default_blend() {
+    blend =
+      BlendState{BlendFactor::One, BlendFactor::OneMinusSrcAlpha, BlendFactor::One, BlendFactor::OneMinusSrcAlpha, BlendOp::Add};
+
+    return *this;
+  }
+
+  RenderState& no_blend() {
+    blend = std::nullopt;
+
+    return *this;
+  }
+
+  RenderState& default_depth() {
+    depth = DepthState{DepthFunc::Less, true};
+
+    return *this;
+  }
+
+  RenderState& no_depth() {
+    depth = std::nullopt;
+
+    return *this;
+  }
+
+  RenderState& add_stencil() {
+    stencil = StencilState{StencilFunc::Always, 1, 0xFF, true};
+
+    return *this;
+  }
+
+  RenderState& subtract_stencil() {
+    stencil = StencilState{StencilFunc::Always, 0, 0xFF, true};
+
+    return *this;
+  }
+
+  RenderState& no_stencil() {
+    stencil = std::nullopt;
+
+    return *this;
+  }
+
+  RenderState& keep_stencil() {
+    stencil = StencilState{StencilFunc::Nequal, 1, 0xFF, false};
+
+    return *this;
+  }
+};
 
 }

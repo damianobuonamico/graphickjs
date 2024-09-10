@@ -306,7 +306,6 @@ namespace graphick::renderer::GPU::GL {
       ));
     }
 
-    glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, 0));
     glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
   }
 

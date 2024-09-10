@@ -32,7 +32,7 @@ inline constexpr T ui_line_width = T(1);
 
 #define ZOOM_MIN 0.02f
 #define ZOOM_MAX 640.0f
-#define ZOOM_STEP 0.18f
+#define ZOOM_STEP 0.25f
 #define PAN_STEP 36.0f
 
 #define INPUT_MOVEMENT_THRESHOLD 4.0f

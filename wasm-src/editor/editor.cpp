@@ -9,14 +9,14 @@
 
 #include "editor.h"
 
-#include "scene/scene.h"
 #include "input/input_manager.h"
+#include "scene/scene.h"
 
 #include "../renderer/renderer.h"
 
-#include "../utils/resource_manager.h"
-#include "../utils/debugger.h"
 #include "../utils/console.h"
+#include "../utils/debugger.h"
+#include "../utils/resource_manager.h"
 
 #ifdef EMSCRIPTEN
 #include <emscripten/html5.h>
@@ -24,99 +24,93 @@
 
 namespace graphick::editor {
 
-  struct RenderUserData {
-    bool complete_redraw;
-  };
-
-  int render_callback(double time, void* user_data) {
-    Editor::get()->render_frame(time, user_data ? static_cast<RenderUserData*>(user_data)->complete_redraw : false);
-    return 0;
-  }
-
-  Editor* Editor::s_instance = nullptr;
-
-  void Editor::init() {
-    if (s_instance != nullptr) {
-      console::error("Editor already initialized, call shutdown() before reinitializing!");
-      return;
-    }
-
-    s_instance = new Editor();
-
-    input::InputManager::init();
-    utils::ResourceManager::init();
-    renderer::Renderer::init();
-
-#if 0
-    GK_DEBUGGER_INIT();
-#endif
-
-    s_instance->m_scenes.emplace_back();
-  }
-
-  void Editor::prepare_refresh() {
-    renderer::Renderer::shutdown();
-  }
-
-  void Editor::refresh() {
-    renderer::Renderer::init();
-  }
-
-  void Editor::shutdown() {
-    if (s_instance == nullptr) {
-      console::error("Renderer already shutdown, call init() before shutting down!");
-      return;
-    }
-
-#if 0
-    GK_DEBUGGER_SHUTDOWN();
-#endif
-
-    renderer::Renderer::shutdown();
-    utils::ResourceManager::shutdown();
-    input::InputManager::shutdown();
-
-    delete s_instance;
-    s_instance = nullptr;
-  }
-
-  Scene& Editor::scene() {
-    if (get()->m_scenes.empty()) {
-      get()->m_scenes.emplace_back();
-    }
-
-    return get()->m_scenes[0];
-  }
-
-  void Editor::resize(const ivec2 size, const ivec2 offset, float dpr) {
-    for (auto& scene : get()->m_scenes) {
-      scene.viewport.resize(size, offset, dpr);
-    }
-  }
-
-  void Editor::render(
 #ifdef EMSCRIPTEN
-    bool complete_redraw
+int render_callback(const double time, void* user_data) {
+  Editor::get()->render_frame(time);
+  return 1;
+}
 #else
-    bool complete_redraw,
-    bool is_main_loop
+bool render_callback(const double time, void* user_data) { return Editor::get()->render_frame(time); }
 #endif
-  ) {
-    // TODO: implement intelligent redraws through render requests
-    RenderUserData user_data = { complete_redraw };
+
+Editor* Editor::s_instance = nullptr;
+
+void Editor::init() {
+  if (s_instance != nullptr) {
+    console::error("Editor already initialized, call shutdown() before reinitializing!");
+    return;
+  }
+
+  s_instance = new Editor();
+
+  input::InputManager::init();
+  utils::ResourceManager::init();
+  renderer::Renderer::init();
+
+  s_instance->m_scenes.emplace_back();
+
 #ifdef EMSCRIPTEN
-    emscripten_request_animation_frame(render_callback, &user_data);
-#else
-    if (is_main_loop) {
-      render_callback(0, &user_data);
-    }
+  emscripten_request_animation_frame_loop(render_callback, nullptr);
 #endif
+}
+
+void Editor::prepare_refresh() { renderer::Renderer::shutdown(); }
+
+void Editor::refresh() { renderer::Renderer::init(); }
+
+void Editor::shutdown() {
+  if (s_instance == nullptr) {
+    console::error("Renderer already shutdown, call init() before shutting down!");
+    return;
   }
 
-  void Editor::render_frame(double time, bool complete_redraw) {
-    OPTICK_EVENT();
+  renderer::Renderer::shutdown();
+  utils::ResourceManager::shutdown();
+  input::InputManager::shutdown();
 
-    scene().render(complete_redraw);
+  delete s_instance;
+  s_instance = nullptr;
+}
+
+Scene& Editor::scene() {
+  if (get()->m_scenes.empty()) {
+    get()->m_scenes.emplace_back();
   }
+
+  return get()->m_scenes[0];
+}
+
+void Editor::resize(const ivec2 size, const ivec2 offset, float dpr) {
+  for (auto& scene : get()->m_scenes) {
+    scene.viewport.resize(size, offset, dpr);
+  }
+}
+
+#ifndef EMSCRIPTEN
+bool Editor::render_loop(const double time) { return render_callback(time, nullptr); }
+#endif
+
+void Editor::request_render(const RenderRequestOptions options) {
+  if (!get()->m_render_request.has_value()) {
+    get()->m_render_request = options;
+    return;
+  }
+
+  get()->m_render_request->update(options);
+}
+
+bool Editor::render_frame(const double time) {
+  if (!m_render_request.has_value()) return false;
+
+  if (m_render_request->frame_rate < 60 && time - m_last_render_time < 1000.0 / m_render_request->frame_rate) {
+    return false;
+  }
+
+  scene().render(m_render_request->ignore_cache);
+
+  m_render_request.reset();
+
+  return true;
+}
 
 }

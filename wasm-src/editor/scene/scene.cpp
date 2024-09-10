@@ -14,558 +14,504 @@
 
 #include "scene.h"
 
-#include "entity.h"
+#include "../../geom/intersections.h"
+#include "../../geom/path.h"
+#include "../../geom/path_builder.h"
+
+#include "../../math/math.h"
+#include "../../math/matrix.h"
+
+#include "../../renderer/renderer.h"
+
+#include "../../utils/console.h"
+#include "../../utils/debugger.h"
+#include "../../utils/misc.h"
 
 #include "../input/input_manager.h"
 #include "../input/tools/pen_tool.h"
 
-#include "../../renderer/renderer.h"
-
-#include "../../math/matrix.h"
-#include "../../math/math.h"
-
-#include "../../geom/intersections.h"
-#include "../../geom/path_builder.h"
-#include "../../geom/path.h"
-
-#include "../../utils/debugger.h"
-#include "../../utils/console.h"
-#include "../../utils/misc.h"
+#include "entity.h"
 
 namespace graphick::editor {
 
-  Scene::Scene() : selection(this), history(this) {}
+Scene::Scene() : selection(this), history(this) { }
 
-  Scene::Scene(const Scene& other) :
-    m_entities(other.m_entities),
-    m_order(other.m_order),
-    selection(this),
-    history(this),
-    viewport(other.viewport)
-  {
+Scene::Scene(const Scene& other) :
+  m_entities(other.m_entities), m_order(other.m_order), selection(this), history(this), viewport(other.viewport) { }
+
+Scene::Scene(Scene&& other) noexcept :
+  m_registry(std::move(other.m_registry)), m_entities(std::move(other.m_entities)), selection(this), history(this) { }
+
+Scene::~Scene() { }
+
+bool Scene::has_entity(const uuid id) const { return m_entities.find(id) != m_entities.end(); }
+
+Entity Scene::get_entity(const uuid id) { return {m_entities.at(id), this}; }
+
+const Entity Scene::get_entity(const uuid id) const { return {m_entities.at(id), const_cast<Scene*>(this)}; }
+
+Entity Scene::create_entity(const std::string& tag, const bool generate_tag) {
+  io::EncodedData data;
+  uuid id = uuid();
+
+  data.component_id(IDComponent::component_id).uuid(id);
+
+  if (generate_tag) {
+    data.component_id(TagComponent::component_id).string(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number) : tag);
   }
 
-  Scene::Scene(Scene&& other) noexcept :
-    m_registry(std::move(other.m_registry)),
-    m_entities(std::move(other.m_entities)),
-    selection(this),
-    history(this) {
-  }
+  data.component_id(CategoryComponent::component_id).uint8(static_cast<uint8_t>(CategoryComponent::Category::None));
 
-  Scene::~Scene() {}
+  data.component_id(TransformComponent::component_id).mat2x3(mat2x3(1.0f));
 
-  bool Scene::has_entity(const uuid id) const {
-    return m_entities.find(id) != m_entities.end();
-  }
+  history.add(id, Action::Target::Entity, std::move(data));
 
-  Entity Scene::get_entity(const uuid id) {
-    return { m_entities.at(id), this };
-  }
+  // Entity entity = { m_registry.create(), this };
 
-  const Entity Scene::get_entity(const uuid id) const {
-    return { m_entities.at(id), const_cast<Scene*>(this) };
-  }
+  // uuid id = uuid();
 
-  Entity Scene::create_entity(const std::string& tag, const bool generate_tag) {
-    io::EncodedData data;
-    uuid id = uuid();
+  // entity.add_component<IDComponent>(id);
 
-    data.component_id(IDComponent::component_id)
-      .uuid(id);
-
-    if (generate_tag) {
-      data.component_id(TagComponent::component_id)
-        .string(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number) : tag);
-    }
-
-    data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Category::None));
-
-    data.component_id(TransformComponent::component_id)
-      .mat2x3(mat2x3(1.0f));
-
-    history.add(
-      id,
-      Action::Target::Entity,
-      std::move(data)
-    );
-
-    // Entity entity = { m_registry.create(), this };
-
-    // uuid id = uuid();
-
-    // entity.add_component<IDComponent>(id);
-
-    // if (generate_tag) {
-    //   entity.add_component<TagComponent>(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number) : tag);
-    //   m_entity_tag_number++;
-    // }
-
-    // m_entities[id] = entity;
-    // m_order.push_back(entity);
-
-    return get_entity(id);
-  }
-
-  Entity Scene::create_element() {
-    io::EncodedData data;
-    uuid id = uuid();
-
-    data.component_id(IDComponent::component_id)
-      .uuid(id);
-
-    data.component_id(TagComponent::component_id)
-      .string("Element " + std::to_string(m_entity_tag_number));
-
-    data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
-
-    data.component_id(PathComponent::component_id)
-      .uint8(0);
-
-    data.component_id(TransformComponent::component_id)
-      .mat2x3(mat2x3(1.0f));
-
-    history.add(
-      id,
-      Action::Target::Entity,
-      std::move(data)
-    );
-
-    // Entity entity = create_entity("Element" + std::to_string(m_entity_tag_number));
-
-    // PathComponent& path_component = entity.add_component<PathComponent>();
-
-    // entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    // entity.add_component<TransformComponent>(entity.id(), &path_component);
-
-    // entity.encode();
-
-    return get_entity(id);
-  }
-
-  Entity Scene::create_element(const geom::path& path) {
-    io::EncodedData data;
-    uuid id = uuid();
-
-    data.component_id(IDComponent::component_id)
-      .uuid(id);
-
-    data.component_id(TagComponent::component_id)
-      .string("Element " + std::to_string(m_entity_tag_number));
-
-    data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
-
-    data.component_id(PathComponent::component_id);
-    path.encode(data);
-
-    data.component_id(TransformComponent::component_id)
-      .mat2x3(mat2x3(1.0f));
-
-    history.add(
-      id,
-      Action::Target::Entity,
-      std::move(data)
-    );
-
-    // Entity entity = create_entity("Element" + std::to_string(m_entity_tag_number));
-
-    // PathComponent& path_component = entity.add_component<PathComponent>(std::move(path));
-
-    // entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-    // entity.add_component<TransformComponent>(entity.id(), &path_component);
-
-    return get_entity(id);
-  }
-
-  void Scene::delete_entity(Entity entity) {
-    history.remove(
-      entity.id(),
-      Action::Target::Entity,
-      entity.encode()
-    );
-  }
-
-  void Scene::delete_entity(uuid id) {
-    delete_entity(get_entity(id));
-  }
-
-  uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold) {
-    const double zoom = viewport.zoom();
-    threshold /= zoom;
-
-    for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
-      const Entity entity = { *it, this };
-
-      if (entity.has_components<IDComponent, PathComponent, TransformComponent>()) {
-        const auto& path = entity.get_component<PathComponent>().data();
-        const TransformComponent transform = entity.get_component<TransformComponent>();
-        const uuid id = entity.id();
-
-        bool has_fill = false;
-        bool has_stroke = false;
-
-        renderer::Fill fill;
-        renderer::Stroke stroke;
-
-        if (entity.has_component<FillComponent>()) {
-          has_fill = true;
-          auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
-
-          fill = renderer::Fill{ fill_component.color, fill_component.rule, 0 };
-        }
-
-        if (entity.has_component<StrokeComponent>()) {
-          has_stroke = true;
-          auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
-
-          stroke = renderer::Stroke{ stroke_component.color, stroke_component.cap, stroke_component.join, stroke_component.width, stroke_component.miter_limit, 0 };
-        }
-
-        geom::FillingOptions filling_options = !has_fill ? geom::FillingOptions{} : geom::FillingOptions{
-          fill.rule
-        };
-
-        geom::StrokingOptions<float> stroking_options = !has_stroke ? geom::StrokingOptions<float>{} : geom::StrokingOptions<float>{
-          stroke.width, stroke.miter_limit, stroke.cap, stroke.join
-        };
-
-        if (path.is_point_inside_path(
-          position,
-          has_fill ? &filling_options : nullptr,
-          has_stroke ? &stroking_options : nullptr,
-          transform,
-          // TODO: remove zoom
-          threshold, zoom,
-          deep_search && selection.has(id)
-        )) {
-          return id;
-        }
-      }
-    }
-
-    return { 0 };
-  }
-
-  Entity Scene::duplicate_entity(const uuid id) {
-    Entity entity = get_entity(id);
-
-    auto [new_id, data] = entity.duplicate();
-
-    history.add(
-      new_id,
-      Action::Target::Entity,
-      std::move(data)
-    );
-
-    return get_entity(new_id);
-  }
-
-  std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect, bool deep_search) {
-    OPTICK_EVENT();
-
-    std::unordered_map<uuid, Selection::SelectionEntry> entities;
-    std::vector<uint32_t> vertices;
-
-    auto view = get_all_entities_with<IDComponent::Data, TransformComponent::Data>();
-
-    for (entt::entity handle : view) {
-      OPTICK_EVENT("entity_in_rect");
-
-      const Entity entity = { handle, this };
-      const uuid id = entity.id();
-      const TransformComponent transform = entity.get_component<TransformComponent>();
-
-      const float angle = math::rotation(transform.matrix());
-
-      if (math::is_almost_zero(std::fmodf(angle, math::two_pi<float>))) {
-        const mat2x3 inverse_transform = transform.inverse();
-        const math::rect selection_rect = inverse_transform * rect;
-
-        if (entity.is_element()) {
-          if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
-            entities.insert({ id, Selection::SelectionEntry() });
-            continue;
-          }
-
-          const PathComponent path = entity.get_component<PathComponent>();
-
-          if (deep_search) {
-            vertices.clear();
-
-            if (path.data().intersects(selection_rect, &vertices)) {
-              entities.insert({ id, Selection::SelectionEntry{ std::unordered_set<uint32_t>(vertices.begin(), vertices.end()) } });
-            }
-          }
-          else {
-            if (path.data().intersects(selection_rect)) {
-              entities.insert({ id, Selection::SelectionEntry() });
-            }
-          }
-        }
-        else {
-          if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
-            entities.insert({ id, Selection::SelectionEntry() });
-          }
-        }
-      }
-      else {
-        if (entity.is_element()) {
-          if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
-            entities.insert({ id, Selection::SelectionEntry() });
-            continue;
-          }
-
-          const PathComponent path = entity.get_component<PathComponent>();
-
-          if (deep_search) {
-            vertices.clear();
-
-            if (path.data().intersects(rect, transform, &vertices)) {
-              entities.insert({ id, Selection::SelectionEntry{ std::unordered_set<uint32_t>(vertices.begin(), vertices.end()) } });
-            }
-          }
-          else {
-            if (path.data().intersects(rect, transform)) {
-              entities.insert({ id, Selection::SelectionEntry() });
-            }
-          }
-        }
-        else {
-          if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
-            entities.insert({ id, Selection::SelectionEntry() });
-          }
-        }
-      }
-
-    }
-
-    return entities;
-  }
-
-  void Scene::render(const bool complete_redraw) const {
-    GK_TOTAL("Scene::render");
-    OPTICK_EVENT();
-
-    const math::rect visible_rect = viewport.visible();
-
-    /* Flooring instead of rounding to avoid banding artifacts. */
-    renderer::Renderer::begin_frame({
-        math::floor(vec2(viewport.size()) * viewport.dpr()),
-        viewport.position(),
-        viewport.zoom() * viewport.dpr(),
-        viewport.dpr(),
-        vec4{0.2f, 0.2f, 0.21f, 1.0f}
-      },
-      &m_cache,
-      complete_redraw
-    );
-
-    uint32_t z_index = 1;
-
-    float tolerance = GK_PATH_TOLERANCE / 2.0f;
-    float outline_tolerance = GK_PATH_TOLERANCE / (viewport.zoom() * viewport.dpr());
-
-    bool should_rehydrate = true;
-
-    auto& selected = selection.selected();
-    auto& temp_selected = selection.temp_selected();
-
-    bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
-
-    for (auto it = m_order.begin(); it != m_order.end(); it++) {
-      const Entity entity = { *it, const_cast<Scene*>(this) };
-      if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
-
-      const uuid id = entity.id();
-      const geom::path& path = entity.get_component<PathComponent>().data();
-      const TransformComponent transform = entity.get_component<TransformComponent>();
-
-      if (!has_entity(id)) return;
-
-      if (should_rehydrate) {
-        // path.rehydrate_cache();
-      }
-
-      bool has_stroke = m_registry.all_of<StrokeComponent::Data>(*it);
-      std::optional<StrokeComponent::Data> stroke = has_stroke ? std::optional<StrokeComponent::Data>(m_registry.get<StrokeComponent::Data>(*it)) : std::nullopt;
-
-      rect entity_rect = transform.approx_bounding_rect();
-
-      if (has_stroke) {
-        entity_rect.min -= vec2{ stroke->width };
-        entity_rect.max += vec2{ stroke->width };
-      }
-
-      if (!geom::does_rect_intersect_rect(entity_rect, visible_rect)) continue;
-
-      bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
-      std::optional<FillComponent::Data> fill = has_fill ? std::optional<FillComponent::Data>(m_registry.get<FillComponent::Data>(*it)) : std::nullopt;
-
-      if (has_fill && !fill->visible) has_fill = false;
-      if (has_stroke && !stroke->visible) has_stroke = false;
-
-      bool is_selected = selected.find(id) != selected.end();
-      bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
-      bool is_full = false;
-
-      if ((!is_selected && !is_selected) && !has_fill && !has_stroke) continue;
-
-      mat2x3 transform_matrix = transform.matrix();
-
-      auto transformation = math::decompose(transform_matrix);
-      float scale = std::max(transformation.scale.x, transformation.scale.y);
-
-      geom::cubic_path cubics = path.to_cubic_path();
-
-      /* First we process outlines, because filling takes ownership of the path. */
-      if (is_selected || is_temp_selected) {
-        std::unordered_set<uint32_t> selected_vertices;
-
-        if (is_selected) {
-          Selection::SelectionEntry entry = selected.at(id);
-
-          is_full = entry.full();
-
-          if (!is_full) {
-            selected_vertices = entry.indices;
-          }
-        }
-
-        if (is_temp_selected && !is_full) {
-          Selection::SelectionEntry entry = temp_selected.at(id);
-
-          is_full = entry.full();
-
-          if (!is_full) {
-            selected_vertices.insert(temp_selected.at(id).indices.begin(), temp_selected.at(id).indices.end());
-          }
-        }
-
-        renderer::Renderer::draw_outline(
-          path, transform, outline_tolerance,
-          true, is_full ? nullptr : &selected_vertices,
-          nullptr, &entity_rect
-        );
-
-        // TEMP
-        // geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
-        // renderer::Renderer::draw_outline(quadratics, transform, outline_tolerance);
-        // renderer::Renderer::draw_outline_vertices(
-        //   path, transform,
-        //   is_full ? nullptr : &selected_vertices
-        // );
-      }
-
-      if (has_fill && has_stroke) {
-        // renderer::Renderer::draw(
-        //   quadratics,
-        //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index },
-        //   renderer::Fill{ fill->color, fill->rule, z_index + 1 },
-        //   transform_matrix
-        // );
-        renderer::Renderer::draw(
-          std::move(cubics),
-          renderer::Fill{ fill->color, fill->rule, z_index },
-          transform_matrix
-        );
-
-        z_index += 2;
-      }
-      else if (has_fill) {
-        renderer::Renderer::draw(
-          std::move(cubics),
-          renderer::Fill{ fill->color, fill->rule, z_index },
-          transform_matrix
-        );
-
-        z_index += 1;
-      }
-      else if (has_stroke) {
-
-        // renderer::Renderer::draw(
-        //   quadratics,
-        //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index },
-        //   transform_matrix
-        // );
-
-        z_index += 1;
-      }
-
-      // draw_vertices,
-
-  // math::rect bounding_rect = path.bounding_rect();
-  // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
-  // geom::path rect;
-  // rect.move_to(lines[0].min);
-
-  // for (auto& line : lines) {
-  //   rect.line_to(line.max);
+  // if (generate_tag) {
+  //   entity.add_component<TagComponent>(tag.empty() ? "Entity " +
+  //   std::to_string(m_entity_tag_number) : tag); m_entity_tag_number++;
   // }
 
-  // Renderer::Renderer::draw_outline(id, rect, position);
+  // m_entities[id] = entity;
+  // m_order.push_back(entity);
+
+  return get_entity(id);
+}
+
+Entity Scene::create_element() {
+  io::EncodedData data;
+  uuid id = uuid();
+
+  data.component_id(IDComponent::component_id).uuid(id);
+
+  data.component_id(TagComponent::component_id).string("Element " + std::to_string(m_entity_tag_number));
+
+  data.component_id(CategoryComponent::component_id).uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
+
+  data.component_id(PathComponent::component_id).uint8(0);
+
+  data.component_id(TransformComponent::component_id).mat2x3(mat2x3(1.0f));
+
+  history.add(id, Action::Target::Entity, std::move(data));
+
+  // Entity entity = create_entity("Element" +
+  // std::to_string(m_entity_tag_number));
+
+  // PathComponent& path_component = entity.add_component<PathComponent>();
+
+  // entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
+  // entity.add_component<TransformComponent>(entity.id(), &path_component);
+
+  // entity.encode();
+
+  return get_entity(id);
+}
+
+Entity Scene::create_element(const geom::path& path) {
+  io::EncodedData data;
+  uuid id = uuid();
+
+  data.component_id(IDComponent::component_id).uuid(id);
+
+  data.component_id(TagComponent::component_id).string("Element " + std::to_string(m_entity_tag_number));
+
+  data.component_id(CategoryComponent::component_id).uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
+
+  data.component_id(PathComponent::component_id);
+  path.encode(data);
+
+  data.component_id(TransformComponent::component_id).mat2x3(mat2x3(1.0f));
+
+  history.add(id, Action::Target::Entity, std::move(data));
+
+  // Entity entity = create_entity("Element" +
+  // std::to_string(m_entity_tag_number));
+
+  // PathComponent& path_component =
+  // entity.add_component<PathComponent>(std::move(path));
+
+  // entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
+  // entity.add_component<TransformComponent>(entity.id(), &path_component);
+
+  return get_entity(id);
+}
+
+void Scene::delete_entity(Entity entity) { history.remove(entity.id(), Action::Target::Entity, entity.encode()); }
+
+void Scene::delete_entity(uuid id) { delete_entity(get_entity(id)); }
+
+uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold) {
+  const double zoom = viewport.zoom();
+  threshold /= zoom;
+
+  for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+    const Entity entity = {*it, this};
+
+    if (entity.has_components<IDComponent, PathComponent, TransformComponent>()) {
+      const auto& path = entity.get_component<PathComponent>().data();
+      const TransformComponent transform = entity.get_component<TransformComponent>();
+      const uuid id = entity.id();
+
+      bool has_fill = false;
+      bool has_stroke = false;
+
+      renderer::Fill fill;
+      renderer::Stroke stroke;
+
+      if (entity.has_component<FillComponent>()) {
+        has_fill = true;
+        auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
+
+        fill = renderer::Fill{fill_component.color, fill_component.rule, 0};
+      }
+
+      if (entity.has_component<StrokeComponent>()) {
+        has_stroke = true;
+        auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
+
+        stroke = renderer::Stroke{
+          stroke_component.color,
+          stroke_component.cap,
+          stroke_component.join,
+          stroke_component.width,
+          stroke_component.miter_limit,
+          0
+        };
+      }
+
+      geom::FillingOptions filling_options = !has_fill ? geom::FillingOptions{} : geom::FillingOptions{fill.rule};
+
+      geom::StrokingOptions<float> stroking_options = !has_stroke
+        ? geom::StrokingOptions<float>{}
+        : geom::StrokingOptions<float>{stroke.width, stroke.miter_limit, stroke.cap, stroke.join};
+
+      if (path.is_point_inside_path(
+            position,
+            has_fill ? &filling_options : nullptr,
+            has_stroke ? &stroking_options : nullptr,
+            transform,
+            // TODO: remove zoom
+            threshold,
+            zoom,
+            deep_search && selection.has(id)
+          )) {
+        return id;
+      }
     }
+  }
 
-    // {
-    //   std::vector<math::rect> lines = math::lines_from_rect(viewport.visible());
-    //   geom::path rect;
-    //   rect.move_to(lines[0].min);
+  return {0};
+}
 
-    //   for (auto& line : lines) {
-    //     rect.line_to(line.max);
-    //   }
+Entity Scene::duplicate_entity(const uuid id) {
+  Entity entity = get_entity(id);
 
-    //   Renderer::Renderer::draw_outline(0, rect, { 0.0f, 0.0f });
-    // }
+  auto [new_id, data] = entity.duplicate();
 
-    {
-      OPTICK_EVENT("Render Overlays");
+  history.add(new_id, Action::Target::Entity, std::move(data));
 
-      tool_state.render_overlays(viewport.zoom());
-    }
+  return get_entity(new_id);
+}
 
-#ifdef GK_DEBUG
-    if (!selected.empty()) {
-      const Entity entity = { m_entities.at(selected.begin()->first), const_cast<Scene*>(this) };
+std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect, bool deep_search) {
+  OPTICK_EVENT();
 
-      if (entity.has_component<PathComponent>()) {
-        const geom::path& path = entity.get_component<PathComponent>().data();
+  std::unordered_map<uuid, Selection::SelectionEntry> entities;
+  std::vector<uint32_t> vertices;
 
-        if (!path.empty()) {
-          const geom::path::Segment segment = path.segment_at(0);
-          renderer::Renderer::draw_debug_overlays({ segment.p0, segment.p1, segment.p2, segment.p3 });
+  auto view = get_all_entities_with<IDComponent::Data, TransformComponent::Data>();
+
+  for (entt::entity handle : view) {
+    OPTICK_EVENT("entity_in_rect");
+
+    const Entity entity = {handle, this};
+    const uuid id = entity.id();
+    const TransformComponent transform = entity.get_component<TransformComponent>();
+
+    const float angle = math::rotation(transform.matrix());
+
+    if (math::is_almost_zero(std::fmodf(angle, math::two_pi<float>))) {
+      const mat2x3 inverse_transform = transform.inverse();
+      const math::rect selection_rect = inverse_transform * rect;
+
+      if (entity.is_element()) {
+        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
+          entities.insert({id, Selection::SelectionEntry()});
+          continue;
+        }
+
+        const PathComponent path = entity.get_component<PathComponent>();
+
+        if (deep_search) {
+          vertices.clear();
+
+          if (path.data().intersects(selection_rect, &vertices)) {
+            entities.insert({id, Selection::SelectionEntry{std::unordered_set<uint32_t>(vertices.begin(), vertices.end())}});
+          }
+        } else {
+          if (path.data().intersects(selection_rect)) {
+            entities.insert({id, Selection::SelectionEntry()});
+          }
+        }
+      } else {
+        if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
+          entities.insert({id, Selection::SelectionEntry()});
+        }
+      }
+    } else {
+      if (entity.is_element()) {
+        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
+          entities.insert({id, Selection::SelectionEntry()});
+          continue;
+        }
+
+        const PathComponent path = entity.get_component<PathComponent>();
+
+        if (deep_search) {
+          vertices.clear();
+
+          if (path.data().intersects(rect, transform, &vertices)) {
+            entities.insert({id, Selection::SelectionEntry{std::unordered_set<uint32_t>(vertices.begin(), vertices.end())}});
+          }
+        } else {
+          if (path.data().intersects(rect, transform)) {
+            entities.insert({id, Selection::SelectionEntry()});
+          }
+        }
+      } else {
+        if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
+          entities.insert({id, Selection::SelectionEntry()});
         }
       }
     }
-#endif
+  }
 
-    renderer::Renderer::end_frame();
+  return entities;
+}
 
-    m_cache.set_grid_rect(viewport.visible(), ivec2(viewport.size() / 128.0f));
+void Scene::render(const bool ignore_cache) const {
+  GK_TOTAL("Scene::render");
+
+  const math::rect visible_rect = viewport.visible();
+  const renderer::Viewport rendering_viewport = {
+    ivec2(math::floor(vec2(viewport.size()) * viewport.dpr())),    // Flooring to avoid banding artifacts.
+    viewport.position(),
+    viewport.zoom() * viewport.dpr(),
+    viewport.dpr(),
+    vec4{0.2f, 0.2f, 0.21f, 1.0f}
+  };
+
+  renderer::Renderer::begin_frame({rendering_viewport, &m_cache, ignore_cache});
+
+  uint32_t z_index = 1;
+
+  float tolerance = GK_PATH_TOLERANCE / 2.0f;
+  float outline_tolerance = GK_PATH_TOLERANCE / (viewport.zoom() * viewport.dpr());
+
+  bool should_rehydrate = true;
+
+  auto& selected = selection.selected();
+  auto& temp_selected = selection.temp_selected();
+
+  bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
+
+  for (auto it = m_order.begin(); it != m_order.end(); it++) {
+    const Entity entity = {*it, const_cast<Scene*>(this)};
+    if (!entity.has_components<IDComponent, PathComponent, TransformComponent>()) continue;
+
+    const uuid id = entity.id();
+    const geom::path& path = entity.get_component<PathComponent>().data();
+    const TransformComponent transform = entity.get_component<TransformComponent>();
+
+    if (!has_entity(id)) return;
+
+    if (should_rehydrate) {
+      // path.rehydrate_cache();
+    }
+
+    bool has_stroke = m_registry.all_of<StrokeComponent::Data>(*it);
+    std::optional<StrokeComponent::Data> stroke =
+      has_stroke ? std::optional<StrokeComponent::Data>(m_registry.get<StrokeComponent::Data>(*it)) : std::nullopt;
+
+    rect entity_rect = transform.approx_bounding_rect();
+
+    if (has_stroke) {
+      entity_rect.min -= vec2{stroke->width};
+      entity_rect.max += vec2{stroke->width};
+    }
+
+    if (!geom::does_rect_intersect_rect(entity_rect, visible_rect)) continue;
+
+    bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
+    std::optional<FillComponent::Data> fill =
+      has_fill ? std::optional<FillComponent::Data>(m_registry.get<FillComponent::Data>(*it)) : std::nullopt;
+
+    if (has_fill && !fill->visible) has_fill = false;
+    if (has_stroke && !stroke->visible) has_stroke = false;
+
+    bool is_selected = selected.find(id) != selected.end();
+    bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
+    bool is_full = false;
+
+    if ((!is_selected && !is_selected) && !has_fill && !has_stroke) continue;
+
+    mat2x3 transform_matrix = transform.matrix();
+
+    auto transformation = math::decompose(transform_matrix);
+    float scale = std::max(transformation.scale.x, transformation.scale.y);
+
+    geom::cubic_path cubics = path.to_cubic_path();
+
+    /* First we process outlines, because filling takes ownership of the path.
+     */
+    if (is_selected || is_temp_selected) {
+      std::unordered_set<uint32_t> selected_vertices;
+
+      if (is_selected) {
+        Selection::SelectionEntry entry = selected.at(id);
+
+        is_full = entry.full();
+
+        if (!is_full) {
+          selected_vertices = entry.indices;
+        }
+      }
+
+      if (is_temp_selected && !is_full) {
+        Selection::SelectionEntry entry = temp_selected.at(id);
+
+        is_full = entry.full();
+
+        if (!is_full) {
+          selected_vertices.insert(temp_selected.at(id).indices.begin(), temp_selected.at(id).indices.end());
+        }
+      }
+
+      renderer::Renderer::draw_outline(
+        path,
+        transform,
+        outline_tolerance,
+        true,
+        is_full ? nullptr : &selected_vertices,
+        nullptr,
+        &entity_rect,
+        true
+      );
+
+      // TEMP
+      // geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
+      // renderer::Renderer::draw_outline(quadratics, transform,
+      // outline_tolerance); renderer::Renderer::draw_outline_vertices(
+      //   path, transform,
+      //   is_full ? nullptr : &selected_vertices
+      // );
+    }
+
+    if (has_fill && has_stroke) {
+      // renderer::Renderer::draw(
+      //   quadratics,
+      //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join,
+      //   stroke->width, stroke->miter_limit, z_index }, renderer::Fill{
+      //   fill->color, fill->rule, z_index + 1 }, transform_matrix
+      // );
+      renderer::Renderer::draw(std::move(cubics), renderer::Fill{fill->color, fill->rule, z_index}, transform_matrix);
+
+      z_index += 2;
+    } else if (has_fill) {
+      renderer::Renderer::draw(std::move(cubics), renderer::Fill{fill->color, fill->rule, z_index}, transform_matrix);
+
+      z_index += 1;
+    } else if (has_stroke) {
+      // renderer::Renderer::draw(
+      //   quadratics,
+      //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join,
+      //   stroke->width, stroke->miter_limit, z_index }, transform_matrix
+      // );
+
+      z_index += 1;
+    }
+
+    // draw_vertices,
+
+    // math::rect bounding_rect = path.bounding_rect();
+    // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
+    // geom::path rect;
+    // rect.move_to(lines[0].min);
+
+    // for (auto& line : lines) {
+    //   rect.line_to(line.max);
+    // }
+
+    // Renderer::Renderer::draw_outline(id, rect, position);
+  }
+
+  // {
+  //   std::vector<math::rect> lines =
+  //   math::lines_from_rect(viewport.visible()); geom::path rect;
+  //   rect.move_to(lines[0].min);
+
+  //   for (auto& line : lines) {
+  //     rect.line_to(line.max);
+  //   }
+
+  //   Renderer::Renderer::draw_outline(0, rect, { 0.0f, 0.0f });
+  // }
+
+  {
+    OPTICK_EVENT("Render Overlays");
+
+    tool_state.render_overlays(viewport.zoom());
+  }
+
+  // #ifdef GK_DEBUG
+  //     if (!selected.empty()) {
+  //       const Entity entity = { m_entities.at(selected.begin()->first),
+  //       const_cast<Scene*>(this) };
+
+  //       if (entity.has_component<PathComponent>()) {
+  //         const geom::path& path =
+  //         entity.get_component<PathComponent>().data();
+
+  //         if (!path.empty()) {
+  //           const geom::path::Segment segment = path.segment_at(0);
+  //           renderer::Renderer::draw_debug_overlays({ segment.p0, segment.p1,
+  //           segment.p2, segment.p3 });
+  //         }
+  //       }
+  //     }
+  // #endif
+
+  renderer::Renderer::end_frame();
+
+  m_cache.set_grid_rect(viewport.visible(), ivec2(viewport.size() / 128.0f));
 
 #if 0
     GK_DEBUGGER_RENDER(vec2(viewport.size()) * viewport.dpr());
 #endif
-  }
-
-  void Scene::add(const uuid id, const io::EncodedData& encoded_data) {
-    Entity entity = { m_registry.create(), this, encoded_data };
-
-    m_entities[id] = entity;
-    m_order.push_back(entity);
-  }
-
-  void Scene::remove(const uuid id) {
-    auto it = m_entities.find(id);
-    if (it == m_entities.end()) return;
-
-    entt::entity entity = it->second;
-
-    selection.deselect(id);
-    m_entities.erase(it);
-    m_order.erase(std::remove(m_order.begin(), m_order.end(), entity), m_order.end());
-    m_registry.destroy(entity);
-  }
-
 }
+
+void Scene::add(const uuid id, const io::EncodedData& encoded_data) {
+  Entity entity = {m_registry.create(), this, encoded_data};
+
+  m_entities[id] = entity;
+  m_order.push_back(entity);
+}
+
+void Scene::remove(const uuid id) {
+  auto it = m_entities.find(id);
+  if (it == m_entities.end()) return;
+
+  entt::entity entity = it->second;
+
+  selection.deselect(id);
+  m_entities.erase(it);
+  m_order.erase(std::remove(m_order.begin(), m_order.end(), entity), m_order.end());
+  m_registry.destroy(entity);
+}
+
+}    // namespace graphick::editor

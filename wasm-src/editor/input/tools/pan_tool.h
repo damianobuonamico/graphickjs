@@ -7,6 +7,8 @@
 
 #include "../tool.h"
 
+#include "../../../math/vec2.h"
+
 namespace graphick::editor::input {
 
   /**
@@ -16,12 +18,16 @@ namespace graphick::editor::input {
    */
   class PanTool : public Tool {
   public:
+    virtual void on_pointer_down() override;
+
     virtual void on_pointer_move() override;
   private:
     /**
      * @brief Default constructor.
      */
     PanTool();
+  private:
+    vec2 m_start_position;    /* The screen space position before panning. */
   private:
     friend class ToolState;
   };

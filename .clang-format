@@ -1,0 +1,38 @@
+# Format Style Options - Created with Clang Power Tools
+---
+BasedOnStyle: WebKit
+AccessModifierOffset: -2
+AlignAfterOpenBracket: BlockIndent
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 2
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortIfStatementsOnASingleLine: Always
+AllowShortLoopsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBinaryOperators: None
+BreakBeforeBraces: Attach
+BreakConstructorInitializers: AfterColon
+ColumnLimit: 130
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+Cpp11BracedListStyle: true
+EmptyLineBeforeAccessModifier: Never
+IndentWidth: 2
+InsertNewlineAtEOF: true
+MaxEmptyLinesToKeep: 1
+ObjCBlockIndentWidth: 2
+PenaltyReturnTypeOnItsOwnLine: 10000
+PenaltyBreakComment: 0
+ReflowComments: true
+SortIncludes: true
+SpaceBeforeCpp11BracedList: false
+SpacesBeforeTrailingComments: 4
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: -1
+TabWidth: 2

@@ -48,23 +48,28 @@ namespace graphick::editor::input {
         if (entity->id() == m_element) {
           if (path.data().empty() || (active_vertex.has_value() && active_vertex.value() == m_vertex.value())) {
             return on_angle_pointer_down();
-          } else {
+          }
+          else {
             return on_close_pointer_down();
           }
-        } else {
+        }
+        else {
           if (m_element) {
             m_temp_element = entity->id();
             return on_join_pointer_down();
-          } else {
+          }
+          else {
             set_pen_element(entity->id());
             return on_start_pointer_down();
           }
         }
-      } else if (scene.selection.has(entity->id())) {
+      }
+      else if (scene.selection.has(entity->id())) {
         m_temp_element = entity->id();
         return on_sub_pointer_down();
       }
-    } else if (hover_type == HoverState::HoverType::Segment && scene.selection.has(entity->id())) {
+    }
+    else if (hover_type == HoverState::HoverType::Segment && scene.selection.has(entity->id())) {
       m_temp_element = entity->id();
       return on_add_pointer_down();
     }
@@ -198,7 +203,8 @@ namespace graphick::editor::input {
       if (path.data().has_in_handle()) {
         handle = path.data().at(geom::path::in_handle_index);
       }
-    } else {
+    }
+    else {
       segment.move_to(transform * path.data().at(path.data().points_count() - 1));
 
       if (path.data().has_out_handle()) {
@@ -208,11 +214,12 @@ namespace graphick::editor::input {
 
     if (handle) {
       segment.cubic_to(transform * handle.value(), InputManager::pointer.scene.position, !m_reverse);
-    } else {
+    }
+    else {
       segment.line_to(InputManager::pointer.scene.position);
     }
 
-    renderer::Renderer::draw_outline(segment.to_quadratic_path(), mat2x3::identity(), 0.25f / Editor::scene().viewport.zoom());
+    renderer::Renderer::draw_outline(segment, mat2x3::identity(), 0.25f / Editor::scene().viewport.zoom());
   }
 
   void PenTool::set_pen_element(const uuid id) {
@@ -233,7 +240,8 @@ namespace graphick::editor::input {
       entity->add_component<FillComponent>(vec4{ 0.8f, 0.3f, 0.3f, 1.0f });
 
       set_pen_element(entity->id());
-    } else {
+    }
+    else {
       if (!scene.has_entity(m_element) || !(entity = scene.get_entity(m_element))->is_element()) {
         set_pen_element(uuid::null);
         return;
@@ -251,20 +259,24 @@ namespace graphick::editor::input {
 
       scene.selection.clear();
       scene.selection.select(m_element);
-    } else if (m_reverse) {
+    }
+    else if (m_reverse) {
       const bool has_in_handle = path.data().has_in_handle();
 
       if (has_in_handle) {
         m_vertex = path.cubic_to(path.data().at(geom::path::in_handle_index), pointer_position, pointer_position, m_reverse);
-      } else {
+      }
+      else {
         m_vertex = path.line_to(pointer_position, m_reverse);
       }
-    } else {
+    }
+    else {
       const bool has_out_handle = path.data().has_out_handle();
 
       if (has_out_handle) {
         m_vertex = path.cubic_to(path.data().at(geom::path::out_handle_index), pointer_position, pointer_position, m_reverse);
-      } else {
+      }
+      else {
         m_vertex = path.line_to(pointer_position, m_reverse);
       }
     }
@@ -312,7 +324,8 @@ namespace graphick::editor::input {
           new_path.cubic_to(first_transform * p2, first_transform * p1, first_transform * p0);
         }
       );
-    } else {
+    }
+    else {
       in_p1 = first_path.data().has_out_handle() ? first_path.data().at(geom::path::out_handle_index) : first_path.data().at(first_path.data().points_count() - 1);
 
       first_path.data().for_each(
@@ -349,7 +362,8 @@ namespace graphick::editor::input {
           new_path.cubic_to(second_transform * p1, second_transform * p2, second_transform * p3);
         }
       );
-    } else {
+    }
+    else {
       const vec2 in_p2 = second_path.data().has_out_handle() ? second_path.data().at(geom::path::out_handle_index) : second_path.data().at(second_path.data().points_count() - 1);
 
       new_path.cubic_to(first_transform * in_p1, second_transform * in_p2, second_transform * second_path.data().at(second_path.data().points_count() - 1));
@@ -440,7 +454,8 @@ namespace graphick::editor::input {
         geom::path::in_handle_index,
         path.data().at(0) - path.data().at(geom::path::in_handle_index)
       );
-    } else {
+    }
+    else {
       path.translate(
         geom::path::out_handle_index,
         path.data().at(path.data().points_count() - 1) - path.data().at(geom::path::out_handle_index)
@@ -461,7 +476,8 @@ namespace graphick::editor::input {
     if (!path.data().empty()) {
       if (m_vertex.value() == 0) {
         m_reverse = true;
-      } else {
+      }
+      else {
         m_reverse = false;
       }
     }

@@ -173,7 +173,7 @@ namespace graphick::editor::input {
 
     mat2x3 transform = manipulator.transform();
 
-    renderer::Renderer::draw_outline(manipulator.path().to_quadratic_path(), transform);
+    renderer::Renderer::draw_outline(manipulator.path(), transform);
 
     const vec2* handles = manipulator.handles();
 
