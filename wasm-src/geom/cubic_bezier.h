@@ -169,6 +169,8 @@ namespace graphick::geom {
     // TODO: move all of these methods to curve_ops and introduce default tolerance value
     bool is_point(const T tolerance) const;
 
+    bool is_line(const T tolerance) const;
+
     math::Vec2<T> normal(const T t) const;
 
     Line<T> start_tangent() const;

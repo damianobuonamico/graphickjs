@@ -76,20 +76,22 @@ public:
   static void end_frame();
 
   /**
-   * @brief Draws a CubicPath with the provided Fill properties.
+   * @brief Draws a CubicPath with the provided Fill and Stroke properties.
    *
    * Takes ownership of the path and caches it for accelerated rendering.
    *
    * @param path The CubicPath to draw.
-   * @param fill The Fill properties to use.
    * @param transform The transformation matrix to apply to the path.
+   * @param fill The Fill properties to use.
+   * @param stroke The Stroke properties to use.
    * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
    * @param pretransformed_rect Whether the bounding rectangle is already transformed, default is false.
    */
   static void draw(
-    geom::cubic_path&& path,
-    const Fill& fill,
+    const geom::Path<float, std::enable_if<true>>& path,
     const mat2x3& transform,
+    const Fill* fill = nullptr,
+    const Stroke* stroke = nullptr,
     const rect* bounding_rect = nullptr,
     const bool pretransformed_rect = false
   );

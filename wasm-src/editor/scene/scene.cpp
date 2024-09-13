@@ -365,8 +365,6 @@ void Scene::render(const bool ignore_cache) const {
     auto transformation = math::decompose(transform_matrix);
     float scale = std::max(transformation.scale.x, transformation.scale.y);
 
-    geom::cubic_path cubics = path.to_cubic_path();
-
     /* First we process outlines, because filling takes ownership of the path.
      */
     if (is_selected || is_temp_selected) {
@@ -413,25 +411,19 @@ void Scene::render(const bool ignore_cache) const {
     }
 
     if (has_fill && has_stroke) {
-      // renderer::Renderer::draw(
-      //   quadratics,
-      //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join,
-      //   stroke->width, stroke->miter_limit, z_index }, renderer::Fill{
-      //   fill->color, fill->rule, z_index + 1 }, transform_matrix
-      // );
-      renderer::Renderer::draw(std::move(cubics), renderer::Fill{fill->color, fill->rule, z_index}, transform_matrix);
+      renderer::Fill filling_opt{fill->color, fill->rule, z_index};
+      renderer::Stroke stroking_opt{stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index + 1};
+      renderer::Renderer::draw(path, transform_matrix, &filling_opt, &stroking_opt, &entity_rect, true);
 
       z_index += 2;
     } else if (has_fill) {
-      renderer::Renderer::draw(std::move(cubics), renderer::Fill{fill->color, fill->rule, z_index}, transform_matrix);
+      renderer::Fill filling_opt{fill->color, fill->rule, z_index};
+      renderer::Renderer::draw(path, transform_matrix, &filling_opt, nullptr, &entity_rect, true);
 
       z_index += 1;
     } else if (has_stroke) {
-      // renderer::Renderer::draw(
-      //   quadratics,
-      //   renderer::Stroke{ stroke->color, stroke->cap, stroke->join,
-      //   stroke->width, stroke->miter_limit, z_index }, transform_matrix
-      // );
+      renderer::Stroke stroking_opt{stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index + 1};
+      renderer::Renderer::draw(path, transform_matrix, nullptr, &stroking_opt, &entity_rect, true);
 
       z_index += 1;
     }

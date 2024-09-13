@@ -19,6 +19,8 @@
 #include "../math/math.h"
 #include "../math/matrix.h"
 
+#include "../utils/console.h"
+
 namespace graphick::geom {
 
 /* -- Static Methods -- */
@@ -34,14 +36,7 @@ namespace graphick::geom {
  * @param sink The contour to add the cap to.
  */
 template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-static void add_cap(
-  const dvec2 from,
-  const dvec2 to,
-  const dvec2 n,
-  const double radius,
-  const LineCap cap,
-  QuadraticPath<T>& sink
-) {
+static void add_cap(const dvec2 from, const dvec2 to, const dvec2 n, const double radius, const LineCap cap, CubicPath<T>& sink) {
   switch (cap) {
   case LineCap::Round: {
     // TODO: angular tolerance
@@ -89,7 +84,7 @@ static void add_join(
   const double radius,
   const double inv_miter_limit,
   LineJoin join,
-  QuadraticPath<T>& sink,
+  CubicPath<T>& sink,
   const bool reverse = false
 ) {
   if (math::is_almost_equal(from, to, math::geometric_epsilon<double>)) {
@@ -142,26 +137,6 @@ static void add_join(
     break;
   }
   }
-}
-
-/**
- * @brief Offsets a line segment.
- *
- * @param p0 The start point of the line.
- * @param p1 The end point of the line.
- * @param radius The radius to offset the line by.
- * @param sink The output path.
- * @return The normal of the end point.
- */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-static dvec2 offset_line(const dvec2 p0, const dvec2 p1, const double radius, StrokeOutline<T>& sink) {
-  const dvec2 n = math::normal(p0, p1);
-  const dvec2 nr = n * radius;
-
-  sink.inner.line_to(math::Vec2<T>(p1 - nr));
-  sink.outer.line_to(math::Vec2<T>(p1 + nr));
-
-  return n;
 }
 
 /**
@@ -354,7 +329,7 @@ PathBuilder<T, _>::PathBuilder(
 
 template <typename T, typename _>
 PathBuilder<T, _>::PathBuilder(
-  const CubicPath<T, std::enable_if<true>>& path,
+  const CubicPath<T>& path,
   const math::Mat2x3<T>& transform,
   const math::Rect<T>* bounding_rect,
   const bool pretransformed_rect
@@ -397,316 +372,133 @@ void PathBuilder<T, _>::flatten(
 }
 
 template <typename T, typename _>
-StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const T tolerance) const {
-  if (m_quadratic_path->empty()) {
-    return {};
-  }
+CubicPath<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const T tolerance) const {
+  if (m_type != PathType::Generic || m_generic_path->empty()) return {};
 
-  dquadratic_bezier quad = {
-    m_transform * dvec2(m_quadratic_path->operator[](0)),
-    m_transform * dvec2(m_quadratic_path->operator[](1)),
-    m_transform * dvec2(m_quadratic_path->operator[](2))
-  };
+  GK_TOTAL("PathBuilder::stroke()");
 
   const double radius = static_cast<double>(options.width) * 0.5;
   const double inv_miter_limit = 1.0 / static_cast<double>(options.miter_limit);
 
-  StrokeOutline<T> outline;
+  dvec2 p0 = m_transform * dvec2(m_generic_path->at(0));
 
-  if (m_quadratic_path->size() == 1 && (math::is_almost_equal(quad.p0, quad.p1) && math::is_almost_equal(quad.p1, quad.p2))) {
+  CubicPath<T> forward;
+  CubicPath<T> backward;
+
+  if (m_generic_path->size() == 1 && m_generic_path->front().is_point()) {
+    // TODO: implement round
     if (options.cap != LineCap::Butt) {
-      return outline;
+      return forward;
     }
-
-    dvec2 n = {0.0, 1.0};
-    dvec2 nr = n * radius;
-    dvec2 start = quad.p0 + nr;
-    dvec2 rstart = quad.p0 - nr;
-
-    outline.outer.move_to(math::Vec2<T>(start));
-
-    add_cap(start, rstart, n, radius, options.cap, outline.outer);
-    add_cap(rstart, start, -n, radius, options.cap, outline.outer);
-
-    return outline;
-  }
-
-  dvec2 pivot = quad.p0;
-  dvec2 last_p1 = quad.p1;
-  dvec2 last_n = math::normal(quad.p0, quad.p1);
-
-  if (m_quadratic_path->closed()) {
-    outline.inner.move_to(math::Vec2<T>(quad.p0 - last_n * radius));
-    outline.outer.move_to(math::Vec2<T>(quad.p0 + last_n * radius));
-  } else {
-    const dvec2 start = quad.p0 - last_n * radius;
-
-    outline.inner.move_to(math::Vec2<T>(start));
-    outline.outer.move_to(math::Vec2<T>(start));
-
-    add_cap(start, quad.p0 + last_n * radius, -last_n, radius, options.cap, outline.outer);
-  }
-
-  for (size_t i = 0; i < m_quadratic_path->size(); i++) {
-    quad = {
-      m_transform * dvec2(m_quadratic_path->operator[](i * 2)),
-      m_transform * dvec2(m_quadratic_path->operator[](i * 2 + 1)),
-      m_transform * dvec2(m_quadratic_path->operator[](i * 2 + 2))
-    };
-
-    const dvec2 start_n = math::normal(quad.p0, quad.p1);
-    const dvec2 start_nr = start_n * radius;
-
-    const dvec2 a = quad.p1 - quad.p0;
-    const dvec2 b = last_p1 - quad.p0;
-
-    double cos = math::dot(a, b) / (math::length(a) * math::length(b));
-
-    // if (cos > 0 || std::abs(cos) < 1.0 - math::geometric_epsilon<double>) {
-    const dvec2 inner_start = quad.p0 - start_nr;
-    const dvec2 outer_start = quad.p0 + start_nr;
-
-    add_join(
-      dvec2(outline.inner.points.back()),
-      inner_start,
-      pivot,
-      -last_n,
-      -start_n,
-      radius,
-      inv_miter_limit,
-      options.join,
-      outline.inner,
-      true
-    );
-    add_join(
-      dvec2(outline.outer.points.back()),
-      outer_start,
-      pivot,
-      last_n,
-      start_n,
-      radius,
-      inv_miter_limit,
-      options.join,
-      outline.outer
-    );
-    // }
-
-    if (math::is_almost_equal(quad.p1, quad.p2)) {
-      // Linear segment.
-
-      outline.inner.line_to(math::Vec2<T>(quad.p2 - start_nr));
-      outline.outer.line_to(math::Vec2<T>(quad.p2 + start_nr));
-
-      last_n = start_n;
-      last_p1 = quad.p0;
-    } else {
-      // Quadratic segment.
-
-      // outline.inner.line_to(math::Vec2<T>(quad.p2 - start_nr));
-      // outline.outer.line_to(math::Vec2<T>(quad.p2 + start_nr));
-
-      // last_n = start_n;
-      // last_n = offset_quadratic(quad.p0, quad.p1, quad.p2, radius, tolerance, outline);
-      // last_n = offset_quadratic(quad, radius, tolerance, outline);
-      last_p1 = quad.p1;
-    }
-
-    pivot = quad.p2;
-  }
-
-  if (m_quadratic_path->closed()) {
-    const dvec2 start_n = math::normal(dvec2(m_quadratic_path->operator[](0)), dvec2(m_quadratic_path->operator[](1)));
-
-    add_join(
-      dvec2(outline.inner.points.back()),
-      dvec2(outline.inner.points.front()),
-      pivot,
-      -last_n,
-      -start_n,
-      radius,
-      inv_miter_limit,
-      options.join,
-      outline.inner,
-      true
-    );
-    add_join(
-      dvec2(outline.outer.points.back()),
-      dvec2(outline.outer.points.front()),
-      pivot,
-      last_n,
-      start_n,
-      radius,
-      inv_miter_limit,
-      options.join,
-      outline.outer
-    );
-  } else {
-    add_cap(dvec2(outline.outer.points.back()), dvec2(outline.inner.points.back()), last_n, radius, options.cap, outline.outer);
-
-    outline.outer.points.insert(outline.outer.points.end(), outline.inner.points.rbegin() + 1, outline.inner.points.rend());
-    outline.inner.points.clear();
-  }
-
-  return outline;
-}
-
-template <typename T, typename _>
-StrokeOutline<T> PathBuilder<T, _>::stroke(
-  const Path<T, std::enable_if<true>>& path,
-  const StrokingOptions<T>& options,
-  const T tolerance
-) const {
-  if (path.empty()) {
-    return {};
-  }
-
-  auto segment = path.front();
-
-  const double radius = static_cast<double>(options.width) * 0.5;
-  const double inv_miter_limit = 1.0 / static_cast<double>(options.miter_limit);
-
-  StrokeOutline<T> outline;
-
-  if (path.size() == 1 && segment.is_point()) {
-    if (options.cap != LineCap::Butt) {
-      return outline;
-    }
-
-    dvec2 p0 = m_transform * dvec2(segment.p0);
 
     dvec2 n = {0.0, 1.0};
     dvec2 nr = n * radius;
     dvec2 start = p0 + nr;
     dvec2 rstart = p0 - nr;
 
-    outline.outer.move_to(math::Vec2<T>(start));
+    forward.move_to(math::Vec2<T>(start));
 
-    add_cap(start, rstart, n, radius, options.cap, outline.outer);
-    add_cap(rstart, start, -n, radius, options.cap, outline.outer);
+    add_cap(start, rstart, n, radius, options.cap, forward);
+    add_cap(rstart, start, -n, radius, options.cap, forward);
 
-    return outline;
+    return forward;
   }
 
-  dvec2 pivot = m_transform * dvec2(segment.p0);
-  dvec2 last_n = dvec2(segment.to_cubic().start_tangent().normal());
+  dvec2 last_n = math::normal(p0, m_transform * dvec2(m_generic_path->at(1)));
 
-  if (path.closed()) {
-    outline.inner.move_to(math::Vec2<T>(pivot - last_n * radius));
-    outline.outer.move_to(math::Vec2<T>(pivot + last_n * radius));
+  if (m_generic_path->closed()) {
+    forward.move_to(math::Vec2<T>(p0 - last_n * radius));
+    backward.move_to(math::Vec2<T>(p0 + last_n * radius));
   } else {
-    const dvec2 start = pivot - last_n * radius;
+    const dvec2 start = p0 - last_n * radius;
 
-    outline.inner.move_to(math::Vec2<T>(start));
-    outline.outer.move_to(math::Vec2<T>(start));
+    forward.move_to(math::Vec2<T>(start));
+    backward.move_to(math::Vec2<T>(start));
 
-    add_cap(start, pivot + last_n * radius, -last_n, radius, options.cap, outline.outer);
+    add_cap(start, p0 + last_n * radius, -last_n, radius, options.cap, backward);
   }
 
-  for (uint32_t i = 1, j = 1; i < path.m_commands_size; i++) {
-    const dvec2 p0 = m_transform * dvec2(path.m_points[j - 1]);
-    const dvec2 p1 = m_transform * dvec2(path.m_points[j]);
+  m_generic_path->for_each(
+    nullptr,
+    [&](const math::Vec2<T> p1) {
+      const dline line = {p0, m_transform * dvec2(p1)};
 
-    const dvec2 start_n = math::normal(p0, p1);
-    const dvec2 start_nr = start_n * radius;
+      const dvec2 start_n = math::normal(line.p0, line.p1);
+      const dvec2 start_nr = start_n * radius;
+      const dvec2 inner_start = line.p0 - start_nr;
+      const dvec2 outer_start = line.p0 + start_nr;
 
-    const dvec2 inner_start = p0 - start_nr;
-    const dvec2 outer_start = p0 + start_nr;
+      add_join(dvec2(forward.back()), inner_start, p0, -last_n, -start_n, radius, inv_miter_limit, options.join, forward, true);
+      add_join(dvec2(backward.back()), outer_start, p0, last_n, start_n, radius, inv_miter_limit, options.join, backward);
 
-    add_join(
-      dvec2(outline.inner.points.back()),
-      inner_start,
-      pivot,
-      -last_n,
-      -start_n,
-      radius,
-      inv_miter_limit,
-      options.join,
-      outline.inner,
-      true
-    );
-    add_join(
-      dvec2(outline.outer.points.back()),
-      outer_start,
-      pivot,
-      last_n,
-      start_n,
-      radius,
-      inv_miter_limit,
-      options.join,
-      outline.outer
-    );
-
-    switch (path.get_command(i)) {
-    case Path<T>::Command::Line: {
-      outline.inner.line_to(math::Vec2<T>(p1 - start_nr));
-      outline.outer.line_to(math::Vec2<T>(p1 + start_nr));
+      forward.line_to(math::Vec2<T>(line.p1 - start_nr));
+      backward.line_to(math::Vec2<T>(line.p1 + start_nr));
 
       last_n = start_n;
+      p0 = line.p1;
+    },
+    nullptr,
+    [&](const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3) {
+      const dcubic_bezier cubic = {p0, m_transform * dvec2(p1), m_transform * dvec2(p2), m_transform * dvec2(p3)};
 
-      j += 1;
-      break;
+      const dvec2 start_n = math::normal(cubic.p0, cubic.p1);
+      const dvec2 start_nr = start_n * radius;
+
+      const dvec2 inner_start = cubic.p0 - start_nr;
+      const dvec2 outer_start = cubic.p0 + start_nr;
+
+      add_join(dvec2(forward.back()), inner_start, p0, -last_n, -start_n, radius, inv_miter_limit, options.join, forward, true);
+      add_join(dvec2(backward.back()), outer_start, p0, last_n, start_n, radius, inv_miter_limit, options.join, backward);
+
+      // TODO: handle negative offset, maybe join the two in one function call
+      // offset_cubic(cubic, -radius, tolerance, forward);
+      offset_cubic(cubic, radius, 0.001, backward);
+
+      last_n = start_n;
+      p0 = cubic.p3;
     }
-    case Path<T>::Command::Quadratic: {
-      j += 2;
-      break;
-    }
-    case Path<T>::Command::Cubic: {
-      const dvec2 p2 = m_transform * dvec2(path.m_points[j + 1]);
-      const dvec2 p3 = m_transform * dvec2(path.m_points[j + 2]);
+  );
 
-      // TODO: don't recalculate normals
-      const dvec2 end_n = math::normal(p2, p3);
-      const dvec2 end_nr = end_n * radius;
-
-      offset_cubic(dcubic_bezier{p0, p1, p2, p3}, radius, tolerance, outline.outer);
-      offset_cubic(dcubic_bezier{p0, p1, p2, p3}, -radius, tolerance, outline.inner);
-
-      last_n = end_n;
-
-      j += 3;
-      break;
-    }
-    default:
-    case Path<T>::Command::Move:
-      j += 1;
-      break;
-    }
-  }
-
-  if (path.closed()) {
-    const dvec2 start_n = math::normal(dvec2(path.m_points[0]), dvec2(path.m_points[1]));
+  if (m_generic_path->closed()) {
+    const dvec2 start_n = math::normal(dvec2(m_generic_path->at(0)), dvec2(m_generic_path->at(1)));
 
     add_join(
-      dvec2(outline.inner.points.back()),
-      dvec2(outline.inner.points.front()),
-      pivot,
+      dvec2(forward.back()),
+      dvec2(forward.front()),
+      p0,
       -last_n,
       -start_n,
       radius,
       inv_miter_limit,
       options.join,
-      outline.inner,
+      forward,
       true
     );
     add_join(
-      dvec2(outline.outer.points.back()),
-      dvec2(outline.outer.points.front()),
-      pivot,
+      dvec2(backward.back()),
+      dvec2(backward.front()),
+      p0,
       last_n,
       start_n,
       radius,
       inv_miter_limit,
       options.join,
-      outline.outer
+      backward
     );
-  } else {
-    add_cap(dvec2(outline.outer.points.back()), dvec2(outline.inner.points.back()), last_n, radius, options.cap, outline.outer);
 
-    outline.outer.points.insert(outline.outer.points.end(), outline.inner.points.rbegin() + 1, outline.inner.points.rend());
-    outline.inner.points.clear();
+    // TODO: fix closing join
+    backward.line_to(forward.points.back());
+
+    backward.points.insert(backward.points.end(), forward.points.rbegin() + 1, forward.points.rend());
+    forward.points.clear();
+  } else {
+    add_cap(dvec2(backward.points.back()), dvec2(forward.points.back()), last_n, radius, options.cap, backward);
+
+    backward.points.insert(backward.points.end(), forward.points.rbegin() + 1, forward.points.rend());
+    forward.points.clear();
   }
 
-  return outline;
+  return backward;
 }
 
 template <typename T, typename _>

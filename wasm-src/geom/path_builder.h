@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "cubic_path.h"
 #include "options.h"
 
 #include "../math/mat2x3.h"
@@ -21,9 +22,6 @@ class Path;
 
 template <typename T, typename>
 class QuadraticPath;
-
-template <typename T, typename>
-class CubicPath;
 
 /**
  * @brief A structure to hold the inner and outer outlines of a stroke.
@@ -71,7 +69,7 @@ public:
    * @param pretransformed_rect Whether the bounding rectangle is already transformed, default is false.
    */
   PathBuilder(
-    const CubicPath<T, std::enable_if<true>>& path,
+    const CubicPath<T>& path,
     const math::Mat2x3<T>& transform,
     const math::Rect<T>* bounding_rect = nullptr,
     const bool pretransformed_rect = false
@@ -111,12 +109,13 @@ public:
   /**
    * @brief Strokes a path and outputs the resulting quadratic curves grouped in contours.
    *
+   * This method is only available for generic paths.
+   *
    * @param options The options to use when stroking the path.
    * @param tolerance The offset error tolerance.
    * @return The resulting quadratic curves grouped in contours.
    */
-  StrokeOutline<T> stroke(const StrokingOptions<T>& options, const T tolerance) const;
-  StrokeOutline<T> stroke(const Path<T, std::enable_if<true>>& path, const StrokingOptions<T>& options, const T tolerance) const;
+  CubicPath<T> stroke(const StrokingOptions<T>& options, const T tolerance) const;
 private:
   /**
    * @brief Clips and flattens a path and outputs the line segments to a sink vector.
@@ -148,7 +147,7 @@ private:
 private:
   const union {
     const QuadraticPath<T, std::enable_if<true>>* m_quadratic_path;    // The quadratic path to process.
-    const CubicPath<T, std::enable_if<true>>* m_cubic_path;            // The cubic path to process.
+    const CubicPath<T>* m_cubic_path;                                  // The cubic path to process.
     const Path<T, std::enable_if<true>>* m_generic_path;               // The generic path to process.
   };
 

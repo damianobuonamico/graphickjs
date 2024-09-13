@@ -191,7 +191,8 @@ void Renderer::begin_frame(const RenderOptions& options) {
   get()->m_viewport = options.viewport;
   get()->m_vp_matrix = projection_matrix * view_matrix;
   get()->m_cache = options.cache;
-  get()->m_cached_rendering = !options.ignore_cache;
+  // get()->m_cached_rendering = !options.ignore_cache;
+  get()->m_cached_rendering = false;
 
   get()->m_transform_vectors.clear();
   get()->m_transform_vectors.reserve(get()->m_max_transform_vectors);
@@ -222,20 +223,21 @@ void Renderer::end_frame() {
 }
 
 void Renderer::draw(
-  geom::cubic_path&& path,
-  const Fill& fill,
+  const geom::Path<float, std::enable_if<true>>& path,
   const mat2x3& transform,
+  const Fill* fill,
+  const Stroke* stroke,
   const rect* bounding_rect,
   const bool pretransformed_rect
 ) {
   GK_TOTAL("Renderer::draw(fill, cubic)");
 
-  if (path.empty()) {
+  if (path.empty() || (fill == nullptr && stroke == nullptr)) {
     return;
   }
 
   const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
-  const rect transformed_bounds = transform * bounds;
+  const rect transformed_bounds = pretransformed_rect ? bounds : transform * bounds;
 
   if (get()->m_cached_rendering && geom::is_rect_in_rect(transformed_bounds, get()->m_safe_clip_rect)) {
     if (get()->m_invalid_rects.empty()) {
@@ -260,8 +262,6 @@ void Renderer::draw(
     geom::rect_rect_intersection_area(transformed_bounds, get()->m_viewport.visible()) / transformed_bounds.area();
   const float dimension = transformed_bounds.area() / get()->m_viewport.visible().area();
 
-  const vec2 bounds_size = bounds.size();
-
   // if (dimension < 0.000001f * get()->m_viewport.size.x * get()->m_viewport.size.y) {
   //   return;
   // }
@@ -270,13 +270,61 @@ void Renderer::draw(
 
   const bool culling = transformed_bounds.area() * get()->m_viewport.zoom * get()->m_viewport.zoom > 18.0f * 18.0f;
 
-  if (!path.closed()) {
-    path.line_to(path.points.front());
+  if (fill) {
+    geom::cubic_path cubic_path = path.to_cubic_path();
+
+    if (!cubic_path.closed()) {
+      cubic_path.line_to(cubic_path.front());
+    }
+
+    // TODO: when all transforms will be on the CPU and cached we can use the transformed bounds
+    get()->draw_no_clipping(
+      std::move(cubic_path),
+      *fill,
+      transform,
+      pretransformed_rect ? path.approx_bounding_rect() : bounds,
+      transformed_bounds,
+      culling
+    );
   }
 
-  get()->draw_no_clipping(std::move(path), fill, transform, bounds, transformed_bounds, culling);
+  if (stroke) {
+    // TODO: should calculate stroke before fill, beacuse drawing takes ownership of the path
+    Fill stroke_fill{stroke->color, FillRule::NonZero, stroke->z_index};
 
-  return;
+    geom::StrokingOptions<float> stroking_options{
+      stroke->width,
+      stroke->miter_limit,
+      stroke->cap,
+      stroke->join,
+    };
+
+    geom::cubic_path stroke_path =
+      geom::PathBuilder(path, transform, bounding_rect, pretransformed_rect).stroke(stroking_options, 0.01f);
+
+    geom::path stroke_pppath;
+    stroke_pppath.move_to(stroke_path[0]);
+
+    for (size_t i = 0; i < stroke_path.size() * 3; i += 3) {
+      stroke_pppath.cubic_to(stroke_path[i + 1], stroke_path[i + 2], stroke_path[i + 3]);
+    }
+
+    geom::PathBuilder(stroke_pppath, mat2x3::identity(), bounding_rect, true)
+      .flatten(get()->m_viewport.visible(), 0.25f, [&](const vec2 p0, const vec2 p1) {
+        get()->m_line_instances.instances.push_back({p0, p1, get()->m_ui_options.line_width, get()->m_ui_options.primary_color_05}
+        );
+      });
+
+    // TODO: should use the stroke bounding_rect...
+    // get()->draw_no_clipping(
+    //   std::move(stroke_path),
+    //   stroke_fill,
+    //   transform,
+    //   pretransformed_rect ? path.approx_bounding_rect() : bounds,
+    //   transformed_bounds,
+    //   culling
+    // );
+  }
 }
 
 void Renderer::draw_outline(

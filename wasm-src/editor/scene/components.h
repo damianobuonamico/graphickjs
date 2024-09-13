@@ -585,6 +585,7 @@ namespace graphick::editor {
 
     StrokeComponentData() = default;
     StrokeComponentData(const vec4& color);
+    StrokeComponentData(const vec4& color, const float width);
     StrokeComponentData(io::DataDecoder& decoder);
   };
 
