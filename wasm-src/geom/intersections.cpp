@@ -119,6 +119,28 @@ namespace graphick::geom {
     return intersection_points;
   }
 
+  bool does_line_intersect_circle(const dline& line, const dvec2& center, const double radius) {
+    const dvec2 d = line.p1 - line.p0;
+    const dvec2 g = line.p0 - center;
+
+    const double a = math::squared_length(d);
+    const double b = 2.0 * math::dot(g, d);
+    const double cr_sq = radius * radius;
+    const double c = math::squared_length(g) - cr_sq;
+    const double disc = b * b - 4.0 * a * c;
+
+    if (disc > 0) {
+      const double d_sqrt = std::sqrt(disc);
+      const double a2 = a * 2.0;
+      const double t1 = (-b - d_sqrt) / a2;
+      const double t2 = (-b + d_sqrt) / a2;
+
+      return (t1 >= 0.0 && t1 <= 1.0) || (t2 >= 0.0 && t2 <= 1.0);
+    }
+
+    return false;
+  }
+
   std::vector<double> quadratic_rect_intersections(const dquadratic_bezier& quad, const drect& rect) {
     std::vector<double> intersections_t;
     std::vector<double> intersections;

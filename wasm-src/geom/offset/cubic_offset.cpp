@@ -3,867 +3,1212 @@
  * @brief Implementation of cubic offsetting.
  *
  * The following implementation is an adaptation of the algorithm in
- * <https://raphlinus.github.io/curves/2022/09/09/parallel-beziers.html>.
+ * <https://github.com/aurimasg/cubic-bezier-offsetter/blob/main/C%2B%2B/CubicCurveOffset.cpp>.
  */
 
 #include "offset.h"
 
-#include "../../math/vector.h"
-
 #include "../curve_ops.h"
-#include "../quadratic_bezier.h"
+#include "../geom.h"
+#include "../intersections.h"
 
-#include "../../../renderer/renderer.h"
+#include "../../math/math.h"
+
+#include <algorithm>
 
 namespace graphick::geom {
 
-const double EPS = 1e-12;
-const double EPS_M = 2.22045e-16;
+/**
+ * @brief The maximum iteration count for locating the nearest point to the cusp,
+ * which has a sufficiently long first derivative to identify the starting or
+ * ending points of a circular arc for the cusp.
+ */
+static constexpr int near_cusp_point_search_max_iteration_count = 18;
 
-const double GAUSS_LEGENDRE_COEFFS_32[] = {
-  0.0965400885147278, -0.0483076656877383, 0.0965400885147278, 0.0483076656877383,  0.0956387200792749, -0.1444719615827965,
-  0.0956387200792749, 0.1444719615827965,  0.0938443990808046, -0.2392873622521371, 0.0938443990808046, 0.2392873622521371,
-  0.0911738786957639, -0.3318686022821277, 0.0911738786957639, 0.3318686022821277,  0.0876520930044038, -0.4213512761306353,
-  0.0876520930044038, 0.4213512761306353,  0.0833119242269467, -0.5068999089322294, 0.0833119242269467, 0.5068999089322294,
-  0.0781938957870703, -0.5877157572407623, 0.0781938957870703, 0.5877157572407623,  0.0723457941088485, -0.6630442669302152,
-  0.0723457941088485, 0.6630442669302152,  0.0658222227763618, -0.7321821187402897, 0.0658222227763618, 0.7321821187402897,
-  0.0586840934785355, -0.7944837959679424, 0.0586840934785355, 0.7944837959679424,  0.0509980592623762, -0.8493676137325700,
-  0.0509980592623762, 0.8493676137325700,  0.0428358980222267, -0.8963211557660521, 0.0428358980222267, 0.8963211557660521,
-  0.0342738629130214, -0.9349060759377397, 0.0342738629130214, 0.9349060759377397,  0.0253920653092621, -0.9647622555875064,
-  0.0253920653092621, 0.9647622555875064,  0.0162743947309057, -0.9856115115452684, 0.0162743947309057, 0.9856115115452684,
-  0.0070186100094701, -0.9972638618494816, 0.0070186100094701, 0.9972638618494816,
+/**
+ * @brief Once the process to identify an offset curve is initiated, the squared lengths
+ * of all the edges of the encompassing polygon are computed and summed. If this total
+ * length is less than or equal to a certain value, the derived curve is instantly
+ * rejected and not added to the output.
+ */
+static constexpr double max_tiny_curve_polygon_perimeter_squared = 1e-7;
+
+/**
+ * @brief If a good circular arc approximation of a curve is found, but its radius is
+ * very close to the offset amount, the scaled arc can collapse to a point or
+ * almost a point. This is an epsilon for testing if the arc is large enough.
+ * Arcs with radius smaller than this value will not be added to the output.
+ */
+static constexpr double min_arc_radius = 1e-8;
+
+/**
+ * @brief An upper limit of arc radius. Circular arcs with calculated radius greater
+ * than this value will not be considered as accepted approximations of curve
+ * segments.
+ */
+static constexpr double max_arc_radius = 1e+6;
+
+/**
+ * @brief Offsetter does not attempt to find exact cusp locations and does not
+ * consider cusp only to be where the derivative vector length is exactly
+ * zero.
+ */
+static constexpr double cusp_derivative_length_squared = 1.5e-4;
+
+/**
+ * @brief If X and Y components of all points are equal when compared with this
+ * epsilon, the curve is considered a point.
+ */
+static constexpr double curve_point_clump_test_epsilon = 1e-14;
+
+/**
+ * @brief Epsilon used to compare coordinates of circular arc centers to see if they
+ * can be merged into a single circular arc.
+ */
+static constexpr double arc_center_comparison_epsilon = 1e-8;
+
+/**
+ * @brief When testing if curve is almost straight, cross products of unit vectors
+ * are calculated as follows:
+ *
+ *     turn1 = (p0 → p1) ⨯ (p0 → p3)
+ *     turn2 = (p1 → p2) ⨯ (p0 → p3)
+ *
+ * Where p0, p1, p2 and p3 are curve points and (X → Y) are unit vectors going
+ * from X to a direction of Y.
+ *
+ * Then these values are compared with zero. If they both are close to zero,
+ * curve is considered approximately straight. This is the epsilon used for
+ * comparing turn1 and turn2 values to zero.
+ */
+static constexpr double approximately_straight_curve_test_epsilon = 1e-5;
+
+/**
+ * @brief The logic is the same as for approximately_straight_curve_test_epsilon value.
+ * This value is used to determine if curve is completely straight, not just
+ * approximately straight.
+ */
+static constexpr double completely_straight_curve_test_epsilon = 1e-15;
+
+/**
+ * @brief A list of positions on curve for testing if circular arc approximation of a
+ * curve is good enough. All values must be from 0 to 1. Positions 0 and 1
+ * should not be included here because distances at 0 and 1 are either
+ * guaranteed to be exactly on the curve being approximated (on the sides of
+ * the input curve) or they are tested before using another methods (ray cast
+ * from arc center to triangle incenter point).
+ */
+static constexpr double arc_probe_positions[] = {0.2, 0.4, 0.6, 0.8};
+
+/**
+ * @brief A list of positions on curve for testing if candidate offset curve is good
+ * enough. From points on original curve at each of these positions a ray is
+ * cast to normal direction and intersection is found with offset candidate.
+ * Then distance is checked to see if it is within maximum error. 0 and 1
+ * should not be added in this list because candidate points at 0 and 1 is
+ * guaranteed to be at the right place already.
+ *
+ * Note that testing involves cubic root finding which is not very cheap
+ * operation. Adding more testing points increases precision, but also
+ * increases the time spent for testing if candidate is good.
+ */
+static constexpr double simple_offset_probe_positions[] = {0.25, 0.5, 0.75};
+
+/**
+ * @brief Keeps data needed to generate a set of output segments.
+ *
+ * @struct OutputBuilder
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+struct OutputBuilder {
+  constexpr OutputBuilder(
+    CubicPath<T>& path,
+    const double scale,
+    const dvec2 translation,
+    const T cubic_tolerance,
+    const T arc_tolerance
+  ) :
+    path(path),
+    scale(scale),
+    translation(translation),
+    arc_tolerance(arc_tolerance),
+    cubic_tolerance(cubic_tolerance),
+    previous_point(dvec2::zero()),
+    previous_point_t(dvec2::zero()),
+    cusp_point(dvec2::zero()) { }
+
+  CubicPath<T>& path;
+
+  dvec2 previous_point;
+  dvec2 previous_point_t;
+  dvec2 cusp_point;
+
+  bool needs_cusp_arc = false;
+  bool cusp_arc_clockwise = false;
+
+  const T cubic_tolerance;
+  const T arc_tolerance;
+  const double scale;
+  const dvec2 translation;
 };
 
-inline static double eps_rel(const double raw, const double a) { return a == 0.0 ? std::abs(raw) : std::abs((raw - a) / a); }
-
-static double depressed_cubic_dominant(const double g, const double h) {
-  const double q = (-1. / 3) * g;
-  const double r = 0.5 * h;
-
-  double phi_0;
-  std::optional<double> k = std::nullopt;
-
-  if (std::abs(q) >= 1e102 || std::abs(r) >= 1e164) {
-    if (std::abs(q) < std::abs(r)) {
-      k = 1 - q * (q / r) * (q / r);
-    } else {
-      k = math::sign(q) * ((r / q) * (r / q) / q - 1);
-    }
-  }
-
-  if (k.has_value() && r == 0) {
-    if (g > 0) {
-      phi_0 = 0;
-    } else {
-      phi_0 = std::sqrt(-g);
-    }
-  } else if (k.has_value() ? k.value() < 0 : r * r < q * q * q) {
-    const double t = k.has_value() ? r / q / std::sqrt(q) : r / std::sqrt(q * q * q);
-    phi_0 = -2 * std::sqrt(q) * std::copysign(std::cos(std::acos(std::abs(t)) * (1. / 3)), t);
-  } else {
-    double a;
-    if (k.has_value()) {
-      if (std::abs(q) < std::abs(r)) {
-        a = -r * (1 + std::sqrt(k.value()));
-      } else {
-        a = -r - std::copysign(std::sqrt(std::abs(q)) * q * std::sqrt(k.value()), r);
-      }
-    } else {
-      a = std::cbrt(-r - std::copysign(std::sqrt(r * r - q * q * q), r));
-    }
-
-    const double b = a == 0 ? 0 : q / a;
-    phi_0 = a + b;
-  }
-
-  double x = phi_0;
-  double f = (x * x + g) * x + h;
-
-  if (std::abs(f) < EPS_M * std::max({x * x * x, g * x, h})) {
-    return x;
-  }
-
-  for (int i = 0; i < 8; i++) {
-    const double delt_f = 3 * x * x + g;
-
-    if (delt_f == 0) {
-      break;
-    }
-
-    const double new_x = x - f / delt_f;
-    const double new_f = (new_x * new_x + g) * new_x + h;
-
-    if (new_f == 0) {
-      return new_x;
-    }
-    if (std::abs(new_f) >= std::abs(f)) {
-      break;
-    }
-
-    x = new_x;
-    f = new_f;
-  }
-
-  return x;
+/**
+ * @brief Called once when the first point of output is calculated.
+ *
+ * @param builder The output builder.
+ * @param p0 The first point of the output.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void move_to(OutputBuilder<T>& builder, const dvec2 p0) {
+  builder.previous_point = p0;
+  builder.previous_point_t = (p0 * builder.scale) + builder.translation;
 }
 
-static std::optional<std::vector<double>> factor_quartic_inner(
-  const double a,
-  const double b,
-  const double c,
-  const double d,
-  const bool rescale
+/**
+ * @brief Called when a new line needs to be added to the output.
+ *
+ * @param builder The output builder.
+ * @param p1 The end point of the line.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void line_to(OutputBuilder<T>& builder, const dvec2 p1) {
+  const dvec2 previous = builder.previous_point;
+
+  if (previous != p1) {
+    const dvec2 t = (p1 * builder.scale) + builder.translation;
+
+    builder.path.line_to(math::Vec2<T>(t));
+
+    builder.previous_point = p1;
+    builder.previous_point_t = t;
+  }
+}
+
+/**
+ * @brief Called when a new quadratic curve needs to be added to the output.
+ *
+ * @param builder The output builder.
+ * @param p1 The control point of the quadratic curve.
+ * @param p2 The end point of the quadratic curve.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void quadratic_to(OutputBuilder<T>& builder, const dvec2 p1, const dvec2 p2) {
+  const dvec2 previous = builder.previous_point;
+
+  if (previous != p1 || previous != p2) {
+    const dvec2 c = (p1 * builder.scale) + builder.translation;
+    const dvec2 t = (p2 * builder.scale) + builder.translation;
+
+    builder.path.quadratic_to(math::Vec2<T>(c), math::Vec2<T>(t));
+
+    builder.previous_point = p2;
+    builder.previous_point_t = t;
+  }
+}
+
+/**
+ * @brief Called when a new cubic curve needs to be added to the output.
+ *
+ * @param builder The output builder.
+ * @param p1 The first control point of the cubic curve.
+ * @param p2 The second control point of the cubic curve.
+ * @param p3 The end point of the cubic curve.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void cubic_to(OutputBuilder<T>& builder, const dvec2 p1, const dvec2 p2, const dvec2 p3) {
+  const dvec2 previous = builder.previous_point;
+
+  if (previous != p1 || previous != p2 || previous != p3) {
+    const dvec2 c1 = (p1 * builder.scale) + builder.translation;
+    const dvec2 c2 = (p2 * builder.scale) + builder.translation;
+    const dvec2 t = (p3 * builder.scale) + builder.translation;
+
+    builder.path.cubic_to(math::Vec2<T>(c1), math::Vec2<T>(c2), math::Vec2<T>(t));
+
+    builder.previous_point = p3;
+    builder.previous_point_t = t;
+  }
+}
+
+/**
+ * @brief Called when a new arc needs to be added to the output.
+ *
+ * @param builder The output builder.
+ * @param center The center of the arc.
+ * @param to The end point of the arc.
+ * @param clockwise Whether the arc is clockwise.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void arc_to(OutputBuilder<T>& builder, const dvec2 center, const dvec2 to, const bool clockwise) {
+  const dvec2 previous = builder.previous_point;
+
+  if (previous != center || previous != to) {
+    const dvec2 c = (center * builder.scale) + builder.translation;
+    const dvec2 t = (to * builder.scale) + builder.translation;
+
+    builder.path.arc_to(math::Vec2<T>(c), math::Vec2<T>(t), clockwise, builder.arc_tolerance);
+
+    builder.previous_point = to;
+    builder.previous_point_t = t;
+  }
+}
+
+/**
+ * @brief Check if the approximation needs to add a cusp arc.
+ *
+ * @param builder The output builder.
+ * @param to The end of the possible cusp.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void maybe_add_cusp_arc(OutputBuilder<T>& builder, const dvec2 to) {
+  if (builder.needs_cusp_arc) {
+    builder.needs_cusp_arc = false;
+
+    arc_to(builder, builder.cusp_point, to, builder.cusp_arc_clockwise);
+
+    builder.cusp_point = dvec2::zero();
+    builder.cusp_arc_clockwise = false;
+  }
+}
+
+/**
+ * @brief Returns the t values of the intersections between a cubic bezier and an infinite line.
+ *
+ * @param cubic The cubic bezier.
+ * @param pa The start point of the line.
+ * @param pb The end point of the line.
+ * @return The t values of the intersections between a cubic bezier and an infinite line.
+ */
+static math::CubicSolutions<double> ray_intersections(const dcubic_bezier& cubic, const dvec2 pa, const dvec2 pb) {
+  const dvec2 v = pb - pa;
+
+  const double ax = (cubic.p0.y - pa.y) * v.x - (cubic.p0.x - pa.x) * v.y;
+  const double bx = (cubic.p1.y - pa.y) * v.x - (cubic.p1.x - pa.x) * v.y;
+  const double cx = (cubic.p2.y - pa.y) * v.x - (cubic.p2.x - pa.x) * v.y;
+  const double dx = (cubic.p3.y - pa.y) * v.x - (cubic.p3.x - pa.x) * v.y;
+
+  const double a = dx;
+  const double b = cx * 3.0;
+  const double c = bx * 3.0;
+
+  const double D = ax;
+  const double A = a - (D - c + b);
+  const double B = b + (3.0 * D - 2.0 * c);
+  const double C = c - (3.0 * D);
+
+  return math::solve_cubic_normalized(A, B, C, D);
+}
+
+/**
+ * @brief Returns true if the curve is close enough to be considered parallel to the original curve.
+ *
+ * @param original The original curve.
+ * @param parallel Candidate parallel curve to be tested.
+ * @param offset Offset from original curve to candidate parallel curve.
+ * @param tolerance Maximum allowed error.
+ * @return True if the curve is close enough to be considered parallel to the original curve.
+ */
+static bool accept_offset(
+  const dcubic_bezier& original,
+  const dcubic_bezier& parallel,
+  const double offset,
+  const double tolerance
 ) {
-  const auto calc_eps_q = [&](const double a1, const double b1, const double a2, const double b2) {
-    const double eps_a = eps_rel(a1 + a2, a);
-    const double eps_b = eps_rel(b1 + a1 * a2 + b2, b);
-    const double eps_c = eps_rel(b1 * a2 + a1 * b2, c);
-
-    return eps_a + eps_b + eps_c;
-  };
-
-  const auto calc_eps_t = [&](const double a1, const double b1, const double a2, const double b2) {
-    return calc_eps_q(a1, b1, a2, b2) + eps_rel(b1 * b2, d);
-  };
-
-  const double disc = 9 * a * a - 24 * b;
-  const double s = disc >= 0 ? -2 * b / (3 * a + std::copysign(std::sqrt(disc), a)) : -0.25 * a;
-  const double a_prime = a + 4 * s;
-  const double b_prime = b + 3 * s * (a + 2 * s);
-  const double c_prime = c + s * (2 * b + s * (3 * a + 4 * s));
-  const double d_prime = d + s * (c + s * (b + s * (a + s)));
-
-  double g_prime = 0.0;
-  double h_prime = 0.0;
-
-  const double K_C = 3.49e102;
-
-  if (rescale) {
-    const double a_prime_s = a_prime / K_C;
-    const double b_prime_s = b_prime / K_C;
-    const double c_prime_s = c_prime / K_C;
-    const double d_prime_s = d_prime / K_C;
-
-    g_prime = a_prime_s * c_prime_s - (4 / K_C) * d_prime_s - (1. / 3) * b_prime_s * b_prime_s;
-    h_prime = (a_prime_s * c_prime_s - (8 / K_C) * d_prime_s - (2. / 9) * b_prime_s * b_prime_s) * (1. / 3) * b_prime_s -
-      c_prime_s * (c_prime_s / K_C) - a_prime_s * a_prime_s * d_prime_s;
-  } else {
-    g_prime = a_prime * c_prime - 4 * d_prime - (1. / 3) * b_prime * b_prime;
-    h_prime = (a_prime * c_prime + 8 * d_prime - (2. / 9) * b_prime * b_prime) * (1. / 3) * b_prime - c_prime * c_prime -
-      a_prime * a_prime * d_prime;
+  // Using shape control method, sometimes output curve becomes completely
+  // off in some situations involving start and end tangents being almost
+  // parallel. These two checks are to prevent accepting such curves as good.
+  if (geom::clockwise(original.p0, original.p1, original.p3) != geom::clockwise(parallel.p0, parallel.p1, parallel.p3)) {
+    return false;
   }
 
-  if (!std::isfinite(g_prime) && std::isfinite(h_prime)) {
-    return std::nullopt;
+  if (geom::clockwise(original.p0, original.p2, original.p3) != geom::clockwise(parallel.p0, parallel.p2, parallel.p3)) {
+    return false;
   }
 
-  double phi = depressed_cubic_dominant(g_prime, h_prime);
+  for (int i = 0; i < sizeof(simple_offset_probe_positions) / sizeof(simple_offset_probe_positions[0]); i++) {
+    const double t = simple_offset_probe_positions[i];
+    const dvec2 op0 = original.sample(t);
+    const dvec2 n = original.raw_normal(t);
 
-  if (rescale) {
-    phi *= K_C;
-  }
+    const math::CubicSolutions<double> intersections = ray_intersections(parallel, op0, op0 + n);
 
-  const double l_1 = a * 0.5;
-  const double l_3 = (1. / 6) * b + 0.5 * phi;
-  const double delt_2 = c - a * l_3;
-  const double d_2_cand_1 = (2. / 3) * b - phi - l_1 * l_1;
-  const double l_2_cand_1 = 0.5 * delt_2 / d_2_cand_1;
-  const double l_2_cand_2 = 2 * (d - l_3 * l_3) / delt_2;
-  const double d_2_cand_2 = 0.5 * delt_2 / l_2_cand_2;
+    if (intersections.count != 1) {
+      return false;
+    }
 
-  double d_2_best = 0;
-  double l_2_best = 0;
-  double eps_l_best = 0;
+    const dvec2 p0 = parallel.sample(intersections.solutions[0]);
+    const double d = math::distance(op0, p0);
+    const double error = std::abs(d - std::abs(offset));
 
-  for (int i = 0; i < 3; i++) {
-    const double d_2 = i == 1 ? d_2_cand_2 : d_2_cand_1;
-    const double l_2 = i == 0 ? l_2_cand_1 : l_2_cand_2;
-    const double eps_0 = eps_rel(d_2 + l_1 * l_1 + 2 * l_3, b);
-    const double eps_1 = eps_rel(2 * (d_2 * l_2 + l_1 * l_3), c);
-    const double eps_2 = eps_rel(d_2 * l_2 * l_2 + l_3 * l_3, d);
-    const double eps_l = eps_0 + eps_1 + eps_2;
-
-    if (i == 0 || eps_l < eps_l_best) {
-      d_2_best = d_2;
-      l_2_best = l_2;
-      eps_l_best = eps_l;
+    if (error > tolerance) {
+      return false;
     }
   }
 
-  const double d_2 = d_2_best;
-  const double l_2 = l_2_best;
-
-  double alpha_1 = 0;
-  double beta_1 = 0;
-  double alpha_2 = 0;
-  double beta_2 = 0;
-
-  if (d_2 < 0.0) {
-    const double sq = std::sqrt(-d_2);
-
-    alpha_1 = l_1 + sq;
-    beta_1 = l_3 + sq * l_2;
-    alpha_2 = l_1 - sq;
-    beta_2 = l_3 - sq * l_2;
-
-    if (std::abs(beta_2) < std::abs(beta_1)) {
-      beta_2 = d / beta_1;
-    } else if (std::abs(beta_2) > std::abs(beta_1)) {
-      beta_1 = d / beta_2;
-    }
-
-    if (std::abs(alpha_1) != std::abs(alpha_2)) {
-      std::vector<double> a1_cands;
-      std::vector<double> a2_cands;
-
-      if (std::abs(alpha_1) < std::abs(alpha_2)) {
-        const double a1_cand_1 = (c - beta_1 * alpha_2) / beta_2;
-        const double a1_cand_2 = (b - beta_2 - beta_1) / alpha_2;
-        const double a1_cand_3 = a - alpha_2;
-
-        a1_cands = {a1_cand_3, a1_cand_1, a1_cand_2};
-        a2_cands = {alpha_2, alpha_2, alpha_2};
-      } else {
-        const double a2_cand_1 = (c - alpha_1 * beta_2) / beta_1;
-        const double a2_cand_2 = (b - beta_2 - beta_1) / alpha_1;
-        const double a2_cand_3 = a - alpha_1;
-
-        a1_cands = {alpha_1, alpha_1, alpha_1};
-        a2_cands = {a2_cand_3, a2_cand_1, a2_cand_2};
-      }
-
-      double eps_q_best = 0;
-
-      for (int i = 0; i < 3; i++) {
-        const double a1 = a1_cands[i];
-        const double a2 = a2_cands[i];
-
-        if (std::isfinite(a1) && std::isfinite(a2)) {
-          const double eps_q = calc_eps_q(a1, beta_1, a2, beta_2);
-
-          if (i == 0 || eps_q < eps_q_best) {
-            alpha_1 = a1;
-            alpha_2 = a2;
-            eps_q_best = eps_q;
-          }
-        }
-      }
-    }
-  } else if (d_2 == 0) {
-    const double d_3 = d - l_3 * l_3;
-
-    alpha_1 = l_1;
-    beta_1 = l_3 + std::sqrt(-d_3);
-    alpha_2 = l_1;
-    beta_2 = l_3 - std::sqrt(-d_3);
-
-    if (std::abs(beta_1) > std::abs(beta_2)) {
-      beta_2 = d / beta_1;
-    } else if (std::abs(beta_2) > std::abs(beta_1)) {
-      beta_1 = d / beta_2;
-    }
-  } else {
-    // No real solutions
-    return std::vector<double>{};
-  }
-
-  double eps_t = calc_eps_t(alpha_1, beta_1, alpha_2, beta_2);
-
-  for (int i = 0; i < 8; i++) {
-    if (eps_t == 0) {
-      break;
-    }
-
-    const double f_0 = beta_1 * beta_2 - d;
-    const double f_1 = beta_1 * alpha_2 + alpha_1 * beta_2 - c;
-    const double f_2 = beta_1 + alpha_1 * alpha_2 + beta_2 - b;
-    const double f_3 = alpha_1 + alpha_2 - a;
-    const double c_1 = alpha_1 - alpha_2;
-    const double det_j = beta_1 * beta_1 - beta_1 * (alpha_2 * c_1 + 2 * beta_2) + beta_2 * (alpha_1 * c_1 + beta_2);
-
-    if (det_j == 0) {
-      break;
-    }
-
-    const double inv = 1 / det_j;
-    const double c_2 = beta_2 - beta_1;
-    const double c_3 = beta_1 * alpha_2 - alpha_1 * beta_2;
-    const double dz_0 = c_1 * f_0 + c_2 * f_1 + c_3 * f_2 - (beta_1 * c_2 + alpha_1 * c_3) * f_3;
-    const double dz_1 = (alpha_1 * c_1 + c_2) * f_0 - beta_1 * (c_1 * f_1 + c_2 * f_2 + c_3 * f_3);
-    const double dz_2 = -c_1 * f_0 - c_2 * f_1 - c_3 * f_2 + (alpha_2 * c_3 + beta_2 * c_2) * f_3;
-    const double dz_3 = -(alpha_2 * c_1 + c_2) * f_0 + beta_2 * (c_1 * f_1 + c_2 * f_2 + c_3 * f_3);
-    const double a1 = alpha_1 - inv * dz_0;
-    const double b1 = beta_1 - inv * dz_1;
-    const double a2 = alpha_2 - inv * dz_2;
-    const double b2 = beta_2 - inv * dz_3;
-    const double new_eps_t = calc_eps_t(a1, b1, a2, b2);
-
-    if (new_eps_t < eps_t) {
-      alpha_1 = a1;
-      beta_1 = b1;
-      alpha_2 = a2;
-      beta_2 = b2;
-      eps_t = new_eps_t;
-    } else {
-      break;
-    }
-  }
-
-  return std::vector<double>{alpha_1, beta_1, alpha_2, beta_2};
+  return true;
 }
 
-/// Returns an array of candidate cubics matching given metrics.
-std::vector<dcubic_bezier> cubic_fit(const double th0, const double th1, const double area, const double mx) {
-  const double c0 = std::cos(th0);
-  const double s0 = std::sin(th0);
-  const double c1 = std::cos(th1);
-  const double s1 = std::sin(th1);
-
-  const double a4 = -9 * c0 * (((2 * s1 * c1 * c0 + s0 * (2 * c1 * c1 - 1)) * c0 - 2 * s1 * c1) * c0 - c1 * c1 * s0);
-  const double a3 = 12 *
-    ((((c1 * (30 * area * c1 - s1) - 15 * area) * c0 + 2 * s0 - c1 * s0 * (c1 + 30 * area * s1)) * c0 + c1 * (s1 - 15 * area * c1)
-     ) *
-       c0 -
-     s0 * c1 * c1);
-  const double a2 = 12 *
-    ((((70 * mx + 15 * area) * s1 * s1 + c1 * (9 * s1 - 70 * c1 * mx - 5 * c1 * area)) * c0 -
-      5 * s0 * s1 * (3 * s1 - 4 * c1 * (7 * mx + area))) *
-       c0 -
-     c1 * (9 * s1 - 70 * c1 * mx - 5 * c1 * area));
-  const double a1 = 16 *
-    (((12 * s0 - 5 * c0 * (42 * mx - 17 * area)) * s1 - 70 * c1 * (3 * mx - area) * s0 - 75 * c0 * c1 * area * area) * s1 -
-     75 * c1 * c1 * area * area * s0);
-  const double a0 = 80 * s1 * (42 * s1 * mx - 25 * area * (s1 - c1 * area));
-
-  std::vector<double> roots;
-
-  if (std::abs(a4) > EPS) {
-    const double a = a3 / a4;
-    const double b = a2 / a4;
-    const double c = a1 / a4;
-    const double d = a0 / a4;
-
-    const std::optional<std::vector<double>> quads = factor_quartic_inner(a, b, c, d, false);
-
-    /*
-    const solved = solve_quartic(a0, a1, a2, a3, a4);
-    for (let x of solved) {
-        const y = (((a4 * x + a3) * x + a2) * x + a1) * x + a0;
-        console.log(x, y);
-    }
-    */
-
-    roots = {};
-
-    if (quads.has_value()) {
-      for (int i = 0; i < quads->size(); i += 2) {
-        const double c1 = quads->at(i);
-        const double c0 = quads->at(i + 1);
-
-        const math::QuadraticSolutions<double> q_roots = math::solve_quadratic(1.0, c1, c0);
-
-        if (q_roots.count > 0) {
-          for (int j = 0; j < q_roots.count; j++) {
-            roots.push_back(q_roots[j]);
-          }
-        } else {
-          // Real part of pair of complex roots
-          roots.push_back(-0.5 * c1);
-        }
-      }
-    }
-  } else {
-    // Question: do we ever care about complex roots in these cases?
-    if (std::abs(a3) > EPS) {
-      const math::CubicSolutions<double> c_roots = math::solve_cubic(a3, a2, a1, a0);
-
-      for (int j = 0; j < c_roots.count; j++) {
-        roots.push_back(c_roots[j]);
-      }
-    } else {
-      const math::QuadraticSolutions<double> q_roots = math::solve_quadratic(a2, a1, a0);
-
-      for (int j = 0; j < q_roots.count; j++) {
-        roots.push_back(q_roots[j]);
-      }
-    }
-  }
-
-  const double s01 = s0 * c1 + s1 * c0;
-  std::vector<dcubic_bezier> cubics = {};
-
-  for (double d0 : roots) {
-    double d1 = (2 * d0 * s0 - area * (20 / 3.)) / (d0 * s01 - 2 * s1);
-
-    if (d0 < 0) {
-      d0 = 0;
-      d1 = s0 / s01;
-    } else if (d1 < 0) {
-      d0 = s1 / s01;
-      d1 = 0;
-    }
-
-    if (d0 >= 0 && d1 >= 0) {
-      cubics.push_back(dcubic_bezier{{0, 0}, {d0 * c0, d0 * s0}, {1 - d1 * c1, d1 * s1}, {1, 0}});
-    }
-  }
-
-  return cubics;
-}
-
-math::CubicSolutions<double> intersect_ray(const dcubic_bezier& c, const dvec2 p, const dvec2 d) {
-  const double px0 = c.p0.x;
-  const double px1 = 3 * c.p1.x - 3 * c.p0.x;
-  const double px2 = 3 * c.p2.x - 6 * c.p1.x + 3 * c.p0.x;
-  const double px3 = c.p3.x - 3 * c.p2.x + 3 * c.p1.x - c.p0.x;
-  const double py0 = c.p0.y;
-  const double py1 = 3 * c.p1.y - 3 * c.p0.y;
-  const double py2 = 3 * c.p2.y - 6 * c.p1.y + 3 * c.p0.y;
-  const double py3 = c.p3.y - 3 * c.p2.y + 3 * c.p1.y - c.p0.y;
-
-  const double c0 = d.y * (px0 - p.x) - d.x * (py0 - p.y);
-  const double c1 = d.y * px1 - d.x * py1;
-  const double c2 = d.y * px2 - d.x * py2;
-  const double c3 = d.y * px3 - d.x * py3;
-
-  return math::solve_cubic_normalized(c3, c2, c1, c0);
-}
-
-struct Cusp {
-  double t0;
-  double t1;
-  double sign;
-};
-
-struct CuspAccumulator {
-
-  dquadratic_bezier q;
-
-  double c0;
-  double c1;
-  double c2;
-
-  double d;
-
-  double t0;
-  double last_t;
-  double last_y;
-
-  std::vector<Cusp> result;
-
-  CuspAccumulator(const dquadratic_bezier& q, const double c0, const double c1, const double c2, const double d) :
-    q(q), c0(c0), c1(c1), c2(c2), d(d), t0(0.0), last_t(0.0), last_y(0.0) {
-    last_y = eval(0.0);
-  }
-
-  double eval(const double t) const {
-    const double ds2 = math::squared_length(q.sample(t));
-    const double k = (((c2 * t + c1) * t) + c0) / (ds2 * std::sqrt(ds2));
-    return k * d + 1.0;
-  }
-
-  void report(const double t) {
-    const double yb = eval(t);
-    const double ya = last_y;
-
-    if (ya >= 0.0 != yb >= 0.0) {
-      const double tx = (yb * last_t - ya * t) / (yb - ya);
-      result.push_back(Cusp{t0, tx, math::sign(ya)});
-      t0 = tx;
-    }
-
-    last_t = t;
-    last_y = yb;
-  }
-
-  std::vector<Cusp>& reap() {
-    result.push_back(Cusp{t0, 1.0, math::sign(last_y)});
-    return result;
-  }
-};
-
-template <typename T>
-struct CubicOffset {
-  CubicPath<T>& sink;
-
-  dcubic_bezier c;
-  dquadratic_bezier q;
-
-  double d;
-
-  CubicOffset(const dcubic_bezier& c, const double d, CubicPath<T>& sink) : c(c), q(lower(c)), d(d), sink(sink) { }
-
-  struct Approximation {
-    dcubic_bezier c;
-    double err;
-  };
-
-  struct Metrics {
-    double arclen;
-    double area;
-    double moment_x;
-  };
-
-  struct Sample {
-    double arclen;
-    dvec2 p;
-    dvec2 d;
-  };
-
-  struct RotatedCubicOffset {
-    CubicOffset c;
-    double th;
-    dvec2 p0;
-
-    RotatedCubicOffset(const CubicOffset c, const double th, const dvec2& p0) : c(c), th(th), p0(p0) { }
-  };
-
-  dvec2 eval_offset(const double t) const {
-    const dvec2 dp = q.sample(t);
-    const double s = d / math::length(dp);
-    return dvec2{-s * dp.y, s * dp.x};
-  }
-
-  dvec2 eval(const double t) const { return c.sample(t) + eval_offset(t); }
-
-  dvec2 eval_deriv(const double t) const {
-    const dvec2 dp = q.sample(t);
-    const dvec2 ddp = q.derivative(t);
-
-    const double h = math::squared_length(dp);
-    const double turn = math::cross(ddp, dp) * d / (h * std::sqrt(h));
-    const double s = 1.0 + turn;
-
-    return s * dp;
-  }
-
-  Metrics calc() const {
-    double arclen = 0.0;
-    double area = 0.0;
-    double moment_x = 0.0;
-
-    const double* co = GAUSS_LEGENDRE_COEFFS_32;
-
-    for (int i = 0; i < 32; i += 2) {
-      const double t = 0.5 * (1.0 + co[i + 1]);
-      const double wi = co[i];
-
-      const dvec2 dp = eval_deriv(t);
-      const dvec2 p = eval(t);
-
-      const double d_area = wi * dp.x * p.y;
-
-      arclen += wi * math::length(dp);
-      area += d_area;
-      moment_x += p.x * d_area;
-    }
-
-    return Metrics{0.5 * arclen, 0.5 * area, 0.5 * moment_x};
-  }
-
-  std::vector<Sample> sample_pts(const int n) const {
-    std::vector<Sample> result = {};
-    double arclen = 0.0;
-
-    // Probably overkill, but keep it simple
-    const double* co = GAUSS_LEGENDRE_COEFFS_32;
-    const double dt = 1.0 / (static_cast<double>(n) + 1.0);
-
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < 32; j += 2) {
-        const double t = dt * (i + 0.5 + 0.5 * co[j + 1]);
-        arclen += co[j] * math::length(eval_deriv(t));
-      }
-
-      const double t = dt * (i + 1);
-      const dvec2 d = eval_offset(t);
-      const dvec2 p = c.sample(t) + d;
-
-      result.push_back(Sample{arclen * 0.5 * dt, p, d});
-    }
-
-    return result;
-  }
-
-  RotatedCubicOffset rotate_to_x() {
-    const dvec2 p0 = c.p0 + eval_offset(0.0);
-    const dvec2 p1 = c.p3 + eval_offset(1.0);
-
-    const double th = math::atan2(p0, p1);
-    const dmat2x3 a = dmat2x3::from_rotation(std::sin(-th), std::cos(-th));
-
-    return RotatedCubicOffset{
-      CubicOffset(dcubic_bezier{a * (c.p0 - p0), a * (c.p1 - p0), a * (c.p2 - p0), a * (c.p3 - p0)}, d, sink),
-      th,
-      p0
-    };
-  }
-
-  double est_cubic_err(const dcubic_bezier& cu, const std::vector<Sample>& samples, const double tolerance) {
-    double err = 0;
-    double tol2 = tolerance * tolerance;
-
-    for (auto& sample : samples) {
-      std::optional<double> best_err = std::nullopt;
-      // Project sample point onto approximate curve along normal.
-      math::CubicSolutions<double> intersections = intersect_ray(cu, sample.p, sample.d);
-
-      if (intersections.count == 0) {
-        // In production, if no rays intersect we probably want
-        // to reject this candidate altogether. But we sample the
-        // endpoints so you can get a plausible number.
-        intersections = math::CubicSolutions<double>{0, 1};
-      }
-
-      for (int i = 0; i < intersections.count; i++) {
-        const double t = intersections[i];
-        const dvec2 p_proj = cu.sample(t);
-        const double this_err = math::squared_length(sample.p - p_proj);
-
-        if (!best_err.has_value() || this_err < best_err) {
-          best_err = this_err;
-        }
-      }
-
-      err = std::max(err, best_err.value());
-
-      if (err > tol2) {
-        break;
-      }
-    }
-
-    return std::sqrt(err);
-  }
-
-  std::optional<Approximation> cubic_approx(const double tolerance, const double sign) {
-    const RotatedCubicOffset r = rotate_to_x();
-
-    const Metrics metrics = r.c.calc();
-
-    const double end_x = r.c.c.p3.x + r.c.eval_offset(1.0).x;
-    const double arclen = metrics.arclen;
-
-    const double th0 = std::atan2(sign * r.c.q.p0.y, sign * r.c.q.p0.x);
-    const double th1 = -std::atan2(sign * r.c.q.p2.y, sign * r.c.q.p2.x);
-    const double ex2 = end_x * end_x;
-    const double ex3 = ex2 * end_x;
-
-    const std::vector<dcubic_bezier> cands = cubic_fit(th0, th1, metrics.area / ex2, metrics.moment_x / ex3);
-    const double cx = end_x * std::cos(r.th);
-    const double sx = end_x * std::sin(r.th);
-
-    const dmat2x3 a = {cx, -sx, r.p0.x, sx, cx, r.p0.y};
-
-    const std::vector<Sample> samples = sample_pts(10);
-
-    std::optional<dcubic_bezier> best_c = std::nullopt;
-    std::vector<double> errs = {};
-
-    double best_err;
-
-    for (auto& raw_cand : cands) {
-      const dcubic_bezier cand = {a * raw_cand.p0, a * raw_cand.p1, a * raw_cand.p2, a * raw_cand.p3};
-      const double err = est_cubic_err(cand, samples, tolerance);
-
-      errs.push_back(err);
-
-      if (!best_c.has_value() || err < best_err) {
-        best_err = err;
-        best_c = cand;
-      }
-    }
-
-    if (!best_c.has_value()) {
-      return std::nullopt;
-    }
-
-    return Approximation{best_c.value(), best_err};
-  }
-
-  void cubic_approx_seq(const double tolerance, const double sign) {
-    const std::optional<Approximation> approx = cubic_approx(tolerance, sign);
-
-    if (approx.has_value() && approx->err <= tolerance) {
-      sink.cubic_to(math::Vec2<T>(approx->c.p1), math::Vec2<T>(approx->c.p2), math::Vec2<T>(approx->c.p3));
-    } else {
-      const auto [left, right] = split(c, 0.5);
-
-      CubicOffset(left, d, sink).cubic_approx_seq(tolerance, sign);
-      CubicOffset(right, d, sink).cubic_approx_seq(tolerance, sign);
-    }
-  }
-};
-
-static inline dquadratic_bezier lower(const dcubic_bezier& c) {
-  return {3 * (c.p1 - c.p0), 3 * (c.p2 - c.p1), 3 * (c.p3 - c.p2)};
-}
-
-static inline double tri_sign(const dvec2 a, const dvec2 b) { return b.x * (a.y - b.y) - b.y * (a.x - b.x); }
-
-static inline double line_nearest_origin(const dvec2 a, const dvec2 b) {
-  const dvec2 d = b - a;
-
-  double dotp = -math::dot(a, d);
-  double d_sq = math::squared_length(d);
-
-  if (dotp <= 0.0) {
-    return math::squared_length(a);
-  } else if (dotp >= d_sq) {
-    return math::squared_length(b);
-  } else {
-    const double t = dotp / d_sq;
-    const dvec2 p = a + t * d;
-
-    return math::squared_length(p);
-  }
-}
-
-static void find_offset_cusps_rec(
-  const dcubic_bezier& c,
-  CuspAccumulator& cusps,
-  const double t0,
-  const double t1,
-  const double c0,
-  const double c1,
-  const double c2,
-  const double d
+/**
+ * @brief Creates a circular arc offset of a cubic bezier curve.
+ *
+ * @param cubic The input cubic bezier curve.
+ * @param offset The offset amount. Can be negative.
+ * @param center The center of the circular arc.
+ * @param from The start point of the circular arc.
+ * @param to The end point of the circular arc.
+ * @param clockwise Whether the arc is clockwise.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void arc_offset(
+  OutputBuilder<T>& builder,
+  const double offset,
+  const dvec2 center,
+  const dvec2 from,
+  const dvec2 to,
+  const bool clockwise
 ) {
-  cusps.report(t0);
+  dline l1(center, from);
+  dline l2(center, to);
 
-  const dquadratic_bezier q = lower(extract(c, t0, t1));
+  const dvec2 v1 = math::normalize(l1.p1 - l1.p0);
+  const dvec2 v2 = math::normalize(l2.p1 - l2.p0);
 
-  // compute interval for ds/dt, using convex hull of hodograph
-  const double dt = t1 - t0;
-  const double d1 = tri_sign(q.p0, q.p1);
-  const double d2 = tri_sign(q.p1, q.p2);
-  const double d3 = tri_sign(q.p2, q.p0);
-
-  const bool z = !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
-
-  const double ds0 = math::squared_length(q.p0);
-  const double ds1 = math::squared_length(q.p1);
-  const double ds2 = math::squared_length(q.p2);
-  const double max_ds = std::sqrt(std::max({ds0, ds1, ds2})) / dt;
-
-  const double m1 = line_nearest_origin(q.p0, q.p1);
-  const double m2 = line_nearest_origin(q.p1, q.p2);
-  const double m3 = line_nearest_origin(q.p2, q.p0);
-  const double min_ds = z ? 0 : std::sqrt(std::min({m1, m2, m3})) / dt;
-
-  double cmin = std::min(c0, c0 + c1 + c2);
-  double cmax = std::max(c0, c0 + c1 + c2);
-
-  const double t_crit = -0.5 * c1 / c2;
-
-  if (t_crit > 0 && t_crit < 1) {
-    const double c_at_t = (c2 * t_crit + c1) * t_crit + c0;
-    cmin = std::min(cmin, c_at_t);
-    cmax = std::max(cmax, c_at_t);
+  if (clockwise) {
+    l1.p1 += v1 * offset;
+    l2.p1 += v2 * offset;
+  } else {
+    l1.p1 -= v1 * offset;
+    l2.p1 -= v2 * offset;
   }
 
-  const double min3 = min_ds * min_ds * min_ds;
-  const double max3 = max_ds * max_ds * max_ds;
+  maybe_add_cusp_arc(builder, l1.p1);
 
-  // TODO: signs are wrong, want min/max of c * d
-  // But this is a suitable starting place for clipping.
-  if (cmin * d > -min3 || cmax * d < -max3) {
-    // return;
+  // Determine if it is clockwise again since arc orientation may have
+  // changed if arc radius was smaller than offset.
+  //
+  // Also it is important to use previous point to determine orientation
+  // instead of the point we just calculated as the start of circular arc
+  // because for small arcs a small numeric error can result in incorrect
+  // arc orientation.
+  arc_to(builder, center, l2.p1, geom::clockwise(center, builder.previous_point, l2.p1));
+}
+
+/**
+ * @brief Returns the unit turn of three points.
+ *
+ * @param p1 The first point.
+ * @param p2 The second point.
+ * @param p3 The third point.
+ * @return The unit turn.
+ */
+static double unit_turn(const dvec2 p1, const dvec2 p2, const dvec2 p3) {
+  return math::cross(math::normalize(p2 - p1), math::normalize(p3 - p1));
+}
+
+/**
+ * @brief Represents curve tangents as two line segments and some precomputed data.
+ *
+ * @struct CurveTangentData
+ */
+struct CurveTangentData {
+  CurveTangentData(const dcubic_bezier& curve) :
+    start_tangent(curve.start_tangent()),
+    end_tangent(curve.end_tangent()),
+    turn1(unit_turn(start_tangent.p0, start_tangent.p1, end_tangent.p0)),
+    turn2(unit_turn(start_tangent.p0, end_tangent.p1, end_tangent.p0)),
+    start_unit_normal(start_tangent.normal()),
+    end_unit_normal(end_tangent.normal()) { }
+
+  const dline start_tangent;
+  const dline end_tangent;
+
+  const dvec2 start_unit_normal;
+  const dvec2 end_unit_normal;
+
+  const double turn1;
+  const double turn2;
+};
+
+/**
+ * @brief Returns true if an attempt to approximate a curve with given tangents should be made.
+ *
+ * @param d The curve tangent data.
+ * @return True if an attempt to approximate a curve with given tangents should be made.
+ */
+static bool can_try_arc_offset(const CurveTangentData& d) {
+  // Arc approximation is only attempted if curve is not considered
+  // approximately straight. But it can be attemped for curves which have
+  // their control points on the different sides of line connecting points
+  // p0 and p3.
+  //
+  // We need to make sure we don't try to do arc approximation for these S
+  // type curves because such curves cannot be approximated by arcs in such
+  // cases.
+
+  static constexpr double P = approximately_straight_curve_test_epsilon;
+  static constexpr double N = -P;
+
+  return ((d.turn1 >= P && d.turn2 >= P) || (d.turn1 <= N && d.turn2 <= N));
+}
+
+/**
+ * @brief Returns true if an attempt to use simple offsetting for a curve with given
+ * tangents should be made.
+ *
+ * @param d The curve tangent data.
+ * @return True if an attempt to use simple offsetting for a curve with given tangents should be made.
+ */
+static bool can_try_simple_offset(const CurveTangentData& d) {
+  // Arc approximation is only attempted if curve is not considered
+  // approximately straight. But it can be attemped for curves which have
+  // their control points on the different sides of line connecting points
+  // p0 and p3.
+  //
+  // We need to make sure we don't try to do arc approximation for these S
+  // type curves because the shape control method behaves really badly with
+  // S shape curves.
+
+  return ((d.turn1 >= 0 && d.turn2 >= 0) || (d.turn1 <= 0 && d.turn2 <= 0));
+}
+
+/**
+ * @brief Returns true if curve is considered too small to be added to offset output.
+ *
+ * @param curve The curve to check.
+ * @return True if curve is considered too small to be added to offset output.
+ */
+static bool curve_is_too_tiny(const dcubic_bezier& curve) {
+  const double lengthsSquared = math::squared_distance(curve.p0, curve.p1) + math::squared_distance(curve.p1, curve.p2) +
+    math::squared_distance(curve.p2, curve.p3);
+
+  return lengthsSquared <= max_tiny_curve_polygon_perimeter_squared;
+}
+
+/**
+ * @brief Attempts to perform simple curve offsetting and returns true if it succeeds
+ * to generate good enough parallel curve.
+ *
+ * @param curve The input curve.
+ * @param d The curve tangent data.
+ * @param builder The output builder.
+ * @param offset The offset amount.
+ * @param tolerance The maximum allowed error.
+ * @return True if it succeeds to generate good enough parallel curve.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static bool try_simple_curve_offset(
+  const dcubic_bezier& curve,
+  const CurveTangentData& d,
+  OutputBuilder<T>& builder,
+  const double offset,
+  const double tolerance
+) {
+  if (!can_try_simple_offset(d)) {
+    return false;
   }
 
-  const math::QuadraticSolutions<double> rmax = math::solve_quadratic(c2 * d, c1 * d, c0 * d + max3);
-  const math::QuadraticSolutions<double> rmin = math::solve_quadratic(c2 * d, c1 * d, c0 * d + min3);
+  const dvec2 d1 = curve.p1 - curve.p0;
+  const dvec2 d2 = curve.p2 - curve.p3;
+  const double div = math::cross(d1, d2);
 
-  std::vector<double> ts;
+  if (math::is_almost_zero(div)) {
+    return false;
+  }
 
-  // TODO: count = 1 cases. Also maybe reduce case explosion?
-  if (rmax.count == 2 && rmin.count == 2) {
-    if (c2 > 0) {
-      ts = {rmin[0], rmax[0], rmax[1], rmin[1]};
-    } else {
-      ts = {rmax[0], rmin[0], rmin[1], rmax[1]};
+  // Start point.
+  const dvec2 p0 = d.start_tangent.p0 + (d.start_tangent.normal() * offset);
+
+  // End point.
+  const dvec2 p3 = d.end_tangent.p0 - (d.end_tangent.normal() * offset);
+
+  // Middle point.
+  const dvec2 mp = curve.sample(0.5);
+  const dvec2 mpN = curve.normal(0.5);
+  const dvec2 p = mp + (mpN * offset);
+
+  const dvec2 bxby = (8.0 / 3.0) * (p - (0.5 * (p0 + p3)));
+
+  const double a = math::cross(bxby, d2) / div;
+  const double b = math::cross(d1, bxby) / div;
+
+  const dvec2 p1(p0.x + a * d1.x, p0.y + a * d1.y);
+  const dvec2 p2(p3.x + b * d2.x, p3.y + b * d2.y);
+
+  const dcubic_bezier candidate(p0, p1, p2, p3);
+
+  if (curve_is_too_tiny(candidate)) {
+    // If curve is too tiny, tell caller there was a great success.
+    return true;
+  }
+
+  if (!accept_offset(curve, candidate, offset, tolerance)) {
+    return false;
+  }
+
+  maybe_add_cusp_arc(builder, candidate.p0);
+
+  cubic_to(builder, candidate.p1, candidate.p2, candidate.p3);
+
+  return true;
+}
+
+/**
+ * @brief Check if the array contains a given merge value.
+ *
+ * @param a The array.
+ * @param count The number of elements in the array.
+ * @param value The value to check.
+ * @param epsilon The epsilon value.
+ * @return True if the array contains a given merge value.
+ */
+static bool DoubleArrayContainsMergePosition(const double* a, const int count, const double value, const double epsilon) {
+  for (int i = 0; i < count; i++) {
+    const double v = a[i];
+
+    if (math::is_almost_equal(value, v, epsilon)) {
+      return true;
     }
-  } else if (rmin.count == 2) {
-    if (c2 > 0) {
-      ts = {rmin[0], rmin[1]};
-    } else {
-      ts = {t0, rmin[0], rmin[1], t1};
+  }
+
+  return false;
+}
+
+/**
+ * @brief Merges curve positions into an array.
+ *
+ * @param t The array to merge into.
+ * @param t_count The number of elements in the array.
+ * @param s The array to merge from.
+ * @param count The number of elements in the array to merge from.
+ * @param epsilon The epsilon value.
+ * @return The new number of elements in the array.
+ */
+static int merge_curve_positions(double t[5], const int t_count, const double* s, const int count, const double epsilon) {
+  int rc = t_count;
+
+  for (int i = 0; i < count; i++) {
+    const double v = s[i];
+
+    if (math::is_almost_zero(v, epsilon)) {
+      continue;
     }
-  } else if (rmax.count == 2) {
-    if (c2 > 0) {
-      ts = {t0, rmax[0], rmax[1], t1};
-    } else {
-      ts = {rmax[0], rmax[1]};
+
+    if (math::is_almost_equal(v, 1.0, epsilon)) {
+      continue;
+    }
+
+    if (DoubleArrayContainsMergePosition(t, rc, v, epsilon)) {
+      continue;
+    }
+
+    t[rc++] = v;
+  }
+
+  return rc;
+}
+
+/**
+ * @brief Returns true if circular arc with given parameters approximate curve close enough.
+ *
+ * @param arc_center Point where arc center is located.
+ * @param arc_radius Radius of arc.
+ * @param curve Curve being approximated with arc.
+ * @param tolerance Maximum allowed error.
+ */
+static bool good_arc(
+  const dvec2 arc_center,
+  const double arc_radius,
+  const dcubic_bezier& curve,
+  const double tolerance,
+  const double t_from,
+  const double t_to
+) {
+  if (arc_radius > max_arc_radius) {
+    return false;
+  }
+
+  const double e = std::min(tolerance, arc_radius / 3.0);
+
+  // Calculate value equal to slightly more than half of maximum error.
+  // Slightly more to minimize false negatives due to finite precision in
+  // circle-line intersection test.
+  const double me = (e * (0.5 + 1e-4));
+
+  for (int i = 0; i < sizeof(arc_probe_positions) / sizeof(arc_probe_positions[0]); i++) {
+    const double t = arc_probe_positions[i];
+
+    // Find t on a given curve.
+    const double curve_t = math::lerp(t, t_from, t_to);
+
+    // Find point and normal at this position.
+    const dvec2 point = curve.sample(curve_t);
+    const dvec2 n = curve.normal(curve_t);
+
+    // Create line segment which has its center at curve on point and
+    // extends by half of maximum allowed error to both directions from
+    // curve point along normal.
+    const dline segment(point + (n * me), point - (n * me));
+
+    // Test if intersection exists.
+    if (!does_line_intersect_circle(segment, arc_center, arc_radius)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * @brief Attempts to use circular arc offsetting method on a given curve.
+ *
+ * @param curve The input curve.
+ * @param d The curve tangent data.
+ * @param builder The output builder.
+ * @param offset The offset amount.
+ * @param tolerance The maximum allowed error.
+ * @return True if it succeeds to generate good enough parallel curve.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static bool try_arc_approximation(
+  const dcubic_bezier& curve,
+  const CurveTangentData& d,
+  OutputBuilder<T>& builder,
+  const double offset,
+  const double tolerance
+) {
+  if (!can_try_arc_offset(d)) {
+    return false;
+  }
+
+  // Cast ray from curve end points to start and end tangent directions.
+  const dvec2 vectorFrom = d.start_tangent.direction();
+  const dvec2 vectorTo = d.end_tangent.direction();
+  const double denom = vectorTo.x * vectorFrom.y - vectorTo.y * vectorFrom.x;
+
+  // Should not happen as we already elliminated parallel case.
+  if (math::is_almost_zero(denom)) {
+    return false;
+  }
+
+  const dvec2 asv = d.start_tangent.p0;
+  const dvec2 bsv = d.end_tangent.p0;
+  const double u = ((bsv.y - asv.y) * vectorTo.x - (bsv.x - asv.x) * vectorTo.y) / denom;
+  const double v = ((bsv.y - asv.y) * vectorFrom.x - (bsv.x - asv.x) * vectorFrom.y) / denom;
+
+  if (u < 0.0 || v < 0.0) {
+    // Intersection is on the wrong side.
+    return false;
+  }
+
+  const dvec2 V = asv + (u * vectorFrom);
+
+  // If start or end tangents extend too far beyond intersection, return
+  // early since it will not result in good approximation.
+  if (math::squared_distance(curve.p0, V) < (d.start_tangent.squared_length() * 0.25) ||
+      math::squared_distance(curve.p3, V) < (d.end_tangent.squared_length() * 0.25)) {
+    return false;
+  }
+
+  const double p3VDistance = math::distance(curve.p3, V);
+  const double p0VDistance = math::distance(curve.p0, V);
+  const double p0p3Distance = math::distance(curve.p0, curve.p3);
+  const dvec2 G =
+    (p3VDistance * curve.p0 + p0VDistance * curve.p3 + p0p3Distance * V) / (p3VDistance + p0VDistance + p0p3Distance);
+
+  const dline p0G(curve.p0, G);
+  const dline Gp3(G, curve.p3);
+
+  const dline E(p0G.midpoint(), p0G.midpoint() - p0G.raw_normal());
+  const dline E1(d.start_tangent.p0, d.start_tangent.p0 - d.start_tangent.raw_normal());
+
+  const std::optional<dvec2> C1 = line_line_intersection_point_infinite(E, E1);
+
+  if (!C1.has_value()) {
+    return false;
+  }
+
+  const math::CubicSolutions<double> intersections = ray_intersections(curve, C1.value(), G);
+
+  if (intersections.count != 1) {
+    return false;
+  }
+
+  const double tG = intersections.solutions[0];
+  const double dist0 = math::distance(G, curve.sample(tG));
+
+  if (dist0 > tolerance) {
+    return false;
+  }
+
+  const dline F(Gp3.midpoint(), Gp3.midpoint() - Gp3.raw_normal());
+  const dline F1(d.end_tangent.p0, d.end_tangent.p0 + d.end_tangent.raw_normal());
+
+  const std::optional<dvec2> C2 = line_line_intersection_point_infinite(F, F1);
+
+  if (!C2.has_value()) {
+    return false;
+  }
+
+  if (math::is_almost_equal(C1.value(), C2.value(), arc_center_comparison_epsilon)) {
+    const double radius = math::distance(C1.value(), curve.p0);
+
+    if (good_arc(C1.value(), radius, curve, tolerance, 0, 1)) {
+      const bool clockwise = geom::clockwise(curve.p0, V, curve.p3);
+
+      arc_offset(builder, offset, C1.value(), curve.p0, curve.p3, clockwise);
+
+      return true;
     }
   } else {
-    const double c_at_t0 = (c2 * t0 + c1) * t0 + c0;
-    if (c_at_t0 * d < -min3 && c_at_t0 * d > -max3) {
-      ts = {t0, t1};
-    } else {
-      ts = {};
+    const double radius1 = math::distance(C1.value(), curve.p0);
+
+    if (!good_arc(C1.value(), radius1, curve, tolerance, 0, tG)) {
+      return false;
     }
+
+    const double radius2 = math::distance(C2.value(), curve.p3);
+
+    if (!good_arc(C2.value(), radius2, curve, tolerance, tG, 1)) {
+      return false;
+    }
+
+    const bool clockwise = geom::clockwise(curve.p0, V, curve.p3);
+
+    arc_offset(builder, offset, C1.value(), curve.p0, G, clockwise);
+    arc_offset(builder, offset, C2.value(), G, curve.p3, clockwise);
+
+    return true;
   }
 
-  for (int i = 0; i < ts.size(); i += 2) {
-    const double new_t0 = std::max(t0, ts[i]);
-    const double new_t1 = std::min(t1, ts[i + 1]);
+  return false;
+}
 
-    if (new_t1 > new_t0) {
-      if (new_t1 - new_t0 < 1e-9) {
-        cusps.report(new_t0);
-        cusps.report(new_t1);
-      } else if (new_t1 - new_t0 > 0.5 * dt) {
-        const double tm = 0.5 * (new_t0 + new_t1);
-        find_offset_cusps_rec(c, cusps, new_t0, tm, c0, c1, c2, d);
-        find_offset_cusps_rec(c, cusps, tm, new_t1, c0, c1, c2, d);
+/**
+ * @brief Returns true if curve is considered approximately straight.
+ *
+ * @param d The curve tangent data.
+ * @return True if curve is considered approximately straight.
+ */
+static bool is_curve_approximately_straight(const CurveTangentData& d) {
+  const double minx = std::min(d.start_tangent.p0.x, d.end_tangent.p0.x);
+  const double miny = std::min(d.start_tangent.p0.y, d.end_tangent.p0.y);
+  const double maxx = std::max(d.start_tangent.p0.x, d.end_tangent.p0.x);
+  const double maxy = std::max(d.start_tangent.p0.y, d.end_tangent.p0.y);
+
+  const double x1 = d.start_tangent.p1.x;
+  const double y1 = d.start_tangent.p1.y;
+  const double x2 = d.end_tangent.p1.x;
+  const double y2 = d.end_tangent.p1.y;
+
+  return (
+    // Is p1 located between p0 and p3?
+    minx <= x1 && miny <= y1 && maxx >= x1 && maxy >= y1 &&
+    // Is P2 located between p0 and p3?
+    minx <= x2 && miny <= y2 && maxx >= x2 && maxy >= y2 &&
+    // Are all points collinear?
+    math::is_almost_zero(d.turn1, approximately_straight_curve_test_epsilon) &&
+    math::is_almost_zero(d.turn2, approximately_straight_curve_test_epsilon)
+  );
+}
+
+/**
+ * @brief Returns true if curve is considered completely straight.
+ *
+ * @param d The curve tangent data.
+ * @return True if curve is considered completely straight.
+ */
+static bool is_curve_completely_straight(const CurveTangentData& d) {
+  return (
+    math::is_almost_zero(d.turn1, completely_straight_curve_test_epsilon) &&
+    math::is_almost_zero(d.turn2, completely_straight_curve_test_epsilon)
+  );
+}
+
+/**
+ * @brief Main function for approximating offset of a curve without cusps.
+ *
+ * @param curve The curve to approximate.
+ * @param d The curve tangent data.
+ * @param builder The output builder.
+ * @param offset The offset amount.
+ * @param tolerance The maximum allowed error.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void approximate_bezier(
+  const dcubic_bezier& curve,
+  const CurveTangentData& d,
+  OutputBuilder<T>& builder,
+  const double offset,
+  const double tolerance
+) {
+  if (!curve.is_point(curve_point_clump_test_epsilon)) {
+    if (is_curve_approximately_straight(d)) {
+      if (is_curve_completely_straight(d)) {
+        // Curve is extremely close to being straight.
+        const dline line(curve.p0, curve.p1);
+        const dvec2 normal = line.normal();
+
+        maybe_add_cusp_arc(builder, line.p0 + (normal * offset));
+
+        line_to(builder, line.p1 + (normal * offset));
       } else {
-        find_offset_cusps_rec(c, cusps, new_t0, new_t1, c0, c1, c2, d);
+        const dvec2 p1o = d.start_tangent.p0 + (offset * d.start_unit_normal);
+        const dvec2 p2o = d.start_tangent.p1 + (offset * d.start_unit_normal);
+        const dvec2 p3o = d.end_tangent.p1 - (offset * d.end_unit_normal);
+        const dvec2 p4o = d.end_tangent.p0 - (offset * d.end_unit_normal);
+
+        maybe_add_cusp_arc(builder, p1o);
+
+        cubic_to(builder, p2o, p3o, p4o);
+      }
+    } else {
+      if (!try_simple_curve_offset(curve, d, builder, offset, tolerance)) {
+        if (!try_arc_approximation(curve, d, builder, offset, tolerance)) {
+          // Split in half and continue.
+          const auto& [a, b] = split(curve, 0.5);
+
+          const CurveTangentData da(a);
+
+          approximate_bezier(a, da, builder, offset, tolerance);
+
+          const CurveTangentData db(b);
+
+          approximate_bezier(b, db, builder, offset, tolerance);
+        }
       }
     }
   }
-
-  cusps.report(t1);
 }
 
-static std::vector<Cusp> find_offset_cusps(const dcubic_bezier& c, const double d) {
-  const dquadratic_bezier q = lower(c);
+/**
+ * @brief Find position on curve where derivative is large enough to appoximate a cusp.
+ *
+ * @param curve The curve.
+ * @param previous_t The previous t value.
+ * @param current_t The current t value.
+ * @return The position on curve where derivative is large enough to appoximate a cusp.
+ */
+static double find_position_on_curve_with_large_enough_derivative(
+  const dcubic_bezier& curve,
+  const double previous_t,
+  const double current_t
+) {
+  GK_ASSERT(current_t > previous_t, "Current t must be greater than previous t.");
 
-  const dvec2 d0 = q.p0;
-  const dvec2 d1 = 2.0 * (q.p1 - q.p0);
-  const dvec2 d2 = q.p0 - 2.0 * q.p1 + q.p2;
+  static constexpr double k_precision = cusp_derivative_length_squared * 2.0;
 
-  const double c0 = math::cross(d1, d0);
-  const double c1 = math::cross(d2, d0) * 2.0;
-  const double c2 = math::cross(d2, d1);
+  double t = std::max(math::lerp(previous_t, current_t, 0.8), current_t - 0.05);
 
-  CuspAccumulator cusps(q, c0, c1, c2, d);
+  for (int i = 0; i < near_cusp_point_search_max_iteration_count; i++) {
+    const dvec2 derivative = curve.derivative(t);
+    const double length_squared = math::squared_length(derivative);
 
-  find_offset_cusps_rec(c, cusps, 0.0, 1.0, c0, c1, c2, d);
+    if (length_squared < k_precision) {
+      return t;
+    }
 
-  return cusps.reap();
+    const double a = t + current_t;
+
+    t = a / 2.0;
+  }
+
+  return t;
+}
+
+/**
+ * @brief Find position on curve where derivative is large enough to appoximate a cusp.
+ *
+ * @param curve The curve.
+ * @param current_t The current t value.
+ * @param next_t The next t value.
+ * @return The position on curve where derivative is large enough to appoximate a cusp.
+ */
+static double find_position_on_curve_with_large_enough_derivative_start(
+  const dcubic_bezier& curve,
+  const double current_t,
+  const double next_t
+) {
+  GK_ASSERT(current_t < next_t, "Current t must be less than next t.");
+
+  static constexpr double k_precision = cusp_derivative_length_squared * 2.0;
+
+  double t = std::min(math::lerp(current_t, next_t, 0.2), current_t + 0.05);
+
+  for (int i = 0; i < near_cusp_point_search_max_iteration_count; i++) {
+    const dvec2 derivative = curve.derivative(t);
+    const double length_squared = math::squared_length(derivative);
+
+    if (length_squared < k_precision) {
+      return t;
+    }
+
+    const double a = current_t + t;
+
+    t = a / 2.0;
+  }
+
+  return t;
+}
+
+/**
+ * @brief If all points of the curve are collinear, a shortcut must be made because
+ * general offsetting algorithm does not handle such curves very well. In case
+ * where are points are collinear, lines between cusps are offset to direction
+ * of their normals and at the points where curve has a cusps, semi-circles
+ * are added to the output.
+ *
+ * @param curve The curve to offset.
+ * @param builder The output builder.
+ * @param offset The offset amount.
+ * @param max_curvature_points The maximum curvature points.
+ * @param max_curvature_point_count The maximum curvature point count.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void offset_linear_cuspy_curve(
+  const dcubic_bezier& curve,
+  OutputBuilder<T>& builder,
+  const double offset,
+  const double* max_curvature_points,
+  const int max_curvature_point_count
+) {
+  const dline start_tangent = curve.start_tangent();
+  const dvec2 normal = start_tangent.normal();
+
+  dvec2 previous_point = start_tangent.p0;
+  dvec2 previous_offset_point = previous_point + (normal * offset);
+
+  move_to(builder, previous_offset_point);
+
+  for (int i = 0; i < max_curvature_point_count; i++) {
+    // Skip 0 and 1!
+    const double t = max_curvature_points[i];
+    const dvec2 derived = curve.derivative(t);
+    const double length_squared = math::squared_length(derived);
+
+    if (length_squared <= 1e-9) {
+      // Cusp. Since we know all curve points are on the same line, some
+      // of maximum curvature points will have nearly zero length
+      // derivative vectors.
+      const dvec2 point_at_cusp = curve.sample(t);
+
+      // Draw line from previous point to point at cusp.
+      const dline l(previous_point, point_at_cusp);
+      const dvec2 n = l.normal();
+      const dvec2 to = point_at_cusp + (n * offset);
+
+      line_to(builder, to);
+
+      // Draw semi circle at cusp.
+      const dvec2 arc_to_pos = point_at_cusp - (n * offset);
+
+      arc_to(builder, point_at_cusp, arc_to_pos, geom::clockwise(previous_point, previous_offset_point, point_at_cusp));
+
+      previous_point = point_at_cusp;
+      previous_offset_point = arc_to_pos;
+    }
+  }
+
+  const dline end_tangent = curve.end_tangent();
+  const dvec2 normal2 = end_tangent.normal();
+
+  line_to(builder, end_tangent.p0 - (normal2 * offset));
+}
+
+/**
+ * @brief Approximates offset of a cubic bezier curve.
+ *
+ * @param curve The curve to approximate.
+ * @param d The curve tangent data.
+ * @param builder The output builder.
+ * @param offset The offset amount.
+ * @param tolerance The maximum allowed error.
+ */
+template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+static void do_approximate_bezier(
+  const dcubic_bezier& curve,
+  const CurveTangentData& d,
+  OutputBuilder<T>& builder,
+  const double offset,
+  const double tolerance
+) {
+  // First find maximum curvature positions.
+  const math::CubicSolutions<double> max_curvature_positions = geom::max_curvature(curve);
+
+  // Handle special case where the input curve is a straight line, but
+  // control points do not necessary lie on line segment between curve
+  // points p0 and p3.
+  if (is_curve_completely_straight(d)) {
+    offset_linear_cuspy_curve(curve, builder, offset, max_curvature_positions.solutions, max_curvature_positions.count);
+    return;
+  }
+
+  // Now find inflection point positions.
+  const math::QuadraticSolutions<double> inflections = geom::inflections(curve);
+
+  // Merge maximum curvature and inflection point positions.
+  double t[5];
+
+  const int count0 = merge_curve_positions(t, 0, inflections.solutions, inflections.count, 1e-7);
+  const int count = merge_curve_positions(t, count0, max_curvature_positions.solutions, max_curvature_positions.count, 1e-5);
+
+  std::sort(t, t + count);
+
+  if (count == 0) {
+    // No initial subdivision suggestions.
+    approximate_bezier(curve, d, builder, offset, tolerance);
+  } else {
+    double previous_t = 0;
+
+    for (int i = 0; i < count; i++) {
+      const double ti = t[i];
+      const dvec2 derivative = curve.derivative(ti);
+      const double length_squared = math::squared_length(derivative);
+
+      if (length_squared < cusp_derivative_length_squared) {
+        // Squared length of derivative becomes tiny. This is where
+        // the cusp is. The goal here is to find a spon on curve,
+        // located before T which has large enough derivative and draw
+        // circular arc to the next point on curve with large enough
+        // derivative.
+
+        const double t1 = find_position_on_curve_with_large_enough_derivative(curve, previous_t, ti);
+
+        GK_ASSERT(t1 < ti, "t1 must be less than t.");
+
+        const dcubic_bezier k = extract(curve, previous_t, t1);
+        const CurveTangentData nd(k);
+
+        approximate_bezier(k, nd, builder, offset, tolerance);
+
+        const double t2 = find_position_on_curve_with_large_enough_derivative_start(curve, ti, i == (count - 1) ? 1.0 : t[i + 1]);
+
+        GK_ASSERT(t2 > ti, "t2 must be greater than t.");
+
+        builder.cusp_point = curve.sample(ti);
+        builder.needs_cusp_arc = true;
+        builder.cusp_arc_clockwise = clockwise(k.p3, builder.cusp_point, curve.sample(t2));
+
+        previous_t = t2;
+      } else {
+        // Easy, feed subcurve between previous and current t values
+        // to offset approximation function.
+
+        const dcubic_bezier k = extract(curve, previous_t, ti);
+        const CurveTangentData nd(k);
+
+        approximate_bezier(k, nd, builder, offset, tolerance);
+
+        previous_t = ti;
+      }
+    }
+
+    GK_ASSERT(previous_t < 1.0, "Previous t must be less than 1.");
+
+    const dcubic_bezier k = extract(curve, previous_t, 1.0);
+    const CurveTangentData nd(k);
+
+    approximate_bezier(k, nd, builder, offset, tolerance);
+  }
+}
+
+/**
+ * @brief Flattens ends of curves if control points are too close to end points.
+ *
+ * @param curve The curve to fix.
+ * @return The fixed curve.
+ */
+static dcubic_bezier fix_redundant_tangents(const dcubic_bezier& curve) {
+  dvec2 p1 = curve.p1;
+  dvec2 p2 = curve.p2;
+
+  if (math::squared_distance(curve.p0, p1) < 1e-12) {
+    p1 = curve.p0;
+  }
+
+  if (math::squared_distance(curve.p3, p2) < 1e-12) {
+    p2 = curve.p3;
+  }
+
+  return dcubic_bezier(curve.p0, p1, p2, curve.p3);
 }
 
 template <typename T, typename _>
 void offset_cubic(const dcubic_bezier& curve, const double offset, const double tolerance, CubicPath<T>& sink) {
-  const std::vector<Cusp> cusps = find_offset_cusps(curve, offset);
+  const double minx = std::min({curve.p0.x, curve.p1.x, curve.p2.x, curve.p3.x});
+  const double maxx = std::max({curve.p0.x, curve.p1.x, curve.p2.x, curve.p3.x});
+  const double miny = std::min({curve.p0.y, curve.p1.y, curve.p2.y, curve.p3.y});
+  const double maxy = std::max({curve.p0.y, curve.p1.y, curve.p2.y, curve.p3.y});
 
-  for (const auto& cusp : cusps) {
-    CubicOffset(extract(curve, cusp.t0, cusp.t1), offset, sink).cubic_approx_seq(tolerance, cusp.sign);
+  const double dx = maxx - minx;
+  const double dy = maxy - miny;
+
+  if (dx < curve_point_clump_test_epsilon && dy < curve_point_clump_test_epsilon) {
+    return;
   }
 
-  for (const auto& cusp : cusps) {
-    const dvec2 p0 = curve.sample(cusp.t0);
-    const dvec2 p1 = curve.sample(cusp.t1);
+  // Select bigger of width and height.
+  const double m = std::max(dx, dy) / 2.0;
 
-    renderer::Renderer::draw_rect(
-      vec2(p0),
-      vec2(4.0f),
-      offset >= 0.0 ? vec4(0.2f, 0.8f, 0.2f, 1.0f) : vec4(0.8f, 0.2f, 0.2f, 1.0f)
-    );
-    renderer::Renderer::draw_rect(
-      vec2(p1),
-      vec2(4.0f),
-      offset >= 0.0 ? vec4(0.2f, 0.8f, 0.2f, 1.0f) : vec4(0.8f, 0.2f, 0.2f, 1.0f)
-    );
+  // Calculate scaled offset.
+  const double so = offset / m;
+
+  if (math::is_almost_zero(so)) {
+    sink.cubic_to(math::Vec2<T>(curve.p1), math::Vec2<T>(curve.p2), math::Vec2<T>(curve.p3));
+    return;
+  }
+
+  // Calculate "normalized" curve which kind of fits into range from - 1 to 1.
+  const double tx = (minx + maxx) / 2.0;
+  const double ty = (miny + maxy) / 2.0;
+  const dvec2 t(tx, ty);
+
+  const dvec2 p0 = curve.p0 - t;
+  const dvec2 p1 = curve.p1 - t;
+  const dvec2 p2 = curve.p2 - t;
+  const dvec2 p3 = curve.p3 - t;
+
+  const dcubic_bezier sc(p0 / m, p1 / m, p2 / m, p3 / m);
+
+  const dcubic_bezier c = fix_redundant_tangents(sc);
+
+  OutputBuilder<T> b(sink, m, t, T(2e-2), T(1e-2));
+
+  const CurveTangentData d(c);
+
+  if (is_curve_approximately_straight(d)) {
+    if (is_curve_completely_straight(d)) {
+      // Curve is extremely close to being straight, use simple line
+      // translation.
+      const dline line(c.p0, c.p3);
+      const dvec2 normal = line.normal();
+      const dline translated = {line.p0 + normal * so, line.p1 + normal * so};
+
+      move_to(b, translated.p0);
+
+      line_to(b, translated.p1);
+    } else {
+      // Curve is almost straight. Translate start and end tangents
+      // separately and generate a cubic curve.
+      const dvec2 p1o = d.start_tangent.p0 + (so * d.start_unit_normal);
+      const dvec2 p2o = d.start_tangent.p1 + (so * d.start_unit_normal);
+      const dvec2 p3o = d.end_tangent.p1 - (so * d.end_unit_normal);
+      const dvec2 p4o = d.end_tangent.p0 - (so * d.end_unit_normal);
+
+      move_to(b, p1o);
+
+      cubic_to(b, p2o, p3o, p4o);
+    }
+  } else {
+    // Arbitrary curve.
+    move_to(b, d.start_tangent.p0 + (so * d.start_unit_normal));
+
+    // Try arc approximation first in case this curve was intended to
+    // approximate circle. If that is indeed true, we avoid a lot of
+    // expensive calculations like finding inflection and maximum
+    // curvature points.
+    if (!try_arc_approximation(c, d, b, so, tolerance)) {
+      do_approximate_bezier(c, d, b, so, tolerance);
+    }
   }
 }
 
@@ -871,4 +1216,5 @@ void offset_cubic(const dcubic_bezier& curve, const double offset, const double 
 
 template void offset_cubic(const dcubic_bezier&, const double, const double, CubicPath<float>&);
 template void offset_cubic(const dcubic_bezier&, const double, const double, CubicPath<double>&);
+
 }

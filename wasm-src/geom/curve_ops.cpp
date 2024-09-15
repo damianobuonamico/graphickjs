@@ -958,14 +958,33 @@ void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to,
   const math::Vec2<T> from = back();
   const T radius = math::distance(center, from);
 
-  const T ang1 = std::atan2(from.y - center.y, from.x - center.x);
-  const T ang2 = std::atan2(to.y - center.y, to.x - center.x);
+  if (math::is_almost_zero(radius)) {
+    return;
+  }
 
-  T angle = std::abs(ang2 - ang1);
+  T angle;
+
+  const math::Vec2<T> center_from = from - center;
+  const math::Vec2<T> center_to = to - center;
+  const T cross =
+    (center_from.x * center_to.x + center_from.y * center_to.y) / (math::length(center_from) * math::length(center_to));
+
+  if (cross >= -T(1) - math::geometric_epsilon<T> && cross <= T(1) + math::geometric_epsilon<T>) {
+    angle = std::acos(std::clamp(cross, -T(1), T(1)));
+  } else {
+    angle = T(0);
+  }
 
   if (math::is_almost_zero(angle)) {
     return;
   }
+
+  T ang1 = std::atan2(center.y - from.y, from.x - center.x);
+
+  ang1 = ang1 < 0 ? ang1 + math::two_pi<T> : ang1;
+
+  if (math::is_almost_equal(ang1, math::two_pi<T>)) ang1 = T(0);
+  if (math::is_almost_zero(ang1)) ang1 = T(0);
 
   const TriangleOrientation orientation = triangle_orientation(center, from, to);
 
@@ -977,7 +996,7 @@ void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to,
     }
   }
 
-  const int segments = std::ceil(angle / (math::pi<T> / T(2)));
+  const int segments = std::ceil(std::abs(angle) / (math::pi<T> / T(2)));
   const T step = angle / segments * (clockwise ? -T(1) : T(1));
 
   T s = -std::sin(ang1);

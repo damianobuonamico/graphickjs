@@ -300,30 +300,26 @@ void Renderer::draw(
     };
 
     geom::cubic_path stroke_path =
-      geom::PathBuilder(path, transform, bounding_rect, pretransformed_rect).stroke(stroking_options, 0.01f);
+      geom::PathBuilder(path, transform, bounding_rect, pretransformed_rect).stroke(stroking_options, 0.0001f);
 
-    geom::path stroke_pppath;
-    stroke_pppath.move_to(stroke_path[0]);
+    // geom::path stroke_pppath;
+    // stroke_pppath.move_to(stroke_path[0]);
 
-    for (size_t i = 0; i < stroke_path.size() * 3; i += 3) {
-      stroke_pppath.cubic_to(stroke_path[i + 1], stroke_path[i + 2], stroke_path[i + 3]);
-    }
+    // for (size_t i = 0; i < stroke_path.size() * 3; i += 3) {
+    //   stroke_pppath.cubic_to(stroke_path[i + 1], stroke_path[i + 2], stroke_path[i + 3]);
+    // }
 
-    geom::PathBuilder(stroke_pppath, mat2x3::identity(), bounding_rect, true)
-      .flatten(get()->m_viewport.visible(), 0.25f, [&](const vec2 p0, const vec2 p1) {
-        get()->m_line_instances.instances.push_back({p0, p1, get()->m_ui_options.line_width, get()->m_ui_options.primary_color_05}
-        );
-      });
+    // geom::PathBuilder(stroke_pppath, mat2x3::identity(), bounding_rect, true)
+    //   .flatten(get()->m_viewport.visible(), 0.25f, [&](const vec2 p0, const vec2 p1) {
+    //     get()->m_line_instances.instances.push_back({p0, p1, get()->m_ui_options.line_width,
+    //     get()->m_ui_options.primary_color_05}
+    //     );
+    //   });
+
+    const rect stroke_rect = stroke_path.approx_bounding_rect();
 
     // TODO: should use the stroke bounding_rect...
-    // get()->draw_no_clipping(
-    //   std::move(stroke_path),
-    //   stroke_fill,
-    //   transform,
-    //   pretransformed_rect ? path.approx_bounding_rect() : bounds,
-    //   transformed_bounds,
-    //   culling
-    // );
+    get()->draw_no_clipping(std::move(stroke_path), stroke_fill, mat2x3::identity(), stroke_rect, stroke_rect, culling);
   }
 }
 

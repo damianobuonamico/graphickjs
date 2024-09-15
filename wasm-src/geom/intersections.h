@@ -302,9 +302,18 @@ namespace graphick::geom {
    * @param radius The radius of the circle.
    * @return true if they intersect, false otherwise.
    */
-  template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-  inline bool does_line_intersect_circle(const Line<T>& line, const math::Vec2<T>& center, const T radius) {
-    return line_circle_intersection_points(line, center, radius).count > 0;
+  bool does_line_intersect_circle(const dline& line, const dvec2& center, const double radius);
+
+  /**
+   * @brief Checks whether or not a linear segment intersects a circle.
+   *
+   * @param line The line segment.
+   * @param center The center of the circle.
+   * @param radius The radius of the circle.
+   * @return true if they intersect, false otherwise.
+   */
+  inline bool does_line_intersect_circle(const line& line, const vec2& center, const float radius) {
+    return does_line_intersect_circle(dline(line), dvec2(center), static_cast<double>(radius));
   }
 
   /**

@@ -162,8 +162,8 @@ int main() {
 #define OBJECTS
 
 #ifdef TIGER
-  std::ifstream ifs("res\\test3.svg");
-  // std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  // std::ifstream ifs("res\\test3.svg");
+  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   graphick::io::svg::parse_svg(content);
 #elif defined(OBJECTS)
@@ -264,7 +264,7 @@ int main() {
     graphick::geom::path path;
 
     // const graphick::vec2 delta = {0.0f, 0.0f};
-    // const graphick::vec2 delta = { (i / 5) * 300.0f, (i % 5) * 300.0f };
+    const graphick::vec2 delta = {(i / 5) * 300.0f, (i % 5) * 300.0f};
 
     // const auto& [p, in_p1, in_p2, out_p1, out_p2] = graphick::math::split_bezier(tests[i][0], tests[i][1], tests[i][2],
     // tests[i][3], 0.5f);
@@ -273,17 +273,17 @@ int main() {
     // path.cubic_to(delta + in_p1, delta + in_p2, delta + p);
     // path.cubic_to(delta + out_p1, delta + out_p2, delta + tests[i][3]);
 
-    // path.move_to(vec2(0.0f, 0.0f));
+    path.move_to(vec2(0.0f, 0.0f));
     // path.cubic_to(vec2(150.0f, 200.0f), vec2(300.0f, 300.0f), vec2(350.0f, 100.0f));
     // path.quadratic_to(vec2(150.0f, 150.0f), vec2(300.0f, 100.0f));
 
-    // path.line_to(vec2(100.0f, 100.0f));
+    path.line_to(vec2(100.0f, 100.0f));
     // path.line_to(vec2(120.0f, 500.0f / 3.0f));
-    // path.line_to(vec2(0.0f, 200.0f));
+    path.line_to(vec2(0.0f, 200.0f));
     // path.line_to(vec2(0.0f, 400.0f));
     // path.line_to(vec2(350.0f, 200.0f));
     // path.line_to(vec2(-50.0f, 100.0f));
-    // path.close();
+    path.close();
 
     // path.move_to(vec2(243.839981f, 37.4800110f));
     // path.cubic_to(vec2(243.839981f, 37.4800110f), vec2(252.350464f, 138.025497f), vec2(252.350464f, 138.025528f));
@@ -304,14 +304,14 @@ int main() {
     // path.move_to(delta + tests[i][0]);
     // path.cubic_to(delta + tests[i][1], delta + tests[i][2], delta + tests[i][3]);
 
-    path.move_to(vec2(153.6666717529297, 375.38543701171875));
-    path.cubic_to(vec2(254.019287109375, 99.42240142822266), vec2(453.30889892578125, 90.89823150634766), vec2(155, 168.71875));
+    // path.move_to(vec2(132.0, 586.0));
+    // path.cubic_to(vec2(285.0, 630.0), vec2(446.0, 604.0), vec2(584.0, 538.0));
 
     graphick::editor::Entity test_entity = graphick::editor::Editor::scene().create_element(path);
     graphick::editor::FillComponent fill =
       test_entity.add_component<graphick::editor::FillComponent>(graphick::vec4{0.8f, 0.3f, 0.3f, 1.0f});
     graphick::editor::StrokeComponent stroke =
-      test_entity.add_component<graphick::editor::StrokeComponent>(graphick::vec4{0.93f, 0.64f, 0.74f, 1.0f}, 20.0f);
+      test_entity.add_component<graphick::editor::StrokeComponent>(graphick::vec4{0.93f, 0.64f, 0.74f, 1.0f}, 50.0f);
 
     // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 10.0f;
     // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap = graphick::geom::LineCap::Round;

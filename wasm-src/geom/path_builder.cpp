@@ -450,9 +450,9 @@ CubicPath<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const 
       add_join(dvec2(forward.back()), inner_start, p0, -last_n, -start_n, radius, inv_miter_limit, options.join, forward, true);
       add_join(dvec2(backward.back()), outer_start, p0, last_n, start_n, radius, inv_miter_limit, options.join, backward);
 
-      // TODO: handle negative offset, maybe join the two in one function call
-      // offset_cubic(cubic, -radius, tolerance, forward);
-      offset_cubic(cubic, radius, 0.001, backward);
+      // TODO: maybe join the two in one function call
+      offset_cubic(cubic, -radius, tolerance, forward);
+      offset_cubic(cubic, radius, tolerance, backward);
 
       last_n = start_n;
       p0 = cubic.p3;
