@@ -185,7 +185,7 @@ struct CubicPath {
    * @param to The end point of the arc.
    * @param clockwise Whether the arc is drawn clockwise or counter-clockwise.
    */
-  void arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise = true, const T tolerance = T(1e-2));
+  void arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise = true);
 
   /**
    * @brief Returns the winding number of a point with respect to the path.

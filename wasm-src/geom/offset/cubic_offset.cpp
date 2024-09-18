@@ -121,18 +121,10 @@ static constexpr double simple_offset_probe_positions[] = {0.25, 0.5, 0.75};
  */
 template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 struct OutputBuilder {
-  constexpr OutputBuilder(
-    CubicPath<T>& path,
-    const double scale,
-    const dvec2 translation,
-    const T cubic_tolerance,
-    const T arc_tolerance
-  ) :
+  constexpr OutputBuilder(CubicPath<T>& path, const double scale, const dvec2 translation) :
     path(path),
     scale(scale),
     translation(translation),
-    arc_tolerance(arc_tolerance),
-    cubic_tolerance(cubic_tolerance),
     previous_point(dvec2::zero()),
     previous_point_t(dvec2::zero()),
     cusp_point(dvec2::zero()) { }
@@ -146,8 +138,6 @@ struct OutputBuilder {
   bool needs_cusp_arc = false;
   bool cusp_arc_clockwise = false;
 
-  const T cubic_tolerance;
-  const T arc_tolerance;
   const double scale;
   const dvec2 translation;
 };
@@ -246,7 +236,7 @@ static void arc_to(OutputBuilder<T>& builder, const dvec2 center, const dvec2 to
     const dvec2 c = (center * builder.scale) + builder.translation;
     const dvec2 t = (to * builder.scale) + builder.translation;
 
-    builder.path.arc_to(math::Vec2<T>(c), math::Vec2<T>(t), clockwise, builder.arc_tolerance);
+    builder.path.arc_to(math::Vec2<T>(c), math::Vec2<T>(t), clockwise);
 
     builder.previous_point = to;
     builder.previous_point_t = t;
@@ -812,6 +802,16 @@ static bool is_curve_approximately_straight(const CurveTangentData& d) {
 }
 
 /**
+ * @brief Returns true if the control points of the curve are almost collinear.
+ *
+ * @param c The curve.
+ * @return True if curve is considered approximately straight.
+ */
+static bool is_curve_approximately_straight(const geom::dcubic_bezier& c) {
+  return geom::collinear(c.p0, c.p1, c.p3, 5e-3) && geom::collinear(c.p0, c.p2, c.p3, 5e-3);
+}
+
+/**
  * @brief Returns true if curve is considered completely straight.
  *
  * @param d The curve tangent data.
@@ -1171,32 +1171,41 @@ void offset_cubic(const dcubic_bezier& curve, const double offset, const double 
 
   const dcubic_bezier c = fix_redundant_tangents(sc);
 
-  OutputBuilder<T> b(sink, m, t, T(2e-2), T(1e-2));
+  OutputBuilder<T> b(sink, m, t);
 
   const CurveTangentData d(c);
 
-  if (is_curve_approximately_straight(d)) {
-    if (is_curve_completely_straight(d)) {
-      // Curve is extremely close to being straight, use simple line
-      // translation.
-      const dline line(c.p0, c.p3);
-      const dvec2 normal = line.normal();
-      const dline translated = {line.p0 + normal * so, line.p1 + normal * so};
+  if (is_curve_approximately_straight(c)) {
+    const drect bounds = c.bounding_rect();
 
-      move_to(b, translated.p0);
+    dvec2 p_min;
+    dvec2 p_max;
 
-      line_to(b, translated.p1);
+    if (math::squared_distance(c.p0, bounds.min) <= math::squared_distance(c.p0, bounds.max)) {
+      p_min = bounds.min;
+      p_max = bounds.max;
     } else {
-      // Curve is almost straight. Translate start and end tangents
-      // separately and generate a cubic curve.
-      const dvec2 p1o = d.start_tangent.p0 + (so * d.start_unit_normal);
-      const dvec2 p2o = d.start_tangent.p1 + (so * d.start_unit_normal);
-      const dvec2 p3o = d.end_tangent.p1 - (so * d.end_unit_normal);
-      const dvec2 p4o = d.end_tangent.p0 - (so * d.end_unit_normal);
+      p_min = bounds.max;
+      p_max = bounds.min;
+    }
 
-      move_to(b, p1o);
+    const dvec2 normal = math::normal(c.p0, c.p3);
 
-      cubic_to(b, p2o, p3o, p4o);
+    if (!math::is_almost_equal(p_min, c.p0, 1e-2)) {
+      line_to(b, p_min - normal * so);
+      arc_to(b, p_min, p_min + normal * so, true);
+    }
+
+    if (!math::is_almost_equal(p_max, c.p3, 1e-2)) {
+      line_to(b, p_max + normal * so);
+      arc_to(b, p_max, p_max - normal * so, true);
+    }
+
+    if (math::squared_distance(b.previous_point, c.p3 + normal * so) <
+        math::squared_distance(b.previous_point, c.p3 - normal * so)) {
+      line_to(b, c.p3 + normal * so);
+    } else {
+      line_to(b, c.p3 - normal * so);
     }
   } else {
     // Arbitrary curve.

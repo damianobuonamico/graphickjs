@@ -176,6 +176,10 @@ namespace graphick::geom {
     Line<T> start_tangent() const;
 
     Line<T> end_tangent() const;
+
+    math::Vec2<T> start_normal() const;
+
+    math::Vec2<T> end_normal() const;
   };
 
   /* -- Helper Methods -- */

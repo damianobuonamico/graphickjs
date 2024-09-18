@@ -32,8 +32,9 @@ class QuadraticPath;
  */
 template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 struct StrokeOutline {
-  geom::QuadraticPath<T, std::enable_if<true>> outer; /* The outer outline of the stroke. */
-  geom::QuadraticPath<T, std::enable_if<true>> inner; /* The inner outline of the stroke, in reverse order. */
+  geom::CubicPath<T, std::enable_if<true>> outer;    // The outer outline of the stroke.
+  geom::CubicPath<T, std::enable_if<true>> inner;    // The inner outline of the stroke, in reverse order.
+  math::Rect<T> bounding_rect;                       // The bounding rectangle of the stroke.
 };
 
 /**
@@ -115,7 +116,7 @@ public:
    * @param tolerance The offset error tolerance.
    * @return The resulting quadratic curves grouped in contours.
    */
-  CubicPath<T> stroke(const StrokingOptions<T>& options, const T tolerance) const;
+  StrokeOutline<T> stroke(const StrokingOptions<T>& options, const T tolerance) const;
 private:
   /**
    * @brief Clips and flattens a path and outputs the line segments to a sink vector.

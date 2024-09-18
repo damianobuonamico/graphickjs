@@ -29,6 +29,7 @@ inline constexpr T ui_line_width = T(1);
 #define GK_LARGE_BUFFER_SIZE 524288
 #define GK_CURVES_TEXTURE_SIZE 512
 #define GK_BANDS_TEXTURE_SIZE 512
+#define GK_VIEWPORT_BANDS_HEIGHT 15
 
 #define ZOOM_MIN 0.02f
 #define ZOOM_MAX 640.0f

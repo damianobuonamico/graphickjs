@@ -8,7 +8,7 @@ AlignTrailingComments:
   OverEmptyLines: 2
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortIfStatementsOnASingleLine: Always
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortLoopsOnASingleLine: true
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
@@ -26,7 +26,7 @@ IndentWidth: 2
 InsertNewlineAtEOF: true
 MaxEmptyLinesToKeep: 1
 ObjCBlockIndentWidth: 2
-PenaltyReturnTypeOnItsOwnLine: 10000
+PenaltyReturnTypeOnItsOwnLine: 999999999
 PenaltyBreakComment: 0
 ReflowComments: true
 SortIncludes: true

@@ -159,6 +159,19 @@ private:
    */
   uint32_t push_transform(const mat2x3& transform);
 
+  struct Drawable {
+    geom::cubic_path path;
+    rect bounding_rect;
+  };
+
+  struct DrawingContext {
+    const Fill& fill;
+    const mat2x3& transform;
+    const bool culling;
+  };
+
+  void draw_no_clipping_impl(const Drawable& path, DrawingContext& context);
+
   /**
    * @brief Draws a CubicPath with the provided Fill properties without performing clipping.
    *
@@ -175,6 +188,29 @@ private:
    */
   void draw_no_clipping(
     geom::cubic_path&& path,
+    const Fill& fill,
+    const mat2x3& transform,
+    const rect& bounding_rect,
+    const rect& transformed_bounding_rect,
+    const bool culling
+  );
+
+  /**
+   * @brief Draws an array of CubicPaths with the provided Fill properties without performing clipping.
+   *
+   * Takes ownership of the path and caches it for accelerated rendering.
+   * If the screen-space footpring is small, no culling is performed.
+   * This method should be used for elements that are almost completely visible.
+   *
+   * @param path The array of CubicPaths to draw, the paths should all be closed.
+   * @param fill The Fill properties to use.
+   * @param transform The transformation matrix to apply to the path.
+   * @param bounding_rect The bounding rectangle of the path.
+   * @param transformed_bounding_rect The bounding rectangle of the transformed path.
+   * @param culling Whether to perform culling.
+   */
+  void draw_no_clipping(
+    const std::vector<geom::cubic_path>& paths,
     const Fill& fill,
     const mat2x3& transform,
     const rect& bounding_rect,

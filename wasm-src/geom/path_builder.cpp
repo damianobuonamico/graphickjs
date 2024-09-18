@@ -85,6 +85,8 @@ static void add_join(
   const double inv_miter_limit,
   LineJoin join,
   CubicPath<T>& sink,
+  math::Rect<T>& bounding_rect,
+  const bool small_segment,
   const bool reverse = false
 ) {
   if (math::is_almost_equal(from, to, math::geometric_epsilon<double>)) {
@@ -100,9 +102,13 @@ static void add_join(
   if (reverse) cross = -cross;
 
   double ang = std::atan2(cross, dot);
+  bool concave = false;
 
   if (ang < 0.0) ang += math::two_pi<double>;
-  if (ang >= math::pi<double>) join = LineJoin::Bevel;
+  if (ang >= math::pi<double>) {
+    join = LineJoin::Bevel;
+    concave = true;
+  }
 
   if (math::is_almost_zero(ang)) {
     return;
@@ -128,12 +134,20 @@ static void add_join(
 
       sink.line_to(math::Vec2<T>(p));
       sink.line_to(math::Vec2<T>(to));
+
+      bounding_rect.include(math::Vec2<T>(p));
+
       break;
     }
   }
   default:
   case LineJoin::Bevel: {
+    if (concave && small_segment) {
+      sink.line_to(math::Vec2<T>(pivot));
+    }
+
     sink.line_to(math::Vec2<T>(to));
+
     break;
   }
   }
@@ -372,7 +386,7 @@ void PathBuilder<T, _>::flatten(
 }
 
 template <typename T, typename _>
-CubicPath<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const T tolerance) const {
+StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const T tolerance) const {
   if (m_type != PathType::Generic || m_generic_path->empty()) return {};
 
   GK_TOTAL("PathBuilder::stroke()");
@@ -382,13 +396,16 @@ CubicPath<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const 
 
   dvec2 p0 = m_transform * dvec2(m_generic_path->at(0));
 
-  CubicPath<T> forward;
-  CubicPath<T> backward;
+  StrokeOutline<T> outline;
+
+  outline.bounding_rect = math::Rect<T>(m_bounding_rect);
+  outline.bounding_rect.min -= radius;
+  outline.bounding_rect.max += radius;
 
   if (m_generic_path->size() == 1 && m_generic_path->front().is_point()) {
     // TODO: implement round
     if (options.cap != LineCap::Butt) {
-      return forward;
+      return outline;
     }
 
     dvec2 n = {0.0, 1.0};
@@ -396,26 +413,38 @@ CubicPath<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const 
     dvec2 start = p0 + nr;
     dvec2 rstart = p0 - nr;
 
-    forward.move_to(math::Vec2<T>(start));
+    outline.inner.move_to(math::Vec2<T>(start));
 
-    add_cap(start, rstart, n, radius, options.cap, forward);
-    add_cap(rstart, start, -n, radius, options.cap, forward);
+    add_cap(start, rstart, n, radius, options.cap, outline.inner);
+    add_cap(rstart, start, -n, radius, options.cap, outline.inner);
 
-    return forward;
+    return outline;
   }
 
-  dvec2 last_n = math::normal(p0, m_transform * dvec2(m_generic_path->at(1)));
+  dvec2 start_n;
+
+  if (math::is_almost_equal(m_generic_path->at(0), m_generic_path->at(1))) {
+    if (math::is_almost_equal(m_generic_path->at(0), m_generic_path->at(2))) {
+      start_n = math::normal(dvec2(m_generic_path->at(0)), dvec2(m_generic_path->at(3)));
+    } else {
+      start_n = math::normal(dvec2(m_generic_path->at(0)), dvec2(m_generic_path->at(2)));
+    }
+  } else {
+    start_n = math::normal(dvec2(m_generic_path->at(0)), dvec2(m_generic_path->at(1)));
+  }
+
+  dvec2 last_n = start_n;
 
   if (m_generic_path->closed()) {
-    forward.move_to(math::Vec2<T>(p0 - last_n * radius));
-    backward.move_to(math::Vec2<T>(p0 + last_n * radius));
+    outline.inner.move_to(math::Vec2<T>(p0 - last_n * radius));
+    outline.outer.move_to(math::Vec2<T>(p0 + last_n * radius));
   } else {
     const dvec2 start = p0 - last_n * radius;
 
-    forward.move_to(math::Vec2<T>(start));
-    backward.move_to(math::Vec2<T>(start));
+    outline.inner.move_to(math::Vec2<T>(start));
+    outline.outer.move_to(math::Vec2<T>(start));
 
-    add_cap(start, p0 + last_n * radius, -last_n, radius, options.cap, backward);
+    add_cap(start, p0 + last_n * radius, -last_n, radius, options.cap, outline.outer);
   }
 
   m_generic_path->for_each(
@@ -428,11 +457,38 @@ CubicPath<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const 
       const dvec2 inner_start = line.p0 - start_nr;
       const dvec2 outer_start = line.p0 + start_nr;
 
-      add_join(dvec2(forward.back()), inner_start, p0, -last_n, -start_n, radius, inv_miter_limit, options.join, forward, true);
-      add_join(dvec2(backward.back()), outer_start, p0, last_n, start_n, radius, inv_miter_limit, options.join, backward);
+      const bool small_segment = math::squared_distance(line.p0, line.p1) < radius * radius;
 
-      forward.line_to(math::Vec2<T>(line.p1 - start_nr));
-      backward.line_to(math::Vec2<T>(line.p1 + start_nr));
+      add_join(
+        dvec2(outline.inner.back()),
+        inner_start,
+        p0,
+        -last_n,
+        -start_n,
+        radius,
+        inv_miter_limit,
+        options.join,
+        outline.inner,
+        outline.bounding_rect,
+        small_segment,
+        true
+      );
+      add_join(
+        dvec2(outline.outer.back()),
+        outer_start,
+        p0,
+        last_n,
+        start_n,
+        radius,
+        inv_miter_limit,
+        options.join,
+        outline.outer,
+        outline.bounding_rect,
+        small_segment
+      );
+
+      outline.inner.line_to(math::Vec2<T>(line.p1 - start_nr));
+      outline.outer.line_to(math::Vec2<T>(line.p1 + start_nr));
 
       last_n = start_n;
       p0 = line.p1;
@@ -441,64 +497,92 @@ CubicPath<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, const 
     [&](const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3) {
       const dcubic_bezier cubic = {p0, m_transform * dvec2(p1), m_transform * dvec2(p2), m_transform * dvec2(p3)};
 
-      const dvec2 start_n = math::normal(cubic.p0, cubic.p1);
+      const dvec2 start_n = cubic.start_normal();
       const dvec2 start_nr = start_n * radius;
 
       const dvec2 inner_start = cubic.p0 - start_nr;
       const dvec2 outer_start = cubic.p0 + start_nr;
 
-      add_join(dvec2(forward.back()), inner_start, p0, -last_n, -start_n, radius, inv_miter_limit, options.join, forward, true);
-      add_join(dvec2(backward.back()), outer_start, p0, last_n, start_n, radius, inv_miter_limit, options.join, backward);
+      add_join(
+        dvec2(outline.inner.back()),
+        inner_start,
+        p0,
+        -last_n,
+        -start_n,
+        radius,
+        inv_miter_limit,
+        options.join,
+        outline.inner,
+        outline.bounding_rect,
+        false,
+        true
+      );
+      add_join(
+        dvec2(outline.outer.back()),
+        outer_start,
+        p0,
+        last_n,
+        start_n,
+        radius,
+        inv_miter_limit,
+        options.join,
+        outline.outer,
+        outline.bounding_rect,
+        false
+      );
 
       // TODO: maybe join the two in one function call
-      offset_cubic(cubic, -radius, tolerance, forward);
-      offset_cubic(cubic, radius, tolerance, backward);
+      offset_cubic(cubic, -radius, tolerance, outline.inner);
+      offset_cubic(cubic, radius, tolerance, outline.outer);
 
-      last_n = start_n;
+      last_n = cubic.end_normal();
       p0 = cubic.p3;
     }
   );
 
   if (m_generic_path->closed()) {
-    const dvec2 start_n = math::normal(dvec2(m_generic_path->at(0)), dvec2(m_generic_path->at(1)));
-
     add_join(
-      dvec2(forward.back()),
-      dvec2(forward.front()),
+      dvec2(outline.inner.back()),
+      dvec2(outline.inner.front()),
       p0,
       -last_n,
       -start_n,
       radius,
       inv_miter_limit,
       options.join,
-      forward,
+      outline.inner,
+      outline.bounding_rect,
+      false,
       true
     );
     add_join(
-      dvec2(backward.back()),
-      dvec2(backward.front()),
+      dvec2(outline.outer.back()),
+      dvec2(outline.outer.front()),
       p0,
       last_n,
       start_n,
       radius,
       inv_miter_limit,
       options.join,
-      backward
+      outline.outer,
+      outline.bounding_rect,
+      false
     );
 
     // TODO: fix closing join
-    backward.line_to(forward.points.back());
+    // outline.outer.line_to(outline.inner.points.back());
 
-    backward.points.insert(backward.points.end(), forward.points.rbegin() + 1, forward.points.rend());
-    forward.points.clear();
+    // outline.outer.points.insert(outline.outer.points.end(), outline.inner.points.rbegin() + 1, outline.inner.points.rend());
+    // outline.inner.points.clear();
+    std::reverse(outline.inner.points.begin(), outline.inner.points.end());
   } else {
-    add_cap(dvec2(backward.points.back()), dvec2(forward.points.back()), last_n, radius, options.cap, backward);
+    add_cap(dvec2(outline.outer.points.back()), dvec2(outline.inner.points.back()), last_n, radius, options.cap, outline.outer);
 
-    backward.points.insert(backward.points.end(), forward.points.rbegin() + 1, forward.points.rend());
-    forward.points.clear();
+    outline.outer.points.insert(outline.outer.points.end(), outline.inner.points.rbegin() + 1, outline.inner.points.rend());
+    outline.inner.points.clear();
   }
 
-  return backward;
+  return outline;
 }
 
 template <typename T, typename _>

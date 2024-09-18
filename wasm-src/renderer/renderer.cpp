@@ -279,7 +279,7 @@ void Renderer::draw(
 
     // TODO: when all transforms will be on the CPU and cached we can use the transformed bounds
     get()->draw_no_clipping(
-      std::move(cubic_path),
+      {cubic_path},
       *fill,
       transform,
       pretransformed_rect ? path.approx_bounding_rect() : bounds,
@@ -299,15 +299,41 @@ void Renderer::draw(
       stroke->join,
     };
 
-    geom::cubic_path stroke_path =
+    geom::StrokeOutline stroke_path =
       geom::PathBuilder(path, transform, bounding_rect, pretransformed_rect).stroke(stroking_options, 0.0001f);
 
     // geom::path stroke_pppath;
-    // stroke_pppath.move_to(stroke_path[0]);
+    // stroke_pppath.move_to(stroke_path.outer[0]);
 
-    // for (size_t i = 0; i < stroke_path.size() * 3; i += 3) {
-    //   stroke_pppath.cubic_to(stroke_path[i + 1], stroke_path[i + 2], stroke_path[i + 3]);
+    // for (size_t i = 0; i < stroke_path.outer.size() * 3; i += 3) {
+    //   stroke_pppath.cubic_to(stroke_path.outer[i + 1], stroke_path.outer[i + 2], stroke_path.outer[i + 3]);
     // }
+
+    if (stroke_path.inner.empty()) {
+      get()->draw_no_clipping(
+        {stroke_path.outer},
+        stroke_fill,
+        mat2x3::identity(),
+        stroke_path.bounding_rect,
+        stroke_path.bounding_rect,
+        culling
+      );
+    } else {
+      // stroke_pppath.line_to(stroke_path.inner[0]);
+
+      // for (size_t i = 0; i < stroke_path.inner.size() * 3; i += 3) {
+      //   stroke_pppath.cubic_to(stroke_path.inner[i + 1], stroke_path.inner[i + 2], stroke_path.inner[i + 3]);
+      // }
+
+      get()->draw_no_clipping(
+        {std::move(stroke_path.inner), std::move(stroke_path.outer)},
+        stroke_fill,
+        mat2x3::identity(),
+        stroke_path.bounding_rect,
+        stroke_path.bounding_rect,
+        culling
+      );
+    }
 
     // geom::PathBuilder(stroke_pppath, mat2x3::identity(), bounding_rect, true)
     //   .flatten(get()->m_viewport.visible(), 0.25f, [&](const vec2 p0, const vec2 p1) {
@@ -315,11 +341,6 @@ void Renderer::draw(
     //     get()->m_ui_options.primary_color_05}
     //     );
     //   });
-
-    const rect stroke_rect = stroke_path.approx_bounding_rect();
-
-    // TODO: should use the stroke bounding_rect...
-    get()->draw_no_clipping(std::move(stroke_path), stroke_fill, mat2x3::identity(), stroke_rect, stroke_rect, culling);
   }
 }
 
@@ -438,6 +459,8 @@ uint32_t Renderer::push_transform(const mat2x3& transform) {
 
   return transform_index;
 }
+
+void Renderer::draw_no_clipping_impl(const Drawable& path, DrawingContext& context) { }
 
 void Renderer::draw_no_clipping(
   geom::cubic_path&& path,
@@ -711,6 +734,123 @@ void Renderer::draw_no_clipping(
       data.bands[bands_start_index + i * 4 + 3] =
         static_cast<uint16_t>(std::max(std::ceil(band.disabled_spans.back().max - bounding_rect.min.x), 0.0f));
     }
+  }
+}
+
+void Renderer::draw_no_clipping(
+  const std::vector<geom::cubic_path>& paths,
+  const Fill& fill,
+  const mat2x3& transform,
+  const rect& bounding_rect,
+  const rect& transformed_bounding_rect,
+  const bool culling
+) {
+  PathInstancedData& data = m_path_instances;
+  DrawingContext context{fill, transform, culling};
+
+  /* Starting indices for this path. */
+
+  const size_t curves_start_index = data.curves.size() / 2;
+  const size_t bands_start_index = data.bands.size();
+  const vec2 bounds_size = bounding_rect.size();
+
+  /* Copy the curves, and cache min_max values. */
+
+  const size_t len =
+    std::accumulate(paths.begin(), paths.end(), 0, [](size_t acc, const geom::cubic_path& path) { return acc + path.size(); });
+
+  std::vector<vec2> min(len);
+  std::vector<vec2> max(len);
+
+  size_t acc = 0;
+
+  for (const geom::cubic_path& path : paths) {
+    for (size_t i = 0; i < path.size(); i++) {
+      const vec2 p0 = path[i * 3];
+      const vec2 p1 = path[i * 3 + 1];
+      const vec2 p2 = path[i * 3 + 2];
+      const vec2 p3 = path[i * 3 + 3];
+
+      data.curves.insert(
+        data.curves.end(),
+        {p0 - bounding_rect.min, p1 - bounding_rect.min, p2 - bounding_rect.min, p3 - bounding_rect.min}
+      );
+
+      min[acc + i] = math::min(p0, p3);
+      max[acc + i] = math::max(p0, p3);
+    }
+
+    acc += path.size();
+  }
+
+  /* Bands count is always between 1 and 16, based on the viewport coverage. */
+
+  const uint8_t horizontal_bands =
+    std::clamp(static_cast<int>(transformed_bounding_rect.size().y * m_viewport.zoom / GK_VIEWPORT_BANDS_HEIGHT), 1, 32);
+
+  /* Sort curves by descending max x. */
+
+  std::vector<uint16_t> h_indices(len);
+
+  std::iota(h_indices.begin(), h_indices.end(), 0);
+  std::sort(h_indices.begin(), h_indices.end(), [&](const uint16_t a, const uint16_t b) { return max[a].x > max[b].x; });
+
+  /* Calculate band metrics. */
+
+  const float band_delta = bounds_size.y / horizontal_bands;
+
+  float band_min = bounding_rect.min.y;
+  float band_max = bounding_rect.min.y + band_delta;
+
+  /* Preallocate horizontal and vertical bands header. */
+
+  data.bands.resize(data.bands.size() + horizontal_bands * 4, 0);
+
+  /* Determine which curves are in each horizontal band. */
+
+  for (uint8_t i = 0; i < horizontal_bands; i++) {
+    const size_t band_start = data.bands.size();
+
+    for (uint16_t j = 0; j < h_indices.size(); j++) {
+      const float min_y = min[h_indices[j]].y;
+      const float max_y = max[h_indices[j]].y;
+
+      if (min_y == max_y || min_y > band_max || max_y < band_min) {
+        continue;
+      }
+
+      data.bands.push_back(h_indices[j]);
+    }
+
+    /* Each band header is an offset from this path's bands data start and the number of curves in the band. */
+
+    const size_t band_end = data.bands.size();
+
+    data.bands[bands_start_index + i * 4] = static_cast<uint16_t>(band_start - bands_start_index);
+    data.bands[bands_start_index + i * 4 + 1] = static_cast<uint16_t>(band_end - band_start);
+
+    band_min += band_delta;
+    band_max += band_delta;
+  }
+
+  /* Push instance. */
+
+  data.instances.push_back(
+    {bounding_rect.min,
+     bounds_size,
+     fill.color,
+     curves_start_index,
+     bands_start_index,
+     horizontal_bands,
+     false,
+     fill.rule == FillRule::EvenOdd,
+     false,    // TODO: replace with culling
+     fill.z_index,
+     0}
+  );
+
+  if (!culling) {
+    return;
   }
 }
 

@@ -63,6 +63,32 @@ Line<T> CubicBezier<T, _>::end_tangent() const {
   return Line<T>(p3, p2);
 }
 
+template <typename T, typename _>
+math::Vec2<T> CubicBezier<T, _>::start_normal() const {
+  if (math::is_almost_equal(p0, p1)) {
+    if (math::is_almost_equal(p0, p2)) {
+      return math::normal(p0, p3);
+    }
+
+    return math::normal(p0, p2);
+  }
+
+  return math::normal(p0, p1);
+}
+
+template <typename T, typename _>
+math::Vec2<T> CubicBezier<T, _>::end_normal() const {
+  if (math::is_almost_equal(p2, p3)) {
+    if (math::is_almost_equal(p1, p2)) {
+      return math::normal(p0, p3);
+    }
+
+    return math::normal(p1, p3);
+  }
+
+  return math::normal(p2, p3);
+}
+
 /* -- Line -- */
 
 template <typename T>
@@ -952,7 +978,7 @@ void CubicPath<T, _>::cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, c
 }
 
 template <typename T, typename _>
-void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise, const T tolerance) {
+void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise) {
   GK_ASSERT(!points.empty(), "Cannot add an arc to an empty path.");
 
   const math::Vec2<T> from = back();
