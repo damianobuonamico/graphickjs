@@ -162,7 +162,7 @@ int main() {
   // #define OBJECTS
 
 #ifdef TIGER
-  // std::ifstream ifs("res\\test3.svg");
+  // std::ifstream ifs("res\\test4.svg");
   std::ifstream ifs("res\\Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   graphick::io::svg::parse_svg(content);

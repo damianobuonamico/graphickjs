@@ -1176,48 +1176,66 @@ void offset_cubic(const dcubic_bezier& curve, const double offset, const double 
   const CurveTangentData d(c);
 
   if (is_curve_approximately_straight(c)) {
-    const drect bounds = c.bounding_rect();
+    // Rotate curve so that it is aligned with x-axis.
+    const double angle = math::is_almost_equal(c.p0.y, c.p3.y, math::geometric_epsilon<double>) ? 0.0 : math::atan2(c.p0, c.p3);
+    const double sin = std::sin(angle);
+    const double cos = std::cos(angle);
 
-    dvec2 p_min;
-    dvec2 p_max;
+    dcubic_bezier r = c;
 
-    if (math::squared_distance(c.p0, bounds.min) <= math::squared_distance(c.p0, bounds.max)) {
-      p_min = bounds.min;
-      p_max = bounds.max;
-    } else {
-      p_min = bounds.max;
-      p_max = bounds.min;
+    if (!math::is_almost_zero(angle)) {
+      r.p1 = math::rotate(c.p1, c.p0, -sin, cos);
+      r.p2 = math::rotate(c.p2, c.p0, -sin, cos);
+      r.p3 = math::rotate(c.p3, c.p0, -sin, cos);
     }
 
-    const dvec2 normal = math::normal(c.p0, c.p3);
+    const drect bounds = r.bounding_rect();
 
-    if (!math::is_almost_equal(p_min, c.p0, 1e-2)) {
-      line_to(b, p_min - normal * so);
-      arc_to(b, p_min, p_min + normal * so, true);
-    }
+    // Size-agnostic straight line.
+    if (std::abs(bounds.min.y - bounds.max.y) < math::geometric_epsilon<double>) {
+      std::vector<double> lines = {r.p0.x};
 
-    if (!math::is_almost_equal(p_max, c.p3, 1e-2)) {
-      line_to(b, p_max + normal * so);
-      arc_to(b, p_max, p_max - normal * so, true);
-    }
+      if (std::abs(r.p0.x - bounds.min.x) <= std::abs(r.p0.x - bounds.max.x)) {
+        if (!math::is_almost_equal(bounds.min.x, r.p0.x, 1e-2)) lines.push_back(bounds.min.x);
+        if (!math::is_almost_equal(bounds.max.x, r.p3.x, 1e-2)) lines.push_back(bounds.max.x);
+      } else {
+        if (!math::is_almost_equal(bounds.max.x, r.p0.x, 1e-2)) lines.push_back(bounds.max.x);
+        if (!math::is_almost_equal(bounds.min.x, r.p3.x, 1e-2)) lines.push_back(bounds.min.x);
+      }
 
-    if (math::squared_distance(b.previous_point, c.p3 + normal * so) <
-        math::squared_distance(b.previous_point, c.p3 - normal * so)) {
-      line_to(b, c.p3 + normal * so);
-    } else {
-      line_to(b, c.p3 - normal * so);
-    }
-  } else {
-    // Arbitrary curve.
-    move_to(b, d.start_tangent.p0 + (so * d.start_unit_normal));
+      lines.push_back(r.p3.x);
 
-    // Try arc approximation first in case this curve was intended to
-    // approximate circle. If that is indeed true, we avoid a lot of
-    // expensive calculations like finding inflection and maximum
-    // curvature points.
-    if (!try_arc_approximation(c, d, b, so, tolerance)) {
-      do_approximate_bezier(c, d, b, so, tolerance);
+      for (int i = 0; i < lines.size() - 1; i++) {
+        const dvec2 p0 = {lines[i], r.p0.y};
+        const dvec2 p1 = {lines[i + 1], r.p0.y};
+        const dvec2 n = math::normal(p0, p1) * so;
+        const dvec2 from = math::rotate(p0 + n, c.p0, sin, cos);
+        const dvec2 to = math::rotate(p1 + n, c.p0, sin, cos);
+
+        if (!math::is_almost_equal(from, b.previous_point, math::geometric_epsilon<double>)) {
+          if (i == 0) {
+            line_to(b, from);
+          } else {
+            arc_to(b, math::rotate(p0, c.p0, sin, cos), from, true);
+          }
+        }
+
+        line_to(b, to);
+      }
+
+      return;
     }
+  }
+
+  // Arbitrary curve.
+  move_to(b, d.start_tangent.p0 + (so * d.start_unit_normal));
+
+  // Try arc approximation first in case this curve was intended to
+  // approximate circle. If that is indeed true, we avoid a lot of
+  // expensive calculations like finding inflection and maximum
+  // curvature points.
+  if (!try_arc_approximation(c, d, b, so, tolerance)) {
+    do_approximate_bezier(c, d, b, so, tolerance);
   }
 }
 
