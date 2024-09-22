@@ -243,6 +243,7 @@ namespace graphick::renderer::GPU {
     int, float,
     ivec2, vec2,
     vec4, mat4,
+    std::vector<int>,
     std::vector<vec4>
   >;
 

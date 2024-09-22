@@ -29,6 +29,8 @@ inline constexpr T ui_line_width = T(1);
 #define GK_LARGE_BUFFER_SIZE 524288
 #define GK_CURVES_TEXTURE_SIZE 512
 #define GK_BANDS_TEXTURE_SIZE 512
+#define GK_GRADIENTS_TEXTURE_WIDTH 64
+#define GK_GRADIENTS_TEXTURE_HEIGHT 64
 #define GK_VIEWPORT_BANDS_HEIGHT 15
 
 #define ZOOM_MIN 0.02f
@@ -37,7 +39,7 @@ inline constexpr T ui_line_width = T(1);
 #define PAN_STEP 36.0f
 
 #define INPUT_MOVEMENT_THRESHOLD 4.0f
-inline constexpr float INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[3] = { 1.0f, 2.0f, 2.0f };
+inline constexpr float INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[3] = {1.0f, 2.0f, 2.0f};
 
 #define GEOMETRY_SQR_EPSILON 0.1f
 #define GEOMETRY_CURVE_ERROR 0.2f

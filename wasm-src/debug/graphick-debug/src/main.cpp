@@ -273,22 +273,22 @@ int main() {
     // path.cubic_to(delta + in_p1, delta + in_p2, delta + p);
     // path.cubic_to(delta + out_p1, delta + out_p2, delta + tests[i][3]);
 
-    path.move_to(vec2(100.0f, 0.0f));
-    path.line_to(vec2(100.0f, 100.0f));
-    path.cubic_to(vec2(50.0f, 100.0f), vec2(250.0f, 100.0f), vec2(200.0f, 100.0f));
-    path.line_to(vec2(200.0f, 200.0f));
+    // path.move_to(vec2(100.0f, 0.0f));
+    // path.line_to(vec2(100.0f, 100.0f));
+    // path.cubic_to(vec2(50.0f, 100.0f), vec2(250.0f, 100.0f), vec2(200.0f, 100.0f));
+    // path.line_to(vec2(200.0f, 200.0f));
 
-    // path.move_to(vec2(0.0f, 0.0f));
+    path.move_to(vec2(0.0f, 0.0f));
     // path.cubic_to(vec2(150.0f, 200.0f), vec2(300.0f, 300.0f), vec2(350.0f, 100.0f));
     // path.quadratic_to(vec2(150.0f, 150.0f), vec2(300.0f, 100.0f));
 
-    // path.line_to(vec2(100.0f, 100.0f));
+    path.line_to(vec2(100.0f, 100.0f));
     // path.line_to(vec2(120.0f, 500.0f / 3.0f));
-    // path.line_to(vec2(0.0f, 200.0f));
+    path.line_to(vec2(0.0f, 200.0f));
     // path.line_to(vec2(0.0f, 400.0f));
     // path.line_to(vec2(350.0f, 200.0f));
     // path.line_to(vec2(-50.0f, 100.0f));
-    // path.close();
+    path.close();
 
     // path.move_to(vec2(243.839981f, 37.4800110f));
     // path.cubic_to(vec2(243.839981f, 37.4800110f), vec2(252.350464f, 138.025497f), vec2(252.350464f, 138.025528f));

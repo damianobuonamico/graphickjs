@@ -39,7 +39,6 @@ template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 static void add_cap(const dvec2 from, const dvec2 to, const dvec2 n, const double radius, const LineCap cap, CubicPath<T>& sink) {
   switch (cap) {
   case LineCap::Round: {
-    // TODO: angular tolerance
     sink.arc_to(math::Vec2<T>(from + (to - from) / 2.0), math::Vec2<T>(to));
     break;
   }
@@ -116,7 +115,6 @@ static void add_join(
 
   switch (join) {
   case LineJoin::Round: {
-    // TODO: tolerance
     sink.arc_to(math::Vec2<T>(pivot), math::Vec2<T>(to), !reverse);
     break;
   }
@@ -403,8 +401,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, co
   outline.bounding_rect.max += radius;
 
   if (m_generic_path->size() == 1 && m_generic_path->front().is_point()) {
-    // TODO: implement round
-    if (options.cap != LineCap::Butt) {
+    if (options.cap == LineCap::Butt) {
       return outline;
     }
 
@@ -569,11 +566,6 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options, co
       false
     );
 
-    // TODO: fix closing join
-    // outline.outer.line_to(outline.inner.points.back());
-
-    // outline.outer.points.insert(outline.outer.points.end(), outline.inner.points.rbegin() + 1, outline.inner.points.rend());
-    // outline.inner.points.clear();
     std::reverse(outline.inner.points.begin(), outline.inner.points.end());
   } else {
     add_cap(dvec2(outline.outer.points.back()), dvec2(outline.inner.points.back()), last_n, radius, options.cap, outline.outer);

@@ -3,6 +3,8 @@
  * @brief The file contains data structures used by the renderer.
  *
  * @todo maybe replace vectors with preallocated arrays
+ * @todo double buffer the tile data
+ * @todo batches of tile data overflow handling
  */
 
 #pragma once
@@ -103,11 +105,166 @@ inline std::vector<uvec2> quad_vertices(const uvec2 min, const uvec2 max) {
 }
 
 /**
+ * @brief Represents a vertex used by the tile shader (32 bytes).
+ *
+ *
+ * @note In attr 1, 7 bits for paint type are probably too much.
+ * @note In attr_2, there are a few wasted bits (max bands is 32, but 256 is used here, bands coords are 12 bits instead of 10).
+ * @note In attr_3, paint_coord is 10 bits instead of 8
+ *
+ * @struct Vertex
+ */
+struct TileVertex {
+  vec2 position;                // | position.x (32) | position.y (32) |
+  uvec4 color;                  // | color.rgba (32) |
+  uint32_t tex_coord;           // | tex_coord.x (16) - tex_coord.y (16) |
+  uint32_t tex_coord_curves;    // | tex_coord_curves.x (16) - tex_coord_curves.y (16) |
+  uint32_t attr_1;              // | blend (5) - paint_type (7) - curves_x (10) - curves_y (10) |
+  uint32_t attr_2;              // | bands_h (8) - bands_x (12) - bands_y (12) |
+  uint32_t attr_3;              // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
+
+  /**
+   * @brief Default constructor.
+   */
+  TileVertex() = default;
+
+  /**
+   * @brief Constructs a new TileVertex object.
+   *
+   * @param position The position of the vertex.
+   * @param color The color of the vertex.
+   * @param tex_coord The texture coordinate used for painting, should be in the range [0, 1].
+   * @param tex_coord_curves The texture coordinate used for rasterization, should be in the range [0, 1].
+   * @param attr_1 The attributes of the vertex, should be created using TileVertex::create_attr_1()
+   * @param attr_2 The attributes of the vertex, should be created using TileVertex::create_attr_2()
+   * @param attr_3 The attributes of the vertex, should be created using TileVertex::create_attr_3()
+   */
+  TileVertex(
+    const vec2 position,
+    const uvec4 color,
+    const vec2 tex_coord,
+    const vec2 tex_coord_curves,
+    const uint32_t attr_1,
+    const uint32_t attr_2,
+    const uint32_t attr_3
+  ) :
+    position(position), color(color), attr_1(attr_1), attr_2(attr_2), attr_3(attr_3) {
+    const uint32_t u_tex_coord_x = static_cast<uint32_t>(tex_coord.x * std::numeric_limits<uint16_t>::max());
+    const uint32_t u_tex_coord_y = static_cast<uint32_t>(tex_coord.y * std::numeric_limits<uint16_t>::max());
+    const uint32_t u_tex_coord_curves_x = static_cast<uint32_t>(tex_coord_curves.x * std::numeric_limits<uint16_t>::max());
+    const uint32_t u_tex_coord_curves_y = static_cast<uint32_t>(tex_coord_curves.y * std::numeric_limits<uint16_t>::max());
+
+    this->tex_coord = (u_tex_coord_x << 16) | u_tex_coord_y;
+    this->tex_coord_curves = (u_tex_coord_curves_x << 16) | u_tex_coord_curves_y;
+  }
+
+  /**
+   * @brief Creates the attr_1 attribute of the vertex.
+   *
+   * This method should be called once per object.
+   *
+   * @param blending_mode The blend mode of the vertex.
+   * @param paint_type The paint type of the vertex.
+   * @param curves_start_index The index of the first curve in the curves texture.
+   * @return The attr_1 attribute.
+   */
+  static uint32_t create_attr_1(const uint8_t blending_mode, const uint8_t paint_type, const size_t curves_start_index) {
+    const uint32_t u_curves_x = (static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE) << 22) >> 22;
+    const uint32_t u_curves_y = (static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE) << 22) >> 22;
+    const uint32_t u_paint_type = (static_cast<uint32_t>(paint_type) << 25) >> 25;
+    const uint32_t u_blend = static_cast<uint32_t>(blending_mode);
+
+    return (u_blend << 27) | (u_paint_type << 20) | (u_curves_x << 10) | (u_curves_y);
+  }
+
+  /**
+   * @brief Creates the attr_2 attribute of the vertex.
+   *
+   * This method should be called once per object.
+   *
+   * @param horizontal_bands The number of horizontal bands.
+   * @param bands_start_index The index of the first band in the bands texture.
+   * @return The attr_2 attribute.
+   */
+  static uint32_t create_attr_2(const uint8_t horizontal_bands, const size_t bands_start_index) {
+    const uint32_t u_bands_x = (static_cast<uint32_t>(bands_start_index % GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
+    const uint32_t u_bands_y = (static_cast<uint32_t>(bands_start_index / GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
+    const uint32_t u_bands_h = (horizontal_bands < 1) ? 0 : static_cast<uint32_t>(horizontal_bands - 1);
+
+    return (u_bands_h << 24) | (u_bands_x << 12) | (u_bands_y);
+  }
+
+  /**
+   * @brief Creates the attr_3 attribute of the vertex.
+   *
+   * This method should be called once per object.
+   *
+   * @param z_index The z-index of the vertex.
+   * @param is_quadratic Whether the curves are quadratic or cubic.
+   * @param is_even_odd Whether the fill rule is even-odd or non-zero.
+   * @param paint_coord The paint coordinate of the vertex.
+   * @return The attr_3 attribute.
+   */
+  static uint32_t create_attr_3(
+    const uint32_t z_index,
+    const bool is_quadratic,
+    const bool is_even_odd,
+    const uint16_t paint_coord
+  ) {
+    const uint32_t u_is_quad = static_cast<uint32_t>(is_quadratic);
+    const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
+    const uint32_t u_paint_coord = (static_cast<uint32_t>(paint_coord) << 22) >> 22;
+
+    return (z_index << 12) | (u_is_quad << 11) | (u_is_eodd << 10) | u_paint_coord;
+  }
+};
+
+/**
+ * @brief Represents a mask instance (32 bytes).
+ *
+ * @note There are 6 bits of padding left in the struct.
+ * @note The maximum number of bands is currently 256 here and 32 in the renderer, so a few bits are wasted.
+ *
+ * @struct MaskInstance
+ */
+struct MaskInstance {
+  vec2 position;      // | position.x (32) | position.y (32) |
+  vec2 size;          // | size.x (32) | size.y (32) |
+  vec2 tex_coords;    // | tex_coords.x (32) | tex_coords.y (32) |
+  uint32_t attr_1;    // | (6) - is_quad (1) - is_eodd (1) - curves_x (12) - curves_y (12) |
+  uint32_t attr_2;    // | bands_h (8) - bands_x (12) - bands_y (12) |
+
+  MaskInstance(
+    const vec2 position,
+    const vec2 size,
+    const vec2 tex_coords,
+    const size_t curves_start_index,
+    const size_t bands_start_index,
+    const uint8_t horizontal_bands,
+    const bool is_quadratic,
+    const bool is_even_odd
+  ) :
+    position(position), size(size), tex_coords(tex_coords) {
+    const uint32_t u_curves_x = (static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
+    const uint32_t u_curves_y = (static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE) << 20) >> 20;
+    const uint32_t u_bands_x = (static_cast<uint32_t>(bands_start_index % GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
+    const uint32_t u_bands_y = (static_cast<uint32_t>(bands_start_index / GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
+    const uint32_t u_bands_h = (horizontal_bands < 1) ? 0 : static_cast<uint32_t>(horizontal_bands - 1);
+    const uint32_t u_is_quad = static_cast<uint32_t>(is_quadratic);
+    const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
+
+    attr_1 = (u_is_quad << 25) | (u_is_eodd << 24) | (u_curves_x << 12) | (u_curves_y);
+    attr_2 = (u_bands_h << 24) | (u_bands_x << 12) | (u_bands_y);
+  }
+};
+
+/**
  * @brief Represents a path instance (32 bytes), the main building block of the renderer.
  *
- * @struct PathInstance
  * @note There are 5 bits of padding left in the struct.
  * @note The maximum number of bands is currently 256 here and 32 in the renderer, so a few bits are wasted.
+ *
+ * @struct PathInstance
  */
 struct PathInstance {
   vec2 position;   /* | position.x (32) | position.y (32) | */
@@ -557,6 +714,53 @@ struct InstancedData {
 };
 
 /**
+ * @brief Represents the data of the mask instances to render.
+ *
+ * @struct MaskInstancedData
+ */
+struct MaskInstancedData : public InstancedData<MaskInstance> {
+  std::vector<vec2> curves;    /* The control points of the curves. */
+  std::vector<uint16_t> bands; /* The bands of the mesh. */
+
+  GPU::Texture curves_texture;
+  GPU::Texture bands_texture;
+
+  /**
+   * @brief Constructs a new MaskInstanceData object.
+   *
+   * @param buffer_size The maximum buffer size.
+   */
+  MaskInstancedData(const size_t buffer_size) :
+    InstancedData<MaskInstance>(buffer_size, quad_vertices({0, 0}, {1, 1})),
+    curves_texture(
+      GPU::TextureFormat::RGBA32F,
+      {512, 512},
+      GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag
+    ),
+    bands_texture(
+      GPU::TextureFormat::R16UI,
+      {512, 512},
+      GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag
+    ) {
+    curves.reserve(512 * 512 * 2);
+    bands.reserve(512 * 512);
+  }
+
+  /**
+   * @brief Clears the instance data.
+   */
+  virtual inline void clear() override {
+    InstancedData<MaskInstance>::clear();
+
+    curves.clear();
+    bands.clear();
+
+    curves.reserve(512 * 512 * 2);
+    bands.reserve(512 * 512);
+  }
+};
+
+/**
  * @brief Represents the data of the path instances to render.
  *
  * @struct PathInstancedData
@@ -600,6 +804,128 @@ struct PathInstancedData : public InstancedData<PathInstance> {
 
     curves.reserve(512 * 512 * 2);
     bands.reserve(512 * 512);
+  }
+};
+
+/**
+ * @brief Represents the data of the tiles to render.
+ *
+ * @struct FilledSpanInstancedData
+ * @todo replace count with size and add real count
+ */
+struct TileBatchedData {
+  size_t vertices_count;             // The max number of vertices in the batch.
+  size_t indices_count;              // The max number of indices in the batch.
+  size_t curves_count;               // The max number of control points in the curves texture.
+  size_t bands_count;                // The max number of indices in the bands texture.
+  size_t gradient_count;             // The max number of pixels in the gradient texture.
+
+  TileVertex* vertices;              // The vertices of the batch.
+  TileVertex* vertices_ptr;          // The current index of the vertices.
+
+  uint16_t* indices;                 // The indices of the batch, these are all static quads.
+  uint16_t* indices_ptr;             // The current index of the indices.
+
+  vec2* curves;                      // The control points of the curves.
+  vec2* curves_ptr;                  // The current index of the curves.
+
+  uint16_t* bands;                   // The bands of the meshes.
+  uint16_t* bands_ptr;               // The current index of the bands.
+
+  uvec4* gradients;                  // The gradients of the meshes.
+  uvec4* gradients_ptr;              // The current index of the gradients.
+
+  GPU::Texture curves_texture;       // The curves texture.
+  GPU::Texture bands_texture;        // The bands texture.
+  GPU::Texture gradients_texture;    // The gradients texture.
+
+  GPU::Buffer vertex_buffer;         // The GPU vertex buffer.
+  GPU::Buffer index_buffer;          // The GPU index buffer.
+
+  GPU::Primitive primitive;          // The primitive type of the mesh.
+
+  /**
+   * @brief Constructs a new TileBatchedData object.
+   *
+   * @param buffer_size The maximum buffer size in bytes.
+   */
+  TileBatchedData(const size_t buffer_size) :
+    primitive(GPU::Primitive::Triangles),
+    vertices_count(buffer_size / sizeof(TileVertex)),
+    indices_count(vertices_count * 3 / 2),
+    curves_count(GK_CURVES_TEXTURE_SIZE * GK_CURVES_TEXTURE_SIZE * 2),
+    bands_count(GK_BANDS_TEXTURE_SIZE * GK_BANDS_TEXTURE_SIZE),
+    gradient_count(GK_GRADIENTS_TEXTURE_WIDTH * GK_GRADIENTS_TEXTURE_HEIGHT),
+    curves_texture(
+      GPU::TextureFormat::RGBA32F,
+      ivec2{GK_CURVES_TEXTURE_SIZE},
+      GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag
+    ),
+    bands_texture(
+      GPU::TextureFormat::R16UI,
+      ivec2{GK_BANDS_TEXTURE_SIZE},
+      GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag
+    ),
+    gradients_texture(
+      GPU::TextureFormat::RGBA8,
+      ivec2{GK_GRADIENTS_TEXTURE_WIDTH, GK_GRADIENTS_TEXTURE_HEIGHT},
+      GPU::TextureSamplingFlagNone
+    ),
+    vertex_buffer(GPU::BufferTarget::Vertex, GPU::BufferUploadMode::Dynamic, vertices_count * sizeof(TileVertex)),
+    index_buffer(GPU::BufferTarget::Index, GPU::BufferUploadMode::Static, indices_count * sizeof(uint16_t)) {
+
+    vertices = new TileVertex[vertices_count];
+    indices = new uint16_t[indices_count];
+    curves = new vec2[curves_count];
+    bands = new uint16_t[bands_count];
+    gradients = new uvec4[gradient_count];
+
+    vertices_ptr = vertices;
+    indices_ptr = indices;
+    curves_ptr = curves;
+    bands_ptr = bands;
+    gradients_ptr = gradients;
+
+    // Fill the index buffer with static quads.
+    for (size_t i = 0; i < indices_count; i += 6) {
+      indices[i + 0] = i / 6 * 4 + 0;
+      indices[i + 1] = i / 6 * 4 + 1;
+      indices[i + 2] = i / 6 * 4 + 2;
+      indices[i + 3] = i / 6 * 4 + 2;
+      indices[i + 4] = i / 6 * 4 + 3;
+      indices[i + 5] = i / 6 * 4 + 0;
+    }
+
+    index_buffer.upload(indices, indices_count * sizeof(uint16_t));
+
+    // Fill the gradients texture with white.
+    for (size_t i = 0; i < gradient_count; i++) {
+      gradients[i] = uvec4(i % GK_GRADIENTS_TEXTURE_HEIGHT);
+    }
+
+    gradients_texture.upload(gradients, gradient_count * sizeof(uvec4));
+  }
+
+  /**
+   * @brief Destroys the TileBatchedData object.
+   */
+  ~TileBatchedData() {
+    delete[] vertices;
+    delete[] indices;
+    delete[] curves;
+    delete[] bands;
+    delete[] gradients;
+  }
+
+  /**
+   * @brief Clears the batched data.
+   */
+  inline void clear() {
+    vertices_ptr = vertices;
+    indices_ptr = indices;
+    curves_ptr = curves;
+    bands_ptr = bands;
+    gradients_ptr = gradients;
   }
 };
 

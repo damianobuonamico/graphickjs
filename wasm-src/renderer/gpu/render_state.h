@@ -37,6 +37,13 @@ using Uniform = GL::GLUniform;
 using TextureUniform = GL::GLTextureUniform;
 
 /**
+ * @brief The array of textures uniform object.
+ *
+ * @struct TexturesUniform
+ */
+using TexturesUniform = GL::GLTexturesUniform;
+
+/**
  * @brief The vertex array object.
  *
  * @struct VertexArray
@@ -79,7 +86,12 @@ using UniformBinding = std::pair<Uniform, UniformData>;
 /**
  * @brief A texture binding is used to bind a texture to a texture unit and uniform.
  */
-using TextureBinding = std::pair<TextureUniform, const Texture&>;
+using TextureBinding = std::pair<TextureUniform, const Texture*>;
+
+/**
+ * @brief A texture array binding is used to bind an array of textures to texture units and a uniform.
+ */
+using TextureArrayBinding = std::pair<TexturesUniform, const std::vector<const Texture*>>;
 
 /**
  * @brief The render state.
@@ -89,19 +101,20 @@ using TextureBinding = std::pair<TextureUniform, const Texture&>;
  * @struct RenderState
  */
 struct RenderState {
-  Program program;                      /* The current program. */
-  VertexArray* vertex_array;            /* The current vertex array. */
-  Primitive primitive;                  /* The current primitive. */
-  irect viewport;                       /* The current viewport. */
+  Program program;                                 /* The current program. */
+  VertexArray* vertex_array;                       /* The current vertex array. */
+  Primitive primitive;                             /* The current primitive. */
+  irect viewport;                                  /* The current viewport. */
 
-  std::vector<UniformBinding> uniforms; /* The uniform bindings. */
-  std::vector<TextureBinding> textures; /* The texture bindings. */
+  std::vector<UniformBinding> uniforms;            /* The uniform bindings. */
+  std::vector<TextureBinding> textures;            /* The texture bindings. */
+  std::vector<TextureArrayBinding> texture_arrays; /* The texture bindings. */
 
-  ClearOps clear_ops;                   /* The clear operations. */
+  ClearOps clear_ops;                              /* The clear operations. */
 
-  std::optional<BlendState> blend;      /* The blend state, if std::nullopt, blending is disabled. */
-  std::optional<DepthState> depth;      /* The depth state, if std::nullopt, the depth test is disabled. */
-  std::optional<StencilState> stencil;  /* The stencil state, if std::nullopt, the stencil test is disabled. */
+  std::optional<BlendState> blend;                 /* The blend state, if std::nullopt, blending is disabled. */
+  std::optional<DepthState> depth;                 /* The depth state, if std::nullopt, the depth test is disabled. */
+  std::optional<StencilState> stencil;             /* The stencil state, if std::nullopt, the stencil test is disabled. */
 
   RenderState() = default;
 
@@ -111,7 +124,8 @@ struct RenderState {
     Primitive primitive,
     irect viewport,
     std::vector<UniformBinding> uniforms = {},
-    std::vector<TextureBinding> textures = {}
+    std::vector<TextureBinding> textures = {},
+    std::vector<TextureArrayBinding> texture_arrays = {}
   ) :
     program(program),
     vertex_array(vertex_array),
@@ -155,6 +169,7 @@ struct RenderState {
 
     uniforms.clear();
     textures.clear();
+    texture_arrays.clear();
 
     return *this;
   }

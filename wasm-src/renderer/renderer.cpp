@@ -222,6 +222,33 @@ void Renderer::end_frame() {
   GK_TOTAL_RECORD("GPU", time);
 }
 
+#if 1
+void Renderer::draw(
+  const geom::Path<float, std::enable_if<true>>& path,
+  const mat2x3& transform,
+  const Fill* fill,
+  const Stroke* stroke,
+  const rect* bounding_rect,
+  const bool pretransformed_rect
+) {
+  if (path.empty() || (fill == nullptr && stroke == nullptr)) {
+    return;
+  }
+
+  // TODO: when not provided, calculate bounding rect from path, stroke and possibly effects. Also transform * bounds is not
+  // the best approximation but should be good enough if most of the paths are transformed in scene.render()
+  const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
+  const rect transformed_bounds = pretransformed_rect ? bounds : transform * bounds;
+
+  // TODO: clip if necessary
+
+  if (math::is_identity(transform)) {
+    get()->draw_transformed(path, transformed_bounds, fill, stroke);
+  } else {
+    get()->draw_transformed(path.transformed(transform), transformed_bounds, fill, stroke);
+  }
+}
+#else
 void Renderer::draw(
   const geom::Path<float, std::enable_if<true>>& path,
   const mat2x3& transform,
@@ -343,6 +370,7 @@ void Renderer::draw(
     //   });
   }
 }
+#endif
 
 void Renderer::draw_outline(
   const geom::Path<float, std::enable_if<true>>& path,
@@ -377,6 +405,7 @@ void Renderer::draw_rect(const vec2 center, const vec2 size, const std::optional
 }
 
 Renderer::Renderer() :
+  m_tile_batch(GK_LARGE_BUFFER_SIZE),
   m_path_instances(GK_LARGE_BUFFER_SIZE),
   m_boundary_span_instances(GK_LARGE_BUFFER_SIZE),
   m_line_instances(GK_LARGE_BUFFER_SIZE, quad_vertices({0, 0}, {1, 1})),
@@ -385,7 +414,12 @@ Renderer::Renderer() :
   m_image_instances(GK_BUFFER_SIZE, quad_vertices({0, 0}, {1, 1})),
   m_filled_span_instances(GK_BUFFER_SIZE, quad_vertices({0, 0}, {1, 1})),
   m_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6),
-  m_max_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6) {
+  m_max_transform_vectors(GPU::Device::max_vertex_uniform_vectors() - 6),
+  m_mask_instances(GK_BUFFER_SIZE),
+  m_masks_framebuffer(ivec2{2048}, false) {
+  std::unique_ptr<GPU::TileVertexArray> tile_vertex_array =
+    std::make_unique<GPU::TileVertexArray>(m_programs.tile_program, m_tile_batch.vertex_buffer, m_tile_batch.index_buffer);
+
   std::unique_ptr<GPU::PathVertexArray> path_vertex_array = std::make_unique<GPU::PathVertexArray>(
     m_programs.path_program,
     m_path_instances.instance_buffer,
@@ -429,6 +463,7 @@ Renderer::Renderer() :
   );
 
   m_vertex_arrays = GPU::VertexArrays{
+    std::move(tile_vertex_array),
     std::move(path_vertex_array),
     std::move(boundary_span_vertex_array),
     std::move(filled_span_vertex_array),
@@ -458,6 +493,155 @@ uint32_t Renderer::push_transform(const mat2x3& transform) {
   m_transform_vectors.insert(m_transform_vectors.end(), {row0, row1});
 
   return transform_index;
+}
+
+void Renderer::draw_transformed(
+  const geom::Path<float, std::enable_if<true>>& path,
+  const rect& bounding_rect,
+  const Fill* fill,
+  const Stroke* stroke
+) {
+  if (fill) {
+    geom::cubic_path cubic_path = path.to_cubic_path();
+
+    if (!cubic_path.closed()) {
+      cubic_path.line_to(cubic_path.front());
+    }
+
+    // TODO: reimplement multiple contours support (only curves copying is different)
+    draw_cubic_path(cubic_path, bounding_rect, *fill);
+  }
+
+  if (stroke) {
+    // TODO: rewire stroke rendering
+  }
+}
+
+void Renderer::draw_cubic_path(
+  const geom::CubicPath<float, std::enable_if<true>>& path,
+  const rect& bounding_rect,
+  const Fill& fill
+) {
+  TileBatchedData& data = m_tile_batch;
+
+  /* Starting indices for this path. */
+
+  // const size_t curves_start_index = data.curves.size() / 2;
+  // const size_t bands_start_index = data.bands.size();
+  const size_t curves_start_index = (data.curves_ptr - data.curves) / 2;
+  const size_t bands_start_index = data.bands_ptr - data.bands;
+  const vec2 bounds_size = bounding_rect.size();
+
+  /* Copy the curves, and cache min_max values. */
+
+  const size_t len = path.size();
+
+  std::vector<vec2> min(len);
+  std::vector<vec2> max(len);
+
+  for (size_t i = 0; i < path.size(); i++) {
+    const vec2 p0 = path[i * 3];
+    const vec2 p1 = path[i * 3 + 1];
+    const vec2 p2 = path[i * 3 + 2];
+    const vec2 p3 = path[i * 3 + 3];
+
+    *(data.curves_ptr++) = (p0 - bounding_rect.min) / bounds_size;
+    *(data.curves_ptr++) = (p1 - bounding_rect.min) / bounds_size;
+    *(data.curves_ptr++) = (p2 - bounding_rect.min) / bounds_size;
+    *(data.curves_ptr++) = (p3 - bounding_rect.min) / bounds_size;
+
+    // data.curves.insert(
+    //   data.curves.end(),
+    //   {p0 - bounding_rect.min, p1 - bounding_rect.min, p2 - bounding_rect.min, p3 - bounding_rect.min}
+    // );
+
+    min[i] = math::min(p0, p3);
+    max[i] = math::max(p0, p3);
+  }
+
+  /* Bands count is always between 1 and 16, based on the viewport coverage. */
+
+  const uint8_t horizontal_bands = std::clamp(static_cast<int>(bounds_size.y * m_viewport.zoom / GK_VIEWPORT_BANDS_HEIGHT), 1, 1);
+
+  /* Sort curves by descending max x. */
+
+  std::vector<uint16_t> h_indices(len);
+
+  std::iota(h_indices.begin(), h_indices.end(), 0);
+  std::sort(h_indices.begin(), h_indices.end(), [&](const uint16_t a, const uint16_t b) { return max[a].x > max[b].x; });
+
+  /* Calculate band metrics. */
+
+  const float band_delta = bounds_size.y / horizontal_bands;
+
+  float band_min = bounding_rect.min.y;
+  float band_max = bounding_rect.min.y + band_delta;
+
+  // /* Preallocate horizontal and vertical bands header. */
+  // data.bands.resize(data.bands.size() + horizontal_bands * 4, 0);
+  data.bands_ptr += horizontal_bands * 4;
+
+  /* Determine which curves are in each horizontal band. */
+
+  for (uint8_t i = 0; i < horizontal_bands; i++) {
+    // const size_t band_start = data.bands.size();
+    const size_t band_start = data.bands_ptr - data.bands;
+
+    for (uint16_t j = 0; j < h_indices.size(); j++) {
+      const float min_y = min[h_indices[j]].y;
+      const float max_y = max[h_indices[j]].y;
+
+      if (min_y == max_y || min_y > band_max || max_y < band_min) {
+        continue;
+      }
+
+      *(data.bands_ptr++) = h_indices[j];
+      // data.bands.push_back(h_indices[j]);
+    }
+
+    /* Each band header is an offset from this path's bands data start and the number of curves in the band. */
+
+    // const size_t band_end = data.bands.size();
+    const size_t band_end = data.bands_ptr - data.bands;
+
+    data.bands[bands_start_index + i * 4] = static_cast<uint16_t>(band_start - bands_start_index);
+    data.bands[bands_start_index + i * 4 + 1] = static_cast<uint16_t>(band_end - band_start);
+
+    band_min += band_delta;
+    band_max += band_delta;
+  }
+
+  // TODO: check if direct rendering is an option
+  // TODO: atlasing (when rendering text merge characters together)
+  // TODO: adjust instance buffer sizes and flush when necessary
+  // TODO: masking (decide whether to use CPU or GPU)
+
+  /* Push instance. */
+
+  const uvec4 color = uvec4(fill.color * 255.0f);
+  const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, curves_start_index);
+  const uint32_t attr_2 = TileVertex::create_attr_2(horizontal_bands, bands_start_index);
+  const uint32_t attr_3 = TileVertex::create_attr_3(fill.z_index, false, fill.rule == FillRule::EvenOdd, 0);
+
+  (*data.vertices_ptr++) =
+    TileVertex{{bounding_rect.min.x, bounding_rect.min.y}, color, {0.0f, 0.0f}, {0.0f, 0.0f}, attr_1, attr_2, attr_3};
+  (*data.vertices_ptr++) =
+    TileVertex{{bounding_rect.max.x, bounding_rect.min.y}, color, {1.0f, 0.0f}, {1.0f, 0.0f}, attr_1, attr_2, attr_3};
+  (*data.vertices_ptr++) =
+    TileVertex{{bounding_rect.max.x, bounding_rect.max.y}, color, {1.0f, 1.0f}, {1.0f, 1.0f}, attr_1, attr_2, attr_3};
+  (*data.vertices_ptr++) =
+    TileVertex{{bounding_rect.min.x, bounding_rect.max.y}, color, {0.0f, 1.0f}, {0.0f, 1.0f}, attr_1, attr_2, attr_3};
+
+  // data.instances.push_back(
+  //   {vec2::zero(),
+  //    bounds_size,
+  //    vec2::zero(),
+  //    curves_start_index,
+  //    bands_start_index,
+  //    horizontal_bands,
+  //    false,
+  //    fill.rule == FillRule::EvenOdd}
+  // );
 }
 
 void Renderer::draw_no_clipping_impl(const Drawable& path, DrawingContext& context) { }
@@ -1003,7 +1187,7 @@ void Renderer::flush_cache() {
     m_image_instances.instances.push_back({cached.center(), cached.size()});
 
     render_state = RENDER_STATE(image).no_blend().no_depth().add_stencil();
-    render_state.textures = std::vector<GPU::TextureBinding>{{m_programs.image_program.image_texture, m_framebuffer->texture}};
+    render_state.textures = std::vector<GPU::TextureBinding>{{m_programs.image_program.image_texture, &m_framebuffer->texture}};
     render_state.uniforms = {{m_programs.image_program.vp_uniform, m_vp_matrix}};
 
     /* Draw the cached image and stencil out its bounding box. */
@@ -1053,8 +1237,8 @@ void Renderer::flush_meshes() {
 
     render_state = RENDER_STATE(path).default_blend().default_depth().keep_stencil();
     render_state.textures = std::vector<GPU::TextureBinding>{
-      {m_programs.path_program.bands_texture, m_path_instances.bands_texture},
-      {m_programs.path_program.curves_texture, m_path_instances.curves_texture}
+      {m_programs.path_program.bands_texture, &m_path_instances.bands_texture},
+      {m_programs.path_program.curves_texture, &m_path_instances.curves_texture}
     };
     render_state.uniforms = {
       {m_programs.path_program.vp_uniform, m_vp_matrix},
@@ -1081,6 +1265,63 @@ void Renderer::flush_meshes() {
       true
     );
   }
+
+  // Render the tiles.
+
+  m_tile_batch.vertex_buffer.upload(
+    m_tile_batch.vertices,
+    (m_tile_batch.vertices_ptr - m_tile_batch.vertices) * sizeof(TileVertex)
+  );
+
+  m_tile_batch.curves_texture.upload(m_tile_batch.curves, m_tile_batch.curves_count * sizeof(vec2));
+  m_tile_batch.bands_texture.upload(m_tile_batch.bands, m_tile_batch.bands_count * sizeof(uint16_t));
+
+  GPU::RenderState state = GPU::RenderState().default_blend().no_depth().no_stencil();
+
+  state.program = m_programs.tile_program.program;
+  state.vertex_array = &m_vertex_arrays.tile_vertex_array->vertex_array;
+  state.primitive = m_tile_batch.primitive;
+  state.viewport = irect{ivec2::zero(), m_viewport.size};
+
+  state.uniforms = {{m_programs.tile_program.vp_uniform, m_vp_matrix}, {m_programs.tile_program.samples_uniform, 3}};
+  state.textures = std::vector<GPU::TextureBinding>{{m_programs.tile_program.bands_texture_uniform, &m_tile_batch.bands_texture}};
+  state.texture_arrays = std::vector<GPU::TextureArrayBinding>{
+    {m_programs.tile_program.textures_uniform,
+     {&m_tile_batch.curves_texture, &m_tile_batch.gradients_texture, &m_tile_batch.curves_texture}}
+  };
+
+  GPU::Device::draw_elements((m_tile_batch.vertices_ptr - m_tile_batch.vertices) * 3 / 2, state);
+
+  m_tile_batch.clear();
+
+  // /* Render out masks. */
+
+  // m_masks_framebuffer.bind();
+
+  // GPU::Device::set_viewport(ivec2{2048});
+  // GPU::Device::clear({vec4{0.0f, 0.0f, 0.0f, 1.0f}, std::nullopt, std::nullopt});
+
+  // m_mask_instances.curves_texture.upload(m_mask_instances.curves.data(), m_mask_instances.curves.size() * sizeof(vec2));
+  // m_mask_instances.bands_texture.upload(m_mask_instances.bands.data(), m_mask_instances.bands.size() * sizeof(uint16_t));
+
+  // render_state = RENDER_STATE(mask).default_blend().no_depth().no_stencil();
+  // render_state.viewport.max = ivec2{2048};
+  // render_state.textures = std::vector<GPU::TextureBinding>{
+  //   {m_programs.mask_program.bands_texture, m_mask_instances.bands_texture},
+  //   {m_programs.mask_program.curves_texture, m_mask_instances.curves_texture}
+  // };
+  // render_state.uniforms = {
+  //   {m_programs.mask_program.vp_uniform,
+  //    orthographic_projection(ivec2{2048}, 1.0) * orthographic_translation(ivec2{2048}, vec2::zero(), 1.0)},
+  //   {m_programs.mask_program.samples_uniform, 3},
+  // };
+
+  // flush(m_mask_instances, render_state);
+
+  // m_masks_framebuffer.unbind();
+  // m_mask_instances.clear();
+
+  // GPU::Device::set_viewport(m_viewport.size);
 }
 
 void Renderer::flush_overlay_meshes() {

@@ -76,11 +76,9 @@ public:
   static void end_frame();
 
   /**
-   * @brief Draws a CubicPath with the provided Fill and Stroke properties.
+   * @brief Draws a Path with the provided Fill and Stroke properties.
    *
-   * Takes ownership of the path and caches it for accelerated rendering.
-   *
-   * @param path The CubicPath to draw.
+   * @param path The Path to draw.
    * @param transform The transformation matrix to apply to the path.
    * @param fill The Fill properties to use.
    * @param stroke The Stroke properties to use.
@@ -158,6 +156,31 @@ private:
    * @return The index of the transformation matrix.
    */
   uint32_t push_transform(const mat2x3& transform);
+
+  /**
+   * @brief Draws a transformed Path with the provided Fill and Stroke properties.
+   *
+   * @param path The transformed Path to draw.
+   * @param fill The Fill properties to use.
+   * @param stroke The Stroke properties to use.
+   * @param bounding_rect The bounding rectangle of the path.
+   */
+  void draw_transformed(
+    const geom::Path<float, std::enable_if<true>>& path,
+    const rect& bounding_rect,
+    const Fill* fill = nullptr,
+    const Stroke* stroke = nullptr
+  );
+
+  /**
+   * @brief Draws a cubic_path with the provided Fill and Stroke properties.
+   *
+   * @param path The transformed CubicPath to draw.
+   * @param fill The Fill properties to use.
+   * @param stroke The Stroke properties to use.
+   * @param bounding_rect The bounding rectangle of the path.
+   */
+  void draw_cubic_path(const geom::CubicPath<float, std::enable_if<true>>& path, const rect& bounding_rect, const Fill& fill);
 
   struct Drawable {
     geom::cubic_path path;
@@ -297,6 +320,11 @@ private:
   IData<RectInstance> m_rect_instances;                   // The rect instances to render.
   IData<ImageInstance> m_image_instances;                 // The image instances to render.
   IData<FilledSpanInstance> m_filled_span_instances;      // The filled spans to render.
+
+  MaskInstancedData m_mask_instances;                     // The mask instances to render.
+  GPU::Framebuffer m_masks_framebuffer;                   // The framebuffer to render masks to.
+
+  TileBatchedData m_tile_batch;                           // The tile batch to render.
 
   UIOptions m_ui_options;                                 // The UI options (i.e. handle size, colors, etc.).
 private:
