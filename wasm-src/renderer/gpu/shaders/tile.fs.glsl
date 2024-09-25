@@ -4,6 +4,7 @@ R"(
   precision mediump usampler2D;
 
   uniform usampler2D u_bands_texture;
+  uniform sampler2D u_curves_texture;
   uniform sampler2D u_textures[${MAX_TEXTURES}];
 
   uniform lowp int u_samples;
@@ -46,8 +47,8 @@ R"(
     for (uint curve = 0U; curve < band_curves_count; curve++) {
       uint curve_offset = curves_offset + texture(u_bands_texture, to_coords(band_data_start + curve)).x * 2U;
 
-      vec4 p01 = texture(u_textures[0], to_coords(curve_offset));
-      vec4 p23 = texture(u_textures[0], to_coords(curve_offset + 1U));
+      vec4 p01 = texture(u_curves_texture, to_coords(curve_offset));
+      vec4 p23 = texture(u_curves_texture, to_coords(curve_offset + 1U));
 
       vec2 p0 = p01.xy - pixel_pos;
       vec2 p1 = p01.zw - pixel_pos;
@@ -140,7 +141,7 @@ R"(
       alpha = alpha * min(abs(coverage), 1.0);
     }
 
-    o_frag_color = vec4(v_color.rgb * texture(u_textures[1], v_tex_coord).rgb, 1.0 + 0.0000000000000000001 * v_tex_coord.x) * alpha;
+    o_frag_color = vec4(v_color.rgb * texture(u_textures[0], v_tex_coord).rgb, 1.0 + 0.0000000000000000001 * v_tex_coord.x) * alpha;
 
     // if (v_tex_coord_curves.y == 1.0) {
     //   o_frag_color = vec4(1.0, 0.0, 0.0, 1.0);

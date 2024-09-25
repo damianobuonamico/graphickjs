@@ -17,16 +17,16 @@ namespace graphick::renderer::GPU {
  * @struct TileProgram
  */
 struct TileProgram {
-  Program program;                         // The shader program.
+  Program program;                          // The shader program.
 
-  Uniform vp_uniform;                      // The view projection uniform.
-  Uniform samples_uniform;                 // The antialiasing samples uniform.
+  Uniform vp_uniform;                       // The view projection uniform.
+  Uniform samples_uniform;                  // The antialiasing samples uniform.
 
-  TextureUniform bands_texture_uniform;    // The bands texture uniform (usampler2D), separate from the sampler2D array.
-  TexturesUniform textures_uniform;        // The texture uniforms:
-                                           //  - [0] is the curves texture
-                                           //  - [1] is the gradient texture
-                                           //  - [2...] are the image textures (or tiles textures).
+  TextureUniform bands_texture_uniform;     // The bands texture uniform (usampler2D), separate from the sampler2D array.
+  TextureUniform curves_texture_uniform;    // The curves texture uniform (sampler2D), separate from the non float array.
+  TexturesUniform textures_uniform;         // The texture uniforms:
+                                            //  - [0] is the gradient texture
+                                            //  - [1...] are the image textures (or tiles textures).
 
   TileProgram();
 };

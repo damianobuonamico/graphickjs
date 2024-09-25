@@ -85,6 +85,7 @@ namespace graphick::renderer::GPU {
    * @brief The vertex attribute type.
    */
   enum class VertexAttrType {
+    F16,
     F32,
     I8,
     I16,

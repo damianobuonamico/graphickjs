@@ -17,12 +17,13 @@ namespace graphick::renderer::GPU {
 
 TileProgram::TileProgram() :
   program(
-    Device::create_program("tile", {{"MAX_TEXTURES", (std::stringstream() << (Device::max_texture_image_units() - 1)).str()}})
+    Device::create_program("tile", {{"MAX_TEXTURES", (std::stringstream() << (Device::max_texture_image_units() - 2)).str()}})
   ),
   vp_uniform(Device::get_uniform(program, "u_view_projection")),
   samples_uniform(Device::get_uniform(program, "u_samples")),
   bands_texture_uniform(Device::get_texture_uniform(program, "u_bands_texture")),
-  textures_uniform(Device::get_textures_uniform(program, "u_textures", Device::max_texture_image_units() - 1)) { }
+  curves_texture_uniform(Device::get_texture_uniform(program, "u_curves_texture")),
+  textures_uniform(Device::get_textures_uniform(program, "u_textures", Device::max_texture_image_units() - 2)) { }
 
 PathProgram::PathProgram() :
   program(
@@ -85,8 +86,8 @@ TileVertexArray::TileVertexArray(const TileProgram& program, const Buffer& verte
 
   VertexAttrDescriptor position_desc = {VertexAttrClass::Float, VertexAttrType::F32, 2, 32, 0, 0, 0};
   VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 32, 8, 0, 0};
-  VertexAttrDescriptor tex_coords_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 32, 12, 0, 0};
-  VertexAttrDescriptor tex_coords_curves_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 32, 16, 0, 0};
+  VertexAttrDescriptor tex_coords_desc = {VertexAttrClass::Float, VertexAttrType::F16, 2, 32, 12, 0, 0};
+  VertexAttrDescriptor tex_coords_curves_desc = {VertexAttrClass::Float, VertexAttrType::F16, 2, 32, 16, 0, 0};
   VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 32, 20, 0, 0};
   VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 32, 24, 0, 0};
   VertexAttrDescriptor third_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 32, 28, 0, 0};

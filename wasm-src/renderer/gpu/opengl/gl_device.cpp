@@ -368,6 +368,8 @@ void GLDevice::set_texture_arrays(const GLProgram& program, const std::vector<Te
       units[i] = textures_uniform.units[i];
     }
 
+    units.resize(textures_uniform.units.size(), units.back());
+
     program.textures[textures_uniform.units[0]].set(units);
   }
 }

@@ -98,6 +98,8 @@ static constexpr GLuint gl_type(TextureFormat format) {
  */
 static constexpr GLuint gl_type(VertexAttrType format) {
   switch (format) {
+  case VertexAttrType::F16:
+    return GL_HALF_FLOAT;
   case VertexAttrType::F32:
     return GL_FLOAT;
   case VertexAttrType::I8:

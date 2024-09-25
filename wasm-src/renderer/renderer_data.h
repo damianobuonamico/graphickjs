@@ -17,6 +17,7 @@
 #include "../math/vec4.h"
 
 #include "../utils/defines.h"
+#include "../utils/half.h"
 #include "../utils/uuid.h"
 
 namespace graphick::editor {
@@ -115,13 +116,13 @@ inline std::vector<uvec2> quad_vertices(const uvec2 min, const uvec2 max) {
  * @struct Vertex
  */
 struct TileVertex {
-  vec2 position;                // | position.x (32) | position.y (32) |
-  uvec4 color;                  // | color.rgba (32) |
-  uint32_t tex_coord;           // | tex_coord.x (16) - tex_coord.y (16) |
-  uint32_t tex_coord_curves;    // | tex_coord_curves.x (16) - tex_coord_curves.y (16) |
-  uint32_t attr_1;              // | blend (5) - paint_type (7) - curves_x (10) - curves_y (10) |
-  uint32_t attr_2;              // | bands_h (8) - bands_x (12) - bands_y (12) |
-  uint32_t attr_3;              // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
+  vec2 position;                        // | position.x (32) | position.y (32) |
+  uvec4 color;                          // | color.rgba (32) |
+  math::Vec2<half> tex_coord;           // | tex_coord.x (16) - tex_coord.y (16) |
+  math::Vec2<half> tex_coord_curves;    // | tex_coord_curves.x (16) - tex_coord_curves.y (16) |
+  uint32_t attr_1;                      // | blend (5) - paint_type (7) - curves_x (10) - curves_y (10) |
+  uint32_t attr_2;                      // | bands_h (8) - bands_x (12) - bands_y (12) |
+  uint32_t attr_3;                      // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
 
   /**
    * @brief Default constructor.
@@ -149,13 +150,10 @@ struct TileVertex {
     const uint32_t attr_3
   ) :
     position(position), color(color), attr_1(attr_1), attr_2(attr_2), attr_3(attr_3) {
-    const uint32_t u_tex_coord_x = static_cast<uint32_t>(tex_coord.x * std::numeric_limits<uint16_t>::max());
-    const uint32_t u_tex_coord_y = static_cast<uint32_t>(tex_coord.y * std::numeric_limits<uint16_t>::max());
-    const uint32_t u_tex_coord_curves_x = static_cast<uint32_t>(tex_coord_curves.x * std::numeric_limits<uint16_t>::max());
-    const uint32_t u_tex_coord_curves_y = static_cast<uint32_t>(tex_coord_curves.y * std::numeric_limits<uint16_t>::max());
-
-    this->tex_coord = (u_tex_coord_x << 16) | u_tex_coord_y;
-    this->tex_coord_curves = (u_tex_coord_curves_x << 16) | u_tex_coord_curves_y;
+    this->tex_coord_curves.x = half(tex_coord_curves.x);
+    this->tex_coord_curves.y = half(tex_coord_curves.y);
+    this->tex_coord.x = half(tex_coord.x);
+    this->tex_coord.y = half(tex_coord.y);
   }
 
   /**

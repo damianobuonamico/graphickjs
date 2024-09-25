@@ -1284,11 +1284,12 @@ void Renderer::flush_meshes() {
   state.viewport = irect{ivec2::zero(), m_viewport.size};
 
   state.uniforms = {{m_programs.tile_program.vp_uniform, m_vp_matrix}, {m_programs.tile_program.samples_uniform, 3}};
-  state.textures = std::vector<GPU::TextureBinding>{{m_programs.tile_program.bands_texture_uniform, &m_tile_batch.bands_texture}};
-  state.texture_arrays = std::vector<GPU::TextureArrayBinding>{
-    {m_programs.tile_program.textures_uniform,
-     {&m_tile_batch.curves_texture, &m_tile_batch.gradients_texture, &m_tile_batch.curves_texture}}
+  state.textures = std::vector<GPU::TextureBinding>{
+    {m_programs.tile_program.bands_texture_uniform, &m_tile_batch.bands_texture},
+    {m_programs.tile_program.curves_texture_uniform, &m_tile_batch.curves_texture}
   };
+  state.texture_arrays =
+    std::vector<GPU::TextureArrayBinding>{{m_programs.tile_program.textures_uniform, {&m_tile_batch.gradients_texture}}};
 
   GPU::Device::draw_elements((m_tile_batch.vertices_ptr - m_tile_batch.vertices) * 3 / 2, state);
 
