@@ -386,6 +386,27 @@ GLFramebuffer::~GLFramebuffer() {
   glCall(glDeleteFramebuffers(1, &gl_framebuffer));
 }
 
+GLFramebuffer::GLFramebuffer(GLFramebuffer&& other) noexcept :
+  texture(std::move(other.texture)),
+  gl_framebuffer(other.gl_framebuffer),
+  gl_renderbuffer(other.gl_renderbuffer),
+  has_depth(other.has_depth),
+  complete(other.complete) { }
+
+GLFramebuffer& GLFramebuffer::operator=(GLFramebuffer&& other) noexcept {
+  texture = std::move(other.texture);
+  gl_framebuffer = other.gl_framebuffer;
+  gl_renderbuffer = other.gl_renderbuffer;
+  has_depth = other.has_depth;
+  complete = other.complete;
+
+  other.gl_framebuffer = 0;
+  other.gl_renderbuffer = 0;
+  other.complete = false;
+
+  return *this;
+}
+
 void GLFramebuffer::bind() const { glCall(glBindFramebuffer(GL_FRAMEBUFFER, gl_framebuffer)); }
 
 void GLFramebuffer::unbind() const { glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0)); }

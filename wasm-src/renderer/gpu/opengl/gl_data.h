@@ -233,6 +233,9 @@ struct GLFramebuffer {
   GLFramebuffer(const GLFramebuffer&) = delete;
   GLFramebuffer& operator=(const GLFramebuffer&) = delete;
 
+  GLFramebuffer(GLFramebuffer&& other) noexcept;
+  GLFramebuffer& operator=(GLFramebuffer&& other) noexcept;
+
   /**
    * @brief Returns the size of the framebuffer.
    *

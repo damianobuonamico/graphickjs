@@ -7,10 +7,9 @@
 
 #include "console.h"
 
-#define SHADERS_LENGTH 8
+#define SHADERS_LENGTH 6
 
-static constexpr const char* shader_names[SHADERS_LENGTH] =
-  {"tile", "path", "boundary_span", "filled_span", "line", "rect", "circle", "image"};
+static constexpr const char* shader_names[SHADERS_LENGTH] = {"tile", "fill", "line", "rect", "circle", "image"};
 
 namespace graphick::utils {
 
@@ -37,17 +36,9 @@ void ResourceManager::prefetch_shaders() {
     ,
 #include "../renderer/gpu/shaders/tile.fs.glsl"
     ,
-#include "../renderer/gpu/shaders/path.vs.glsl"
+#include "../renderer/gpu/shaders/fill.vs.glsl"
     ,
-#include "../renderer/gpu/shaders/path.fs.glsl"
-    ,
-#include "../renderer/gpu/shaders/boundary_span.vs.glsl"
-    ,
-#include "../renderer/gpu/shaders/boundary_span.fs.glsl"
-    ,
-#include "../renderer/gpu/shaders/filled_span.vs.glsl"
-    ,
-#include "../renderer/gpu/shaders/filled_span.fs.glsl"
+#include "../renderer/gpu/shaders/fill.fs.glsl"
     ,
 #include "../renderer/gpu/shaders/line.vs.glsl"
     ,
@@ -73,4 +64,4 @@ void ResourceManager::prefetch_shaders() {
   }
 }
 
-}
+}  // namespace graphick::utils

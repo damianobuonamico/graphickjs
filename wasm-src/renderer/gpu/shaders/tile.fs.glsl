@@ -19,7 +19,7 @@ R"(
 
   out vec4 o_frag_color;
 
-  #define to_coords(x) (vec2((float((x) % 512U) + 0.5) / 512.0, (float((x) / 512U) + 0.5) / 512.0))
+  #define to_coords(x) (vec2((float((x) % 256U) + 0.5) / 256.0, (float((x) / 256U) + 0.5) / 256.0))
 
   float calculate_cubic_root(float a, float b, float c, float d, float t0) {
     float t = t0;
@@ -103,22 +103,22 @@ R"(
     vec2 pixel_size = vec2(fwidth(v_tex_coord_curves.x), fwidth(v_tex_coord_curves.y));
     float coverage = 0.0;
 
-    uint bands = (v_attr_2 >> 24) + 1U;
+    uint bands = (v_attr_3 >> 24) + 1U;
     
-    uint xBandsOffset = (v_attr_2 >> 12) & 0xFFFU;
-    uint yBandsOffset = v_attr_2 & 0xFFFU;
+    uint xBandsOffset = (v_attr_3 >> 12) & 0xFFFU;
+    uint yBandsOffset = v_attr_3 & 0xFFFU;
     uint xCurvesOffset = (v_attr_1 >> 10) & 0x3FFU;
     uint yCurvesOffset = v_attr_1 & 0x3FFU;
 
-    uint bandsIndexOffset = xBandsOffset + yBandsOffset * 512U;
-    uint curves_index_offset = xCurvesOffset + yCurvesOffset * 512U;
+    uint bandsIndexOffset = xBandsOffset + yBandsOffset * 256U;
+    uint curves_index_offset = xCurvesOffset + yCurvesOffset * 256U;
 
     for (int yOffset = (1 - samples) / 2; yOffset <= (samples - 1) / 2; yOffset++) {
       vec2 sample_pos = v_tex_coord_curves + vec2(0.0, yOffset) * pixel_size.y / float(samples);
     
       uint band_index = clamp(uint(floor(sample_pos.y * float(bands))), 0U, bands - 1U);
-      uint band_data_start = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 4U)).x + bandsIndexOffset;
-      uint band_curves_count = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 4U + 1U)).x;
+      uint band_data_start = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 2U)).x + bandsIndexOffset;
+      uint band_curves_count = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 2U + 1U)).x;
 
       coverage += cubic_horizontal_coverage(sample_pos, 1.0 / pixel_size.x, curves_index_offset, band_data_start, band_curves_count);
     }
@@ -127,8 +127,8 @@ R"(
   }
 
   void main() {
-    bool is_even_odd = bool((v_attr_3 >> 10) & 0x1U);
-    bool is_quadratic = bool((v_attr_3 >> 11) & 0x1U);
+    bool is_even_odd = bool((v_attr_2 >> 10) & 0x1U);
+    bool is_quadratic = bool((v_attr_2 >> 11) & 0x1U);
 
     int samples = u_samples % 2 == 0 ? u_samples + 1 : u_samples;
 
@@ -141,7 +141,7 @@ R"(
       alpha = alpha * min(abs(coverage), 1.0);
     }
 
-    o_frag_color = vec4(v_color.rgb * texture(u_textures[0], v_tex_coord).rgb, 1.0 + 0.0000000000000000001 * v_tex_coord.x) * alpha;
+    o_frag_color = vec4(v_color.rgb + texture(u_textures[0], v_tex_coord).rgb, 1.0 + 0.0000000000000000001 * v_tex_coord.x) * alpha;
 
     // if (v_tex_coord_curves.y == 1.0) {
     //   o_frag_color = vec4(1.0, 0.0, 0.0, 1.0);

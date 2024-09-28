@@ -17,64 +17,34 @@ namespace graphick::renderer::GPU {
  * @struct TileProgram
  */
 struct TileProgram {
-  Program program;                          // The shader program.
+  Program program;                        // The shader program.
 
-  Uniform vp_uniform;                       // The view projection uniform.
-  Uniform samples_uniform;                  // The antialiasing samples uniform.
+  Uniform vp_uniform;                     // The view projection uniform.
+  Uniform samples_uniform;                // The antialiasing samples uniform.
 
-  TextureUniform bands_texture_uniform;     // The bands texture uniform (usampler2D), separate from the sampler2D array.
-  TextureUniform curves_texture_uniform;    // The curves texture uniform (sampler2D), separate from the non float array.
-  TexturesUniform textures_uniform;         // The texture uniforms:
-                                            //  - [0] is the gradient texture
-                                            //  - [1...] are the image textures (or tiles textures).
+  TextureUniform bands_texture_uniform;   // The bands texture uniform (usampler2D), separate from the sampler2D array.
+  TextureUniform curves_texture_uniform;  // The curves texture uniform (sampler2D), separate from the non float array.
+  TexturesUniform textures_uniform;       // The texture uniforms:
+                                          //  - [0] is the gradient texture
+                                          //  - [1...] are the image textures (or tiles textures).
 
   TileProgram();
 };
 
 /**
- * @brief The main shader program.
+ * @brief Fill shader program.
  *
- * @struct PathProgram
+ * @struct FillProgram
  */
-struct PathProgram {
-  Program program;               /* The shader program. */
-  Uniform vp_uniform;            /* The view projection uniform. */
-  Uniform viewport_size_uniform; /* The viewport size uniform. */
-  Uniform samples_uniform;       /* The antialiasing samples uniform. */
-  Uniform models_uniform;        /* The models uniform. */
-  TextureUniform curves_texture; /* The curves texture. */
-  TextureUniform bands_texture;  /* The bands texture. */
+struct FillProgram {
+  Program program;                   // The shader program.
+  Uniform vp_uniform;                // The view projection uniform.
 
-  PathProgram();
-};
+  TexturesUniform textures_uniform;  // The texture uniforms:
+                                     //  - [0] is the gradient texture
+                                     //  - [1...] are the image textures (or tiles textures).
 
-/**
- * @brief Boundary span shader program.
- *
- * @struct BoundarySpanProgram
- */
-struct BoundarySpanProgram {
-  Program program;               /* The shader program. */
-  Uniform vp_uniform;            /* The view projection uniform. */
-  Uniform viewport_size_uniform; /* The viewport size uniform. */
-  Uniform max_samples_uniform;   /* The maximum antialiasing samples uniform. */
-  Uniform models_uniform;        /* The models uniform. */
-  TextureUniform curves_texture; /* The curves texture. */
-
-  BoundarySpanProgram();
-};
-
-/**
- * @brief Filled span shader program.
- *
- * @struct FilledSpanProgram
- */
-struct FilledSpanProgram {
-  Program program;        /* The shader program. */
-  Uniform vp_uniform;     /* The view projection uniform. */
-  Uniform models_uniform; /* The models uniform. */
-
-  FilledSpanProgram();
+  FillProgram();
 };
 
 /**
@@ -134,14 +104,12 @@ struct ImageProgram {
  * @struct Programs
  */
 struct Programs {
-  TileProgram tile_program;                  /* The tile shader program. */
-  PathProgram path_program;                  /* The path shader program. */
-  BoundarySpanProgram boundary_span_program; /* The boundary span shader program. */
-  FilledSpanProgram filled_span_program;     /* The filled span shader program. */
-  LineProgram line_program;                  /* The line shader program. */
-  RectProgram rect_program;                  /* The square shader program. */
-  CircleProgram circle_program;              /* The circle shader program. */
-  ImageProgram image_program;                /* The image shader program. */
+  TileProgram tile_program;     /* The tile shader program. */
+  FillProgram fill_program;     /* The fill shader program. */
+  LineProgram line_program;     /* The line shader program. */
+  RectProgram rect_program;     /* The square shader program. */
+  CircleProgram circle_program; /* The circle shader program. */
+  ImageProgram image_program;   /* The image shader program. */
 };
 
 /**
@@ -155,37 +123,10 @@ struct TileVertexArray {
   TileVertexArray(const TileProgram& program, const Buffer& vertex_buffer, const Buffer& index_buffer);
 };
 
-/**
- * @brief Vertex array to use with PathProgram.
- *
- * @struct PathVertexArray
- */
-struct PathVertexArray {
+struct FillVertexArray {
   VertexArray vertex_array; /* The vertex array. */
 
-  PathVertexArray(const PathProgram& program, const Buffer& instance_buffer, const Buffer& vertex_buffer);
-};
-
-/**
- * @brief Vertex array to use with BoundarySpanProgram.
- *
- * @struct BoundarySpanVertexArray
- */
-struct BoundarySpanVertexArray {
-  VertexArray vertex_array; /* The vertex array. */
-
-  BoundarySpanVertexArray(const BoundarySpanProgram& program, const Buffer& instance_buffer, const Buffer& vertex_buffer);
-};
-
-/**
- * @brief Vertex array to use with FilledSpanProgram.
- *
- * @struct FilledSpanVertexArray
- */
-struct FilledSpanVertexArray {
-  VertexArray vertex_array; /* The vertex array. */
-
-  FilledSpanVertexArray(const FilledSpanProgram& program, const Buffer& instance_buffer, const Buffer& vertex_buffer);
+  FillVertexArray(const FillProgram& program, const Buffer& vertex_buffer, const Buffer& index_buffer);
 };
 
 /**
@@ -238,35 +179,29 @@ struct ImageVertexArray {
  * @struct VertexArrays
  */
 struct VertexArrays {
-  std::unique_ptr<TileVertexArray> tile_vertex_array;                  /* The tile shader vertex array. */
-  std::unique_ptr<PathVertexArray> path_vertex_array;                  /* The path shader vertex array. */
-  std::unique_ptr<BoundarySpanVertexArray> boundary_span_vertex_array; /* The boundary span shader vertex array. */
-  std::unique_ptr<FilledSpanVertexArray> filled_span_vertex_array;     /* The filled span shader vertex array. */
-  std::unique_ptr<LineVertexArray> line_vertex_array;                  /* The line shader vertex array. */
-  std::unique_ptr<RectVertexArray> rect_vertex_array;                  /* The square shader vertex array. */
-  std::unique_ptr<CircleVertexArray> circle_vertex_array;              /* The circle shader vertex array. */
-  std::unique_ptr<ImageVertexArray> image_vertex_array;                /* The image shader vertex array. */
+  std::unique_ptr<TileVertexArray> tile_vertex_array;     /* The tile shader vertex array. */
+  std::unique_ptr<FillVertexArray> fill_vertex_array;     /* The fill shader vertex array. */
+  std::unique_ptr<LineVertexArray> line_vertex_array;     /* The line shader vertex array. */
+  std::unique_ptr<RectVertexArray> rect_vertex_array;     /* The square shader vertex array. */
+  std::unique_ptr<CircleVertexArray> circle_vertex_array; /* The circle shader vertex array. */
+  std::unique_ptr<ImageVertexArray> image_vertex_array;   /* The image shader vertex array. */
 
   VertexArrays() = default;
 
   VertexArrays(
     std::unique_ptr<TileVertexArray> tile_vertex_array,
-    std::unique_ptr<PathVertexArray> path_vertex_array,
-    std::unique_ptr<BoundarySpanVertexArray> boundary_span_vertex_array,
-    std::unique_ptr<FilledSpanVertexArray> filled_span_vertex_array,
+    std::unique_ptr<FillVertexArray> fill_vertex_array,
     std::unique_ptr<LineVertexArray> line_vertex_array,
     std::unique_ptr<RectVertexArray> rect_vertex_array,
     std::unique_ptr<CircleVertexArray> circle_vertex_array,
     std::unique_ptr<ImageVertexArray> image_vertex_array
   ) :
     tile_vertex_array(std::move(tile_vertex_array)),
-    path_vertex_array(std::move(path_vertex_array)),
-    boundary_span_vertex_array(std::move(boundary_span_vertex_array)),
-    filled_span_vertex_array(std::move(filled_span_vertex_array)),
+    fill_vertex_array(std::move(fill_vertex_array)),
     line_vertex_array(std::move(line_vertex_array)),
     rect_vertex_array(std::move(rect_vertex_array)),
     circle_vertex_array(std::move(circle_vertex_array)),
     image_vertex_array(std::move(image_vertex_array)) { }
 };
 
-}
+}  // namespace graphick::renderer::GPU

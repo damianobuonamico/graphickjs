@@ -193,6 +193,12 @@ struct RenderState {
     return *this;
   }
 
+  RenderState& no_depth_write() {
+    depth = DepthState{DepthFunc::Less, false};
+
+    return *this;
+  }
+
   RenderState& no_depth() {
     depth = std::nullopt;
 
@@ -224,4 +230,4 @@ struct RenderState {
   }
 };
 
-}
+}  // namespace graphick::renderer::GPU
