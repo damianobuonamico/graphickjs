@@ -14,18 +14,16 @@ namespace graphick::utils {
  * @brief The class that represents the resource manager.
  *
  * It is responsible for loading and caching static resources such as shaders and fonts.
- *
- * @class ResourceManager
  */
 class ResourceManager {
-public:
+ public:
   /**
    * @brief Deleted copy, move constructor and assignment operators.
    */
-  ResourceManager(const ResourceManager&) = delete;
-  ResourceManager(ResourceManager&&) = delete;
-  ResourceManager& operator=(const ResourceManager&) = delete;
-  ResourceManager& operator=(ResourceManager&&) = delete;
+  ResourceManager(const ResourceManager &) = delete;
+  ResourceManager(ResourceManager &&) = delete;
+  ResourceManager &operator=(const ResourceManager &) = delete;
+  ResourceManager &operator=(ResourceManager &&) = delete;
 
   /**
    * @brief Initializes the resource manager.
@@ -42,8 +40,9 @@ public:
    *
    * @return The instance of the resource manager.
    */
-  static std::string get_shader(const std::string& name);
-private:
+  static std::string get_shader(const std::string &name);
+
+ private:
   /**
    * @brief Default constructor and destructor.
    */
@@ -56,10 +55,11 @@ private:
    * The shaders are stored inline in the source code due to the limitations of WebAssembly.
    */
   void prefetch_shaders();
-private:
+
+ private:
   std::unordered_map<std::string, std::string> m_shaders;  // The cache of shaders.
-private:
-  static ResourceManager* s_instance;                      // The instance of the resource manager singleton.
+ private:
+  static ResourceManager *s_instance;  // The instance of the resource manager singleton.
 };
 
 }  // namespace graphick::utils

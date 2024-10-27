@@ -1,6 +1,7 @@
 /**
  * @file hover_state.h
- * @brief Contains the declaration of the HoverState class, which stores what is currently under the pointer.
+ * @brief Contains the declaration of the HoverState class, which stores what is currently under
+ * the pointer.
  */
 
 #pragma once
@@ -22,16 +23,15 @@ namespace graphick::editor::input {
  * @brief The HoverState class represents the state of the pointer hover.
  *
  * This class provides methods for setting and getting the hovered object.
- *
- * @class HoverState
  */
 class HoverState {
-public:
+ public:
   /**
    * @brief The HoverType enum represents the type of the hovered object.
    */
   enum class HoverType { None = 0, Entity, Element, Segment, Vertex, Handle };
-public:
+
+ public:
   /**
    * @brief Default constructor.
    */
@@ -40,8 +40,8 @@ public:
   /**
    * @brief Deleted copy and move constructors.
    */
-  HoverState(const HoverState&) = delete;
-  HoverState(HoverState&&) = delete;
+  HoverState(const HoverState &) = delete;
+  HoverState(HoverState &&) = delete;
 
   /**
    * @brief Destructor.
@@ -53,14 +53,20 @@ public:
    *
    * @return The type of the hovered object.
    */
-  inline HoverType type() const { return m_type; }
+  inline HoverType type() const
+  {
+    return m_type;
+  }
 
   /**
    * @brief Returns the UUID of the hovered entity.
    *
    * @return The UUID of the hovered entity.
    */
-  inline uuid entity_id() const { return m_entity; }
+  inline uuid entity_id() const
+  {
+    return m_entity;
+  }
 
   /**
    * @brief Returns the hovered entity.
@@ -89,7 +95,8 @@ public:
    * @return The index of the hovered handle, std::nullopt if no handle is hovered.
    */
   std::optional<size_t> handle() const;
-private:
+
+ private:
   /**
    * @brief Sets the hovered entity and calculates the hovered object of the given entity.
    *
@@ -101,20 +108,25 @@ private:
    * @param threshold The threshold for the hover.
    * @param zoom The current zoom level.
    */
-  void set_hovered(const uuid entity, const vec2 position, const bool deep_search, float threshold, const double zoom);
+  void set_hovered(const uuid entity,
+                   const vec2 position,
+                   const bool deep_search,
+                   float threshold,
+                   const double zoom);
 
   /**
    * @brief Resets the hover state.
    */
   void reset();
-private:
+
+ private:
   HoverType m_type = HoverType::None;  // The type of the hovered object.
 
   uuid m_entity = uuid::null;          // The UUID of the hovered entity.
-  int64_t m_segment = -1;              // The index of the hovered segment, -1 if no segment is hovered.
-  int64_t m_vertex = -1;               // The index of the hovered vertex, -1 if no vertex is hovered.
-  int64_t m_handle = -1;               // The index of the hovered handle, -1 if no handle is hovered.
-private:
+  int64_t m_segment = -1;  // The index of the hovered segment, -1 if no segment is hovered.
+  int64_t m_vertex = -1;   // The index of the hovered vertex, -1 if no vertex is hovered.
+  int64_t m_handle = -1;   // The index of the hovered handle, -1 if no handle is hovered.
+ private:
   friend class InputManager;
 };
 

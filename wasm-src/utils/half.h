@@ -16,8 +16,6 @@ namespace graphick::utils {
  * @brief The half float type.
  *
  * This is a 16-bit floating point number.
- *
- * @struct half
  */
 struct half {
   union {
@@ -50,7 +48,8 @@ struct half {
    *
    * @param other The float.
    */
-  half(float other) {
+  half(float other)
+  {
     IEEESingle f;
     f.f = other;
 
@@ -73,45 +72,46 @@ struct half {
         IEEE.exp = 0;
       }
 
-      else if (new_exp < -14) {
+      else if (new_exp < -14)
+      {
         // This maps to a denorm
         IEEE.exp = 0;
         unsigned int exp_val = (unsigned int)(-14 - new_exp);  // 2^-exp_val
 
         switch (exp_val) {
-        case 0:
-          IEEE.frac = 0;
-          break;
-        case 1:
-          IEEE.frac = 512 + (f.IEEE.frac >> 14);
-          break;
-        case 2:
-          IEEE.frac = 256 + (f.IEEE.frac >> 15);
-          break;
-        case 3:
-          IEEE.frac = 128 + (f.IEEE.frac >> 16);
-          break;
-        case 4:
-          IEEE.frac = 64 + (f.IEEE.frac >> 17);
-          break;
-        case 5:
-          IEEE.frac = 32 + (f.IEEE.frac >> 18);
-          break;
-        case 6:
-          IEEE.frac = 16 + (f.IEEE.frac >> 19);
-          break;
-        case 7:
-          IEEE.frac = 8 + (f.IEEE.frac >> 20);
-          break;
-        case 8:
-          IEEE.frac = 4 + (f.IEEE.frac >> 21);
-          break;
-        case 9:
-          IEEE.frac = 2 + (f.IEEE.frac >> 22);
-          break;
-        case 10:
-          IEEE.frac = 1;
-          break;
+          case 0:
+            IEEE.frac = 0;
+            break;
+          case 1:
+            IEEE.frac = 512 + (f.IEEE.frac >> 14);
+            break;
+          case 2:
+            IEEE.frac = 256 + (f.IEEE.frac >> 15);
+            break;
+          case 3:
+            IEEE.frac = 128 + (f.IEEE.frac >> 16);
+            break;
+          case 4:
+            IEEE.frac = 64 + (f.IEEE.frac >> 17);
+            break;
+          case 5:
+            IEEE.frac = 32 + (f.IEEE.frac >> 18);
+            break;
+          case 6:
+            IEEE.frac = 16 + (f.IEEE.frac >> 19);
+            break;
+          case 7:
+            IEEE.frac = 8 + (f.IEEE.frac >> 20);
+            break;
+          case 8:
+            IEEE.frac = 4 + (f.IEEE.frac >> 21);
+            break;
+          case 9:
+            IEEE.frac = 2 + (f.IEEE.frac >> 22);
+            break;
+          case 10:
+            IEEE.frac = 1;
+            break;
         }
       } else if (new_exp > 15) {
         // Map this value to infinity

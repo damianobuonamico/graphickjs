@@ -16,14 +16,16 @@
 
 namespace graphick::editor::input {
 
-SelectTool::SelectTool() : Tool(ToolType::Select, CategoryNone) { }
+SelectTool::SelectTool() : Tool(ToolType::Select, CategoryNone) {}
 
-void SelectTool::on_pointer_down() {
+void SelectTool::on_pointer_down()
+{
   m_is_entity_added_to_selection = false;
   m_dragging_occurred = false;
-  m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity()->id() : uuid::null;
+  m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity()->id() :
+                                                        uuid::null;
 
-  Scene& scene = Editor::scene();
+  Scene &scene = Editor::scene();
 
   if (!InputManager::keys.shift && (m_entity == uuid::null || !scene.selection.has(m_entity))) {
     scene.selection.clear();
@@ -38,7 +40,7 @@ void SelectTool::on_pointer_down() {
     if (InputManager::keys.alt) {
       std::vector<uuid> duplicated;
 
-      for (const auto& [id, _] : scene.selection.selected()) {
+      for (const auto &[id, _] : scene.selection.selected()) {
         duplicated.push_back(scene.duplicate_entity(id).id());
       }
 
@@ -53,14 +55,17 @@ void SelectTool::on_pointer_down() {
   }
 }
 
-void SelectTool::on_pointer_move() {
+void SelectTool::on_pointer_move()
+{
   m_dragging_occurred = true;
 
-  if ((m_entity != uuid::null && Editor::scene().selection.has(m_entity)) || InputManager::keys.alt) {
+  if ((m_entity != uuid::null && Editor::scene().selection.has(m_entity)) ||
+      InputManager::keys.alt)
+  {
     if (!Editor::scene().selection.empty()) {
       const vec2 movement = InputManager::pointer.scene.movement;
 
-      for (auto& [id, _] : Editor::scene().selection.selected()) {
+      for (auto &[id, _] : Editor::scene().selection.selected()) {
         Entity entity = Editor::scene().get_entity(id);
 
         entity.get_component<TransformComponent>().translate(movement);
@@ -70,11 +75,13 @@ void SelectTool::on_pointer_move() {
     OPTICK_EVENT();
 
     m_selection_rect.size(InputManager::pointer.scene.delta);
-    Editor::scene().selection.temp_select(Editor::scene().entities_in(m_selection_rect.bounding_rect()));
+    Editor::scene().selection.temp_select(
+        Editor::scene().entities_in(m_selection_rect.bounding_rect()));
   }
 }
 
-void SelectTool::on_pointer_up() {
+void SelectTool::on_pointer_up()
+{
   Editor::scene().selection.sync();
 
   if (m_selection_rect.active()) {
@@ -85,7 +92,9 @@ void SelectTool::on_pointer_up() {
     return;
   }
 
-  if (m_entity != uuid::null && Editor::scene().selection.has(m_entity) && !m_is_entity_added_to_selection) {
+  if (m_entity != uuid::null && Editor::scene().selection.has(m_entity) &&
+      !m_is_entity_added_to_selection)
+  {
     if (InputManager::keys.shift) {
       Editor::scene().selection.deselect(m_entity);
     } else {
@@ -97,11 +106,14 @@ void SelectTool::on_pointer_up() {
   }
 }
 
-void SelectTool::render_overlays() const {
-  if (!m_selection_rect.active()) return;
+void SelectTool::render_overlays() const
+{
+  if (!m_selection_rect.active())
+    return;
 
   renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
-  renderer::Renderer::draw_rect(m_selection_rect.bounding_rect(), vec4(0.22f, 0.76f, 0.95f, 0.25f));
+  renderer::Renderer::draw_rect(m_selection_rect.bounding_rect(),
+                                vec4(0.22f, 0.76f, 0.95f, 0.25f));
 }
 
 }  // namespace graphick::editor::input

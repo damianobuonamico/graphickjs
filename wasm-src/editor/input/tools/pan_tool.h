@@ -13,22 +13,22 @@ namespace graphick::editor::input {
 
 /**
  * @brief The PanTool class represents a tool used for panning the viewport.
- *
- * @class PanTool
  */
 class PanTool : public Tool {
-public:
+ public:
   virtual void on_pointer_down() override;
 
   virtual void on_pointer_move() override;
-private:
+
+ private:
   /**
    * @brief Default constructor.
    */
   PanTool();
-private:
+
+ private:
   vec2 m_start_position;  // The screen space position before panning.
-private:
+ private:
   friend class ToolState;
 };
 

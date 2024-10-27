@@ -17,8 +17,6 @@ using FillRule = geom::FillRule;
 
 /**
  * @brief Fill properties used to render a path.
- *
- * @struct Fill
  */
 struct Fill {
   vec4 color;        // The color used to fill the path.
@@ -30,18 +28,19 @@ struct Fill {
   /**
    * @brief Default constructor
    */
-  Fill() : color(0.0f, 0.0f, 0.0f, 1.0f), rule(FillRule::NonZero), z_index(0) { }
+  Fill() : color(0.0f, 0.0f, 0.0f, 1.0f), rule(FillRule::NonZero), z_index(0) {}
 
   /**
    * @brief Complete constructor
    */
-  Fill(const vec4& color, FillRule rule, uint32_t z_index) : color(color), rule(rule), z_index(z_index) { }
+  Fill(const vec4 &color, FillRule rule, uint32_t z_index)
+      : color(color), rule(rule), z_index(z_index)
+  {
+  }
 };
 
 /**
  * @brief Stroke properties used to render a path.
- *
- * @struct Stroke
  */
 struct Stroke {
   vec4 color;         // The color used to stroke the path.
@@ -57,14 +56,33 @@ struct Stroke {
   /**
    * @brief Default constructor
    */
-  Stroke() :
-    color(0.0f, 0.0f, 0.0f, 1.0f), cap(LineCap::Butt), join(LineJoin::Miter), width(1.0f), miter_limit(10.0f), z_index(0) { }
+  Stroke()
+      : color(0.0f, 0.0f, 0.0f, 1.0f),
+        cap(LineCap::Butt),
+        join(LineJoin::Miter),
+        width(1.0f),
+        miter_limit(10.0f),
+        z_index(0)
+  {
+  }
 
   /**
    * @brief Complete constructor
    */
-  Stroke(const vec4& color, LineCap cap, LineJoin join, float width, float miter_limit, uint32_t z_index) :
-    color(color), cap(cap), join(join), width(width), miter_limit(miter_limit), z_index(z_index) { }
+  Stroke(const vec4 &color,
+         LineCap cap,
+         LineJoin join,
+         float width,
+         float miter_limit,
+         uint32_t z_index)
+      : color(color),
+        cap(cap),
+        join(join),
+        width(width),
+        miter_limit(miter_limit),
+        z_index(z_index)
+  {
+  }
 };
 
 }  // namespace graphick::renderer

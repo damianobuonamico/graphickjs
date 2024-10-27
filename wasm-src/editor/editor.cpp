@@ -18,23 +18,28 @@
 #include "../utils/resource_manager.h"
 
 #ifdef EMSCRIPTEN
-#include <emscripten/html5.h>
+#  include <emscripten/html5.h>
 #endif
 
 namespace graphick::editor {
 
 #ifdef EMSCRIPTEN
-int render_callback(const double time, void* user_data) {
+int render_callback(const double time, void *user_data)
+{
   Editor::get()->render_frame(time);
   return 1;
 }
 #else
-bool render_callback(const double time, void* user_data) { return Editor::get()->render_frame(time); }
+bool render_callback(const double time, void *user_data)
+{
+  return Editor::get()->render_frame(time);
+}
 #endif
 
-Editor* Editor::s_instance = nullptr;
+Editor *Editor::s_instance = nullptr;
 
-void Editor::init() {
+void Editor::init()
+{
   if (s_instance != nullptr) {
     console::error("Editor already initialized, call shutdown() before reinitializing!");
     return;
@@ -53,11 +58,18 @@ void Editor::init() {
 #endif
 }
 
-void Editor::prepare_refresh() { renderer::Renderer::shutdown(); }
+void Editor::prepare_refresh()
+{
+  renderer::Renderer::shutdown();
+}
 
-void Editor::refresh() { renderer::Renderer::init(); }
+void Editor::refresh()
+{
+  renderer::Renderer::init();
+}
 
-void Editor::shutdown() {
+void Editor::shutdown()
+{
   if (s_instance == nullptr) {
     console::error("Renderer already shutdown, call init() before shutting down!");
     return;
@@ -71,7 +83,8 @@ void Editor::shutdown() {
   s_instance = nullptr;
 }
 
-Scene& Editor::scene() {
+Scene &Editor::scene()
+{
   if (get()->m_scenes.empty()) {
     get()->m_scenes.emplace_back();
   }
@@ -79,17 +92,22 @@ Scene& Editor::scene() {
   return get()->m_scenes[0];
 }
 
-void Editor::resize(const ivec2 size, const ivec2 offset, float dpr) {
-  for (auto& scene : get()->m_scenes) {
+void Editor::resize(const ivec2 size, const ivec2 offset, float dpr)
+{
+  for (auto &scene : get()->m_scenes) {
     scene.viewport.resize(size, offset, dpr);
   }
 }
 
 #ifndef EMSCRIPTEN
-bool Editor::render_loop(const double time) { return render_callback(time, nullptr); }
+bool Editor::render_loop(const double time)
+{
+  return render_callback(time, nullptr);
+}
 #endif
 
-void Editor::request_render(const RenderRequestOptions options) {
+void Editor::request_render(const RenderRequestOptions options)
+{
   if (!get()->m_render_request.has_value()) {
     get()->m_render_request = options;
     return;
@@ -98,10 +116,14 @@ void Editor::request_render(const RenderRequestOptions options) {
   get()->m_render_request->update(options);
 }
 
-bool Editor::render_frame(const double time) {
-  if (!m_render_request.has_value()) return false;
+bool Editor::render_frame(const double time)
+{
+  if (!m_render_request.has_value())
+    return false;
 
-  if (m_render_request->frame_rate < 60 && time - m_last_render_time < 1000.0 / m_render_request->frame_rate) {
+  if (m_render_request->frame_rate < 60 &&
+      time - m_last_render_time < 1000.0 / m_render_request->frame_rate)
+  {
     return false;
   }
 

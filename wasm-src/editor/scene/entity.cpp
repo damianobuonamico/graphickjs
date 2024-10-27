@@ -9,41 +9,46 @@
 
 namespace graphick::editor {
 
-#define DECODE_COMPONENT(component_type)                                                                                         \
-  if (component_id == component_type::component_id) {                                                                            \
-    add<component_type>(decoder);                                                                                                \
-    if (decoder.end_of_data()) return;                                                                                           \
-    component_id = decoder.component_id();                                                                                       \
+#define DECODE_COMPONENT(component_type) \
+  if (component_id == component_type::component_id) { \
+    add<component_type>(decoder); \
+    if (decoder.end_of_data()) \
+      return; \
+    component_id = decoder.component_id(); \
   }
 
-#define DECODE_COMPONENT_WITH_DATA(component_type, ...)                                                                          \
-  if (component_id == component_type::component_id) {                                                                            \
-    add<component_type>(__VA_ARGS__);                                                                                            \
-    if (decoder.end_of_data()) return;                                                                                           \
-    component_id = decoder.component_id();                                                                                       \
+#define DECODE_COMPONENT_WITH_DATA(component_type, ...) \
+  if (component_id == component_type::component_id) { \
+    add<component_type>(__VA_ARGS__); \
+    if (decoder.end_of_data()) \
+      return; \
+    component_id = decoder.component_id(); \
   }
 
-#define ENCODE_COMPONENT(component_type)                                                                                         \
-  if (auto handle = m_scene->m_registry.try_get<component_type::Data>(m_handle); handle) {                                       \
-    component_type(this, handle).encode(data);                                                                                   \
+#define ENCODE_COMPONENT(component_type) \
+  if (auto handle = m_scene->m_registry.try_get<component_type::Data>(m_handle); handle) { \
+    component_type(this, handle).encode(data); \
   }
 
-#define REMOVE_COMPONENT(component_type)                                                                                         \
-  if (component_id == component_type::component_id) {                                                                            \
-    remove<component_type>();                                                                                                    \
+#define REMOVE_COMPONENT(component_type) \
+  if (component_id == component_type::component_id) { \
+    remove<component_type>(); \
   }
 
-#define MODIFY_COMPONENT(component_type)                                                                                         \
-  case (component_type::component_id): {                                                                                         \
-    get_component<component_type>().modify(decoder);                                                                             \
-    break;                                                                                                                       \
+#define MODIFY_COMPONENT(component_type) \
+  case (component_type::component_id): { \
+    get_component<component_type>().modify(decoder); \
+    break; \
   }
 
-Entity::Entity(entt::entity handle, Scene* scene, const io::EncodedData& encoded_data) : m_handle(handle), m_scene(scene) {
+Entity::Entity(entt::entity handle, Scene *scene, const io::EncodedData &encoded_data)
+    : m_handle(handle), m_scene(scene)
+{
   add(encoded_data, true);
 }
 
-io::EncodedData Entity::encode() const {
+io::EncodedData Entity::encode() const
+{
   io::EncodedData data;
 
   ENCODE_COMPONENT(IDComponent);
@@ -57,7 +62,8 @@ io::EncodedData Entity::encode() const {
   return data;
 }
 
-std::pair<uuid, io::EncodedData> Entity::duplicate() const {
+std::pair<uuid, io::EncodedData> Entity::duplicate() const
+{
   io::EncodedData data;
 
   IDComponentData id_data = {uuid()};
@@ -77,10 +83,12 @@ std::pair<uuid, io::EncodedData> Entity::duplicate() const {
   return {id_data.id, data};
 }
 
-void Entity::add(const io::EncodedData& encoded_data, const bool full_entity) {
+void Entity::add(const io::EncodedData &encoded_data, const bool full_entity)
+{
   io::DataDecoder decoder(&encoded_data);
 
-  if (decoder.end_of_data()) return;
+  if (decoder.end_of_data())
+    return;
 
   uint8_t component_id = decoder.component_id();
 
@@ -93,10 +101,12 @@ void Entity::add(const io::EncodedData& encoded_data, const bool full_entity) {
   DECODE_COMPONENT(FillComponent);
 }
 
-void Entity::remove(const io::EncodedData& encoded_data) {
+void Entity::remove(const io::EncodedData &encoded_data)
+{
   io::DataDecoder decoder(&encoded_data);
 
-  if (decoder.end_of_data()) return;
+  if (decoder.end_of_data())
+    return;
 
   uint8_t component_id = decoder.component_id();
 
@@ -109,12 +119,15 @@ void Entity::remove(const io::EncodedData& encoded_data) {
   REMOVE_COMPONENT(FillComponent);
 }
 
-void Entity::modify(const io::EncodedData& encoded_data) {
+void Entity::modify(const io::EncodedData &encoded_data)
+{
   io::DataDecoder decoder(&encoded_data);
-  if (decoder.end_of_data()) return;
+  if (decoder.end_of_data())
+    return;
 
   uint8_t component_id = decoder.component_id();
-  if (decoder.end_of_data()) return;
+  if (decoder.end_of_data())
+    return;
 
   switch (component_id) {
     MODIFY_COMPONENT(TagComponent);

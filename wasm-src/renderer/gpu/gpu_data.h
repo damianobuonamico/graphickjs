@@ -42,7 +42,15 @@ enum class ShaderKind {
 /**
  * @brief The color blend factor.
  */
-enum class BlendFactor { Zero, One, SrcAlpha, OneMinusSrcAlpha, DestAlpha, OneMinusDestAlpha, DestColor };
+enum class BlendFactor {
+  Zero,
+  One,
+  SrcAlpha,
+  OneMinusSrcAlpha,
+  DestAlpha,
+  OneMinusDestAlpha,
+  DestColor
+};
 
 /**
  * @brief The color blend operation.
@@ -104,8 +112,6 @@ enum class BufferUploadMode { Static, Dynamic, Stream };
 
 /**
  * @brief The vertex attribute descriptor.
- *
- * @struct VertexAttrDescriptor
  */
 struct VertexAttrDescriptor {
   VertexAttrClass attr_class;  // The attribute class.
@@ -120,8 +126,6 @@ struct VertexAttrDescriptor {
 
 /**
  * @brief The blend state.
- *
- * @struct BlendState
  */
 struct BlendState {
   BlendFactor src_rgb_factor;     // The source RGB factor.
@@ -130,32 +134,39 @@ struct BlendState {
   BlendFactor dest_alpha_factor;  // The destination alpha factor.
   BlendOp op;                     // The blend operation.
 
-  bool operator==(const BlendState& other) const {
+  bool operator==(const BlendState &other) const
+  {
     return src_rgb_factor == other.src_rgb_factor && dest_rgb_factor == other.dest_rgb_factor &&
-      src_alpha_factor == other.src_alpha_factor && dest_alpha_factor == other.dest_alpha_factor && op == other.op;
+           src_alpha_factor == other.src_alpha_factor &&
+           dest_alpha_factor == other.dest_alpha_factor && op == other.op;
   }
 
-  bool operator!=(const BlendState& other) const { return !operator==(other); }
+  bool operator!=(const BlendState &other) const
+  {
+    return !operator==(other);
+  }
 };
 
 /**
  * @brief The depth state.
- *
- * @struct DepthState
  */
 struct DepthState {
   DepthFunc func;  // The depth function.
   bool write;      // Whether to write to the depth buffer.
 
-  bool operator==(const DepthState& other) const { return func == other.func && write == other.write; }
+  bool operator==(const DepthState &other) const
+  {
+    return func == other.func && write == other.write;
+  }
 
-  bool operator!=(const DepthState& other) const { return !operator==(other); }
+  bool operator!=(const DepthState &other) const
+  {
+    return !operator==(other);
+  }
 };
 
 /**
  * @brief The stencil state.
- *
- * @struct StencilState
  */
 struct StencilState {
   StencilFunc func;    // The stencil function.
@@ -163,27 +174,42 @@ struct StencilState {
   uint32_t mask;       // The mask value.
   bool write;          // Whether to write to the stencil buffer.
 
-  bool operator==(const StencilState& other) const {
-    return func == other.func && reference == other.reference && mask == other.mask && write == other.write;
+  bool operator==(const StencilState &other) const
+  {
+    return func == other.func && reference == other.reference && mask == other.mask &&
+           write == other.write;
   }
 
-  bool operator!=(const StencilState& other) const { return !operator==(other); }
+  bool operator!=(const StencilState &other) const
+  {
+    return !operator==(other);
+  }
 };
 
 /**
  * @brief The clear operations.
- *
- * @struct ClearOps
  */
 struct ClearOps {
-  std::optional<vec4> color;       // The color clear value. If std::nullopt, the color buffer is not cleared.
-  std::optional<float> depth;      // The depth clear value. If std::nullopt, the depth buffer is not cleared.
-  std::optional<uint8_t> stencil;  // The stencil clear value. If std::nullopt, the stencil buffer is not cleared.
+  std::optional<vec4>
+      color;    // The color clear value. If std::nullopt, the color buffer is not cleared.
+  std::optional<float>
+      depth;    // The depth clear value. If std::nullopt, the depth buffer is not cleared.
+  std::optional<uint8_t>
+      stencil;  // The stencil clear value. If std::nullopt, the stencil buffer is not cleared.
 };
 
 /**
  * @brief The uniform data.
  */
-using UniformData = std::variant<uint16_t, uint32_t, int, float, ivec2, vec2, vec4, mat4, std::vector<int>, std::vector<vec4>>;
+using UniformData = std::variant<uint16_t,
+                                 uint32_t,
+                                 int,
+                                 float,
+                                 ivec2,
+                                 vec2,
+                                 vec4,
+                                 mat4,
+                                 std::vector<int>,
+                                 std::vector<vec4>>;
 
 }  // namespace graphick::renderer::GPU

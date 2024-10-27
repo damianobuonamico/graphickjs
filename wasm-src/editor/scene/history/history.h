@@ -16,17 +16,15 @@ namespace graphick::editor {
  * @brief This class represents the history of a scene.
  *
  * The history is a list of actions that can be undone and redone.
- *
- * @class History
  */
 class History {
-public:
+ public:
   /**
    * @brief Default, move and copy constructors.
    */
-  History(Scene* scene);
-  History(const History&) = delete;
-  History(History&&) = delete;
+  History(Scene *scene);
+  History(const History &) = delete;
+  History(History &&) = delete;
 
   /**
    * @brief Default constructor.
@@ -40,8 +38,8 @@ public:
    * @param target The target of the entity the action is related to.
    * @param encoded_data The encoded data of the target.
    */
-  void add(uuid entity_id, Action::Target target, const io::EncodedData& encoded_data);
-  void add(uuid entity_id, Action::Target target, io::EncodedData&& encoded_data);
+  void add(uuid entity_id, Action::Target target, const io::EncodedData &encoded_data);
+  void add(uuid entity_id, Action::Target target, io::EncodedData &&encoded_data);
 
   /**
    * @brief Push a Remove action to the history.
@@ -50,8 +48,8 @@ public:
    * @param target The target of the entity the action is related to.
    * @param encoded_data The encoded data of the target.
    */
-  void remove(uuid entity_id, Action::Target target, const io::EncodedData& encoded_data);
-  void remove(uuid entity_id, Action::Target target, io::EncodedData&& encoded_data);
+  void remove(uuid entity_id, Action::Target target, const io::EncodedData &encoded_data);
+  void remove(uuid entity_id, Action::Target target, io::EncodedData &&encoded_data);
 
   /**
    * @brief Push a Modify action to the history.
@@ -59,10 +57,17 @@ public:
    * @param entity_id The id of the entity the action is related to.
    * @param encoded_data The encoded data of the target.
    * @param backup_data The encoded backup data of the target.
-   * @param execute Whether to execute the action or not (i.e. the action was already executed), default is true.
+   * @param execute Whether to execute the action or not (i.e. the action was already executed),
+   * default is true.
    */
-  void modify(uuid entity_id, const io::EncodedData& encoded_data, const io::EncodedData& backup_data, const bool execute = true);
-  void modify(uuid entity_id, io::EncodedData&& encoded_data, io::EncodedData&& backup_data, const bool execute = true);
+  void modify(uuid entity_id,
+              const io::EncodedData &encoded_data,
+              const io::EncodedData &backup_data,
+              const bool execute = true);
+  void modify(uuid entity_id,
+              io::EncodedData &&encoded_data,
+              io::EncodedData &&backup_data,
+              const bool execute = true);
 
   /**
    * @brief Undo the last action.
@@ -83,7 +88,8 @@ public:
    * @brief End the current batch of actions.
    */
   void end_batch();
-private:
+
+ private:
   /**
    * @brief Push an action to the history.
    *
@@ -92,7 +98,7 @@ private:
    * @param action The action to add.
    * @param execute Whether to execute the action or just push it, default is true.
    */
-  void push(Action&& action, const bool execute = true);
+  void push(Action &&action, const bool execute = true);
 
   /**
    * @brief Seal the history.
@@ -105,13 +111,14 @@ private:
    * @brief Clear the history.
    */
   void clear();
-private:
+
+ private:
   std::vector<Action> m_actions;        // The list of actions.
   std::vector<size_t> m_batch_indices;  // The indices of the start of each batch.
 
   int64_t m_batch_index = 0;            // The index of the last batch.
 
-  Scene* m_scene;                       // The scene the history is related to.
+  Scene *m_scene;                       // The scene the history is related to.
 };
 
 }  // namespace graphick::editor

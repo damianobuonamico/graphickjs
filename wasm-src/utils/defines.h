@@ -8,13 +8,13 @@
 #pragma once
 
 #if !defined(GK_CONF_DIST) && !defined(EMSCRIPTEN)
-#define GK_DEBUG 1
+#  define GK_DEBUG 1
 #endif
 
-template <typename T>
+template<typename T>
 inline constexpr T ui_handle_size = T(5);
 
-template <typename T>
+template<typename T>
 inline constexpr T ui_line_width = T(1);
 
 #define GK_EPSILON 1e-6f

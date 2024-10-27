@@ -16,14 +16,15 @@
 
 namespace graphick::editor {
 
-Selection::Selection(Scene* scene) : m_scene(scene) { }
+Selection::Selection(Scene *scene) : m_scene(scene) {}
 
-rect Selection::bounding_rect() const {
+rect Selection::bounding_rect() const
+{
   GK_TOTAL("Selection::bounding_rect");
 
   rect selection_rect;
 
-  for (auto& [id, _] : m_selected) {
+  for (auto &[id, _] : m_selected) {
     const Entity entity = m_scene->get_entity(id);
     const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
 
@@ -34,11 +35,16 @@ rect Selection::bounding_rect() const {
   return selection_rect;
 }
 
-bool Selection::has(const uuid id, bool include_temp) const {
-  return m_selected.find(id) != m_selected.end() || (include_temp && m_temp_selected.find(id) != m_temp_selected.end());
+bool Selection::has(const uuid id, bool include_temp) const
+{
+  return m_selected.find(id) != m_selected.end() ||
+         (include_temp && m_temp_selected.find(id) != m_temp_selected.end());
 }
 
-bool Selection::has_child(const uuid element_id, const uint32_t child_index, bool include_temp) const {
+bool Selection::has_child(const uuid element_id,
+                          const uint32_t child_index,
+                          bool include_temp) const
+{
   auto it = m_selected.find(element_id);
 
   if (it == m_selected.end()) {
@@ -56,13 +62,16 @@ bool Selection::has_child(const uuid element_id, const uint32_t child_index, boo
   return it->second.indices.find(child_index) != it->second.indices.end();
 }
 
-void Selection::clear() {
+void Selection::clear()
+{
   m_selected.clear();
   m_temp_selected.clear();
 }
 
-void Selection::select(const uuid id) {
-  if (!m_scene->has_entity(id)) return;
+void Selection::select(const uuid id)
+{
+  if (!m_scene->has_entity(id))
+    return;
 
   const Entity entity = m_scene->get_entity(id);
 
@@ -71,7 +80,8 @@ void Selection::select(const uuid id) {
   }
 }
 
-void Selection::select_child(const uuid element_id, const uint32_t child_index) {
+void Selection::select_child(const uuid element_id, const uint32_t child_index)
+{
   auto it = m_selected.find(element_id);
 
   if (it == m_selected.end()) {
@@ -84,12 +94,17 @@ void Selection::select_child(const uuid element_id, const uint32_t child_index) 
   }
 }
 
-void Selection::deselect(const uuid id) { m_selected.erase(id); }
+void Selection::deselect(const uuid id)
+{
+  m_selected.erase(id);
+}
 
-void Selection::deselect_child(const uuid element_id, const uint32_t child_index) {
+void Selection::deselect_child(const uuid element_id, const uint32_t child_index)
+{
   auto it = m_selected.find(element_id);
 
-  if (it == m_selected.end()) return;
+  if (it == m_selected.end())
+    return;
 
   if (it->second.full()) {
     Entity element = m_scene->get_entity(element_id);
@@ -98,7 +113,8 @@ void Selection::deselect_child(const uuid element_id, const uint32_t child_index
     it->second.type = SelectionEntry::Type::Element;
 
     for (uint32_t i : element.get_component<PathComponent>().data().vertex_indices()) {
-      if (i == child_index) continue;
+      if (i == child_index)
+        continue;
 
       it->second.indices.insert(i);
     }
@@ -111,15 +127,20 @@ void Selection::deselect_child(const uuid element_id, const uint32_t child_index
   }
 }
 
-void Selection::temp_select(const std::unordered_map<uuid, SelectionEntry>& entities) { m_temp_selected = entities; }
+void Selection::temp_select(const std::unordered_map<uuid, SelectionEntry> &entities)
+{
+  m_temp_selected = entities;
+}
 
-void Selection::sync() {
-  for (auto& [id, entry] : m_temp_selected) {
+void Selection::sync()
+{
+  for (auto &[id, entry] : m_temp_selected) {
     if (entry.type == SelectionEntry::Type::Element) {
       auto it = m_selected.find(id);
 
       if (it != m_selected.end() && it->second.type == SelectionEntry::Type::Element) {
-        if (it->second.full()) continue;
+        if (it->second.full())
+          continue;
 
         for (uint32_t child_index : entry.indices) {
           it->second.indices.insert(child_index);

@@ -22,10 +22,8 @@ namespace graphick::math {
 
 /**
  * @brief A struct containing the decomposed components of a 2x3 matrix.
- *
- * @struct DecomposedTransform
  */
-template <typename T>
+template<typename T>
 struct DecomposedTransform {
   Vec2<T> translation;  // Position component.
   Vec2<T> scale;        // Scale component.
@@ -41,8 +39,9 @@ struct DecomposedTransform {
  *
  * @param m The matrix to be zeroed.
  */
-template <typename T>
-void zero(Mat2<T>& m) {
+template<typename T>
+void zero(Mat2<T> &m)
+{
   zero(m[0]);
   zero(m[1]);
 }
@@ -52,8 +51,9 @@ void zero(Mat2<T>& m) {
  *
  * @param m The matrix to be zeroed.
  */
-template <typename T>
-void zero(Mat3<T>& m) {
+template<typename T>
+void zero(Mat3<T> &m)
+{
   zero(m[0]);
   zero(m[1]);
   zero(m[2]);
@@ -64,8 +64,9 @@ void zero(Mat3<T>& m) {
  *
  * @param m The matrix to be zeroed.
  */
-template <typename T>
-void zero(Mat4<T>& m) {
+template<typename T>
+void zero(Mat4<T> &m)
+{
   zero(m[0]);
   zero(m[1]);
   zero(m[2]);
@@ -77,8 +78,9 @@ void zero(Mat4<T>& m) {
  *
  * @param m The matrix to be zeroed.
  */
-template <typename T>
-void zero(Mat2x3<T>& m) {
+template<typename T>
+void zero(Mat2x3<T> &m)
+{
   zero(m[0]);
   zero(m[1]);
 }
@@ -90,8 +92,9 @@ void zero(Mat2x3<T>& m) {
  *
  * @param m The matrix to be set to the identity matrix.
  */
-template <typename T>
-void identity(Mat2<T>& m) {
+template<typename T>
+void identity(Mat2<T> &m)
+{
   m[0][0] = T(1);
   m[0][1] = T(0);
   m[1][0] = T(0);
@@ -103,8 +106,9 @@ void identity(Mat2<T>& m) {
  *
  * @param m The matrix to be set to the identity matrix.
  */
-template <typename T>
-void identity(Mat3<T>& m) {
+template<typename T>
+void identity(Mat3<T> &m)
+{
   m[0][0] = T(1);
   m[0][1] = T(0);
   m[0][2] = T(0);
@@ -121,8 +125,9 @@ void identity(Mat3<T>& m) {
  *
  * @param m The matrix to be set to the identity matrix.
  */
-template <typename T>
-void identity(Mat4<T>& m) {
+template<typename T>
+void identity(Mat4<T> &m)
+{
   m[0][0] = T(1);
   m[0][1] = T(0);
   m[0][2] = T(0);
@@ -146,8 +151,9 @@ void identity(Mat4<T>& m) {
  *
  * @param m The matrix to be set to the identity matrix.
  */
-template <typename T>
-void identity(Mat2x3<T>& m) {
+template<typename T>
+void identity(Mat2x3<T> &m)
+{
   m[0][0] = T(1);
   m[0][1] = T(0);
   m[1][0] = T(0);
@@ -164,8 +170,9 @@ void identity(Mat2x3<T>& m) {
  * @param m The matrix to check.
  * @return True if the matrix is a zero matrix, false otherwise.
  */
-template <typename T>
-bool is_zero(const Mat2<T>& m) {
+template<typename T>
+bool is_zero(const Mat2<T> &m)
+{
   return (is_zero(m[0]) && is_zero(m[1]));
 }
 
@@ -175,8 +182,9 @@ bool is_zero(const Mat2<T>& m) {
  * @param m The matrix to check.
  * @return True if the matrix is a zero matrix, false otherwise.
  */
-template <typename T>
-bool is_zero(const Mat3<T>& m) {
+template<typename T>
+bool is_zero(const Mat3<T> &m)
+{
   return (is_zero(m[0]) && is_zero(m[1]) && is_zero(m[2]));
 }
 
@@ -186,8 +194,9 @@ bool is_zero(const Mat3<T>& m) {
  * @param m The matrix to check.
  * @return True if the matrix is a zero matrix, false otherwise.
  */
-template <typename T>
-bool is_zero(const Mat4<T>& m) {
+template<typename T>
+bool is_zero(const Mat4<T> &m)
+{
   return (is_zero(m[0]) && is_zero(m[1]) && is_zero(m[2]) && is_zero(m[3]));
 }
 
@@ -197,8 +206,9 @@ bool is_zero(const Mat4<T>& m) {
  * @param m The matrix to check.
  * @return True if the matrix is a zero matrix, false otherwise.
  */
-template <typename T>
-bool is_zero(const Mat2x3<T>& m) {
+template<typename T>
+bool is_zero(const Mat2x3<T> &m)
+{
   return (is_zero(m[0]) && is_zero(m[1]));
 }
 
@@ -210,8 +220,9 @@ bool is_zero(const Mat2x3<T>& m) {
  * @param m The matrix to check.
  * @return True if the matrix is an identity matrix, false otherwise.
  */
-template <typename T>
-bool is_identity(const Mat2<T>& m) {
+template<typename T>
+bool is_identity(const Mat2<T> &m)
+{
   return (m[0][0] == T(1) && m[0][1] == T(0) && m[1][0] == T(0) && m[1][1] == T(1));
 }
 
@@ -221,12 +232,12 @@ bool is_identity(const Mat2<T>& m) {
  * @param m The matrix to check.
  * @return True if the matrix is an identity matrix, false otherwise.
  */
-template <typename T>
-bool is_identity(const Mat3<T>& m) {
-  return (
-    m[0][0] == T(1) && m[0][1] == T(0) && m[0][2] == T(0) && m[1][0] == T(0) && m[1][1] == T(1) && m[1][2] == T(0) &&
-    m[2][0] == T(0) && m[2][1] == T(0) && m[2][2] == T(1)
-  );
+template<typename T>
+bool is_identity(const Mat3<T> &m)
+{
+  return (m[0][0] == T(1) && m[0][1] == T(0) && m[0][2] == T(0) && m[1][0] == T(0) &&
+          m[1][1] == T(1) && m[1][2] == T(0) && m[2][0] == T(0) && m[2][1] == T(0) &&
+          m[2][2] == T(1));
 }
 
 /**
@@ -235,13 +246,13 @@ bool is_identity(const Mat3<T>& m) {
  * @param m The matrix to check.
  * @return True if the matrix is an identity matrix, false otherwise.
  */
-template <typename T>
-bool is_identity(const Mat4<T>& m) {
-  return (
-    m[0][0] == T(1) && m[0][1] == T(0) && m[0][2] == T(0) && m[0][3] == T(0) && m[1][0] == T(0) && m[1][1] == T(1) &&
-    m[1][2] == T(0) && m[1][3] == T(0) && m[2][0] == T(0) && m[2][1] == T(0) && m[2][2] == T(1) && m[2][3] == T(0) &&
-    m[3][0] == T(0) && m[3][1] == T(0) && m[3][2] == T(0) && m[3][3] == T(1)
-  );
+template<typename T>
+bool is_identity(const Mat4<T> &m)
+{
+  return (m[0][0] == T(1) && m[0][1] == T(0) && m[0][2] == T(0) && m[0][3] == T(0) &&
+          m[1][0] == T(0) && m[1][1] == T(1) && m[1][2] == T(0) && m[1][3] == T(0) &&
+          m[2][0] == T(0) && m[2][1] == T(0) && m[2][2] == T(1) && m[2][3] == T(0) &&
+          m[3][0] == T(0) && m[3][1] == T(0) && m[3][2] == T(0) && m[3][3] == T(1));
 }
 
 /**
@@ -250,9 +261,11 @@ bool is_identity(const Mat4<T>& m) {
  * @param m The matrix to check.
  * @return True if the matrix is an identity matrix, false otherwise.
  */
-template <typename T>
-bool is_identity(const Mat2x3<T>& m) {
-  return (m[0][0] == T(1) && m[0][1] == T(0) && m[1][0] == T(0) && m[1][1] == T(1) && m[0][2] == T(0) && m[1][2] == T(0));
+template<typename T>
+bool is_identity(const Mat2x3<T> &m)
+{
+  return (m[0][0] == T(1) && m[0][1] == T(0) && m[1][0] == T(0) && m[1][1] == T(1) &&
+          m[0][2] == T(0) && m[1][2] == T(0));
 }
 
 /* -- not_identity -- */
@@ -260,60 +273,67 @@ bool is_identity(const Mat2x3<T>& m) {
 /**
  * Checks if a 2x2 matrix is not an identity matrix.
  *
- * Checking if a matrix is not an identity matrix is faster than checking if it is an identity matrix.
+ * Checking if a matrix is not an identity matrix is faster than checking if it is an identity
+ * matrix.
  *
  * @param m The matrix to check.
  * @return True if the matrix is not an identity matrix, false otherwise.
  */
-template <typename T>
-bool not_identity(const Mat2<T>& m) {
+template<typename T>
+bool not_identity(const Mat2<T> &m)
+{
   return (m[0][0] != T(1) || m[0][1] != T(0) || m[1][0] != T(0) || m[1][1] != T(1));
 }
 
 /**
  * Checks if a 3x3 matrix is not an identity matrix.
  *
- * Checking if a matrix is not an identity matrix is faster than checking if it is an identity matrix.
+ * Checking if a matrix is not an identity matrix is faster than checking if it is an identity
+ * matrix.
  *
  * @param m The matrix to check.
  * @return True if the matrix is not an identity matrix, false otherwise.
  */
-template <typename T>
-bool not_identity(const Mat3<T>& m) {
-  return (
-    m[0][0] != T(1) || m[0][1] != T(0) || m[0][2] != T(0) || m[1][0] != T(0) || m[1][1] != T(1) || m[1][2] != T(0) ||
-    m[2][0] != T(0) || m[2][1] != T(0) || m[2][2] != T(1)
-  );
+template<typename T>
+bool not_identity(const Mat3<T> &m)
+{
+  return (m[0][0] != T(1) || m[0][1] != T(0) || m[0][2] != T(0) || m[1][0] != T(0) ||
+          m[1][1] != T(1) || m[1][2] != T(0) || m[2][0] != T(0) || m[2][1] != T(0) ||
+          m[2][2] != T(1));
 }
 
 /**
  * Checks if a 4x4 matrix is not an identity matrix.
  *
- * Checking if a matrix is not an identity matrix is faster than checking if it is an identity matrix.
+ * Checking if a matrix is not an identity matrix is faster than checking if it is an identity
+ * matrix.
  *
  * @param m The matrix to check.
  * @return True if the matrix is not an identity matrix, false otherwise.
  */
-template <typename T>
-bool not_identity(const Mat4<T>& m) {
-  return (
-    m[0][0] != T(1) || m[0][1] != T(0) || m[0][2] != T(0) || m[0][3] != T(0) || m[1][0] != T(0) || m[1][1] != T(1) ||
-    m[1][2] != T(0) || m[1][3] != T(0) || m[2][0] != T(0) || m[2][1] != T(0) || m[2][2] != T(1) || m[2][3] != T(0) ||
-    m[3][0] != T(0) || m[3][1] != T(0) || m[3][2] != T(0) || m[3][3] != T(1)
-  );
+template<typename T>
+bool not_identity(const Mat4<T> &m)
+{
+  return (m[0][0] != T(1) || m[0][1] != T(0) || m[0][2] != T(0) || m[0][3] != T(0) ||
+          m[1][0] != T(0) || m[1][1] != T(1) || m[1][2] != T(0) || m[1][3] != T(0) ||
+          m[2][0] != T(0) || m[2][1] != T(0) || m[2][2] != T(1) || m[2][3] != T(0) ||
+          m[3][0] != T(0) || m[3][1] != T(0) || m[3][2] != T(0) || m[3][3] != T(1));
 }
 
 /**
  * Checks if a 2x3 matrix is not an identity matrix.
  *
- * Checking if a matrix is not an identity matrix is faster than checking if it is an identity matrix.
+ * Checking if a matrix is not an identity matrix is faster than checking if it is an identity
+ * matrix.
  *
  * @param m The matrix to check.
  * @return True if the matrix is not an identity matrix, false otherwise.
  */
-template <typename T>
-bool not_identity(const Mat2x3<T>& m) {
-  return (m[0][0] != T(1) || m[0][1] != T(0) || m[1][0] != T(0) || m[1][1] != T(1) || m[0][2] != T(0) || m[1][2] != T(0));
+template<typename T>
+bool not_identity(const Mat2x3<T> &m)
+{
+  return (m[0][0] != T(1) || m[0][1] != T(0) || m[1][0] != T(0) || m[1][1] != T(1) ||
+          m[0][2] != T(0) || m[1][2] != T(0));
 }
 
 /* -- determinant -- */
@@ -324,8 +344,9 @@ bool not_identity(const Mat2x3<T>& m) {
  * @param m The matrix to calculate the determinant of.
  * @return The determinant of the matrix.
  */
-template <typename T>
-T determinant(const Mat2<T>& m) {
+template<typename T>
+T determinant(const Mat2<T> &m)
+{
   return (+m[0][0] * m[1][1] - m[0][1] * m[1][0]);
 }
 
@@ -335,12 +356,12 @@ T determinant(const Mat2<T>& m) {
  * @param m The matrix to calculate the determinant of.
  * @return The determinant of the matrix.
  */
-template <typename T>
-T determinant(const Mat3<T>& m) {
-  return (
-    +m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) - m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2]) +
-    m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2])
-  );
+template<typename T>
+T determinant(const Mat3<T> &m)
+{
+  return (+m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) -
+          m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2]) +
+          m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2]));
 }
 
 /**
@@ -349,22 +370,21 @@ T determinant(const Mat3<T>& m) {
  * @param m The matrix to calculate the determinant of.
  * @return The determinant of the matrix.
  */
-template <typename T>
-T determinant(const Mat4<T>& m) {
-  return (
-    +m[0][0] *
-      (+m[1][1] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) - m[2][1] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) +
-       m[3][1] * (m[1][2] * m[2][3] - m[2][2] * m[1][3])) -
-    m[1][0] *
-      (+m[0][1] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) - m[2][1] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
-       m[3][1] * (m[0][2] * m[2][3] - m[2][2] * m[0][3])) +
-    m[2][0] *
-      (+m[0][1] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) - m[1][1] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
-       m[3][1] * (m[0][2] * m[1][3] - m[1][2] * m[0][3])) -
-    m[3][0] *
-      (+m[0][1] * (m[1][2] * m[2][3] - m[2][2] * m[1][3]) - m[1][1] * (m[0][2] * m[2][3] - m[2][2] * m[0][3]) +
-       m[2][1] * (m[0][2] * m[1][3] - m[1][2] * m[0][3]))
-  );
+template<typename T>
+T determinant(const Mat4<T> &m)
+{
+  return (+m[0][0] * (+m[1][1] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) -
+                      m[2][1] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) +
+                      m[3][1] * (m[1][2] * m[2][3] - m[2][2] * m[1][3])) -
+          m[1][0] * (+m[0][1] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) -
+                     m[2][1] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
+                     m[3][1] * (m[0][2] * m[2][3] - m[2][2] * m[0][3])) +
+          m[2][0] * (+m[0][1] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) -
+                     m[1][1] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
+                     m[3][1] * (m[0][2] * m[1][3] - m[1][2] * m[0][3])) -
+          m[3][0] * (+m[0][1] * (m[1][2] * m[2][3] - m[2][2] * m[1][3]) -
+                     m[1][1] * (m[0][2] * m[2][3] - m[2][2] * m[0][3]) +
+                     m[2][1] * (m[0][2] * m[1][3] - m[1][2] * m[0][3])));
 }
 
 /**
@@ -376,8 +396,9 @@ T determinant(const Mat4<T>& m) {
  * @param m The matrix to calculate the determinant of.
  * @return The determinant of the matrix.
  */
-template <typename T>
-T determinant(const Mat2x3<T>& m) {
+template<typename T>
+T determinant(const Mat2x3<T> &m)
+{
   return (+m[0][0] * m[1][1] - m[0][1] * m[1][0]);
 }
 
@@ -389,8 +410,9 @@ T determinant(const Mat2x3<T>& m) {
  * @param m The matrix to calculate the inverse of.
  * @return The inverse of the matrix.
  */
-template <typename T>
-Mat2<T> inverse(const Mat2<T>& m) {
+template<typename T>
+Mat2<T> inverse(const Mat2<T> &m)
+{
   T one_over_determinant = 1.0f / determinant(m);
 
   Mat2<T> inverse;
@@ -408,8 +430,9 @@ Mat2<T> inverse(const Mat2<T>& m) {
  * @param m The matrix to calculate the inverse of.
  * @return The inverse of the matrix.
  */
-template <typename T>
-Mat3<T> inverse(const Mat3<T>& m) {
+template<typename T>
+Mat3<T> inverse(const Mat3<T> &m)
+{
   T one_over_determinant = 1.0f / determinant(m);
 
   Mat3<T> inverse;
@@ -432,59 +455,76 @@ Mat3<T> inverse(const Mat3<T>& m) {
  * @param m The matrix to calculate the inverse
  * @return The inverse of the matrix.
  */
-template <typename T>
-Mat4<T> inverse(const Mat4<T>& m) {
+template<typename T>
+Mat4<T> inverse(const Mat4<T> &m)
+{
   T one_over_determinant = 1.0f / determinant(m);
 
   Mat4<T> inverse;
-  inverse[0][0] = +(+m[1][1] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) - m[2][1] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) +
+  inverse[0][0] = +(+m[1][1] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) -
+                    m[2][1] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) +
                     m[3][1] * (m[1][2] * m[2][3] - m[2][2] * m[1][3])) *
-    one_over_determinant;
-  inverse[1][0] = -(+m[1][0] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) - m[2][0] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) +
+                  one_over_determinant;
+  inverse[1][0] = -(+m[1][0] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) -
+                    m[2][0] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) +
                     m[3][0] * (m[1][2] * m[2][3] - m[2][2] * m[1][3])) *
-    one_over_determinant;
-  inverse[2][0] = +(+m[1][0] * (m[2][1] * m[3][3] - m[3][1] * m[2][3]) - m[2][0] * (m[1][1] * m[3][3] - m[3][1] * m[1][3]) +
+                  one_over_determinant;
+  inverse[2][0] = +(+m[1][0] * (m[2][1] * m[3][3] - m[3][1] * m[2][3]) -
+                    m[2][0] * (m[1][1] * m[3][3] - m[3][1] * m[1][3]) +
                     m[3][0] * (m[1][1] * m[2][3] - m[2][1] * m[1][3])) *
-    one_over_determinant;
-  inverse[3][0] = -(+m[1][0] * (m[2][1] * m[3][2] - m[3][1] * m[2][2]) - m[2][0] * (m[1][1] * m[3][2] - m[3][1] * m[1][2]) +
+                  one_over_determinant;
+  inverse[3][0] = -(+m[1][0] * (m[2][1] * m[3][2] - m[3][1] * m[2][2]) -
+                    m[2][0] * (m[1][1] * m[3][2] - m[3][1] * m[1][2]) +
                     m[3][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2])) *
-    one_over_determinant;
-  inverse[0][1] = -(+m[0][1] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) - m[2][1] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
+                  one_over_determinant;
+  inverse[0][1] = -(+m[0][1] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) -
+                    m[2][1] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
                     m[3][1] * (m[0][2] * m[2][3] - m[2][2] * m[0][3])) *
-    one_over_determinant;
-  inverse[1][1] = +(+m[0][0] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) - m[2][0] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
+                  one_over_determinant;
+  inverse[1][1] = +(+m[0][0] * (m[2][2] * m[3][3] - m[3][2] * m[2][3]) -
+                    m[2][0] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
                     m[3][0] * (m[0][2] * m[2][3] - m[2][2] * m[0][3])) *
-    one_over_determinant;
-  inverse[2][1] = -(+m[0][0] * (m[2][1] * m[3][3] - m[3][1] * m[2][3]) - m[2][0] * (m[0][1] * m[3][3] - m[3][1] * m[0][3]) +
+                  one_over_determinant;
+  inverse[2][1] = -(+m[0][0] * (m[2][1] * m[3][3] - m[3][1] * m[2][3]) -
+                    m[2][0] * (m[0][1] * m[3][3] - m[3][1] * m[0][3]) +
                     m[3][0] * (m[0][1] * m[2][3] - m[2][1] * m[0][3])) *
-    one_over_determinant;
-  inverse[3][1] = +(+m[0][0] * (m[2][1] * m[3][2] - m[3][1] * m[2][2]) - m[2][0] * (m[0][1] * m[3][2] - m[3][1] * m[0][2]) +
+                  one_over_determinant;
+  inverse[3][1] = +(+m[0][0] * (m[2][1] * m[3][2] - m[3][1] * m[2][2]) -
+                    m[2][0] * (m[0][1] * m[3][2] - m[3][1] * m[0][2]) +
                     m[3][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2])) *
-    one_over_determinant;
-  inverse[0][2] = +(+m[0][1] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) - m[1][1] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
+                  one_over_determinant;
+  inverse[0][2] = +(+m[0][1] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) -
+                    m[1][1] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
                     m[3][1] * (m[0][2] * m[1][3] - m[1][2] * m[0][3])) *
-    one_over_determinant;
-  inverse[1][2] = -(+m[0][0] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) - m[1][0] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
+                  one_over_determinant;
+  inverse[1][2] = -(+m[0][0] * (m[1][2] * m[3][3] - m[3][2] * m[1][3]) -
+                    m[1][0] * (m[0][2] * m[3][3] - m[3][2] * m[0][3]) +
                     m[3][0] * (m[0][2] * m[1][3] - m[1][2] * m[0][3])) *
-    one_over_determinant;
-  inverse[2][2] = +(+m[0][0] * (m[1][1] * m[3][3] - m[3][1] * m[1][3]) - m[1][0] * (m[0][1] * m[3][3] - m[3][1] * m[0][3]) +
+                  one_over_determinant;
+  inverse[2][2] = +(+m[0][0] * (m[1][1] * m[3][3] - m[3][1] * m[1][3]) -
+                    m[1][0] * (m[0][1] * m[3][3] - m[3][1] * m[0][3]) +
                     m[3][0] * (m[0][1] * m[1][3] - m[1][1] * m[0][3])) *
-    one_over_determinant;
-  inverse[3][2] = -(+m[0][0] * (m[1][1] * m[3][2] - m[3][1] * m[1][2]) - m[1][0] * (m[0][1] * m[3][2] - m[3][1] * m[0][2]) +
+                  one_over_determinant;
+  inverse[3][2] = -(+m[0][0] * (m[1][1] * m[3][2] - m[3][1] * m[1][2]) -
+                    m[1][0] * (m[0][1] * m[3][2] - m[3][1] * m[0][2]) +
                     m[3][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2])) *
-    one_over_determinant;
-  inverse[0][3] = -(+m[0][1] * (m[1][2] * m[2][3] - m[2][2] * m[1][3]) - m[1][1] * (m[0][2] * m[2][3] - m[2][2] * m[0][3]) +
+                  one_over_determinant;
+  inverse[0][3] = -(+m[0][1] * (m[1][2] * m[2][3] - m[2][2] * m[1][3]) -
+                    m[1][1] * (m[0][2] * m[2][3] - m[2][2] * m[0][3]) +
                     m[2][1] * (m[0][2] * m[1][3] - m[1][2] * m[0][3])) *
-    one_over_determinant;
-  inverse[1][3] = +(+m[0][0] * (m[1][2] * m[2][3] - m[2][2] * m[1][3]) - m[1][0] * (m[0][2] * m[2][3] - m[2][2] * m[0][3]) +
+                  one_over_determinant;
+  inverse[1][3] = +(+m[0][0] * (m[1][2] * m[2][3] - m[2][2] * m[1][3]) -
+                    m[1][0] * (m[0][2] * m[2][3] - m[2][2] * m[0][3]) +
                     m[2][0] * (m[0][2] * m[1][3] - m[1][2] * m[0][3])) *
-    one_over_determinant;
-  inverse[2][3] = -(+m[0][0] * (m[1][1] * m[2][3] - m[2][1] * m[1][3]) - m[1][0] * (m[0][1] * m[2][3] - m[2][1] * m[0][3]) +
+                  one_over_determinant;
+  inverse[2][3] = -(+m[0][0] * (m[1][1] * m[2][3] - m[2][1] * m[1][3]) -
+                    m[1][0] * (m[0][1] * m[2][3] - m[2][1] * m[0][3]) +
                     m[2][0] * (m[0][1] * m[1][3] - m[1][1] * m[0][3])) *
-    one_over_determinant;
-  inverse[3][3] = +(+m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) - m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2]) +
+                  one_over_determinant;
+  inverse[3][3] = +(+m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) -
+                    m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2]) +
                     m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2])) *
-    one_over_determinant;
+                  one_over_determinant;
 
   return inverse;
 }
@@ -498,8 +538,9 @@ Mat4<T> inverse(const Mat4<T>& m) {
  * @param m The matrix to calculate the inverse of.
  * @return The inverse of the matrix.
  */
-template <typename T>
-Mat2x3<T> inverse(const Mat2x3<T>& m) {
+template<typename T>
+Mat2x3<T> inverse(const Mat2x3<T> &m)
+{
   T one_over_determinant = 1.0f / determinant(m);
 
   Mat2x3<T> inverse;
@@ -521,8 +562,9 @@ Mat2x3<T> inverse(const Mat2x3<T>& m) {
  * @param m The matrix to transpose
  * @return The transposed matrix.
  */
-template <typename T>
-Mat2<T> transpose(const Mat2<T>& m) {
+template<typename T>
+Mat2<T> transpose(const Mat2<T> &m)
+{
   Mat2<T> result;
   result[0][0] = m[0][0];
   result[0][1] = m[1][0];
@@ -537,8 +579,9 @@ Mat2<T> transpose(const Mat2<T>& m) {
  * @param m The matrix to transpose
  * @return The transposed matrix.
  */
-template <typename T>
-Mat3<T> transpose(const Mat3<T>& m) {
+template<typename T>
+Mat3<T> transpose(const Mat3<T> &m)
+{
   Mat3<T> result;
   result[0][0] = m[0][0];
   result[0][1] = m[1][0];
@@ -558,8 +601,9 @@ Mat3<T> transpose(const Mat3<T>& m) {
  * @param m The matrix to transpose
  * @return The transposed matrix.
  */
-template <typename T>
-Mat4<T> transpose(const Mat4<T>& m) {
+template<typename T>
+Mat4<T> transpose(const Mat4<T> &m)
+{
   Mat4<T> result;
   result[0][0] = m[0][0];
   result[0][1] = m[1][0];
@@ -589,8 +633,9 @@ Mat4<T> transpose(const Mat4<T>& m) {
  * @param v The vector to translate by.
  * @return The translated matrix.
  */
-template <typename T>
-Mat2x3<T> translate(const Mat2x3<T>& m, const Vec2<T> v) {
+template<typename T>
+Mat2x3<T> translate(const Mat2x3<T> &m, const Vec2<T> v)
+{
   const T src_b00 = m[0][0];
   const T src_b01 = m[0][1];
   const T src_b02 = m[0][2];
@@ -617,8 +662,9 @@ Mat2x3<T> translate(const Mat2x3<T>& m, const Vec2<T> v) {
  * @param v The vector to scale by.
  * @return The scaled matrix.
  */
-template <typename T>
-Mat2x3<T> scale(const Mat2x3<T>& m, const Vec2<T> v) {
+template<typename T>
+Mat2x3<T> scale(const Mat2x3<T> &m, const Vec2<T> v)
+{
   const T src_b00 = m[0][0];
   const T src_b01 = m[0][1];
   const T src_b02 = m[0][2];
@@ -644,8 +690,9 @@ Mat2x3<T> scale(const Mat2x3<T>& m, const Vec2<T> v) {
  * @param v The vector to scale by.
  * @return The scaled matrix.
  */
-template <typename T>
-Mat2x3<T> scale(const Mat2x3<T>& m, const Vec2<T> c, const Vec2<T> v) {
+template<typename T>
+Mat2x3<T> scale(const Mat2x3<T> &m, const Vec2<T> c, const Vec2<T> v)
+{
   return translate(scale(translate(m, -c), v), c);
 }
 
@@ -658,24 +705,26 @@ Mat2x3<T> scale(const Mat2x3<T>& m, const Vec2<T> c, const Vec2<T> v) {
  * @param t The angle to rotate by.
  * @return The rotated matrix.
  */
-template <typename T>
-Mat2x3<T> rotate(const Mat2x3<T>& m, const T t) {
+template<typename T>
+Mat2x3<T> rotate(const Mat2x3<T> &m, const T t)
+{
   return rotate(m, std::sinf(t), std::cosf(t));
 }
 
 /**
  * @brief Performs a 2D rotation to a 2x3 matrix.
  *
- * This function is faster than the regular rotate function because it does not need to calculate the sine and cosine of the
- * angle.
+ * This function is faster than the regular rotate function because it does not need to calculate
+ * the sine and cosine of the angle.
  *
  * @param m The matrix to rotate.
  * @param sin_t The sine of the angle to rotate by.
  * @param cos_t The cosine of the angle to rotate by.
  * @return The rotated matrix.
  */
-template <typename T>
-Mat2x3<T> rotate(const Mat2x3<T>& m, const T sin_t, const T cos_t) {
+template<typename T>
+Mat2x3<T> rotate(const Mat2x3<T> &m, const T sin_t, const T cos_t)
+{
   const T src_b00 = m[0][0];
   const T src_b01 = m[0][1];
   const T src_b02 = m[0][2];
@@ -701,23 +750,25 @@ Mat2x3<T> rotate(const Mat2x3<T>& m, const T sin_t, const T cos_t) {
  * @param t The angle to rotate by.
  * @return The rotated matrix.
  */
-template <typename T>
-Mat2x3<T> rotate(const Mat2x3<T>& m, const Vec2<T> c, const T t) {
+template<typename T>
+Mat2x3<T> rotate(const Mat2x3<T> &m, const Vec2<T> c, const T t)
+{
   return translate(rotate(translate(m, -c), t), c);
 }
 /**
  * @brief Performs a 2D rotation to a 2x3 matrix.
  *
- * This function is faster than the regular rotate function because it does not need to calculate the sine and cosine of the
- * angle.
+ * This function is faster than the regular rotate function because it does not need to calculate
+ * the sine and cosine of the angle.
  *
  * @param m The matrix to rotate.
  * @param sin_t The sine of the angle to rotate by.
  * @param cos_t The cosine of the angle to rotate by.
  * @return The rotated matrix.
  */
-template <typename T>
-Mat2x3<T> rotate(const Mat2x3<T>& m, const Vec2<T> c, const T sin_t, const T cos_t) {
+template<typename T>
+Mat2x3<T> rotate(const Mat2x3<T> &m, const Vec2<T> c, const T sin_t, const T cos_t)
+{
   return translate(rotate(translate(m, -c), sin_t, cos_t), c);
 }
 
@@ -729,8 +780,9 @@ Mat2x3<T> rotate(const Mat2x3<T>& m, const Vec2<T> c, const T sin_t, const T cos
  * @param m The matrix to decompose.
  * @return The decomposed matrix.
  */
-template <typename T>
-DecomposedTransform<T> decompose(const Mat2x3<T>& m) {
+template<typename T>
+DecomposedTransform<T> decompose(const Mat2x3<T> &m)
+{
   DecomposedTransform<T> decomposed;
 
   decomposed.rotation = std::atan2f(m[1][0], m[0][0]);
@@ -752,8 +804,9 @@ DecomposedTransform<T> decompose(const Mat2x3<T>& m) {
  * @param m The matrix to calculate the translation component of.
  * @return The translation component of the matrix.
  */
-template <typename T>
-Vec2<T> translation(const Mat2x3<T>& m) {
+template<typename T>
+Vec2<T> translation(const Mat2x3<T> &m)
+{
   return {m[0][2], m[1][2]};
 }
 
@@ -763,8 +816,9 @@ Vec2<T> translation(const Mat2x3<T>& m) {
  * @param m The matrix to calculate the rotation component of.
  * @return The rotation component of the matrix.
  */
-template <typename T>
-T rotation(const Mat2x3<T>& m) {
+template<typename T>
+T rotation(const Mat2x3<T> &m)
+{
   return std::atan2f(m[1][0], m[0][0]);
 }
 
@@ -774,8 +828,9 @@ T rotation(const Mat2x3<T>& m) {
  * @param m The matrix to calculate the scale component of.
  * @return The scale component of the matrix.
  */
-template <typename T>
-Vec2<T> scaling(const Mat2x3<T>& m) {
+template<typename T>
+Vec2<T> scaling(const Mat2x3<T> &m)
+{
   return decompose(m).scale;
 }
 
@@ -784,8 +839,9 @@ Vec2<T> scaling(const Mat2x3<T>& m) {
 /**
  * @brief Overloaded multiplication operator to multiply a 2x3 matrix by a 2D rect.
  */
-template <typename T>
-math::Rect<T> operator*(const Mat2x3<T>& m, const math::Rect<T>& r) {
+template<typename T>
+math::Rect<T> operator*(const Mat2x3<T> &m, const math::Rect<T> &r)
+{
   Vec2<T> r1 = m * r.min;
   Vec2<T> r2 = m * Vec2<T>{r.min.x, r.max.y};
   Vec2<T> r3 = m * r.max;
@@ -797,8 +853,9 @@ math::Rect<T> operator*(const Mat2x3<T>& m, const math::Rect<T>& r) {
 /**
  * @brief Overloaded division operator to divide a 2x3 matrix by a 2D rect.
  */
-template <typename T>
-math::Rect<T> operator/(const Mat2x3<T>& m, const math::Rect<T>& r) {
+template<typename T>
+math::Rect<T> operator/(const Mat2x3<T> &m, const math::Rect<T> &r)
+{
   return inverse(m) * r;
 }
 

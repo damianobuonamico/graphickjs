@@ -14,34 +14,35 @@ namespace graphick::math {
 
 /* -- Defines -- */
 
-template <typename T>
+template<typename T>
 inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> pi = T(3.14159265358979323846);
 
-template <typename T>
+template<typename T>
 inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> two_pi = T(2) * pi<T>;
 
-template <typename T>
+template<typename T>
 inline constexpr T epsilon = T(0);
-template <>
+template<>
 inline constexpr float epsilon<float> = std::numeric_limits<float>::epsilon();
-template <>
+template<>
 inline constexpr double epsilon<double> = std::numeric_limits<double>::epsilon();
 
-template <typename T>
+template<typename T>
 inline constexpr T geometric_epsilon = T(0);
-template <>
+template<>
 inline constexpr float geometric_epsilon<float> = 1e-3f;
-template <>
+template<>
 inline constexpr double geometric_epsilon<double> = 1e-3;
 
-template <typename T>
+template<typename T>
 inline constexpr T newton_raphson_iterations = T(5);
 
-template <typename T>
+template<typename T>
 inline constexpr T max_recursion_depth = T(16);
 
-template <typename T>
-inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> circle_ratio = T(0.55228474983079339840);
+template<typename T>
+inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> circle_ratio = T(
+    0.55228474983079339840);
 
 /**
  * @brief Rounds a scalar to a certain number of decimals.
@@ -50,8 +51,9 @@ inline constexpr std::enable_if_t<std::is_floating_point_v<T>, T> circle_ratio =
  * @param precision The smallest value to round to.
  * @return The rounded scalar.
  */
-template <typename T>
-inline T round(const T t, const T precision) noexcept {
+template<typename T>
+inline T round(const T t, const T precision) noexcept
+{
   if (precision >= T(1)) {
     return std::round(t / precision) * precision;
   }
@@ -70,8 +72,9 @@ inline T round(const T t, const T precision) noexcept {
  * @param max The maximum value.
  * @return The clamped scalar.
  */
-template <typename T>
-inline T clamp(const T t, const T min, const T max) {
+template<typename T>
+inline T clamp(const T t, const T min, const T max)
+{
   return t < min ? min : (t > max ? max : t);
 }
 
@@ -85,8 +88,9 @@ inline T clamp(const T t, const T min, const T max) {
  * @param new_max The maximum value of the new range.
  * @return The mapped value.
  */
-template <typename T>
-inline T map(const T t, const T old_min, const T old_max, const T new_min, const T new_max) {
+template<typename T>
+inline T map(const T t, const T old_min, const T old_max, const T new_min, const T new_max)
+{
   return (((t - old_min) * (new_max - new_min)) / (old_max - old_min) + new_min);
 }
 
@@ -98,8 +102,9 @@ inline T map(const T t, const T old_min, const T old_max, const T new_min, const
  * @param t The interpolation value.
  * @return The interpolated value.
  */
-template <typename T>
-inline T lerp(const T a, const T b, const T t) {
+template<typename T>
+inline T lerp(const T a, const T b, const T t)
+{
   return a + (b - a) * t;
 }
 
@@ -111,8 +116,9 @@ inline T lerp(const T a, const T b, const T t) {
  * @param max The maximum value.
  * @return The wrapped value.
  */
-template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
-inline T wrap(T t, const T min, const T max) {
+template<typename T, typename = std::enable_if<std::is_integral_v<T>>>
+inline T wrap(T t, const T min, const T max)
+{
 
   const T range_size = max - min + 1;
 
@@ -130,8 +136,9 @@ inline T wrap(T t, const T min, const T max) {
  * @param eps The precision to check with.
  * @return Whether the scalar is almost zero.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool is_almost_zero(const T t, const T eps = epsilon<T>) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline bool is_almost_zero(const T t, const T eps = epsilon<T>)
+{
   return std::abs(t) <= eps;
 }
 
@@ -143,8 +150,9 @@ inline bool is_almost_zero(const T t, const T eps = epsilon<T>) {
  * @param eps The precision to check with.
  * @return Whether the scalars are almost equal.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>)
+{
   return std::abs(t1 - t2) <= eps;
 }
 
@@ -155,8 +163,9 @@ inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>) {
  * @param include_ends Whether to include the ends of the range, defaults to true.
  * @return Whether the scalar is normalized.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool is_normalized(const T t, const bool include_ends = true) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline bool is_normalized(const T t, const bool include_ends = true)
+{
   return include_ends ? (t >= T(0) && t <= T(1)) : (t > T(0) && t < T(1));
 }
 
@@ -169,8 +178,9 @@ inline bool is_normalized(const T t, const bool include_ends = true) {
  * @param include_ends Whether to include the ends of the range, defaults to true.
  * @return Whether the scalar is in the range.
  */
-template <typename T>
-inline bool is_in_range(const T t, const T min, const T max, const bool include_ends = true) {
+template<typename T>
+inline bool is_in_range(const T t, const T min, const T max, const bool include_ends = true)
+{
   return include_ends ? (t >= min && t <= max) : (t > min && t < max);
 }
 
@@ -180,8 +190,9 @@ inline bool is_in_range(const T t, const T min, const T max, const bool include_
  * @param a The angle in degrees.
  * @return The angle in radians.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline T degrees_to_radians(const T a) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline T degrees_to_radians(const T a)
+{
   return a * pi<T> / T(180);
 }
 
@@ -191,8 +202,9 @@ inline T degrees_to_radians(const T a) {
  * @param a The angle in radians.
  * @return The angle in degrees.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline T radians_to_degrees(const T a) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline T radians_to_degrees(const T a)
+{
   return a * T(180) / pi<T>;
 }
 
@@ -202,8 +214,9 @@ inline T radians_to_degrees(const T a) {
  * @param n The scalar to calculate the next power of two of.
  * @return The next power of two.
  */
-template <typename T, typename = std::enable_if<std::is_integral_v<T>>>
-inline T next_power_of_two(T n) {
+template<typename T, typename = std::enable_if<std::is_integral_v<T>>>
+inline T next_power_of_two(T n)
+{
   n--;
 
   uint8_t power = (sizeof(T) < 8 ? 8 : sizeof(T)) - 2;
@@ -221,8 +234,9 @@ inline T next_power_of_two(T n) {
  * @param val The scalar to calculate the sign of.
  * @return The sign of the scalar.
  */
-template <typename T>
-inline T sign(T val) {
+template<typename T>
+inline T sign(T val)
+{
   return static_cast<T>((T(0) < val) - (val < T(0)));
 }
 

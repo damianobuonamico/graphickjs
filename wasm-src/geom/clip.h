@@ -11,7 +11,8 @@
 namespace graphick::geom {
 
 /**
- * @brief Calculates the x-coordinate of the intersection point between two lines defined by their endpoints.
+ * @brief Calculates the x-coordinate of the intersection point between two lines defined by their
+ * endpoints.
  *
  * If one of the lines is horizontal, use the x_intersect_horizontal() function.
  *
@@ -19,8 +20,10 @@ namespace graphick::geom {
  * @param x3, y3, x4, y4 The coordinates of the second line.
  * @return The x-coordinate of the intersection point.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline T x_intersect(const T x1, const T y1, const T x2, const T y2, const T x3, const T y3, const T x4, const T y4) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline T x_intersect(
+    const T x1, const T y1, const T x2, const T y2, const T x3, const T y3, const T x4, const T y4)
+{
   const T num = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
   const T den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
@@ -28,7 +31,8 @@ inline T x_intersect(const T x1, const T y1, const T x2, const T y2, const T x3,
 }
 
 /**
- * @brief Calculates the y-coordinate of the intersection point between two lines defined by their endpoints.
+ * @brief Calculates the y-coordinate of the intersection point between two lines defined by their
+ * endpoints.
  *
  * If one of the lines is vertical, use the y_intersect_vertical() function.
  *
@@ -36,8 +40,10 @@ inline T x_intersect(const T x1, const T y1, const T x2, const T y2, const T x3,
  * @param x3, y3, x4, y4 The coordinates of the second line.
  * @return The y-coordinate of the intersection point.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline T y_intersect(const T x1, const T y1, const T x2, const T y2, const T x3, const T y3, const T x4, const T y4) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline T y_intersect(
+    const T x1, const T y1, const T x2, const T y2, const T x3, const T y3, const T x4, const T y4)
+{
   const T num = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
   const T den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
@@ -53,10 +59,12 @@ inline T y_intersect(const T x1, const T y1, const T x2, const T y2, const T x3,
  * @param x1, y1, x2, y2 The coordinates of the second line.
  * @return The x-coordinate of the intersection point.
  */
-template <typename T>
-inline T x_intersect_horizontal(const T y, const T x1, const T y1, const T x2, const T y2) {
-  const int64_t num = static_cast<int64_t>(x1) * static_cast<int64_t>(y2) - static_cast<int64_t>(y1) * static_cast<int64_t>(x2) -
-    static_cast<int64_t>(y) * static_cast<int64_t>(x1 - x2);
+template<typename T>
+inline T x_intersect_horizontal(const T y, const T x1, const T y1, const T x2, const T y2)
+{
+  const int64_t num = static_cast<int64_t>(x1) * static_cast<int64_t>(y2) -
+                      static_cast<int64_t>(y1) * static_cast<int64_t>(x2) -
+                      static_cast<int64_t>(y) * static_cast<int64_t>(x1 - x2);
   const int64_t den = static_cast<int64_t>(y2 - y1);
 
   return static_cast<T>(num / den);
@@ -71,8 +79,9 @@ inline T x_intersect_horizontal(const T y, const T x1, const T y1, const T x2, c
  * @param x1, y1, x2, y2 The coordinates of the second line.
  * @return The x-coordinate of the intersection point.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline T x_intersect_horizontal(const T y, const T x1, const T y1, const T x2, const T y2) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline T x_intersect_horizontal(const T y, const T x1, const T y1, const T x2, const T y2)
+{
   const T num = x1 * y2 - y1 * x2 - y * (x1 - x2);
   const T den = y2 - y1;
 
@@ -88,10 +97,12 @@ inline T x_intersect_horizontal(const T y, const T x1, const T y1, const T x2, c
  * @param x1, y1, x2, y2 The coordinates of the second line.
  * @return The y-coordinate of the intersection point.
  */
-template <typename T>
-inline T y_intersect_vertical(const T x, const T x1, const T y1, const T x2, const T y2) {
-  const int64_t num = static_cast<int64_t>(x1) * static_cast<int64_t>(y2) - static_cast<int64_t>(y1) * static_cast<int64_t>(x2) +
-    static_cast<int64_t>(x) * static_cast<int64_t>(y1 - y2);
+template<typename T>
+inline T y_intersect_vertical(const T x, const T x1, const T y1, const T x2, const T y2)
+{
+  const int64_t num = static_cast<int64_t>(x1) * static_cast<int64_t>(y2) -
+                      static_cast<int64_t>(y1) * static_cast<int64_t>(x2) +
+                      static_cast<int64_t>(x) * static_cast<int64_t>(y1 - y2);
   const int64_t den = static_cast<int64_t>(x1 - x2);
 
   return static_cast<T>(num / den);
@@ -106,8 +117,9 @@ inline T y_intersect_vertical(const T x, const T x1, const T y1, const T x2, con
  * @param x1, y1, x2, y2 The coordinates of the second line.
  * @return The y-coordinate of the intersection point.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline T y_intersect_vertical(const T x, const T x1, const T y1, const T x2, const T y2) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline T y_intersect_vertical(const T x, const T x1, const T y1, const T x2, const T y2)
+{
   const T num = x1 * y2 - y1 * x2 + x * (y1 - y2);
   const T den = x1 - x2;
 
@@ -122,9 +134,11 @@ inline T y_intersect_vertical(const T x, const T x1, const T y1, const T x2, con
  * @param points The points of the polygon.
  * @param x The x value to clip to.
  */
-template <typename T>
-inline void clip_to_left(std::vector<math::Vec2<T>>& points, const T x) {
-  if (points.empty()) return;
+template<typename T>
+inline void clip_to_left(std::vector<math::Vec2<T>> &points, const T x)
+{
+  if (points.empty())
+    return;
 
   std::vector<math::Vec2<T>> new_points;
 
@@ -133,13 +147,15 @@ inline void clip_to_left(std::vector<math::Vec2<T>>& points, const T x) {
 
     if (point.x < x) {
       if (points[i + 1].x > x) {
-        new_points.push_back({x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y)});
+        new_points.push_back(
+            {x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y)});
       }
     } else {
       new_points.push_back(point);
 
       if (points[i + 1].x < x) {
-        new_points.push_back({x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y)});
+        new_points.push_back(
+            {x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y)});
       }
     }
   }
@@ -159,9 +175,11 @@ inline void clip_to_left(std::vector<math::Vec2<T>>& points, const T x) {
  * @param points The points of the polygon.
  * @param x The x value to clip to.
  */
-template <typename T>
-inline void clip_to_right(std::vector<math::Vec2<T>>& points, const T x) {
-  if (points.empty()) return;
+template<typename T>
+inline void clip_to_right(std::vector<math::Vec2<T>> &points, const T x)
+{
+  if (points.empty())
+    return;
 
   std::vector<math::Vec2<T>> new_points;
 
@@ -170,13 +188,15 @@ inline void clip_to_right(std::vector<math::Vec2<T>>& points, const T x) {
 
     if (point.x > x) {
       if (points[i + 1].x < x) {
-        new_points.push_back({x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y)});
+        new_points.push_back(
+            {x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y)});
       }
     } else {
       new_points.push_back(point);
 
       if (points[i + 1].x > x) {
-        new_points.push_back({x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y)});
+        new_points.push_back(
+            {x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y)});
       }
     }
   }
@@ -196,9 +216,11 @@ inline void clip_to_right(std::vector<math::Vec2<T>>& points, const T x) {
  * @param points The points of the polygon.
  * @param y The y value to clip to.
  */
-template <typename T>
-inline void clip_to_top(std::vector<math::Vec2<T>>& points, const T y) {
-  if (points.empty()) return;
+template<typename T>
+inline void clip_to_top(std::vector<math::Vec2<T>> &points, const T y)
+{
+  if (points.empty())
+    return;
 
   std::vector<math::Vec2<T>> new_points;
 
@@ -207,13 +229,15 @@ inline void clip_to_top(std::vector<math::Vec2<T>>& points, const T y) {
 
     if (point.y < y) {
       if (points[i + 1].y > y) {
-        new_points.push_back({x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y});
+        new_points.push_back(
+            {x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y});
       }
     } else {
       new_points.push_back(point);
 
       if (points[i + 1].y < y) {
-        new_points.push_back({x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y});
+        new_points.push_back(
+            {x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y});
       }
     }
   }
@@ -233,9 +257,11 @@ inline void clip_to_top(std::vector<math::Vec2<T>>& points, const T y) {
  * @param points The points of the polygon.
  * @param y The y value to clip to.
  */
-template <typename T>
-inline void clip_to_bottom(std::vector<math::Vec2<T>>& points, const T y) {
-  if (points.empty()) return;
+template<typename T>
+inline void clip_to_bottom(std::vector<math::Vec2<T>> &points, const T y)
+{
+  if (points.empty())
+    return;
 
   std::vector<math::Vec2<T>> new_points;
 
@@ -244,13 +270,15 @@ inline void clip_to_bottom(std::vector<math::Vec2<T>>& points, const T y) {
 
     if (point.y > y) {
       if (points[i + 1].y < y) {
-        new_points.push_back({x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y});
+        new_points.push_back(
+            {x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y});
       }
     } else {
       new_points.push_back(point);
 
       if (points[i + 1].y > y) {
-        new_points.push_back({x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y});
+        new_points.push_back(
+            {x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y});
       }
     }
   }
@@ -270,8 +298,9 @@ inline void clip_to_bottom(std::vector<math::Vec2<T>>& points, const T y) {
  * @param points The points of the polygon.
  * @param rect The rect to clip to.
  */
-template <typename T>
-inline void clip(std::vector<math::Vec2<T>>& points, const math::Rect<T>& rect) {
+template<typename T>
+inline void clip(std::vector<math::Vec2<T>> &points, const math::Rect<T> &rect)
+{
   clip_to_left(points, rect.min.x);
   clip_to_right(points, rect.max.x);
   clip_to_top(points, rect.min.y);

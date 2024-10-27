@@ -1,6 +1,7 @@
 /**
  * @file tool_state.h
- * @brief Contains the ToolState class, which is used to manage the state of the input tools in the Graphick editor.
+ * @brief Contains the ToolState class, which is used to manage the state of the input tools in the
+ * Graphick editor.
  */
 
 #pragma once
@@ -18,13 +19,11 @@ class PenTool;
  *
  * This class is used to manage the state of the input tools in the Graphick editor.
  * It is used to keep track of and update the current tool, the active tool, and the last tool.
- *
- * @class ToolState
  */
 class ToolState {
-public:
+ public:
   Manipulator manipulator; /* The manipulator object */
-public:
+ public:
   /**
    * @brief Constructs a ToolState object.
    */
@@ -35,14 +34,14 @@ public:
    *
    * @param other The ToolState object to copy.
    */
-  ToolState(const ToolState&) = delete;
+  ToolState(const ToolState &) = delete;
 
   /**
    * @brief Move constructor for ToolState.
    *
    * @param other The ToolState object to move from.
    */
-  ToolState(ToolState&&) = delete;
+  ToolState(ToolState &&) = delete;
 
   /**
    * @brief Custom destructor for ToolState.
@@ -54,21 +53,28 @@ public:
    *
    * @return A reference to the current tool.
    */
-  inline Tool& current() const { return *m_tools[(int)m_current]; }
+  inline Tool &current() const
+  {
+    return *m_tools[(int)m_current];
+  }
 
   /**
    * @brief Returns the active tool.
    *
    * @return A reference to the active tool.
    */
-  inline Tool& active() const { return *m_tools[(int)m_active]; }
+  inline Tool &active() const
+  {
+    return *m_tools[(int)m_active];
+  }
 
   /**
    * @brief Returns a pointer to the pen tool if in use.
    *
-   * @return A pointer to the pen tool if it is either the current or active tool, otherwise nullptr.
+   * @return A pointer to the pen tool if it is either the current or active tool, otherwise
+   * nullptr.
    */
-  PenTool* pen() const;
+  PenTool *pen() const;
 
   /**
    * @brief Resets the current and active tools' state.
@@ -132,18 +138,21 @@ public:
   /**
    * @brief Recalculates the active tool.
    *
-   * This function recalculates the active tool based on the current tool, the pointer state, the hover state, and the key state.
+   * This function recalculates the active tool based on the current tool, the pointer state, the
+   * hover state, and the key state.
    */
   void recalculate_active();
 
   /**
    * @brief Renders the overlays for the current tool.
    *
-   * This function queues to the renderer the overlays for the current tool and the manipulator (if active).
+   * This function queues to the renderer the overlays for the current tool and the manipulator (if
+   * active).
    */
   void render_overlays(const float zoom) const;
-private:
-  Tool* m_tools[static_cast<int>(Tool::ToolType::None)];  // An array of pointers to the tools.
+
+ private:
+  Tool *m_tools[static_cast<int>(Tool::ToolType::None)];  // An array of pointers to the tools.
 
   Tool::ToolType m_current;                               // The current tool.
   Tool::ToolType m_active;                                // The active tool.

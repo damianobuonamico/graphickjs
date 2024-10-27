@@ -12,7 +12,8 @@
 
 namespace graphick::math {
 
-QuadraticSolutions<double> solve_quadratic(const double a, const double b, const double c) {
+QuadraticSolutions<double> solve_quadratic(const double a, const double b, const double c)
+{
   const double sc = c / a;
   const double sb = b / a;
 
@@ -54,7 +55,10 @@ QuadraticSolutions<double> solve_quadratic(const double a, const double b, const
   return {root1};
 }
 
-QuadraticSolutions<double> solve_quadratic_normalized(const double a, const double b, const double c) {
+QuadraticSolutions<double> solve_quadratic_normalized(const double a,
+                                                      const double b,
+                                                      const double c)
+{
   const double sc = c / a;
   const double sb = b / a;
 
@@ -108,13 +112,12 @@ QuadraticSolutions<double> solve_quadratic_normalized(const double a, const doub
 }
 
 // TODO: implement stable method from kurbo
-CubicSolutions<double> solve_cubic(
-  const double a,
-  const double b,
-  const double c,
-  const double d,
-  const bool include_double_roots
-) {
+CubicSolutions<double> solve_cubic(const double a,
+                                   const double b,
+                                   const double c,
+                                   const double d,
+                                   const bool include_double_roots)
+{
   if (is_almost_zero(a)) {
     /* It is a quadratic equation */
 
@@ -128,7 +131,8 @@ CubicSolutions<double> solve_cubic(
 
     if (!include_double_roots) {
       if ((solutions.count == 0) || (solutions.count == 1 && solutions.solutions[0] != 0) ||
-          (solutions.count == 2 && solutions.solutions[0] != 0 && solutions.solutions[1] != 0)) {
+          (solutions.count == 2 && solutions.solutions[0] != 0 && solutions.solutions[1] != 0))
+      {
         solutions.count++;
       }
     } else {
@@ -152,7 +156,8 @@ CubicSolutions<double> solve_cubic(
     const double real_root1 = 2.0 * u - b / (3.0 * a);
     const double real_root2 = -u - b / (3.0 * a);
 
-    if (include_double_roots) return {real_root1, real_root2, real_root2};
+    if (include_double_roots)
+      return {real_root1, real_root2, real_root2};
 
     return {real_root1, real_root2};
   } else if (discriminant > 0) {
@@ -177,13 +182,12 @@ CubicSolutions<double> solve_cubic(
   }
 }
 
-CubicSolutions<double> solve_cubic_normalized(
-  const double a,
-  const double b,
-  const double c,
-  const double d,
-  const bool include_double_roots
-) {
+CubicSolutions<double> solve_cubic_normalized(const double a,
+                                              const double b,
+                                              const double c,
+                                              const double d,
+                                              const bool include_double_roots)
+{
   if (is_almost_zero(a)) {
     /* It is a quadratic equation */
 
@@ -197,7 +201,8 @@ CubicSolutions<double> solve_cubic_normalized(
 
     if (!include_double_roots) {
       if ((solutions.count == 0) || (solutions.count == 1 && solutions.solutions[0] != 0) ||
-          (solutions.count == 2 && solutions.solutions[0] != 0 && solutions.solutions[1] != 0)) {
+          (solutions.count == 2 && solutions.solutions[0] != 0 && solutions.solutions[1] != 0))
+      {
         solutions.count++;
       }
     } else {
@@ -225,7 +230,8 @@ CubicSolutions<double> solve_cubic_normalized(
     const bool real_root2_norm = math::is_normalized(real_root2);
 
     if (real_root1_norm && real_root2_norm) {
-      if (include_double_roots) return {real_root1, real_root2, real_root2};
+      if (include_double_roots)
+        return {real_root1, real_root2, real_root2};
       return {real_root1, real_root2};
     } else if (real_root1_norm) {
       return {real_root1};
@@ -241,7 +247,8 @@ CubicSolutions<double> solve_cubic_normalized(
     const double v = std::cbrt(-q / 2.0 - std::sqrt(discriminant));
     const double real_root = u + v - b / (3.0 * a);
 
-    if (math::is_normalized(real_root)) return {real_root};
+    if (math::is_normalized(real_root))
+      return {real_root};
 
     return {};
   } else {
@@ -258,27 +265,28 @@ CubicSolutions<double> solve_cubic_normalized(
     const bool root2_norm = math::is_normalized(root2);
     const bool root3_norm = math::is_normalized(root3);
 
-    const uint8_t flag =
-      (static_cast<uint8_t>(root1_norm)) | (static_cast<uint8_t>(root2_norm) << 1) | (static_cast<uint8_t>(root3_norm) << 2);
+    const uint8_t flag = (static_cast<uint8_t>(root1_norm)) |
+                         (static_cast<uint8_t>(root2_norm) << 1) |
+                         (static_cast<uint8_t>(root3_norm) << 2);
 
     switch (flag) {
-    case 0b001:
-      return {root1};
-    case 0b010:
-      return {root2};
-    case 0b011:
-      return {root1, root2};
-    case 0b100:
-      return {root3};
-    case 0b101:
-      return {root1, root3};
-    case 0b110:
-      return {root2, root3};
-    case 0b111:
-      return {root1, root2, root3};
-    default:
-    case 0b000:
-      return {};
+      case 0b001:
+        return {root1};
+      case 0b010:
+        return {root2};
+      case 0b011:
+        return {root1, root2};
+      case 0b100:
+        return {root3};
+      case 0b101:
+        return {root1, root3};
+      case 0b110:
+        return {root2, root3};
+      case 0b111:
+        return {root1, root2, root3};
+      default:
+      case 0b000:
+        return {};
     }
   }
 }

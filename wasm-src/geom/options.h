@@ -13,18 +13,20 @@ namespace graphick::geom {
 enum class LineCap {
   Butt,   // The ends of lines are squared off at the endpoints.
   Round,  // The ends of lines are rounded.
-  Square  // The ends of lines are squared off by adding a box with an equal width and half the height of the line's thickness.
+  Square  // The ends of lines are squared off by adding a box with an equal width and half the
+          // height of the line's thickness.
 };
 
 /**
  * @brief The line join used to determine how the corners of a stroke are drawn.
  */
 enum class LineJoin {
-  Miter,  // Connected segments are joined by extending their outside edges to connect at a single point.
-  Round,  // Rounds off the corners of a shape by filling an additional sector of disc centered at the common endpoint of
-          // connected segments.
-  Bevel   // Fills an additional triangular area between the common endpoint of connected segments, and the separate outside
-          // rectangular corners of each segment.
+  Miter,  // Connected segments are joined by extending their outside edges to connect at a single
+          // point.
+  Round,  // Rounds off the corners of a shape by filling an additional sector of disc centered at
+          // the common endpoint of connected segments.
+  Bevel   // Fills an additional triangular area between the common endpoint of connected segments,
+         // and the separate outside rectangular corners of each segment.
 };
 
 /**
@@ -39,10 +41,8 @@ enum class FillRule {
 
 /**
  * @brief The options used to stroke a path.
- *
- * @struct StrokingOptions
  */
-template <typename T>
+template<typename T>
 struct StrokingOptions {
   T width;        // The distance between the two offset curves of a stroke.
   T miter_limit;  // The miter limit used to determine whether the line join is mitered or beveled.
@@ -53,8 +53,6 @@ struct StrokingOptions {
 
 /**
  * @brief The options used to fill a path.
- *
- * @struct FillingOptions
  */
 struct FillingOptions {
   FillRule rule;  // The fill rule used to determine how self-intersecting paths are filled.

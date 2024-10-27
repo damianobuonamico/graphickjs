@@ -13,19 +13,19 @@ namespace graphick::editor::input {
 
 /**
  * @brief The PencilTool class represents a tool used for drawing freehand entities.
- *
- * @class PencilTool
  */
 class PencilTool : public Tool {
-public:
+ public:
   virtual void on_pointer_down() override;
   virtual void on_pointer_move() override;
   virtual void on_pointer_up() override;
-private:
+
+ private:
   PencilTool();
-private:
+
+ private:
   // std::shared_ptr<FreehandEntity> m_entity = nullptr;
-private:
+ private:
   friend class ToolState;
 };
 

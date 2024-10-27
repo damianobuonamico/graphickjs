@@ -17,21 +17,22 @@
 namespace graphick::editor::input {
 
 /**
- * @brief The DirectSelectTool class represents a tool used for selecting and manipulating entities.
+ * @brief The DirectSelectTool class represents a tool used for selecting and manipulating
+ * entities.
  *
- * The DirectSelectTool is a multi-purpose tool that allows the user to select and manipulate entities and their components (i.e.
- * paths). The state of the direct select tool is managed internally.
- *
- * @class DirectSelectTool
+ * The DirectSelectTool is a multi-purpose tool that allows the user to select and manipulate
+ * entities and their components (i.e. paths). The state of the direct select tool is managed
+ * internally.
  */
 class DirectSelectTool : public Tool {
-public:
+ public:
   virtual void on_pointer_down() override;
   virtual void on_pointer_move() override;
   virtual void on_pointer_up() override;
 
   virtual void render_overlays() const override;
-private:
+
+ private:
   /**
    * @brief Default constructor.
    */
@@ -118,26 +119,29 @@ private:
    * @brief Collapses very close handles.
    */
   void on_handle_pointer_up();
-private:
+
+ private:
   /**
    * @brief Enum class representing the different modes of the direct select tool.
    */
   enum class Mode { None = 0, Duplicate, Element, Vertex, Handle, Bezier, Entity };
-private:
-  bool m_is_entity_added_to_selection = false;     // Whether the entity was just added to the selection.
-  bool m_should_evaluate_selection = false;        // Whether the selection should be evaluated (i.e. select the entity under the
-                                                   // pointer).
-  bool m_dragging_occurred = false;                // Whether a dragging occurred.
 
-  Mode m_mode = Mode::None;                        // The current mode of the direct select tool.
-  uuid m_entity = uuid::null;                      // The UUID of the active entity.
+ private:
+  bool m_is_entity_added_to_selection =
+      false;                                 // Whether the entity was just added to the selection.
+  bool m_should_evaluate_selection = false;  // Whether the selection should be evaluated (i.e.
+                                             // select the entity under the pointer).
+  bool m_dragging_occurred = false;          // Whether a dragging occurred.
+
+  Mode m_mode = Mode::None;                  // The current mode of the direct select tool.
+  uuid m_entity = uuid::null;                // The UUID of the active entity.
 
   std::optional<size_t> m_segment = std::nullopt;  // The active segment.
   std::optional<size_t> m_vertex = std::nullopt;   // The active vertex.
   std::optional<size_t> m_handle = std::nullopt;   // The active handle.
 
   SelectionRect m_selection_rect;                  // The selection rectangle.
-private:
+ private:
   friend class ToolState;
 };
 

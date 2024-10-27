@@ -19,11 +19,9 @@ namespace graphick::editor::input {
  *
  * This class provides methods for setting and getting the UUID of the pen element.
  * The state of the pen tool is managed internally.
- *
- * @class PenTool
  */
 class PenTool : public Tool {
-public:
+ public:
   virtual void on_pointer_down() override;
   virtual void on_pointer_move() override;
   virtual void on_pointer_up() override;
@@ -37,7 +35,10 @@ public:
    *
    * @return The UUID of the pen element.
    */
-  inline uuid pen_element() const { return m_element; }
+  inline uuid pen_element() const
+  {
+    return m_element;
+  }
 
   /**
    * @brief Sets the pen element to the specified UUID.
@@ -45,7 +46,8 @@ public:
    * @param id The UUID of the pen element to set.
    */
   void set_pen_element(const uuid id);
-private:
+
+ private:
   /**
    * @brief Default constructor.
    */
@@ -87,21 +89,24 @@ private:
    * @brief Sets the active path and vertex.
    */
   void on_start_pointer_down();
-private:
+
+ private:
   /**
    * @brief Enum class representing the different modes of the pen tool.
    */
   enum class Mode { None = 0, New, Join, Close, Sub, Add, Angle, Start };
-private:
-  Mode m_mode = Mode::New;                        // The current mode of the pen tool.
-  uuid m_element = uuid::null;                    // The UUID of the pen element.
-  uuid m_temp_element = uuid::null;               // The UUID of a temp element that lasts only one pointer down -> up sequence.
+
+ private:
+  Mode m_mode = Mode::New;      // The current mode of the pen tool.
+  uuid m_element = uuid::null;  // The UUID of the pen element.
+  uuid m_temp_element =
+      uuid::null;  // The UUID of a temp element that lasts only one pointer down -> up sequence.
 
   std::optional<size_t> m_vertex = std::nullopt;  // The active vertex.
 
   bool m_reverse = false;                         // Whether the active path is reversed.
-  int m_direction = 0;                            // The direction of the active path, 1 for forward, -1 for backward.
-private:
+  int m_direction = 0;  // The direction of the active path, 1 for forward, -1 for backward.
+ private:
   friend class ToolState;
 };
 

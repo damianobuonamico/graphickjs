@@ -25,13 +25,16 @@ namespace graphick::geom {
 
 /* -- Segment -- */
 
-template <typename T, typename _>
-bool Path<T, _>::Segment::is_point() const {
+template<typename T, typename _>
+bool Path<T, _>::Segment::is_point() const
+{
   bool point = math::is_almost_equal(p0, p1);
 
   if (point) {
-    if (is_quadratic()) return math::is_almost_equal(p1, p2);
-    if (is_cubic()) return math::is_almost_equal(p1, p2) && math::is_almost_equal(p2, p3);
+    if (is_quadratic())
+      return math::is_almost_equal(p1, p2);
+    if (is_cubic())
+      return math::is_almost_equal(p1, p2) && math::is_almost_equal(p2, p3);
   }
 
   return point;
@@ -39,9 +42,12 @@ bool Path<T, _>::Segment::is_point() const {
 
 /* -- Iterator -- */
 
-template <typename T, typename _>
-Path<T, _>::Iterator::Iterator(const Path<T>& path, const uint32_t index, const IndexType index_type) :
-  m_path(path), m_index(index), m_point_index(0) {
+template<typename T, typename _>
+Path<T, _>::Iterator::Iterator(const Path<T> &path,
+                               const uint32_t index,
+                               const IndexType index_type)
+    : m_path(path), m_index(index), m_point_index(0)
+{
   if (index_type == IndexType::Point) {
     GK_ASSERT(index < path.m_points.size(), "Point index out of range.");
 
@@ -49,35 +55,35 @@ Path<T, _>::Iterator::Iterator(const Path<T>& path, const uint32_t index, const 
 
     while (m_point_index <= index) {
       switch (path.get_command(m_index)) {
-      case Command::Move:
-        if (index == m_point_index) {
-          operator++();
-          return;
-        }
+        case Command::Move:
+          if (index == m_point_index) {
+            operator++();
+            return;
+          }
 
-        m_point_index += 1;
-        break;
-      case Command::Line:
-        if (index == m_point_index) {
-          return;
-        }
+          m_point_index += 1;
+          break;
+        case Command::Line:
+          if (index == m_point_index) {
+            return;
+          }
 
-        m_point_index += 1;
-        break;
-      case Command::Quadratic:
-        if (index - m_point_index <= 1) {
-          return;
-        }
+          m_point_index += 1;
+          break;
+        case Command::Quadratic:
+          if (index - m_point_index <= 1) {
+            return;
+          }
 
-        m_point_index += 2;
-        break;
-      case Command::Cubic:
-        if (index - m_point_index <= 2) {
-          return;
-        }
+          m_point_index += 2;
+          break;
+        case Command::Cubic:
+          if (index - m_point_index <= 2) {
+            return;
+          }
 
-        m_point_index += 3;
-        break;
+          m_point_index += 3;
+          break;
       }
 
       m_index += 1;
@@ -99,16 +105,16 @@ Path<T, _>::Iterator::Iterator(const Path<T>& path, const uint32_t index, const 
   if (m_index <= path.m_commands_size / 2) {
     for (uint32_t i = 0; i < m_index; i++) {
       switch (path.get_command(i)) {
-      case Command::Move:
-      case Command::Line:
-        m_point_index += 1;
-        break;
-      case Command::Quadratic:
-        m_point_index += 2;
-        break;
-      case Command::Cubic:
-        m_point_index += 3;
-        break;
+        case Command::Move:
+        case Command::Line:
+          m_point_index += 1;
+          break;
+        case Command::Quadratic:
+          m_point_index += 2;
+          break;
+        case Command::Cubic:
+          m_point_index += 3;
+          break;
       }
     }
   } else {
@@ -116,55 +122,59 @@ Path<T, _>::Iterator::Iterator(const Path<T>& path, const uint32_t index, const 
 
     for (uint32_t i = path.m_commands_size - 1; i >= m_index; i--) {
       switch (path.get_command(i)) {
-      case Command::Move:
-      case Command::Line:
-        m_point_index -= 1;
-        break;
-      case Command::Quadratic:
-        m_point_index -= 2;
-        break;
-      case Command::Cubic:
-        m_point_index -= 3;
-        break;
+        case Command::Move:
+        case Command::Line:
+          m_point_index -= 1;
+          break;
+        case Command::Quadratic:
+          m_point_index -= 2;
+          break;
+        case Command::Cubic:
+          m_point_index -= 3;
+          break;
       }
     }
   }
 }
 
-template <typename T, typename _>
-typename Path<T, _>::Iterator& Path<T, _>::Iterator::operator++() {
+template<typename T, typename _>
+typename Path<T, _>::Iterator &Path<T, _>::Iterator::operator++()
+{
   GK_ASSERT(m_index < m_path.m_commands_size, "Cannot increment the end iterator.");
 
   switch (m_path.get_command(m_index)) {
-  case Command::Move:
-  case Command::Line:
-    m_point_index += 1;
-    break;
-  case Command::Quadratic:
-    m_point_index += 2;
-    break;
-  case Command::Cubic:
-    m_point_index += 3;
-    break;
+    case Command::Move:
+    case Command::Line:
+      m_point_index += 1;
+      break;
+    case Command::Quadratic:
+      m_point_index += 2;
+      break;
+    case Command::Cubic:
+      m_point_index += 3;
+      break;
   }
 
   m_index += 1;
 
-  if (m_index < m_path.m_commands_size && m_path.get_command(m_index) == Command::Move) operator++();
+  if (m_index < m_path.m_commands_size && m_path.get_command(m_index) == Command::Move)
+    operator++();
 
   return *this;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::Iterator Path<T, _>::Iterator::operator++(int) {
+template<typename T, typename _>
+typename Path<T, _>::Iterator Path<T, _>::Iterator::operator++(int)
+{
   Iterator tmp = *this;
   ++(*this);
 
   return tmp;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::Iterator Path<T, _>::Iterator::operator+(const uint32_t n) const {
+template<typename T, typename _>
+typename Path<T, _>::Iterator Path<T, _>::Iterator::operator+(const uint32_t n) const
+{
   Iterator tmp = *this;
 
   for (uint32_t i = 0; i < n; i++) {
@@ -174,39 +184,42 @@ typename Path<T, _>::Iterator Path<T, _>::Iterator::operator+(const uint32_t n) 
   return tmp;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::Iterator& Path<T, _>::Iterator::operator--() {
+template<typename T, typename _>
+typename Path<T, _>::Iterator &Path<T, _>::Iterator::operator--()
+{
   GK_ASSERT(m_index > 0, "Cannot decrement the begin iterator.");
 
   m_index -= 1;
 
   switch (m_path.get_command(m_index)) {
-  case Command::Move:
-    operator--();
-  case Command::Line:
-    m_point_index -= 1;
-    break;
-  case Command::Quadratic:
-    m_point_index -= 2;
-    break;
-  case Command::Cubic:
-    m_point_index -= 3;
-    break;
+    case Command::Move:
+      operator--();
+    case Command::Line:
+      m_point_index -= 1;
+      break;
+    case Command::Quadratic:
+      m_point_index -= 2;
+      break;
+    case Command::Cubic:
+      m_point_index -= 3;
+      break;
   }
 
   return *this;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::Iterator Path<T, _>::Iterator::operator--(int) {
+template<typename T, typename _>
+typename Path<T, _>::Iterator Path<T, _>::Iterator::operator--(int)
+{
   Iterator tmp = *this;
   --(*this);
 
   return tmp;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::Iterator Path<T, _>::Iterator::operator-(const uint32_t n) const {
+template<typename T, typename _>
+typename Path<T, _>::Iterator Path<T, _>::Iterator::operator-(const uint32_t n) const
+{
   Iterator tmp = *this;
 
   for (uint32_t i = 0; i < n; i++) {
@@ -216,57 +229,63 @@ typename Path<T, _>::Iterator Path<T, _>::Iterator::operator-(const uint32_t n) 
   return tmp;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::Iterator::value_type Path<T, _>::Iterator::operator*() const {
+template<typename T, typename _>
+typename Path<T, _>::Iterator::value_type Path<T, _>::Iterator::operator*() const
+{
   const Command command = m_path.get_command(m_index);
 
   switch (command) {
-  case Command::Cubic: {
-    GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
-    return Segment{
-      m_path.m_points[m_point_index - 1],
-      m_path.m_points[m_point_index],
-      m_path.m_points[m_point_index + 1],
-      m_path.m_points[m_point_index + 2]
-    };
-  }
-  case Command::Quadratic: {
-    GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
-    return Segment{m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1]};
-  }
-  case Command::Line: {
-    GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-    return Segment{m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index]};
-  }
-  default:
-  case Command::Move:
-    Iterator temp = operator+(1);
-    return *temp;
+    case Command::Cubic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(),
+                "Not enough points for a cubic bezier.");
+      return Segment{m_path.m_points[m_point_index - 1],
+                     m_path.m_points[m_point_index],
+                     m_path.m_points[m_point_index + 1],
+                     m_path.m_points[m_point_index + 2]};
+    }
+    case Command::Quadratic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(),
+                "Not enough points for a quadratic bezier.");
+      return Segment{m_path.m_points[m_point_index - 1],
+                     m_path.m_points[m_point_index],
+                     m_path.m_points[m_point_index + 1]};
+    }
+    case Command::Line: {
+      GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(),
+                "Points vector subscript out of range.");
+      return Segment{m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index]};
+    }
+    default:
+    case Command::Move:
+      Iterator temp = operator+(1);
+      return *temp;
   }
 }
 
 /* -- ReverseIterator -- */
 
-template <typename T, typename _>
-Path<T, _>::ReverseIterator::ReverseIterator(const Path<T>& path, const uint32_t index) :
-  m_path(path), m_index(index), m_point_index(0) {
-  if (m_index != 0 && path.get_command(m_index) == Command::Move) m_index--;
+template<typename T, typename _>
+Path<T, _>::ReverseIterator::ReverseIterator(const Path<T> &path, const uint32_t index)
+    : m_path(path), m_index(index), m_point_index(0)
+{
+  if (m_index != 0 && path.get_command(m_index) == Command::Move)
+    m_index--;
 
   GK_ASSERT(m_index >= 0 && m_index < path.m_commands_size, "Index out of range.");
 
   if (m_index < path.m_commands_size / 2) {
     for (uint32_t i = 0; i < m_index; i++) {
       switch (path.get_command(i)) {
-      case Command::Move:
-      case Command::Line:
-        m_point_index += 1;
-        break;
-      case Command::Quadratic:
-        m_point_index += 2;
-        break;
-      case Command::Cubic:
-        m_point_index += 3;
-        break;
+        case Command::Move:
+        case Command::Line:
+          m_point_index += 1;
+          break;
+        case Command::Quadratic:
+          m_point_index += 2;
+          break;
+        case Command::Cubic:
+          m_point_index += 3;
+          break;
       }
     }
   } else {
@@ -274,54 +293,58 @@ Path<T, _>::ReverseIterator::ReverseIterator(const Path<T>& path, const uint32_t
 
     for (uint32_t i = path.m_commands_size - 1; i >= m_index; i--) {
       switch (path.get_command(i)) {
-      case Command::Move:
-      case Command::Line:
-        m_point_index -= 1;
-        break;
-      case Command::Quadratic:
-        m_point_index -= 2;
-        break;
-      case Command::Cubic:
-        m_point_index -= 3;
-        break;
+        case Command::Move:
+        case Command::Line:
+          m_point_index -= 1;
+          break;
+        case Command::Quadratic:
+          m_point_index -= 2;
+          break;
+        case Command::Cubic:
+          m_point_index -= 3;
+          break;
       }
     }
   }
 }
 
-template <typename T, typename _>
-typename Path<T, _>::ReverseIterator& Path<T, _>::ReverseIterator::operator++() {
+template<typename T, typename _>
+typename Path<T, _>::ReverseIterator &Path<T, _>::ReverseIterator::operator++()
+{
   GK_ASSERT(m_index > 0, "Cannot increment the rend iterator.");
 
   m_index -= 1;
 
   switch (m_path.get_command(m_index)) {
-  case Command::Move:
-    if (m_index > 0) operator++();
-  case Command::Line:
-    m_point_index -= 1;
-    break;
-  case Command::Quadratic:
-    m_point_index -= 2;
-    break;
-  case Command::Cubic:
-    m_point_index -= 3;
-    break;
+    case Command::Move:
+      if (m_index > 0)
+        operator++();
+    case Command::Line:
+      m_point_index -= 1;
+      break;
+    case Command::Quadratic:
+      m_point_index -= 2;
+      break;
+    case Command::Cubic:
+      m_point_index -= 3;
+      break;
   }
 
   return *this;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator++(int) {
+template<typename T, typename _>
+typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator++(int)
+{
   ReverseIterator tmp = *this;
   ++(*this);
 
   return tmp;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator+(const uint32_t n) const {
+template<typename T, typename _>
+typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator+(const uint32_t n) const
+{
   ReverseIterator tmp = *this;
 
   for (uint32_t i = 0; i < n; i++) {
@@ -331,40 +354,44 @@ typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator+(cons
   return tmp;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::ReverseIterator& Path<T, _>::ReverseIterator::operator--() {
+template<typename T, typename _>
+typename Path<T, _>::ReverseIterator &Path<T, _>::ReverseIterator::operator--()
+{
   GK_ASSERT(m_index < m_path.m_commands_size, "Cannot decrement the rbegin iterator.");
 
   switch (m_path.get_command(m_index)) {
-  case Command::Move:
-  case Command::Line:
-    m_point_index += 1;
-    break;
-  case Command::Quadratic:
-    m_point_index += 2;
-    break;
-  case Command::Cubic:
-    m_point_index += 3;
-    break;
+    case Command::Move:
+    case Command::Line:
+      m_point_index += 1;
+      break;
+    case Command::Quadratic:
+      m_point_index += 2;
+      break;
+    case Command::Cubic:
+      m_point_index += 3;
+      break;
   }
 
   m_index += 1;
 
-  if (m_index < m_path.m_commands_size && m_path.get_command(m_index) == Command::Move) operator++();
+  if (m_index < m_path.m_commands_size && m_path.get_command(m_index) == Command::Move)
+    operator++();
 
   return *this;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator--(int) {
+template<typename T, typename _>
+typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator--(int)
+{
   ReverseIterator tmp = *this;
   --(*this);
 
   return tmp;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator-(const uint32_t n) const {
+template<typename T, typename _>
+typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator-(const uint32_t n) const
+{
   ReverseIterator tmp = *this;
 
   for (uint32_t i = 0; i < n; i++) {
@@ -374,76 +401,89 @@ typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator-(cons
   return tmp;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::ReverseIterator::value_type Path<T, _>::ReverseIterator::operator*() const {
+template<typename T, typename _>
+typename Path<T, _>::ReverseIterator::value_type Path<T, _>::ReverseIterator::operator*() const
+{
   const Command command = m_path.get_command(m_index);
 
   switch (command) {
-  case Command::Cubic: {
-    GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(), "Not enough points for a cubic bezier.");
-    return Segment{
-      m_path.m_points[m_point_index - 1],
-      m_path.m_points[m_point_index],
-      m_path.m_points[m_point_index + 1],
-      m_path.m_points[m_point_index + 2]
-    };
-  }
-  case Command::Quadratic: {
-    GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(), "Not enough points for a quadratic bezier.");
-    return Segment{m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index], m_path.m_points[m_point_index + 1]};
-  }
-  case Command::Line: {
-    GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(), "Points vector subscript out of range.");
-    return Segment{m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index]};
-  }
-  default:
-  case Command::Move:
-    ReverseIterator temp = operator-(1);
-    return *temp;
+    case Command::Cubic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 2 < m_path.m_points.size(),
+                "Not enough points for a cubic bezier.");
+      return Segment{m_path.m_points[m_point_index - 1],
+                     m_path.m_points[m_point_index],
+                     m_path.m_points[m_point_index + 1],
+                     m_path.m_points[m_point_index + 2]};
+    }
+    case Command::Quadratic: {
+      GK_ASSERT(m_point_index > 0 && m_point_index + 1 < m_path.m_points.size(),
+                "Not enough points for a quadratic bezier.");
+      return Segment{m_path.m_points[m_point_index - 1],
+                     m_path.m_points[m_point_index],
+                     m_path.m_points[m_point_index + 1]};
+    }
+    case Command::Line: {
+      GK_ASSERT(m_point_index > 0 && m_point_index < m_path.m_points.size(),
+                "Points vector subscript out of range.");
+      return Segment{m_path.m_points[m_point_index - 1], m_path.m_points[m_point_index]};
+    }
+    default:
+    case Command::Move:
+      ReverseIterator temp = operator-(1);
+      return *temp;
   }
 }
 
 /* -- Path -- */
 
-template <typename T, typename _>
-Path<T, _>::Path() :
-  m_points(),
-  m_commands(),
-  m_commands_size(0),
-  m_closed(false),
-  m_in_handle(math::Vec2<T>::zero()),
-  m_out_handle(math::Vec2<T>::zero()) { }
+template<typename T, typename _>
+Path<T, _>::Path()
+    : m_points(),
+      m_commands(),
+      m_commands_size(0),
+      m_closed(false),
+      m_in_handle(math::Vec2<T>::zero()),
+      m_out_handle(math::Vec2<T>::zero())
+{
+}
 
-template <typename T, typename _>
-Path<T, _>::Path(const Path<T>& other) :
-  m_points(other.m_points),
-  m_commands(other.m_commands),
-  m_commands_size(other.m_commands_size),
-  m_closed(other.m_closed),
-  m_in_handle(other.m_in_handle),
-  m_out_handle(other.m_out_handle) { }
+template<typename T, typename _>
+Path<T, _>::Path(const Path<T> &other)
+    : m_points(other.m_points),
+      m_commands(other.m_commands),
+      m_commands_size(other.m_commands_size),
+      m_closed(other.m_closed),
+      m_in_handle(other.m_in_handle),
+      m_out_handle(other.m_out_handle)
+{
+}
 
-template <typename T, typename _>
-Path<T, _>::Path(Path<T>&& other) noexcept :
-  m_points(std::move(other.m_points)),
-  m_commands(std::move(other.m_commands)),
-  m_commands_size(other.m_commands_size),
-  m_closed(other.m_closed),
-  m_in_handle(other.m_in_handle),
-  m_out_handle(other.m_out_handle) { }
+template<typename T, typename _>
+Path<T, _>::Path(Path<T> &&other) noexcept
+    : m_points(std::move(other.m_points)),
+      m_commands(std::move(other.m_commands)),
+      m_commands_size(other.m_commands_size),
+      m_closed(other.m_closed),
+      m_in_handle(other.m_in_handle),
+      m_out_handle(other.m_out_handle)
+{
+}
 
-template <typename T, typename _>
-template <typename U>
-Path<T, _>::Path(const Path<U>& other) :
-  m_points(other.m_points.begin(), other.m_points.end()),
-  m_commands(other.m_commands.begin(), other.m_commands.end()),
-  m_commands_size(other.m_commands_size),
-  m_closed(other.m_closed),
-  m_in_handle(other.m_in_handle),
-  m_out_handle(other.m_out_handle) { }
+template<typename T, typename _>
+template<typename U>
+Path<T, _>::Path(const Path<U> &other)
+    : m_points(other.m_points.begin(), other.m_points.end()),
+      m_commands(other.m_commands.begin(), other.m_commands.end()),
+      m_commands_size(other.m_commands_size),
+      m_closed(other.m_closed),
+      m_in_handle(other.m_in_handle),
+      m_out_handle(other.m_out_handle)
+{
+}
 
-template <typename T, typename _>
-Path<T, _>::Path(io::DataDecoder& decoder) {
+template<typename T, typename _>
+Path<T, _>::Path(io::DataDecoder &decoder)
+{
   // Commands and points are always present, is_closed is encoded in the properties bitfield.
   const auto [not_vacant, is_closed, has_in_handle, has_out_handle] = decoder.bitfield<4>();
 
@@ -476,16 +516,16 @@ Path<T, _>::Path(io::DataDecoder& decoder) {
     Command command = get_command(i);
 
     switch (command) {
-    case Command::Move:
-    case Command::Line:
-      point_index += 1;
-      break;
-    case Command::Quadratic:
-      point_index += 2;
-      break;
-    case Command::Cubic:
-      point_index += 3;
-      break;
+      case Command::Move:
+      case Command::Line:
+        point_index += 1;
+        break;
+      case Command::Quadratic:
+        point_index += 2;
+        break;
+      case Command::Cubic:
+        point_index += 3;
+        break;
     }
 
     if (command != Command::Move) {
@@ -518,8 +558,9 @@ Path<T, _>::Path(io::DataDecoder& decoder) {
   }
 }
 
-template <typename T, typename _>
-Path<T, _>& Path<T, _>::operator=(const Path<T, _>& other) {
+template<typename T, typename _>
+Path<T, _> &Path<T, _>::operator=(const Path<T, _> &other)
+{
   m_points = other.m_points;
   m_commands = other.m_commands;
   m_commands_size = other.m_commands_size;
@@ -530,8 +571,9 @@ Path<T, _>& Path<T, _>::operator=(const Path<T, _>& other) {
   return *this;
 }
 
-template <typename T, typename _>
-Path<T, _>& Path<T, _>::operator=(Path<T, _>&& other) noexcept {
+template<typename T, typename _>
+Path<T, _> &Path<T, _>::operator=(Path<T, _> &&other) noexcept
+{
   m_points = std::move(other.m_points);
   m_commands = std::move(other.m_commands);
   m_commands_size = other.m_commands_size;
@@ -542,128 +584,137 @@ Path<T, _>& Path<T, _>::operator=(Path<T, _>&& other) noexcept {
   return *this;
 }
 
-template <typename T, typename _>
+template<typename T, typename _>
 void Path<T, _>::for_each(
-  std::function<void(const math::Vec2<T>)> move_callback,
-  std::function<void(const math::Vec2<T>)> line_callback,
-  std::function<void(const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback,
-  std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback
-) const {
+    std::function<void(const math::Vec2<T>)> move_callback,
+    std::function<void(const math::Vec2<T>)> line_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)>
+        cubic_callback) const
+{
   for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
-    case Command::Cubic:
-      GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+      case Command::Cubic:
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
 
-      if (cubic_callback) {
-        cubic_callback(m_points[j], m_points[j + 1], m_points[j + 2]);
-      }
+        if (cubic_callback) {
+          cubic_callback(m_points[j], m_points[j + 1], m_points[j + 2]);
+        }
 
-      j += 3;
-      break;
-    case Command::Quadratic:
-      GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+        j += 3;
+        break;
+      case Command::Quadratic:
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
 
-      if (quadratic_callback) {
-        quadratic_callback(m_points[j], m_points[j + 1]);
-      }
+        if (quadratic_callback) {
+          quadratic_callback(m_points[j], m_points[j + 1]);
+        }
 
-      j += 2;
-      break;
-    case Command::Line:
-      GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+        j += 2;
+        break;
+      case Command::Line:
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
 
-      if (line_callback) {
-        line_callback(m_points[j]);
-      }
+        if (line_callback) {
+          line_callback(m_points[j]);
+        }
 
-      j += 1;
-      break;
-    case Command::Move:
-      GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+        j += 1;
+        break;
+      case Command::Move:
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
 
-      if (move_callback) {
-        move_callback(m_points[j]);
-      }
+        if (move_callback) {
+          move_callback(m_points[j]);
+        }
 
-      j += 1;
-      break;
+        j += 1;
+        break;
     }
   }
 }
 
-template <typename T, typename _>
+template<typename T, typename _>
 void Path<T, _>::for_each_reversed(
-  std::function<void(const math::Vec2<T>)> move_callback,
-  std::function<void(const math::Vec2<T>, const math::Vec2<T>)> line_callback,
-  std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> quadratic_callback,
-  std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)> cubic_callback
-) const {
-  for (int64_t i = static_cast<int64_t>(m_commands_size) - 1, j = static_cast<int32_t>(m_points.size()); i >= 0; i--) {
+    std::function<void(const math::Vec2<T>)> move_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> line_callback,
+    std::function<void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)>
+        quadratic_callback,
+    std::function<
+        void(const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>, const math::Vec2<T>)>
+        cubic_callback) const
+{
+  for (int64_t i = static_cast<int64_t>(m_commands_size) - 1,
+               j = static_cast<int32_t>(m_points.size());
+       i >= 0;
+       i--)
+  {
     switch (get_command(static_cast<uint32_t>(i))) {
-    case Command::Cubic:
-      GK_ASSERT(j - 4 >= 0, "Not enough points for a cubic bezier.");
+      case Command::Cubic:
+        GK_ASSERT(j - 4 >= 0, "Not enough points for a cubic bezier.");
 
-      if (cubic_callback) {
-        cubic_callback(m_points[j - 4], m_points[j - 3], m_points[j - 2], m_points[j - 1]);
-      }
+        if (cubic_callback) {
+          cubic_callback(m_points[j - 4], m_points[j - 3], m_points[j - 2], m_points[j - 1]);
+        }
 
-      j -= 3;
-      break;
-    case Command::Quadratic:
-      GK_ASSERT(j - 3 >= 0, "Not enough points for a quadratic bezier.");
+        j -= 3;
+        break;
+      case Command::Quadratic:
+        GK_ASSERT(j - 3 >= 0, "Not enough points for a quadratic bezier.");
 
-      if (quadratic_callback) {
-        quadratic_callback(m_points[j - 3], m_points[j - 2], m_points[j - 1]);
-      }
+        if (quadratic_callback) {
+          quadratic_callback(m_points[j - 3], m_points[j - 2], m_points[j - 1]);
+        }
 
-      j -= 2;
-      break;
-    case Command::Line:
-      GK_ASSERT(j - 2 >= 0, "Not enough points for a line.");
+        j -= 2;
+        break;
+      case Command::Line:
+        GK_ASSERT(j - 2 >= 0, "Not enough points for a line.");
 
-      if (line_callback) {
-        line_callback(m_points[j - 2], m_points[j - 1]);
-      }
+        if (line_callback) {
+          line_callback(m_points[j - 2], m_points[j - 1]);
+        }
 
-      j -= 1;
-      break;
-    case Command::Move:
-      GK_ASSERT(j - 1 >= 0, "Points vector subscript out of range.");
+        j -= 1;
+        break;
+      case Command::Move:
+        GK_ASSERT(j - 1 >= 0, "Points vector subscript out of range.");
 
-      if (move_callback) {
-        move_callback(m_points[j - 1]);
-      }
+        if (move_callback) {
+          move_callback(m_points[j - 1]);
+        }
 
-      j -= 1;
-      break;
+        j -= 1;
+        break;
     }
   }
 }
 
-template <typename T, typename _>
-std::vector<uint32_t> Path<T, _>::vertex_indices() const {
+template<typename T, typename _>
+std::vector<uint32_t> Path<T, _>::vertex_indices() const
+{
   std::vector<uint32_t> indices;
 
   indices.reserve(points_count(false));
 
   for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
-    case Command::Move:
-      indices.push_back(point_i);
-      point_i += 1;
-      break;
-    case Command::Line:
-      indices.push_back(point_i);
-      point_i += 1;
-      break;
-    case Command::Quadratic:
-      indices.push_back(point_i + 1);
-      point_i += 2;
-      break;
-    case Command::Cubic:
-      indices.push_back(point_i + 2);
-      point_i += 3;
-      break;
+      case Command::Move:
+        indices.push_back(point_i);
+        point_i += 1;
+        break;
+      case Command::Line:
+        indices.push_back(point_i);
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        indices.push_back(point_i + 1);
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        indices.push_back(point_i + 2);
+        point_i += 3;
+        break;
     }
   }
 
@@ -674,24 +725,27 @@ std::vector<uint32_t> Path<T, _>::vertex_indices() const {
   return indices;
 }
 
-template <typename T, typename _>
-bool Path<T, _>::is_vertex(const uint32_t point_index) const {
-  if (point_index == 0) return true;
+template<typename T, typename _>
+bool Path<T, _>::is_vertex(const uint32_t point_index) const
+{
+  if (point_index == 0)
+    return true;
 
   for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
-    if (point_i > point_index) return false;
+    if (point_i > point_index)
+      return false;
 
     switch (get_command(i)) {
-    case Command::Move:
-    case Command::Line:
-      point_i += 1;
-      break;
-    case Command::Quadratic:
-      point_i += 2;
-      break;
-    case Command::Cubic:
-      point_i += 3;
-      break;
+      case Command::Move:
+      case Command::Line:
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        point_i += 3;
+        break;
     }
 
     if (point_i - 1 == point_index) {
@@ -702,12 +756,12 @@ bool Path<T, _>::is_vertex(const uint32_t point_index) const {
   return false;
 }
 
-template <typename T, typename _>
-typename Path<T, _>::VertexNode Path<T, _>::node_at(const uint32_t point_index) const {
-  GK_ASSERT(
-    point_index < m_points.size() || point_index == in_handle_index || point_index == out_handle_index,
-    "Point index out of range."
-  );
+template<typename T, typename _>
+typename Path<T, _>::VertexNode Path<T, _>::node_at(const uint32_t point_index) const
+{
+  GK_ASSERT(point_index < m_points.size() || point_index == in_handle_index ||
+                point_index == out_handle_index,
+            "Point index out of range.");
 
   VertexNode node = {0, -1, -1, -1, -1, -1};
 
@@ -723,42 +777,42 @@ typename Path<T, _>::VertexNode Path<T, _>::node_at(const uint32_t point_index) 
 
   if (!closed()) {
     switch (point_index) {
-    case in_handle_index:
-      node.out = in_handle_index;
-      node.vertex = 0;
+      case in_handle_index:
+        node.out = in_handle_index;
+        node.vertex = 0;
 
-      if (m_commands_size > 1 && get_command(1) == Command::Cubic) {
-        node.in = 1;
-        node.in_command = 1;
-      } else if (m_commands_size == 1) {
-        node.in = out_handle_index;
-      }
+        if (m_commands_size > 1 && get_command(1) == Command::Cubic) {
+          node.in = 1;
+          node.in_command = 1;
+        } else if (m_commands_size == 1) {
+          node.in = out_handle_index;
+        }
 
-      return node;
-    case out_handle_index:
-      node.out = out_handle_index;
-      node.vertex = static_cast<uint32_t>(m_points.size()) - 1;
+        return node;
+      case out_handle_index:
+        node.out = out_handle_index;
+        node.vertex = static_cast<uint32_t>(m_points.size()) - 1;
 
-      if (m_commands_size > 1 && get_command(m_commands_size - 1) == Command::Cubic) {
-        node.in = static_cast<uint32_t>(m_points.size()) - 2;
-        node.in_command = m_commands_size - 1;
-      } else if (m_commands_size == 1) {
-        node.in = in_handle_index;
-      }
+        if (m_commands_size > 1 && get_command(m_commands_size - 1) == Command::Cubic) {
+          node.in = static_cast<uint32_t>(m_points.size()) - 2;
+          node.in_command = m_commands_size - 1;
+        } else if (m_commands_size == 1) {
+          node.in = in_handle_index;
+        }
 
-      return node;
-    default:
-      break;
+        return node;
+      default:
+        break;
     }
   }
 
   Iterator it = {*this, point_index, IndexType::Point};
   Segment segment = *it;
 
-  int64_t* in = &node.in;
-  int64_t* in_command = &node.in_command;
-  int64_t* out = &node.out;
-  int64_t* out_command = &node.out_command;
+  int64_t *in = &node.in;
+  int64_t *in_command = &node.in_command;
+  int64_t *out = &node.out;
+  int64_t *out_command = &node.out_command;
 
   if (point_index != 0 && !(segment.type == Command::Cubic && it.point_index() >= point_index)) {
     it++;
@@ -827,8 +881,9 @@ typename Path<T, _>::VertexNode Path<T, _>::node_at(const uint32_t point_index) 
   return node;
 }
 
-template <typename T, typename _>
-void Path<T, _>::move_to(const math::Vec2<T> point) {
+template<typename T, typename _>
+void Path<T, _>::move_to(const math::Vec2<T> point)
+{
   GK_ASSERT(empty(), "Cannot add a move to a non-empty path.");
 
   if (!vacant() && get_command(m_commands_size - 1) == Command::Move) {
@@ -843,8 +898,9 @@ void Path<T, _>::move_to(const math::Vec2<T> point) {
   push_command(Command::Move);
 }
 
-template <typename T, typename _>
-void Path<T, _>::line_to(const math::Vec2<T> point, const bool reverse) {
+template<typename T, typename _>
+void Path<T, _>::line_to(const math::Vec2<T> point, const bool reverse)
+{
   GK_ASSERT(!vacant(), "Cannot add a line to a vacant path.");
 
   if (reverse) {
@@ -860,8 +916,11 @@ void Path<T, _>::line_to(const math::Vec2<T> point, const bool reverse) {
   }
 }
 
-template <typename T, typename _>
-void Path<T, _>::quadratic_to(const math::Vec2<T> control, const math::Vec2<T> point, const bool reverse) {
+template<typename T, typename _>
+void Path<T, _>::quadratic_to(const math::Vec2<T> control,
+                              const math::Vec2<T> point,
+                              const bool reverse)
+{
   GK_ASSERT(!vacant(), "Cannot add a quadratic bezier to a vacant path.");
 
   if (reverse) {
@@ -877,13 +936,12 @@ void Path<T, _>::quadratic_to(const math::Vec2<T> control, const math::Vec2<T> p
   }
 }
 
-template <typename T, typename _>
-void Path<T, _>::cubic_to(
-  const math::Vec2<T> control1,
-  const math::Vec2<T> control2,
-  const math::Vec2<T> point,
-  const bool reverse
-) {
+template<typename T, typename _>
+void Path<T, _>::cubic_to(const math::Vec2<T> control1,
+                          const math::Vec2<T> control2,
+                          const math::Vec2<T> point,
+                          const bool reverse)
+{
   GK_ASSERT(!vacant(), "Cannot add a cubic bezier to a vacant path.");
 
   if (control1 == (reverse ? m_points.front() : m_points.back()) && control2 == point) {
@@ -903,8 +961,12 @@ void Path<T, _>::cubic_to(
   }
 }
 
-template <typename T, typename _>
-void Path<T, _>::cubic_to(const math::Vec2<T> control, const math::Vec2<T> point, const bool is_control_1, const bool reverse) {
+template<typename T, typename _>
+void Path<T, _>::cubic_to(const math::Vec2<T> control,
+                          const math::Vec2<T> point,
+                          const bool is_control_1,
+                          const bool reverse)
+{
   GK_ASSERT(!vacant(), "Cannot add a cubic bezier to a vacant path.");
 
   if (reverse) {
@@ -930,16 +992,15 @@ void Path<T, _>::cubic_to(const math::Vec2<T> control, const math::Vec2<T> point
   }
 }
 
-template <typename T, typename _>
-void Path<T, _>::arc_to(
-  const math::Vec2<T> center,
-  const math::Vec2<T> radius,
-  const T x_axis_rotation,
-  const bool large_arc_flag,
-  const bool sweep_flag,
-  const math::Vec2<T> point,
-  const bool reverse
-) {
+template<typename T, typename _>
+void Path<T, _>::arc_to(const math::Vec2<T> center,
+                        const math::Vec2<T> radius,
+                        const T x_axis_rotation,
+                        const bool large_arc_flag,
+                        const bool sweep_flag,
+                        const math::Vec2<T> point,
+                        const bool reverse)
+{
   GK_ASSERT(!vacant(), "Cannot add an arc to a vacant path.");
 
   math::Vec2<T> r = radius;
@@ -954,7 +1015,8 @@ void Path<T, _>::arc_to(
   const math::Vec2<T> sq_p = d1 * d1;
 
   const T check = sq_p.x / sq_r.x + sq_p.y / sq_r.y;
-  if (check > T(1)) r *= std::sqrt(check);
+  if (check > T(1))
+    r *= std::sqrt(check);
 
   math::Mat2<T> a = {cos_th / r.x, sin_th / r.x, -sin_th / r.y, cos_th / r.y};
   math::Vec2<T> p1 = {math::dot(a[0], point), math::dot(a[1], point)};
@@ -964,21 +1026,27 @@ void Path<T, _>::arc_to(
   const T d = math::squared_length(p1 - p0);
 
   T sfactor_sq = T(1) / d - T(0.25);
-  if (sfactor_sq < T(0)) sfactor_sq = T(0);
+  if (sfactor_sq < T(0))
+    sfactor_sq = T(0);
 
   T sfactor = std::sqrt(sfactor_sq);
-  if (sweep_flag == large_arc_flag) sfactor = -sfactor;
+  if (sweep_flag == large_arc_flag)
+    sfactor = -sfactor;
 
-  const math::Vec2<T> c1 = {(p0.x + p1.x) / T(2) - sfactor * (p1.y - p0.y), (p0.y + p1.y) / T(2) + sfactor * (p1.x - p0.x)};
+  const math::Vec2<T> c1 = {(p0.x + p1.x) / T(2) - sfactor * (p1.y - p0.y),
+                            (p0.y + p1.y) / T(2) + sfactor * (p1.x - p0.x)};
 
   const T th0 = std::atan2(p0.y - c1.y, p0.x - c1.x);
   const T th1 = std::atan2(p1.y - c1.y, p1.x - c1.x);
 
   T th_arc = th1 - th0;
-  if (th_arc < T(0) && sweep_flag) th_arc += math::two_pi<T>;
-  else if (th_arc > T(0) && !sweep_flag) th_arc -= math::two_pi<T>;
+  if (th_arc < T(0) && sweep_flag)
+    th_arc += math::two_pi<T>;
+  else if (th_arc > T(0) && !sweep_flag)
+    th_arc -= math::two_pi<T>;
 
-  int n_segs = static_cast<int>(std::ceil(std::abs(th_arc / (math::pi<T> / T(2) + math::geometric_epsilon<T>))));
+  int n_segs = static_cast<int>(
+      std::ceil(std::abs(th_arc / (math::pi<T> / T(2) + math::geometric_epsilon<T>))));
   for (int i = 0; i < n_segs; i++) {
     const T th2 = th0 + i * th_arc / n_segs;
     const T th3 = th0 + (i + 1) * th_arc / n_segs;
@@ -1007,27 +1075,35 @@ void Path<T, _>::arc_to(
   }
 }
 
-template <typename T, typename _>
-void Path<T, _>::ellipse(const math::Vec2<T> center, const math::Vec2<T> radius) {
+template<typename T, typename _>
+void Path<T, _>::ellipse(const math::Vec2<T> center, const math::Vec2<T> radius)
+{
   const math::Vec2<T> top_left = center - radius;
   const math::Vec2<T> bottom_right = center + radius;
   const math::Vec2<T> cp = radius * math::circle_ratio<T>;
 
   move_to({center.x, top_left.y});
-  cubic_to({center.x + cp.x, top_left.y}, {bottom_right.x, center.y - cp.y}, {bottom_right.x, center.y});
-  cubic_to({bottom_right.x, center.y + cp.y}, {center.x + cp.x, bottom_right.y}, {center.x, bottom_right.y});
-  cubic_to({center.x - cp.x, bottom_right.y}, {top_left.x, center.y + cp.y}, {top_left.x, center.y});
+  cubic_to({center.x + cp.x, top_left.y},
+           {bottom_right.x, center.y - cp.y},
+           {bottom_right.x, center.y});
+  cubic_to({bottom_right.x, center.y + cp.y},
+           {center.x + cp.x, bottom_right.y},
+           {center.x, bottom_right.y});
+  cubic_to(
+      {center.x - cp.x, bottom_right.y}, {top_left.x, center.y + cp.y}, {top_left.x, center.y});
   cubic_to({top_left.x, center.y - cp.y}, {center.x - cp.x, top_left.y}, {center.x, top_left.y});
   close();
 }
 
-template <typename T, typename _>
-void Path<T, _>::circle(const math::Vec2<T> center, const T radius) {
+template<typename T, typename _>
+void Path<T, _>::circle(const math::Vec2<T> center, const T radius)
+{
   ellipse(center, {radius, radius});
 }
 
-template <typename T, typename _>
-void Path<T, _>::rect(const math::Vec2<T> point, const math::Vec2<T> size, const bool centered) {
+template<typename T, typename _>
+void Path<T, _>::rect(const math::Vec2<T> point, const math::Vec2<T> size, const bool centered)
+{
   math::Vec2<T> p = point;
 
   if (centered) {
@@ -1041,8 +1117,12 @@ void Path<T, _>::rect(const math::Vec2<T> point, const math::Vec2<T> size, const
   close();
 }
 
-template <typename T, typename _>
-void Path<T, _>::round_rect(const math::Vec2<T> point, const math::Vec2<T> size, const T radius, const bool centered) {
+template<typename T, typename _>
+void Path<T, _>::round_rect(const math::Vec2<T> point,
+                            const math::Vec2<T> size,
+                            const T radius,
+                            const bool centered)
+{
   math::Vec2<T> p = point;
   T r = radius;
 
@@ -1050,36 +1130,36 @@ void Path<T, _>::round_rect(const math::Vec2<T> point, const math::Vec2<T> size,
     p -= size / T(2);
   }
 
-  if (r > size.x / T(2)) r = size.x / T(2);
-  if (r > size.y / T(2)) r = size.y / T(2);
+  if (r > size.x / T(2))
+    r = size.x / T(2);
+  if (r > size.y / T(2))
+    r = size.y / T(2);
 
   move_to({p.x + r, p.y});
   line_to({p.x + size.x - r, p.y});
-  cubic_to(
-    {p.x + size.x - r * math::circle_ratio<T>, p.y},
-    {p.x + size.x, p.y + r * math::circle_ratio<T>},
-    {p.x + size.x, p.y + r}
-  );
+  cubic_to({p.x + size.x - r * math::circle_ratio<T>, p.y},
+           {p.x + size.x, p.y + r * math::circle_ratio<T>},
+           {p.x + size.x, p.y + r});
   line_to({p.x + size.x, p.y + size.y - r});
-  cubic_to(
-    {p.x + size.x, p.y + size.y - r * math::circle_ratio<T>},
-    {p.x + size.x - r * math::circle_ratio<T>, p.y + size.y},
-    {p.x + size.x - r, p.y + size.y}
-  );
+  cubic_to({p.x + size.x, p.y + size.y - r * math::circle_ratio<T>},
+           {p.x + size.x - r * math::circle_ratio<T>, p.y + size.y},
+           {p.x + size.x - r, p.y + size.y});
   line_to({p.x + r, p.y + size.y});
-  cubic_to(
-    {p.x + r * math::circle_ratio<T>, p.y + size.y},
-    {p.x, p.y + size.y - r * math::circle_ratio<T>},
-    {p.x, p.y + size.y - r}
-  );
+  cubic_to({p.x + r * math::circle_ratio<T>, p.y + size.y},
+           {p.x, p.y + size.y - r * math::circle_ratio<T>},
+           {p.x, p.y + size.y - r});
   line_to({p.x, p.y + r});
-  cubic_to({p.x, p.y + r * math::circle_ratio<T>}, {p.x + r * math::circle_ratio<T>, p.y}, {p.x + r, p.y});
+  cubic_to({p.x, p.y + r * math::circle_ratio<T>},
+           {p.x + r * math::circle_ratio<T>, p.y},
+           {p.x + r, p.y});
   close();
 }
 
-template <typename T, typename _>
-void Path<T, _>::close() {
-  if (empty() || m_commands.empty() || (size() == 1 && get_command(1) == Command::Line)) return;
+template<typename T, typename _>
+void Path<T, _>::close()
+{
+  if (empty() || m_commands.empty() || (size() == 1 && get_command(1) == Command::Line))
+    return;
 
   const math::Vec2<T> p = m_points.front();
 
@@ -1099,12 +1179,14 @@ void Path<T, _>::close() {
   m_closed = true;
 }
 
-template <typename T, typename _>
-uint32_t Path<T, _>::to_line(const uint32_t command_index, uint32_t reference_point) {
+template<typename T, typename _>
+uint32_t Path<T, _>::to_line(const uint32_t command_index, uint32_t reference_point)
+{
   GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
 
   const Command command = get_command(command_index);
-  if (command == Command::Line || command == Command::Move) return reference_point;
+  if (command == Command::Line || command == Command::Move)
+    return reference_point;
 
   const Iterator it = {*this, command_index, IndexType::Command};
   const Segment segment = *it;
@@ -1125,12 +1207,14 @@ uint32_t Path<T, _>::to_line(const uint32_t command_index, uint32_t reference_po
   return reference_point > point_i ? reference_point - 1 : reference_point;
 }
 
-template <typename T, typename _>
-uint32_t Path<T, _>::to_quadratic(const uint32_t command_index, uint32_t reference_point) {
+template<typename T, typename _>
+uint32_t Path<T, _>::to_quadratic(const uint32_t command_index, uint32_t reference_point)
+{
   GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
 
   const Command command = get_command(command_index);
-  if (command != Command::Line) return reference_point;
+  if (command != Command::Line)
+    return reference_point;
 
   const Iterator it = {*this, command_index, IndexType::Command};
   const Segment segment = *it;
@@ -1143,12 +1227,14 @@ uint32_t Path<T, _>::to_quadratic(const uint32_t command_index, uint32_t referen
   return reference_point >= point_i ? reference_point + 1 : reference_point;
 }
 
-template <typename T, typename _>
-uint32_t Path<T, _>::to_cubic(const uint32_t command_index, uint32_t reference_point) {
+template<typename T, typename _>
+uint32_t Path<T, _>::to_cubic(const uint32_t command_index, uint32_t reference_point)
+{
   GK_ASSERT(command_index < m_commands_size, "Command index out of range.");
 
   const Command command = get_command(command_index);
-  if (command == Command::Cubic || command == Command::Move) return reference_point;
+  if (command == Command::Cubic || command == Command::Move)
+    return reference_point;
 
   const Iterator it = {*this, command_index, IndexType::Command};
   const Segment segment = *it;
@@ -1177,8 +1263,9 @@ uint32_t Path<T, _>::to_cubic(const uint32_t command_index, uint32_t reference_p
   return reference_point >= point_i + 1 ? reference_point + 1 : reference_point;
 }
 
-template <typename T, typename _>
-void Path<T, _>::remove(const uint32_t point_index, const bool keep_shape) {
+template<typename T, typename _>
+void Path<T, _>::remove(const uint32_t point_index, const bool keep_shape)
+{
   GK_ASSERT(point_index < m_points.size(), "Point index out of range.");
 
   uint32_t to_remove = point_index == m_points.size() - 1 ? 0 : point_index;
@@ -1238,41 +1325,41 @@ void Path<T, _>::remove(const uint32_t point_index, const bool keep_shape) {
 
   if (to_remove == 0) {
     switch (segment.type) {
-    case Command::Line:
-      m_points.pop_back();
-      break;
-    case Command::Quadratic:
-      m_points.pop_back();
-      m_points.pop_back();
-      break;
-    case Command::Cubic:
-      m_points.pop_back();
-      m_points.pop_back();
-      m_points.pop_back();
-      break;
-    case Command::Move:
-    default:
-      break;
+      case Command::Line:
+        m_points.pop_back();
+        break;
+      case Command::Quadratic:
+        m_points.pop_back();
+        m_points.pop_back();
+        break;
+      case Command::Cubic:
+        m_points.pop_back();
+        m_points.pop_back();
+        m_points.pop_back();
+        break;
+      case Command::Move:
+      default:
+        break;
     }
 
     switch (next_segment.type) {
-    case Command::Line:
-      m_points.insert(m_points.begin(), {cubic.p0, cubic.p1});
-      m_points[2] = cubic.p2;
-      break;
-    case Command::Quadratic:
-      m_points.insert(m_points.begin(), cubic.p0);
-      m_points[1] = cubic.p1;
-      m_points[2] = cubic.p2;
-      break;
-    case Command::Cubic:
-      m_points[0] = cubic.p0;
-      m_points[1] = cubic.p1;
-      m_points[2] = cubic.p2;
-      break;
-    case Command::Move:
-    default:
-      break;
+      case Command::Line:
+        m_points.insert(m_points.begin(), {cubic.p0, cubic.p1});
+        m_points[2] = cubic.p2;
+        break;
+      case Command::Quadratic:
+        m_points.insert(m_points.begin(), cubic.p0);
+        m_points[1] = cubic.p1;
+        m_points[2] = cubic.p2;
+        break;
+      case Command::Cubic:
+        m_points[0] = cubic.p0;
+        m_points[1] = cubic.p1;
+        m_points[2] = cubic.p2;
+        break;
+      case Command::Move:
+      default:
+        break;
     }
 
     new_command_index = 1;
@@ -1281,38 +1368,38 @@ void Path<T, _>::remove(const uint32_t point_index, const bool keep_shape) {
     replace_command(new_command_index, Command::Cubic);
   } else {
     switch (segment.type) {
-    case Command::Line:
-      m_points[to_remove] = cubic.p3;
-      m_points.insert(m_points.begin() + to_remove, {cubic.p1, cubic.p2});
-      break;
-    case Command::Quadratic:
-      m_points[to_remove - 1] = cubic.p1;
-      m_points[to_remove] = cubic.p3;
-      m_points.insert(m_points.begin() + to_remove, cubic.p2);
-      break;
-    case Command::Cubic:
-      m_points[to_remove - 2] = cubic.p1;
-      m_points[to_remove - 1] = cubic.p2;
-      m_points[to_remove] = cubic.p3;
-      break;
-    case Command::Move:
-    default:
-      break;
+      case Command::Line:
+        m_points[to_remove] = cubic.p3;
+        m_points.insert(m_points.begin() + to_remove, {cubic.p1, cubic.p2});
+        break;
+      case Command::Quadratic:
+        m_points[to_remove - 1] = cubic.p1;
+        m_points[to_remove] = cubic.p3;
+        m_points.insert(m_points.begin() + to_remove, cubic.p2);
+        break;
+      case Command::Cubic:
+        m_points[to_remove - 2] = cubic.p1;
+        m_points[to_remove - 1] = cubic.p2;
+        m_points[to_remove] = cubic.p3;
+        break;
+      case Command::Move:
+      default:
+        break;
     }
 
     switch (next_segment.type) {
-    case Command::Line:
-      m_points.erase(m_points.begin() + to_remove + 1);
-      break;
-    case Command::Quadratic:
-      m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 3);
-      break;
-    case Command::Cubic:
-      m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 4);
-      break;
-    case Command::Move:
-    default:
-      break;
+      case Command::Line:
+        m_points.erase(m_points.begin() + to_remove + 1);
+        break;
+      case Command::Quadratic:
+        m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 3);
+        break;
+      case Command::Cubic:
+        m_points.erase(m_points.begin() + to_remove + 1, m_points.begin() + to_remove + 4);
+        break;
+      case Command::Move:
+      default:
+        break;
     }
 
     new_command_index = it.command_index();
@@ -1326,60 +1413,67 @@ void Path<T, _>::remove(const uint32_t point_index, const bool keep_shape) {
   }
 }
 
-template <typename T, typename _>
-uint32_t Path<T, _>::split(const uint32_t segment_index, const T t) {
+template<typename T, typename _>
+uint32_t Path<T, _>::split(const uint32_t segment_index, const T t)
+{
   GK_ASSERT(segment_index < m_commands_size - 1, "Segment index out of range.");
 
-  if (empty()) return 0;
+  if (empty())
+    return 0;
 
   const Iterator it = {*this, segment_index, IndexType::Segment};
   const Segment segment = *it;
   const uint32_t point_i = it.point_index();
 
   switch (segment.type) {
-  case Command::Line: {
-    const math::Vec2<T> p = math::lerp(segment.p0, segment.p1, t);
+    case Command::Line: {
+      const math::Vec2<T> p = math::lerp(segment.p0, segment.p1, t);
 
-    m_points.insert(m_points.begin() + point_i, p);
-    insert_command(Command::Line, segment_index + 1);
+      m_points.insert(m_points.begin() + point_i, p);
+      insert_command(Command::Line, segment_index + 1);
 
-    return point_i;
-  }
-  case Command::Quadratic: {
-    const auto& [left, right] =
-      geom::split(QuadraticBezier<T>{m_points[point_i - 1], m_points[point_i], m_points[point_i + 1]}, t);
+      return point_i;
+    }
+    case Command::Quadratic: {
+      const auto &[left, right] = geom::split(
+          QuadraticBezier<T>{m_points[point_i - 1], m_points[point_i], m_points[point_i + 1]}, t);
 
-    m_points[point_i] = left.p1;
+      m_points[point_i] = left.p1;
 
-    m_points.insert(m_points.begin() + point_i, {left.p2, right.p1});
-    insert_command(Command::Quadratic, segment_index + 1);
+      m_points.insert(m_points.begin() + point_i, {left.p2, right.p1});
+      insert_command(Command::Quadratic, segment_index + 1);
 
-    return point_i + 1;
-  }
-  case Command::Cubic: {
-    const auto& [left, right] =
-      geom::split(CubicBezier<T>{m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2]}, t);
+      return point_i + 1;
+    }
+    case Command::Cubic: {
+      const auto &[left, right] = geom::split(CubicBezier<T>{m_points[point_i - 1],
+                                                             m_points[point_i],
+                                                             m_points[point_i + 1],
+                                                             m_points[point_i + 2]},
+                                              t);
 
-    m_points[point_i] = left.p1;
-    m_points[point_i + 1] = right.p2;
+      m_points[point_i] = left.p1;
+      m_points[point_i + 1] = right.p2;
 
-    m_points.insert(m_points.begin() + point_i + 1, {left.p2, left.p3, right.p1});
-    insert_command(Command::Cubic, segment_index + 1);
+      m_points.insert(m_points.begin() + point_i + 1, {left.p2, left.p3, right.p1});
+      insert_command(Command::Cubic, segment_index + 1);
 
-    return point_i + 2;
-  }
-  case Command::Move:
-  default:
-    break;
+      return point_i + 2;
+    }
+    case Command::Move:
+    default:
+      break;
   };
 
   return 0;
 }
 
-template <typename T, typename _>
-math::Rect<T> Path<T, _>::bounding_rect() const {
+template<typename T, typename _>
+math::Rect<T> Path<T, _>::bounding_rect() const
+{
   if (empty()) {
-    if (vacant()) return {};
+    if (vacant())
+      return {};
     return {m_points[0], m_points[0]};
   }
 
@@ -1387,59 +1481,62 @@ math::Rect<T> Path<T, _>::bounding_rect() const {
 
   for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
-    case Command::Cubic: {
-      GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
-      GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+      case Command::Cubic: {
+        GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
 
-      const CubicBezier<T> cubic = {m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]};
+        const CubicBezier<T> cubic = {
+            m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]};
 
-      rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(cubic));
+        rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(cubic));
 
-      j += 3;
+        j += 3;
 
-      break;
-    }
-    case Command::Quadratic: {
-      GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
-      GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
 
-      const QuadraticBezier<T> quadratic = {m_points[j - 1], m_points[j], m_points[j + 1]};
+        const QuadraticBezier<T> quadratic = {m_points[j - 1], m_points[j], m_points[j + 1]};
 
-      rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(quadratic));
+        rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(quadratic));
 
-      j += 2;
+        j += 2;
 
-      break;
-    }
-    case Command::Line: {
-      GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
-      GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
 
-      rect = math::Rect<T>::from_rects(rect, math::Rect<T>{m_points[j - 1], m_points[j]});
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{m_points[j - 1], m_points[j]});
 
-      j += 1;
+        j += 1;
 
-      break;
-    }
-    case Command::Move: {
-      GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
 
-      rect = math::Rect<T>::from_rects(rect, math::Rect<T>{m_points[j], m_points[j]});
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{m_points[j], m_points[j]});
 
-      j += 1;
+        j += 1;
 
-      break;
-    }
+        break;
+      }
     }
   }
 
   return rect;
 }
 
-template <typename T, typename _>
-math::Rect<T> Path<T, _>::bounding_rect(const math::Mat2x3<T>& transform) const {
+template<typename T, typename _>
+math::Rect<T> Path<T, _>::bounding_rect(const math::Mat2x3<T> &transform) const
+{
   if (empty()) {
-    if (vacant()) return {};
+    if (vacant())
+      return {};
 
     const math::Vec2<T> p = transform * m_points[0];
     return {p, p};
@@ -1449,64 +1546,69 @@ math::Rect<T> Path<T, _>::bounding_rect(const math::Mat2x3<T>& transform) const 
 
   for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
-    case Command::Cubic: {
-      GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
-      GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
+      case Command::Cubic: {
+        GK_ASSERT(j > 0, "Cubic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 2 < m_points.size(), "Not enough points for a cubic bezier.");
 
-      const CubicBezier<T> cubic =
-        {transform * m_points[j - 1], transform * m_points[j], transform * m_points[j + 1], transform * m_points[j + 2]};
+        const CubicBezier<T> cubic = {transform * m_points[j - 1],
+                                      transform * m_points[j],
+                                      transform * m_points[j + 1],
+                                      transform * m_points[j + 2]};
 
-      rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(cubic));
+        rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(cubic));
 
-      j += 3;
+        j += 3;
 
-      break;
-    }
-    case Command::Quadratic: {
-      GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
-      GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
+        break;
+      }
+      case Command::Quadratic: {
+        GK_ASSERT(j > 0, "Quadratic bezier command cannot be the first command of a path.");
+        GK_ASSERT(j + 1 < m_points.size(), "Not enough points for a quadratic bezier.");
 
-      const QuadraticBezier<T> quadratic = {transform * m_points[j - 1], transform * m_points[j], transform * m_points[j + 1]};
+        const QuadraticBezier<T> quadratic = {
+            transform * m_points[j - 1], transform * m_points[j], transform * m_points[j + 1]};
 
-      rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(quadratic));
+        rect = math::Rect<T>::from_rects(rect, geom::bounding_rect(quadratic));
 
-      j += 2;
+        j += 2;
 
-      break;
-    }
-    case Command::Line: {
-      GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
-      GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
+        break;
+      }
+      case Command::Line: {
+        GK_ASSERT(j > 0, "Line command cannot be the first command of a path.");
+        GK_ASSERT(j < m_points.size(), "Not enough points for a line.");
 
-      const math::Vec2<T> p1 = transform * m_points[j];
+        const math::Vec2<T> p1 = transform * m_points[j];
 
-      rect = math::Rect<T>::from_rects(rect, math::Rect<T>{p1, p1});
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{p1, p1});
 
-      j += 1;
+        j += 1;
 
-      break;
-    }
-    case Command::Move: {
-      GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
+        break;
+      }
+      case Command::Move: {
+        GK_ASSERT(j < m_points.size(), "Points vector subscript out of range.");
 
-      const math::Vec2<T> p0 = transform * m_points[j];
+        const math::Vec2<T> p0 = transform * m_points[j];
 
-      rect = math::Rect<T>::from_rects(rect, math::Rect<T>{p0, p0});
+        rect = math::Rect<T>::from_rects(rect, math::Rect<T>{p0, p0});
 
-      j += 1;
+        j += 1;
 
-      break;
-    }
+        break;
+      }
     }
   }
 
   return rect;
 }
 
-template <typename T, typename _>
-math::Rect<T> Path<T, _>::approx_bounding_rect() const {
+template<typename T, typename _>
+math::Rect<T> Path<T, _>::approx_bounding_rect() const
+{
   if (empty()) {
-    if (vacant()) return {};
+    if (vacant())
+      return {};
     return {m_points[0], m_points[0]};
   }
 
@@ -1525,40 +1627,39 @@ math::Rect<T> Path<T, _>::approx_bounding_rect() const {
   return rect;
 }
 
-template <typename T, typename _>
-bool Path<T, _>::is_point_inside_path(
-  const math::Vec2<T> point,
-  const FillingOptions* fill,
-  const StrokingOptions<T>* stroke,
-  const math::Mat2x3<T>& transform,
-  const T threshold,
-  const T zoom,
-  const bool deep_search
-) const {
+template<typename T, typename _>
+bool Path<T, _>::is_point_inside_path(const math::Vec2<T> point,
+                                      const FillingOptions *fill,
+                                      const StrokingOptions<T> *stroke,
+                                      const math::Mat2x3<T> &transform,
+                                      const T threshold,
+                                      const T zoom,
+                                      const bool deep_search) const
+{
   if (empty()) {
     if (vacant()) {
       return false;
     }
 
-    return (
-      is_point_in_circle(point, transform * m_points[0], threshold) ||
-      (deep_search &&
-       (is_point_in_circle(point, transform * m_in_handle, threshold) ||
-        is_point_in_circle(point, transform * m_out_handle, threshold)))
-    );
+    return (is_point_in_circle(point, transform * m_points[0], threshold) ||
+            (deep_search && (is_point_in_circle(point, transform * m_in_handle, threshold) ||
+                             is_point_in_circle(point, transform * m_out_handle, threshold))));
   }
 
   const math::Rect<T> bounds = approx_bounding_rect();
   const math::Mat2x3<T> inverse_transform = math::inverse(transform);
   const math::Vec2<T> local_point = inverse_transform * point;
 
-  const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) && (stroke->width > threshold) : false;
+  const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) &&
+                                            (stroke->width > threshold) :
+                                        false;
 
-  if (!is_point_in_rect(
-        local_point,
-        bounds,
-        stroke ? stroke->width / T(2) * (consider_miters ? stroke->miter_limit : T(1)) + threshold : threshold
-      ))
+  if (!is_point_in_rect(local_point,
+                        bounds,
+                        stroke ?
+                            stroke->width / T(2) * (consider_miters ? stroke->miter_limit : T(1)) +
+                                threshold :
+                            threshold))
     return false;
 
   QuadraticPath<T> path = to_quadratic_path();
@@ -1570,12 +1671,16 @@ bool Path<T, _>::is_point_inside_path(
 
     const int winding = path.winding_of(local_point);
 
-    if ((fill->rule == FillRule::NonZero && winding != 0) || (fill->rule == FillRule::EvenOdd && winding % 2 != 0)) {
+    if ((fill->rule == FillRule::NonZero && winding != 0) ||
+        (fill->rule == FillRule::EvenOdd && winding % 2 != 0))
+    {
       return true;
     }
   }
 
-  StrokingOptions<T> stroking_options = stroke ? *stroke : StrokingOptions<T>{T(0), T(0), LineCap::Butt, LineJoin::Round};
+  StrokingOptions<T> stroking_options = stroke ? *stroke :
+                                                 StrokingOptions<T>{
+                                                     T(0), T(0), LineCap::Butt, LineJoin::Round};
 
   stroking_options.width += threshold;
   stroking_options.miter_limit = consider_miters ? stroking_options.miter_limit : T(0);
@@ -1583,10 +1688,93 @@ bool Path<T, _>::is_point_inside_path(
   // TODO: implement stroking
   for (uint32_t point_index = 0; point_index < m_points.size(); point_index++) {
     if (is_point_in_circle(point, transform * m_points[point_index], threshold)) {
-      if (deep_search || point_index == 0) return true;
+      if (deep_search || point_index == 0)
+        return true;
 
       for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
         switch (get_command(i)) {
+          case Command::Move:
+          case Command::Line:
+            if (point_i == point_index) {
+              return true;
+            }
+
+            point_i += 1;
+            break;
+          case Command::Quadratic:
+            if (point_i + 1 == point_index) {
+              return true;
+            }
+
+            point_i += 2;
+            break;
+          case Command::Cubic:
+            if (point_i + 2 == point_index) {
+              return true;
+            }
+
+            point_i += 3;
+            break;
+        }
+      }
+
+      return false;
+    }
+  }
+
+  return (deep_search && (is_point_in_circle(point, transform * m_in_handle, threshold) ||
+                          is_point_in_circle(point, transform * m_out_handle, threshold)));
+}
+
+template<typename T, typename _>
+bool Path<T, _>::is_point_inside_segment(const uint32_t segment_index,
+                                         const math::Vec2<T> point,
+                                         const StrokingOptions<T> *stroke,
+                                         const math::Mat2x3<T> &transform,
+                                         const T threshold,
+                                         const T zoom) const
+{
+  const Segment segment = segment_at(segment_index);
+
+  Path<T> path;
+
+  path.move_to(segment.p0);
+
+  switch (segment.type) {
+    case Command::Line: {
+      path.line_to(segment.to_line());
+      break;
+    }
+    case Command::Quadratic: {
+      path.quadratic_to(segment.to_quadratic());
+      break;
+    }
+    case Command::Cubic: {
+      path.cubic_to(segment.to_cubic());
+      break;
+    }
+    default:
+    case Command::Move:
+      break;
+  }
+
+  return path.is_point_inside_path(point, nullptr, stroke, transform, threshold, zoom, false);
+}
+
+template<typename T, typename _>
+bool Path<T, _>::is_point_inside_point(const uint32_t point_index,
+                                       const math::Vec2<T> point,
+                                       const math::Mat2x3<T> &transform,
+                                       const T threshold) const
+{
+  const math::Vec2<T> p = transform * at(point_index);
+
+  if (is_point_in_circle(point, p, threshold)) {
+    if (point_index == 0)
+      return true;
+
+    for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
         case Command::Move:
         case Command::Line:
           if (point_i == point_index) {
@@ -1596,128 +1784,50 @@ bool Path<T, _>::is_point_inside_path(
           point_i += 1;
           break;
         case Command::Quadratic:
-          if (point_i + 1 == point_index) {
+          if (point_i == point_index) {
+            if (m_points[point_i] == m_points[point_i - 1] ||
+                m_points[point_i] == m_points[point_i + 1])
+            {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 1 == point_index) {
             return true;
           }
 
           point_i += 2;
           break;
         case Command::Cubic:
-          if (point_i + 2 == point_index) {
+          if (point_i == point_index) {
+            if (m_points[point_i] == m_points[point_i - 1] ||
+                m_points[point_i] == m_points[point_i + 2])
+            {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 1 == point_index) {
+            if (m_points[point_i + 1] == m_points[point_i - 1] ||
+                m_points[point_i + 1] == m_points[point_i + 2])
+            {
+              return false;
+            }
+
+            return true;
+          } else if (point_i + 2 == point_index) {
             return true;
           }
 
           point_i += 3;
           break;
-        }
       }
+    }
 
+    if (point_index == in_handle_index && !has_in_handle())
       return false;
-    }
-  }
-
-  return (
-    deep_search &&
-    (is_point_in_circle(point, transform * m_in_handle, threshold) ||
-     is_point_in_circle(point, transform * m_out_handle, threshold))
-  );
-}
-
-template <typename T, typename _>
-bool Path<T, _>::is_point_inside_segment(
-  const uint32_t segment_index,
-  const math::Vec2<T> point,
-  const StrokingOptions<T>* stroke,
-  const math::Mat2x3<T>& transform,
-  const T threshold,
-  const T zoom
-) const {
-  const Segment segment = segment_at(segment_index);
-
-  Path<T> path;
-
-  path.move_to(segment.p0);
-
-  switch (segment.type) {
-  case Command::Line: {
-    path.line_to(segment.to_line());
-    break;
-  }
-  case Command::Quadratic: {
-    path.quadratic_to(segment.to_quadratic());
-    break;
-  }
-  case Command::Cubic: {
-    path.cubic_to(segment.to_cubic());
-    break;
-  }
-  default:
-  case Command::Move:
-    break;
-  }
-
-  return path.is_point_inside_path(point, nullptr, stroke, transform, threshold, zoom, false);
-}
-
-template <typename T, typename _>
-bool Path<T, _>::is_point_inside_point(
-  const uint32_t point_index,
-  const math::Vec2<T> point,
-  const math::Mat2x3<T>& transform,
-  const T threshold
-) const {
-  const math::Vec2<T> p = transform * at(point_index);
-
-  if (is_point_in_circle(point, p, threshold)) {
-    if (point_index == 0) return true;
-
-    for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
-      switch (get_command(i)) {
-      case Command::Move:
-      case Command::Line:
-        if (point_i == point_index) {
-          return true;
-        }
-
-        point_i += 1;
-        break;
-      case Command::Quadratic:
-        if (point_i == point_index) {
-          if (m_points[point_i] == m_points[point_i - 1] || m_points[point_i] == m_points[point_i + 1]) {
-            return false;
-          }
-
-          return true;
-        } else if (point_i + 1 == point_index) {
-          return true;
-        }
-
-        point_i += 2;
-        break;
-      case Command::Cubic:
-        if (point_i == point_index) {
-          if (m_points[point_i] == m_points[point_i - 1] || m_points[point_i] == m_points[point_i + 2]) {
-            return false;
-          }
-
-          return true;
-        } else if (point_i + 1 == point_index) {
-          if (m_points[point_i + 1] == m_points[point_i - 1] || m_points[point_i + 1] == m_points[point_i + 2]) {
-            return false;
-          }
-
-          return true;
-        } else if (point_i + 2 == point_index) {
-          return true;
-        }
-
-        point_i += 3;
-        break;
-      }
-    }
-
-    if (point_index == in_handle_index && !has_in_handle()) return false;
-    if (point_index == out_handle_index && !has_out_handle()) return false;
+    if (point_index == out_handle_index && !has_out_handle())
+      return false;
 
     return true;
   }
@@ -1725,13 +1835,15 @@ bool Path<T, _>::is_point_inside_point(
   return false;
 }
 
-template <typename T, typename _>
-bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* indices) const {
+template<typename T, typename _>
+bool Path<T, _>::intersects(const math::Rect<T> &rect, std::vector<uint32_t> *indices) const
+{
   if (m_commands_size == 0) {
     return false;
   } else if (m_commands_size == 1) {
     if (is_point_in_rect(m_points[0], rect)) {
-      if (indices) indices->push_back(0);
+      if (indices)
+        indices->push_back(0);
       return true;
     }
 
@@ -1742,55 +1854,65 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* in
     return false;
   }
 
-  if (indices) indices->reserve(points_count(false));
+  if (indices)
+    indices->reserve(points_count(false));
 
   bool found = false;
 
   for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
-    case Command::Move:
-      if (is_point_in_rect(m_points[point_i], rect)) {
-        if (indices) indices->push_back(point_i);
-        found = true;
-      }
+      case Command::Move:
+        if (is_point_in_rect(m_points[point_i], rect)) {
+          if (indices)
+            indices->push_back(point_i);
+          found = true;
+        }
 
-      point_i += 1;
-      break;
-    case Command::Line:
-      if (is_point_in_rect(m_points[point_i], rect)) {
-        if (indices) indices->push_back(point_i);
-        found = true;
-      } else if (!found && does_line_intersect_rect({m_points[point_i - 1], m_points[point_i]}, rect)) {
-        found = true;
-      }
+        point_i += 1;
+        break;
+      case Command::Line:
+        if (is_point_in_rect(m_points[point_i], rect)) {
+          if (indices)
+            indices->push_back(point_i);
+          found = true;
+        } else if (!found &&
+                   does_line_intersect_rect({m_points[point_i - 1], m_points[point_i]}, rect))
+        {
+          found = true;
+        }
 
-      point_i += 1;
-      break;
-    case Command::Quadratic:
-      if (is_point_in_rect(m_points[point_i + 1], rect)) {
-        if (indices) indices->push_back(point_i + 1);
-        found = true;
-      } else if (!found &&
-                 does_quadratic_intersect_rect({m_points[point_i - 1], m_points[point_i], m_points[point_i + 1]}, rect)) {
-        found = true;
-      }
+        point_i += 1;
+        break;
+      case Command::Quadratic:
+        if (is_point_in_rect(m_points[point_i + 1], rect)) {
+          if (indices)
+            indices->push_back(point_i + 1);
+          found = true;
+        } else if (!found &&
+                   does_quadratic_intersect_rect(
+                       {m_points[point_i - 1], m_points[point_i], m_points[point_i + 1]}, rect))
+        {
+          found = true;
+        }
 
-      point_i += 2;
-      break;
-    case Command::Cubic:
-      if (is_point_in_rect(m_points[point_i + 2], rect)) {
-        if (indices) indices->push_back(point_i + 2);
-        found = true;
-      } else if (!found &&
-                 does_cubic_intersect_rect(
-                   {m_points[point_i - 1], m_points[point_i], m_points[point_i + 1], m_points[point_i + 2]},
-                   rect
-                 )) {
-        found = true;
-      }
+        point_i += 2;
+        break;
+      case Command::Cubic:
+        if (is_point_in_rect(m_points[point_i + 2], rect)) {
+          if (indices)
+            indices->push_back(point_i + 2);
+          found = true;
+        } else if (!found && does_cubic_intersect_rect({m_points[point_i - 1],
+                                                        m_points[point_i],
+                                                        m_points[point_i + 1],
+                                                        m_points[point_i + 2]},
+                                                       rect))
+        {
+          found = true;
+        }
 
-      point_i += 3;
-      break;
+        point_i += 3;
+        break;
     }
   }
 
@@ -1801,13 +1923,17 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* in
   return found;
 }
 
-template <typename T, typename _>
-bool Path<T, _>::intersects(const math::Rect<T>& rect, const math::Mat2x3<T>& transform, std::vector<uint32_t>* indices) const {
+template<typename T, typename _>
+bool Path<T, _>::intersects(const math::Rect<T> &rect,
+                            const math::Mat2x3<T> &transform,
+                            std::vector<uint32_t> *indices) const
+{
   if (m_commands_size == 0) {
     return false;
   } else if (m_commands_size == 1) {
     if (is_point_in_rect(transform * m_points[0], rect)) {
-      if (indices) indices->push_back(0);
+      if (indices)
+        indices->push_back(0);
       return true;
     }
 
@@ -1820,70 +1946,77 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, const math::Mat2x3<T>& tr
     return false;
   }
 
-  if (indices) indices->reserve(points_count(false));
+  if (indices)
+    indices->reserve(points_count(false));
 
   bool found = false;
 
   for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
-    case Command::Move: {
-      const math::Vec2<T> p0 = transform * m_points[point_i];
+      case Command::Move: {
+        const math::Vec2<T> p0 = transform * m_points[point_i];
 
-      if (is_point_in_rect(p0, rect)) {
-        if (indices) indices->push_back(point_i);
-        found = true;
+        if (is_point_in_rect(p0, rect)) {
+          if (indices)
+            indices->push_back(point_i);
+          found = true;
+        }
+
+        point_i += 1;
+        last = p0;
+
+        break;
       }
+      case Command::Line: {
+        const math::Vec2<T> p1 = transform * m_points[point_i];
 
-      point_i += 1;
-      last = p0;
+        if (is_point_in_rect(p1, rect)) {
+          if (indices)
+            indices->push_back(point_i);
+          found = true;
+        } else if (!found && does_line_intersect_rect({last, p1}, rect)) {
+          found = true;
+        }
 
-      break;
-    }
-    case Command::Line: {
-      const math::Vec2<T> p1 = transform * m_points[point_i];
-
-      if (is_point_in_rect(p1, rect)) {
-        if (indices) indices->push_back(point_i);
-        found = true;
-      } else if (!found && does_line_intersect_rect({last, p1}, rect)) {
-        found = true;
+        point_i += 1;
+        break;
       }
+      case Command::Quadratic: {
+        const math::Vec2<T> p2 = transform * m_points[point_i + 1];
 
-      point_i += 1;
-      break;
-    }
-    case Command::Quadratic: {
-      const math::Vec2<T> p2 = transform * m_points[point_i + 1];
+        if (is_point_in_rect(p2, rect)) {
+          if (indices)
+            indices->push_back(point_i + 1);
+          found = true;
+        } else if (!found &&
+                   does_quadratic_intersect_rect({last, transform * m_points[point_i], p2}, rect))
+        {
+          found = true;
+        }
 
-      if (is_point_in_rect(p2, rect)) {
-        if (indices) indices->push_back(point_i + 1);
-        found = true;
-      } else if (!found && does_quadratic_intersect_rect({last, transform * m_points[point_i], p2}, rect)) {
-        found = true;
+        point_i += 2;
+        last = p2;
+
+        break;
       }
+      case Command::Cubic: {
+        const math::Vec2<T> p1 = transform * m_points[point_i];
+        const math::Vec2<T> p2 = transform * m_points[point_i + 1];
+        const math::Vec2<T> p3 = transform * m_points[point_i + 2];
 
-      point_i += 2;
-      last = p2;
+        if (is_point_in_rect(p3, rect)) {
+          if (indices)
+            indices->push_back(point_i + 2);
+          found = true;
+        } else if (!found && does_cubic_intersect_rect({last, p1, p2, p3}, rect)) {
+          found = true;
+        }
 
-      break;
-    }
-    case Command::Cubic: {
-      const math::Vec2<T> p1 = transform * m_points[point_i];
-      const math::Vec2<T> p2 = transform * m_points[point_i + 1];
-      const math::Vec2<T> p3 = transform * m_points[point_i + 2];
+        point_i += 3;
+        last = p3;
 
-      if (is_point_in_rect(p3, rect)) {
-        if (indices) indices->push_back(point_i + 2);
-        found = true;
-      } else if (!found && does_cubic_intersect_rect({last, p1, p2, p3}, rect)) {
-        found = true;
+        break;
       }
-
-      point_i += 3;
-      last = p3;
-
-      break;
-    }
     }
   }
 
@@ -1894,8 +2027,9 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, const math::Mat2x3<T>& tr
   return found;
 }
 
-template <typename T, typename _>
-QuadraticPath<T> Path<T, _>::to_quadratic_path(const T tolerance) const {
+template<typename T, typename _>
+QuadraticPath<T> Path<T, _>::to_quadratic_path(const T tolerance) const
+{
   QuadraticPath<T> path;
 
   if (empty()) {
@@ -1904,32 +2038,34 @@ QuadraticPath<T> Path<T, _>::to_quadratic_path(const T tolerance) const {
 
   for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
-    case Command::Move:
-      path.move_to(m_points[j]);
-      j += 1;
-      break;
-    case Command::Line:
-      path.line_to(m_points[j]);
-      j += 1;
-      break;
-    case Command::Quadratic:
-      path.quadratic_to(m_points[j], m_points[j + 1]);
-      j += 2;
-      break;
-    case Command::Cubic: {
-      cubic_to_quadratics({m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]}, tolerance, path);
+      case Command::Move:
+        path.move_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Line:
+        path.line_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Quadratic:
+        path.quadratic_to(m_points[j], m_points[j + 1]);
+        j += 2;
+        break;
+      case Command::Cubic: {
+        cubic_to_quadratics(
+            {m_points[j - 1], m_points[j], m_points[j + 1], m_points[j + 2]}, tolerance, path);
 
-      j += 3;
-      break;
-    }
+        j += 3;
+        break;
+      }
     }
   }
 
   return path;
 }
 
-template <typename T, typename _>
-CubicPath<T> Path<T, _>::to_cubic_path() const {
+template<typename T, typename _>
+CubicPath<T> Path<T, _>::to_cubic_path() const
+{
   CubicPath<T> path;
 
   if (empty()) {
@@ -1938,30 +2074,31 @@ CubicPath<T> Path<T, _>::to_cubic_path() const {
 
   for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
-    case Command::Move:
-      path.move_to(m_points[j]);
-      j += 1;
-      break;
-    case Command::Line:
-      path.line_to(m_points[j]);
-      j += 1;
-      break;
-    case Command::Quadratic:
-      path.quadratic_to(m_points[j], m_points[j + 1]);
-      j += 2;
-      break;
-    case Command::Cubic:
-      path.cubic_to(m_points[j], m_points[j + 1], m_points[j + 2]);
-      j += 3;
-      break;
+      case Command::Move:
+        path.move_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Line:
+        path.line_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Quadratic:
+        path.quadratic_to(m_points[j], m_points[j + 1]);
+        j += 2;
+        break;
+      case Command::Cubic:
+        path.cubic_to(m_points[j], m_points[j + 1], m_points[j + 2]);
+        j += 3;
+        break;
     }
   }
 
   return path;
 }
 
-template <typename T, typename _>
-Path<T> Path<T, _>::transformed(const math::Mat2x3<T>& transform) const {
+template<typename T, typename _>
+Path<T> Path<T, _>::transformed(const math::Mat2x3<T> &transform) const
+{
   Path<T> path;
 
   if (empty()) {
@@ -1984,8 +2121,9 @@ Path<T> Path<T, _>::transformed(const math::Mat2x3<T>& transform) const {
   return path;
 }
 
-template <typename T, typename _>
-io::EncodedData& Path<T, _>::encode(io::EncodedData& data) const {
+template<typename T, typename _>
+io::EncodedData &Path<T, _>::encode(io::EncodedData &data) const
+{
   if (vacant()) {
     // The first bit is set to true to indicate that the path is vacant.
     return data.uint8(0);
@@ -2000,14 +2138,17 @@ io::EncodedData& Path<T, _>::encode(io::EncodedData& data) const {
   data.vector(m_commands);
   data.vector(m_points);
 
-  if (has_in) data.vec2(vec2(m_in_handle));
-  if (has_out) data.vec2(vec2(m_out_handle));
+  if (has_in)
+    data.vec2(vec2(m_in_handle));
+  if (has_out)
+    data.vec2(vec2(m_out_handle));
 
   return data;
 }
 
-template <typename T, typename _>
-void Path<T, _>::push_command(const Command command) {
+template<typename T, typename _>
+void Path<T, _>::push_command(const Command command)
+{
   uint32_t rem = m_commands_size % 4;
 
   if (rem == 0) {
@@ -2019,8 +2160,9 @@ void Path<T, _>::push_command(const Command command) {
   m_commands_size += 1;
 }
 
-template <typename T, typename _>
-void Path<T, _>::insert_command(const Command command, const uint32_t index) {
+template<typename T, typename _>
+void Path<T, _>::insert_command(const Command command, const uint32_t index)
+{
   if (index >= m_commands_size) {
     return push_command(command);
   } else if (index == 0) {
@@ -2068,8 +2210,9 @@ void Path<T, _>::insert_command(const Command command, const uint32_t index) {
   }
 }
 
-template <typename T, typename _>
-void Path<T, _>::replace_command(const uint32_t index, const Command command) {
+template<typename T, typename _>
+void Path<T, _>::replace_command(const uint32_t index, const Command command)
+{
   GK_ASSERT(index < m_commands_size, "Command index out of range.");
 
   uint32_t rem = index % 4;
@@ -2078,8 +2221,9 @@ void Path<T, _>::replace_command(const uint32_t index, const Command command) {
   m_commands[index / 4] |= static_cast<uint8_t>(command) << (6 - rem * 2);
 }
 
-template <typename T, typename _>
-void Path<T, _>::remove_command(const uint32_t index) {
+template<typename T, typename _>
+void Path<T, _>::remove_command(const uint32_t index)
+{
   GK_ASSERT(index < m_commands_size, "Command index out of range.");
 
   if (index == m_commands_size - 1) {

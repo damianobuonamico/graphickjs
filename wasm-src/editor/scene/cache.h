@@ -15,11 +15,9 @@ namespace graphick::editor {
  * @brief The Cache class is used to store cached data.
  *
  * It is designed to be validated exclusively by the History class.
- *
- * @class Cache
  */
 class Cache {
-public:
+ public:
   /**
    * @brief Clears the cache.
    */
@@ -46,9 +44,13 @@ public:
    *
    * @return The valid rectangles.
    */
-  const std::vector<rect>& get_invalid_rects() const { return m_invalid_rects; }
-private:
-  std::vector<bool> m_grid;           // When an action is performed, some grid cells are invalidated.
+  const std::vector<rect> &get_invalid_rects() const
+  {
+    return m_invalid_rects;
+  }
+
+ private:
+  std::vector<bool> m_grid;  // When an action is performed, some grid cells are invalidated.
   std::vector<rect> m_invalid_rects;  // The invalid rectangles.
 
   ivec2 m_subdivisions;               // The number of subdivisions in the grid.

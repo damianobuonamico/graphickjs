@@ -19,11 +19,10 @@ namespace graphick::geom {
  * The last control point of a curve is the first control point of the next curve.
  * Linear segments are treated as quadratic curves with p1 = p2.
  *
- * All curves are splitted in monotone segments for efficient winding number computation (and rendering).
- *
- * @struct QuadraticPath
+ * All curves are splitted in monotone segments for efficient winding number computation (and
+ * rendering).
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 struct QuadraticPath {
   std::vector<math::Vec2<T>> points;  // The control points of the path.
 
@@ -34,14 +33,20 @@ struct QuadraticPath {
    *
    * @return true if the path is empty, false otherwise.
    */
-  inline bool empty() const { return points.size() < 3; }
+  inline bool empty() const
+  {
+    return points.size() < 3;
+  }
 
   /**
    * @brief Returns the number of curves in the path.
    *
    * @return The number of curves in the path.
    */
-  inline size_t size() const { return empty() ? 0 : (points.size() - 1) / 2; }
+  inline size_t size() const
+  {
+    return empty() ? 0 : (points.size() - 1) / 2;
+  }
 
   /**
    * @brief Returns whether the path is closed.
@@ -50,21 +55,30 @@ struct QuadraticPath {
    *
    * @return true if the path is closed, false otherwise.
    */
-  inline bool closed() const { return !empty() && points.front() == points.back(); }
+  inline bool closed() const
+  {
+    return !empty() && points.front() == points.back();
+  }
 
   /**
    * @brief Returns the first control point of the path.
    *
    * @return The first control point.
    */
-  inline math::Vec2<T>& front() { return points.front(); }
+  inline math::Vec2<T> &front()
+  {
+    return points.front();
+  }
 
   /**
    * @brief Returns the last control point of the path.
    *
    * @return The last control point.
    */
-  inline math::Vec2<T>& back() { return points.back(); }
+  inline math::Vec2<T> &back()
+  {
+    return points.back();
+  }
 
   /**
    * @brief Returns the i-th control point of the path.
@@ -72,16 +86,21 @@ struct QuadraticPath {
    * @param i The index of the control point.
    * @return The i-th control point.
    */
-  inline math::Vec2<T> operator[](const size_t i) const { return points[i]; }
+  inline math::Vec2<T> operator[](const size_t i) const
+  {
+    return points[i];
+  }
 
   /**
    * @brief Returns an approximate bounding rectangle of the path.
    *
-   * The bounding rectangle is computed by taking the minimum and maximum x and y values of the control points.
+   * The bounding rectangle is computed by taking the minimum and maximum x and y values of the
+   * control points.
    *
    * @return An approximate bounding rectangle of the path.
    */
-  inline math::Rect<T> approx_bounding_rect() const {
+  inline math::Rect<T> approx_bounding_rect() const
+  {
     if (empty()) {
       return math::Rect<T>{};
     }
@@ -103,7 +122,10 @@ struct QuadraticPath {
    *
    * @param p The point to move the cursor to.
    */
-  inline void move_to(const math::Vec2<T> p) { points.push_back(p); }
+  inline void move_to(const math::Vec2<T> p)
+  {
+    points.push_back(p);
+  }
 
   /**
    * @brief Adds a line to the path.
@@ -112,7 +134,8 @@ struct QuadraticPath {
    *
    * @param p The end point of the line.
    */
-  inline void line_to(const math::Vec2<T> p) {
+  inline void line_to(const math::Vec2<T> p)
+  {
     GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
     points.push_back(p);
@@ -134,7 +157,10 @@ struct QuadraticPath {
    * @param p2 The second control point of the curve.
    * @param p3 The end point of the curve.
    */
-  void cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3, const T tolerance = T(2e-2));
+  void cubic_to(const math::Vec2<T> p1,
+                const math::Vec2<T> p2,
+                const math::Vec2<T> p3,
+                const T tolerance = T(2e-2));
 
   /**
    * @brief Adds an arc to the path.
@@ -143,7 +169,10 @@ struct QuadraticPath {
    * @param to The end point of the arc.
    * @param clockwise Whether the arc is drawn clockwise or counter-clockwise.
    */
-  void arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise = true, const T tolerance = T(1e-2));
+  void arc_to(const math::Vec2<T> center,
+              const math::Vec2<T> to,
+              const bool clockwise = true,
+              const T tolerance = T(1e-2));
 
   /**
    * @brief Returns the winding number of a point with respect to the path.

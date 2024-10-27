@@ -17,8 +17,9 @@ namespace graphick::utils {
  * @param func The function to apply to each element.
  * @return The function.
  */
-template <typename T, typename Fn>
-const Fn for_each(const T& first, const T& second, Fn func) {
+template<typename T, typename Fn>
+const Fn for_each(const T &first, const T &second, Fn func)
+{
   for (auto it = first.begin(); it != first.end(); it++) {
     func(*it);
   }

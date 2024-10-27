@@ -20,12 +20,11 @@ class Scene;
  *
  * An action includes the id and the target of the entity that was affected.
  * A modify action can only be performed on a component, and affects one or more of its properties.
- * A property is always present in a component. To "remove" a property, a modify action with its default value is performed.
- *
- * @struct Action
+ * A property is always present in a component. To "remove" a property, a modify action with its
+ * default value is performed.
  */
 struct Action {
-public:
+ public:
   /**
    * @brief The type of action that was performed.
    */
@@ -40,15 +39,16 @@ public:
    * @brief The target that was affected by the action.
    */
   enum class Target {
-    Entity,        // The entire entity.
-    Component,     // A component of the entity.
+    Entity,     // The entire entity.
+    Component,  // A component of the entity.
   };
-public:
+
+ public:
   Type type;       // The type of action that was performed.
   Target target;   // The target of the action.
 
   uuid entity_id;  // The id of the entity that was affected.
-public:
+ public:
   /**
    * @brief Constructs an Add or Remove action with the given entity id, target, type and data.
    *
@@ -57,84 +57,93 @@ public:
    * @param type The type of action that was performed, either Add or Remove.
    * @param data The encoded data of the target.
    */
-  Action(uuid entity_id, Target target, Type type, const io::EncodedData& data);
-  Action(uuid entity_id, Target target, Type type, io::EncodedData&& data);
+  Action(uuid entity_id, Target target, Type type, const io::EncodedData &data);
+  Action(uuid entity_id, Target target, Type type, io::EncodedData &&data);
 
   /**
    * @brief Constructs a Modify action with the given entity id, target, type, data and backup.
    *
    * @param entity_id The id of the entity that was affected.
    * @param target The target that was affected by the action.
-   * @param type The type of action that was performed, only Modify is allowed for this constructor.
+   * @param type The type of action that was performed, only Modify is allowed for this
+   * constructor.
    * @param data The encoded data of the target.
    * @param backup The backup data of the target.
    */
-  Action(uuid entity_id, Target target, Type type, const io::EncodedData& data, const io::EncodedData& backup);
-  Action(uuid entity_id, Target target, Type type, io::EncodedData&& data, io::EncodedData&& backup);
+  Action(uuid entity_id,
+         Target target,
+         Type type,
+         const io::EncodedData &data,
+         const io::EncodedData &backup);
+  Action(
+      uuid entity_id, Target target, Type type, io::EncodedData &&data, io::EncodedData &&backup);
 
   /**
    * @brief Copy and move constructors.
    */
-  Action(const Action& other);
-  Action(Action&& other) noexcept;
+  Action(const Action &other);
+  Action(Action &&other) noexcept;
 
   /**
    * @brief Copy and move assignment operators.
    */
-  Action& operator=(const Action& other);
-  Action& operator=(Action&& other) noexcept;
+  Action &operator=(const Action &other);
+  Action &operator=(Action &&other) noexcept;
 
   /**
    * @brief Executes the action.
    */
-  void execute(Scene* scene) const;
+  void execute(Scene *scene) const;
 
   /**
    * @brief Reverts the action.
    */
-  void revert(Scene* scene) const;
+  void revert(Scene *scene) const;
 
   /**
    * @brief Merges the action with the given action.
    *
-   * Checks if the actions can be merged and if so, merges them. If the merge is successful, the given action is invalidated.
-   * The merging process updates the data of the action to the new data.
+   * Checks if the actions can be merged and if so, merges them. If the merge is successful, the
+   * given action is invalidated. The merging process updates the data of the action to the new
+   * data.
    *
    * @param other The action to merge with.
    * @return true if the actions were merged, false otherwise.
    */
-  bool merge(Action& other);
-private:
+  bool merge(Action &other);
+
+ private:
   /**
    * @brief Executes the add action.
    */
-  void execute_add(Scene* scene) const;
+  void execute_add(Scene *scene) const;
 
   /**
    * @brief Executes the remove action.
    */
-  void execute_remove(Scene* scene) const;
+  void execute_remove(Scene *scene) const;
 
   /**
    * @brief Executes the modify action.
    */
-  void execute_modify(Scene* scene) const;
+  void execute_modify(Scene *scene) const;
 
   /**
    * @brief Reverts the add action.
    */
-  void revert_add(Scene* scene) const;
+  void revert_add(Scene *scene) const;
 
   /**
    * @brief Reverts the remove action.
    */
-  void revert_remove(Scene* scene) const;
+  void revert_remove(Scene *scene) const;
 
   /**
    * @brief Reverts the modify action.
    */
-  void revert_modify(Scene* scene) const;
-private:
+  void revert_modify(Scene *scene) const;
+
+ private:
   io::EncodedData m_data;    // The encoded data of the target.
   io::EncodedData m_backup;  // The backup data of the target.
 };

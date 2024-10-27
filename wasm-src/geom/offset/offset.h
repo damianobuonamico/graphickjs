@@ -18,7 +18,10 @@ namespace graphick::geom {
  * @param tolerance The maximum distance between the offset curve and its approximation.
  * @param sink The output quadratic path.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-void offset_cubic(const dcubic_bezier& curve, const double offset, const double tolerance, CubicPath<T>& sink);
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+void offset_cubic(const dcubic_bezier &curve,
+                  const double offset,
+                  const double tolerance,
+                  CubicPath<T> &sink);
 
 }  // namespace graphick::geom

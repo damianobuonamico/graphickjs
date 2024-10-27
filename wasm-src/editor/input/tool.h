@@ -14,11 +14,9 @@ namespace graphick::editor::input {
  *
  * It contains information about the type of tool, its category, and its behavior.
  * It is an abstract class, so it cannot be instantiated.
- *
- * @class Tool
  */
 class Tool {
-public:
+ public:
   /**
    * @brief The ToolType enum represents the type of tool.
    */
@@ -33,13 +31,14 @@ public:
     CategoryImmediate = 1 << 1,
     CategoryView = 1 << 2,
   };
-public:
+
+ public:
   /**
    * @brief Deleted default constructor, copy constructor, move constructor, and destructor.
    */
   Tool() = delete;
-  Tool(const Tool&) = delete;
-  Tool(Tool&&) = delete;
+  Tool(const Tool &) = delete;
+  Tool(Tool &&) = delete;
   ~Tool() = default;
 
   /**
@@ -47,14 +46,20 @@ public:
    *
    * @return The type of the tool.
    */
-  inline ToolType type() const { return m_type; }
+  inline ToolType type() const
+  {
+    return m_type;
+  }
 
   /**
    * @brief Returns the category of the tool.
    *
    * @return The category of the tool.
    */
-  inline int category() const { return m_category; }
+  inline int category() const
+  {
+    return m_category;
+  }
 
   /**
    * @brief Checks if the tool is in the given category.
@@ -62,27 +67,30 @@ public:
    * @param category The category to check.
    * @return true if the tool is in the given category, false othwerwise.
    */
-  inline bool is_in_category(Category category) const { return m_category & category; }
+  inline bool is_in_category(Category category) const
+  {
+    return m_category & category;
+  }
 
   /**
    * @brief Called when the pointer is pressed down.
    */
-  virtual void on_pointer_down() { }
+  virtual void on_pointer_down() {}
 
   /**
    * @brief Called when the pointer is moved.
    */
-  virtual void on_pointer_move() { }
+  virtual void on_pointer_move() {}
 
   /**
    * @brief Called when the pointer is released.
    */
-  virtual void on_pointer_up() { }
+  virtual void on_pointer_up() {}
 
   /**
    * @brief Called when the pointer is hovering.
    */
-  virtual void on_pointer_hover() { }
+  virtual void on_pointer_hover() {}
 
   /**
    * @brief Called when a key is pressed or released.
@@ -90,26 +98,28 @@ public:
    * @param down Whether the key is pressed down or released.
    * @param key The key that was pressed or released.
    */
-  virtual void on_key(const bool down, const KeyboardKey key) { }
+  virtual void on_key(const bool down, const KeyboardKey key) {}
 
   /**
    * @brief Resets the tool to its default state.
    */
-  virtual void reset() { }
+  virtual void reset() {}
 
   /**
    * @brief Renders any overlays for the tool.
    */
-  virtual void render_overlays() const { }
-protected:
+  virtual void render_overlays() const {}
+
+ protected:
   /**
    * @brief Constructs a new Tool object with the given type and category.
    *
    * @param type The type of the tool.
    * @param category The category of the tool.
    */
-  Tool(ToolType type, int category) : m_type(type), m_category(category) { }
-protected:
+  Tool(ToolType type, int category) : m_type(type), m_category(category) {}
+
+ protected:
   const ToolType m_type;  // The type of the tool.
   const int m_category;   // The category of the tool.
 };

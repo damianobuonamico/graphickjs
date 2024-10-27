@@ -16,32 +16,42 @@
 
 namespace graphick::editor::input {
 
-HoverState::~HoverState() { }
+HoverState::~HoverState() {}
 
-std::optional<Entity> HoverState::entity() const {
-  if (m_entity == 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;
+std::optional<Entity> HoverState::entity() const
+{
+  if (m_entity == 0 || !Editor::scene().has_entity(m_entity))
+    return std::nullopt;
   return Editor::scene().get_entity(m_entity);
 }
 
-std::optional<size_t> HoverState::segment() const {
-  if (m_entity == 0 || m_segment < 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;
+std::optional<size_t> HoverState::segment() const
+{
+  if (m_entity == 0 || m_segment < 0 || !Editor::scene().has_entity(m_entity))
+    return std::nullopt;
   return static_cast<size_t>(m_segment);
 }
 
-std::optional<size_t> HoverState::vertex() const {
-  if (m_entity == 0 || m_vertex < 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;
+std::optional<size_t> HoverState::vertex() const
+{
+  if (m_entity == 0 || m_vertex < 0 || !Editor::scene().has_entity(m_entity))
+    return std::nullopt;
   return static_cast<size_t>(m_vertex);
 }
 
-std::optional<size_t> HoverState::handle() const {
-  if (m_entity == 0 || m_handle < 0 || !Editor::scene().has_entity(m_entity)) return std::nullopt;
+std::optional<size_t> HoverState::handle() const
+{
+  if (m_entity == 0 || m_handle < 0 || !Editor::scene().has_entity(m_entity))
+    return std::nullopt;
   return static_cast<size_t>(m_handle);
 }
 
-void HoverState::set_hovered(const uuid id, const vec2 position, const bool deep_search, float threshold, const double zoom) {
+void HoverState::set_hovered(
+    const uuid id, const vec2 position, const bool deep_search, float threshold, const double zoom)
+{
   reset();
 
-  const Scene& scene = Editor::scene();
+  const Scene &scene = Editor::scene();
   m_entity = id;
 
   if (id == uuid::null || !scene.has_entity(id)) {
@@ -94,7 +104,9 @@ void HoverState::set_hovered(const uuid id, const vec2 position, const bool deep
   }
 
   if (path.data().has_in_handle()) {
-    if (path.data().is_point_inside_point(geom::path::in_handle_index, position, transform, threshold)) {
+    if (path.data().is_point_inside_point(
+            geom::path::in_handle_index, position, transform, threshold))
+    {
       m_type = HoverType::Handle;
       m_segment = -1;
       m_vertex = -1;
@@ -104,7 +116,9 @@ void HoverState::set_hovered(const uuid id, const vec2 position, const bool deep
   }
 
   if (path.data().has_out_handle()) {
-    if (path.data().is_point_inside_point(geom::path::out_handle_index, position, transform, threshold)) {
+    if (path.data().is_point_inside_point(
+            geom::path::out_handle_index, position, transform, threshold))
+    {
       m_type = HoverType::Handle;
       m_segment = -1;
       m_vertex = -1;
@@ -115,7 +129,8 @@ void HoverState::set_hovered(const uuid id, const vec2 position, const bool deep
 
   if (!path.data().empty()) {
     for (uint32_t i = 0; i < path.data().size(); i++) {
-      // if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom)) {
+      // if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom))
+      // {
       m_type = HoverType::Segment;
       m_segment = i;
       m_vertex = -1;
@@ -126,7 +141,8 @@ void HoverState::set_hovered(const uuid id, const vec2 position, const bool deep
   }
 }
 
-void HoverState::reset() {
+void HoverState::reset()
+{
   m_type = HoverType::None;
   m_entity = uuid::null;
   m_segment = -1;

@@ -22,9 +22,10 @@
 
 namespace graphick::editor::input {
 
-DirectSelectTool::DirectSelectTool() : Tool(ToolType::DirectSelect, CategoryDirect) { }
+DirectSelectTool::DirectSelectTool() : Tool(ToolType::DirectSelect, CategoryDirect) {}
 
-void DirectSelectTool::on_pointer_down() {
+void DirectSelectTool::on_pointer_down()
+{
   m_is_entity_added_to_selection = false;
   m_should_evaluate_selection = false;
   m_dragging_occurred = false;
@@ -58,57 +59,61 @@ void DirectSelectTool::on_pointer_down() {
     on_handle_pointer_down();
   } else if (hover_type == HoverState::HoverType::Segment) {
     on_segment_pointer_down();
-  } else if (hover_type == HoverState::HoverType::Entity && entity->is_in_category(CategoryComponent::Category::Selectable)) {
+  } else if (hover_type == HoverState::HoverType::Entity &&
+             entity->is_in_category(CategoryComponent::Category::Selectable))
+  {
     on_entity_pointer_down();
   } else {
     on_none_pointer_down();
   }
 }
 
-void DirectSelectTool::on_pointer_move() {
+void DirectSelectTool::on_pointer_move()
+{
   m_dragging_occurred = true;
 
   switch (m_mode) {
-  case Mode::Duplicate:
-  case Mode::Entity:
-  case Mode::Element:
-  case Mode::Vertex:
-    translate_selected();
-    break;
-  case Mode::Handle:
-    on_handle_pointer_move();
-    break;
-  case Mode::Bezier:
-    on_segment_pointer_move();
-    break;
-  default:
-  case Mode::None:
-    on_none_pointer_move();
-    break;
+    case Mode::Duplicate:
+    case Mode::Entity:
+    case Mode::Element:
+    case Mode::Vertex:
+      translate_selected();
+      break;
+    case Mode::Handle:
+      on_handle_pointer_move();
+      break;
+    case Mode::Bezier:
+      on_segment_pointer_move();
+      break;
+    default:
+    case Mode::None:
+      on_none_pointer_move();
+      break;
   }
 }
 
-void DirectSelectTool::on_pointer_up() {
+void DirectSelectTool::on_pointer_up()
+{
   switch (m_mode) {
-  case Mode::Duplicate:
-    break;
-  case Mode::Entity:
-  case Mode::Element:
-    on_entity_pointer_up();
-    break;
-  case Mode::Vertex:
-    on_vertex_pointer_up();
-    break;
-  case Mode::Handle:
-    on_handle_pointer_up();
-    break;
-  case Mode::Bezier:
-    on_segment_pointer_up();
-    break;
-  default:
-  case Mode::None:
-    on_none_pointer_up();
-    break;
+    case Mode::Duplicate:
+      break;
+    case Mode::Entity:
+    case Mode::Element:
+      on_entity_pointer_up();
+      break;
+    case Mode::Vertex:
+      on_vertex_pointer_up();
+      break;
+    case Mode::Handle:
+      on_handle_pointer_up();
+      break;
+    case Mode::Bezier:
+      on_segment_pointer_up();
+      break;
+    default:
+    case Mode::None:
+      on_none_pointer_up();
+      break;
   }
 
   if (m_selection_rect.active()) {
@@ -116,18 +121,22 @@ void DirectSelectTool::on_pointer_up() {
   }
 }
 
-void DirectSelectTool::render_overlays() const {
-  if (!m_selection_rect.active()) return;
+void DirectSelectTool::render_overlays() const
+{
+  if (!m_selection_rect.active())
+    return;
 
   renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
-  renderer::Renderer::draw_rect(m_selection_rect.bounding_rect(), vec4(0.22f, 0.76f, 0.95f, 0.25f));
+  renderer::Renderer::draw_rect(m_selection_rect.bounding_rect(),
+                                vec4(0.22f, 0.76f, 0.95f, 0.25f));
 }
 
-void DirectSelectTool::translate_selected() {
+void DirectSelectTool::translate_selected()
+{
   vec2 absolute_movenent = InputManager::pointer.scene.movement;
   vec2 movement = absolute_movenent;
 
-  Scene& scene = Editor::scene();
+  Scene &scene = Editor::scene();
 
   if (m_vertex.has_value()) {
     Entity entity = scene.get_entity(m_entity);
@@ -140,11 +149,12 @@ void DirectSelectTool::translate_selected() {
     const vec2 position = inverse_transform * InputManager::pointer.scene.position;
     const vec2 vertex_position = path.data().at(m_vertex.value());
 
-    absolute_movenent = InputManager::pointer.scene.position - transform.transform(vertex_position);
+    absolute_movenent = InputManager::pointer.scene.position -
+                        transform.transform(vertex_position);
     movement = position - vertex_position;
   }
 
-  for (auto& [id, entry] : scene.selection.selected()) {
+  for (auto &[id, entry] : scene.selection.selected()) {
     Entity entity = scene.get_entity(id);
     TransformComponent transform = entity.get_component<TransformComponent>();
 
@@ -161,7 +171,8 @@ void DirectSelectTool::translate_selected() {
 
 /* -- on_pointer_down -- */
 
-void DirectSelectTool::on_none_pointer_down() {
+void DirectSelectTool::on_none_pointer_down()
+{
   if (!InputManager::keys.shift) {
     Editor::scene().selection.clear();
   }
@@ -170,10 +181,11 @@ void DirectSelectTool::on_none_pointer_down() {
   m_mode = Mode::None;
 }
 
-void DirectSelectTool::on_duplicate_pointer_down() {
+void DirectSelectTool::on_duplicate_pointer_down()
+{
   on_entity_pointer_down();
 
-  Scene& scene = Editor::scene();
+  Scene &scene = Editor::scene();
 
   if (!scene.selection.has(m_entity)) {
     return;
@@ -181,7 +193,7 @@ void DirectSelectTool::on_duplicate_pointer_down() {
 
   std::vector<uuid> duplicated;
 
-  for (const auto& [id, _] : scene.selection.selected()) {
+  for (const auto &[id, _] : scene.selection.selected()) {
     duplicated.push_back(scene.duplicate_entity(id).id());
   }
 
@@ -198,11 +210,13 @@ void DirectSelectTool::on_duplicate_pointer_down() {
   m_mode = Mode::Duplicate;
 }
 
-void DirectSelectTool::on_entity_pointer_down() {
-  Scene& scene = Editor::scene();
+void DirectSelectTool::on_entity_pointer_down()
+{
+  Scene &scene = Editor::scene();
 
   if (!scene.selection.has(m_entity)) {
-    if (!InputManager::keys.shift) scene.selection.clear();
+    if (!InputManager::keys.shift)
+      scene.selection.clear();
 
     scene.selection.select(m_entity);
     m_is_entity_added_to_selection = true;
@@ -211,11 +225,13 @@ void DirectSelectTool::on_entity_pointer_down() {
   m_mode = Mode::Entity;
 }
 
-void DirectSelectTool::on_element_pointer_down() {
-  Scene& scene = Editor::scene();
+void DirectSelectTool::on_element_pointer_down()
+{
+  Scene &scene = Editor::scene();
 
   if (!scene.selection.has(m_entity) || !scene.selection.get(m_entity).full()) {
-    if (!InputManager::keys.shift) scene.selection.clear();
+    if (!InputManager::keys.shift)
+      scene.selection.clear();
 
     scene.selection.select(m_entity);
     m_is_entity_added_to_selection = true;
@@ -224,8 +240,9 @@ void DirectSelectTool::on_element_pointer_down() {
   m_mode = Mode::Element;
 }
 
-void DirectSelectTool::on_segment_pointer_down() {
-  Scene& scene = Editor::scene();
+void DirectSelectTool::on_segment_pointer_down()
+{
+  Scene &scene = Editor::scene();
   Entity entity = scene.get_entity(m_entity);
 
   if (!entity.is_element()) {
@@ -242,7 +259,8 @@ void DirectSelectTool::on_segment_pointer_down() {
   m_mode = Mode::Bezier;
 
   if (scene.selection.has(m_entity) && scene.selection.has_child(m_entity, start_index) &&
-      scene.selection.has_child(m_entity, end_index)) {
+      scene.selection.has_child(m_entity, end_index))
+  {
     return;
   }
 
@@ -252,8 +270,8 @@ void DirectSelectTool::on_segment_pointer_down() {
     } else {
       scene.selection.clear();
 
-      // m_last_bezier_point = InputManager::pointer.scene.origin - m_element->transform()->position().get();
-      // m_last_bezier_p1 = m_bezier->p1();
+      // m_last_bezier_point = InputManager::pointer.scene.origin -
+      // m_element->transform()->position().get(); m_last_bezier_p1 = m_bezier->p1();
       // m_last_bezier_p2 = m_bezier->p2();
       // m_closest = m_bezier->closest_to(m_last_bezier_point);
 
@@ -271,11 +289,13 @@ void DirectSelectTool::on_segment_pointer_down() {
   scene.selection.select_child(m_entity, end_index);
 }
 
-void DirectSelectTool::on_vertex_pointer_down() {
-  Scene& scene = Editor::scene();
+void DirectSelectTool::on_vertex_pointer_down()
+{
+  Scene &scene = Editor::scene();
 
   if (!scene.selection.has_child(m_entity, m_vertex.value())) {
-    if (!InputManager::keys.shift) scene.selection.clear();
+    if (!InputManager::keys.shift)
+      scene.selection.clear();
 
     scene.selection.select_child(m_entity, m_vertex.value());
     m_is_entity_added_to_selection = true;
@@ -284,20 +304,25 @@ void DirectSelectTool::on_vertex_pointer_down() {
   m_mode = Mode::Vertex;
 }
 
-void DirectSelectTool::on_handle_pointer_down() { m_mode = Mode::Handle; }
+void DirectSelectTool::on_handle_pointer_down()
+{
+  m_mode = Mode::Handle;
+}
 
 /* -- on_pointer_move -- */
 
-void DirectSelectTool::on_none_pointer_move() {
+void DirectSelectTool::on_none_pointer_move()
+{
   if (m_selection_rect.active()) {
-    Scene& scene = Editor::scene();
+    Scene &scene = Editor::scene();
 
     m_selection_rect.size(InputManager::pointer.scene.delta);
     scene.selection.temp_select(scene.entities_in(m_selection_rect.bounding_rect(), true));
   }
 }
 
-void DirectSelectTool::on_segment_pointer_move() {
+void DirectSelectTool::on_segment_pointer_move()
+{
   if (!m_should_evaluate_selection) {
     translate_selected();
     return;
@@ -320,7 +345,8 @@ void DirectSelectTool::on_segment_pointer_move() {
   // vec2 d1 = e1 - m_closest.point;
   // vec2 d2 = e2 - m_closest.point;
 
-  // vec2 position = InputManager::pointer.scene.position - m_element->transform()->position().get();
+  // vec2 position = InputManager::pointer.scene.position -
+  // m_element->transform()->position().get();
 
   // vec2 ne1 = position + d1;
   // vec2 ne2 = position + d2;
@@ -343,13 +369,15 @@ void DirectSelectTool::on_segment_pointer_move() {
 
   // BezierEntity::BezierABC ideal_abc = m_bezier->abc(ideal_t, position);
 
-  // float angle = std::fmodf(std::atan2f(p3.y - p0.y, p3.x - p0.x) - std::atan2f(position.y - p0.y, position.x - p0.x) +
-  // MATH_F_TWO_PI, MATH_F_TWO_PI); float bc = (angle < 0.0f || angle > MATH_F_PI ? -1.0f : 1.0f) * distance(p0, p3) / 3.0f; float
-  // de1 = ideal_t * bc; float de2 = (1.0f - ideal_t) * bc;
+  // float angle = std::fmodf(std::atan2f(p3.y - p0.y, p3.x - p0.x) - std::atan2f(position.y -
+  // p0.y, position.x - p0.x) + MATH_F_TWO_PI, MATH_F_TWO_PI); float bc = (angle < 0.0f || angle >
+  // MATH_F_PI ? -1.0f : 1.0f) * distance(p0, p3) / 3.0f; float de1 = ideal_t * bc; float de2 =
+  // (1.0f - ideal_t) * bc;
 
-  // vec2 tangent1 = { position.x - 10.0f * (position.y - center.y), position.y + 10.0f * (position.x - center.x) };
-  // vec2 tangent2 = { position.x + 10.0f * (position.y - center.y), position.y - 10.0f * (position.x - center.x) };
-  // vec2 direction = normalize(tangent2 - tangent1);
+  // vec2 tangent1 = { position.x - 10.0f * (position.y - center.y), position.y + 10.0f *
+  // (position.x - center.x) }; vec2 tangent2 = { position.x + 10.0f * (position.y - center.y),
+  // position.y - 10.0f * (position.x - center.x) }; vec2 direction = normalize(tangent2 -
+  // tangent1);
 
   // vec2 ideal_e1 = position + de1 * direction;
   // vec2 ideal_e2 = position - de2 * direction;
@@ -372,8 +400,9 @@ void DirectSelectTool::on_segment_pointer_move() {
   // m_bezier->end().transform()->translate_left_to(lerp_np2 - p3);
 }
 
-void DirectSelectTool::on_handle_pointer_move() {
-  Scene& scene = Editor::scene();
+void DirectSelectTool::on_handle_pointer_move()
+{
+  Scene &scene = Editor::scene();
   Entity entity = scene.get_entity(m_entity);
 
   PathComponent path = entity.get_component<PathComponent>();
@@ -384,12 +413,17 @@ void DirectSelectTool::on_handle_pointer_move() {
 
 /* -- on_pointer_up -- */
 
-void DirectSelectTool::on_none_pointer_up() { Editor::scene().selection.sync(); }
+void DirectSelectTool::on_none_pointer_up()
+{
+  Editor::scene().selection.sync();
+}
 
-void DirectSelectTool::on_entity_pointer_up() {
-  if (m_dragging_occurred) return;
+void DirectSelectTool::on_entity_pointer_up()
+{
+  if (m_dragging_occurred)
+    return;
 
-  Scene& scene = Editor::scene();
+  Scene &scene = Editor::scene();
 
   if (scene.selection.has(m_entity) && !m_is_entity_added_to_selection) {
     if (InputManager::keys.shift) {
@@ -403,10 +437,12 @@ void DirectSelectTool::on_entity_pointer_up() {
   }
 }
 
-void DirectSelectTool::on_segment_pointer_up() {
-  if (m_dragging_occurred) return;
+void DirectSelectTool::on_segment_pointer_up()
+{
+  if (m_dragging_occurred)
+    return;
 
-  Scene& scene = Editor::scene();
+  Scene &scene = Editor::scene();
   Entity entity = scene.get_entity(m_entity);
 
   const PathComponent path = entity.get_component<PathComponent>();
@@ -420,7 +456,9 @@ void DirectSelectTool::on_segment_pointer_up() {
     scene.selection.select_child(m_entity, start_index);
     scene.selection.select_child(m_entity, end_index);
   } else if (!m_is_entity_added_to_selection && scene.selection.has(m_entity) &&
-             scene.selection.has_child(m_entity, start_index) && scene.selection.has_child(m_entity, end_index)) {
+             scene.selection.has_child(m_entity, start_index) &&
+             scene.selection.has_child(m_entity, end_index))
+  {
     if (InputManager::keys.shift) {
       scene.selection.deselect_child(m_entity, start_index);
       scene.selection.deselect_child(m_entity, end_index);
@@ -435,12 +473,13 @@ void DirectSelectTool::on_segment_pointer_up() {
   }
 }
 
-void DirectSelectTool::on_vertex_pointer_up() {
+void DirectSelectTool::on_vertex_pointer_up()
+{
   if (m_dragging_occurred) {
     return;
   }
 
-  Scene& scene = Editor::scene();
+  Scene &scene = Editor::scene();
 
   if (scene.selection.has_child(m_entity, m_vertex.value()) && !m_is_entity_added_to_selection) {
     if (InputManager::keys.shift) {
@@ -455,8 +494,10 @@ void DirectSelectTool::on_vertex_pointer_up() {
   }
 }
 
-void DirectSelectTool::on_handle_pointer_up() {
-  if (!m_entity || !m_handle.has_value()) return;
+void DirectSelectTool::on_handle_pointer_up()
+{
+  if (!m_entity || !m_handle.has_value())
+    return;
 
   Entity entity = Editor::scene().get_entity(m_entity);
   PathComponent path = entity.get_component<PathComponent>();
@@ -472,8 +513,8 @@ void DirectSelectTool::on_handle_pointer_up() {
       path.translate(static_cast<size_t>(node.in), vertex - in_handle);
 
       if (node.in_command >= 0) {
-        const geom::path::Segment segment =
-          path.data().segment_at(static_cast<size_t>(node.in_command), geom::path::IndexType::Command);
+        const geom::path::Segment segment = path.data().segment_at(
+            static_cast<size_t>(node.in_command), geom::path::IndexType::Command);
 
         if (segment.is_line()) {
           path.to_cubic(static_cast<size_t>(node.in_command));
@@ -490,8 +531,8 @@ void DirectSelectTool::on_handle_pointer_up() {
       path.translate(static_cast<size_t>(node.out), vertex - out_handle);
 
       if (node.out_command >= 0) {
-        const geom::path::Segment segment =
-          path.data().segment_at(static_cast<size_t>(node.out_command), geom::path::IndexType::Command);
+        const geom::path::Segment segment = path.data().segment_at(
+            static_cast<size_t>(node.out_command), geom::path::IndexType::Command);
 
         if (segment.is_line()) {
           path.to_cubic(static_cast<size_t>(node.out_command));

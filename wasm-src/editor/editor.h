@@ -16,23 +16,23 @@ namespace graphick::editor {
 
 /**
  * @brief Includes options to customize the render request.
- *
- * @struct RenderRequestOptions
  */
 struct RenderRequestOptions {
   bool ignore_cache = false;  // Whether to ignore the cache and redraw everything.
-  int frame_rate = 60;        // The frame rate to render at, if >= 60 it will render at the screen's refresh rate.
+  int frame_rate =
+      60;  // The frame rate to render at, if >= 60 it will render at the screen's refresh rate.
 
   RenderRequestOptions() = default;
 
-  RenderRequestOptions(bool ignore_cache) : ignore_cache(ignore_cache) { }
+  RenderRequestOptions(bool ignore_cache) : ignore_cache(ignore_cache) {}
 
   /**
    * @brief Updates the options with the latest request.
    *
    * @param options The options to update with.
    */
-  inline void update(const RenderRequestOptions& options) {
+  inline void update(const RenderRequestOptions &options)
+  {
     ignore_cache |= options.ignore_cache;
     frame_rate = options.frame_rate;
   }
@@ -42,16 +42,14 @@ struct RenderRequestOptions {
  * @brief The main Graphick Editor singleton.
  *
  * This class is responsible for managing and rendering the scenes.
- *
- * @class Editor
  */
 class Editor {
-public:
+ public:
   /**
    * @brief Deleted copy and move constructors.
    */
-  Editor(const Editor&) = delete;
-  Editor(Editor&&) = delete;
+  Editor(const Editor &) = delete;
+  Editor(Editor &&) = delete;
 
   /**
    * @brief Initializes the whole editor.
@@ -80,7 +78,7 @@ public:
    *
    * @return The current scene.
    */
-  static Scene& scene();
+  static Scene &scene();
 
   /**
    * @brief Resizes the editor.
@@ -111,7 +109,8 @@ public:
    * @param options The options to use, leave empty for default.
    */
   static void request_render(const RenderRequestOptions options = {});
-private:
+
+ private:
   /**
    * @brief Default constructor and destructor.
    */
@@ -123,7 +122,10 @@ private:
    *
    * @return The editor's instance.
    */
-  static inline Editor* get() { return s_instance; }
+  static inline Editor *get()
+  {
+    return s_instance;
+  }
 
   /**
    * @brief Renders a new frame if needed.
@@ -134,19 +136,20 @@ private:
    * @return Whether the frame was rendered.
    */
   bool render_frame(const double time);
-private:
+
+ private:
   std::vector<Scene> m_scenes;                           // The scenes managed by the editor.
   std::optional<RenderRequestOptions> m_render_request;  // The current render request.
 
   double m_last_render_time = 0.0;                       // The last render time.
-private:
+ private:
 #ifdef EMSCRIPTEN
-  friend int render_callback(const double time, void* user_data);
+  friend int render_callback(const double time, void *user_data);
 #else
-  friend bool render_callback(const double time, void* user_data);
+  friend bool render_callback(const double time, void *user_data);
 #endif
-private:
-  static Editor* s_instance;  // The editor's singleton instance.
+ private:
+  static Editor *s_instance;  // The editor's singleton instance.
 };
 
 }  // namespace graphick::editor

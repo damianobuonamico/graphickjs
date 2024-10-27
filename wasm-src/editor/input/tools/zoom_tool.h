@@ -11,18 +11,18 @@ namespace graphick::editor::input {
 
 /**
  * @brief The ZoomTool class represents a tool used for zooming the viewport.
- *
- * @class ZoomTool
  */
 class ZoomTool : public Tool {
-public:
+ public:
   virtual void on_pointer_move() override;
-private:
+
+ private:
   /**
    * @brief Default constructor.
    */
   ZoomTool();
-private:
+
+ private:
   friend class ToolState;
 };
 

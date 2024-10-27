@@ -24,8 +24,11 @@ namespace graphick::geom {
  * @param c The third point.
  * @return The center of the circle.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline math::Vec2<T> circle_center(const math::Vec2<T> a, const math::Vec2<T> b, const math::Vec2<T> c) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline math::Vec2<T> circle_center(const math::Vec2<T> a,
+                                   const math::Vec2<T> b,
+                                   const math::Vec2<T> c)
+{
   const T offset = math::squared_length(b);
   const T bc = (math::squared_length(a) - offset) / T(2);
   const T cd = (offset - (math::squared_length(c))) / T(2);
@@ -37,7 +40,8 @@ inline math::Vec2<T> circle_center(const math::Vec2<T> a, const math::Vec2<T> b,
 
   const T inverse_det = T(1) / det;
 
-  return {(bc * (b.y - c.y) - cd * (a.y - b.y)) * inverse_det, (cd * (a.x - b.x) - bc * (b.x - c.x)) * inverse_det};
+  return {(bc * (b.y - c.y) - cd * (a.y - b.y)) * inverse_det,
+          (cd * (a.x - b.x) - bc * (b.x - c.x)) * inverse_det};
 }
 
 /* -- Rectangle -- */
@@ -50,8 +54,9 @@ inline math::Vec2<T> circle_center(const math::Vec2<T> a, const math::Vec2<T> b,
  * @param r The rotated rect to convert.
  * @return The resulting rect.
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline math::Rect<T> rrect_to_rect(const math::RRect<T>& r) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline math::Rect<T> rrect_to_rect(const math::RRect<T> &r)
+{
   const math::Vec2<T> center = r.center();
 
   const T sin = std::sin(r.angle);
@@ -62,7 +67,8 @@ inline math::Rect<T> rrect_to_rect(const math::RRect<T>& r) {
   math::Vec2<T> r3 = math::rotate(r.max, center, sin, cos);
   math::Vec2<T> r4 = math::rotate({r.max.x, r.min.y}, center, sin, cos);
 
-  return {math::min(math::min(r1, r2), math::min(r3, r4)), math::max(math::max(r1, r2), math::max(r3, r4))};
+  return {math::min(math::min(r1, r2), math::min(r3, r4)),
+          math::max(math::max(r1, r2), math::max(r3, r4))};
 }
 
 /**
@@ -71,8 +77,9 @@ inline math::Rect<T> rrect_to_rect(const math::RRect<T>& r) {
  * @param r The rect to straighten.
  * @return The resulting rect.
  */
-template <typename T>
-inline math::Rect<T> straighten_rect(const math::Rect<T>& r) {
+template<typename T>
+inline math::Rect<T> straighten_rect(const math::Rect<T> &r)
+{
   return {math::min(r.min, r.max), math::max(r.min, r.max)};
 }
 
@@ -82,14 +89,13 @@ inline math::Rect<T> straighten_rect(const math::Rect<T>& r) {
  * @param rect The rect.
  * @return The lines that make up the rect.
  */
-template <typename T>
-inline std::array<Line<T>, 4> lines_from_rect(const math::Rect<T>& rect) {
-  return {
-    {rect.min, {rect.max.x, rect.min.y}},
-    {{rect.max.x, rect.min.y}, rect.max},
-    {rect.max, {rect.min.x, rect.max.y}},
-    {{rect.min.x, rect.max.y}, rect.min}
-  };
+template<typename T>
+inline std::array<Line<T>, 4> lines_from_rect(const math::Rect<T> &rect)
+{
+  return {{rect.min, {rect.max.x, rect.min.y}},
+          {{rect.max.x, rect.min.y}, rect.max},
+          {rect.max, {rect.min.x, rect.max.y}},
+          {{rect.min.x, rect.max.y}, rect.min}};
 }
 
 /* -- Polygon -- */
@@ -111,8 +117,11 @@ enum class TriangleOrientation : uint8_t {
  * @param p2 The third point.
  * @return The orientation of the triangle.
  */
-template <typename T>
-inline TriangleOrientation triangle_orientation(const math::Vec2<T> p0, const math::Vec2<T> p1, const math::Vec2<T> p2) {
+template<typename T>
+inline TriangleOrientation triangle_orientation(const math::Vec2<T> p0,
+                                                const math::Vec2<T> p1,
+                                                const math::Vec2<T> p2)
+{
   const T turn = math::cross(p1 - p0, p2 - p0);
 
   if (math::is_almost_zero(turn)) {
@@ -132,8 +141,9 @@ inline TriangleOrientation triangle_orientation(const math::Vec2<T> p0, const ma
  * @param p2 The third point.
  * @return true if the points are in clockwise order, false otherwise.
  */
-template <typename T>
-inline bool clockwise(const math::Vec2<T> p0, const math::Vec2<T> p1, const math::Vec2<T> p2) {
+template<typename T>
+inline bool clockwise(const math::Vec2<T> p0, const math::Vec2<T> p1, const math::Vec2<T> p2)
+{
   return triangle_orientation(p0, p1, p2) == TriangleOrientation::Clockwise;
 }
 
@@ -143,8 +153,9 @@ inline bool clockwise(const math::Vec2<T> p0, const math::Vec2<T> p1, const math
  * @param points The points to check.
  * @return true if the points are in clockwise order, false otherwise.
  */
-template <typename T>
-inline bool clockwise(const std::vector<math::Vec2<T>>& points) {
+template<typename T>
+inline bool clockwise(const std::vector<math::Vec2<T>> &points)
+{
   T sum = (points.front().x - points.back().x) * (points.front().y + points.back().y);
 
   for (size_t i = 0; i < points.size() - 1; i++) {
@@ -154,8 +165,12 @@ inline bool clockwise(const std::vector<math::Vec2<T>>& points) {
   return sum >= T(0);
 }
 
-template <typename T>
-inline bool collinear(const math::Vec2<T> p0, const math::Vec2<T> p1, const math::Vec2<T> p2, const T eps = math::geometric_epsilon<T>) {
+template<typename T>
+inline bool collinear(const math::Vec2<T> p0,
+                      const math::Vec2<T> p1,
+                      const math::Vec2<T> p2,
+                      const T eps = math::geometric_epsilon<T>)
+{
   return math::is_almost_zero(math::cross(p1 - p0, p2 - p0), eps);
 }
 

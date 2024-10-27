@@ -20,11 +20,9 @@ namespace graphick::editor::input {
  * This class provides methods for handling pointer, keyboard, and clipboard events.
  * Events are automatically dispatched to the appropriate tool.
  * All of the events will be handled referring to the scene is currently active.
- *
- * @class InputManager
  */
 class InputManager {
-public:
+ public:
   /**
    * @brief The PointerEvent enum represents the type of pointer event.
    */
@@ -67,11 +65,10 @@ public:
    * @brief The ClipboardEvent enum represents the type of clipboard event.
    */
   enum class ClipboardEvent { Copy = 0, Paste = 1, Cut = 2 };
-public:
+
+ public:
   /**
    * @brief Groups the pointer coordinates.
-   *
-   * @struct PointerCoord
    */
   struct PointerCoord {
     vec2 position{};  // The position of the pointer.
@@ -86,8 +83,6 @@ public:
    * The ctrl, alt, and shift fields represent the state of the keys.
    * The ctrl_state_changed, alt_state_changed, and shift_state_changed fields represent whether
    * the state of the keys has changed between the previous and the current frame.
-   *
-   * @struct KeysState
    */
   struct KeysState {
     bool ctrl = false;
@@ -102,8 +97,6 @@ public:
 
   /**
    * @brief Represents the full state of a pointer.
-   *
-   * @struct Pointer
    */
   struct Pointer {
     PointerTarget target = PointerTarget::Other;  // The target that the pointer is over.
@@ -113,29 +106,33 @@ public:
 
     bool down = false;                            // Whether the pointer is down.
     bool inside = true;                           // Whether the pointer is inside the canvas.
-    float pressure = 1.0f;                        // The pressure of the pointer, 1.0 if not available (i.e. mouse).
-    double time = 0.0f;                           // The time stamp of the last pointer update.
+    float pressure = 1.0f;  // The pressure of the pointer, 1.0 if not available (i.e. mouse).
+    double time = 0.0f;     // The time stamp of the last pointer update.
 
-    PointerType type = PointerType::Mouse;        // The type of the pointer.
-    PointerButton button = PointerButton::Left;   // The button of the pointer.
+    PointerType type = PointerType::Mouse;       // The type of the pointer.
+    PointerButton button = PointerButton::Left;  // The button of the pointer.
   };
-public:
-  static KeysState keys;                          // The state of the keys.
-  static Pointer pointer;                         // The state of the pointer.
-  static HoverState hover;                        // The hover state of the pointer.
-public:
+
+ public:
+  static KeysState keys;    // The state of the keys.
+  static Pointer pointer;   // The state of the pointer.
+  static HoverState hover;  // The hover state of the pointer.
+ public:
   /**
    * @brief Deleted copy and move constructors.
    */
-  InputManager(const InputManager&) = delete;
-  InputManager(InputManager&&) = delete;
+  InputManager(const InputManager &) = delete;
+  InputManager(InputManager &&) = delete;
 
   /**
    * @brief Gets the static instance of the InputManager class.
    *
    * @return The InputManager instance.
    */
-  static inline InputManager* get() { return s_instance; }
+  static inline InputManager *get()
+  {
+    return s_instance;
+  }
 
   /**
    * @brief Initializes the InputManager class.
@@ -163,19 +160,17 @@ public:
    * @param shift Whether the shift key is pressed.
    * @return Whether the event was handled.
    */
-  static bool on_pointer_event(
-    PointerTarget target,
-    PointerEvent event,
-    PointerType type,
-    PointerButton button,
-    float x,
-    float y,
-    float pressure,
-    double time_stamp,
-    bool alt,
-    bool ctrl,
-    bool shift
-  );
+  static bool on_pointer_event(PointerTarget target,
+                               PointerEvent event,
+                               PointerType type,
+                               PointerButton button,
+                               float x,
+                               float y,
+                               float pressure,
+                               double time_stamp,
+                               bool alt,
+                               bool ctrl,
+                               bool shift);
 
   /**
    * @brief Handles a keyboard event.
@@ -188,7 +183,8 @@ public:
    * @param shift Whether the shift key is pressed.
    * @return Whether the event was handled.
    */
-  static bool on_keyboard_event(KeyboardEvent event, KeyboardKey key, bool repeat, bool alt, bool ctrl, bool shift);
+  static bool on_keyboard_event(
+      KeyboardEvent event, KeyboardKey key, bool repeat, bool alt, bool ctrl, bool shift);
 
   /**
    * @brief Handles a resize event.
@@ -247,7 +243,7 @@ public:
    *
    * @return The current tool.
    */
-  static const Tool& tool();
+  static const Tool &tool();
 
   /**
    * @brief Sets the current tool to the specified type.
@@ -255,7 +251,8 @@ public:
    * @param type The type of the tool to set.
    */
   static void set_tool(Tool::ToolType type);
-private:
+
+ private:
   /**
    * @brief Default constructor and destructor.
    */
@@ -398,11 +395,12 @@ private:
    * @return Whether the event was handled.
    */
   bool on_drag(PointerTarget target, float delta_x, float delta_y);
-private:
+
+ private:
   bool m_moving = false;            // Whether the pointer is moving.
   bool m_abort = false;             // Whether the pointer event should be aborted.
-private:
-  static InputManager* s_instance;  // The static instance of the InputManager singleton.
+ private:
+  static InputManager *s_instance;  // The static instance of the InputManager singleton.
 };
 
 }  // namespace graphick::editor::input

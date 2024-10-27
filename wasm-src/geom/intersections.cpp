@@ -1,6 +1,7 @@
 /**
  * @file geom/intersections.cpp
- * @brief This file contains the implementations of hit testing and intersection methods for geometric shapes.
+ * @brief This file contains the implementations of hit testing and intersection methods for
+ * geometric shapes.
  */
 
 #include "intersections.h"
@@ -13,7 +14,8 @@ namespace graphick::geom {
 
 /* -- Line -- */
 
-std::optional<double> line_line_intersection(const dline& a, const dline& b) {
+std::optional<double> line_line_intersection(const dline &a, const dline &b)
+{
   const double den = b.p1.x - b.p0.x;
 
   if (math::is_almost_zero(den)) {
@@ -27,7 +29,8 @@ std::optional<double> line_line_intersection(const dline& a, const dline& b) {
   }
 
   const double m = (b.p1.y - b.p0.y) / den;
-  const double t = (m * b.p0.x - b.p0.y + a.p0.y - m * a.p0.x) / (m * (a.p1.x - a.p0.x) + a.p0.y - a.p1.y);
+  const double t = (m * b.p0.x - b.p0.y + a.p0.y - m * a.p0.x) /
+                   (m * (a.p1.x - a.p0.x) + a.p0.y - a.p1.y);
 
   if (math::is_normalized(t)) {
     return t;
@@ -36,7 +39,8 @@ std::optional<double> line_line_intersection(const dline& a, const dline& b) {
   return std::nullopt;
 }
 
-std::optional<dvec2> line_line_intersection_point(const dline& a, const dline& b) {
+std::optional<dvec2> line_line_intersection_point(const dline &a, const dline &b)
+{
   const drect rect = drect::from_vectors(b.p0, b.p1);
   const double den = b.p1.x - b.p0.x;
 
@@ -51,7 +55,8 @@ std::optional<dvec2> line_line_intersection_point(const dline& a, const dline& b
   }
 
   const double m = (b.p1.y - b.p0.y) / den;
-  const double t = (m * b.p0.x - b.p0.y + a.p0.y - m * a.p0.x) / (m * (a.p1.x - a.p0.x) + a.p0.y - a.p1.y);
+  const double t = (m * b.p0.x - b.p0.y + a.p0.y - m * a.p0.x) /
+                   (m * (a.p1.x - a.p0.x) + a.p0.y - a.p1.y);
 
   if (math::is_normalized(t)) {
     return math::lerp(a.p0, a.p1, t);
@@ -60,14 +65,17 @@ std::optional<dvec2> line_line_intersection_point(const dline& a, const dline& b
   return std::nullopt;
 }
 
-math::QuadraticSolutions<dvec2> line_circle_intersection_points(const dline& line, const dvec2 center, const double radius) {
+math::QuadraticSolutions<dvec2> line_circle_intersection_points(const dline &line,
+                                                                const dvec2 center,
+                                                                const double radius)
+{
   const dvec2 ldir = line.p1 - line.p0;
   const dvec2 tvec = line.p0 - center;
 
   const double a = math::squared_length(ldir);
   const double b = 2.0 * dot(ldir, tvec);
-  const double c =
-    math::squared_length(center) + math::squared_length(line.p0) - (2.0 * math::dot(center, line.p0)) - radius * radius;
+  const double c = math::squared_length(center) + math::squared_length(line.p0) -
+                   (2.0 * math::dot(center, line.p0)) - radius * radius;
 
   const double i = b * b - 4.0 * a * c;
 
@@ -89,7 +97,8 @@ math::QuadraticSolutions<dvec2> line_circle_intersection_points(const dline& lin
   return {};
 }
 
-std::vector<dvec2> line_rect_intersection_points(const dline& line, const drect& rect) {
+std::vector<dvec2> line_rect_intersection_points(const dline &line, const drect &rect)
+{
   std::vector<dvec2> intersection_points;
   std::vector<double> intersections;
 
@@ -100,12 +109,17 @@ std::vector<dvec2> line_rect_intersection_points(const dline& line, const drect&
   const double t3 = math::solve_linear(a.y, line.p0.y - rect.min.y);
   const double t4 = math::solve_linear(a.y, line.p0.y - rect.max.y);
 
-  if (math::is_normalized(t1)) intersections.push_back(t1);
-  if (math::is_normalized(t2)) intersections.push_back(t2);
-  if (math::is_normalized(t3)) intersections.push_back(t3);
-  if (math::is_normalized(t4)) intersections.push_back(t4);
+  if (math::is_normalized(t1))
+    intersections.push_back(t1);
+  if (math::is_normalized(t2))
+    intersections.push_back(t2);
+  if (math::is_normalized(t3))
+    intersections.push_back(t3);
+  if (math::is_normalized(t4))
+    intersections.push_back(t4);
 
-  if (intersections.empty()) return intersection_points;
+  if (intersections.empty())
+    return intersection_points;
 
   std::sort(intersections.begin(), intersections.end());
 
@@ -120,7 +134,8 @@ std::vector<dvec2> line_rect_intersection_points(const dline& line, const drect&
   return intersection_points;
 }
 
-bool does_line_intersect_circle(const dline& line, const dvec2& center, const double radius) {
+bool does_line_intersect_circle(const dline &line, const dvec2 &center, const double radius)
+{
   const dvec2 d = line.p1 - line.p0;
   const dvec2 g = line.p0 - center;
 
@@ -142,7 +157,8 @@ bool does_line_intersect_circle(const dline& line, const dvec2& center, const do
   return false;
 }
 
-std::vector<double> quadratic_rect_intersections(const dquadratic_bezier& quad, const drect& rect) {
+std::vector<double> quadratic_rect_intersections(const dquadratic_bezier &quad, const drect &rect)
+{
   std::vector<double> intersections_t;
   std::vector<double> intersections;
 
@@ -162,7 +178,8 @@ std::vector<double> quadratic_rect_intersections(const dquadratic_bezier& quad, 
     }
   }
 
-  if (intersections.empty()) return intersections_t;
+  if (intersections.empty())
+    return intersections_t;
 
   std::sort(intersections.begin(), intersections.end());
 
@@ -178,7 +195,8 @@ std::vector<double> quadratic_rect_intersections(const dquadratic_bezier& quad, 
   return intersections_t;
 }
 
-std::vector<double> cubic_rect_intersections(const dcubic_bezier& cubic, const drect& rect) {
+std::vector<double> cubic_rect_intersections(const dcubic_bezier &cubic, const drect &rect)
+{
   std::vector<double> intersections_t;
   std::vector<double> intersections;
 
@@ -198,7 +216,8 @@ std::vector<double> cubic_rect_intersections(const dcubic_bezier& cubic, const d
     }
   }
 
-  if (intersections.empty()) return intersections_t;
+  if (intersections.empty())
+    return intersections_t;
 
   std::sort(intersections.begin(), intersections.end());
 
@@ -214,7 +233,8 @@ std::vector<double> cubic_rect_intersections(const dcubic_bezier& cubic, const d
   return intersections_t;
 }
 
-double line_closest_to(const dline& line, const dvec2 p) {
+double line_closest_to(const dline &line, const dvec2 p)
+{
   const dvec2 v = line.p1 - line.p0;
   const dvec2 w = p - line.p0;
 
@@ -223,7 +243,8 @@ double line_closest_to(const dline& line, const dvec2 p) {
   return math::is_almost_zero(len_sq) ? 0.0 : std::clamp(dot(v, w) / len_sq, 0.0, 1.0);
 }
 
-double quadratic_closest_to(const dquadratic_bezier& quad, const dvec2 p) {
+double quadratic_closest_to(const dquadratic_bezier &quad, const dvec2 p)
+{
   const auto [A, B, C] = quad.coefficients();
 
   double a = 0.0;
@@ -261,7 +282,8 @@ double quadratic_closest_to(const dquadratic_bezier& quad, const dvec2 p) {
 }
 
 // TODO: test
-double cubic_closest_to_alt(const dcubic_bezier& cubic, const dvec2 p) {
+double cubic_closest_to_alt(const dcubic_bezier &cubic, const dvec2 p)
+{
   const auto [A, B, C, D] = cubic.coefficients();
 
   double a = 0.0;
@@ -302,7 +324,8 @@ double cubic_closest_to_alt(const dcubic_bezier& cubic, const dvec2 p) {
   return min_t;
 }
 
-double cubic_closest_to(const dcubic_bezier& cubic, const dvec2 p) {
+double cubic_closest_to(const dcubic_bezier &cubic, const dvec2 p)
+{
   const dvec2 A_sq = cubic.p0 * cubic.p0;
   const dvec2 B_sq = cubic.p1 * cubic.p1;
   const dvec2 C_sq = cubic.p2 * cubic.p2;
@@ -328,19 +351,20 @@ double cubic_closest_to(const dcubic_bezier& cubic, const dvec2 p) {
   double f = 0.0;
 
   for (int i = 0; i < 2; ++i) {
-    a += 6.0 * A_sq[i] - 36.0 * AB[i] + 36.0 * AC[i] - 12.0 * AD[i] + 54.0 * B_sq[i] - 108.0 * BC[i] + 36.0 * BD[i] +
-      54.0 * C_sq[i] - 36.0 * CD[i] + 6.0 * D_sq[i];
+    a += 6.0 * A_sq[i] - 36.0 * AB[i] + 36.0 * AC[i] - 12.0 * AD[i] + 54.0 * B_sq[i] -
+         108.0 * BC[i] + 36.0 * BD[i] + 54.0 * C_sq[i] - 36.0 * CD[i] + 6.0 * D_sq[i];
 
-    b += -30.0 * A_sq[i] + 150.0 * AB[i] - 120.0 * AC[i] + 30.0 * AD[i] - 180.0 * B_sq[i] + 270.0 * BC[i] - 60.0 * BD[i] -
-      90.0 * C_sq[i] + 30.0 * CD[i];
+    b += -30.0 * A_sq[i] + 150.0 * AB[i] - 120.0 * AC[i] + 30.0 * AD[i] - 180.0 * B_sq[i] +
+         270.0 * BC[i] - 60.0 * BD[i] - 90.0 * C_sq[i] + 30.0 * CD[i];
 
-    c += 60.0 * A_sq[i] - 240.0 * AB[i] + 144.0 * AC[i] - 24.0 * AD[i] + 216.0 * B_sq[i] - 216.0 * BC[i] + 24.0 * BD[i] +
-      36.0 * C_sq[i];
+    c += 60.0 * A_sq[i] - 240.0 * AB[i] + 144.0 * AC[i] - 24.0 * AD[i] + 216.0 * B_sq[i] -
+         216.0 * BC[i] + 24.0 * BD[i] + 36.0 * C_sq[i];
 
-    d += -60.0 * A_sq[i] + 180.0 * AB[i] - 72.0 * AC[i] + 6.0 * AD[i] + 6.0 * Apos[i] - 108.0 * B_sq[i] + 54.0 * BC[i] -
-      18.0 * Bpos[i] + 18.0 * Cpos[i] - 6.0 * Dpos[i];
+    d += -60.0 * A_sq[i] + 180.0 * AB[i] - 72.0 * AC[i] + 6.0 * AD[i] + 6.0 * Apos[i] -
+         108.0 * B_sq[i] + 54.0 * BC[i] - 18.0 * Bpos[i] + 18.0 * Cpos[i] - 6.0 * Dpos[i];
 
-    e += 30.0 * A_sq[i] - 60.0 * AB[i] + 12.0 * AC[i] - 12.0 * Apos[i] + 18.0 * B_sq[i] + 24.0 * Bpos[i] - 12.0 * Cpos[i];
+    e += 30.0 * A_sq[i] - 60.0 * AB[i] + 12.0 * AC[i] - 12.0 * Apos[i] + 18.0 * B_sq[i] +
+         24.0 * Bpos[i] - 12.0 * Cpos[i];
 
     f += -6.0 * A_sq[i] + 6.0 * AB[i] + 6.0 * Apos[i] - 6.0 * Bpos[i];
   }
@@ -358,13 +382,15 @@ double cubic_closest_to(const dcubic_bezier& cubic, const dvec2 p) {
       const double t_qui = t_qu * t;
 
       t -= (a * t_qui + b * t_qu + c * t_cu + d * t_sq + e * t + f) /
-        (5.0 * a * t_qu + 4.0 * b * t_cu + 3.0 * c * t_sq + 2.0 * d * t + e);
+           (5.0 * a * t_qu + 4.0 * b * t_cu + 3.0 * c * t_sq + 2.0 * d * t + e);
     }
 
-    if (t < 0.0 || t > 1.0) continue;
+    if (t < 0.0 || t > 1.0)
+      continue;
 
-    const dvec2 point = cubic.p0 * (1.0 - t) * (1.0 - t) * (1.0 - t) + cubic.p1 * 3.0 * t * (1.0 - t) * (1.0 - t) +
-      cubic.p2 * 3.0 * t * t * (1.0 - t) + cubic.p3 * t * t * t;
+    const dvec2 point = cubic.p0 * (1.0 - t) * (1.0 - t) * (1.0 - t) +
+                        cubic.p1 * 3.0 * t * (1.0 - t) * (1.0 - t) +
+                        cubic.p2 * 3.0 * t * t * (1.0 - t) + cubic.p3 * t * t * t;
 
     const double sq_dist = math::squared_distance(point, p);
 

@@ -13,19 +13,37 @@
 
 #include <vector>
 
-#define XY(v)                                                                                                                    \
-  graphick::math::Vec2 { v.x, v.y }
-#define RG(v)                                                                                                                    \
-  graphick::math::Vec2 { v.r, v.g }
-#define ST(v)                                                                                                                    \
-  graphick::math::Vec2 { v.s, v.t }
+#define XY(v) \
+  graphick::math::Vec2 \
+  { \
+    v.x, v.y \
+  }
+#define RG(v) \
+  graphick::math::Vec2 \
+  { \
+    v.r, v.g \
+  }
+#define ST(v) \
+  graphick::math::Vec2 \
+  { \
+    v.s, v.t \
+  }
 
-#define XYZ(v)                                                                                                                   \
-  graphick::math::Vec3 { v.x, v.y, v.z }
-#define RGB(v)                                                                                                                   \
-  graphick::math::Vec3 { v.r, v.g, v.b }
-#define STP(v)                                                                                                                   \
-  graphick::math::Vec3 { v.s, v.t, v.p }
+#define XYZ(v) \
+  graphick::math::Vec3 \
+  { \
+    v.x, v.y, v.z \
+  }
+#define RGB(v) \
+  graphick::math::Vec3 \
+  { \
+    v.r, v.g, v.b \
+  }
+#define STP(v) \
+  graphick::math::Vec3 \
+  { \
+    v.s, v.t, v.p \
+  }
 
 namespace graphick::math {
 
@@ -38,8 +56,9 @@ namespace graphick::math {
  * @param v2 The second vector.
  * @return The minimum of the two vectors.
  */
-template <typename T>
-constexpr Vec2<T> min(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+constexpr Vec2<T> min(const Vec2<T> v1, const Vec2<T> v2)
+{
   return Vec2<T>(std::min(v1.x, v2.x), std::min(v1.y, v2.y));
 }
 
@@ -50,8 +69,9 @@ constexpr Vec2<T> min(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v2 The second vector.
  * @return The minimum of the two vectors.
  */
-template <typename T>
-constexpr Vec3<T> min(const Vec3<T>& v1, const Vec3<T>& v2) {
+template<typename T>
+constexpr Vec3<T> min(const Vec3<T> &v1, const Vec3<T> &v2)
+{
   return Vec3<T>(std::min(v1.x, v2.x), std::min(v1.y, v2.y), std::min(v1.z, v2.z));
 }
 
@@ -62,9 +82,11 @@ constexpr Vec3<T> min(const Vec3<T>& v1, const Vec3<T>& v2) {
  * @param v2 The second vector.
  * @return The minimum of the two vectors.
  */
-template <typename T>
-constexpr Vec4<T> min(const Vec4<T>& v1, const Vec4<T>& v2) {
-  return Vec4<T>(std::min(v1.x, v2.x), std::min(v1.y, v2.y), std::min(v1.z, v2.z), std::min(v1.w, v2.w));
+template<typename T>
+constexpr Vec4<T> min(const Vec4<T> &v1, const Vec4<T> &v2)
+{
+  return Vec4<T>(
+      std::min(v1.x, v2.x), std::min(v1.y, v2.y), std::min(v1.z, v2.z), std::min(v1.w, v2.w));
 }
 
 /**
@@ -75,8 +97,9 @@ constexpr Vec4<T> min(const Vec4<T>& v1, const Vec4<T>& v2) {
  * @param out The output vector, can be the same as v1 or v2.
  * @return A reference to the output vector.
  */
-template <typename T>
-constexpr Vec2<T>& min(const Vec2<T> v1, const Vec2<T> v2, Vec2<T>& out) {
+template<typename T>
+constexpr Vec2<T> &min(const Vec2<T> v1, const Vec2<T> v2, Vec2<T> &out)
+{
   out.x = std::min(v1.x, v2.x);
   out.y = std::min(v1.y, v2.y);
 
@@ -91,8 +114,9 @@ constexpr Vec2<T>& min(const Vec2<T> v1, const Vec2<T> v2, Vec2<T>& out) {
  * @param out The output vector, can be the same as v1 or v2.
  * @return A reference to the output vector.
  */
-template <typename T>
-constexpr Vec3<T>& min(const Vec3<T>& v1, const Vec3<T>& v2, Vec3<T>& out) {
+template<typename T>
+constexpr Vec3<T> &min(const Vec3<T> &v1, const Vec3<T> &v2, Vec3<T> &out)
+{
   out.x = std::min(v1.x, v2.x);
   out.y = std::min(v1.y, v2.y);
   out.z = std::min(v1.z, v2.z);
@@ -108,8 +132,9 @@ constexpr Vec3<T>& min(const Vec3<T>& v1, const Vec3<T>& v2, Vec3<T>& out) {
  * @param out The output vector, can be the same as v1 or v2.
  * @return A reference to the output vector.
  */
-template <typename T>
-constexpr Vec4<T>& min(const Vec4<T>& v1, const Vec4<T>& v2, Vec4<T>& out) {
+template<typename T>
+constexpr Vec4<T> &min(const Vec4<T> &v1, const Vec4<T> &v2, Vec4<T> &out)
+{
   out.x = std::min(v1.x, v2.x);
   out.y = std::min(v1.y, v2.y);
   out.z = std::min(v1.z, v2.z);
@@ -127,8 +152,9 @@ constexpr Vec4<T>& min(const Vec4<T>& v1, const Vec4<T>& v2, Vec4<T>& out) {
  * @param v2 The second vector.
  * @return The maximum of the two vectors.
  */
-template <typename T>
-constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2)
+{
   return Vec2<T>(std::max(v1.x, v2.x), std::max(v1.y, v2.y));
 }
 
@@ -139,8 +165,9 @@ constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v2 The second vector.
  * @return The maximum of the two vectors.
  */
-template <typename T>
-constexpr Vec3<T> max(const Vec3<T>& v1, const Vec3<T>& v2) {
+template<typename T>
+constexpr Vec3<T> max(const Vec3<T> &v1, const Vec3<T> &v2)
+{
   return Vec3<T>(std::max(v1.x, v2.x), std::max(v1.y, v2.y), std::max(v1.z, v2.z));
 }
 
@@ -151,9 +178,11 @@ constexpr Vec3<T> max(const Vec3<T>& v1, const Vec3<T>& v2) {
  * @param v2 The second vector.
  * @return The maximum of the two vectors.
  */
-template <typename T>
-constexpr Vec4<T> max(const Vec4<T>& v1, const Vec4<T>& v2) {
-  return Vec4<T>(std::max(v1.x, v2.x), std::max(v1.y, v2.y), std::max(v1.z, v2.z), std::max(v1.w, v2.w));
+template<typename T>
+constexpr Vec4<T> max(const Vec4<T> &v1, const Vec4<T> &v2)
+{
+  return Vec4<T>(
+      std::max(v1.x, v2.x), std::max(v1.y, v2.y), std::max(v1.z, v2.z), std::max(v1.w, v2.w));
 }
 
 /**
@@ -164,8 +193,9 @@ constexpr Vec4<T> max(const Vec4<T>& v1, const Vec4<T>& v2) {
  * @param out The output vector, can be the same as v1 or v2.
  * @return A reference to the output vector.
  */
-template <typename T>
-constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2, Vec2<T>& out) {
+template<typename T>
+constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2, Vec2<T> &out)
+{
   out.x = std::max(v1.x, v2.x);
   out.y = std::max(v1.y, v2.y);
 
@@ -180,8 +210,9 @@ constexpr Vec2<T> max(const Vec2<T> v1, const Vec2<T> v2, Vec2<T>& out) {
  * @param out The output vector, can be the same as v1 or v2.
  * @return A reference to the output vector.
  */
-template <typename T>
-constexpr Vec3<T> max(const Vec3<T>& v1, const Vec3<T>& v2, Vec3<T>& out) {
+template<typename T>
+constexpr Vec3<T> max(const Vec3<T> &v1, const Vec3<T> &v2, Vec3<T> &out)
+{
   out.x = std::max(v1.x, v2.x);
   out.y = std::max(v1.y, v2.y);
   out.z = std::max(v1.z, v2.z);
@@ -197,8 +228,9 @@ constexpr Vec3<T> max(const Vec3<T>& v1, const Vec3<T>& v2, Vec3<T>& out) {
  * @param out The output vector, can be the same as v1 or v2.
  * @return A reference to the output vector.
  */
-template <typename T>
-constexpr Vec4<T> max(const Vec4<T>& v1, const Vec4<T>& v2, Vec4<T>& out) {
+template<typename T>
+constexpr Vec4<T> max(const Vec4<T> &v1, const Vec4<T> &v2, Vec4<T> &out)
+{
   out.x = std::max(v1.x, v2.x);
   out.y = std::max(v1.y, v2.y);
   out.z = std::max(v1.z, v2.z);
@@ -215,8 +247,9 @@ constexpr Vec4<T> max(const Vec4<T>& v1, const Vec4<T>& v2, Vec4<T>& out) {
  * @param v The vector.
  * @return The length of the vector.
  */
-template <typename T>
-inline T length(const Vec2<T> v) {
+template<typename T>
+inline T length(const Vec2<T> v)
+{
   return std::hypot(v.x, v.y);
 }
 
@@ -226,8 +259,9 @@ inline T length(const Vec2<T> v) {
  * @param v The vector.
  * @return The length of the vector.
  */
-template <typename T>
-inline T length(const Vec3<T>& v) {
+template<typename T>
+inline T length(const Vec3<T> &v)
+{
   return std::hypot(v.x, v.y, v.z);
 }
 
@@ -237,8 +271,9 @@ inline T length(const Vec3<T>& v) {
  * @param v The vector.
  * @return The length of the vector.
  */
-template <typename T>
-inline T length(const Vec4<T>& v) {
+template<typename T>
+inline T length(const Vec4<T> &v)
+{
   return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
 }
 
@@ -251,8 +286,9 @@ inline T length(const Vec4<T>& v) {
  * @param v2 The second vector.
  * @return The dot product of the two vectors.
  */
-template <typename T>
-constexpr T dot(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+constexpr T dot(const Vec2<T> v1, const Vec2<T> v2)
+{
   return v1.x * v2.x + v1.y * v2.y;
 }
 
@@ -263,8 +299,9 @@ constexpr T dot(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v2 The second vector.
  * @return The dot product of the two vectors.
  */
-template <typename T>
-constexpr T dot(const Vec3<T>& v1, const Vec3<T>& v2) {
+template<typename T>
+constexpr T dot(const Vec3<T> &v1, const Vec3<T> &v2)
+{
   return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
 
@@ -275,8 +312,9 @@ constexpr T dot(const Vec3<T>& v1, const Vec3<T>& v2) {
  * @param v2 The second vector.
  * @return The dot product of the two vectors.
  */
-template <typename T>
-constexpr T dot(const Vec4<T>& v1, const Vec4<T>& v2) {
+template<typename T>
+constexpr T dot(const Vec4<T> &v1, const Vec4<T> &v2)
+{
   return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
 }
 
@@ -289,8 +327,9 @@ constexpr T dot(const Vec4<T>& v1, const Vec4<T>& v2) {
  * @param v2 The second vector.
  * @return The cross product as a scalar value.
  */
-template <typename T>
-constexpr T cross(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+constexpr T cross(const Vec2<T> v1, const Vec2<T> v2)
+{
   return v1.x * v2.y - v2.x * v1.y;
 }
 
@@ -301,9 +340,11 @@ constexpr T cross(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v2 The second vector.
  * @return The cross product as a Vec3.
  */
-template <typename T>
-constexpr Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2) {
-  return Vec3<T>(v1.y * v2.z - v1.z * v2.y, -(v1.x * v2.z - v1.z * v2.x), v1.x * v2.y - v1.y * v2.x);
+template<typename T>
+constexpr Vec3<T> cross(const Vec3<T> &v1, const Vec3<T> &v2)
+{
+  return Vec3<T>(
+      v1.y * v2.z - v1.z * v2.y, -(v1.x * v2.z - v1.z * v2.x), v1.x * v2.y - v1.y * v2.x);
 }
 
 /* -- squared_length -- */
@@ -314,8 +355,9 @@ constexpr Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2) {
  * @param v The vector.
  * @return The squared length of the vector.
  */
-template <typename T>
-constexpr T squared_length(const Vec2<T> v) {
+template<typename T>
+constexpr T squared_length(const Vec2<T> v)
+{
   return v.x * v.x + v.y * v.y;
 }
 
@@ -325,8 +367,9 @@ constexpr T squared_length(const Vec2<T> v) {
  * @param v The vector.
  * @return The squared length of the vector.
  */
-template <typename T>
-constexpr T squared_length(const Vec3<T>& v) {
+template<typename T>
+constexpr T squared_length(const Vec3<T> &v)
+{
   return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
@@ -336,8 +379,9 @@ constexpr T squared_length(const Vec3<T>& v) {
  * @param v The vector.
  * @return The squared length of the vector.
  */
-template <typename T>
-constexpr T squared_length(const Vec4<T>& v) {
+template<typename T>
+constexpr T squared_length(const Vec4<T> &v)
+{
   return v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
 }
 
@@ -350,8 +394,9 @@ constexpr T squared_length(const Vec4<T>& v) {
  * @param v2 The second vector.
  * @return The distance between the two vectors.
  */
-template <typename T>
-inline T distance(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+inline T distance(const Vec2<T> v1, const Vec2<T> v2)
+{
   return std::hypot(v2.x - v1.x, v2.y - v1.y);
 }
 
@@ -362,8 +407,9 @@ inline T distance(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v2 The second vector.
  * @return The distance between the two vectors.
  */
-template <typename T>
-inline T distance(const Vec3<T>& v1, const Vec3<T>& v2) {
+template<typename T>
+inline T distance(const Vec3<T> &v1, const Vec3<T> &v2)
+{
   return std::hypot(v2.x - v1.x, v2.y - v1.y, v2.z - v1.z);
 }
 
@@ -374,8 +420,9 @@ inline T distance(const Vec3<T>& v1, const Vec3<T>& v2) {
  * @param v2 The second vector.
  * @return The distance between the two vectors.
  */
-template <typename T>
-inline T distance(const Vec4<T>& v1, const Vec4<T>& v2) {
+template<typename T>
+inline T distance(const Vec4<T> &v1, const Vec4<T> &v2)
+{
   return length(v2 - v1);
 }
 
@@ -388,8 +435,9 @@ inline T distance(const Vec4<T>& v1, const Vec4<T>& v2) {
  * @param v2 The second vector.
  * @return The squared distance between the two vectors.
  */
-template <typename T>
-constexpr T squared_distance(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+constexpr T squared_distance(const Vec2<T> v1, const Vec2<T> v2)
+{
   Vec2<T> v = v2 - v1;
   return dot(v, v);
 }
@@ -401,8 +449,9 @@ constexpr T squared_distance(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v2 The second vector.
  * @return The squared distance between the two vectors.
  */
-template <typename T>
-constexpr T squared_distance(const Vec3<T>& v1, const Vec3<T>& v2) {
+template<typename T>
+constexpr T squared_distance(const Vec3<T> &v1, const Vec3<T> &v2)
+{
   Vec3<T> v = v2 - v1;
   return dot(v, v);
 }
@@ -414,8 +463,9 @@ constexpr T squared_distance(const Vec3<T>& v1, const Vec3<T>& v2) {
  * @param v2 The second vector.
  * @return The squared distance between the two vectors.
  */
-template <typename T>
-constexpr T squared_distance(const Vec4<T>& v1, const Vec4<T>& v2) {
+template<typename T>
+constexpr T squared_distance(const Vec4<T> &v1, const Vec4<T> &v2)
+{
   Vec4<T> v = v2 - v1;
   return dot(v, v);
 }
@@ -430,8 +480,9 @@ constexpr T squared_distance(const Vec4<T>& v1, const Vec4<T>& v2) {
  * @param t The interpolation factor.
  * @return The interpolated vector.
  */
-template <typename T>
-constexpr Vec2<T> lerp(const Vec2<T> v1, const Vec2<T> v2, T t) {
+template<typename T>
+constexpr Vec2<T> lerp(const Vec2<T> v1, const Vec2<T> v2, T t)
+{
   return Vec2<T>(v1.x + t * (v2.x - v1.x), v1.y + t * (v2.y - v1.y));
 }
 
@@ -443,8 +494,9 @@ constexpr Vec2<T> lerp(const Vec2<T> v1, const Vec2<T> v2, T t) {
  * @param t The interpolation factor.
  * @return The interpolated vector.
  */
-template <typename T>
-constexpr Vec3<T> lerp(const Vec3<T>& v1, const Vec3<T>& v2, T t) {
+template<typename T>
+constexpr Vec3<T> lerp(const Vec3<T> &v1, const Vec3<T> &v2, T t)
+{
   return Vec3<T>(v1.x + t * (v2.x - v1.x), v1.y + t * (v2.y - v1.y), v1.z + t * (v2.z - v1.z));
 }
 
@@ -456,9 +508,13 @@ constexpr Vec3<T> lerp(const Vec3<T>& v1, const Vec3<T>& v2, T t) {
  * @param t The interpolation factor.
  * @return The interpolated vector.
  */
-template <typename T>
-constexpr Vec4<T> lerp(const Vec4<T>& v1, const Vec4<T>& v2, T t) {
-  return Vec4<T>(v1.x + t * (v2.x - v1.x), v1.y + t * (v2.y - v1.y), v1.z + t * (v2.z - v1.z), v1.w + t * (v2.w - v1.w));
+template<typename T>
+constexpr Vec4<T> lerp(const Vec4<T> &v1, const Vec4<T> &v2, T t)
+{
+  return Vec4<T>(v1.x + t * (v2.x - v1.x),
+                 v1.y + t * (v2.y - v1.y),
+                 v1.z + t * (v2.z - v1.z),
+                 v1.w + t * (v2.w - v1.w));
 }
 
 /* -- midpoint -- */
@@ -470,8 +526,9 @@ constexpr Vec4<T> lerp(const Vec4<T>& v1, const Vec4<T>& v2, T t) {
  * @param v2 The second vector.
  * @return The midpoint between v1 and v2.
  */
-template <typename T>
-constexpr Vec2<T> midpoint(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+constexpr Vec2<T> midpoint(const Vec2<T> v1, const Vec2<T> v2)
+{
   return Vec2<T>((v1.x + v2.x) / T(2), (v1.y + v2.y) / T(2));
 }
 
@@ -482,8 +539,9 @@ constexpr Vec2<T> midpoint(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v2 The second vector.
  * @return The midpoint between v1 and v2.
  */
-template <typename T>
-constexpr Vec3<T> midpoint(const Vec3<T>& v1, const Vec3<T>& v2) {
+template<typename T>
+constexpr Vec3<T> midpoint(const Vec3<T> &v1, const Vec3<T> &v2)
+{
   return Vec3<T>((v1.x + v2.x) / T(2), (v1.y + v2.y) / T(2), (v1.z + v2.z) / T(2));
 }
 
@@ -494,9 +552,11 @@ constexpr Vec3<T> midpoint(const Vec3<T>& v1, const Vec3<T>& v2) {
  * @param v2 The second vector.
  * @return The midpoint between v1 and v2.
  */
-template <typename T>
-constexpr Vec4<T> midpoint(const Vec4<T>& v1, const Vec4<T>& v2) {
-  return Vec4<T>((v1.x + v2.x) / T(2), (v1.y + v2.y) / T(2), (v1.z + v2.z) / T(2), (v1.w + v2.w) / T(2));
+template<typename T>
+constexpr Vec4<T> midpoint(const Vec4<T> &v1, const Vec4<T> &v2)
+{
+  return Vec4<T>(
+      (v1.x + v2.x) / T(2), (v1.y + v2.y) / T(2), (v1.z + v2.z) / T(2), (v1.w + v2.w) / T(2));
 }
 
 /* -- normalize -- */
@@ -507,10 +567,12 @@ constexpr Vec4<T> midpoint(const Vec4<T>& v1, const Vec4<T>& v2) {
  * @param v The vector to normalize.
  * @return The normalized Vec2.
  */
-template <typename T>
-constexpr Vec2<T> normalize(const Vec2<T> v) {
+template<typename T>
+constexpr Vec2<T> normalize(const Vec2<T> v)
+{
   T len = v.x * v.x + v.y * v.y;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   return Vec2<T>(v.x * len, v.y * len);
 }
@@ -521,10 +583,12 @@ constexpr Vec2<T> normalize(const Vec2<T> v) {
  * @param v The vector to normalize.
  * @return The normalized Vec3.
  */
-template <typename T>
-constexpr Vec3<T> normalize(const Vec3<T>& v) {
+template<typename T>
+constexpr Vec3<T> normalize(const Vec3<T> &v)
+{
   T len = v.x * v.x + v.y * v.y + v.z * v.z;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   return Vec3<T>(v.x * len, v.y * len, v.z * len);
 }
@@ -535,10 +599,12 @@ constexpr Vec3<T> normalize(const Vec3<T>& v) {
  * @param v The vector to normalize.
  * @return The normalized Vec4.
  */
-template <typename T>
-constexpr Vec4<T> normalize(const Vec4<T>& v) {
+template<typename T>
+constexpr Vec4<T> normalize(const Vec4<T> &v)
+{
   T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   return Vec4<T>(v.x * len, v.y * len, v.z * len, v.w * len);
 }
@@ -550,10 +616,12 @@ constexpr Vec4<T> normalize(const Vec4<T>& v) {
  * @param out The normalized vector (output).
  * @return The normalized Vec2.
  */
-template <typename T>
-constexpr Vec2<T>& normalize(const Vec2<T> v, Vec2<T>& out) {
+template<typename T>
+constexpr Vec2<T> &normalize(const Vec2<T> v, Vec2<T> &out)
+{
   T len = v.x * v.x + v.y * v.y;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   out.x = v.x * len;
   out.y = v.y * len;
@@ -568,10 +636,12 @@ constexpr Vec2<T>& normalize(const Vec2<T> v, Vec2<T>& out) {
  * @param out The normalized vector (output).
  * @return The normalized Vec3.
  */
-template <typename T>
-constexpr Vec3<T>& normalize(const Vec3<T>& v, Vec3<T>& out) {
+template<typename T>
+constexpr Vec3<T> &normalize(const Vec3<T> &v, Vec3<T> &out)
+{
   T len = v.x * v.x + v.y * v.y + v.z * v.z;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   out.x = v.x * len;
   out.y = v.y * len;
@@ -587,10 +657,12 @@ constexpr Vec3<T>& normalize(const Vec3<T>& v, Vec3<T>& out) {
  * @param out The normalized vector (output).
  * @return The normalized Vec4.
  */
-template <typename T>
-constexpr Vec4<T>& normalize(const Vec4<T>& v, Vec4<T>& out) {
+template<typename T>
+constexpr Vec4<T> &normalize(const Vec4<T> &v, Vec4<T> &out)
+{
   T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   out.x = v.x * len;
   out.y = v.y * len;
@@ -609,10 +681,12 @@ constexpr Vec4<T>& normalize(const Vec4<T>& v, Vec4<T>& out) {
  * @param t The scaling factor.
  * @return The normalized and scaled Vec2.
  */
-template <typename T>
-constexpr Vec2<T> normalize_length(const Vec2<T> v, T t) {
+template<typename T>
+constexpr Vec2<T> normalize_length(const Vec2<T> v, T t)
+{
   T len = v.x * v.x + v.y * v.y;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   return Vec2<T>(v.x * len * t, v.y * len * t);
 }
@@ -624,10 +698,12 @@ constexpr Vec2<T> normalize_length(const Vec2<T> v, T t) {
  * @param t The scaling factor.
  * @return The normalized and scaled Vec3.
  */
-template <typename T>
-constexpr Vec3<T> normalize_length(const Vec3<T>& v, T t) {
+template<typename T>
+constexpr Vec3<T> normalize_length(const Vec3<T> &v, T t)
+{
   T len = v.x * v.x + v.y * v.y + v.z * v.z;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   return Vec3<T>(v.x * len * t, v.y * len * t, v.z * len * t);
 }
@@ -639,10 +715,12 @@ constexpr Vec3<T> normalize_length(const Vec3<T>& v, T t) {
  * @param t The scaling factor.
  * @return The normalized and scaled Vec4.
  */
-template <typename T>
-constexpr Vec4<T> normalize_length(const Vec4<T>& v, T t) {
+template<typename T>
+constexpr Vec4<T> normalize_length(const Vec4<T> &v, T t)
+{
   T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   return Vec4<T>(v.x * len * t, v.y * len * t, v.z * len * t, v.w * len * t);
 }
@@ -655,10 +733,12 @@ constexpr Vec4<T> normalize_length(const Vec4<T>& v, T t) {
  * @param out The normalized and scaled vector (output).
  * @return The normalized and scaled Vec2.
  */
-template <typename T>
-constexpr Vec2<T>& normalize_length(const Vec2<T> v, T t, Vec2<T>& out) {
+template<typename T>
+constexpr Vec2<T> &normalize_length(const Vec2<T> v, T t, Vec2<T> &out)
+{
   T len = v.x * v.x + v.y * v.y;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   out.x = v.x * len * t;
   out.y = v.y * len * t;
@@ -674,10 +754,12 @@ constexpr Vec2<T>& normalize_length(const Vec2<T> v, T t, Vec2<T>& out) {
  * @param out The normalized and scaled vector (output).
  * @return The normalized and scaled Vec3.
  */
-template <typename T>
-constexpr Vec3<T>& normalize_length(const Vec3<T>& v, T t, Vec3<T>& out) {
+template<typename T>
+constexpr Vec3<T> &normalize_length(const Vec3<T> &v, T t, Vec3<T> &out)
+{
   T len = v.x * v.x + v.y * v.y + v.z * v.z;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   out.x = v.x * len * t;
   out.y = v.y * len * t;
@@ -694,10 +776,12 @@ constexpr Vec3<T>& normalize_length(const Vec3<T>& v, T t, Vec3<T>& out) {
  * @param out The normalized and scaled vector (output).
  * @return The normalized and scaled Vec4.
  */
-template <typename T>
-constexpr Vec4<T>& normalize_length(const Vec4<T>& v, T t, Vec4<T>& out) {
+template<typename T>
+constexpr Vec4<T> &normalize_length(const Vec4<T> &v, T t, Vec4<T> &out)
+{
   T len = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-  if (len > 0) len = 1 / std::sqrt(len);
+  if (len > 0)
+    len = 1 / std::sqrt(len);
 
   out.x = v.x * len * t;
   out.y = v.y * len * t;
@@ -715,8 +799,9 @@ constexpr Vec4<T>& normalize_length(const Vec4<T>& v, T t, Vec4<T>& out) {
  * @param v The vector to negate.
  * @return The negated Vec2.
  */
-template <typename T>
-constexpr Vec2<T> negate(const Vec2<T> v) {
+template<typename T>
+constexpr Vec2<T> negate(const Vec2<T> v)
+{
   return -v;
 }
 
@@ -726,8 +811,9 @@ constexpr Vec2<T> negate(const Vec2<T> v) {
  * @param v The vector to negate.
  * @return The negated Vec3.
  */
-template <typename T>
-constexpr Vec3<T> negate(const Vec3<T>& v) {
+template<typename T>
+constexpr Vec3<T> negate(const Vec3<T> &v)
+{
   return -v;
 }
 
@@ -737,8 +823,9 @@ constexpr Vec3<T> negate(const Vec3<T>& v) {
  * @param v The vector to negate.
  * @return The negated Vec4.
  */
-template <typename T>
-constexpr Vec4<T> negate(const Vec4<T>& v) {
+template<typename T>
+constexpr Vec4<T> negate(const Vec4<T> &v)
+{
   return -v;
 }
 
@@ -749,8 +836,9 @@ constexpr Vec4<T> negate(const Vec4<T>& v) {
  * @param out The negated vector (output).
  * @return The negated Vec2.
  */
-template <typename T>
-constexpr Vec2<T>& negate(const Vec2<T> v, Vec2<T>& out) {
+template<typename T>
+constexpr Vec2<T> &negate(const Vec2<T> v, Vec2<T> &out)
+{
   out.x = -v.x;
   out.y = -v.y;
 
@@ -764,8 +852,9 @@ constexpr Vec2<T>& negate(const Vec2<T> v, Vec2<T>& out) {
  * @param out The negated vector (output).
  * @return The negated Vec3.
  */
-template <typename T>
-constexpr Vec3<T>& negate(const Vec3<T>& v, Vec3<T>& out) {
+template<typename T>
+constexpr Vec3<T> &negate(const Vec3<T> &v, Vec3<T> &out)
+{
   out.x = -v.x;
   out.y = -v.y;
   out.z = -v.z;
@@ -780,8 +869,9 @@ constexpr Vec3<T>& negate(const Vec3<T>& v, Vec3<T>& out) {
  * @param out The negated vector (output).
  * @return The negated Vec4.
  */
-template <typename T>
-constexpr Vec4<T>& negate(const Vec4<T>& v, Vec4<T>& out) {
+template<typename T>
+constexpr Vec4<T> &negate(const Vec4<T> &v, Vec4<T> &out)
+{
   out.x = -v.x;
   out.y = -v.y;
   out.z = -v.z;
@@ -798,8 +888,9 @@ constexpr Vec4<T>& negate(const Vec4<T>& v, Vec4<T>& out) {
  * @param v The vector to calculate absolute values for.
  * @return The Vec2<T> with absolute values of its components.
  */
-template <typename T>
-inline Vec2<T> abs(const Vec2<T> v) {
+template<typename T>
+inline Vec2<T> abs(const Vec2<T> v)
+{
   return Vec2<T>(std::abs(v.x), std::abs(v.y));
 }
 
@@ -809,8 +900,9 @@ inline Vec2<T> abs(const Vec2<T> v) {
  * @param v The vector to calculate absolute values for.
  * @return The Vec3<T> with absolute values of its components.
  */
-template <typename T>
-inline Vec3<T> abs(const Vec3<T>& v) {
+template<typename T>
+inline Vec3<T> abs(const Vec3<T> &v)
+{
   return Vec3<T>(std::abs(v.x), std::abs(v.y), std::abs(v.z));
 }
 
@@ -820,8 +912,9 @@ inline Vec3<T> abs(const Vec3<T>& v) {
  * @param v The vector to calculate absolute values for.
  * @return The Vec4<T> with absolute values of its components.
  */
-template <typename T>
-inline Vec4<T> abs(const Vec4<T>& v) {
+template<typename T>
+inline Vec4<T> abs(const Vec4<T> &v)
+{
   return Vec4<T>(std::abs(v.x), std::abs(v.y), std::abs(v.z), std::abs(v.w));
 }
 
@@ -832,8 +925,9 @@ inline Vec4<T> abs(const Vec4<T>& v) {
  * @param out The vector with absolute values of its components (output).
  * @return The Vec2<T> with absolute values of its components.
  */
-template <typename T>
-inline Vec2<T>& abs(const Vec2<T> v, Vec2<T>& out) {
+template<typename T>
+inline Vec2<T> &abs(const Vec2<T> v, Vec2<T> &out)
+{
   out.x = std::abs(v.x);
   out.y = std::abs(v.y);
 
@@ -846,8 +940,9 @@ inline Vec2<T>& abs(const Vec2<T> v, Vec2<T>& out) {
  * @param out The vector with absolute values of its components (output).
  * @return The Vec3<T> with absolute values of its components.
  */
-template <typename T>
-inline Vec3<T>& abs(const Vec3<T>& v, Vec3<T>& out) {
+template<typename T>
+inline Vec3<T> &abs(const Vec3<T> &v, Vec3<T> &out)
+{
   out.x = std::abs(v.x);
   out.y = std::abs(v.y);
   out.z = std::abs(v.z);
@@ -861,8 +956,9 @@ inline Vec3<T>& abs(const Vec3<T>& v, Vec3<T>& out) {
  * @param out The vector with absolute values of its components (output).
  * @return The Vec4<T> with absolute values of its components.
  */
-template <typename T>
-inline Vec4<T>& abs(const Vec4<T>& v, Vec4<T>& out) {
+template<typename T>
+inline Vec4<T> &abs(const Vec4<T> &v, Vec4<T> &out)
+{
   out.x = std::abs(v.x);
   out.y = std::abs(v.y);
   out.z = std::abs(v.z);
@@ -877,8 +973,9 @@ inline Vec4<T>& abs(const Vec4<T>& v, Vec4<T>& out) {
  *
  * @param v The vector to be zeroed.
  */
-template <typename T>
-constexpr void zero(Vec2<T>& v) {
+template<typename T>
+constexpr void zero(Vec2<T> &v)
+{
   v.x = v.y = T(0);
 }
 
@@ -887,8 +984,9 @@ constexpr void zero(Vec2<T>& v) {
  *
  * @param v The vector to be zeroed.
  */
-template <typename T>
-constexpr void zero(Vec3<T>& v) {
+template<typename T>
+constexpr void zero(Vec3<T> &v)
+{
   v.x = v.y = v.z = T(0);
 }
 
@@ -897,8 +995,9 @@ constexpr void zero(Vec3<T>& v) {
  *
  * @param v The vector to be zeroed.
  */
-template <typename T>
-constexpr void zero(Vec4<T>& v) {
+template<typename T>
+constexpr void zero(Vec4<T> &v)
+{
   v.x = v.y = v.z = v.w = T(0);
 }
 
@@ -910,8 +1009,9 @@ constexpr void zero(Vec4<T>& v) {
  * @param v The vector to be checked.
  * @return True if all components are zero, false otherwise.
  */
-template <typename T>
-constexpr bool is_zero(const Vec2<T> v) {
+template<typename T>
+constexpr bool is_zero(const Vec2<T> v)
+{
   return v.x == T(0) && v.y == T(0);
 }
 
@@ -921,8 +1021,9 @@ constexpr bool is_zero(const Vec2<T> v) {
  * @param v The vector to be checked.
  * @return True if all components are zero, false otherwise.
  */
-template <typename T>
-constexpr bool is_zero(const Vec3<T>& v) {
+template<typename T>
+constexpr bool is_zero(const Vec3<T> &v)
+{
   return v.x == T(0) && v.y == T(0) && v.z == T(0);
 }
 
@@ -932,8 +1033,9 @@ constexpr bool is_zero(const Vec3<T>& v) {
  * @param v The vector to be checked.
  * @return True if all components are zero, false otherwise.
  */
-template <typename T>
-constexpr bool is_zero(const Vec4<T>& v) {
+template<typename T>
+constexpr bool is_zero(const Vec4<T> &v)
+{
   return v.x == T(0) && v.y == T(0) && v.z == T(0) && v.w == T(0);
 }
 
@@ -945,8 +1047,9 @@ constexpr bool is_zero(const Vec4<T>& v) {
  * @param v The vector to be checked.
  * @return True if any component is non-zero, false if all are zero.
  */
-template <typename T>
-constexpr bool not_zero(const Vec2<T> v) {
+template<typename T>
+constexpr bool not_zero(const Vec2<T> v)
+{
   return v.x != T(0) || v.y != T(0);
 }
 
@@ -956,8 +1059,9 @@ constexpr bool not_zero(const Vec2<T> v) {
  * @param v The vector to be checked.
  * @return True if any component is non-zero, false if all are zero.
  */
-template <typename T>
-constexpr bool not_zero(const Vec3<T>& v) {
+template<typename T>
+constexpr bool not_zero(const Vec3<T> &v)
+{
   return v.x != T(0) || v.y != T(0) || v.z != T(0);
 }
 
@@ -967,8 +1071,9 @@ constexpr bool not_zero(const Vec3<T>& v) {
  * @param v The vector to be checked.
  * @return True if any component is non-zero, false if all are zero.
  */
-template <typename T>
-constexpr bool not_zero(const Vec4<T>& v) {
+template<typename T>
+constexpr bool not_zero(const Vec4<T> &v)
+{
   return v.x != T(0) || v.y != T(0) || v.z != T(0) || v.w != T(0);
 }
 
@@ -981,8 +1086,9 @@ constexpr bool not_zero(const Vec4<T>& v) {
  * @param eps The epsilon value for comparison (default is math::epsilon).
  * @return True if all components are within epsilon of zero, false otherwise.
  */
-template <typename T>
-inline bool is_almost_zero(const Vec2<T> v, const T eps = epsilon<T>) {
+template<typename T>
+inline bool is_almost_zero(const Vec2<T> v, const T eps = epsilon<T>)
+{
   return !(std::abs(v.x) > eps || std::abs(v.y) > eps);
 }
 
@@ -993,8 +1099,9 @@ inline bool is_almost_zero(const Vec2<T> v, const T eps = epsilon<T>) {
  * @param eps The epsilon value for comparison (default is math::epsilon).
  * @return True if all components are within epsilon of zero, false otherwise.
  */
-template <typename T>
-inline bool is_almost_zero(const Vec3<T>& v, const T eps = epsilon<T>) {
+template<typename T>
+inline bool is_almost_zero(const Vec3<T> &v, const T eps = epsilon<T>)
+{
   return !(std::abs(v.x) > eps || std::abs(v.y) > eps || std::abs(v.z) > eps);
 }
 
@@ -1005,52 +1112,60 @@ inline bool is_almost_zero(const Vec3<T>& v, const T eps = epsilon<T>) {
  * @param eps The epsilon value for comparison (default is math::epsilon).
  * @return True if all components are within epsilon of zero, false otherwise.
  */
-template <typename T>
-inline bool is_almost_zero(const Vec4<T>& v, const T eps = epsilon<T>) {
-  return !(std::abs(v.x) > eps || std::abs(v.y) > eps || std::abs(v.z) > eps || std::abs(v.w) > eps);
+template<typename T>
+inline bool is_almost_zero(const Vec4<T> &v, const T eps = epsilon<T>)
+{
+  return !(std::abs(v.x) > eps || std::abs(v.y) > eps || std::abs(v.z) > eps ||
+           std::abs(v.w) > eps);
 }
 
 /* -- is_almost_equal -- */
 
 /**
- * @brief Checks if all components of a Vec2 are nearly equal to another vector within a given epsilon.
+ * @brief Checks if all components of a Vec2 are nearly equal to another vector within a given
+ * epsilon.
  *
  * @param v1 The first vector for comparison.
  * @param v2 The second vector for comparison.
  * @param eps The epsilon value for comparison (default is math::epsilon).
  * @return True if all components are within epsilon of each other, false otherwise.
  */
-template <typename T>
-inline bool is_almost_equal(const Vec2<T> v1, const Vec2<T> v2, const T eps = epsilon<T>) {
+template<typename T>
+inline bool is_almost_equal(const Vec2<T> v1, const Vec2<T> v2, const T eps = epsilon<T>)
+{
   return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps);
 }
 
 /**
- * @brief Checks if all components of a Vec3<T> are nearly equal to another vector within a given epsilon.
+ * @brief Checks if all components of a Vec3<T> are nearly equal to another vector within a given
+ * epsilon.
  *
  * @param v1 The first vector for comparison.
  * @param v2 The second vector for comparison.
  * @param eps The epsilon value for comparison (default is math::epsilon).
  * @return True if all components are within epsilon of each other, false otherwise.
  */
-template <typename T>
-inline bool is_almost_equal(const Vec3<T>& v1, const Vec3<T>& v2, const T eps = epsilon<T>) {
-  return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps || std::abs(v1.z - v2.z) > eps);
+template<typename T>
+inline bool is_almost_equal(const Vec3<T> &v1, const Vec3<T> &v2, const T eps = epsilon<T>)
+{
+  return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps ||
+           std::abs(v1.z - v2.z) > eps);
 }
 
 /**
- * @brief Checks if all components of a Vec4<T> are nearly equal to another vector within a given epsilon.
+ * @brief Checks if all components of a Vec4<T> are nearly equal to another vector within a given
+ * epsilon.
  *
  * @param v1 The first vector for comparison.
  * @param v2 The second vector for comparison.
  * @param eps The epsilon value for comparison (default is math::epsilon).
  * @return True if all components are within epsilon of each other, false otherwise.
  */
-template <typename T>
-inline bool is_almost_equal(const Vec4<T>& v1, const Vec4<T>& v2, const T eps = epsilon<T>) {
-  return !(
-    std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps || std::abs(v1.z - v2.z) > eps || std::abs(v1.w - v2.w) > eps
-  );
+template<typename T>
+inline bool is_almost_equal(const Vec4<T> &v1, const Vec4<T> &v2, const T eps = epsilon<T>)
+{
+  return !(std::abs(v1.x - v2.x) > eps || std::abs(v1.y - v2.y) > eps ||
+           std::abs(v1.z - v2.z) > eps || std::abs(v1.w - v2.w) > eps);
 }
 
 /* -- floor -- */
@@ -1061,8 +1176,9 @@ inline bool is_almost_equal(const Vec4<T>& v1, const Vec4<T>& v2, const T eps = 
  * @param v The vector to be rounded.
  * @return The Vec2<T> with rounded components.
  */
-template <typename T>
-constexpr Vec2<T> floor(const Vec2<T> v) {
+template<typename T>
+constexpr Vec2<T> floor(const Vec2<T> v)
+{
   return Vec2<T>(std::floor(v.x), std::floor(v.y));
 }
 
@@ -1072,8 +1188,9 @@ constexpr Vec2<T> floor(const Vec2<T> v) {
  * @param v The vector to be rounded.
  * @return The Vec3<T> with rounded components.
  */
-template <typename T>
-constexpr Vec3<T> floor(const Vec3<T>& v) {
+template<typename T>
+constexpr Vec3<T> floor(const Vec3<T> &v)
+{
   return Vec3<T>(std::floor(v.x), std::floor(v.y), std::floor(v.z));
 }
 
@@ -1083,8 +1200,9 @@ constexpr Vec3<T> floor(const Vec3<T>& v) {
  * @param v The vector to be rounded.
  * @return The Vec4<T> with rounded components.
  */
-template <typename T>
-constexpr Vec4<T> floor(const Vec4<T>& v) {
+template<typename T>
+constexpr Vec4<T> floor(const Vec4<T> &v)
+{
   return Vec4<T>(std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w));
 }
 
@@ -1096,8 +1214,9 @@ constexpr Vec4<T> floor(const Vec4<T>& v) {
  * @param v The vector to be rounded.
  * @return The Vec2<T> with rounded components.
  */
-template <typename T>
-constexpr Vec2<T> ceil(const Vec2<T> v) {
+template<typename T>
+constexpr Vec2<T> ceil(const Vec2<T> v)
+{
   return Vec2<T>(std::ceil(v.x), std::ceil(v.y));
 }
 
@@ -1107,8 +1226,9 @@ constexpr Vec2<T> ceil(const Vec2<T> v) {
  * @param v The vector to be rounded.
  * @return The Vec3<T> with rounded components.
  */
-template <typename T>
-constexpr Vec3<T> ceil(const Vec3<T>& v) {
+template<typename T>
+constexpr Vec3<T> ceil(const Vec3<T> &v)
+{
   return Vec3<T>(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z));
 }
 
@@ -1118,8 +1238,9 @@ constexpr Vec3<T> ceil(const Vec3<T>& v) {
  * @param v The vector to be rounded.
  * @return The Vec4<T> with rounded components.
  */
-template <typename T>
-constexpr Vec4<T> ceil(const Vec4<T>& v) {
+template<typename T>
+constexpr Vec4<T> ceil(const Vec4<T> &v)
+{
   return Vec4<T>(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z), std::ceil(v.w));
 }
 
@@ -1131,8 +1252,9 @@ constexpr Vec4<T> ceil(const Vec4<T>& v) {
  * @param v The vector to be rounded.
  * @return The Vec2<T> with rounded components.
  */
-template <typename T>
-constexpr Vec2<T> round(const Vec2<T> v) {
+template<typename T>
+constexpr Vec2<T> round(const Vec2<T> v)
+{
   return Vec2<T>(std::round(v.x), std::round(v.y));
 }
 
@@ -1142,8 +1264,9 @@ constexpr Vec2<T> round(const Vec2<T> v) {
  * @param v The vector to be rounded.
  * @return The Vec3<T> with rounded components.
  */
-template <typename T>
-constexpr Vec3<T> round(const Vec3<T>& v) {
+template<typename T>
+constexpr Vec3<T> round(const Vec3<T> &v)
+{
   return Vec3<T>(std::round(v.x), std::round(v.y), std::round(v.z));
 }
 
@@ -1153,8 +1276,9 @@ constexpr Vec3<T> round(const Vec3<T>& v) {
  * @param v The vector to be rounded.
  * @return The Vec4<T> with rounded components.
  */
-template <typename T>
-constexpr Vec4<T> round(const Vec4<T>& v) {
+template<typename T>
+constexpr Vec4<T> round(const Vec4<T> &v)
+{
   return Vec4<T>(std::round(v.x), std::round(v.y), std::round(v.z), std::round(v.w));
 }
 
@@ -1167,9 +1291,11 @@ constexpr Vec4<T> round(const Vec4<T>& v) {
  * @param v2 The second vector.
  * @return The angle in radians between the two vectors.
  */
-template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
-inline T angle(const Vec2<T> v1, const Vec2<T> v2) {
-  return sign(cross(v1, v2)) * std::acos(dot(v1, v2) / std::sqrt(squared_length(v1) * squared_length(v2)));
+template<typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+inline T angle(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return sign(cross(v1, v2)) *
+         std::acos(dot(v1, v2) / std::sqrt(squared_length(v1) * squared_length(v2)));
 }
 
 /**
@@ -1179,8 +1305,9 @@ inline T angle(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v2 The second vector.
  * @return The arctangent of the angle between the two vectors.
  */
-template <typename T>
-inline T atan2(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+inline T atan2(const Vec2<T> v1, const Vec2<T> v2)
+{
   return std::atan2(v2.y - v1.y, v2.x - v1.x);
 }
 
@@ -1194,8 +1321,9 @@ inline T atan2(const Vec2<T> v1, const Vec2<T> v2) {
  * @param t The angle in radians by which to rotate the vector.
  * @return The rotated Vec2.
  */
-template <typename T>
-inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T t) {
+template<typename T>
+inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T t)
+{
   const T cx = v.x - c.x;
   const T cy = v.y - c.y;
   const T sin_t = std::sin(t);
@@ -1205,7 +1333,8 @@ inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T t) {
 }
 
 /**
- * @brief Rotates a Vec2 around a center point by a specified angle using precomputed sin and cos values.
+ * @brief Rotates a Vec2 around a center point by a specified angle using precomputed sin and cos
+ * values.
  *
  * @param v The vector to be rotated.
  * @param c The center of rotation.
@@ -1213,8 +1342,9 @@ inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T t) {
  * @param cos_t The cosine of the rotation angle.
  * @return The rotated Vec2.
  */
-template <typename T>
-inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T sin_t, T cos_t) {
+template<typename T>
+inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T sin_t, T cos_t)
+{
   const T cx = v.x - c.x;
   const T cy = v.y - c.y;
 
@@ -1231,8 +1361,9 @@ inline Vec2<T> rotate(const Vec2<T> v, const Vec2<T> c, T sin_t, T cos_t) {
  * @param t The scaling factor.
  * @return The scaled Vec2.
  */
-template <typename T>
-constexpr Vec2<T> scale(const Vec2<T> v, const Vec2<T> c, const Vec2<T> s) {
+template<typename T>
+constexpr Vec2<T> scale(const Vec2<T> v, const Vec2<T> c, const Vec2<T> s)
+{
   return Vec2<T>((v.x - c.x) * s.x + c.x, (v.y - c.y) * s.y + c.y);
 }
 
@@ -1244,8 +1375,9 @@ constexpr Vec2<T> scale(const Vec2<T> v, const Vec2<T> c, const Vec2<T> s) {
  * @param v The vector to calculate the orthogonal vector for.
  * @return The orthogonal vector.
  */
-template <typename T>
-constexpr Vec2<T> orthogonal(const Vec2<T> v) {
+template<typename T>
+constexpr Vec2<T> orthogonal(const Vec2<T> v)
+{
   return Vec2<T>(-v.y, v.x);
 }
 
@@ -1256,8 +1388,9 @@ constexpr Vec2<T> orthogonal(const Vec2<T> v) {
  * @param out The orthogonal output vector.
  * @return A reference to the output vector.
  */
-template <typename T>
-constexpr Vec2<T>& orthogonal(const Vec2<T> v, Vec2<T>& out) {
+template<typename T>
+constexpr Vec2<T> &orthogonal(const Vec2<T> v, Vec2<T> &out)
+{
   T temp = v.x;
 
   out.x = -v.y;
@@ -1274,8 +1407,9 @@ constexpr Vec2<T>& orthogonal(const Vec2<T> v, Vec2<T>& out) {
  * @param v The vector to calculate the normal vector for.
  * @return The normal vector.
  */
-template <typename T>
-constexpr Vec2<T> normal(const Vec2<T> v1, const Vec2<T> v2) {
+template<typename T>
+constexpr Vec2<T> normal(const Vec2<T> v1, const Vec2<T> v2)
+{
   return normalize(Vec2<T>(v2.y - v1.y, v1.x - v2.x));
 }
 
@@ -1287,8 +1421,9 @@ constexpr Vec2<T> normal(const Vec2<T> v1, const Vec2<T> v2) {
  * @param v The vector to swap coordinates for.
  * @return The vector with swapped coordinates.
  */
-template <typename T>
-constexpr Vec2<T> swap_coordinates(const Vec2<T> v) {
+template<typename T>
+constexpr Vec2<T> swap_coordinates(const Vec2<T> v)
+{
   return (v.y, v.x);
 }
 
@@ -1299,8 +1434,9 @@ constexpr Vec2<T> swap_coordinates(const Vec2<T> v) {
  * @param out The output vector with swapped coordinates.
  * @return A reference to the output vector.
  */
-template <typename T>
-constexpr Vec2<T>& swap_coordinates(const Vec2<T> v, Vec2<T>& out) {
+template<typename T>
+constexpr Vec2<T> &swap_coordinates(const Vec2<T> v, Vec2<T> &out)
+{
   T temp = v.x;
 
   out.x = v.y;
@@ -1320,8 +1456,12 @@ constexpr Vec2<T>& swap_coordinates(const Vec2<T> v, Vec2<T>& out) {
  * @param eps The epsilon value for comparison (default is math::epsilon).
  * @return True if the three vectors are collinear, false otherwise.
  */
-template <typename T>
-inline bool collinear(const Vec2<T> v1, const Vec2<T> v2, const Vec2<T> v3, const T eps = epsilon<T>) {
+template<typename T>
+inline bool collinear(const Vec2<T> v1,
+                      const Vec2<T> v2,
+                      const Vec2<T> v3,
+                      const T eps = epsilon<T>)
+{
   const T t = v1.x * (v2.y - v3.y) + v2.x * (v3.y - v1.y) + v3.x * (v1.y - v2.y);
   return std::abs(t) <= eps;
 }

@@ -19,11 +19,10 @@ namespace graphick::geom {
  * The last control point of a curve is the first control point of the next curve.
  * Linear segments are treated as cubic curves with p1 = p2 = p3.
  *
- * All curves are splitted in monotone segments for efficient winding number computation (and rendering).
- *
- * @struct CubicPath
+ * All curves are splitted in monotone segments for efficient winding number computation (and
+ * rendering).
  */
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 struct CubicPath {
   std::vector<math::Vec2<T>> points;  // The control points of the path.
 
@@ -34,14 +33,20 @@ struct CubicPath {
    *
    * @return true if the path is empty, false otherwise.
    */
-  inline bool empty() const { return points.size() < 4; }
+  inline bool empty() const
+  {
+    return points.size() < 4;
+  }
 
   /**
    * @brief Returns the number of curves in the path.
    *
    * @return The number of curves in the path.
    */
-  inline size_t size() const { return empty() ? 0 : (points.size() - 1) / 3; }
+  inline size_t size() const
+  {
+    return empty() ? 0 : (points.size() - 1) / 3;
+  }
 
   /**
    * @brief Returns whether the path is closed.
@@ -50,21 +55,30 @@ struct CubicPath {
    *
    * @return true if the path is closed, false otherwise.
    */
-  inline bool closed() const { return !empty() && points.front() == points.back(); }
+  inline bool closed() const
+  {
+    return !empty() && points.front() == points.back();
+  }
 
   /**
    * @brief Returns the first control point of the path.
    *
    * @return The first control point.
    */
-  inline math::Vec2<T>& front() { return points.front(); }
+  inline math::Vec2<T> &front()
+  {
+    return points.front();
+  }
 
   /**
    * @brief Returns the last control point of the path.
    *
    * @return The last control point.
    */
-  inline math::Vec2<T>& back() { return points.back(); }
+  inline math::Vec2<T> &back()
+  {
+    return points.back();
+  }
 
   /**
    * @brief Returns the i-th control point of the path.
@@ -72,7 +86,10 @@ struct CubicPath {
    * @param i The index of the control point.
    * @return The i-th control point.
    */
-  inline math::Vec2<T> operator[](const size_t i) const { return points[i]; }
+  inline math::Vec2<T> operator[](const size_t i) const
+  {
+    return points[i];
+  }
 
   /**
    * @brief Returns the i-th control point of the path.
@@ -80,7 +97,10 @@ struct CubicPath {
    * @param i The index of the control point.
    * @return The i-th control point.
    */
-  inline math::Vec2<T>& operator[](const size_t i) { return points[i]; }
+  inline math::Vec2<T> &operator[](const size_t i)
+  {
+    return points[i];
+  }
 
   /**
    * @brief Returns the i-th control point of the path.
@@ -88,7 +108,10 @@ struct CubicPath {
    * @param i The index of the control point.
    * @return The i-th control point.
    */
-  inline math::Vec2<T> at(const size_t i) const { return points[i]; }
+  inline math::Vec2<T> at(const size_t i) const
+  {
+    return points[i];
+  }
 
   /**
    * @brief Returns the i-th control point of the path.
@@ -96,16 +119,21 @@ struct CubicPath {
    * @param i The index of the control point.
    * @return The i-th control point.
    */
-  inline math::Vec2<T>& at(const size_t i) { return points[i]; }
+  inline math::Vec2<T> &at(const size_t i)
+  {
+    return points[i];
+  }
 
   /**
    * @brief Returns an approximate bounding rectangle of the path.
    *
-   * The bounding rectangle is computed by taking the minimum and maximum x and y values of the control points.
+   * The bounding rectangle is computed by taking the minimum and maximum x and y values of the
+   * control points.
    *
    * @return An approximate bounding rectangle of the path.
    */
-  inline math::Rect<T> approx_bounding_rect() const {
+  inline math::Rect<T> approx_bounding_rect() const
+  {
     if (empty()) {
       return math::Rect<T>{};
     }
@@ -129,10 +157,13 @@ struct CubicPath {
    *
    * @param p The point to move the cursor to.
    */
-  inline void move_to(const math::Vec2<T> p) {
+  inline void move_to(const math::Vec2<T> p)
+  {
     if (points.empty()) {
       points.push_back(p);
-    } else if (points.size() > 2 && points[points.size() - 2] == points.back() && points[points.size() - 3] == points.back()) {
+    } else if (points.size() > 2 && points[points.size() - 2] == points.back() &&
+               points[points.size() - 3] == points.back())
+    {
       points[points.size() - 3] = p;
       points[points.size() - 2] = p;
       points.back() = p;
@@ -148,7 +179,8 @@ struct CubicPath {
    *
    * @param p The end point of the line.
    */
-  inline void line_to(const math::Vec2<T> p) {
+  inline void line_to(const math::Vec2<T> p)
+  {
     GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
     points.insert(points.end(), {p, p, p});
@@ -160,7 +192,8 @@ struct CubicPath {
    * @param p1 The first control point of the curve.
    * @param p2 The end point of the curve.
    */
-  inline void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2) {
+  inline void quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2)
+  {
     GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
     const math::Vec2<T> p0 = points.back();

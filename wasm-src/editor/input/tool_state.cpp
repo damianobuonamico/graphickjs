@@ -20,47 +20,59 @@
 #include "../../renderer/renderer.h"
 
 #ifdef EMSCRIPTEN
-#include <emscripten.h>
+#  include <emscripten.h>
 
-#ifndef __INTELLISENSE__
+#  ifndef __INTELLISENSE__
 EM_JS(void, update_tool_ui, (int type), { window._set_tool(type); });
-#else
-void update_tool_ui(int type) { }
-#endif
+#  else
+void update_tool_ui(int type) {}
+#  endif
 
 #else
-void update_tool_ui(int type) { }
+void update_tool_ui(int type) {}
 #endif
 
 namespace graphick::editor::input {
 
-ToolState::ToolState() :
-  m_current(Tool::ToolType::DirectSelect),
-  m_active(m_current),
-  m_last_tool(m_current),
-  m_tools{new PanTool(), new ZoomTool(), new SelectTool(), new DirectSelectTool(), new PenTool(), new PencilTool()} { }
+ToolState::ToolState()
+    : m_current(Tool::ToolType::DirectSelect),
+      m_active(m_current),
+      m_last_tool(m_current),
+      m_tools{new PanTool(),
+              new ZoomTool(),
+              new SelectTool(),
+              new DirectSelectTool(),
+              new PenTool(),
+              new PencilTool()}
+{
+}
 
-ToolState::~ToolState() {
+ToolState::~ToolState()
+{
   for (auto tool : m_tools) {
     delete tool;
   }
 }
 
-PenTool* ToolState::pen() const {
+PenTool *ToolState::pen() const
+{
   if (m_active == Tool::ToolType::Pen || m_current == Tool::ToolType::Pen) {
-    return static_cast<editor::input::PenTool*>(m_tools[static_cast<int>(Tool::ToolType::Pen)]);
+    return static_cast<editor::input::PenTool *>(m_tools[static_cast<int>(Tool::ToolType::Pen)]);
   }
 
   return nullptr;
 }
 
-void ToolState::reset_tool() {
+void ToolState::reset_tool()
+{
   current().reset();
   active().reset();
 }
 
-void ToolState::set_current(Tool::ToolType tool) {
-  if (tool == Tool::ToolType::None) return;
+void ToolState::set_current(Tool::ToolType tool)
+{
+  if (tool == Tool::ToolType::None)
+    return;
 
   reset_tool();
 
@@ -69,8 +81,10 @@ void ToolState::set_current(Tool::ToolType tool) {
   recalculate_active();
 }
 
-void ToolState::set_active(Tool::ToolType tool) {
-  if (tool == Tool::ToolType::None) return;
+void ToolState::set_active(Tool::ToolType tool)
+{
+  if (tool == Tool::ToolType::None)
+    return;
 
   m_last_tool = m_active;
   m_active = tool;
@@ -78,22 +92,25 @@ void ToolState::set_active(Tool::ToolType tool) {
   update_tool_ui(static_cast<int>(tool));
 }
 
-void ToolState::on_pointer_down(const float zoom) {
-  Tool& tool = active();
+void ToolState::on_pointer_down(const float zoom)
+{
+  Tool &tool = active();
 
-  if (!tool.is_in_category(Tool::CategoryDirect) && !tool.is_in_category(Tool::CategoryImmediate) &&
-      manipulator.on_pointer_down(5.0f / zoom))
+  if (!tool.is_in_category(Tool::CategoryDirect) &&
+      !tool.is_in_category(Tool::CategoryImmediate) && manipulator.on_pointer_down(5.0f / zoom))
     return;
 
   if (m_active == Tool::ToolType::DirectSelect && m_current == Tool::ToolType::Pen) {
     if (InputManager::hover.type() == HoverState::HoverType::Vertex) {
-      if (InputManager::hover.entity_id() != static_cast<PenTool*>(&current())->pen_element()) {
+      if (InputManager::hover.entity_id() != static_cast<PenTool *>(&current())->pen_element()) {
         reset_tool();
       }
     } else if (InputManager::hover.type() != HoverState::HoverType::Handle) {
       reset_tool();
     }
-  } else if (m_last_tool != m_active && m_active != Tool::ToolType::Pan && m_active != Tool::ToolType::Zoom) {
+  } else if (m_last_tool != m_active && m_active != Tool::ToolType::Pan &&
+             m_active != Tool::ToolType::Zoom)
+  {
     m_tools[(int)m_last_tool]->reset();
   }
 
@@ -101,7 +118,8 @@ void ToolState::on_pointer_down(const float zoom) {
   manipulator.update();
 }
 
-void ToolState::on_pointer_move() {
+void ToolState::on_pointer_move()
+{
   if (manipulator.in_use()) {
     manipulator.on_pointer_move();
     return;
@@ -111,7 +129,8 @@ void ToolState::on_pointer_move() {
   manipulator.update();
 }
 
-void ToolState::on_pointer_up() {
+void ToolState::on_pointer_up()
+{
   if (manipulator.in_use()) {
     manipulator.on_pointer_up();
     return;
@@ -121,19 +140,24 @@ void ToolState::on_pointer_up() {
   manipulator.update();
 }
 
-void ToolState::on_pointer_hover() { active().on_pointer_hover(); }
+void ToolState::on_pointer_hover()
+{
+  active().on_pointer_hover();
+}
 
-void ToolState::on_key(const bool down, const KeyboardKey key) {
-  Tool& tool = active();
+void ToolState::on_key(const bool down, const KeyboardKey key)
+{
+  Tool &tool = active();
 
-  if (!tool.is_in_category(Tool::CategoryDirect) && !tool.is_in_category(Tool::CategoryImmediate) &&
-      manipulator.on_key(down, key))
+  if (!tool.is_in_category(Tool::CategoryDirect) &&
+      !tool.is_in_category(Tool::CategoryImmediate) && manipulator.on_key(down, key))
     return;
 
   tool.on_key(down, key);
 }
 
-void ToolState::recalculate_active() {
+void ToolState::recalculate_active()
+{
   if (InputManager::keys.space) {
     if (InputManager::keys.ctrl) {
       set_active(Tool::ToolType::Zoom);
@@ -159,18 +183,21 @@ void ToolState::recalculate_active() {
   }
 }
 
-void ToolState::render_overlays(const float zoom) const {
-  Tool& tool = active();
+void ToolState::render_overlays(const float zoom) const
+{
+  Tool &tool = active();
 
   tool.render_overlays();
 
-  if (tool.is_in_category(Tool::CategoryDirect) || tool.is_in_category(Tool::CategoryImmediate) || !manipulator.active()) return;
+  if (tool.is_in_category(Tool::CategoryDirect) || tool.is_in_category(Tool::CategoryImmediate) ||
+      !manipulator.active())
+    return;
 
   mat2x3 transform = manipulator.transform();
 
   renderer::Renderer::draw_outline(manipulator.path(), transform);
 
-  const vec2* handles = manipulator.handles();
+  const vec2 *handles = manipulator.handles();
 
   for (int i = 0; i < Manipulator::RN; i++) {
     renderer::Renderer::draw_rect(transform * handles[i], vec2(5.0f / zoom));

@@ -10,7 +10,8 @@
 namespace graphick::editor::input {
 
 /**
- * @brief The KeyboardKey enum translates platform-specific keycodes to a platform-agnostic set of keynames.
+ * @brief The KeyboardKey enum translates platform-specific keycodes to a platform-agnostic set of
+ * keynames.
  */
 enum class KeyboardKey {
   Undefined = -1,

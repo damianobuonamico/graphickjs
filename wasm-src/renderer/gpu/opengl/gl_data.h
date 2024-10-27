@@ -62,26 +62,25 @@ GLenum gl_stencil_func(StencilFunc func);
 
 /**
  * @brief The OpenGL uniform object.
- *
- * @struct GLUniform
  */
 struct GLUniform {
   GLint location;
 
-  bool operator==(const GLUniform& other) const { return location == other.location; }
+  bool operator==(const GLUniform &other) const
+  {
+    return location == other.location;
+  }
 
   /**
    * @brief Sets the data to the uniform.
    *
    * @param data The data to set.
    */
-  void set(const UniformData& data) const;
+  void set(const UniformData &data) const;
 };
 
 /**
  * @brief The OpenGL texture uniform object.
- *
- * @struct GLTextureUniform
  */
 struct GLTextureUniform {
   GLUniform uniform;  // The uniform.
@@ -90,8 +89,6 @@ struct GLTextureUniform {
 
 /**
  * @brief The OpenGL array of textures uniform object.
- *
- * @struct GLTexturesUniform
  */
 struct GLTexturesUniform {
   GLUniform uniform;          // The uniform.
@@ -100,8 +97,6 @@ struct GLTexturesUniform {
 
 /**
  * @brief The OpenGL program object.
- *
- * @struct GLProgram
  */
 struct GLProgram {
   GLuint gl_program;                // The OpenGL underlying program.
@@ -118,8 +113,6 @@ struct GLProgram {
 
 /**
  * @brief The OpenGL vertex attribute.
- *
- * @struct GLVertexAttribute
  */
 struct GLVertexAttribute {
   GLuint attribute;  // The underlying vertex attribute.
@@ -127,8 +120,6 @@ struct GLVertexAttribute {
 
 /**
  * @brief The OpenGL vertex array object.
- *
- * @struct GLVertexArray
  */
 struct GLVertexArray {
   GLuint gl_vertex_array;  // The OpenGL underlying vertex array.
@@ -152,13 +143,11 @@ struct GLVertexArray {
    * @param attr The attribute to configure.
    * @param desc The attribute descriptor.
    */
-  void configure_attribute(const GLVertexAttribute attr, const VertexAttrDescriptor& desc) const;
+  void configure_attribute(const GLVertexAttribute attr, const VertexAttrDescriptor &desc) const;
 };
 
 /**
  * @brief The OpenGL texture object.
- *
- * @struct GLTexture
  */
 struct GLTexture {
   TextureFormat format;  // The texture format.
@@ -167,12 +156,10 @@ struct GLTexture {
 
   int sampling_flags;    // The texture sampling flags.
 
-  GLTexture(
-    const TextureFormat format,
-    const ivec2 size,
-    const int sampling_flags = TextureSamplingFlagNone,
-    const void* data = nullptr
-  );
+  GLTexture(const TextureFormat format,
+            const ivec2 size,
+            const int sampling_flags = TextureSamplingFlagNone,
+            const void *data = nullptr);
   ~GLTexture();
 
   /**
@@ -202,7 +189,7 @@ struct GLTexture {
    * @param data The data to upload.
    * @param region The region to upload the data to.
    */
-  void upload(const void* data, const irect region) const;
+  void upload(const void *data, const irect region) const;
 
   /**
    * @brief Uploads the data to the texture, treating it as a 1D buffer.
@@ -211,13 +198,11 @@ struct GLTexture {
    * @param byte_size The size of the data in bytes.
    * @param offset The offset to upload the data to.
    */
-  void upload(const void* data, const size_t byte_size, const size_t offset = 0) const;
+  void upload(const void *data, const size_t byte_size, const size_t offset = 0) const;
 };
 
 /**
  * @brief The OpenGL framebuffer object.
- *
- * @struct GLFramebuffer
  */
 struct GLFramebuffer {
   GLTexture texture;       // The texture to render to.
@@ -230,18 +215,21 @@ struct GLFramebuffer {
   GLFramebuffer(const ivec2 size, const bool has_depth);
   ~GLFramebuffer();
 
-  GLFramebuffer(const GLFramebuffer&) = delete;
-  GLFramebuffer& operator=(const GLFramebuffer&) = delete;
+  GLFramebuffer(const GLFramebuffer &) = delete;
+  GLFramebuffer &operator=(const GLFramebuffer &) = delete;
 
-  GLFramebuffer(GLFramebuffer&& other) noexcept;
-  GLFramebuffer& operator=(GLFramebuffer&& other) noexcept;
+  GLFramebuffer(GLFramebuffer &&other) noexcept;
+  GLFramebuffer &operator=(GLFramebuffer &&other) noexcept;
 
   /**
    * @brief Returns the size of the framebuffer.
    *
    * @return The size of the framebuffer.
    */
-  inline ivec2 size() const { return texture.size; }
+  inline ivec2 size() const
+  {
+    return texture.size;
+  }
 
   /**
    * @brief Binds the framebuffer.
@@ -263,8 +251,6 @@ struct GLFramebuffer {
 
 /**
  * @brief The OpenGL buffer object.
- *
- * @struct GLBuffer
  */
 struct GLBuffer {
   BufferUploadMode mode;  // The buffer upload mode.
@@ -272,7 +258,10 @@ struct GLBuffer {
   GLuint gl_buffer;       // The OpenGL underlying buffer.
   size_t size;            // The size of the buffer in bytes.
 
-  GLBuffer(const BufferTarget target, const BufferUploadMode mode, const size_t size, const void* data = nullptr);
+  GLBuffer(const BufferTarget target,
+           const BufferUploadMode mode,
+           const size_t size,
+           const void *data = nullptr);
   ~GLBuffer();
 
   /**
@@ -285,7 +274,7 @@ struct GLBuffer {
    *
    * @param vertex_array The vertex array to bind the buffer to.
    */
-  void bind(const GLVertexArray& vertex_array) const;
+  void bind(const GLVertexArray &vertex_array) const;
 
   /**
    * @brief Unbinds the buffer.
@@ -299,7 +288,7 @@ struct GLBuffer {
    * @param size The size of the data in bytes.
    * @param offset The offset to upload the data to.
    */
-  void upload(const void* data, const size_t size, const size_t offset = 0) const;
+  void upload(const void *data, const size_t size, const size_t offset = 0) const;
 };
 
 }  // namespace graphick::renderer::GPU::GL

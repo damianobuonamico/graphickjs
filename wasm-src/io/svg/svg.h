@@ -18,7 +18,7 @@ namespace graphick::io::svg {
  * @param svg The SVG string to parse.
  * @return true if the SVG was parsed successfully, false otherwise.
  */
-bool parse_svg(const std::string& svg);
+bool parse_svg(const std::string &svg);
 
 /**
  * @brief Parse an SVG string and add the elements to the scene.
@@ -26,6 +26,6 @@ bool parse_svg(const std::string& svg);
  * @param svg The SVG string to parse.
  * @return true if the SVG was parsed successfully, false otherwise.
  */
-bool parse_svg(const char* svg);
+bool parse_svg(const char *svg);
 
 }  // namespace graphick::io::svg

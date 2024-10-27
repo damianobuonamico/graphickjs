@@ -20,33 +20,35 @@ namespace graphick::editor::input {
 /**
  * @brief Translates a control point of a path using the pen or direct selection tool.
  *
- * If create_handles is true, even if the control point provided is a vertex, it's incoming and outgoing handles will be
- * translated.
+ * If create_handles is true, even if the control point provided is a vertex, it's incoming and
+ * outgoing handles will be translated.
  *
  * @param path The path to move the control point on.
  * @param point_index The control point to move.
  * @param transform The transformation matrix of the element containing the path.
- * @param override_movement A pointer to a vec2 used to override the movement of the control point, default is nullptr.
- * @param create_handles Whether to create handles if not present when moving the control point, default is false.
- * @param keep_in_handle_length Whether to keep the length of the incoming handle when moving the control point, default is true.
- * @param translate_in_first Whether to translate the incoming handle first, and in case calculate the outgoing handle
- * accordingly, default is false.
- * @param direction A pointer to an integer that will be set to the direction of the move (1 for forward, -1 for backward),
+ * @param override_movement A pointer to a vec2 used to override the movement of the control point,
  * default is nullptr.
- * @param in_use_handle A pointer to a History::Vec2Value object that will be set to the handle that is currently in use (out
- * handle), default is nullptr.
- * @return The update point index (i.e. a segment was converted from linear to cubic, so two points were added).
+ * @param create_handles Whether to create handles if not present when moving the control point,
+ * default is false.
+ * @param keep_in_handle_length Whether to keep the length of the incoming handle when moving the
+ * control point, default is true.
+ * @param translate_in_first Whether to translate the incoming handle first, and in case calculate
+ * the outgoing handle accordingly, default is false.
+ * @param direction A pointer to an integer that will be set to the direction of the move (1 for
+ * forward, -1 for backward), default is nullptr.
+ * @param in_use_handle A pointer to a History::Vec2Value object that will be set to the handle
+ * that is currently in use (out handle), default is nullptr.
+ * @return The update point index (i.e. a segment was converted from linear to cubic, so two points
+ * were added).
  */
-size_t translate_control_point(
-  PathComponent& path,
-  const size_t point_index,
-  const mat2x3& transform,
-  const vec2* override_movement = nullptr,
-  bool create_handles = false,
-  bool keep_in_handle_length = true,
-  bool translate_in_first = false,
-  int* direction = nullptr
-);
+size_t translate_control_point(PathComponent &path,
+                               const size_t point_index,
+                               const mat2x3 &transform,
+                               const vec2 *override_movement = nullptr,
+                               bool create_handles = false,
+                               bool keep_in_handle_length = true,
+                               bool translate_in_first = false,
+                               int *direction = nullptr);
 
 /**
  * @brief A class representing a selection rectangle.
@@ -54,15 +56,14 @@ size_t translate_control_point(
  * This class is used to represent a rectangular selection in the editor.
  * It is used by various tools to determine the area of the canvas that
  * should be affected by the tool's operation.
- *
- * @class SelectionRect
  */
 class SelectionRect {
-public:
+ public:
   /**
    * @brief Constructs a SelectionRect object.
    *
-   * @param dashed A boolean value indicating whether the selection rectangle should be dashed or not.
+   * @param dashed A boolean value indicating whether the selection rectangle should be dashed or
+   * not.
    */
   SelectionRect(bool dashed = false);
 
@@ -71,14 +72,14 @@ public:
    *
    * @param other The SelectionRect object to copy.
    */
-  SelectionRect(const SelectionRect& other) = default;
+  SelectionRect(const SelectionRect &other) = default;
 
   /**
    * @brief Move constructor for SelectionRect.
    *
    * @param other The SelectionRect object to move from.
    */
-  SelectionRect(SelectionRect&&) = default;
+  SelectionRect(SelectionRect &&) = default;
 
   /**
    * @brief Default destructor for SelectionRect.
@@ -90,21 +91,30 @@ public:
    *
    * @return A boolean value indicating whether the selection rectangle is active or not.
    */
-  inline bool active() const { return m_active; }
+  inline bool active() const
+  {
+    return m_active;
+  }
 
   /**
    * @brief Returns the position of the selection rectangle.
    *
    * @return A vec2 object representing the position of the selection rectangle.
    */
-  inline vec2 position() const { return m_position; }
+  inline vec2 position() const
+  {
+    return m_position;
+  }
 
   /**
    * @brief Returns the path of the selection rectangle.
    *
    * @return A geom::path object representing the path of the selection rectangle.
    */
-  inline const geom::path& path() const { return m_path; }
+  inline const geom::path &path() const
+  {
+    return m_path;
+  }
 
   /**
    * @brief Returns the transform matrix of the selection rectangle.
@@ -132,20 +142,27 @@ public:
    *
    * @param size A vec2 object representing the new size of the selection rectangle.
    */
-  inline void size(const vec2 size) { m_size = size; }
+  inline void size(const vec2 size)
+  {
+    m_size = size;
+  }
 
   /**
    * @brief Sets the angle of the selection rectangle.
    *
    * @param angle A float value representing the new angle of the selection rectangle.
    */
-  inline void angle(const float angle) { m_angle = angle; }
+  inline void angle(const float angle)
+  {
+    m_angle = angle;
+  }
 
   /**
    * @brief Resets the selection rectangle to its default state.
    */
   void reset();
-protected:
+
+ protected:
   bool m_dashed = false;      /* Whether should be dashed or not. */
   bool m_active = false;      /* Whether is active or not. */
 
@@ -158,9 +175,10 @@ protected:
 };
 
 class Manipulator : public SelectionRect {
-public:
+ public:
   /**
-   * @brief An enum class representing the different types of handles that can be used to transform an entity.
+   * @brief An enum class representing the different types of handles that can be used to transform
+   * an entity.
    */
   enum HandleType {
     /* Edge scale handles. */
@@ -189,25 +207,26 @@ public:
 
     HandleNone
   };
-public:
+
+ public:
   /**
    * @brief Constructs a Manipulator object.
    */
-  Manipulator() : SelectionRect(false) { }
+  Manipulator() : SelectionRect(false) {}
 
   /**
    * @brief Copy constructor for Manipulator.
    *
    * @param other The Manipulator object to copy.
    */
-  Manipulator(const Manipulator& other) = default;
+  Manipulator(const Manipulator &other) = default;
 
   /**
    * @brief Move constructor for Manipulator.
    *
    * @param other The Manipulator object to move from.
    */
-  Manipulator(Manipulator&&) = default;
+  Manipulator(Manipulator &&) = default;
 
   /**
    * @brief Default destructor for Manipulator.
@@ -219,14 +238,21 @@ public:
    *
    * @return true if the tool is in use, false otherwise.
    */
-  inline bool in_use() const { return m_in_use; }
+  inline bool in_use() const
+  {
+    return m_in_use;
+  }
 
   /**
    * @brief Returns the positions of the manipulator handles.
    *
-   * @return An array of vec2 objects representing the positions of the handles, it's size is equal to HandleNone.
+   * @return An array of vec2 objects representing the positions of the handles, it's size is equal
+   * to HandleNone.
    */
-  inline const vec2* handles() const { return m_handles; }
+  inline const vec2 *handles() const
+  {
+    return m_handles;
+  }
 
   /**
    * @brief Updates the state of the manipulator.
@@ -263,13 +289,14 @@ public:
    * @return A boolean value indicating whether the event was handled or not.
    */
   bool on_key(const bool down, const KeyboardKey key);
-private:
+
+ private:
   /**
    * @brief Updates the positions of the handles.
    *
    * @param bounding_rect The target bounding rectangle of the manipulator.
    */
-  void update_positions(const rrect& bounding_rect);
+  void update_positions(const rrect &bounding_rect);
 
   /**
    * @brief Scale pointer move event handler.
@@ -284,7 +311,8 @@ private:
    * If the shift key is pressed, rotation snapping is triggered.
    */
   void on_rotate_pointer_move();
-private:
+
+ private:
   std::vector<mat2x3> m_cache;   // The cache of the transform matrices.
   vec2 m_handles[HandleNone];    // The positions of the handles.
   float m_threshold = 0.0f;      // The virtual size of the handles.

@@ -30,7 +30,8 @@
 
 namespace graphick::io::svg {
 
-static const char* rtrim(const char* start, const char* end) {
+static const char *rtrim(const char *start, const char *end)
+{
   while (end > start && IS_WS(end[-1])) {
     end--;
   }
@@ -38,14 +39,17 @@ static const char* rtrim(const char* start, const char* end) {
   return end;
 }
 
-static bool skip_desc(const char*& ptr, const char* end, char ch) {
-  if (ptr >= end || *ptr != ch) return false;
+static bool skip_desc(const char *&ptr, const char *end, char ch)
+{
+  if (ptr >= end || *ptr != ch)
+    return false;
 
   ptr++;
   return true;
 }
 
-static bool skip_desc(const char*& ptr, const char* end, const char* data) {
+static bool skip_desc(const char *&ptr, const char *end, const char *data)
+{
   int read = 0;
   while (data[read]) {
     if (ptr >= end || *ptr != data[read]) {
@@ -60,7 +64,8 @@ static bool skip_desc(const char*& ptr, const char* end, const char* data) {
   return true;
 }
 
-static bool skip_until(const char*& ptr, const char* end, char ch) {
+static bool skip_until(const char *&ptr, const char *end, char ch)
+{
   while (ptr < end && *ptr != ch) {
     ptr++;
   }
@@ -68,17 +73,20 @@ static bool skip_until(const char*& ptr, const char* end, char ch) {
   return ptr < end;
 }
 
-static bool skip_until(const char*& ptr, const char* end, const char* data) {
+static bool skip_until(const char *&ptr, const char *end, const char *data)
+{
   while (ptr < end) {
-    const char* start = ptr;
-    if (skip_desc(start, end, data)) break;
+    const char *start = ptr;
+    if (skip_desc(start, end, data))
+      break;
     ptr++;
   }
 
   return ptr < end;
 }
 
-static bool skip_ws(const char*& ptr, const char* end) {
+static bool skip_ws(const char *&ptr, const char *end)
+{
   while (ptr < end && IS_WS(*ptr)) {
     ptr++;
   }
@@ -86,8 +94,10 @@ static bool skip_ws(const char*& ptr, const char* end) {
   return ptr < end;
 }
 
-static bool skip_ws_delimiter(const char*& ptr, const char* end, const char delimiter) {
-  if (ptr < end && !IS_WS(*ptr) && *ptr != delimiter) return false;
+static bool skip_ws_delimiter(const char *&ptr, const char *end, const char delimiter)
+{
+  if (ptr < end && !IS_WS(*ptr) && *ptr != delimiter)
+    return false;
 
   if (skip_ws(ptr, end)) {
     if (ptr < end && *ptr == delimiter) {
@@ -99,12 +109,17 @@ static bool skip_ws_delimiter(const char*& ptr, const char* end, const char deli
   return ptr < end;
 }
 
-static bool skip_ws_comma(const char*& ptr, const char* end) { return skip_ws_delimiter(ptr, end, ','); }
+static bool skip_ws_comma(const char *&ptr, const char *end)
+{
+  return skip_ws_delimiter(ptr, end, ',');
+}
 
-static bool read_identifier(const char*& ptr, const char* end, std::string& value) {
-  if (ptr >= end || !IS_STARTNAMECHAR(*ptr)) return false;
+static bool read_identifier(const char *&ptr, const char *end, std::string &value)
+{
+  if (ptr >= end || !IS_STARTNAMECHAR(*ptr))
+    return false;
 
-  const char* start = ptr;
+  const char *start = ptr;
   ptr++;
 
   while (ptr < end && IS_NAMECHAR(*ptr)) {
@@ -115,20 +130,23 @@ static bool read_identifier(const char*& ptr, const char* end, std::string& valu
   return true;
 }
 
-inline bool is_integral_digit(char ch, int base) {
+inline bool is_integral_digit(char ch, int base)
+{
   if (IS_NUM(ch)) {
     return ch - '0' < base;
   }
 
   if (IS_ALPHA(ch)) {
-    return (ch >= 'a' && ch < 'a' + std::min(base, 36) - 10) || (ch >= 'A' && ch < 'A' + std::min(base, 36) - 10);
+    return (ch >= 'a' && ch < 'a' + std::min(base, 36) - 10) ||
+           (ch >= 'A' && ch < 'A' + std::min(base, 36) - 10);
   }
 
   return false;
 }
 
-template <typename I>
-static bool parse_integer(const char*& ptr, const char* end, I& integer, int base = 10) {
+template<typename I>
+static bool parse_integer(const char *&ptr, const char *end, I &integer, int base = 10)
+{
   bool is_negative = 0;
   I value = 0;
 
@@ -144,7 +162,8 @@ static bool parse_integer(const char*& ptr, const char* end, I& integer, int bas
     is_negative = true;
   }
 
-  if (ptr >= end || !is_integral_digit(*ptr, base)) return false;
+  if (ptr >= end || !is_integral_digit(*ptr, base))
+    return false;
 
   while (ptr < end && is_integral_digit(*ptr, base)) {
     const char ch = *ptr++;
@@ -159,7 +178,8 @@ static bool parse_integer(const char*& ptr, const char* end, I& integer, int bas
     }
 
     if (value > max_multiplier ||
-        (value == max_multiplier && static_cast<I>(digit_value) > (int_max % static_cast<I>(base)) + is_negative))
+        (value == max_multiplier &&
+         static_cast<I>(digit_value) > (int_max % static_cast<I>(base)) + is_negative))
       return false;
     value = static_cast<I>(base) * value + static_cast<I>(digit_value);
 
@@ -173,8 +193,9 @@ static bool parse_integer(const char*& ptr, const char* end, I& integer, int bas
   return true;
 }
 
-template <typename I>
-static bool parse_number(const char*& ptr, const char* end, I& number) {
+template<typename I>
+static bool parse_number(const char *&ptr, const char *end, I &number)
+{
   I integer, fraction;
   int sign, expsign, exponent;
 
@@ -192,7 +213,8 @@ static bool parse_number(const char*& ptr, const char* end, I& number) {
     sign = -1;
   }
 
-  if (ptr >= end || !(IS_NUM(*ptr) || *ptr == '.')) return false;
+  if (ptr >= end || !(IS_NUM(*ptr) || *ptr == '.'))
+    return false;
 
   if (*ptr != '.') {
     while (ptr < end && IS_NUM(*ptr)) {
@@ -203,7 +225,8 @@ static bool parse_number(const char*& ptr, const char* end, I& number) {
 
   if (ptr < end && *ptr == '.') {
     ++ptr;
-    if (ptr >= end || !IS_NUM(*ptr)) return false;
+    if (ptr >= end || !IS_NUM(*ptr))
+      return false;
 
     I divisor = 1;
 
@@ -225,7 +248,8 @@ static bool parse_number(const char*& ptr, const char* end, I& number) {
       expsign = -1;
     }
 
-    if (ptr >= end || !IS_NUM(*ptr)) return false;
+    if (ptr >= end || !IS_NUM(*ptr))
+      return false;
 
     while (ptr < end && IS_NUM(*ptr)) {
       exponent = 10 * exponent + (*ptr - '0');
@@ -241,16 +265,19 @@ static bool parse_number(const char*& ptr, const char* end, I& number) {
   return number >= -number_max && number <= number_max;
 }
 
-static bool parse_number_list(const char*& ptr, const char* end, float* values, int count) {
+static bool parse_number_list(const char *&ptr, const char *end, float *values, int count)
+{
   for (int i = 0; i < count; i++) {
-    if (!parse_number(ptr, end, values[i])) return false;
+    if (!parse_number(ptr, end, values[i]))
+      return false;
     skip_ws_comma(ptr, end);
   }
 
   return true;
 }
 
-static bool parse_arc_flag(const char*& ptr, const char* end, bool& flag) {
+static bool parse_arc_flag(const char *&ptr, const char *end, bool &flag)
+{
   if (ptr < end && *ptr == '0') {
     flag = false;
   } else if (ptr < end && *ptr == '1') {
@@ -264,7 +291,8 @@ static bool parse_arc_flag(const char*& ptr, const char* end, bool& flag) {
   return true;
 }
 
-static bool decode_text(const char* ptr, const char* end, std::string& value) {
+static bool decode_text(const char *ptr, const char *end, std::string &value)
+{
   value.clear();
 
   while (ptr < end) {
@@ -283,7 +311,8 @@ static bool decode_text(const char* ptr, const char* end, std::string& value) {
       }
 
       unsigned int cp;
-      if (!parse_integer(ptr, end, cp, base)) return false;
+      if (!parse_integer(ptr, end, cp, base))
+        return false;
 
       char c[5] = {0, 0, 0, 0, 0};
       if (cp < 0x80) {
@@ -329,19 +358,22 @@ static bool decode_text(const char* ptr, const char* end, std::string& value) {
       }
     }
 
-    if (!skip_desc(ptr, end, ';')) return false;
+    if (!skip_desc(ptr, end, ';'))
+      return false;
   }
 
   return true;
 }
 
-static geom::path parse_path(const std::string& string) {
-  const char* ptr = string.data();
-  const char* end = ptr + string.size();
+static geom::path parse_path(const std::string &string)
+{
+  const char *ptr = string.data();
+  const char *end = ptr + string.size();
 
   geom::path path{};
 
-  if (ptr >= end || !(*ptr == 'M' || *ptr == 'm')) return path;
+  if (ptr >= end || !(*ptr == 'M' || *ptr == 'm'))
+    return path;
 
   char command = *ptr++;
   char last_command = command;
@@ -355,7 +387,8 @@ static geom::path parse_path(const std::string& string) {
     skip_ws(ptr, end);
 
     if (command == 'M' || command == 'm') {
-      if (!parse_number_list(ptr, end, c, 2)) return path;
+      if (!parse_number_list(ptr, end, c, 2))
+        return path;
 
       if (command == 'm') {
         c[0] += current_point.x;
@@ -370,7 +403,8 @@ static geom::path parse_path(const std::string& string) {
       start_point.y = current_point.y = c[1];
       command = command == 'm' ? 'l' : 'L';
     } else if (command == 'L' || command == 'l') {
-      if (!parse_number_list(ptr, end, c, 2)) return path;
+      if (!parse_number_list(ptr, end, c, 2))
+        return path;
 
       if (command == 'l') {
         c[0] += current_point.x;
@@ -384,9 +418,11 @@ static geom::path parse_path(const std::string& string) {
       current_point.x = c[0];
       current_point.y = c[1];
     } else if (command == 'H' || command == 'h') {
-      if (!parse_number_list(ptr, end, c, 1)) return path;
+      if (!parse_number_list(ptr, end, c, 1))
+        return path;
 
-      if (command == 'h') c[0] += current_point.x;
+      if (command == 'h')
+        c[0] += current_point.x;
 
       // path.lineTo(c[0], current_point.y);
       path.line_to({c[0], current_point.y});
@@ -394,9 +430,11 @@ static geom::path parse_path(const std::string& string) {
       // vertices.push_back(std::make_pair(vertex->id, vertex));
       current_point.x = c[0];
     } else if (command == 'V' || command == 'v') {
-      if (!parse_number_list(ptr, end, c + 1, 1)) return path;
+      if (!parse_number_list(ptr, end, c + 1, 1))
+        return path;
 
-      if (command == 'v') c[1] += current_point.y;
+      if (command == 'v')
+        c[1] += current_point.y;
 
       // path.lineTo(current_point.x, c[1]);
       path.line_to({current_point.x, c[1]});
@@ -404,7 +442,8 @@ static geom::path parse_path(const std::string& string) {
       // vertices.push_back(std::make_pair(vertex->id, vertex));
       current_point.y = c[1];
     } else if (command == 'Q' || command == 'q') {
-      if (!parse_number_list(ptr, end, c, 4)) return path;
+      if (!parse_number_list(ptr, end, c, 4))
+        return path;
 
       if (command == 'q') {
         c[0] += current_point.x;
@@ -419,15 +458,17 @@ static geom::path parse_path(const std::string& string) {
       // float cx2 = 2.0 / 3.0 * c[0] + 1.0 / 3.0 * c[2];
       // float cy2 = 2.0 / 3.0 * c[1] + 1.0 / 3.0 * c[3];
       // path.quadTo(current_point.x, current_point.y, c[0], c[1], c[2], c[3]);
-      // vertices.back().second->set_right(vec2{ cx1, cy1 } - vec2{ current_point.x, current_point.y });
-      // auto vertex = std::make_shared<VertexEntity>(vec2{ c[2], c[3] }, vec2{ cx2, cy2 } - vec2{ c[2], c[3] }, true);
-      // vertices.push_back(std::make_pair(vertex->id, vertex));
+      // vertices.back().second->set_right(vec2{ cx1, cy1 } - vec2{ current_point.x,
+      // current_point.y }); auto vertex = std::make_shared<VertexEntity>(vec2{ c[2], c[3] }, vec2{
+      // cx2, cy2 } - vec2{ c[2], c[3] }, true); vertices.push_back(std::make_pair(vertex->id,
+      // vertex));
       control_point.x = c[0];
       control_point.y = c[1];
       current_point.x = c[2];
       current_point.y = c[3];
     } else if (command == 'C' || command == 'c') {
-      if (!parse_number_list(ptr, end, c, 6)) return path;
+      if (!parse_number_list(ptr, end, c, 6))
+        return path;
 
       if (command == 'c') {
         c[0] += current_point.x;
@@ -440,15 +481,17 @@ static geom::path parse_path(const std::string& string) {
 
       path.cubic_to({c[0], c[1]}, {c[2], c[3]}, {c[4], c[5]});
       // path.cubicTo(c[0], c[1], c[2], c[3], c[4], c[5]);
-      // vertices.back().second->set_right(vec2{ c[0], c[1] } - vec2{ current_point.x, current_point.y });
-      // auto vertex = std::make_shared<VertexEntity>(vec2{ c[4], c[5] }, vec2{ c[2], c[3] } - vec2{ c[4], c[5] }, true);
-      // vertices.push_back(std::make_pair(vertex->id, vertex));
+      // vertices.back().second->set_right(vec2{ c[0], c[1] } - vec2{ current_point.x,
+      // current_point.y }); auto vertex = std::make_shared<VertexEntity>(vec2{ c[4], c[5] }, vec2{
+      // c[2], c[3] } - vec2{ c[4], c[5] }, true); vertices.push_back(std::make_pair(vertex->id,
+      // vertex));
       control_point.x = c[2];
       control_point.y = c[3];
       current_point.x = c[4];
       current_point.y = c[5];
     } else if (command == 'T' || command == 't') {
-      if (last_command != 'Q' && last_command != 'q' && last_command != 'T' && last_command != 't') {
+      if (last_command != 'Q' && last_command != 'q' && last_command != 'T' && last_command != 't')
+      {
         c[0] = current_point.x;
         c[1] = current_point.y;
       } else {
@@ -456,7 +499,8 @@ static geom::path parse_path(const std::string& string) {
         c[1] = 2 * current_point.y - control_point.y;
       }
 
-      if (!parse_number_list(ptr, end, c + 2, 2)) return path;
+      if (!parse_number_list(ptr, end, c + 2, 2))
+        return path;
 
       if (command == 't') {
         c[2] += current_point.x;
@@ -469,15 +513,17 @@ static geom::path parse_path(const std::string& string) {
       // float cx2 = 2.0 / 3.0 * c[0] + 1.0 / 3.0 * c[2];
       // float cy2 = 2.0 / 3.0 * c[1] + 1.0 / 3.0 * c[3];
       // path.quadTo(current_point.x, current_point.y, c[0], c[1], c[2], c[3]);
-      // vertices.back().second->set_right(vec2{ cx1, cy1 } - vec2{ current_point.x, current_point.y });
-      // auto vertex = std::make_shared<VertexEntity>(vec2{ c[2], c[3] }, vec2{ cx2, cy2 } - vec2{ c[2], c[3] }, true);
-      // vertices.push_back(std::make_pair(vertex->id, vertex));
+      // vertices.back().second->set_right(vec2{ cx1, cy1 } - vec2{ current_point.x,
+      // current_point.y }); auto vertex = std::make_shared<VertexEntity>(vec2{ c[2], c[3] }, vec2{
+      // cx2, cy2 } - vec2{ c[2], c[3] }, true); vertices.push_back(std::make_pair(vertex->id,
+      // vertex));
       control_point.x = c[0];
       control_point.y = c[1];
       current_point.x = c[2];
       current_point.y = c[3];
     } else if (command == 'S' || command == 's') {
-      if (last_command != 'C' && last_command != 'c' && last_command != 'S' && last_command != 's') {
+      if (last_command != 'C' && last_command != 'c' && last_command != 'S' && last_command != 's')
+      {
         c[0] = current_point.x;
         c[1] = current_point.y;
       } else {
@@ -485,7 +531,8 @@ static geom::path parse_path(const std::string& string) {
         c[1] = 2 * current_point.y - control_point.y;
       }
 
-      if (!parse_number_list(ptr, end, c + 2, 4)) return path;
+      if (!parse_number_list(ptr, end, c + 2, 4))
+        return path;
 
       if (command == 's') {
         c[2] += current_point.x;
@@ -496,16 +543,17 @@ static geom::path parse_path(const std::string& string) {
 
       path.cubic_to({c[0], c[1]}, {c[2], c[3]}, {c[4], c[5]});
       // path.cubicTo(c[0], c[1], c[2], c[3], c[4], c[5]);
-      // vertices.back().second->set_right(vec2{ c[0], c[1] } - vec2{ current_point.x, current_point.y });
-      // auto vertex = std::make_shared<VertexEntity>(vec2{ c[4], c[5] }, vec2{ c[2], c[3] } - vec2{ c[4], c[5] }, true);
-      // vertices.push_back(std::make_pair(vertex->id, vertex));
+      // vertices.back().second->set_right(vec2{ c[0], c[1] } - vec2{ current_point.x,
+      // current_point.y }); auto vertex = std::make_shared<VertexEntity>(vec2{ c[4], c[5] }, vec2{
+      // c[2], c[3] } - vec2{ c[4], c[5] }, true); vertices.push_back(std::make_pair(vertex->id,
+      // vertex));
       control_point.x = c[2];
       control_point.y = c[3];
       current_point.x = c[4];
       current_point.y = c[5];
     } else if (command == 'A' || command == 'a') {
-      if (!parse_number_list(ptr, end, c, 3) || !parse_arc_flag(ptr, end, f[0]) || !parse_arc_flag(ptr, end, f[1]) ||
-          !parse_number_list(ptr, end, c + 3, 2))
+      if (!parse_number_list(ptr, end, c, 3) || !parse_arc_flag(ptr, end, f[0]) ||
+          !parse_arc_flag(ptr, end, f[1]) || !parse_number_list(ptr, end, c + 3, 2))
         return path;
       // if (!parse_number_list(ptr, end, c, 3)) return path;
 
@@ -514,7 +562,8 @@ static geom::path parse_path(const std::string& string) {
         c[4] += current_point.y;
       }
 
-      path.arc_to({current_point.x, current_point.y}, {c[0], c[1]}, c[2], f[0], f[1], {c[3], c[4]});
+      path.arc_to(
+          {current_point.x, current_point.y}, {c[0], c[1]}, c[2], f[0], f[1], {c[3], c[4]});
       // path.arcTo(current_point.x, current_point.y, c[0], c[1], c[2], f[0], f[1], c[3], c[4]);
       current_point.x = c[3];
       current_point.y = c[4];
@@ -527,7 +576,8 @@ static geom::path parse_path(const std::string& string) {
     }
 
     skip_ws_comma(ptr, end);
-    if (ptr >= end) break;
+    if (ptr >= end)
+      break;
 
     last_command = command;
     if (IS_ALPHA(*ptr)) {
@@ -538,9 +588,10 @@ static geom::path parse_path(const std::string& string) {
   return path;
 }
 
-bool parse_svg(const char* svg) {
-  const char* ptr = svg;
-  const char* end = svg + strlen(svg);
+bool parse_svg(const char *svg)
+{
+  const char *ptr = svg;
+  const char *end = svg + strlen(svg);
 
   std::string name;
   std::string value;
@@ -548,7 +599,7 @@ bool parse_svg(const char* svg) {
   std::vector<vec4> fill_colors = {{0.0f, 0.0f, 0.0f, 0.0f}};
   std::vector<vec4> stroke_colors = {{0.0f, 0.0f, 0.0f, 0.0f}};
 
-  auto remove_comments = [](std::string& value) {
+  auto remove_comments = [](std::string &value) {
     size_t start = value.find("/*");
     while (start != std::string::npos) {
       size_t end = value.find("*/", start + 2);
@@ -557,8 +608,9 @@ bool parse_svg(const char* svg) {
     }
   };
 
-  auto handle_text = [&](const char* start, const char* end, bool in_cdata) {
-    if (ignoring > 0) return;
+  auto handle_text = [&](const char *start, const char *end, bool in_cdata) {
+    if (ignoring > 0)
+      return;
 
     if (in_cdata) {
       value.assign(start, end);
@@ -571,8 +623,9 @@ bool parse_svg(const char* svg) {
   };
 
   while (ptr < end) {
-    const char* start = ptr;
-    if (!skip_until(ptr, end, '<')) break;
+    const char *start = ptr;
+    if (!skip_until(ptr, end, '<'))
+      break;
 
     handle_text(start, ptr, false);
     ptr++;
@@ -581,7 +634,8 @@ bool parse_svg(const char* svg) {
       // if (current == nullptr && ignoring == 0) return false;
 
       ptr++;
-      if (!read_identifier(ptr, end, name)) return false;
+      if (!read_identifier(ptr, end, name))
+        return false;
 
       if (name == "g") {
         fill_colors.pop_back();
@@ -589,7 +643,8 @@ bool parse_svg(const char* svg) {
       }
 
       skip_ws(ptr, end);
-      if (ptr >= end || *ptr != '>') return false;
+      if (ptr >= end || *ptr != '>')
+        return false;
 
       if (ignoring > 0) {
         ignoring--;
@@ -604,8 +659,10 @@ bool parse_svg(const char* svg) {
     if (ptr < end && *ptr == '?') {
       ptr++;
 
-      if (!read_identifier(ptr, end, name)) return false;
-      if (!skip_until(ptr, end, "?>")) return false;
+      if (!read_identifier(ptr, end, name))
+        return false;
+      if (!skip_until(ptr, end, "?>"))
+        return false;
 
       ptr += 2;
       continue;
@@ -616,7 +673,8 @@ bool parse_svg(const char* svg) {
 
       if (skip_desc(ptr, end, "--")) {
         start = ptr;
-        if (!skip_until(ptr, end, "-->")) return false;
+        if (!skip_until(ptr, end, "-->"))
+          return false;
 
         handle_text(start, ptr, false);
         ptr += 3;
@@ -626,7 +684,8 @@ bool parse_svg(const char* svg) {
       if (skip_desc(ptr, end, "[CDATA[")) {
         start = ptr;
 
-        if (!skip_until(ptr, end, "]]>")) return false;
+        if (!skip_until(ptr, end, "]]>"))
+          return false;
 
         handle_text(start, ptr, true);
         ptr += 3;
@@ -640,8 +699,10 @@ bool parse_svg(const char* svg) {
             int depth = 1;
 
             while (ptr < end && depth > 0) {
-              if (*ptr == '[') depth++;
-              if (*ptr == ']') depth--;
+              if (*ptr == '[')
+                depth++;
+              if (*ptr == ']')
+                depth--;
               ptr++;
             }
           } else {
@@ -649,7 +710,8 @@ bool parse_svg(const char* svg) {
           }
         }
 
-        if (ptr >= end || *ptr != '>') return false;
+        if (ptr >= end || *ptr != '>')
+          return false;
 
         ptr++;
         continue;
@@ -658,7 +720,8 @@ bool parse_svg(const char* svg) {
       return false;
     }
 
-    if (!read_identifier(ptr, end, name)) return false;
+    if (!read_identifier(ptr, end, name))
+      return false;
 
     if (name == "g") {
       fill_colors.push_back({0.0f, 0.0f, 0.0f, 0.0f});
@@ -669,12 +732,14 @@ bool parse_svg(const char* svg) {
     skip_ws(ptr, end);
     while (ptr < end && read_identifier(ptr, end, name)) {
       skip_ws(ptr, end);
-      if (ptr >= end || *ptr != '=') return false;
+      if (ptr >= end || *ptr != '=')
+        return false;
 
       ptr++;
       skip_ws(ptr, end);
 
-      if (ptr >= end || !(*ptr == '\"' || *ptr == '\'')) return false;
+      if (ptr >= end || !(*ptr == '\"' || *ptr == '\''))
+        return false;
 
       char quote = *ptr;
       ptr++;
@@ -686,9 +751,11 @@ bool parse_svg(const char* svg) {
         ptr++;
       }
 
-      if (ptr >= end || *ptr != quote) return false;
+      if (ptr >= end || *ptr != quote)
+        return false;
 
-      if (!skip_until(ptr, end, quote)) return false;
+      if (!skip_until(ptr, end, quote))
+        return false;
 
       if (name == "fill" || name == "stroke") {
         decode_text(start, rtrim(start, ptr), value);
@@ -723,8 +790,10 @@ bool parse_svg(const char* svg) {
           ss.clear();
         }
 
-        if (name == "fill") fill_colors.back() = {r / 255.0f, g / 255.0f, b / 255.0f, 1.0f};
-        else stroke_colors.back() = {r / 255.0f, g / 255.0f, b / 255.0f, 1.0f};
+        if (name == "fill")
+          fill_colors.back() = {r / 255.0f, g / 255.0f, b / 255.0f, 1.0f};
+        else
+          stroke_colors.back() = {r / 255.0f, g / 255.0f, b / 255.0f, 1.0f};
       }
       if (name == "d") {
         // if (fill_colors.back() != vec4{ 0.0f, 0.0f, 0.0f, 1.0f }) {
@@ -734,8 +803,8 @@ bool parse_svg(const char* svg) {
         // History::CommandHistory::enable();
 
         if (!path.empty()) {
-          /*if (!path.closed() && math::is_almost_equal(path.front().p0, path.back().p3, GK_POINT_EPSILON)) {
-            path.close();
+          /*if (!path.closed() && math::is_almost_equal(path.front().p0, path.back().p3,
+          GK_POINT_EPSILON)) { path.close();
           }*/
 
           editor::Entity element = editor::Editor::scene().create_element(std::move(path));
@@ -757,6 +826,9 @@ bool parse_svg(const char* svg) {
   return true;
 }
 
-bool parse_svg(const std::string& svg) { return parse_svg(svg.c_str()); }
+bool parse_svg(const std::string &svg)
+{
+  return parse_svg(svg.c_str());
+}
 
 }  // namespace graphick::io::svg

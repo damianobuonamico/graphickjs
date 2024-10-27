@@ -6,9 +6,9 @@
 #pragma once
 
 #ifdef EMSCRIPTEN
-#include <GLES3/gl32.h>
+#  include <GLES3/gl32.h>
 #else
-#include <glad/glad.h>
+#  include <glad/glad.h>
 #endif
 
 #include "../../../utils/console.h"
@@ -17,7 +17,11 @@
 /**
  * @brief Clears all OpenGL errors.
  */
-static inline void glClearErrors() { while (glGetError() != GL_NO_ERROR); }
+static inline void glClearErrors()
+{
+  while (glGetError() != GL_NO_ERROR)
+    ;
+}
 
 /**
  * @brief Logs an OpenGL error.
@@ -26,7 +30,8 @@ static inline void glClearErrors() { while (glGetError() != GL_NO_ERROR); }
  * @param line The line that caused the error.
  * @return True if there was no error, false otherwise.
  */
-inline bool glLogCall(const char* function, int line) {
+inline bool glLogCall(const char *function, int line)
+{
   while (GLenum error = glGetError()) {
     std::stringstream ss;
     ss << "OpenGL Error: " << error << " " << function << " " << line;
@@ -38,17 +43,18 @@ inline bool glLogCall(const char* function, int line) {
   return true;
 }
 
-#ifdef _MSC_VER
-#define glCall(x)                                                                                                                \
-  glClearErrors();                                                                                                               \
-  x;                                                                                                                             \
-  if (!glLogCall(#x, __LINE__)) __debugbreak();
+#  ifdef _MSC_VER
+#    define glCall(x) \
+      glClearErrors(); \
+      x; \
+      if (!glLogCall(#x, __LINE__)) \
+        __debugbreak();
+#  else
+#    define glCall(x) \
+      glClearErrors(); \
+      x; \
+      glLogCall(#x, __LINE__)
+#  endif
 #else
-#define glCall(x)                                                                                                                \
-  glClearErrors();                                                                                                               \
-  x;                                                                                                                             \
-  glLogCall(#x, __LINE__)
-#endif
-#else
-#define glCall(x) x
+#  define glCall(x) x
 #endif

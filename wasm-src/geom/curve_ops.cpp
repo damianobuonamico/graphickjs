@@ -19,26 +19,28 @@ namespace graphick::geom {
 
 /* -- Cubic Bezier -- */
 
-template <typename T, typename _>
-bool CubicBezier<T, _>::is_point(const T tolerance) const {
-  return (
-    math::is_almost_equal(p0, p3, tolerance) && math::is_almost_equal(p0, p1, tolerance) &&
-    math::is_almost_equal(p0, p2, tolerance)
-  );
+template<typename T, typename _>
+bool CubicBezier<T, _>::is_point(const T tolerance) const
+{
+  return (math::is_almost_equal(p0, p3, tolerance) && math::is_almost_equal(p0, p1, tolerance) &&
+          math::is_almost_equal(p0, p2, tolerance));
 }
 
-template <typename T, typename _>
-bool CubicBezier<T, _>::is_line(const T tolerance) const {
+template<typename T, typename _>
+bool CubicBezier<T, _>::is_line(const T tolerance) const
+{
   return (math::is_almost_equal(p1, p2, tolerance) && math::is_almost_equal(p1, p3, tolerance));
 }
 
-template <typename T, typename _>
-math::Vec2<T> CubicBezier<T, _>::normal(const T t) const {
+template<typename T, typename _>
+math::Vec2<T> CubicBezier<T, _>::normal(const T t) const
+{
   return math::normalize(raw_normal(t));
 }
 
-template <typename T, typename _>
-Line<T> CubicBezier<T, _>::start_tangent() const {
+template<typename T, typename _>
+Line<T> CubicBezier<T, _>::start_tangent() const
+{
   if (math::is_almost_equal(p0, p1)) {
     if (math::is_almost_equal(p0, p2)) {
       return Line<T>(p0, p3);
@@ -50,8 +52,9 @@ Line<T> CubicBezier<T, _>::start_tangent() const {
   return Line<T>(p0, p1);
 }
 
-template <typename T, typename _>
-Line<T> CubicBezier<T, _>::end_tangent() const {
+template<typename T, typename _>
+Line<T> CubicBezier<T, _>::end_tangent() const
+{
   if (math::is_almost_equal(p2, p3)) {
     if (math::is_almost_equal(p1, p2)) {
       return Line<T>(p3, p0);
@@ -63,8 +66,9 @@ Line<T> CubicBezier<T, _>::end_tangent() const {
   return Line<T>(p3, p2);
 }
 
-template <typename T, typename _>
-math::Vec2<T> CubicBezier<T, _>::start_normal() const {
+template<typename T, typename _>
+math::Vec2<T> CubicBezier<T, _>::start_normal() const
+{
   if (math::is_almost_equal(p0, p1)) {
     if (math::is_almost_equal(p0, p2)) {
       return math::normal(p0, p3);
@@ -76,8 +80,9 @@ math::Vec2<T> CubicBezier<T, _>::start_normal() const {
   return math::normal(p0, p1);
 }
 
-template <typename T, typename _>
-math::Vec2<T> CubicBezier<T, _>::end_normal() const {
+template<typename T, typename _>
+math::Vec2<T> CubicBezier<T, _>::end_normal() const
+{
   if (math::is_almost_equal(p2, p3)) {
     if (math::is_almost_equal(p1, p2)) {
       return math::normal(p0, p3);
@@ -91,18 +96,21 @@ math::Vec2<T> CubicBezier<T, _>::end_normal() const {
 
 /* -- Line -- */
 
-template <typename T>
-math::Vec2<T> Line<T>::direction() const {
+template<typename T>
+math::Vec2<T> Line<T>::direction() const
+{
   return math::normalize(p1 - p0);
 }
 
-template <typename T>
-math::Vec2<T> Line<T>::normal() const {
+template<typename T>
+math::Vec2<T> Line<T>::normal() const
+{
   return math::normalize(raw_normal());
 }
 
-template <typename T>
-T Line<T>::angle() const {
+template<typename T>
+T Line<T>::angle() const
+{
   const math::Vec2<T> delta = p1 - p0;
 
   const T theta = std::atan2(-delta.y, delta.x);
@@ -120,15 +128,17 @@ T Line<T>::angle() const {
   return theta_norm;
 }
 
-template <typename T>
-T Line<T>::length() const {
+template<typename T>
+T Line<T>::length() const
+{
   return math::length(p1 - p0);
 }
 
 /* -- Curvature -- */
 
-template <typename T, typename _>
-math::CubicSolutions<T> max_curvature(const CubicBezier<T>& cubic) {
+template<typename T, typename _>
+math::CubicSolutions<T> max_curvature(const CubicBezier<T> &cubic)
+{
   // TODO: optimize and template
   const T axx = cubic.p1.x - cubic.p0.x;
   const T bxx = cubic.p2.x - T(2) * cubic.p1.x + cubic.p0.x;
@@ -156,8 +166,9 @@ math::CubicSolutions<T> max_curvature(const CubicBezier<T>& cubic) {
   return math::solve_cubic_normalized(coe0, coe1, coe2, coe3);
 }
 
-template <typename T, typename _>
-math::QuadraticSolutions<T> inflections(const CubicBezier<T>& cubic) {
+template<typename T, typename _>
+math::QuadraticSolutions<T> inflections(const CubicBezier<T> &cubic)
+{
   // TODO: optimize and template
   const T ax = cubic.p1.x - cubic.p0.x;
   const T ay = cubic.p1.y - cubic.p0.y;
@@ -171,36 +182,42 @@ math::QuadraticSolutions<T> inflections(const CubicBezier<T>& cubic) {
 
 /* -- Approximate Bounding Rectangle -- */
 
-template <>
-math::Rect<float> QuadraticBezier<float>::approx_bounding_rect() const {
+template<>
+math::Rect<float> QuadraticBezier<float>::approx_bounding_rect() const
+{
   return geom::approx_bounding_rect(*this);
 }
 
-template <>
-math::Rect<double> QuadraticBezier<double>::approx_bounding_rect() const {
+template<>
+math::Rect<double> QuadraticBezier<double>::approx_bounding_rect() const
+{
   return geom::approx_bounding_rect(*this);
 }
 
-template <>
-math::Rect<float> CubicBezier<float>::approx_bounding_rect() const {
+template<>
+math::Rect<float> CubicBezier<float>::approx_bounding_rect() const
+{
   return geom::approx_bounding_rect(*this);
 }
 
-template <>
-math::Rect<double> CubicBezier<double>::approx_bounding_rect() const {
+template<>
+math::Rect<double> CubicBezier<double>::approx_bounding_rect() const
+{
   return geom::approx_bounding_rect(*this);
 }
 
 /* -- Bounding Rectangle -- */
 
-template <typename T, typename _>
-math::Rect<T> bounding_rect(const QuadraticBezier<T>& quad) {
+template<typename T, typename _>
+math::Rect<T> bounding_rect(const QuadraticBezier<T> &quad)
+{
   math::Rect<T> bounds = math::Rect<T>::from_vectors({quad.p0, quad.p2});
 
   const auto [a, b, c] = quad.coefficients();
 
   for (int i = 0; i < 2; i++) {
-    if (math::is_almost_zero(a[i])) continue;
+    if (math::is_almost_zero(a[i]))
+      continue;
 
     const T t = math::solve_linear(T(2) * a[i], b[i]);
 
@@ -215,25 +232,29 @@ math::Rect<T> bounding_rect(const QuadraticBezier<T>& quad) {
   return bounds;
 }
 
-template <>
-math::Rect<float> QuadraticBezier<float>::bounding_rect() const {
+template<>
+math::Rect<float> QuadraticBezier<float>::bounding_rect() const
+{
   return geom::bounding_rect(*this);
 }
 
-template <>
-math::Rect<double> QuadraticBezier<double>::bounding_rect() const {
+template<>
+math::Rect<double> QuadraticBezier<double>::bounding_rect() const
+{
   return geom::bounding_rect(*this);
 }
 
-template <typename T, typename _>
-math::Rect<T> bounding_rect(const CubicBezier<T>& cubic) {
+template<typename T, typename _>
+math::Rect<T> bounding_rect(const CubicBezier<T> &cubic)
+{
   math::Rect<T> bounds = math::Rect<T>::from_vectors({cubic.p0, cubic.p3});
 
   const auto [a, b, c, d] = cubic.coefficients();
 
   for (int i = 0; i < 2; i++) {
     if (math::is_almost_zero(a[i])) {
-      if (math::is_almost_zero(b[i])) continue;
+      if (math::is_almost_zero(b[i]))
+        continue;
 
       const T t = math::solve_linear(T(2) * b[i], c[i]);
 
@@ -248,7 +269,8 @@ math::Rect<T> bounding_rect(const CubicBezier<T>& cubic) {
       continue;
     }
 
-    const math::QuadraticSolutions t_values = math::solve_quadratic(T(3) * a[i], T(2) * b[i], c[i]);
+    const math::QuadraticSolutions t_values = math::solve_quadratic(
+        T(3) * a[i], T(2) * b[i], c[i]);
 
     for (uint8_t j = 0; j < t_values.count; j++) {
       const T t = t_values.solutions[j];
@@ -266,20 +288,23 @@ math::Rect<T> bounding_rect(const CubicBezier<T>& cubic) {
   return bounds;
 }
 
-template <>
-math::Rect<float> CubicBezier<float>::bounding_rect() const {
+template<>
+math::Rect<float> CubicBezier<float>::bounding_rect() const
+{
   return geom::bounding_rect(*this);
 }
 
-template <>
-math::Rect<double> CubicBezier<double>::bounding_rect() const {
+template<>
+math::Rect<double> CubicBezier<double>::bounding_rect() const
+{
   return geom::bounding_rect(*this);
 }
 
 /* -- Curve Splitting -- */
 
-template <typename T, typename _>
-inline std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T>& quad, const T t) {
+template<typename T, typename _>
+inline std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T> &quad, const T t)
+{
   const math::Vec2<T> q = math::lerp(quad.p0, quad.p1, t);
   const math::Vec2<T> r = math::lerp(quad.p1, quad.p2, t);
 
@@ -288,8 +313,9 @@ inline std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T>& quad, c
   return {QuadraticBezier<T>(quad.p0, q, p), QuadraticBezier<T>(p, r, quad.p2)};
 }
 
-template <typename T, typename _>
-std::array<QuadraticBezier<T>, 3> split(const QuadraticBezier<T>& quad, const T t1, const T t2) {
+template<typename T, typename _>
+std::array<QuadraticBezier<T>, 3> split(const QuadraticBezier<T> &quad, const T t1, const T t2)
+{
   const math::Vec2<T> q1 = math::lerp(quad.p0, quad.p1, t1);
   const math::Vec2<T> q2 = math::lerp(quad.p0, quad.p1, t2);
 
@@ -301,11 +327,14 @@ std::array<QuadraticBezier<T>, 3> split(const QuadraticBezier<T>& quad, const T 
 
   const math::Vec2<T> q = math::lerp(q1, r1, t2);
 
-  return {QuadraticBezier<T>(quad.p0, q1, p1), QuadraticBezier<T>(p1, q, p2), QuadraticBezier<T>(p2, r2, quad.p2)};
+  return {QuadraticBezier<T>(quad.p0, q1, p1),
+          QuadraticBezier<T>(p1, q, p2),
+          QuadraticBezier<T>(p2, r2, quad.p2)};
 }
 
-template <typename T, typename _>
-std::array<CubicBezier<T>, 2> split(const CubicBezier<T>& cubic, const T t) {
+template<typename T, typename _>
+std::array<CubicBezier<T>, 2> split(const CubicBezier<T> &cubic, const T t)
+{
   const math::Vec2<T> q = math::lerp(cubic.p0, cubic.p1, t);
   const math::Vec2<T> r = math::lerp(cubic.p1, cubic.p2, t);
   const math::Vec2<T> s = math::lerp(cubic.p2, cubic.p3, t);
@@ -318,8 +347,9 @@ std::array<CubicBezier<T>, 2> split(const CubicBezier<T>& cubic, const T t) {
   return {CubicBezier<T>(cubic.p0, q, qr, p), CubicBezier<T>(p, rs, s, cubic.p3)};
 }
 
-template <typename T, typename _>
-std::array<CubicBezier<T>, 3> split(const CubicBezier<T>& cubic, const T t1, const T t2) {
+template<typename T, typename _>
+std::array<CubicBezier<T>, 3> split(const CubicBezier<T> &cubic, const T t1, const T t2)
+{
   const math::Vec2<T> q1 = math::lerp(cubic.p0, cubic.p1, t1);
   const math::Vec2<T> q2 = math::lerp(cubic.p0, cubic.p1, t2);
 
@@ -341,13 +371,16 @@ std::array<CubicBezier<T>, 3> split(const CubicBezier<T>& cubic, const T t1, con
   const math::Vec2<T> q = math::lerp(qr1, rs1, t2);
   const math::Vec2<T> r = math::lerp(qr2, rs2, t1);
 
-  return {CubicBezier<T>(cubic.p0, q1, qr1, p1), CubicBezier<T>(p1, q, r, p2), CubicBezier<T>(p2, rs2, s2, cubic.p3)};
+  return {CubicBezier<T>(cubic.p0, q1, qr1, p1),
+          CubicBezier<T>(p1, q, r, p2),
+          CubicBezier<T>(p2, rs2, s2, cubic.p3)};
 }
 
 /* -- Curve Extraction -- */
 
-template <typename T, typename _>
-QuadraticBezier<T> extract(const QuadraticBezier<T>& quad, const T t1, const T t2) {
+template<typename T, typename _>
+QuadraticBezier<T> extract(const QuadraticBezier<T> &quad, const T t1, const T t2)
+{
   const math::Vec2<T> q1 = math::lerp(quad.p0, quad.p1, t1);
   const math::Vec2<T> q2 = math::lerp(quad.p0, quad.p1, t2);
 
@@ -362,8 +395,9 @@ QuadraticBezier<T> extract(const QuadraticBezier<T>& quad, const T t1, const T t
   return QuadraticBezier<T>(p1, q, p2);
 }
 
-template <typename T, typename _>
-CubicBezier<T> extract(const CubicBezier<T>& cubic, const T t1, const T t2) {
+template<typename T, typename _>
+CubicBezier<T> extract(const CubicBezier<T> &cubic, const T t1, const T t2)
+{
   const math::Vec2<T> q1 = math::lerp(cubic.p0, cubic.p1, t1);
   const math::Vec2<T> q2 = math::lerp(cubic.p0, cubic.p1, t2);
 
@@ -390,8 +424,10 @@ CubicBezier<T> extract(const CubicBezier<T>& cubic, const T t1, const T t2) {
 
 /* -- Conversion -- */
 
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-std::array<math::Vec2<T>, 3> taylor_expand(const std::array<math::Vec2<T>, 4>& coefficients, const T t0) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+std::array<math::Vec2<T>, 3> taylor_expand(const std::array<math::Vec2<T>, 4> &coefficients,
+                                           const T t0)
+{
   const math::Vec2<T> a = coefficients[0];
   const math::Vec2<T> b = coefficients[1];
   const math::Vec2<T> c = coefficients[2];
@@ -409,8 +445,9 @@ std::array<math::Vec2<T>, 3> taylor_expand(const std::array<math::Vec2<T>, 4>& c
   return {f_second / T(2), f_prime - t0 * f_second, f - t0 * f_prime + t0_sq * f_second / T(2)};
 }
 
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-T taylor_expansion_error(const math::Vec2<T> a, const T t0, const T tolerance) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+T taylor_expansion_error(const math::Vec2<T> a, const T t0, const T tolerance)
+{
   const T t0_sq = t0 * t0;
   const T t0_cb = t0_sq * t0;
 
@@ -421,23 +458,28 @@ T taylor_expansion_error(const math::Vec2<T> a, const T t0, const T tolerance) {
   T t_e = T(2);
 
   for (uint8_t i = 0; i < 2; i++) {
-    const math::CubicSolutions<T> t_errors_negative = math::solve_cubic(a[i], b[i], c[i], d[i] + tolerance);
-    const math::CubicSolutions<T> t_errors_positive = math::solve_cubic(a[i], b[i], c[i], d[i] - tolerance);
+    const math::CubicSolutions<T> t_errors_negative = math::solve_cubic(
+        a[i], b[i], c[i], d[i] + tolerance);
+    const math::CubicSolutions<T> t_errors_positive = math::solve_cubic(
+        a[i], b[i], c[i], d[i] - tolerance);
 
     for (uint8_t i = 0; i < 3; i++) {
       const T t_negative = t_errors_negative.solutions[i];
       const T t_positive = t_errors_positive.solutions[i];
 
-      if (t_negative > t0 && t_negative < t_e) t_e = t_negative;
-      if (t_positive > t0 && t_positive < t_e) t_e = t_positive;
+      if (t_negative > t0 && t_negative < t_e)
+        t_e = t_negative;
+      if (t_positive > t0 && t_positive < t_e)
+        t_e = t_positive;
     }
   }
 
   return t_e;
 }
 
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-T next_taylor_center(const math::Vec2<T> a, const T t_e, const T tolerance) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+T next_taylor_center(const math::Vec2<T> a, const T t_e, const T tolerance)
+{
   const T t_e_sq = t_e * t_e;
   const T t_e_cb = t_e_sq * t_e;
 
@@ -448,15 +490,19 @@ T next_taylor_center(const math::Vec2<T> a, const T t_e, const T tolerance) {
   T t0_prime = T(2);
 
   for (uint8_t i = 0; i < 2; i++) {
-    const math::CubicSolutions<T> t_centers_negative = math::solve_cubic(-a[i], b[i], c[i], d[i] + tolerance);
-    const math::CubicSolutions<T> t_centers_positive = math::solve_cubic(-a[i], b[i], c[i], d[i] - tolerance);
+    const math::CubicSolutions<T> t_centers_negative = math::solve_cubic(
+        -a[i], b[i], c[i], d[i] + tolerance);
+    const math::CubicSolutions<T> t_centers_positive = math::solve_cubic(
+        -a[i], b[i], c[i], d[i] - tolerance);
 
     for (uint8_t i = 0; i < 3; i++) {
       const T t_negative = t_centers_negative.solutions[i];
       const T t_positive = t_centers_positive.solutions[i];
 
-      if (t_negative > t_e && t_negative < t0_prime) t0_prime = t_negative;
-      if (t_positive > t_e && t_positive < t0_prime) t0_prime = t_positive;
+      if (t_negative > t_e && t_negative < t0_prime)
+        t0_prime = t_negative;
+      if (t_positive > t_e && t_positive < t0_prime)
+        t0_prime = t_positive;
     }
   }
 
@@ -516,8 +562,9 @@ T next_taylor_center(const math::Vec2<T> a, const T t_e, const T tolerance) {
     }
   }
 #else
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline static T fast_cubic_first_solution(const T a, const T b, const T c, const T d) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline static T fast_cubic_first_solution(const T a, const T b, const T c, const T d)
+{
   if (math::is_almost_zero(a)) {
     /* If a = 0, also b = 0. It is a linear equation. */
 
@@ -541,17 +588,17 @@ inline static T fast_cubic_first_solution(const T a, const T b, const T c, const
   return real_root;
 }
 
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline static math::Vec2<T> fast_cubic_first_solution(
-  const math::Vec2<T> a,
-  const math::Vec2<T> b,
-  const math::Vec2<T> c,
-  const math::Vec2<T> d
-) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline static math::Vec2<T> fast_cubic_first_solution(const math::Vec2<T> a,
+                                                      const math::Vec2<T> b,
+                                                      const math::Vec2<T> c,
+                                                      const math::Vec2<T> d)
+{
   /* d is guaranteed to be non-zero. */
   /* Calculate coefficients of the depressed cubic equation: y^3 + py + q = 0. */
   const math::Vec2<T> p = (T(3) * a * c - b * b) / (T(3) * a * a);
-  const math::Vec2<T> q = (T(2) * b * b * b - T(9) * a * b * c + T(27) * a * a * d) / (T(27) * a * a * a);
+  const math::Vec2<T> q = (T(2) * b * b * b - T(9) * a * b * c + T(27) * a * a * d) /
+                          (T(27) * a * a * a);
 
   /* Calculate discriminant, it is guaranteed to be positive. */
   const math::Vec2<T> discriminant = (q * q) / T(4) + (p * p * p) / T(27);
@@ -576,14 +623,13 @@ inline static math::Vec2<T> fast_cubic_first_solution(
   return solutions;
 }
 
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline static math::Vec4<T> fast_cubic_first_solution_plus_minus(
-  const math::Vec2<T> a,
-  const math::Vec2<T> b,
-  const math::Vec2<T> c,
-  const math::Vec2<T> d,
-  const T tolerance
-) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline static math::Vec4<T> fast_cubic_first_solution_plus_minus(const math::Vec2<T> a,
+                                                                 const math::Vec2<T> b,
+                                                                 const math::Vec2<T> c,
+                                                                 const math::Vec2<T> d,
+                                                                 const T tolerance)
+{
   const math::Vec2<T> d_plus = d + tolerance;
   const math::Vec2<T> d_minus = d - tolerance;
 
@@ -630,10 +676,15 @@ inline static math::Vec4<T> fast_cubic_first_solution_plus_minus(
   return solutions;
 }
 
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-void monotonic_cubic_to_circular_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+void monotonic_cubic_to_circular_quadratics(const CubicBezier<T> &cubic,
+                                            const T tolerance,
+                                            QuadraticPath<T> &sink)
+{
   // Get the angle of the biarc of current Bezier arc.
-  const math::Vec2<T> B = line_line_intersection_point_infinite(cubic.start_tangent(), cubic.end_tangent()).value_or(cubic.p0);
+  const math::Vec2<T> B = line_line_intersection_point_infinite(cubic.start_tangent(),
+                                                                cubic.end_tangent())
+                              .value_or(cubic.p0);
   const math::Vec2<T> AB = B - cubic.p0;
   const math::Vec2<T> BC = cubic.p3 - B;
 
@@ -654,41 +705,46 @@ void monotonic_cubic_to_circular_quadratics(const CubicBezier<T>& cubic, const T
   }
 }
 
-template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-void cubic_to_circular_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink) {
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+void cubic_to_circular_quadratics(const CubicBezier<T> &cubic,
+                                  const T tolerance,
+                                  QuadraticPath<T> &sink)
+{
   const math::QuadraticSolutions<T> split_points = inflections(cubic);
 
   switch (split_points.count) {
-  case 0:
-    monotonic_cubic_to_circular_quadratics(cubic, tolerance, sink);
-    break;
-  case 1: {
-    std::array<CubicBezier<T>, 2> cubics = split(cubic, split_points.solutions[0]);
+    case 0:
+      monotonic_cubic_to_circular_quadratics(cubic, tolerance, sink);
+      break;
+    case 1: {
+      std::array<CubicBezier<T>, 2> cubics = split(cubic, split_points.solutions[0]);
 
-    monotonic_cubic_to_circular_quadratics(cubics[0], tolerance, sink);
-    monotonic_cubic_to_circular_quadratics(cubics[1], tolerance, sink);
+      monotonic_cubic_to_circular_quadratics(cubics[0], tolerance, sink);
+      monotonic_cubic_to_circular_quadratics(cubics[1], tolerance, sink);
 
-    break;
-  }
-  case 2: {
-    std::array<CubicBezier<T>, 3> cubics = split(cubic, split_points.solutions[0], split_points.solutions[1]);
+      break;
+    }
+    case 2: {
+      std::array<CubicBezier<T>, 3> cubics = split(
+          cubic, split_points.solutions[0], split_points.solutions[1]);
 
-    monotonic_cubic_to_circular_quadratics(cubics[0], tolerance, sink);
-    monotonic_cubic_to_circular_quadratics(cubics[1], tolerance, sink);
-    monotonic_cubic_to_circular_quadratics(cubics[2], tolerance, sink);
+      monotonic_cubic_to_circular_quadratics(cubics[0], tolerance, sink);
+      monotonic_cubic_to_circular_quadratics(cubics[1], tolerance, sink);
+      monotonic_cubic_to_circular_quadratics(cubics[2], tolerance, sink);
 
-    break;
-  }
+      break;
+    }
   }
 }
 
-template <typename T, typename _>
-void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink) {
+template<typename T, typename _>
+void cubic_to_quadratics(const CubicBezier<T> &cubic, const T tolerance, QuadraticPath<T> &sink)
+{
   // return cubic_to_circular_quadratics(cubic, tolerance, sink);
 
   GK_TOTAL("geom::cubic_to_quadratics");  // 7.7ms -> 7.41ms -> 6.7ms -> 6.25ms -> 4.9ms -> 4.57ms
 
-  const auto& [a, b, c, d] = cubic.coefficients();
+  const auto &[a, b, c, d] = cubic.coefficients();
 
   T t0 = T(0);
   T t_e = T(0);
@@ -717,14 +773,20 @@ void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, Quadrat
     // Value of t at which the Taylor approximation error equals the tolerance.
     T t_e_prime = T(2);
 
-    const math::Vec4<T> t_error = fast_cubic_first_solution_plus_minus(a, coeff0, coeff1, -coeff2, tolerance);
-    // const math::Vec2<T> t_error_negative = fast_cubic_first_solution(a, coeff0, coeff1, -coeff2 + tolerance);
-    // const math::Vec2<T> t_error_positive = fast_cubic_first_solution(a, coeff0, coeff1, -coeff2 - tolerance);
+    const math::Vec4<T> t_error = fast_cubic_first_solution_plus_minus(
+        a, coeff0, coeff1, -coeff2, tolerance);
+    // const math::Vec2<T> t_error_negative = fast_cubic_first_solution(a, coeff0, coeff1, -coeff2
+    // + tolerance); const math::Vec2<T> t_error_positive = fast_cubic_first_solution(a, coeff0,
+    // coeff1, -coeff2 - tolerance);
 
-    if (t_error.x > t0 && t_error.x < t_e_prime) t_e_prime = t_error.x;
-    if (t_error.y > t0 && t_error.y < t_e_prime) t_e_prime = t_error.y;
-    if (t_error.z > t0 && t_error.z < t_e_prime) t_e_prime = t_error.z;
-    if (t_error.w > t0 && t_error.w < t_e_prime) t_e_prime = t_error.w;
+    if (t_error.x > t0 && t_error.x < t_e_prime)
+      t_e_prime = t_error.x;
+    if (t_error.y > t0 && t_error.y < t_e_prime)
+      t_e_prime = t_error.y;
+    if (t_error.z > t0 && t_error.z < t_e_prime)
+      t_e_prime = t_error.z;
+    if (t_error.w > t0 && t_error.w < t_e_prime)
+      t_e_prime = t_error.w;
 
     // Value of t at which the next Taylor approximation should start from
     // in order to mantain the max error at t=t_e.
@@ -737,14 +799,20 @@ void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, Quadrat
 
     T t0_prime = T(2);
 
-    const math::Vec4<T> t_centers = fast_cubic_first_solution_plus_minus(-a, e_prime_b, e_prime_c, e_prime_d, tolerance);
-    // const math::Vec2<T> t_centers_negative = fast_cubic_first_solution(-a, e_prime_b, e_prime_c, e_prime_d + tolerance);
-    // const math::Vec2<T> t_centers_positive = fast_cubic_first_solution(-a, e_prime_b, e_prime_c, e_prime_d - tolerance);
+    const math::Vec4<T> t_centers = fast_cubic_first_solution_plus_minus(
+        -a, e_prime_b, e_prime_c, e_prime_d, tolerance);
+    // const math::Vec2<T> t_centers_negative = fast_cubic_first_solution(-a, e_prime_b, e_prime_c,
+    // e_prime_d + tolerance); const math::Vec2<T> t_centers_positive =
+    // fast_cubic_first_solution(-a, e_prime_b, e_prime_c, e_prime_d - tolerance);
 
-    if (t_centers.x > t_e_prime && t_centers.x < t0_prime) t0_prime = t_centers.x;
-    if (t_centers.y > t_e_prime && t_centers.y < t0_prime) t0_prime = t_centers.y;
-    if (t_centers.z > t_e_prime && t_centers.z < t0_prime) t0_prime = t_centers.z;
-    if (t_centers.w > t_e_prime && t_centers.w < t0_prime) t0_prime = t_centers.w;
+    if (t_centers.x > t_e_prime && t_centers.x < t0_prime)
+      t0_prime = t_centers.x;
+    if (t_centers.y > t_e_prime && t_centers.y < t0_prime)
+      t0_prime = t_centers.y;
+    if (t_centers.z > t_e_prime && t_centers.z < t0_prime)
+      t0_prime = t_centers.z;
+    if (t_centers.w > t_e_prime && t_centers.w < t0_prime)
+      t0_prime = t_centers.w;
 
     // Quadratic Bezier curve from t_e to t_e_prime.
     const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_a, quad_b, quad_c);
@@ -774,7 +842,8 @@ void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, Quadrat
 }
 
 // template <typename T, typename _>
-// void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink) {
+// void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink)
+// {
 //   GK_TOTAL("geom::cubic_to_quadratics"); // 7.7ms ->
 
 //   const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
@@ -786,7 +855,8 @@ void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, Quadrat
 
 //   while (t0 < T(1)) {
 //     // Taylor expansion coefficients at t=t0.
-//     const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
+//     const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients,
+//     t0);
 
 //     // Value of t at which the Taylor approximation error equals the tolerance.
 //     const T t_e_prime = taylor_expansion_error(cubic_coefficients[0], t0, tolerance);
@@ -819,8 +889,10 @@ void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, Quadrat
 // }
 #endif
 
-template <typename T, typename _>
-std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> cubic_to_quadratics_with_intervals(const CubicBezier<T>& cubic) {
+template<typename T, typename _>
+std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> cubic_to_quadratics_with_intervals(
+    const CubicBezier<T> &cubic)
+{
   const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
 
   std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> quads;
@@ -858,12 +930,13 @@ std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> cubic_to_quadratics_wi
   return quads;
 }
 
-template <typename T, typename _>
-void QuadraticPath<T, _>::quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2) {
+template<typename T, typename _>
+void QuadraticPath<T, _>::quadratic_to(const math::Vec2<T> p1, const math::Vec2<T> p2)
+{
   GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
   const QuadraticBezier<T> quad = {back(), p1, p2};
-  const auto& [a, b] = quad.derivative_coefficients();
+  const auto &[a, b] = quad.derivative_coefficients();
 
   std::vector<float> split_points = {T(0), T(1)};
 
@@ -887,15 +960,23 @@ void QuadraticPath<T, _>::quadratic_to(const math::Vec2<T> p1, const math::Vec2<
   }
 }
 
-template <typename T, typename _>
-void QuadraticPath<T, _>::cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3, const T tolerance) {
+template<typename T, typename _>
+void QuadraticPath<T, _>::cubic_to(const math::Vec2<T> p1,
+                                   const math::Vec2<T> p2,
+                                   const math::Vec2<T> p3,
+                                   const T tolerance)
+{
   GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
   cubic_to_quadratics(CubicBezier<T>{back(), p1, p2, p3}, tolerance, *this);
 }
 
-template <typename T, typename _>
-void QuadraticPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise, const T tolerance) {
+template<typename T, typename _>
+void QuadraticPath<T, _>::arc_to(const math::Vec2<T> center,
+                                 const math::Vec2<T> to,
+                                 const bool clockwise,
+                                 const T tolerance)
+{
   GK_ASSERT(!points.empty(), "Cannot add an arc to an empty path.");
 
   const math::Vec2<T> from = back();
@@ -908,8 +989,10 @@ void QuadraticPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T>
 
   T diff = std::abs(ang2 - ang1);
 
-  if (diff > math::pi<T>) diff = math::two_pi<T> - diff;
-  if (!clockwise) diff = -diff;
+  if (diff > math::pi<T>)
+    diff = math::two_pi<T> - diff;
+  if (!clockwise)
+    diff = -diff;
 
   const T diff_abs = std::abs(diff);
 
@@ -929,12 +1012,15 @@ void QuadraticPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T>
   }
 }
 
-template <typename T, typename _>
-void CubicPath<T, _>::cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3) {
+template<typename T, typename _>
+void CubicPath<T, _>::cubic_to(const math::Vec2<T> p1,
+                               const math::Vec2<T> p2,
+                               const math::Vec2<T> p3)
+{
   GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
   const CubicBezier<T> cubic = {back(), p1, p2, p3};
-  const auto& [a, b, c] = cubic.derivative_coefficients();
+  const auto &[a, b, c] = cubic.derivative_coefficients();
   const auto inflection_points = inflections(cubic);
   // const auto& [a_prime, b_prime] = cubic.second_derivative_coefficients();
 
@@ -977,8 +1063,11 @@ void CubicPath<T, _>::cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, c
   }
 }
 
-template <typename T, typename _>
-void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to, const bool clockwise) {
+template<typename T, typename _>
+void CubicPath<T, _>::arc_to(const math::Vec2<T> center,
+                             const math::Vec2<T> to,
+                             const bool clockwise)
+{
   GK_ASSERT(!points.empty(), "Cannot add an arc to an empty path.");
 
   const math::Vec2<T> from = back();
@@ -992,8 +1081,8 @@ void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to,
 
   const math::Vec2<T> center_from = from - center;
   const math::Vec2<T> center_to = to - center;
-  const T cross =
-    (center_from.x * center_to.x + center_from.y * center_to.y) / (math::length(center_from) * math::length(center_to));
+  const T cross = (center_from.x * center_to.x + center_from.y * center_to.y) /
+                  (math::length(center_from) * math::length(center_to));
 
   if (cross >= -T(1) - math::geometric_epsilon<T> && cross <= T(1) + math::geometric_epsilon<T>) {
     angle = std::acos(std::clamp(cross, -T(1), T(1)));
@@ -1009,8 +1098,10 @@ void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to,
 
   ang1 = ang1 < 0 ? ang1 + math::two_pi<T> : ang1;
 
-  if (math::is_almost_equal(ang1, math::two_pi<T>)) ang1 = T(0);
-  if (math::is_almost_zero(ang1)) ang1 = T(0);
+  if (math::is_almost_equal(ang1, math::two_pi<T>))
+    ang1 = T(0);
+  if (math::is_almost_zero(ang1))
+    ang1 = T(0);
 
   const TriangleOrientation orientation = triangle_orientation(center, from, to);
 
@@ -1057,7 +1148,8 @@ void CubicPath<T, _>::arc_to(const math::Vec2<T> center, const math::Vec2<T> to,
 
 /* -- Winding Number -- */
 
-static inline int winding_of(const dquadratic_bezier& quad, const dvec2 p) {
+static inline int winding_of(const dquadratic_bezier &quad, const dvec2 p)
+{
   if (std::max(std::max(quad.p0.x, quad.p1.x), quad.p2.x) < p.x) {
     // The curve is entirely on the left of the point.
     return 0;
@@ -1099,8 +1191,9 @@ static inline int winding_of(const dquadratic_bezier& quad, const dvec2 p) {
   return 0;
 }
 
-template <>
-int QuadraticPath<float>::winding_of(const vec2 p) const {
+template<>
+int QuadraticPath<float>::winding_of(const vec2 p) const
+{
   if (points.size() < 3) {
     return 0;
   }
@@ -1108,15 +1201,18 @@ int QuadraticPath<float>::winding_of(const vec2 p) const {
   int winding = 0;
 
   for (size_t i = 0; i < size(); i++) {
-    winding +=
-      geom::winding_of(dquadratic_bezier{dvec2(points[i * 2]), dvec2(points[i * 2 + 1]), dvec2(points[i * 2 + 2])}, dvec2(p));
+    winding += geom::winding_of(dquadratic_bezier{dvec2(points[i * 2]),
+                                                  dvec2(points[i * 2 + 1]),
+                                                  dvec2(points[i * 2 + 2])},
+                                dvec2(p));
   }
 
   return winding;
 }
 
-template <>
-int QuadraticPath<double>::winding_of(const dvec2 p) const {
+template<>
+int QuadraticPath<double>::winding_of(const dvec2 p) const
+{
   if (points.size() < 3) {
     return 0;
   }
@@ -1124,7 +1220,8 @@ int QuadraticPath<double>::winding_of(const dvec2 p) const {
   int winding = 0;
 
   for (size_t i = 0; i < size(); i++) {
-    winding += geom::winding_of(dquadratic_bezier{points[i * 2], points[i * 2 + 1], points[i * 2 + 2]}, p);
+    winding += geom::winding_of(
+        dquadratic_bezier{points[i * 2], points[i * 2 + 1], points[i * 2 + 2]}, p);
   }
 
   return winding;
@@ -1138,43 +1235,56 @@ template struct Line<double>;
 template struct CubicBezier<float>;
 template struct CubicBezier<double>;
 
-template math::CubicSolutions<float> max_curvature(const CubicBezier<float>&);
-template math::CubicSolutions<double> max_curvature(const CubicBezier<double>&);
+template math::CubicSolutions<float> max_curvature(const CubicBezier<float> &);
+template math::CubicSolutions<double> max_curvature(const CubicBezier<double> &);
 
-template math::QuadraticSolutions<float> inflections(const CubicBezier<float>&);
-template math::QuadraticSolutions<double> inflections(const CubicBezier<double>&);
+template math::QuadraticSolutions<float> inflections(const CubicBezier<float> &);
+template math::QuadraticSolutions<double> inflections(const CubicBezier<double> &);
 
-template math::Rect<float> bounding_rect(const QuadraticBezier<float>&);
-template math::Rect<double> bounding_rect(const QuadraticBezier<double>&);
+template math::Rect<float> bounding_rect(const QuadraticBezier<float> &);
+template math::Rect<double> bounding_rect(const QuadraticBezier<double> &);
 
-template math::Rect<float> bounding_rect(const CubicBezier<float>&);
-template math::Rect<double> bounding_rect(const CubicBezier<double>&);
+template math::Rect<float> bounding_rect(const CubicBezier<float> &);
+template math::Rect<double> bounding_rect(const CubicBezier<double> &);
 
-template std::array<QuadraticBezier<float>, 2> split(const QuadraticBezier<float>&, const float);
-template std::array<QuadraticBezier<double>, 2> split(const QuadraticBezier<double>&, const double);
+template std::array<QuadraticBezier<float>, 2> split(const QuadraticBezier<float> &, const float);
+template std::array<QuadraticBezier<double>, 2> split(const QuadraticBezier<double> &,
+                                                      const double);
 
-template std::array<QuadraticBezier<float>, 3> split(const QuadraticBezier<float>&, const float, const float);
-template std::array<QuadraticBezier<double>, 3> split(const QuadraticBezier<double>&, const double, const double);
+template std::array<QuadraticBezier<float>, 3> split(const QuadraticBezier<float> &,
+                                                     const float,
+                                                     const float);
+template std::array<QuadraticBezier<double>, 3> split(const QuadraticBezier<double> &,
+                                                      const double,
+                                                      const double);
 
-template std::array<CubicBezier<float>, 2> split(const CubicBezier<float>&, const float);
-template std::array<CubicBezier<double>, 2> split(const CubicBezier<double>&, const double);
+template std::array<CubicBezier<float>, 2> split(const CubicBezier<float> &, const float);
+template std::array<CubicBezier<double>, 2> split(const CubicBezier<double> &, const double);
 
-template std::array<CubicBezier<float>, 3> split(const CubicBezier<float>&, const float, const float);
-template std::array<CubicBezier<double>, 3> split(const CubicBezier<double>&, const double, const double);
+template std::array<CubicBezier<float>, 3> split(const CubicBezier<float> &,
+                                                 const float,
+                                                 const float);
+template std::array<CubicBezier<double>, 3> split(const CubicBezier<double> &,
+                                                  const double,
+                                                  const double);
 
-template QuadraticBezier<float> extract(const QuadraticBezier<float>&, const float, const float);
-template QuadraticBezier<double> extract(const QuadraticBezier<double>&, const double, const double);
+template QuadraticBezier<float> extract(const QuadraticBezier<float> &, const float, const float);
+template QuadraticBezier<double> extract(const QuadraticBezier<double> &,
+                                         const double,
+                                         const double);
 
-template CubicBezier<float> extract(const CubicBezier<float>&, const float, const float);
-template CubicBezier<double> extract(const CubicBezier<double>&, const double, const double);
+template CubicBezier<float> extract(const CubicBezier<float> &, const float, const float);
+template CubicBezier<double> extract(const CubicBezier<double> &, const double, const double);
 
-template void cubic_to_quadratics(const CubicBezier<float>&, const float, QuadraticPath<float>&);
-template void cubic_to_quadratics(const CubicBezier<double>&, const double, QuadraticPath<double>&);
+template void cubic_to_quadratics(const CubicBezier<float> &, const float, QuadraticPath<float> &);
+template void cubic_to_quadratics(const CubicBezier<double> &,
+                                  const double,
+                                  QuadraticPath<double> &);
 
-template std::vector<std::pair<QuadraticBezier<float>, math::Vec2<float>>> cubic_to_quadratics_with_intervals(const CubicBezier<
-                                                                                                              float>&);
-template std::vector<std::pair<QuadraticBezier<double>, math::Vec2<double>>> cubic_to_quadratics_with_intervals(const CubicBezier<
-                                                                                                                double>&);
+template std::vector<std::pair<QuadraticBezier<float>, math::Vec2<float>>>
+cubic_to_quadratics_with_intervals(const CubicBezier<float> &);
+template std::vector<std::pair<QuadraticBezier<double>, math::Vec2<double>>>
+cubic_to_quadratics_with_intervals(const CubicBezier<double> &);
 
 template struct QuadraticPath<float>;
 template struct QuadraticPath<double>;
