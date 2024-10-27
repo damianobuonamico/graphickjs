@@ -353,4 +353,4 @@ io::EncodedData& FillComponent::encode(io::EncodedData& data, const bool optimiz
 
 void FillComponent::modify(io::DataDecoder& decoder) { m_data->color = decoder.color(); }
 
-}
+}  // namespace graphick::editor

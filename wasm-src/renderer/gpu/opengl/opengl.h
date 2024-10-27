@@ -17,9 +17,7 @@
 /**
  * @brief Clears all OpenGL errors.
  */
-static inline void glClearErrors() {
-  while (glGetError() != GL_NO_ERROR);
-}
+static inline void glClearErrors() { while (glGetError() != GL_NO_ERROR); }
 
 /**
  * @brief Logs an OpenGL error.
@@ -41,14 +39,16 @@ inline bool glLogCall(const char* function, int line) {
 }
 
 #ifdef _MSC_VER
-#define glCall(x) glClearErrors();\
-	x;\
-	if (!glLogCall(#x, __LINE__)) __debugbreak();
+#define glCall(x)                                                                                                                \
+  glClearErrors();                                                                                                               \
+  x;                                                                                                                             \
+  if (!glLogCall(#x, __LINE__)) __debugbreak();
 #else
-#define glCall(x) glClearErrors();\
-	x;\
+#define glCall(x)                                                                                                                \
+  glClearErrors();                                                                                                               \
+  x;                                                                                                                             \
   glLogCall(#x, __LINE__)
 #endif
-#else 
+#else
 #define glCall(x) x
 #endif

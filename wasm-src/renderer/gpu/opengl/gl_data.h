@@ -84,8 +84,8 @@ struct GLUniform {
  * @struct GLTextureUniform
  */
 struct GLTextureUniform {
-  GLUniform uniform; /* The uniform. */
-  GLuint unit;       /* The texture unit. */
+  GLUniform uniform;  // The uniform.
+  GLuint unit;        // The texture unit.
 };
 
 /**
@@ -94,8 +94,8 @@ struct GLTextureUniform {
  * @struct GLTexturesUniform
  */
 struct GLTexturesUniform {
-  GLUniform uniform;         /* The uniform. */
-  std::vector<GLuint> units; /* The texture units. */
+  GLUniform uniform;          // The uniform.
+  std::vector<GLuint> units;  // The texture units.
 };
 
 /**
@@ -104,11 +104,11 @@ struct GLTexturesUniform {
  * @struct GLProgram
  */
 struct GLProgram {
-  GLuint gl_program;               /* The OpenGL underlying program. */
-  GLuint vertex;                   /* The vertex shader. */
-  GLuint fragment;                 /* The fragment shader. */
+  GLuint gl_program;                // The OpenGL underlying program.
+  GLuint vertex;                    // The vertex shader.
+  GLuint fragment;                  // The fragment shader.
 
-  std::vector<GLUniform> textures; /* Mapping from texture unit number to uniform location. */
+  std::vector<GLUniform> textures;  // Mapping from texture unit number to uniform location.
 
   /**
    * @brief Binds the program to the pipeline.
@@ -122,7 +122,7 @@ struct GLProgram {
  * @struct GLVertexAttribute
  */
 struct GLVertexAttribute {
-  GLuint attribute; /* The underlying vertex attribute. */
+  GLuint attribute;  // The underlying vertex attribute.
 };
 
 /**
@@ -131,7 +131,7 @@ struct GLVertexAttribute {
  * @struct GLVertexArray
  */
 struct GLVertexArray {
-  GLuint gl_vertex_array; /* The OpenGL underlying vertex array. */
+  GLuint gl_vertex_array;  // The OpenGL underlying vertex array.
 
   GLVertexArray();
   ~GLVertexArray();
@@ -161,11 +161,11 @@ struct GLVertexArray {
  * @struct GLTexture
  */
 struct GLTexture {
-  TextureFormat format; /* The texture format. */
-  GLuint gl_texture;    /* The OpenGL underlying texture. */
-  ivec2 size;           /* The size of the texture. */
+  TextureFormat format;  // The texture format.
+  GLuint gl_texture;     // The OpenGL underlying texture.
+  ivec2 size;            // The size of the texture.
 
-  int sampling_flags;   /* The texture sampling flags. */
+  int sampling_flags;    // The texture sampling flags.
 
   GLTexture(
     const TextureFormat format,
@@ -220,12 +220,12 @@ struct GLTexture {
  * @struct GLFramebuffer
  */
 struct GLFramebuffer {
-  GLTexture texture;      /* The texture to render to. */
-  GLuint gl_framebuffer;  /* The OpenGL underlying framebuffer. */
-  GLuint gl_renderbuffer; /* The OpenGL underlying renderbuffer. */
+  GLTexture texture;       // The texture to render to.
+  GLuint gl_framebuffer;   // The OpenGL underlying framebuffer.
+  GLuint gl_renderbuffer;  // The OpenGL underlying renderbuffer.
 
-  bool has_depth;         /* Whether the framebuffer has a depth buffer. */
-  bool complete;          /* Whether the framebuffer was successfully created. */
+  bool has_depth;          // Whether the framebuffer has a depth buffer.
+  bool complete;           // Whether the framebuffer was successfully created.
 
   GLFramebuffer(const ivec2 size, const bool has_depth);
   ~GLFramebuffer();
@@ -267,10 +267,10 @@ struct GLFramebuffer {
  * @struct GLBuffer
  */
 struct GLBuffer {
-  BufferUploadMode mode; /* The buffer upload mode. */
-  BufferTarget target;   /* The buffer target. */
-  GLuint gl_buffer;      /* The OpenGL underlying buffer. */
-  size_t size;           /* The size of the buffer in bytes. */
+  BufferUploadMode mode;  // The buffer upload mode.
+  BufferTarget target;    // The buffer target.
+  GLuint gl_buffer;       // The OpenGL underlying buffer.
+  size_t size;            // The size of the buffer in bytes.
 
   GLBuffer(const BufferTarget target, const BufferUploadMode mode, const size_t size, const void* data = nullptr);
   ~GLBuffer();
@@ -302,4 +302,4 @@ struct GLBuffer {
   void upload(const void* data, const size_t size, const size_t offset = 0) const;
 };
 
-}
+}  // namespace graphick::renderer::GPU::GL

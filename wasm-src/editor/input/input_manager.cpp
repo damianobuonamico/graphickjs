@@ -376,4 +376,4 @@ bool InputManager::on_drag(PointerTarget target, float delta_x, float delta_y) {
   return true;
 }
 
-}
+}  // namespace graphick::editor::input

@@ -15,7 +15,6 @@
 #include "../renderer/renderer.h"
 
 #include "../utils/console.h"
-#include "../utils/debugger.h"
 #include "../utils/resource_manager.h"
 
 #ifdef EMSCRIPTEN
@@ -113,4 +112,4 @@ bool Editor::render_frame(const double time) {
   return true;
 }
 
-}
+}  // namespace graphick::editor

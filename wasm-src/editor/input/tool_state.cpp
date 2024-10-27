@@ -178,4 +178,4 @@ void ToolState::render_overlays(const float zoom) const {
   }
 }
 
-}
+}  // namespace graphick::editor::input

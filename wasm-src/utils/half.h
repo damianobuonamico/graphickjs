@@ -14,29 +14,29 @@ namespace graphick::utils {
 
 /**
  * @brief The half float type.
- * 
+ *
  * This is a 16-bit floating point number.
- * 
+ *
  * @struct half
  */
 struct half {
   union {
-    uint16_t bits;           // The 16-bit representation of the half float
+    uint16_t bits;         // The 16-bit representation of the half float
 
     struct {
-      uint16_t frac : 10;    // 10 bits for the mantissa
-      uint16_t exp : 5;      // 5 bits for the exponent
-      uint16_t sign : 1;     // 1 bit for the sign
+      uint16_t frac : 10;  // 10 bits for the mantissa
+      uint16_t exp : 5;    // 5 bits for the exponent
+      uint16_t sign : 1;   // 1 bit for the sign
     } IEEE;
   };
 
   union IEEESingle {
-    float f;                 // The 32-bit representation of the float
+    float f;               // The 32-bit representation of the float
 
     struct {
-      uint32_t frac : 23;    // 23 bits for the mantissa
-      uint32_t exp : 8;      // 8 bits for the exponent
-      uint32_t sign : 1;     // 1 bit for the sign
+      uint32_t frac : 23;  // 23 bits for the mantissa
+      uint32_t exp : 8;    // 8 bits for the exponent
+      uint32_t sign : 1;   // 1 bit for the sign
     } IEEE;
   };
 
@@ -76,7 +76,7 @@ struct half {
       else if (new_exp < -14) {
         // This maps to a denorm
         IEEE.exp = 0;
-        unsigned int exp_val = (unsigned int)(-14 - new_exp);    // 2^-exp_val
+        unsigned int exp_val = (unsigned int)(-14 - new_exp);  // 2^-exp_val
 
         switch (exp_val) {
         case 0:
@@ -125,7 +125,7 @@ struct half {
   }
 };
 
-}
+}  // namespace graphick::utils
 
 namespace graphick {
 using half = utils::half;

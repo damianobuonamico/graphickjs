@@ -282,4 +282,4 @@ CubicSolutions<double> solve_cubic_normalized(
     }
   }
 }
-}
+}  // namespace graphick::math

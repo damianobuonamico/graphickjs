@@ -20,7 +20,7 @@
 namespace graphick::io {
 struct EncodedData;
 struct DataDecoder;
-}
+}  // namespace graphick::io
 
 namespace graphick::math {
 template <typename T>
@@ -47,23 +47,23 @@ public:
    * @brief The Command enum represents the type of commands used to traverse the path.
    */
   enum class Command : uint8_t {
-    Move = 0,      /* Move to a point. */
-    Line = 1,      /* Linear segment. */
-    Quadratic = 2, /* Quadratic bezier curve. */
-    Cubic = 3      /* Cubic bezier curve. */
+    Move = 0,       // Move to a point.
+    Line = 1,       // Linear segment.
+    Quadratic = 2,  // Quadratic bezier curve.
+    Cubic = 3       // Cubic bezier curve.
   };
 
   /**
    * @brief The IndexType enum represents the type of index used to traverse the path.
    */
   enum class IndexType {
-    Point = 0,   /* The index represents the ith control point. */
-    Command = 1, /* The index represents the ith command. */
-    Segment = 2  /* The index represents the ith segment. */
+    Point = 0,    // The index represents the ith control point.
+    Command = 1,  // The index represents the ith command.
+    Segment = 2   // The index represents the ith segment.
   };
 
-  static const uint32_t in_handle_index = std::numeric_limits<uint32_t>::max() - 1;  /* The index of the incoming handle. */
-  static const uint32_t out_handle_index = std::numeric_limits<uint32_t>::max() - 2; /* The index of the outgoing handle. */
+  static const uint32_t in_handle_index = std::numeric_limits<uint32_t>::max() - 1;   // The index of the incoming handle.
+  static const uint32_t out_handle_index = std::numeric_limits<uint32_t>::max() - 2;  // The index of the outgoing handle.
 public:
   /**
    * @brief This struct represents a vertex node of the path.
@@ -73,16 +73,16 @@ public:
    * @struct VertexNode
    */
   struct VertexNode {
-    uint32_t vertex;      /* The index of the vertex. */
+    uint32_t vertex;       // The index of the vertex.
 
-    int64_t in;           /* The index of the incoming handle, -1 if no incoming handle is present. */
-    int64_t out;          /* The index of the outgoing handle. -1 if no outgoing handle is present. */
+    int64_t in;            // The index of the incoming handle, -1 if no incoming handle is present.
+    int64_t out;           // The index of the outgoing handle. -1 if no outgoing handle is present.
 
-    int64_t close_vertex; /* The index of the vertex that closes the sub-path, -1 if the sub-path is not closed or the vertex is
-                             not a sub-path end. */
+    int64_t close_vertex;  // The index of the vertex that closes the sub-path, -1 if the sub-path is not closed or the vertex is
+                           // not a sub-path end.
 
-    int64_t in_command;   /* The index of the incoming command, -1 if no incoming command is present. */
-    int64_t out_command;  /* The index of the outgoing command, -1 if no outgoing command is present. */
+    int64_t in_command;    // The index of the incoming command, -1 if no incoming command is present.
+    int64_t out_command;   // The index of the outgoing command, -1 if no outgoing command is present.
   };
 
   /**
@@ -93,12 +93,12 @@ public:
    * @struct Segment
    */
   struct Segment {
-    Command type = Command::Move;             /* The type of the segment. */
+    Command type = Command::Move;              // The type of the segment.
 
-    math::Vec2<T> p0 = math::Vec2<T>::zero(); /* The first point of the segment or move command destination. */
-    math::Vec2<T> p1 = math::Vec2<T>::zero(); /* The second point of the segment (line, quadratic, cubic). */
-    math::Vec2<T> p2 = math::Vec2<T>::zero(); /* The third point of the segment (quadratic, cubic). */
-    math::Vec2<T> p3 = math::Vec2<T>::zero(); /* The fourth point of the segment (cubic). */
+    math::Vec2<T> p0 = math::Vec2<T>::zero();  // The first point of the segment or move command destination.
+    math::Vec2<T> p1 = math::Vec2<T>::zero();  // The second point of the segment (line, quadratic, cubic).
+    math::Vec2<T> p2 = math::Vec2<T>::zero();  // The third point of the segment (quadratic, cubic).
+    math::Vec2<T> p3 = math::Vec2<T>::zero();  // The fourth point of the segment (cubic).
 
     /**
      * @brief Constructors.
@@ -241,10 +241,10 @@ public:
      */
     inline uint32_t point_index() const { return m_point_index; }
   private:
-    uint32_t m_index;       /* The current command index of the iterator. */
-    uint32_t m_point_index; /* The index of the last point iterated over. */
+    uint32_t m_index;        // The current command index of the iterator.
+    uint32_t m_point_index;  // The index of the last point iterated over.
 
-    const Path<T>& m_path;  /* The path to iterate over. */
+    const Path<T>& m_path;   // The path to iterate over.
   };
 
   /**
@@ -304,10 +304,10 @@ public:
      */
     value_type operator*() const;
   private:
-    uint32_t m_index;       /* The current segment index of the iterator. */
-    uint32_t m_point_index; /* The index of the last point iterated over. */
+    uint32_t m_index;        // The current segment index of the iterator.
+    uint32_t m_point_index;  // The index of the last point iterated over.
 
-    const Path<T>& m_path;  /* The path to iterate over. */
+    const Path<T>& m_path;   // The path to iterate over.
   };
 public:
   /**
@@ -964,20 +964,20 @@ private:
    */
   void remove_command(const uint32_t index);
 private:
-  std::vector<uint8_t> m_commands;     /* The commands used to traverse the path. */
-  std::vector<math::Vec2<T>> m_points; /* The points of the path. */
+  std::vector<uint8_t> m_commands;      // The commands used to traverse the path.
+  std::vector<math::Vec2<T>> m_points;  // The points of the path.
 
-  uint32_t m_commands_size = 0;        /* The effective number of commands in the path. */
-  bool m_closed = false;               /* Whether the path is closed or not. */
+  uint32_t m_commands_size = 0;         // The effective number of commands in the path.
+  bool m_closed = false;                // Whether the path is closed or not.
 
-  math::Vec2<T> m_in_handle;           /* The incoming handle of the path, its index is Path::in_handle_index. */
-  math::Vec2<T> m_out_handle;          /* The outgoing handle of the path, its index is Path::out_handle_index. */
+  math::Vec2<T> m_in_handle;            // The incoming handle of the path, its index is Path::in_handle_index.
+  math::Vec2<T> m_out_handle;           // The outgoing handle of the path, its index is Path::out_handle_index.
 private:
   template <typename U, typename _>
   friend class PathBuilder;
 };
 
-}
+}  // namespace graphick::geom
 
 /* -- Aliases -- */
 
@@ -986,4 +986,4 @@ namespace graphick::geom {
 using path = Path<float>;
 using dpath = Path<double>;
 
-}
+}  // namespace graphick::geom

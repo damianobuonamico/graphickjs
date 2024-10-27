@@ -32,9 +32,9 @@ class QuadraticPath;
  */
 template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 struct StrokeOutline {
-  geom::CubicPath<T, std::enable_if<true>> outer;    // The outer outline of the stroke.
-  geom::CubicPath<T, std::enable_if<true>> inner;    // The inner outline of the stroke, in reverse order.
-  math::Rect<T> bounding_rect;                       // The bounding rectangle of the stroke.
+  geom::CubicPath<T, std::enable_if<true>> outer;  // The outer outline of the stroke.
+  geom::CubicPath<T, std::enable_if<true>> inner;  // The inner outline of the stroke, in reverse order.
+  math::Rect<T> bounding_rect;                     // The bounding rectangle of the stroke.
 };
 
 /**
@@ -147,18 +147,18 @@ private:
   enum class PathType { Quadratic, Cubic, Generic };
 private:
   const union {
-    const QuadraticPath<T, std::enable_if<true>>* m_quadratic_path;    // The quadratic path to process.
-    const CubicPath<T>* m_cubic_path;                                  // The cubic path to process.
-    const Path<T, std::enable_if<true>>* m_generic_path;               // The generic path to process.
+    const QuadraticPath<T, std::enable_if<true>>* m_quadratic_path;  // The quadratic path to process.
+    const CubicPath<T>* m_cubic_path;                                // The cubic path to process.
+    const Path<T, std::enable_if<true>>* m_generic_path;             // The generic path to process.
   };
 
-  const dmat2x3 m_transform;                                           // The transformation matrix to apply to the path.
-  const PathType m_type;                                               // The type of the path.
+  const dmat2x3 m_transform;                                         // The transformation matrix to apply to the path.
+  const PathType m_type;                                             // The type of the path.
 
-  drect m_bounding_rect;                                               // The bounding rectangle of the path.
+  drect m_bounding_rect;                                             // The bounding rectangle of the path.
 };
 
-}
+}  // namespace graphick::geom
 
 /* -- Aliases -- */
 
@@ -167,4 +167,4 @@ namespace graphick::geom {
 using path_builder = PathBuilder<float>;
 using dpath_builder = PathBuilder<double>;
 
-}
+}  // namespace graphick::geom

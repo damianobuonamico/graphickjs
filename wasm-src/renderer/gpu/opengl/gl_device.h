@@ -240,16 +240,16 @@ private:
    */
   void set_render_state(const RenderState& render_state);
 private:
-  std::string m_backend_name;         /* The backend name. */
-  std::string m_device_name;          /* The device name. */
-  std::string m_glsl_version_spec;    /* The GLSL version specification. */
+  std::string m_backend_name;          // The backend name.
+  std::string m_device_name;           // The device name.
+  std::string m_glsl_version_spec;     // The GLSL version specification.
 
-  GLuint m_timer_query;               /* The timer query. */
-  GLint m_max_vertex_uniform_vectors; /* The maximum number of vertex uniform vectors. */
-  GLint m_max_texture_image_units;    /* The maximum number of texture image units in the fragment shader. */
+  GLuint m_timer_query;                // The timer query.
+  GLint m_max_vertex_uniform_vectors;  // The maximum number of vertex uniform vectors.
+  GLint m_max_texture_image_units;     // The maximum number of texture image units in the fragment shader.
 
-  GLState m_state;                    /* The current state. */
+  GLState m_state;                     // The current state.
 private:
   static GLDevice* s_device;
 };
-}
+}  // namespace graphick::renderer::GPU::GL

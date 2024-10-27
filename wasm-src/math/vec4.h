@@ -17,10 +17,10 @@ namespace graphick::math {
    */
   template <typename T>
   struct Vec4 {
-    union { T x, r, s; };    /* The 0 component of the vector. */
-    union { T y, g, t; };    /* The 1 component of the vector. */
-    union { T z, b, p; };    /* The 2 component of the vector. */
-    union { T w, a, q; };    /* The 3 component of the vector. */
+    union { T x, r, s; };    // The 0 component of the vector.
+    union { T y, g, t; };    // The 1 component of the vector.
+    union { T z, b, p; };    // The 2 component of the vector.
+    union { T w, a, q; };    // The 3 component of the vector.
 
     /* -- Component accesses -- */
 

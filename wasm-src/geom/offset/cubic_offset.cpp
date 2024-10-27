@@ -1244,4 +1244,4 @@ void offset_cubic(const dcubic_bezier& curve, const double offset, const double 
 template void offset_cubic(const dcubic_bezier&, const double, const double, CubicPath<float>&);
 template void offset_cubic(const dcubic_bezier&, const double, const double, CubicPath<double>&);
 
-}
+}  // namespace graphick::geom

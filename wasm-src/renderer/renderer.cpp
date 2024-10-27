@@ -151,7 +151,8 @@ void Renderer::init() {
   emscripten_webgl_init_context_attributes(&attr);
 
   /* https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#avoid_alphafalse_which_can_be_expensive */
-  attr.alpha = true;
+  attr.alpha = false;
+  attr.desynchronized = true;
   attr.premultipliedAlpha = false;
   attr.majorVersion = 2;
   attr.antialias = false;

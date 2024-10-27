@@ -34,13 +34,13 @@ namespace graphick::renderer {
  * @struct Viewport
  */
 struct Viewport {
-  ivec2 size;      /* The size of the viewport. */
-  vec2 position;   /* The position of the viewport. */
+  ivec2 size;       // The size of the viewport.
+  vec2 position;    // The position of the viewport.
 
-  double zoom;     /* The zoom level of the viewport (it is pre-multiplied by the dpr). */
-  double dpr;      /* The device pixel ratio. */
+  double zoom;      // The zoom level of the viewport (it is pre-multiplied by the dpr).
+  double dpr;       // The device pixel ratio.
 
-  vec4 background; /* The background color to clear the viewport with. */
+  vec4 background;  // The background color to clear the viewport with.
 
   /**
    * @brief Default constructor.
@@ -79,7 +79,7 @@ struct Viewport {
    */
   inline vec2 project(const vec2 p) const { return p / static_cast<float>(zoom) - position; }
 private:
-  rect m_visible; /* The visible area of the viewport in scene-space coordinates. */
+  rect m_visible;  // The visible area of the viewport in scene-space coordinates.
 };
 
 /**
@@ -88,10 +88,10 @@ private:
  * @struct RenderOptions
  */
 struct RenderOptions {
-  Viewport viewport;    /* The viewport to render to. */
-  editor::Cache* cache; /* The cache to use for rendering, can be nullptr. */
+  Viewport viewport;     // The viewport to render to.
+  editor::Cache* cache;  // The cache to use for rendering, can be nullptr.
 
-  bool ignore_cache;    /* Whether to ignore the cache and redraw everything. */
+  bool ignore_cache;     // Whether to ignore the cache and redraw everything.
 };
 
 /**
@@ -294,8 +294,8 @@ struct FillVertex {
  * @struct Intersection
  */
 struct Intersection {
-  float x;        /* The x-coordinate of the intersection. */
-  bool downwards; /* Whether the intersection is downwards, used for non-zero fill rule. */
+  float x;         // The x-coordinate of the intersection.
+  bool downwards;  // Whether the intersection is downwards, used for non-zero fill rule.
 };
 
 /**
@@ -304,8 +304,8 @@ struct Intersection {
  * @struct Span
  */
 struct Span {
-  float min; /* The minimum x-coordinate of the span. */
-  float max; /* The maximum x-coordinate of the span. */
+  float min;  // The minimum x-coordinate of the span.
+  float max;  // The maximum x-coordinate of the span.
 };
 
 /**
@@ -314,8 +314,8 @@ struct Span {
  * @struct Band
  */
 struct Band {
-  std::vector<Span> disabled_spans; /* The filled spans of the band. */
-  std::vector<Span> filled_spans;   /* The filled spans of the band. */
+  std::vector<Span> disabled_spans;  // The filled spans of the band.
+  std::vector<Span> filled_spans;    // The filled spans of the band.
 
   /**
    * @brief Disables the spans intersecting with the given curve.
@@ -339,14 +339,14 @@ struct Band {
 
     for (int i = 0; i < disabled_spans.size(); i++) {
       if (min >= disabled_spans[i].min && max <= disabled_spans[i].max) {
-        /* The new span is completely within a larger span. */
+        // The new span is completely within a larger span.
         return;
       }
 
       const vec2 intersection = {std::max(min, disabled_spans[i].min), std::min(max, disabled_spans[i].max)};
 
       if (intersection.x <= intersection.y) {
-        /* If there is an intersection, we can perform an union. */
+        // If there is an intersection, we can perform an union.
 
         disabled_spans[i].min = std::min(disabled_spans[i].min, min);
         disabled_spans[i].max = std::max(disabled_spans[i].max, max);
@@ -358,12 +358,12 @@ struct Band {
     }
 
     if (unioned == 0) {
-      /* If there was no union, we can insert the new span at the potensial index. */
+      // If there was no union, we can insert the new span at the potensial index.
       disabled_spans.insert(disabled_spans.begin() + potential_index, Span{min, max});
       return;
     }
 
-    /* We can now remove the spans that are completely within the new span. */
+    // We can now remove the spans that are completely within the new span.
 
     for (Span& span1 : disabled_spans) {
       if (span1.min == span1.max) continue;
@@ -376,7 +376,7 @@ struct Band {
         const vec2 intersection = {std::max(span1.min, span2.min), std::min(span1.max, span2.max)};
 
         if (intersection.x <= intersection.y) {
-          /* If there is an intersection, we can perform an union and disable the second span. */
+          // If there is an intersection, we can perform an union and disable the second span.
 
           span1.min = std::min(span1.min, span2.min);
           span1.max = std::max(span1.max, span2.max);
@@ -386,7 +386,7 @@ struct Band {
       }
     }
 
-    /* We can erase all the spans that have zero width. */
+    // We can erase all the spans that have zero width.
 
     disabled_spans.erase(
       std::remove_if(disabled_spans.begin(), disabled_spans.end(), [](const Span& span) { return span.min == span.max; }),
@@ -401,10 +401,10 @@ struct Band {
  * @struct LineInstance
  */
 struct LineInstance {
-  vec2 start;  /* start.xy */
-  vec2 end;    /* end.xy */
-  float width; /* width */
-  uvec4 color; /* color.rgba */
+  vec2 start;   // start.xy */
+  vec2 end;     // end.xy */
+  float width;  // width */
+  uvec4 color;  // color.rgba */
 
   /**
    * @brief Constructs a new LineInstance object.
@@ -424,9 +424,9 @@ struct LineInstance {
  * @struct RectInstance
  */
 struct RectInstance {
-  vec2 position; /* position.xy */
-  vec2 size;     /* size.xy */
-  uvec4 color;   /* color.rgba */
+  vec2 position;  // position.xy */
+  vec2 size;      // size.xy */
+  uvec4 color;    // color.rgba */
 
   /**
    * @brief Constructs a new RectInstance object.
@@ -443,9 +443,9 @@ struct RectInstance {
  * @brief Represents a circle to be rendered using instancing.
  */
 struct CircleInstance {
-  vec2 position; /* position.xy */
-  float radius;  /* radius */
-  uvec4 color;   /* color.rgba */
+  vec2 position;  // position.xy */
+  float radius;   // radius */
+  uvec4 color;    // color.rgba */
 
   /**
    * @brief Constructs a new CircleInstance object.
@@ -464,8 +464,8 @@ struct CircleInstance {
  * @struct ImageInstance
  */
 struct ImageInstance {
-  vec2 position; /* position.xy */
-  vec2 size;     /* size.xy */
+  vec2 position;  // position.xy */
+  vec2 size;      // size.xy */
 
   /**
    * @brief Constructs a new ImageInstance object.
@@ -484,9 +484,9 @@ struct ImageInstance {
  */
 template <typename T>
 struct InstanceBuffer {
-  std::vector<std::vector<T>> batches; /* The instances. */
+  std::vector<std::vector<T>> batches;  // The instances.
 
-  uint32_t max_instances_per_batch;    /* The maximum number of instances for each batch. */
+  uint32_t max_instances_per_batch;     // The maximum number of instances for each batch.
 
   /**
    * @brief Constructs a new InstanceBuffer object.
@@ -528,14 +528,14 @@ struct InstanceBuffer {
  */
 template <typename T>
 struct InstancedData {
-  InstanceBuffer<T> instances; /* The per-instance data. */
+  InstanceBuffer<T> instances;  // The per-instance data.
 
-  GPU::Primitive primitive;    /* The primitive type of the mesh. */
+  GPU::Primitive primitive;     // The primitive type of the mesh.
 
-  GPU::Buffer instance_buffer; /* The GPU instance buffer. */
-  GPU::Buffer vertex_buffer;   /* The GPU vertex buffer. */
+  GPU::Buffer instance_buffer;  // The GPU instance buffer.
+  GPU::Buffer vertex_buffer;    // The GPU vertex buffer.
 
-  size_t vertex_size;          /* The size of a vertex in bytes. */
+  size_t vertex_size;           // The size of a vertex in bytes.
 
   /**
    * @brief Initializes the instance data.
@@ -908,14 +908,14 @@ struct Batch {
  * @struct UIOptions
  */
 struct UIOptions {
-  vec2 vertex_size;       /* The size of a vertex. */
-  vec2 vertex_inner_size; /* The size of the white part of a vertex. */
+  vec2 vertex_size;        // The size of a vertex.
+  vec2 vertex_inner_size;  // The size of the white part of a vertex.
 
-  float handle_radius;    /* The radius of an handle. */
-  float line_width;       /* The default width of the lines. */
+  float handle_radius;     // The radius of an handle.
+  float line_width;        // The default width of the lines.
 
-  vec4 primary_color;     /* The primary color of the UI. */
-  vec4 primary_color_05;  /* The primary color 5% darker. */
+  vec4 primary_color;      // The primary color of the UI.
+  vec4 primary_color_05;   // The primary color 5% darker.
 };
 
 }  // namespace graphick::renderer

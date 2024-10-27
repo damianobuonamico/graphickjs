@@ -2136,4 +2136,4 @@ void Path<T, _>::remove_command(const uint32_t index) {
 template class Path<float>;
 template class Path<double>;
 
-}
+}  // namespace graphick::geom

@@ -6,9 +6,9 @@
 #pragma once
 
 #include "cache.h"
-#include "viewport.h"
-#include "selection.h"
 #include "history/history.h"
+#include "selection.h"
+#include "viewport.h"
 
 #include "../input/tool_state.h"
 
@@ -18,177 +18,179 @@
 
 namespace graphick::editor {
 
-  class Entity;
+class Entity;
+
+/**
+ * @brief A scene is a collection of entities and their components.
+ *
+ * @class Scene
+ */
+class Scene {
+public:
+  const uuid id;                // The unique identifier of the scene.
+
+  Viewport viewport;            // Manages the viewport of the scene.
+  Selection selection;          // Manages the selection of entities.
+  History history;              // Manages the history of the scene.
+
+  input::ToolState tool_state;  // Manages the tool state of the scene.
+public:
+  /**
+   * @brief Default constructor, copy constructor and move constructor.
+   */
+  Scene();
+  Scene(const Scene& other);
+  Scene(Scene&& other) noexcept;
 
   /**
-   * @brief A scene is a collection of entities and their components.
-   *
-   * @class Scene
+   * @brief Deleted copy and move assignment operators.
    */
-  class Scene {
-  public:
-    const uuid id;                  /* The unique identifier of the scene. */
+  Scene& operator=(const Scene& other) = delete;
+  Scene& operator=(Scene&& other) = delete;
 
-    Viewport viewport;              /* Manages the viewport of the scene. */
-    Selection selection;            /* Manages the selection of entities. */
-    History history;                /* Manages the history of the scene. */
+  /**
+   * @brief Default destructor.
+   */
+  ~Scene();
 
-    input::ToolState tool_state;    /* Manages the tool state of the scene. */
-  public:
-    /**
-     * @brief Default constructor, copy constructor and move constructor.
-    */
-    Scene();
-    Scene(const Scene& other);
-    Scene(Scene&& other) noexcept;
+  /**
+   * @brief Returns a view of all the entities with the specified components.
+   *
+   * @return A view of all the entities with the specified components.
+   */
+  template <typename... C>
+  inline auto get_all_entities_with() {
+    return m_registry.view<C...>();
+  }
 
-    /**
-     * @brief Deleted copy and move assignment operators.
-     */
-    Scene& operator=(const Scene& other) = delete;
-    Scene& operator=(Scene&& other) = delete;
+  /**
+   * @brief Checks if an entity exists.
+   *
+   * @return true if the entity exists, false otherwise.
+   */
+  bool has_entity(const uuid id) const;
 
-    /**
-     * @brief Default destructor.
-     */
-    ~Scene();
+  /**
+   * @brief Returns the entity with the specified unique identifier.
+   *
+   * @return The entity with the specified unique identifier.
+   */
+  Entity get_entity(const uuid id);
 
-    /**
-     * @brief Returns a view of all the entities with the specified components.
-     *
-     * @return A view of all the entities with the specified components.
-     */
-    template <typename... C>
-    inline auto get_all_entities_with() { return m_registry.view<C...>(); }
+  /**
+   * @brief Returns the entity with the specified unique identifier.
+   *
+   * @return The entity with the specified unique identifier.
+   */
+  const Entity get_entity(const uuid id) const;
 
-    /**
-     * @brief Checks if an entity exists.
-     *
-     * @return true if the entity exists, false otherwise.
-     */
-    bool has_entity(const uuid id) const;
+  /**
+   * @brief Creates a new entity.
+   *
+   * @param tag The tag of the entity, if empty a default tag will be generated.
+   * @param generate_tag If true, a default tag will be generated.
+   * @return The new entity.
+   */
+  Entity create_entity(const std::string& tag = "", const bool generate_tag = true);
 
-    /**
-     * @brief Returns the entity with the specified unique identifier.
-     *
-     * @return The entity with the specified unique identifier.
-     */
-    Entity get_entity(const uuid id);
+  /**
+   * @brief Creates a new element entity.
+   *
+   * This method automatically adds all the required components of an element entity.
+   *
+   * @return The new element.
+   */
+  Entity create_element();
 
-    /**
-     * @brief Returns the entity with the specified unique identifier.
-     *
-     * @return The entity with the specified unique identifier.
-     */
-    const Entity get_entity(const uuid id) const;
+  /**
+   * @brief Creates a new element entity from a path.
+   *
+   * This method automatically adds all the required components of an element entity.
+   *
+   * @param path The underlying path of the element.
+   * @return The new element.
+   */
+  Entity create_element(const geom::path& path);
 
-    /**
-     * @brief Creates a new entity.
-     *
-     * @param tag The tag of the entity, if empty a default tag will be generated.
-     * @param generate_tag If true, a default tag will be generated.
-     * @return The new entity.
-     */
-    Entity create_entity(const std::string& tag = "", const bool generate_tag = true);
+  /**
+   * @brief Deletes an entity.
+   *
+   * @param entity The entity to delete.
+   */
+  void delete_entity(Entity entity);
 
-    /**
-     * @brief Creates a new element entity.
-     *
-     * This method automatically adds all the required components of an element entity.
-     *
-     * @return The new element.
-     */
-    Entity create_element();
+  /**
+   * @brief Deletes an entity.
+   *
+   * @param id The unique identifier of the entity to delete.
+   */
+  void delete_entity(uuid id);
 
-    /**
-     * @brief Creates a new element entity from a path.
-     *
-     * This method automatically adds all the required components of an element entity.
-     *
-     * @param path The underlying path of the element.
-     * @return The new element.
-     */
-    Entity create_element(const geom::path& path);
+  /**
+   * @brief Duplicates an entity.
+   *
+   * @param id The id of the entity to duplicate.
+   * @return The duplicated entity.
+   */
+  Entity duplicate_entity(const uuid id);
 
-    /**
-     * @brief Deletes an entity.
-     *
-     * @param entity The entity to delete.
-     */
-    void delete_entity(Entity entity);
+  /**
+   * @brief Returns the uuid of the entity at the specified position if any, uuid::null otherwise.
+   *
+   * @param position The position to check.
+   * @param deep_search If true, individual vertices and other handles will be checked.
+   * @param threshold The threshold to use when hit testing.
+   * @return The entity at the specified position.
+   */
+  uuid entity_at(const vec2 position, bool deep_search = false, float threshold = 0.0f);
 
-    /**
-     * @brief Deletes an entity.
-     *
-     * @param id The unique identifier of the entity to delete.
-     */
-    void delete_entity(uuid id);
+  /**
+   * @brief Returns the entities in the specified rectangle.
+   *
+   * @param rect The rectangle to check.
+   * @param deep_search If true, individual vertices and other handles will be checked.
+   * @return The entities in the specified rectangle.
+   */
+  std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const math::rect& rect, bool deep_search = false);
+private:
+  /**
+   * @brief Renders the scene.
+   *
+   * This method should only be called by the editor.
+   *
+   * @param ignore_cache If true, the entire scene will be redrawn, ignoring the cache.
+   */
+  void render(const bool ignore_cache) const;
 
-    /**
-     * @brief Duplicates an entity.
-     *
-     * @param id The id of the entity to duplicate.
-     * @return The duplicated entity.
-     */
-    Entity duplicate_entity(const uuid id);
+  /**
+   * @brief Adds a new entity to the scene from encoded data.
+   *
+   * This method should only be called by the history manager.
+   *
+   * @param id The unique identifier of the entity.
+   * @param encoded_data The encoded data of the entity.
+   */
+  void add(const uuid id, const io::EncodedData& encoded_data);
 
-    /**
-     * @brief Returns the uuid of the entity at the specified position if any, uuid::null otherwise.
-     *
-     * @param position The position to check.
-     * @param deep_search If true, individual vertices and other handles will be checked.
-     * @param threshold The threshold to use when hit testing.
-     * @return The entity at the specified position.
-     */
-    uuid entity_at(const vec2 position, bool deep_search = false, float threshold = 0.0f);
+  /**
+   * @brief Removes an entity from the scene.
+   *
+   * This method should only be called by the history manager.
+   */
+  void remove(const uuid id);
+private:
+  entt::registry m_registry;                          // The main entt registry of the scene.
 
-    /**
-     * @brief Returns the entities in the specified rectangle.
-     *
-     * @param rect The rectangle to check.
-     * @param deep_search If true, individual vertices and other handles will be checked.
-     * @return The entities in the specified rectangle.
-     */
-    std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const math::rect& rect, bool deep_search = false);
-  private:
-    /**
-     * @brief Renders the scene.
-     *
-     * This method should only be called by the editor.
-     *
-     * @param ignore_cache If true, the entire scene will be redrawn, ignoring the cache. 
-     */
-    void render(const bool ignore_cache) const;
+  std::unordered_map<uuid, entt::entity> m_entities;  // A map of entities by their unique identifier.
+  std::vector<entt::entity> m_order;                  // The z-order of the entities.
 
-    /**
-     * @brief Adds a new entity to the scene from encoded data.
-     *
-     * This method should only be called by the history manager.
-     *
-     * @param id The unique identifier of the entity.
-     * @param encoded_data The encoded data of the entity.
-     */
-    void add(const uuid id, const io::EncodedData& encoded_data);
+  size_t m_entity_tag_number = 0;                     // The number of unnamed entities created, used for generating tags.
 
-    /**
-     * @brief Removes an entity from the scene.
-     *
-     * This method should only be called by the history manager.
-     */
-    void remove(const uuid id);
-  private:
-    entt::registry m_registry;                            /* The main entt registry of the scene. */
+  mutable Cache m_cache;                              // The cache of the scene.
+private:
+  friend class Editor;
+  friend class Entity;
+  friend struct Action;
+};
 
-    std::unordered_map<uuid, entt::entity> m_entities;    /* A map of entities by their unique identifier. */
-    std::vector<entt::entity> m_order;                    /* The z-order of the entities. */
-
-    size_t m_entity_tag_number = 0;                       /* The number of unnamed entities created, used for generating tags. */
-
-    mutable Cache m_cache;                                /* The cache of the scene. */
-  private:
-    friend class Editor;
-    friend class Entity;
-    friend struct Action;
-  };
-
-}
+}  // namespace graphick::editor

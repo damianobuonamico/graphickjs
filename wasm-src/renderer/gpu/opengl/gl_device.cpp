@@ -451,4 +451,4 @@ void GLDevice::set_render_state(const RenderState& render_state) {
     s_device->m_state.stencil = render_state.stencil;
   }
 }
-}
+}  // namespace graphick::renderer::GPU::GL

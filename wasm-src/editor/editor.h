@@ -20,8 +20,8 @@ namespace graphick::editor {
  * @struct RenderRequestOptions
  */
 struct RenderRequestOptions {
-  bool ignore_cache = false; /* Whether to ignore the cache and redraw everything. */
-  int frame_rate = 60;       /* The frame rate to render at, if >= 60 it will render at the screen's refresh rate. */
+  bool ignore_cache = false;  // Whether to ignore the cache and redraw everything.
+  int frame_rate = 60;        // The frame rate to render at, if >= 60 it will render at the screen's refresh rate.
 
   RenderRequestOptions() = default;
 
@@ -135,10 +135,10 @@ private:
    */
   bool render_frame(const double time);
 private:
-  std::vector<Scene> m_scenes;                          /* The scenes managed by the editor. */
-  std::optional<RenderRequestOptions> m_render_request; /* The current render request. */
+  std::vector<Scene> m_scenes;                           // The scenes managed by the editor.
+  std::optional<RenderRequestOptions> m_render_request;  // The current render request.
 
-  double m_last_render_time = 0.0;                      /* The last render time. */
+  double m_last_render_time = 0.0;                       // The last render time.
 private:
 #ifdef EMSCRIPTEN
   friend int render_callback(const double time, void* user_data);
@@ -146,7 +146,7 @@ private:
   friend bool render_callback(const double time, void* user_data);
 #endif
 private:
-  static Editor* s_instance; /* The editor's singleton instance. */
+  static Editor* s_instance;  // The editor's singleton instance.
 };
 
-}
+}  // namespace graphick::editor

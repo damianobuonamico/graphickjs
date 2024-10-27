@@ -101,20 +101,20 @@ using TextureArrayBinding = std::pair<TexturesUniform, const std::vector<const T
  * @struct RenderState
  */
 struct RenderState {
-  Program program;                                 /* The current program. */
-  VertexArray* vertex_array;                       /* The current vertex array. */
-  Primitive primitive;                             /* The current primitive. */
-  irect viewport;                                  /* The current viewport. */
+  Program program;                                  // The current program.
+  VertexArray* vertex_array;                        // The current vertex array.
+  Primitive primitive;                              // The current primitive.
+  irect viewport;                                   // The current viewport.
 
-  std::vector<UniformBinding> uniforms;            /* The uniform bindings. */
-  std::vector<TextureBinding> textures;            /* The texture bindings. */
-  std::vector<TextureArrayBinding> texture_arrays; /* The texture bindings. */
+  std::vector<UniformBinding> uniforms;             // The uniform bindings.
+  std::vector<TextureBinding> textures;             // The texture bindings.
+  std::vector<TextureArrayBinding> texture_arrays;  // The texture bindings.
 
-  ClearOps clear_ops;                              /* The clear operations. */
+  ClearOps clear_ops;                               // The clear operations.
 
-  std::optional<BlendState> blend;                 /* The blend state, if std::nullopt, blending is disabled. */
-  std::optional<DepthState> depth;                 /* The depth state, if std::nullopt, the depth test is disabled. */
-  std::optional<StencilState> stencil;             /* The stencil state, if std::nullopt, the stencil test is disabled. */
+  std::optional<BlendState> blend;                  // The blend state, if std::nullopt, blending is disabled.
+  std::optional<DepthState> depth;                  // The depth state, if std::nullopt, the depth test is disabled.
+  std::optional<StencilState> stencil;              // The stencil state, if std::nullopt, the stencil test is disabled.
 
   RenderState() = default;
 

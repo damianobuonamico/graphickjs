@@ -686,7 +686,7 @@ template <typename T, typename _>
 void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink) {
   // return cubic_to_circular_quadratics(cubic, tolerance, sink);
 
-  GK_TOTAL("geom::cubic_to_quadratics");    // 7.7ms -> 7.41ms -> 6.7ms -> 6.25ms -> 4.9ms -> 4.57ms
+  GK_TOTAL("geom::cubic_to_quadratics");  // 7.7ms -> 7.41ms -> 6.7ms -> 6.25ms -> 4.9ms -> 4.57ms
 
   const auto& [a, b, c, d] = cubic.coefficients();
 
@@ -1181,4 +1181,4 @@ template struct QuadraticPath<double>;
 
 template struct CubicPath<float>;
 template struct CubicPath<double>;
-}
+}  // namespace graphick::geom

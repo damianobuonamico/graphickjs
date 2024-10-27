@@ -24,7 +24,6 @@
 #include "../../renderer/renderer.h"
 
 #include "../../utils/console.h"
-#include "../../utils/debugger.h"
 #include "../../utils/misc.h"
 
 #include "../input/input_manager.h"
@@ -299,7 +298,7 @@ void Scene::render(const bool ignore_cache) const {
 
   const math::rect visible_rect = viewport.visible();
   const renderer::Viewport rendering_viewport = {
-    ivec2(math::floor(vec2(viewport.size()) * viewport.dpr())),    // Flooring to avoid banding artifacts.
+    ivec2(math::floor(vec2(viewport.size()) * viewport.dpr())),  // Flooring to avoid banding artifacts.
     viewport.position(),
     viewport.zoom() * viewport.dpr(),
     viewport.dpr(),
@@ -506,4 +505,4 @@ void Scene::remove(const uuid id) {
   m_registry.destroy(entity);
 }
 
-}    // namespace graphick::editor
+}  // namespace graphick::editor

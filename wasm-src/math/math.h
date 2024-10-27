@@ -24,8 +24,8 @@ namespace graphick::math {
  */
 template <typename T>
 struct QuadraticSolutions {
-  T solutions[2]; /* The solutions. */
-  uint8_t count;  /* The number of solutions. */
+  T solutions[2]; // The solutions.
+  uint8_t count;  // The number of solutions.
 
   /**
    * @brief Constructs a QuadraticSolutions object.
@@ -48,8 +48,8 @@ struct QuadraticSolutions {
  */
 template <typename T>
 struct CubicSolutions {
-  T solutions[3]; /* The solutions. */
-  uint8_t count;  /* The number of solutions. */
+  T solutions[3]; // The solutions.
+  uint8_t count;  // The number of solutions.
 
   /**
    * @brief Constructs a CubicSolutions object.
@@ -236,4 +236,4 @@ inline int hash(std::initializer_list<T> numbers) {
   return h ^ (h >> 7) ^ (h >> 4);
 }
 
-}
+}  // namespace graphick::math

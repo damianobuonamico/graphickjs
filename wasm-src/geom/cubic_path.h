@@ -25,7 +25,7 @@ namespace graphick::geom {
  */
 template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 struct CubicPath {
-  std::vector<math::Vec2<T>> points; /* The control points of the path. */
+  std::vector<math::Vec2<T>> points;  // The control points of the path.
 
   /**
    * @brief Returns whether the path is empty.
@@ -196,7 +196,7 @@ struct CubicPath {
   int winding_of(const math::Vec2<T> p) const;
 };
 
-}
+}  // namespace graphick::geom
 
 /* -- Aliases -- */
 
@@ -205,4 +205,4 @@ namespace graphick::geom {
 using cubic_path = CubicPath<float>;
 using dcubic_path = CubicPath<double>;
 
-}
+}  // namespace graphick::geom

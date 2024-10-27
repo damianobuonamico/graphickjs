@@ -53,9 +53,9 @@ struct FillProgram {
  * @struct LineProgram
  */
 struct LineProgram {
-  Program program;      /* The shader program. */
-  Uniform vp_uniform;   /* The view projection uniform. */
-  Uniform zoom_uniform; /* The zoom uniform. */
+  Program program;       // The shader program.
+  Uniform vp_uniform;    // The view projection uniform.
+  Uniform zoom_uniform;  // The zoom uniform.
 
   LineProgram();
 };
@@ -66,8 +66,8 @@ struct LineProgram {
  * @struct RectProgram
  */
 struct RectProgram {
-  Program program;    /* The shader program. */
-  Uniform vp_uniform; /* The view projection uniform. */
+  Program program;     // The shader program.
+  Uniform vp_uniform;  // The view projection uniform.
 
   RectProgram();
 };
@@ -78,9 +78,9 @@ struct RectProgram {
  * @struct CircleProgram
  */
 struct CircleProgram {
-  Program program;      /* The shader program. */
-  Uniform vp_uniform;   /* The view projection uniform. */
-  Uniform zoom_uniform; /* The zoom uniform. */
+  Program program;       // The shader program.
+  Uniform vp_uniform;    // The view projection uniform.
+  Uniform zoom_uniform;  // The zoom uniform.
 
   CircleProgram();
 };
@@ -91,9 +91,9 @@ struct CircleProgram {
  * @struct ImageProgram
  */
 struct ImageProgram {
-  Program program;              /* The shader program. */
-  Uniform vp_uniform;           /* The view projection uniform. */
-  TextureUniform image_texture; /* The image texture. */
+  Program program;               // The shader program.
+  Uniform vp_uniform;            // The view projection uniform.
+  TextureUniform image_texture;  // The image texture.
 
   ImageProgram();
 };
@@ -104,12 +104,12 @@ struct ImageProgram {
  * @struct Programs
  */
 struct Programs {
-  TileProgram tile_program;     /* The tile shader program. */
-  FillProgram fill_program;     /* The fill shader program. */
-  LineProgram line_program;     /* The line shader program. */
-  RectProgram rect_program;     /* The square shader program. */
-  CircleProgram circle_program; /* The circle shader program. */
-  ImageProgram image_program;   /* The image shader program. */
+  TileProgram tile_program;      // The tile shader program.
+  FillProgram fill_program;      // The fill shader program.
+  LineProgram line_program;      // The line shader program.
+  RectProgram rect_program;      // The square shader program.
+  CircleProgram circle_program;  // The circle shader program.
+  ImageProgram image_program;    // The image shader program.
 };
 
 /**
@@ -118,13 +118,13 @@ struct Programs {
  * @struct TileVertexArray
  */
 struct TileVertexArray {
-  VertexArray vertex_array; /* The vertex array. */
+  VertexArray vertex_array;  // The vertex array.
 
   TileVertexArray(const TileProgram& program, const Buffer& vertex_buffer, const Buffer& index_buffer);
 };
 
 struct FillVertexArray {
-  VertexArray vertex_array; /* The vertex array. */
+  VertexArray vertex_array;  // The vertex array.
 
   FillVertexArray(const FillProgram& program, const Buffer& vertex_buffer, const Buffer& index_buffer);
 };
@@ -135,7 +135,7 @@ struct FillVertexArray {
  * @struct LineVertexArray
  */
 struct LineVertexArray {
-  VertexArray vertex_array; /* The vertex array. */
+  VertexArray vertex_array;  // The vertex array.
 
   LineVertexArray(const LineProgram& program, const Buffer& instance_buffer, const Buffer& vertex_buffer);
 };
@@ -146,7 +146,7 @@ struct LineVertexArray {
  * @struct RectVertexArray
  */
 struct RectVertexArray {
-  VertexArray vertex_array; /* The vertex array. */
+  VertexArray vertex_array;  // The vertex array.
 
   RectVertexArray(const RectProgram& program, const Buffer& instance_buffer, const Buffer& vertex_buffer);
 };
@@ -157,7 +157,7 @@ struct RectVertexArray {
  * @struct CircleVertexArray
  */
 struct CircleVertexArray {
-  VertexArray vertex_array; /* The vertex array. */
+  VertexArray vertex_array;  // The vertex array.
 
   CircleVertexArray(const CircleProgram& program, const Buffer& instance_buffer, const Buffer& vertex_buffer);
 };
@@ -168,7 +168,7 @@ struct CircleVertexArray {
  * @struct ImageVertexArray
  */
 struct ImageVertexArray {
-  VertexArray vertex_array; /* The vertex array. */
+  VertexArray vertex_array;  // The vertex array.
 
   ImageVertexArray(const ImageProgram& program, const Buffer& instance_buffer, const Buffer& vertex_buffer);
 };
@@ -179,12 +179,12 @@ struct ImageVertexArray {
  * @struct VertexArrays
  */
 struct VertexArrays {
-  std::unique_ptr<TileVertexArray> tile_vertex_array;     /* The tile shader vertex array. */
-  std::unique_ptr<FillVertexArray> fill_vertex_array;     /* The fill shader vertex array. */
-  std::unique_ptr<LineVertexArray> line_vertex_array;     /* The line shader vertex array. */
-  std::unique_ptr<RectVertexArray> rect_vertex_array;     /* The square shader vertex array. */
-  std::unique_ptr<CircleVertexArray> circle_vertex_array; /* The circle shader vertex array. */
-  std::unique_ptr<ImageVertexArray> image_vertex_array;   /* The image shader vertex array. */
+  std::unique_ptr<TileVertexArray> tile_vertex_array;      // The tile shader vertex array.
+  std::unique_ptr<FillVertexArray> fill_vertex_array;      // The fill shader vertex array.
+  std::unique_ptr<LineVertexArray> line_vertex_array;      // The line shader vertex array.
+  std::unique_ptr<RectVertexArray> rect_vertex_array;      // The square shader vertex array.
+  std::unique_ptr<CircleVertexArray> circle_vertex_array;  // The circle shader vertex array.
+  std::unique_ptr<ImageVertexArray> image_vertex_array;    // The image shader vertex array.
 
   VertexArrays() = default;
 

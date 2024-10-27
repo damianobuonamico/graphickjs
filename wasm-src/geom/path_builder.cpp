@@ -654,4 +654,4 @@ void PathBuilder<T, _>::flatten_unclipped(
 
 template class PathBuilder<float>;
 template class PathBuilder<double>;
-}
+}  // namespace graphick::geom

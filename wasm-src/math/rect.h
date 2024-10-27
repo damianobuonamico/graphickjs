@@ -18,8 +18,8 @@ namespace graphick::math {
  */
 template <typename T>
 struct Rect {
-  Vec2<T> min; /* The minimum point of the rectangle. */
-  Vec2<T> max; /* The maximum point of the rectangle. */
+  Vec2<T> min;  // The minimum point of the rectangle.
+  Vec2<T> max;  // The maximum point of the rectangle.
 
   /* -- Component accesses -- */
 
@@ -184,7 +184,7 @@ struct Rect {
  */
 template <typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 struct RRect : public Rect<T> {
-  T angle; /* The angle of rotation of the rectangle. */
+  T angle;  // The angle of rotation of the rectangle.
 
   /* -- Constructors -- */
 
@@ -275,7 +275,7 @@ template <typename T>
 constexpr bool operator!=(const Rect<T>& r1, const Rect<T>& r2) {
   return !(r1 == r2);
 }
-}
+}  // namespace graphick::math
 
 /* -- Aliases -- */
 
@@ -291,7 +291,7 @@ using drrect = math::RRect<double>;
 using irrect = math::RRect<int32_t>;
 using urrect = math::RRect<uint8_t>;
 
-}
+}  // namespace graphick::math
 
 namespace graphick {
 
@@ -305,4 +305,4 @@ using math::irrect;
 using math::rrect;
 using math::urrect;
 
-}
+}  // namespace graphick

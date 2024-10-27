@@ -12,20 +12,20 @@
 
 namespace graphick::io::svg {
 
-  /**
-   * @brief Parse an SVG string and add the elements to the scene.
-   *
-   * @param svg The SVG string to parse.
-   * @return true if the SVG was parsed successfully, false otherwise.
-   */
-  bool parse_svg(const std::string& svg);
+/**
+ * @brief Parse an SVG string and add the elements to the scene.
+ *
+ * @param svg The SVG string to parse.
+ * @return true if the SVG was parsed successfully, false otherwise.
+ */
+bool parse_svg(const std::string& svg);
 
-  /**
-   * @brief Parse an SVG string and add the elements to the scene.
-   *
-   * @param svg The SVG string to parse.
-   * @return true if the SVG was parsed successfully, false otherwise.
-   */
-  bool parse_svg(const char* svg);
+/**
+ * @brief Parse an SVG string and add the elements to the scene.
+ *
+ * @param svg The SVG string to parse.
+ * @return true if the SVG was parsed successfully, false otherwise.
+ */
+bool parse_svg(const char* svg);
 
-}
+}  // namespace graphick::io::svg

@@ -81,7 +81,8 @@
       "xtree": "cpp",
       "xutility": "cpp",
       "iostream": "cpp",
-      "random": "cpp"
+      "random": "cpp",
+      "*.glsl": "cpp"
     }
   }
 }

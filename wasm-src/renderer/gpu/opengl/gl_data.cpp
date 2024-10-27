@@ -441,4 +441,4 @@ void GLBuffer::upload(const void* data, const size_t size, const size_t offset) 
   glCall(glBufferSubData(gl_target(target), (GLintptr)offset, (GLsizeiptr)size, data));
 }
 
-}
+}  // namespace graphick::renderer::GPU::GL

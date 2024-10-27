@@ -159,4 +159,4 @@ inline bool collinear(const math::Vec2<T> p0, const math::Vec2<T> p1, const math
   return math::is_almost_zero(math::cross(p1 - p0, p2 - p0), eps);
 }
 
-}
+}  // namespace graphick::geom
