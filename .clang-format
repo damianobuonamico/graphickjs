@@ -90,10 +90,13 @@ IndentPPDirectives: AfterHash
 
 BreakBeforeTernaryOperators: false
 
-SpaceAfterTemplateKeyword: false
-
 # Handy comment at the end of each C++ name space.
 FixNamespaceComments: true
+
+# Align & and * in next to the type, not the variable.
+PointerAlignment: Left
+
+SpaceAfterTemplateKeyword: false
 
 # Use "if (...)" instead of "if(...)", but have function calls like foo().
 SpaceBeforeParens: ControlStatements

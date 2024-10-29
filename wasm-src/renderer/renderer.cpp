@@ -37,72 +37,39 @@ namespace graphick::renderer {
 /* -- Static Methods -- */
 
 /**
- * @brief Generates an orthographic projection matrix.
+ * @brief Generates an orthographic projection matrix from a viewport.
  *
- * @param size The size of the viewport.
- * @param zoom The zoom level.
+ * @param viewport The viewport to generate the projection matrix for.
  * @return The orthographic projection matrix p.
  */
-static dmat4 orthographic_projection(const ivec2 size, double zoom)
+static dmat4 orthographic_projection(const Viewport& viewport)
 {
-  const dvec2 dsize = dvec2(size);
+  const dvec2 dsize = dvec2(viewport.size);
 
-  const double factor = 0.5f / zoom;
+  const double factor = 0.5 / viewport.zoom;
   const double half_width = -dsize.x * factor;
   const double half_height = dsize.y * factor;
 
-  const double right = -half_width;
-  const double left = half_width;
-  const double top = -half_height;
-  const double bottom = half_height;
-
-  return dmat4{2.0 / (right - left),
-               0.0,
-               0.0,
-               0.0,
-               0.0,
-               2.0 / (top - bottom),
-               0.0,
-               0.0,
-               0.0,
-               0.0,
-               -1.0,
-               0.0,
-               -(right + left) / (right - left),
-               -(top + bottom) / (top - bottom),
-               0.0,
-               1.0};
+  return dmat4{{-1.0 / half_width, 0.0, 0.0, 0.0},
+               {0.0, -1.0 / half_height, 0.0, 0.0},
+               {0.0, 0.0, -1.0, 0.0},
+               {0.0, 0.0, 0.0, 1.0}};
 }
 
 /**
- * @brief Generates an orthographic translation matrix.
+ * @brief Generates an orthographic translation matrix from a viewport.
  *
- * @param size The size of the viewport.
- * @param position The position of the camera.
- * @param zoom The zoom level.
+ * @param viewport The viewport to generate the translation matrix for.
  * @return The orthographic translation matrix v.
  */
-static dmat4 orthographic_translation(const ivec2 size, const vec2 position, const double zoom)
+static dmat4 orthographic_translation(const Viewport& viewport)
 {
-  const dvec2 dsize = dvec2(size);
-  const dvec2 dposition = dvec2(position);
+  const dvec2 dsize = dvec2(viewport.size);
 
-  return dmat4{1.0f,
-               0.0f,
-               0.0f,
-               0.5f * (-dsize.x / zoom + 2 * dposition.x),
-               0.0f,
-               1.0f,
-               0.0f,
-               0.5f * (-dsize.y / zoom + 2 * dposition.y),
-               0.0f,
-               0.0f,
-               1.0f,
-               0.0f,
-               0.0f,
-               0.0f,
-               0.0f,
-               1.0f};
+  return dmat4{{1.0, 0.0, 0.0, 0.5 * (-dsize.x / viewport.zoom + 2.0 * viewport.position.x)},
+               {0.0, 1.0, 0.0, 0.5 * (-dsize.y / viewport.zoom + 2.0 * viewport.position.y)},
+               {0.0, 0.0, 1.0, 0.0},
+               {0.0, 0.0, 0.0, 1.0}};
 }
 
 #define RENDER_STATE(name) \
@@ -122,13 +89,13 @@ static dmat4 orthographic_translation(const ivec2 size, const vec2 position, con
  * @param flush_data The flush data to use.
  */
 template<typename T>
-static void flush(InstancedData<T> &data, const GPU::RenderState render_state)
+static void flush(InstancedData<T>& data, const GPU::RenderState render_state)
 {
   if (data.instances.batches[0].empty()) {
     return;
   }
 
-  for (const std::vector<T> &batch : data.instances.batches) {
+  for (const std::vector<T>& batch : data.instances.batches) {
     data.instance_buffer.upload(batch.data(), batch.size() * sizeof(T));
 
     GPU::Device::draw_arrays_instanced(
@@ -140,7 +107,7 @@ static void flush(InstancedData<T> &data, const GPU::RenderState render_state)
 
 /* -- Static Member Initialization -- */
 
-Renderer *Renderer::s_instance = nullptr;
+Renderer* Renderer::s_instance = nullptr;
 
 /* -- Renderer -- */
 
@@ -153,7 +120,10 @@ void Renderer::init()
   EmscriptenWebGLContextAttributes attr;
   emscripten_webgl_init_context_attributes(&attr);
 
-  /* https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#avoid_alphafalse_which_can_be_expensive
+  /* Despite
+   * <https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#avoid_alphafalse_which_can_be_expensive>,
+   * when using desynchronized context (essential for responsive input), is better to use
+   * alpha=false to avoid expensive blending operations if there are elements on top.
    */
   attr.alpha = false;
   attr.desynchronized = true;
@@ -189,29 +159,17 @@ void Renderer::shutdown()
 #endif
 }
 
-void Renderer::begin_frame(const RenderOptions &options)
+void Renderer::begin_frame(const RenderOptions& options)
 {
-  const dmat4 view_matrix = orthographic_translation(
-      options.viewport.size, options.viewport.position, options.viewport.zoom);
-  const dmat4 projection_matrix = orthographic_projection(options.viewport.size,
-                                                          options.viewport.zoom);
+  const dmat4 view_matrix = orthographic_translation(options.viewport);
+  const dmat4 projection_matrix = orthographic_projection(options.viewport);
 
   get()->m_last_viewport = get()->m_viewport;
   get()->m_viewport = options.viewport;
   get()->m_vp_matrix = projection_matrix * view_matrix;
   get()->m_cache = options.cache;
-  // get()->m_cached_rendering = !options.ignore_cache;
-  get()->m_cached_rendering = false;
-
-  get()->m_ui_options = UIOptions{
-      vec2(options.viewport.dpr / options.viewport.zoom * ui_handle_size<double>),
-      vec2(options.viewport.dpr / options.viewport.zoom * (ui_handle_size<double> - 2.0)),
-      static_cast<float>(options.viewport.dpr / options.viewport.zoom / 2.0 *
-                         ui_handle_size<double>),
-      static_cast<float>(options.viewport.dpr * ui_line_width<double>),
-      vec4(0.22f, 0.76f, 0.95f, 1.0f),
-      vec4(0.22f, 0.76f, 0.95f, 1.0f) * vec4(0.95f, 0.95f, 0.95f, 1.0f),
-  };
+  get()->m_cached_rendering = false;  // get()->m_cached_rendering = !options.ignore_cache;
+  get()->m_ui_options = UIOptions(options.viewport.dpr / options.viewport.zoom);
 
   GPU::Device::begin_commands();
 
@@ -228,11 +186,11 @@ void Renderer::end_frame()
   GK_TOTAL_RECORD("GPU", time);
 }
 
-void Renderer::draw(const geom::Path<float, std::enable_if<true>> &path,
-                    const mat2x3 &transform,
-                    const Fill *fill,
-                    const Stroke *stroke,
-                    const rect *bounding_rect,
+void Renderer::draw(const geom::Path<float, std::enable_if<true>>& path,
+                    const mat2x3& transform,
+                    const Fill* fill,
+                    const Stroke* stroke,
+                    const rect* bounding_rect,
                     const bool pretransformed_rect)
 {
   if (path.empty() || (fill == nullptr && stroke == nullptr)) {
@@ -254,13 +212,13 @@ void Renderer::draw(const geom::Path<float, std::enable_if<true>> &path,
   }
 }
 
-void Renderer::draw_outline(const geom::Path<float, std::enable_if<true>> &path,
-                            const mat2x3 &transform,
+void Renderer::draw_outline(const geom::Path<float, std::enable_if<true>>& path,
+                            const mat2x3& transform,
                             const float tolerance,
                             const bool draw_vertices,
-                            const std::unordered_set<uint32_t> *selected_vertices,
-                            const Stroke *stroke,
-                            const rect *bounding_rect,
+                            const std::unordered_set<uint32_t>* selected_vertices,
+                            const Stroke* stroke,
+                            const rect* bounding_rect,
                             const bool pretransformed_rect)
 {
   if (path.empty()) {
@@ -278,7 +236,7 @@ void Renderer::draw_outline(const geom::Path<float, std::enable_if<true>> &path,
   }
 }
 
-void Renderer::draw_rect(const rect &rect, const std::optional<vec4> color)
+void Renderer::draw_rect(const rect& rect, const std::optional<vec4> color)
 {
   get()->m_rect_instances.instances.push_back(
       {rect.center(), rect.size(), color.value_or(get()->m_ui_options.primary_color)});
@@ -337,10 +295,10 @@ Renderer::Renderer()
                                       std::move(image_vertex_array)};
 }
 
-void Renderer::draw_transformed(const geom::Path<float, std::enable_if<true>> &path,
-                                const rect &bounding_rect,
-                                const Fill *fill,
-                                const Stroke *stroke)
+void Renderer::draw_transformed(const geom::Path<float, std::enable_if<true>>& path,
+                                const rect& bounding_rect,
+                                const Fill* fill,
+                                const Stroke* stroke)
 {
   const bool culling = bounding_rect.area() * m_viewport.zoom * m_viewport.zoom > 18.0f * 18.0f;
 
@@ -375,9 +333,9 @@ void Renderer::draw_transformed(const geom::Path<float, std::enable_if<true>> &p
   }
 }
 
-bool Renderer::draw_cubic_path_impl(PathDrawable &drawable)
+bool Renderer::draw_cubic_path_impl(PathDrawable& drawable)
 {
-  TileBatchData &tiles = m_batch.tiles;
+  TileBatchData& tiles = m_batch.tiles;
 
   /* Bands count is always between 1 and 16, based on the viewport coverage. */
 
@@ -490,9 +448,9 @@ bool Renderer::draw_cubic_path_impl(PathDrawable &drawable)
   return false;
 }
 
-void Renderer::draw_cubic_path_cull(PathDrawable &drawable,
-                                    PathCullingData &data,
-                                    const geom::CubicPath<float, std::enable_if<true>> &path)
+void Renderer::draw_cubic_path_cull(PathDrawable& drawable,
+                                    PathCullingData& data,
+                                    const geom::CubicPath<float, std::enable_if<true>>& path)
 {
   for (uint16_t i = 0; i < path.size(); i++) {
     /* Being monotonic, it is straightforward to determine which bands the curve intersects. */
@@ -522,7 +480,7 @@ void Renderer::draw_cubic_path_cull(PathDrawable &drawable,
     const vec2 p2 = path[i * 3 + 2];
     const vec2 p3 = path[i * 3 + 3];
 
-    const auto &[a, b, c, d] = geom::cubic_coefficients(p0, p1, p2, p3);
+    const auto& [a, b, c, d] = geom::cubic_coefficients(p0, p1, p2, p3);
 
     const bool b01 = std::abs(p1.x - p0.x) + std::abs(p1.y - p0.y) <
                      math::geometric_epsilon<float>;
@@ -610,10 +568,10 @@ void Renderer::draw_cubic_path_cull(PathDrawable &drawable,
   data.accumulator += path.size();
 }
 
-void Renderer::draw_cubic_path_cull_commit(PathDrawable &drawable, PathCullingData &data)
+void Renderer::draw_cubic_path_cull_commit(PathDrawable& drawable, PathCullingData& data)
 {
-  TileBatchData &tiles = m_batch.tiles;
-  FillBatchData &fills = m_batch.fills;
+  TileBatchData& tiles = m_batch.tiles;
+  FillBatchData& fills = m_batch.fills;
 
   const uvec4 color = uvec4(drawable.fill.color * 255.0f);
   const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, drawable.curves_start_index);
@@ -629,19 +587,19 @@ void Renderer::draw_cubic_path_cull_commit(PathDrawable &drawable, PathCullingDa
   /* Calculate filled spans. */
 
   for (int i = 0; i < data.bands.size(); i++) {
-    const Band &band = data.bands[i];
+    const Band& band = data.bands[i];
     const float top_y = drawable.bounding_rect.min.y + i * drawable.band_delta;
     const float bottom_y = drawable.bounding_rect.min.y + (i + 1) * drawable.band_delta;
 
     std::sort(data.bottom_intersections[i].begin(),
               data.bottom_intersections[i].end(),
-              [&](const Intersection &a, const Intersection &b) { return a.x < b.x; });
+              [&](const Intersection& a, const Intersection& b) { return a.x < b.x; });
 
     int winding = 0;
     int winding_k = 0;
 
     if (!band.disabled_spans.empty()) {
-      const Span &span = band.disabled_spans.front();
+      const Span& span = band.disabled_spans.front();
 
       const vec2 span_min = {span.min, top_y};
       const vec2 span_max = {span.max, bottom_y};
@@ -679,8 +637,8 @@ void Renderer::draw_cubic_path_cull_commit(PathDrawable &drawable, PathCullingDa
     }
 
     for (int j = 0; j < static_cast<int>(band.disabled_spans.size()) - 1; j++) {
-      const Span &span1 = band.disabled_spans[j];
-      const Span &span2 = band.disabled_spans[j + 1];
+      const Span& span1 = band.disabled_spans[j];
+      const Span& span2 = band.disabled_spans[j + 1];
 
       const vec2 span_min = {span2.min, top_y};
       const vec2 span_max = {span2.max, bottom_y};
@@ -738,12 +696,12 @@ void Renderer::draw_cubic_path_cull_commit(PathDrawable &drawable, PathCullingDa
   }
 }
 
-void Renderer::draw_cubic_path(const geom::CubicPath<float, std::enable_if<true>> &path,
-                               const rect &bounding_rect,
-                               const Fill &fill,
+void Renderer::draw_cubic_path(const geom::CubicPath<float, std::enable_if<true>>& path,
+                               const rect& bounding_rect,
+                               const Fill& fill,
                                const bool culling)
 {
-  TileBatchData &tiles = m_batch.tiles;
+  TileBatchData& tiles = m_batch.tiles;
 
   /* Starting indices for this path. */
 
@@ -799,17 +757,17 @@ void Renderer::draw_cubic_path(const geom::CubicPath<float, std::enable_if<true>
 }
 
 void Renderer::draw_cubic_paths(
-    const std::vector<const geom::CubicPath<float, std::enable_if<true>> *> &paths,
-    const rect &bounding_rect,
-    const Fill &fill,
+    const std::vector<const geom::CubicPath<float, std::enable_if<true>>*>& paths,
+    const rect& bounding_rect,
+    const Fill& fill,
     const bool culling)
 {
-  TileBatchData &tiles = m_batch.tiles;
+  TileBatchData& tiles = m_batch.tiles;
 
   /* Starting indices for this path. */
 
   const size_t length = std::accumulate(
-      paths.begin(), paths.end(), 0, [](const size_t acc, const auto *p) {
+      paths.begin(), paths.end(), 0, [](const size_t acc, const auto* p) {
         return acc + p->size();
       });
 
@@ -835,7 +793,7 @@ void Renderer::draw_cubic_paths(
 
   size_t accumulator = 0;
 
-  for (const auto *path : paths) {
+  for (const auto* path : paths) {
     for (uint16_t i = 0; i < path->size(); i++) {
       const vec2 p0 = path->at(i * 3);
       const vec2 p1 = path->at(i * 3 + 1);
@@ -864,22 +822,22 @@ void Renderer::draw_cubic_paths(
 
   PathCullingData culling_data(drawable.horizontal_bands);
 
-  for (const auto *path : paths) {
+  for (const auto* path : paths) {
     draw_cubic_path_cull(drawable, culling_data, *path);
   }
 
   draw_cubic_path_cull_commit(drawable, culling_data);
 }
 
-void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true>> &path,
-                                     const mat2x3 &transform,
+void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path,
+                                     const mat2x3& transform,
                                      const float tolerance,
-                                     const std::unordered_set<uint32_t> *selected_vertices,
-                                     const Stroke *stroke)
+                                     const std::unordered_set<uint32_t>* selected_vertices,
+                                     const Stroke* stroke)
 {
-  InstanceBuffer<LineInstance> &lines = m_line_instances.instances;
-  InstanceBuffer<RectInstance> &rects = m_rect_instances.instances;
-  InstanceBuffer<CircleInstance> &circles = get()->m_circle_instances.instances;
+  InstanceBuffer<LineInstance>& lines = m_line_instances.instances;
+  InstanceBuffer<RectInstance>& rects = m_rect_instances.instances;
+  InstanceBuffer<CircleInstance>& circles = get()->m_circle_instances.instances;
 
   uint32_t i = path.points_count() - 1;
   vec2 last_raw = path.at(i);
@@ -1029,7 +987,7 @@ void Renderer::flush_cache()
 
     m_invalid_rects = m_cache->get_invalid_rects();
 
-    for (const auto &r : m_invalid_rects) {
+    for (const auto& r : m_invalid_rects) {
       draw_rect(r, m_viewport.background);
     }
 
@@ -1059,9 +1017,9 @@ void Renderer::flush_cache()
 
 void Renderer::flush_meshes()
 {
-  TileBatchData &tiles = m_batch.tiles;
-  FillBatchData &fills = m_batch.fills;
-  BatchData &data = m_batch.data;
+  TileBatchData& tiles = m_batch.tiles;
+  FillBatchData& fills = m_batch.fills;
+  BatchData& data = m_batch.data;
 
   GPU::RenderState state;
 

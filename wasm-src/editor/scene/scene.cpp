@@ -352,9 +352,6 @@ void Scene::render(const bool ignore_cache) const
 
   uint32_t z_index = 1;
 
-  float tolerance = GK_PATH_TOLERANCE / 2.0f;
-  float outline_tolerance = GK_PATH_TOLERANCE / (viewport.zoom() * viewport.dpr());
-
   bool should_rehydrate = true;
 
   auto &selected = selection.selected();
@@ -443,14 +440,8 @@ void Scene::render(const bool ignore_cache) const
         }
       }
 
-      renderer::Renderer::draw_outline(path,
-                                       transform,
-                                       outline_tolerance,
-                                       true,
-                                       is_full ? nullptr : &selected_vertices,
-                                       nullptr,
-                                       &entity_rect,
-                                       true);
+      renderer::Renderer::draw_outline(
+          path, transform, true, is_full ? nullptr : &selected_vertices, nullptr, &entity_rect);
 
       // TEMP
       // geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
@@ -469,13 +460,12 @@ void Scene::render(const bool ignore_cache) const
                                     stroke->width,
                                     stroke->miter_limit,
                                     z_index + 1};
-      renderer::Renderer::draw(
-          path, transform_matrix, &filling_opt, &stroking_opt, &entity_rect, true);
+      renderer::Renderer::draw(path, transform_matrix, &filling_opt, &stroking_opt, &entity_rect);
 
       z_index += 2;
     } else if (has_fill) {
       renderer::Fill filling_opt{fill->color, fill->rule, z_index};
-      renderer::Renderer::draw(path, transform_matrix, &filling_opt, nullptr, &entity_rect, true);
+      renderer::Renderer::draw(path, transform_matrix, &filling_opt, nullptr, &entity_rect);
 
       z_index += 1;
     } else if (has_stroke) {
@@ -485,7 +475,7 @@ void Scene::render(const bool ignore_cache) const
                                     stroke->width,
                                     stroke->miter_limit,
                                     z_index + 1};
-      renderer::Renderer::draw(path, transform_matrix, nullptr, &stroking_opt, &entity_rect, true);
+      renderer::Renderer::draw(path, transform_matrix, nullptr, &stroking_opt, &entity_rect);
 
       z_index += 1;
     }

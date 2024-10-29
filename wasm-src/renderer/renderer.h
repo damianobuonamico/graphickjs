@@ -21,29 +21,29 @@
 
 #include "gpu/shaders.h"
 
-#include "properties.h"
 #include "renderer_data.h"
 
 namespace graphick::geom {
 template<typename T, typename>
 class Path;
-}
+using path = geom::Path<float, std::enable_if<true>>;
+}  // namespace graphick::geom
 
 namespace graphick::renderer {
 
 /**
  * @brief The main Graphick renderer.
  *
- * The renderer takes QuadraticPaths as input and draws them on the screen based on the provided
- * Stroke and Fill properties.
+ * The renderer takes Paths as input and draws them on the screen based on the provided Stroke,
+ * Fill and outline properties.
+ *
+ * Takes floats as input, but uses doubles internally for better precision.
  */
 class Renderer {
  public:
-  /**
-   * @brief Deleted copy and move constructors.
-   */
-  Renderer(const Renderer &) = delete;
-  Renderer(Renderer &&) = delete;
+ public:
+  Renderer(const Renderer&) = delete;
+  Renderer(Renderer&&) = delete;
 
   /**
    * @brief Initializes the renderer.
@@ -64,7 +64,7 @@ class Renderer {
    *
    * @param options The RenderOptions to use for the frame.
    */
-  static void begin_frame(const RenderOptions &options);
+  static void begin_frame(const RenderOptions& options);
 
   /**
    * @brief Ends the current frame.
@@ -78,41 +78,10 @@ class Renderer {
    *
    * @param path The Path to draw.
    * @param transform The transformation matrix to apply to the path.
-   * @param fill The Fill properties to use.
-   * @param stroke The Stroke properties to use.
-   * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
-   * @param pretransformed_rect Whether the bounding rectangle is already transformed, default is
-   * false.
+   * @param options The DrawingOptions to use.
+   * @return true if the path was visible and drawn, false otherwise.
    */
-  static void draw(const geom::Path<float, std::enable_if<true>> &path,
-                   const mat2x3 &transform,
-                   const Fill *fill = nullptr,
-                   const Stroke *stroke = nullptr,
-                   const rect *bounding_rect = nullptr,
-                   const bool pretransformed_rect = false);
-
-  /**
-   * @brief Draws the outline of a Path.
-   *
-   * @param path The Path to draw.
-   * @param transform The transformation matrix to apply to the path.
-   * @param tolerance The tolerance to use when approximating the path, default is 0.25.
-   * @param draw_vertices Whether to draw the vertices of the path, default is false.
-   * @param selected_vertices The indices of the selected vertices, if nullptr all vertices are
-   * selected.
-   * @param stroke The Stroke properties to use, can be nullptr.
-   * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
-   * @param pretransformed_rect Whether the bounding rectangle is already transformed, default is
-   * false.
-   */
-  static void draw_outline(const geom::Path<float, std::enable_if<true>> &path,
-                           const mat2x3 &transform,
-                           const float tolerance = 0.25f,
-                           const bool draw_vertices = false,
-                           const std::unordered_set<uint32_t> *selected_vertices = nullptr,
-                           const Stroke *stroke = nullptr,
-                           const rect *bounding_rect = nullptr,
-                           const bool pretransformed_rect = false);
+  static bool draw(const geom::path& path, const mat2x3& transform, const DrawingOptions& options);
 
   /**
    * @brief Draws a rectangle with the provided color.
@@ -120,7 +89,7 @@ class Renderer {
    * @param rect The rectangle to draw.
    * @param color The color to use.
    */
-  static void draw_rect(const rect &rect, const std::optional<vec4> color = std::nullopt);
+  static void draw_rect(const rect& rect, const std::optional<vec4> color = std::nullopt);
 
   /**
    * @brief Draws a rectangle with the provided color.
@@ -144,12 +113,23 @@ class Renderer {
                         const vec2 end,
                         const std::optional<vec4> color = std::nullopt);
 
+  /**
+   * @brief Draws a circle with the provided color.
+   *
+   * @param center The center of the circle.
+   * @param radius The radius of the circle.
+   * @param color The color to use.
+   */
+  static void draw_circle(const vec2 center,
+                          const float radius,
+                          const std::optional<vec4> color = std::nullopt);
+
  private:
   struct PathDrawable {
-    const rect &bounding_rect;
+    const rect& bounding_rect;
     const vec2 bounds_size;
 
-    const Fill &fill;
+    const Fill& fill;
 
     const size_t curves_start_index;
     const size_t bands_start_index;
@@ -185,7 +165,7 @@ class Renderer {
    *
    * @return The singleton instance of the renderer.
    */
-  static inline Renderer *get()
+  static inline Renderer* get()
   {
     return s_instance;
   }
@@ -198,18 +178,18 @@ class Renderer {
    * @param stroke The Stroke properties to use.
    * @param bounding_rect The bounding rectangle of the path.
    */
-  void draw_transformed(const geom::Path<float, std::enable_if<true>> &path,
-                        const rect &bounding_rect,
-                        const Fill *fill = nullptr,
-                        const Stroke *stroke = nullptr);
+  void draw_transformed(const geom::Path<float, std::enable_if<true>>& path,
+                        const rect& bounding_rect,
+                        const Fill* fill = nullptr,
+                        const Stroke* stroke = nullptr);
 
-  bool draw_cubic_path_impl(PathDrawable &drawable);
+  bool draw_cubic_path_impl(PathDrawable& drawable);
 
-  void draw_cubic_path_cull(PathDrawable &drawable,
-                            PathCullingData &data,
-                            const geom::CubicPath<float, std::enable_if<true>> &path);
+  void draw_cubic_path_cull(PathDrawable& drawable,
+                            PathCullingData& data,
+                            const geom::CubicPath<float, std::enable_if<true>>& path);
 
-  void draw_cubic_path_cull_commit(PathDrawable &drawable, PathCullingData &data);
+  void draw_cubic_path_cull_commit(PathDrawable& drawable, PathCullingData& data);
 
   /**
    * @brief Draws a cubic_path with the provided Fill properties.
@@ -219,9 +199,9 @@ class Renderer {
    * @param fill The Fill properties to use.
    * @param culling Whether to perform culling (calculate smaller tiles and fills).
    */
-  void draw_cubic_path(const geom::CubicPath<float, std::enable_if<true>> &path,
-                       const rect &bounding_rect,
-                       const Fill &fill,
+  void draw_cubic_path(const geom::CubicPath<float, std::enable_if<true>>& path,
+                       const rect& bounding_rect,
+                       const Fill& fill,
                        const bool culling = false);
 
   /**
@@ -233,9 +213,9 @@ class Renderer {
    * @param culling Whether to perform culling (calculate smaller tiles and fills).
    */
   void draw_cubic_paths(
-      const std::vector<const geom::CubicPath<float, std::enable_if<true>> *> &paths,
-      const rect &bounding_rect,
-      const Fill &fill,
+      const std::vector<const geom::CubicPath<float, std::enable_if<true>>*>& paths,
+      const rect& bounding_rect,
+      const Fill& fill,
       const bool culling = false);
 
   /**
@@ -243,16 +223,14 @@ class Renderer {
    *
    * @param path The Path to draw.
    * @param transform The transformation matrix to apply to the path.
-   * @param tolerance The tolerance to use when approximating the path.
    * @param selected_vertices The indices of the selected vertices, if nullptr all vertices are
    * selected.
    * @param stroke The Stroke properties to use.
    */
-  void draw_outline_vertices(const geom::Path<float, std::enable_if<true>> &path,
-                             const mat2x3 &transform,
-                             const float tolerance,
-                             const std::unordered_set<uint32_t> *selected_vertices,
-                             const Stroke *stroke);
+  void draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path,
+                             const mat2x3& transform,
+                             const std::unordered_set<uint32_t>* selected_vertices,
+                             const Stroke* stroke);
 
   /**
    * @brief Flushes the cached elements to the framebuffer.
@@ -284,7 +262,7 @@ class Renderer {
   Viewport m_viewport;       // The viewport to render to.
 
   std::vector<rect> m_invalid_rects;  // The invalid rects to clip against.
-  editor::Cache *m_cache;             // The cache to use.
+  editor::Cache* m_cache;             // The cache to use.
   rect m_safe_clip_rect;    // The largest clip rect that can be used with cached rendering.
   bool m_cached_rendering;  // Whether to use cached rendering.
 
@@ -299,7 +277,7 @@ class Renderer {
 
   UIOptions m_ui_options;       // The UI options (i.e. handle size, colors, etc.).
  private:
-  static Renderer *s_instance;  // The singleton instance of the renderer.
+  static Renderer* s_instance;  // The singleton instance of the renderer.
 };
 
 }  // namespace graphick::renderer

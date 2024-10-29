@@ -11,6 +11,9 @@
 
 #include "gpu/render_state.h"
 
+#include "properties.h"
+#include "renderer_settings.h"
+
 #include "../math/mat2x3.h"
 #include "../math/rect.h"
 #include "../math/scalar.h"
@@ -33,7 +36,7 @@ namespace graphick::renderer {
  */
 struct Viewport {
   ivec2 size;       // The size of the viewport.
-  vec2 position;    // The position of the viewport.
+  dvec2 position;   // The position of the viewport.
 
   double zoom;      // The zoom level of the viewport (it is pre-multiplied by the dpr).
   double dpr;       // The device pixel ratio.
@@ -55,16 +58,16 @@ struct Viewport {
    * @param background The clear color of the viewport.
    */
   Viewport(const ivec2 size,
-           const vec2 position,
+           const dvec2 position,
            const double zoom,
            const double dpr,
-           const vec4 &background)
+           const vec4& background)
       : size(size),
         position(position),
         zoom(zoom),
         dpr(dpr),
         background(background),
-        m_visible({-position, vec2(size) / static_cast<float>(zoom) - position})
+        m_visible({-position, dvec2(size) / zoom - position})
   {
   }
 
@@ -73,7 +76,7 @@ struct Viewport {
    *
    * @return The scene-space rectangle that is visible in the viewport.
    */
-  inline rect visible() const
+  inline drect visible() const
   {
     return m_visible;
   }
@@ -84,13 +87,13 @@ struct Viewport {
    * @param p The point in client-space.
    * @return The point in scene-space.
    */
-  inline vec2 project(const vec2 p) const
+  inline dvec2 project(const dvec2 p) const
   {
-    return p / static_cast<float>(zoom) - position;
+    return p / zoom - position;
   }
 
  private:
-  rect m_visible;  // The visible area of the viewport in scene-space coordinates.
+  drect m_visible;  // The visible area of the viewport in scene-space coordinates.
 };
 
 /**
@@ -98,7 +101,7 @@ struct Viewport {
  */
 struct RenderOptions {
   Viewport viewport;     // The viewport to render to.
-  editor::Cache *cache;  // The cache to use for rendering, can be nullptr.
+  editor::Cache* cache;  // The cache to use for rendering, can be nullptr.
 
   bool ignore_cache;     // Whether to ignore the cache and redraw everything.
 };
@@ -391,11 +394,11 @@ struct Band {
 
     // We can now remove the spans that are completely within the new span.
 
-    for (Span &span1 : disabled_spans) {
+    for (Span& span1 : disabled_spans) {
       if (span1.min == span1.max)
         continue;
 
-      for (Span &span2 : disabled_spans) {
+      for (Span& span2 : disabled_spans) {
         if (&span1 == &span2 || span2.min == span2.max) {
           continue;
         }
@@ -417,7 +420,7 @@ struct Band {
 
     disabled_spans.erase(std::remove_if(disabled_spans.begin(),
                                         disabled_spans.end(),
-                                        [](const Span &span) { return span.min == span.max; }),
+                                        [](const Span& span) { return span.min == span.max; }),
                          disabled_spans.end());
   }
 };
@@ -439,7 +442,7 @@ struct LineInstance {
    * @param width The width of the line.
    * @param color The color of the line.
    */
-  LineInstance(const vec2 start, const vec2 end, const float width, const vec4 &color)
+  LineInstance(const vec2 start, const vec2 end, const float width, const vec4& color)
       : start(start), end(end), width(width), color(color * 255.0f)
   {
   }
@@ -460,7 +463,7 @@ struct RectInstance {
    * @param size The size of the rect.
    * @param color The color of the rect.
    */
-  RectInstance(const vec2 position, const vec2 size, const vec4 &color)
+  RectInstance(const vec2 position, const vec2 size, const vec4& color)
       : position(position), size(size), color(color * 255.0f)
   {
   }
@@ -481,7 +484,7 @@ struct CircleInstance {
    * @param radius The radius of the circle.
    * @param color The color of the circle.
    */
-  CircleInstance(const vec2 position, const float radius, const vec4 &color)
+  CircleInstance(const vec2 position, const float radius, const vec4& color)
       : position(position), radius(radius), color(color * 255.0f)
   {
   }
@@ -539,7 +542,7 @@ struct InstanceBuffer {
    *
    * @param instance The instance to add.
    */
-  inline void push_back(T &&instance)
+  inline void push_back(T&& instance)
   {
     if (batches.back().size() >= max_instances_per_batch) {
       batches.push_back({});
@@ -571,7 +574,7 @@ struct InstancedData {
    * @param primitive The primitive type of the mesh.
    */
   InstancedData(const size_t buffer_size,
-                const std::vector<vec2> &vertices,
+                const std::vector<vec2>& vertices,
                 const GPU::Primitive primitive = GPU::Primitive::Triangles)
       : primitive(primitive),
         instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
@@ -591,7 +594,7 @@ struct InstancedData {
    * @param primitive The primitive type of the mesh.
    */
   InstancedData(const size_t buffer_size,
-                const std::vector<uvec2> &vertices,
+                const std::vector<uvec2>& vertices,
                 const GPU::Primitive primitive = GPU::Primitive::Triangles)
       : primitive(primitive),
         instances(static_cast<uint32_t>(buffer_size / sizeof(T))),
@@ -604,11 +607,11 @@ struct InstancedData {
   {
   }
 
-  InstancedData(const InstancedData &) = delete;
-  InstancedData(InstancedData &&) = delete;
+  InstancedData(const InstancedData&) = delete;
+  InstancedData(InstancedData&&) = delete;
 
-  InstancedData &operator=(const InstancedData &) = delete;
-  InstancedData &operator=(InstancedData &&) = delete;
+  InstancedData& operator=(const InstancedData&) = delete;
+  InstancedData& operator=(InstancedData&&) = delete;
 
   /**
    * @brief Gets the maximum number of instances for each batch.
@@ -636,8 +639,8 @@ struct InstancedData {
 struct BatchData {
   size_t max_gradients;            // The maximum number of gradients in the batch.
 
-  uvec4 *gradients;                // The gradients of the meshes.
-  uvec4 *gradients_ptr;            // The current index of the gradients.
+  uvec4* gradients;                // The gradients of the meshes.
+  uvec4* gradients_ptr;            // The current index of the gradients.
 
   GPU::Texture gradients_texture;  // The gradients texture.
 
@@ -701,17 +704,17 @@ struct TileBatchData {
   size_t max_curves;            // The maximum number of control points in the curves texture.
   size_t max_bands;             // The maximum number of indices in the bands texture.
 
-  TileVertex *vertices;         // The vertices of the batch.
-  TileVertex *vertices_ptr;     // The current index of the vertices.
+  TileVertex* vertices;         // The vertices of the batch.
+  TileVertex* vertices_ptr;     // The current index of the vertices.
 
-  uint16_t *indices;            // The indices of the batch, these are all static quads.
-  uint16_t *indices_ptr;        // The current index of the indices.
+  uint16_t* indices;            // The indices of the batch, these are all static quads.
+  uint16_t* indices_ptr;        // The current index of the indices.
 
-  vec2 *curves;                 // The control points of the curves.
-  vec2 *curves_ptr;             // The current index of the curves.
+  vec2* curves;                 // The control points of the curves.
+  vec2* curves_ptr;             // The current index of the curves.
 
-  uint16_t *bands;              // The bands of the meshes.
-  uint16_t *bands_ptr;          // The current index of the bands.
+  uint16_t* bands;              // The bands of the meshes.
+  uint16_t* bands_ptr;          // The current index of the bands.
 
   GPU::Buffer vertex_buffer;    // The GPU vertex buffer.
   GPU::Buffer index_buffer;     // The GPU index buffer.
@@ -868,11 +871,11 @@ struct FillBatchData {
   size_t max_vertices;        // The maximum number of vertices in the batch.
   size_t max_indices;         // The maximum number of indices in the batch.
 
-  FillVertex *vertices;       // The vertices of the batch.
-  FillVertex *vertices_ptr;   // The current index of the vertices.
+  FillVertex* vertices;       // The vertices of the batch.
+  FillVertex* vertices_ptr;   // The current index of the vertices.
 
-  uint16_t *indices;          // The indices of the batch, these are all static quads.
-  uint16_t *indices_ptr;      // The current index of the indices.
+  uint16_t* indices;          // The indices of the batch, these are all static quads.
+  uint16_t* indices_ptr;      // The current index of the indices.
 
   GPU::Buffer vertex_buffer;  // The GPU vertex buffer.
   GPU::Buffer index_buffer;   // The GPU index buffer.
@@ -986,17 +989,50 @@ struct Batch {
 };
 
 /**
- * @brief Collects all the UI related options.
+ * @brief Represents the options to outline a path.
+ */
+struct Outline {
+  std::unordered_set<uint32_t>* selected_vertices;  // The selected vertices, can be nullptr.
+  bool draw_vertices;                               // Whether to draw individual the vertices.
+  vec4 color;                                       // The color of the outline.
+};
+
+/**
+ * @brief Represents the options to draw a path: fill, stroke and outline.
+ */
+struct DrawingOptions {
+  Fill* fill;        // The fill to use, can be nullptr.
+  Stroke* stroke;    // The stroke to use, can be nullptr.
+  Outline* outline;  // The outline to use, can be nullptr.
+};
+
+/**
+ * @brief Collects all the UI related options, transformed based on the viewport.
  */
 struct UIOptions {
-  vec2 vertex_size;        // The size of a vertex.
-  vec2 vertex_inner_size;  // The size of the white part of a vertex.
+  dvec2 vertex_size;        // The size of a vertex.
+  dvec2 vertex_inner_size;  // The size of the white part of a vertex.
 
-  float handle_radius;     // The radius of an handle.
-  float line_width;        // The default width of the lines.
+  double handle_radius;     // The radius of an handle.
+  double line_width;        // The default width of the lines.
 
-  vec4 primary_color;      // The primary color of the UI.
-  vec4 primary_color_05;   // The primary color 5% darker.
+  vec4 primary_color;       // The primary color of the UI.
+  vec4 primary_color_05;    // The primary color 5% darker.
+
+  /**
+   * @brief Constructs a new UIOptions object.
+   *
+   * @param factor The factor to scale the options with (dpr / zoom).
+   */
+  UIOptions(const double factor)
+      : vertex_size(RendererSettings::ui_handle_size * factor),
+        vertex_inner_size((RendererSettings::ui_handle_size - 2.0) * factor),
+        handle_radius(RendererSettings::ui_handle_size * factor / 2.0),
+        line_width(RendererSettings::ui_line_width * factor),
+        primary_color(RendererSettings::ui_primary_color),
+        primary_color_05(RendererSettings::ui_primary_color * 0.95f)
+  {
+  }
 };
 
 }  // namespace graphick::renderer
