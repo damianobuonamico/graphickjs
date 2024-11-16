@@ -8,6 +8,7 @@
 #include "vec2.h"
 
 #include <initializer_list>
+#include <array>
 
 namespace graphick::math {
 
@@ -21,7 +22,7 @@ struct Rect {
 
   /* -- Component accesses -- */
 
-  constexpr Vec2<T> &operator[](uint8_t i)
+  constexpr Vec2<T>& operator[](uint8_t i)
   {
     switch (i) {
       default:
@@ -32,7 +33,7 @@ struct Rect {
     }
   }
 
-  constexpr Vec2<T> const &operator[](uint8_t i) const
+  constexpr Vec2<T> const& operator[](uint8_t i) const
   {
     switch (i) {
       default:
@@ -47,7 +48,7 @@ struct Rect {
 
   Rect() : min(std::numeric_limits<Vec2<T>>::max()), max(std::numeric_limits<Vec2<T>>::lowest()) {}
 
-  constexpr Rect(const Rect<T> &r) = default;
+  constexpr Rect(const Rect<T>& r) = default;
 
   constexpr Rect(Vec2<T> v) : min(v), max(v) {}
 
@@ -56,7 +57,7 @@ struct Rect {
   constexpr Rect(T a, T b, T c, T d) : min(a, b), max(c, d) {}
 
   template<typename U>
-  constexpr Rect(const Rect<U> &r) : min(r.min), max(r.max)
+  constexpr Rect(const Rect<U>& r) : min(r.min), max(r.max)
   {
   }
 
@@ -93,7 +94,7 @@ struct Rect {
     return Rect<T>(min, max);
   }
 
-  static constexpr Rect<T> from_rects(const Rect<T> r1, const Rect<T> r2)
+  static constexpr Rect<T> from_rects(const Rect<T>& r1, const Rect<T>& r2)
   {
     Vec2<T> min = r1.min;
     Vec2<T> max = r1.max;
@@ -106,6 +107,11 @@ struct Rect {
     }
 
     return Rect<T>(min, max);
+  }
+
+  static constexpr Rect<T> expand(const Rect<T>& r, T t)
+  {
+    return Rect<T>(r.min - t, r.max + t);
   }
 
   /* -- Dimensions -- */
@@ -138,7 +144,7 @@ struct Rect {
 
   /* -- Methods -- */
 
-  constexpr Rect<T> &include(const Vec2<T> v)
+  constexpr Rect<T>& include(const Vec2<T> v)
   {
     min.x = min.x > v.x ? v.x : min.x;
     min.y = min.y > v.y ? v.y : min.y;
@@ -147,58 +153,63 @@ struct Rect {
     return *this;
   }
 
+  constexpr std::array<Vec2<T>, 4> vertices() const
+  {
+    return {min, {max.x, min.y}, max, {min.x, max.y}};
+  }
+
   /* -- Unary arithmetic operators -- */
 
-  constexpr Rect<T> &operator+=(T scalar)
+  constexpr Rect<T>& operator+=(T scalar)
   {
     min += scalar;
     max += scalar;
     return *this;
   }
 
-  constexpr Rect<T> &operator+=(const Vec2<T> v)
+  constexpr Rect<T>& operator+=(const Vec2<T> v)
   {
     min += v;
     max += v;
     return *this;
   }
 
-  constexpr Rect<T> &operator-=(T scalar)
+  constexpr Rect<T>& operator-=(T scalar)
   {
     min -= scalar;
     max -= scalar;
     return *this;
   }
 
-  constexpr Rect<T> &operator-=(const Vec2<T> v)
+  constexpr Rect<T>& operator-=(const Vec2<T> v)
   {
     min -= v;
     max -= v;
     return *this;
   }
 
-  constexpr Rect<T> &operator*=(T scalar)
+  constexpr Rect<T>& operator*=(T scalar)
   {
     min *= scalar;
     max *= scalar;
     return *this;
   }
 
-  constexpr Rect<T> &operator*=(const Vec2<T> v)
+  constexpr Rect<T>& operator*=(const Vec2<T> v)
   {
     min *= v;
     max *= v;
     return *this;
   }
 
-  constexpr Rect<T> &operator/=(T scalar)
+  constexpr Rect<T>& operator/=(T scalar)
   {
     min /= scalar;
     max /= scalar;
     return *this;
   }
 
-  constexpr Rect<T> &operator/=(const Vec2<T> v)
+  constexpr Rect<T>& operator/=(const Vec2<T> v)
   {
     min /= v;
     max /= v;
@@ -217,16 +228,16 @@ struct RRect : public Rect<T> {
 
   RRect() : Rect<T>(), angle(0) {}
 
-  constexpr RRect(const RRect &r) : Rect<T>(r.min, r.max), angle(r.angle) {}
+  constexpr RRect(const RRect& r) : Rect<T>(r.min, r.max), angle(r.angle) {}
 
-  constexpr RRect(const Rect<T> &r, T t = 0) : Rect<T>(r), angle(t) {}
+  constexpr RRect(const Rect<T>& r, T t = 0) : Rect<T>(r), angle(t) {}
 
   constexpr RRect(Vec2<T> v, T t = 0) : Rect<T>(v), angle(t) {}
 
   constexpr RRect(Vec2<T> v1, Vec2<T> v2, T t = 0) : Rect<T>(v1, v2), angle(t) {}
 
   template<typename U>
-  constexpr RRect(const RRect<U> &r) : Rect<T>(r.min, r.max), angle(static_cast<T>(r.angle))
+  constexpr RRect(const RRect<U>& r) : Rect<T>(r.min, r.max), angle(static_cast<T>(r.angle))
   {
   }
 };
@@ -234,73 +245,73 @@ struct RRect : public Rect<T> {
 /* -- Binary operators -- */
 
 template<typename T>
-constexpr Rect<T> operator+(const Rect<T> &r1, const Rect<T> &r2)
+constexpr Rect<T> operator+(const Rect<T>& r1, const Rect<T>& r2)
 {
   return Rect<T>(r1.min + r2.min, r1.max + r2.max);
 }
 
 template<typename T>
-constexpr Rect<T> operator+(const Rect<T> &r, const Vec2<T> v)
+constexpr Rect<T> operator+(const Rect<T>& r, const Vec2<T> v)
 {
   return Rect<T>(r.min + v, r.max + v);
 }
 
 template<typename T, typename U>
-constexpr Rect<T> operator+(const Rect<T> &r, U scalar)
+constexpr Rect<T> operator+(const Rect<T>& r, U scalar)
 {
   return Rect<T>(r.min + scalar, r.max + scalar);
 }
 
 template<typename T>
-constexpr Rect<T> operator-(const Rect<T> &r1, const Rect<T> &r2)
+constexpr Rect<T> operator-(const Rect<T>& r1, const Rect<T>& r2)
 {
   return Rect<T>(r1.min - r2.min, r1.max - r2.max);
 }
 
 template<typename T>
-constexpr Rect<T> operator-(const Rect<T> &r, const Vec2<T> v)
+constexpr Rect<T> operator-(const Rect<T>& r, const Vec2<T> v)
 {
   return Rect<T>(r.min - v, r.max - v);
 }
 
 template<typename T, typename U>
-constexpr Rect<T> operator-(const Rect<T> &r, U scalar)
+constexpr Rect<T> operator-(const Rect<T>& r, U scalar)
 {
   return Rect<T>(r.min - scalar, r.max - scalar);
 }
 
 template<typename T>
-constexpr Rect<T> operator*(const Rect<T> &r, const Vec2<T> v)
+constexpr Rect<T> operator*(const Rect<T>& r, const Vec2<T> v)
 {
   return Rect<T>(r.min * v, r.max * v);
 }
 
 template<typename T, typename U>
-constexpr Rect<T> operator*(const Rect<T> &r, U scalar)
+constexpr Rect<T> operator*(const Rect<T>& r, U scalar)
 {
   return Rect<T>(r.min * scalar, r.max * scalar);
 }
 
 template<typename T>
-constexpr Rect<T> operator/(const Rect<T> &r, const Vec2<T> v)
+constexpr Rect<T> operator/(const Rect<T>& r, const Vec2<T> v)
 {
   return Rect<T>(r.min / v, r.max / v);
 }
 
 template<typename T, typename U>
-constexpr Rect<T> operator/(const Rect<T> &r, U scalar)
+constexpr Rect<T> operator/(const Rect<T>& r, U scalar)
 {
   return Rect<T>(r.min / scalar, r.max / scalar);
 }
 
 template<typename T>
-constexpr Rect<T> operator%(const Rect<T> &r, const Vec2<T> v)
+constexpr Rect<T> operator%(const Rect<T>& r, const Vec2<T> v)
 {
   return Rect<T>(r.min % v, r.max % v);
 }
 
 template<typename T, typename U>
-constexpr Rect<T> operator%(const Rect<T> &r, U scalar)
+constexpr Rect<T> operator%(const Rect<T>& r, U scalar)
 {
   return Rect<T>(r.min % scalar, r.max % scalar);
 }
@@ -308,13 +319,13 @@ constexpr Rect<T> operator%(const Rect<T> &r, U scalar)
 /* -- Boolean operators -- */
 
 template<typename T>
-constexpr bool operator==(const Rect<T> &r1, const Rect<T> &r2)
+constexpr bool operator==(const Rect<T>& r1, const Rect<T>& r2)
 {
   return r1.min == r2.min && r1.max == r2.max;
 }
 
 template<typename T>
-constexpr bool operator!=(const Rect<T> &r1, const Rect<T> &r2)
+constexpr bool operator!=(const Rect<T>& r1, const Rect<T>& r2)
 {
   return !(r1 == r2);
 }

@@ -41,7 +41,7 @@ static void add_cap(const dvec2 from,
                     const dvec2 n,
                     const double radius,
                     const LineCap cap,
-                    CubicPath<T> &sink)
+                    CubicPath<T>& sink)
 {
   switch (cap) {
     case LineCap::Round: {
@@ -88,8 +88,8 @@ static void add_join(const dvec2 from,
                      const double radius,
                      const double inv_miter_limit,
                      LineJoin join,
-                     CubicPath<T> &sink,
-                     math::Rect<T> &bounding_rect,
+                     CubicPath<T>& sink,
+                     math::Rect<T>& bounding_rect,
                      const bool small_segment,
                      const bool reverse = false)
 {
@@ -171,11 +171,11 @@ static void add_join(const dvec2 from,
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 static void fast_flatten(
-    const dquadratic_bezier &quad,
+    const dquadratic_bezier& quad,
     const double tolerance,
     std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback)
 {
-  const auto &[a, b, c] = quad.coefficients();
+  const auto& [a, b, c] = quad.coefficients();
   const double dt = std::sqrt((2.0 * tolerance) / math::length(quad.p0 - 2.0 * quad.p1 + quad.p2));
 
   dvec2 last = quad.p0;
@@ -207,11 +207,11 @@ static void fast_flatten(
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 static void fast_flatten(
-    const dcubic_bezier &cubic,
+    const dcubic_bezier& cubic,
     const double tolerance,
     std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback)
 {
-  const auto &[a, b, c, d] = cubic.coefficients();
+  const auto& [a, b, c, d] = cubic.coefficients();
   const double conc = std::max(std::hypot(b.x, b.y), std::hypot(a.x + b.x, a.y + b.y));
   const double dt = std::sqrt((std::sqrt(8.0) * tolerance) / conc);
 
@@ -247,8 +247,8 @@ static void fast_flatten(
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 static void recursive_flatten(
-    const dquadratic_bezier &quad,
-    const drect &clip,
+    const dquadratic_bezier& quad,
+    const drect& clip,
     const double tolerance_sq,
     std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback,
     uint8_t depth = 0)
@@ -302,8 +302,8 @@ static void recursive_flatten(
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 static void recursive_flatten(
-    const dcubic_bezier &cubic,
-    const drect &clip,
+    const dcubic_bezier& cubic,
+    const drect& clip,
     const double tolerance_sq,
     std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback,
     uint8_t depth = 0)
@@ -334,7 +334,7 @@ static void recursive_flatten(
     return;
   }
 
-  const auto &[left, right] = split(cubic, 0.5);
+  const auto& [left, right] = split(cubic, 0.5);
 
   recursive_flatten(left, clip, tolerance_sq, sink_callback, depth);
   recursive_flatten(right, clip, tolerance_sq, sink_callback, depth);
@@ -343,43 +343,31 @@ static void recursive_flatten(
 /* -- PathBuilder -- */
 
 template<typename T, typename _>
-PathBuilder<T, _>::PathBuilder(const QuadraticPath<T, std::enable_if<true>> &path,
-                               const math::Mat2x3<T> &transform,
-                               const math::Rect<T> *bounding_rect,
-                               const bool pretransformed_rect)
-    : m_quadratic_path(&path), m_transform(dmat2x3(transform)), m_type(PathType::Quadratic)
+PathBuilder<T, _>::PathBuilder(const QuadraticPath<T, std::enable_if<true>>& path,
+                               const math::Rect<T>& bounding_rect)
+    : m_quadratic_path(&path), m_bounding_rect(drect(bounding_rect)), m_type(PathType::Quadratic)
 {
-  const drect bounds = bounding_rect ? drect(*bounding_rect) : drect(path.approx_bounding_rect());
-  m_bounding_rect = pretransformed_rect ? bounds : m_transform * bounds;
 }
 
 template<typename T, typename _>
-PathBuilder<T, _>::PathBuilder(const CubicPath<T> &path,
-                               const math::Mat2x3<T> &transform,
-                               const math::Rect<T> *bounding_rect,
-                               const bool pretransformed_rect)
-    : m_cubic_path(&path), m_transform(dmat2x3(transform)), m_type(PathType::Cubic)
+PathBuilder<T, _>::PathBuilder(const CubicPath<T>& path, const math::Rect<T>& bounding_rect)
+    : m_cubic_path(&path), m_bounding_rect(drect(bounding_rect)), m_type(PathType::Cubic)
 {
-  const drect bounds = bounding_rect ? drect(*bounding_rect) : drect(path.approx_bounding_rect());
-  m_bounding_rect = pretransformed_rect ? bounds : m_transform * bounds;
 }
 
 template<typename T, typename _>
-PathBuilder<T, _>::PathBuilder(const Path<T, std::enable_if<true>> &path,
-                               const math::Mat2x3<T> &transform,
-                               const math::Rect<T> *bounding_rect,
-                               const bool pretransformed_rect)
-    : m_generic_path(&path), m_transform(dmat2x3(transform)), m_type(PathType::Generic)
+PathBuilder<T, _>::PathBuilder(const Path<T, std::enable_if<true>>& path,
+                               const math::Rect<T>& bounding_rect)
+    : m_generic_path(&path), m_bounding_rect(drect(bounding_rect)), m_type(PathType::Generic)
 {
-  const drect bounds = bounding_rect ? drect(*bounding_rect) : drect(path.approx_bounding_rect());
-  m_bounding_rect = pretransformed_rect ? bounds : m_transform * bounds;
 }
 
 template<typename T, typename _>
+template<typename U>
 void PathBuilder<T, _>::flatten(
-    const math::Rect<T> &clip,
+    const math::Rect<T>& clip,
     const T tolerance,
-    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback) const
+    std::function<void(const math::Vec2<U>, const math::Vec2<U>)> sink_callback) const
 {
   if (m_type != PathType::Generic || m_generic_path->empty())
     return;
@@ -400,8 +388,7 @@ void PathBuilder<T, _>::flatten(
 }
 
 template<typename T, typename _>
-StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T> &options,
-                                           const T tolerance) const
+StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options) const
 {
   if (m_type != PathType::Generic || m_generic_path->empty())
     return {};
@@ -411,7 +398,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T> &options,
   const double radius = static_cast<double>(options.width) * 0.5;
   const double inv_miter_limit = 1.0 / static_cast<double>(options.miter_limit);
 
-  dvec2 p0 = m_transform * dvec2(m_generic_path->at(0));
+  dvec2 p0 = dvec2(m_generic_path->at(0));
 
   StrokeOutline<T> outline;
 
@@ -466,7 +453,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T> &options,
   m_generic_path->for_each(
       nullptr,
       [&](const math::Vec2<T> p1) {
-        const dline line = {p0, m_transform * dvec2(p1)};
+        const dline line = {p0, dvec2(p1)};
 
         const dvec2 start_n = math::normal(line.p0, line.p1);
         const dvec2 start_nr = start_n * radius;
@@ -507,8 +494,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T> &options,
       },
       nullptr,
       [&](const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3) {
-        const dcubic_bezier cubic = {
-            p0, m_transform * dvec2(p1), m_transform * dvec2(p2), m_transform * dvec2(p3)};
+        const dcubic_bezier cubic = {p0, dvec2(p1), dvec2(p2), dvec2(p3)};
 
         const dvec2 start_n = cubic.start_normal();
         const dvec2 start_nr = start_n * radius;
@@ -541,8 +527,8 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T> &options,
                  false);
 
         // TODO: maybe join the two in one function call
-        offset_cubic(cubic, -radius, tolerance, outline.inner);
-        offset_cubic(cubic, radius, tolerance, outline.outer);
+        offset_cubic(cubic, -radius, options.tolerance, outline.inner);
+        offset_cubic(cubic, radius, options.tolerance, outline.outer);
 
         last_n = cubic.end_normal();
         p0 = cubic.p3;
@@ -592,34 +578,35 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T> &options,
 }
 
 template<typename T, typename _>
+template<typename U>
 void PathBuilder<T, _>::flatten_clipped(
-    const drect &clip,
+    const drect& clip,
     const double tolerance_sq,
-    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback) const
+    std::function<void(const math::Vec2<U>, const math::Vec2<U>)> sink_callback) const
 {
   dvec2 p0;
 
   m_generic_path->for_each(
-      [&](const math::Vec2<T> p0_raw) { p0 = m_transform * dvec2(p0_raw); },
+      [&](const math::Vec2<T> p0_raw) { p0 = dvec2(p0_raw); },
       [&](const math::Vec2<T> p1_raw) {
-        const dvec2 p1 = m_transform * dvec2(p1_raw);
+        const dvec2 p1 = dvec2(p1_raw);
 
-        sink_callback(math::Vec2<T>(p0), math::Vec2<T>(p1));
+        sink_callback(math::Vec2<U>(p0), math::Vec2<U>(p1));
 
         p0 = p1;
       },
       [&](const math::Vec2<T> p1_raw, const math::Vec2<T> p2_raw) {
-        const dvec2 p1 = m_transform * dvec2(p1_raw);
-        const dvec2 p2 = m_transform * dvec2(p2_raw);
+        const dvec2 p1 = dvec2(p1_raw);
+        const dvec2 p2 = dvec2(p2_raw);
 
         recursive_flatten(dquadratic_bezier{p0, p1, p2}, clip, tolerance_sq, sink_callback);
 
         p0 = p2;
       },
       [&](const math::Vec2<T> p1_raw, const math::Vec2<T> p2_raw, const math::Vec2<T> p3_raw) {
-        const dvec2 p1 = m_transform * dvec2(p1_raw);
-        const dvec2 p2 = m_transform * dvec2(p2_raw);
-        const dvec2 p3 = m_transform * dvec2(p3_raw);
+        const dvec2 p1 = dvec2(p1_raw);
+        const dvec2 p2 = dvec2(p2_raw);
+        const dvec2 p3 = dvec2(p3_raw);
 
         recursive_flatten(dcubic_bezier{p0, p1, p2, p3}, clip, tolerance_sq, sink_callback);
 
@@ -628,33 +615,34 @@ void PathBuilder<T, _>::flatten_clipped(
 }
 
 template<typename T, typename _>
+template<typename U>
 void PathBuilder<T, _>::flatten_unclipped(
     const double tolerance,
-    std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback) const
+    std::function<void(const math::Vec2<U>, const math::Vec2<U>)> sink_callback) const
 {
-
   dvec2 p0;
-  m_generic_path->for_each(
-      [&](const math::Vec2<T> p0_raw) { p0 = m_transform * dvec2(p0_raw); },
-      [&](const math::Vec2<T> p1_raw) {
-        const dvec2 p1 = m_transform * dvec2(p1_raw);
 
-        sink_callback(math::Vec2<T>(p0), math::Vec2<T>(p1));
+  m_generic_path->for_each(
+      [&](const math::Vec2<T> p0_raw) { p0 = dvec2(p0_raw); },
+      [&](const math::Vec2<T> p1_raw) {
+        const dvec2 p1 = dvec2(p1_raw);
+
+        sink_callback(math::Vec2<U>(p0), math::Vec2<U>(p1));
 
         p0 = p1;
       },
       [&](const math::Vec2<T> p1_raw, const math::Vec2<T> p2_raw) {
-        const dvec2 p1 = m_transform * dvec2(p1_raw);
-        const dvec2 p2 = m_transform * dvec2(p2_raw);
+        const dvec2 p1 = dvec2(p1_raw);
+        const dvec2 p2 = dvec2(p2_raw);
 
         fast_flatten(dquadratic_bezier{p0, p1, p2}, tolerance, sink_callback);
 
         p0 = p2;
       },
       [&](const math::Vec2<T> p1_raw, const math::Vec2<T> p2_raw, const math::Vec2<T> p3_raw) {
-        const dvec2 p1 = m_transform * dvec2(p1_raw);
-        const dvec2 p2 = m_transform * dvec2(p2_raw);
-        const dvec2 p3 = m_transform * dvec2(p3_raw);
+        const dvec2 p1 = dvec2(p1_raw);
+        const dvec2 p2 = dvec2(p2_raw);
+        const dvec2 p3 = dvec2(p3_raw);
 
         fast_flatten(dcubic_bezier{p0, p1, p2, p3}, tolerance, sink_callback);
 
@@ -666,4 +654,22 @@ void PathBuilder<T, _>::flatten_unclipped(
 
 template class PathBuilder<float>;
 template class PathBuilder<double>;
+
+template void PathBuilder<float>::flatten(
+    const math::Rect<float>&,
+    const float,
+    std::function<void(const math::Vec2<float>, const math::Vec2<float>)>) const;
+template void PathBuilder<float>::flatten(
+    const math::Rect<float>&,
+    const float,
+    std::function<void(const math::Vec2<double>, const math::Vec2<double>)>) const;
+template void PathBuilder<double>::flatten(
+    const math::Rect<double>&,
+    const double,
+    std::function<void(const math::Vec2<double>, const math::Vec2<double>)>) const;
+template void PathBuilder<double>::flatten(
+    const math::Rect<double>&,
+    const double,
+    std::function<void(const math::Vec2<float>, const math::Vec2<float>)>) const;
+
 }  // namespace graphick::geom

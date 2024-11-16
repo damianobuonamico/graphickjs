@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "../renderer/renderer_settings.h"
+
 namespace graphick::editor {
 
 /**
@@ -13,7 +15,7 @@ namespace graphick::editor {
  * The default settings are stored in `settings.cpp`.
  */
 struct Settings {
-  
+  using Renderer = renderer::RendererSettings;
 };
 
 }  // namespace graphick::editor

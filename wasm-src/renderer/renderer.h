@@ -21,12 +21,17 @@
 
 #include "gpu/shaders.h"
 
+#include "renderer_cache.h"
 #include "renderer_data.h"
 
 namespace graphick::geom {
 template<typename T, typename>
+
 class Path;
+
 using path = geom::Path<float, std::enable_if<true>>;
+using dpath = geom::Path<double, std::enable_if<true>>;
+
 }  // namespace graphick::geom
 
 namespace graphick::renderer {
@@ -84,6 +89,20 @@ class Renderer {
   static bool draw(const geom::path& path, const mat2x3& transform, const DrawingOptions& options);
 
   /**
+   * @brief Draws a Path with the provided Fill and Stroke properties.
+   *
+   * @param path The Path to draw.
+   * @param transform The transformation matrix to apply to the path.
+   * @param options The DrawingOptions to use.
+   * @param id The id used for caching.
+   * @return true if the path was visible and drawn, false otherwise.
+   */
+  static bool draw(const geom::path& path,
+                   const mat2x3& transform,
+                   const DrawingOptions& options,
+                   const uuid id);
+
+  /**
    * @brief Draws a rectangle with the provided color.
    *
    * @param rect The rectangle to draw.
@@ -125,32 +144,41 @@ class Renderer {
                           const std::optional<vec4> color = std::nullopt);
 
  private:
+  // TODO: delete this
+
+  /**
+   * @brief Groups the data required to be populated in order to draw a path.
+   */
   struct PathDrawable {
-    const rect& bounding_rect;
-    const vec2 bounds_size;
+    const drect& bounding_rect;       // The bounding rectangle of the path.
+    const dvec2 bounds_size;          // The size of the bounding rectangle.
 
-    const Fill& fill;
+    const Fill& fill;                 // The Fill properties to use.
 
-    const size_t curves_start_index;
-    const size_t bands_start_index;
-    const size_t length;
+    const size_t curves_start_index;  // The index of the first curve in the curves buffer.
+    const size_t bands_start_index;   // The index of the first band in the bands buffer.
+    const size_t num;                 // The number of curves in the path.
 
-    const bool culling;
+    const bool culling;               // Whether to perform culling.
 
-    std::vector<vec2> min;
-    std::vector<vec2> max;
+    std::vector<dvec2> min;           // The cached minimum points of the curves.
+    std::vector<dvec2> max;           // The cached maximum points of the curves.
 
-    uint8_t horizontal_bands;
-    float band_delta;
+    uint8_t horizontal_bands;         // The number of horizontal bands.
+    double band_delta;                // The height of a band.
   };
 
+  /**
+   * @brief Groups the data required to perform culling on a path.
+   */
   struct PathCullingData {
-    std::vector<Band> bands;
-    std::vector<std::vector<Intersection>> bottom_intersections;
+    std::vector<Band> bands;   // The culling bands.
+    std::vector<std::vector<Intersection>>
+        bottom_intersections;  // The intersections with the bottom edge of the bands.
 
-    size_t accumulator = 0;
+    size_t accumulator = 0;    // The number of contours processed.
 
-    inline PathCullingData(const size_t length) : bands(length), bottom_intersections(length) {}
+    inline PathCullingData(const size_t num) : bands(num), bottom_intersections(num) {}
   };
 
  private:
@@ -174,22 +202,42 @@ class Renderer {
    * @brief Draws a transformed Path with the provided Fill and Stroke properties.
    *
    * @param path The transformed Path to draw.
-   * @param fill The Fill properties to use.
-   * @param stroke The Stroke properties to use.
    * @param bounding_rect The bounding rectangle of the path.
+   * @param options The DrawingOptions to use.
+   * @param cache_bounding_rect Wether the bounding rectangle should be stored in the cache.
+   * @return true if the path was visible and drawn, false otherwise.
    */
-  void draw_transformed(const geom::Path<float, std::enable_if<true>>& path,
-                        const rect& bounding_rect,
-                        const Fill* fill = nullptr,
-                        const Stroke* stroke = nullptr);
+  bool draw_transformed(const geom::dpath& path,
+                        const drect& bounding_rect,
+                        const DrawingOptions& options,
+                        const uuid id = uuid::null);
 
-  bool draw_cubic_path_impl(PathDrawable& drawable);
+  /**
+   * @brief Populates the PathData.
+   *
+   * @param data The PathData to populate.
+   * @return true if the path was culled, false otherwise.
+   */
+  bool draw_cubic_path_impl(PathData& data);
 
-  void draw_cubic_path_cull(PathDrawable& drawable,
-                            PathCullingData& data,
-                            const geom::CubicPath<float, std::enable_if<true>>& path);
+  /**
+   * @brief Populates the PathCullingData.
+   *
+   * @param path The transformed CubicPath to draw.
+   * @param data The PathData to use.
+   * @param culling_data The PathCullingData to populate.
+   */
+  void draw_cubic_path_cull(const geom::dcubic_path& path,
+                            PathData& data,
+                            PathCullingData& culling_data);
 
-  void draw_cubic_path_cull_commit(PathDrawable& drawable, PathCullingData& data);
+  /**
+   * @brief Populates the PathData with the PathCullingData.
+   *
+   * @param data The PathData to populate.
+   * @param culling_data The PathCullingData to use.
+   */
+  void draw_cubic_path_cull_commit(PathData& data, PathCullingData& culling_data);
 
   /**
    * @brief Draws a cubic_path with the provided Fill properties.
@@ -198,11 +246,13 @@ class Renderer {
    * @param bounding_rect The bounding rectangle of the path.
    * @param fill The Fill properties to use.
    * @param culling Whether to perform culling (calculate smaller tiles and fills).
+   * @param drawable The final drawable object to draw.
    */
-  void draw_cubic_path(const geom::CubicPath<float, std::enable_if<true>>& path,
-                       const rect& bounding_rect,
+  void draw_cubic_path(const geom::dcubic_path& path,
+                       const drect& bounding_rect,
                        const Fill& fill,
-                       const bool culling = false);
+                       const bool culling,
+                       Drawable& drawable);
 
   /**
    * @brief Draws multiple cubic_paths with the provided Fill properties.
@@ -211,12 +261,13 @@ class Renderer {
    * @param bounding_rect The bounding rectangle of the path.
    * @param fill The Fill properties to use.
    * @param culling Whether to perform culling (calculate smaller tiles and fills).
+   * @param drawable The final drawable object to draw.
    */
-  void draw_cubic_paths(
-      const std::vector<const geom::CubicPath<float, std::enable_if<true>>*>& paths,
-      const rect& bounding_rect,
-      const Fill& fill,
-      const bool culling = false);
+  void draw_cubic_paths(const std::vector<const geom::dcubic_path*>& paths,
+                        const drect& bounding_rect,
+                        const Fill& fill,
+                        const bool culling,
+                        Drawable& drawable);
 
   /**
    * @brief Draws the individual vertices of a path.
@@ -227,10 +278,14 @@ class Renderer {
    * selected.
    * @param stroke The Stroke properties to use.
    */
-  void draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path,
-                             const mat2x3& transform,
-                             const std::unordered_set<uint32_t>* selected_vertices,
-                             const Stroke* stroke);
+  void draw_outline_vertices(const geom::dpath& path, const Outline& outline);
+
+  /**
+   * @brief Upload a Drawable object to the GPU.
+   *
+   * @param drawable The Drawable object to upload.
+   */
+  void draw(const Drawable& drawable);
 
   /**
    * @brief Flushes the cached elements to the framebuffer.
@@ -262,7 +317,7 @@ class Renderer {
   Viewport m_viewport;       // The viewport to render to.
 
   std::vector<rect> m_invalid_rects;  // The invalid rects to clip against.
-  editor::Cache* m_cache;             // The cache to use.
+  RendererCache* m_cache;             // The cache to use for rendering.
   rect m_safe_clip_rect;    // The largest clip rect that can be used with cached rendering.
   bool m_cached_rendering;  // Whether to use cached rendering.
 

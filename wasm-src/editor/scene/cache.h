@@ -7,6 +7,8 @@
 
 #include "../../math/rect.h"
 
+#include "../../renderer/renderer_cache.h"
+
 #include <vector>
 
 namespace graphick::editor {
@@ -18,10 +20,22 @@ namespace graphick::editor {
  */
 class Cache {
  public:
+  renderer::RendererCache renderer_cache;  // The renderer cache.
+ public:
   /**
    * @brief Clears the cache.
    */
   void clear();
+
+  /**
+   * @brief Clears the cache of the given entity.
+   *
+   * @param entity_id The id of the entity to clear.
+   */
+  inline void clear(const uuid entity_id)
+  {
+    renderer_cache.clear(entity_id);
+  }
 
   /**
    * @brief Sets the portion of the screen that is cached.
@@ -44,7 +58,7 @@ class Cache {
    *
    * @return The valid rectangles.
    */
-  const std::vector<rect> &get_invalid_rects() const
+  const std::vector<rect>& get_invalid_rects() const
   {
     return m_invalid_rects;
   }

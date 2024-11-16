@@ -29,13 +29,15 @@
 #include "../input/input_manager.h"
 #include "../input/tools/pen_tool.h"
 
+#include "../settings.h"
+
 #include "entity.h"
 
 namespace graphick::editor {
 
 Scene::Scene() : selection(this), history(this) {}
 
-Scene::Scene(const Scene &other)
+Scene::Scene(const Scene& other)
     : m_entities(other.m_entities),
       m_order(other.m_order),
       selection(this),
@@ -44,7 +46,7 @@ Scene::Scene(const Scene &other)
 {
 }
 
-Scene::Scene(Scene &&other) noexcept
+Scene::Scene(Scene&& other) noexcept
     : m_registry(std::move(other.m_registry)),
       m_entities(std::move(other.m_entities)),
       selection(this),
@@ -66,10 +68,10 @@ Entity Scene::get_entity(const uuid id)
 
 const Entity Scene::get_entity(const uuid id) const
 {
-  return {m_entities.at(id), const_cast<Scene *>(this)};
+  return {m_entities.at(id), const_cast<Scene*>(this)};
 }
 
-Entity Scene::create_entity(const std::string &tag, const bool generate_tag)
+Entity Scene::create_entity(const std::string& tag, const bool generate_tag)
 {
   io::EncodedData data;
   uuid id = uuid();
@@ -137,7 +139,7 @@ Entity Scene::create_element()
   return get_entity(id);
 }
 
-Entity Scene::create_element(const geom::path &path)
+Entity Scene::create_element(const geom::path& path)
 {
   io::EncodedData data;
   uuid id = uuid();
@@ -188,7 +190,7 @@ uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold)
     const Entity entity = {*it, this};
 
     if (entity.has_components<IDComponent, PathComponent, TransformComponent>()) {
-      const auto &path = entity.get_component<PathComponent>().data();
+      const auto& path = entity.get_component<PathComponent>().data();
       const TransformComponent transform = entity.get_component<TransformComponent>();
       const uuid id = entity.id();
 
@@ -200,14 +202,14 @@ uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold)
 
       if (entity.has_component<FillComponent>()) {
         has_fill = true;
-        auto &fill_component = entity.get_component<FillComponent>().fill_TEMP();
+        auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
 
         fill = renderer::Fill{fill_component.color, fill_component.rule, 0};
       }
 
       if (entity.has_component<StrokeComponent>()) {
         has_stroke = true;
-        auto &stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
+        auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
 
         stroke = renderer::Stroke{stroke_component.color,
                                   stroke_component.cap,
@@ -223,7 +225,7 @@ uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold)
       geom::StrokingOptions<float> stroking_options =
           !has_stroke ? geom::StrokingOptions<float>{} :
                         geom::StrokingOptions<float>{
-                            stroke.width, stroke.miter_limit, stroke.cap, stroke.join};
+                            0.0001f, float(stroke.width), float(stroke.miter_limit), stroke.cap, stroke.join};
 
       if (path.is_point_inside_path(position,
                                     has_fill ? &filling_options : nullptr,
@@ -253,7 +255,7 @@ Entity Scene::duplicate_entity(const uuid id)
   return get_entity(new_id);
 }
 
-std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect &rect,
+std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect,
                                                                        bool deep_search)
 {
   OPTICK_EVENT();
@@ -343,9 +345,9 @@ void Scene::render(const bool ignore_cache) const
   const renderer::Viewport rendering_viewport = {
       ivec2(math::floor(vec2(viewport.size()) *
                         viewport.dpr())),  // Flooring to avoid banding artifacts.
-      viewport.position(),
-      viewport.zoom() * viewport.dpr(),
-      viewport.dpr(),
+      dvec2(viewport.position()),
+      double(viewport.zoom() * viewport.dpr()),
+      double(viewport.dpr()),
       vec4{0.2f, 0.2f, 0.21f, 1.0f}};
 
   renderer::Renderer::begin_frame({rendering_viewport, &m_cache, ignore_cache});
@@ -354,18 +356,18 @@ void Scene::render(const bool ignore_cache) const
 
   bool should_rehydrate = true;
 
-  auto &selected = selection.selected();
-  auto &temp_selected = selection.temp_selected();
+  auto& selected = selection.selected();
+  auto& temp_selected = selection.temp_selected();
 
   bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
 
   for (auto it = m_order.begin(); it != m_order.end(); it++) {
-    const Entity entity = {*it, const_cast<Scene *>(this)};
+    const Entity entity = {*it, const_cast<Scene*>(this)};
     if (!entity.has_components<IDComponent, PathComponent, TransformComponent>())
       continue;
 
     const uuid id = entity.id();
-    const geom::path &path = entity.get_component<PathComponent>().data();
+    const geom::path& path = entity.get_component<PathComponent>().data();
     const TransformComponent transform = entity.get_component<TransformComponent>();
 
     if (!has_entity(id))
@@ -375,49 +377,52 @@ void Scene::render(const bool ignore_cache) const
       // path.rehydrate_cache();
     }
 
+    bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
     bool has_stroke = m_registry.all_of<StrokeComponent::Data>(*it);
-    std::optional<StrokeComponent::Data> stroke =
+
+    const std::optional<FillComponent::Data> fill =
+        has_fill ? std::optional<FillComponent::Data>(m_registry.get<FillComponent::Data>(*it)) :
+                   std::nullopt;
+    const std::optional<StrokeComponent::Data> stroke =
         has_stroke ?
             std::optional<StrokeComponent::Data>(m_registry.get<StrokeComponent::Data>(*it)) :
             std::nullopt;
 
-    rect entity_rect = transform.approx_bounding_rect();
-
-    if (has_stroke) {
-      entity_rect.min -= vec2{stroke->width};
-      entity_rect.max += vec2{stroke->width};
+    if (has_fill && !fill->visible) {
+      has_fill = false;
+    }
+    if (has_stroke && !stroke->visible) {
+      has_stroke = false;
     }
 
-    if (!geom::does_rect_intersect_rect(entity_rect, visible_rect))
+    const bool is_selected = selected.find(id) != selected.end();
+    const bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
+    const bool has_outline = is_selected || is_temp_selected;
+
+    if (!has_fill && !has_stroke && !has_outline) {
       continue;
-
-    bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
-    std::optional<FillComponent::Data> fill = has_fill ?
-                                                  std::optional<FillComponent::Data>(
-                                                      m_registry.get<FillComponent::Data>(*it)) :
-                                                  std::nullopt;
-
-    if (has_fill && !fill->visible)
-      has_fill = false;
-    if (has_stroke && !stroke->visible)
-      has_stroke = false;
-
-    bool is_selected = selected.find(id) != selected.end();
-    bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
-    bool is_full = false;
-
-    if ((!is_selected && !is_selected) && !has_fill && !has_stroke)
-      continue;
+    }
 
     mat2x3 transform_matrix = transform.matrix();
+    std::unordered_set<uint32_t> selected_vertices;
 
-    auto transformation = math::decompose(transform_matrix);
-    float scale = std::max(transformation.scale.x, transformation.scale.y);
+    renderer::Fill fill_opt;
+    renderer::Stroke stroke_opt;
+    renderer::Outline outline_opt;
 
-    /* First we process outlines, because filling takes ownership of the path.
-     */
-    if (is_selected || is_temp_selected) {
-      std::unordered_set<uint32_t> selected_vertices;
+    if (has_fill) {
+      fill_opt = renderer::Fill(fill->color, fill->rule, z_index);
+      z_index += 1;
+    }
+
+    if (has_stroke) {
+      stroke_opt = renderer::Stroke(
+          stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index);
+      z_index += 1;
+    }
+
+    if (has_outline) {
+      bool is_full = false;
 
       if (is_selected) {
         Selection::SelectionEntry entry = selected.at(id);
@@ -440,58 +445,17 @@ void Scene::render(const bool ignore_cache) const
         }
       }
 
-      renderer::Renderer::draw_outline(
-          path, transform, true, is_full ? nullptr : &selected_vertices, nullptr, &entity_rect);
-
-      // TEMP
-      // geom::quadratic_path quadratics = path.to_quadratic_path(2e-2f);
-      // renderer::Renderer::draw_outline(quadratics, transform,
-      // outline_tolerance); renderer::Renderer::draw_outline_vertices(
-      //   path, transform,
-      //   is_full ? nullptr : &selected_vertices
-      // );
+      outline_opt = renderer::Outline{is_full ? nullptr : &selected_vertices,
+                                      draw_vertices,
+                                      Settings::Renderer::ui_primary_color};
     }
 
-    if (has_fill && has_stroke) {
-      renderer::Fill filling_opt{fill->color, fill->rule, z_index};
-      renderer::Stroke stroking_opt{stroke->color,
-                                    stroke->cap,
-                                    stroke->join,
-                                    stroke->width,
-                                    stroke->miter_limit,
-                                    z_index + 1};
-      renderer::Renderer::draw(path, transform_matrix, &filling_opt, &stroking_opt, &entity_rect);
-
-      z_index += 2;
-    } else if (has_fill) {
-      renderer::Fill filling_opt{fill->color, fill->rule, z_index};
-      renderer::Renderer::draw(path, transform_matrix, &filling_opt, nullptr, &entity_rect);
-
-      z_index += 1;
-    } else if (has_stroke) {
-      renderer::Stroke stroking_opt{stroke->color,
-                                    stroke->cap,
-                                    stroke->join,
-                                    stroke->width,
-                                    stroke->miter_limit,
-                                    z_index + 1};
-      renderer::Renderer::draw(path, transform_matrix, nullptr, &stroking_opt, &entity_rect);
-
-      z_index += 1;
-    }
-
-    // draw_vertices,
-
-    // math::rect bounding_rect = path.bounding_rect();
-    // std::vector<math::rect> lines = math::lines_from_rect(bounding_rect);
-    // geom::path rect;
-    // rect.move_to(lines[0].min);
-
-    // for (auto& line : lines) {
-    //   rect.line_to(line.max);
-    // }
-
-    // Renderer::Renderer::draw_outline(id, rect, position);
+    renderer::Renderer::draw(path,
+                             transform_matrix,
+                             renderer::DrawingOptions{has_fill ? &fill_opt : nullptr,
+                                                      has_stroke ? &stroke_opt : nullptr,
+                                                      has_outline ? &outline_opt : nullptr},
+                             m_registry.get<IDComponent::Data>(*it).id);
   }
 
   // {
@@ -539,7 +503,7 @@ void Scene::render(const bool ignore_cache) const
 #endif
 }
 
-void Scene::add(const uuid id, const io::EncodedData &encoded_data)
+void Scene::add(const uuid id, const io::EncodedData& encoded_data)
 {
   Entity entity = {m_registry.create(), this, encoded_data};
 

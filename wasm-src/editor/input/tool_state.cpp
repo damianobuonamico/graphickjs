@@ -10,14 +10,16 @@
 
 #include "input_manager.h"
 
+#include "../../renderer/renderer.h"
+
+#include "../settings.h"
+
 #include "tools/direct_select_tool.h"
 #include "tools/pan_tool.h"
 #include "tools/pen_tool.h"
 #include "tools/pencil_tool.h"
 #include "tools/select_tool.h"
 #include "tools/zoom_tool.h"
-
-#include "../../renderer/renderer.h"
 
 #ifdef EMSCRIPTEN
 #  include <emscripten.h>
@@ -54,10 +56,10 @@ ToolState::~ToolState()
   }
 }
 
-PenTool *ToolState::pen() const
+PenTool* ToolState::pen() const
 {
   if (m_active == Tool::ToolType::Pen || m_current == Tool::ToolType::Pen) {
-    return static_cast<editor::input::PenTool *>(m_tools[static_cast<int>(Tool::ToolType::Pen)]);
+    return static_cast<editor::input::PenTool*>(m_tools[static_cast<int>(Tool::ToolType::Pen)]);
   }
 
   return nullptr;
@@ -94,7 +96,7 @@ void ToolState::set_active(Tool::ToolType tool)
 
 void ToolState::on_pointer_down(const float zoom)
 {
-  Tool &tool = active();
+  Tool& tool = active();
 
   if (!tool.is_in_category(Tool::CategoryDirect) &&
       !tool.is_in_category(Tool::CategoryImmediate) && manipulator.on_pointer_down(5.0f / zoom))
@@ -102,7 +104,7 @@ void ToolState::on_pointer_down(const float zoom)
 
   if (m_active == Tool::ToolType::DirectSelect && m_current == Tool::ToolType::Pen) {
     if (InputManager::hover.type() == HoverState::HoverType::Vertex) {
-      if (InputManager::hover.entity_id() != static_cast<PenTool *>(&current())->pen_element()) {
+      if (InputManager::hover.entity_id() != static_cast<PenTool*>(&current())->pen_element()) {
         reset_tool();
       }
     } else if (InputManager::hover.type() != HoverState::HoverType::Handle) {
@@ -147,7 +149,7 @@ void ToolState::on_pointer_hover()
 
 void ToolState::on_key(const bool down, const KeyboardKey key)
 {
-  Tool &tool = active();
+  Tool& tool = active();
 
   if (!tool.is_in_category(Tool::CategoryDirect) &&
       !tool.is_in_category(Tool::CategoryImmediate) && manipulator.on_key(down, key))
@@ -185,7 +187,7 @@ void ToolState::recalculate_active()
 
 void ToolState::render_overlays(const float zoom) const
 {
-  Tool &tool = active();
+  Tool& tool = active();
 
   tool.render_overlays();
 
@@ -195,9 +197,11 @@ void ToolState::render_overlays(const float zoom) const
 
   mat2x3 transform = manipulator.transform();
 
-  renderer::Renderer::draw_outline(manipulator.path(), transform);
+  renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
+  renderer::Renderer::draw(
+      manipulator.path(), transform, renderer::DrawingOptions{nullptr, nullptr, &outline});
 
-  const vec2 *handles = manipulator.handles();
+  const vec2* handles = manipulator.handles();
 
   for (int i = 0; i < Manipulator::RN; i++) {
     renderer::Renderer::draw_rect(transform * handles[i], vec2(5.0f / zoom));

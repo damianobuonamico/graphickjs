@@ -25,7 +25,7 @@ void SelectTool::on_pointer_down()
   m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity()->id() :
                                                         uuid::null;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (!InputManager::keys.shift && (m_entity == uuid::null || !scene.selection.has(m_entity))) {
     scene.selection.clear();
@@ -40,7 +40,7 @@ void SelectTool::on_pointer_down()
     if (InputManager::keys.alt) {
       std::vector<uuid> duplicated;
 
-      for (const auto &[id, _] : scene.selection.selected()) {
+      for (const auto& [id, _] : scene.selection.selected()) {
         duplicated.push_back(scene.duplicate_entity(id).id());
       }
 
@@ -65,7 +65,7 @@ void SelectTool::on_pointer_move()
     if (!Editor::scene().selection.empty()) {
       const vec2 movement = InputManager::pointer.scene.movement;
 
-      for (auto &[id, _] : Editor::scene().selection.selected()) {
+      for (auto& [id, _] : Editor::scene().selection.selected()) {
         Entity entity = Editor::scene().get_entity(id);
 
         entity.get_component<TransformComponent>().translate(movement);
@@ -111,9 +111,12 @@ void SelectTool::render_overlays() const
   if (!m_selection_rect.active())
     return;
 
-  renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
+  renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
+  renderer::Renderer::draw(m_selection_rect.path(),
+                           m_selection_rect.transform(),
+                           renderer::DrawingOptions{nullptr, nullptr, &outline});
   renderer::Renderer::draw_rect(m_selection_rect.bounding_rect(),
-                                vec4(0.22f, 0.76f, 0.95f, 0.25f));
+                                Settings::Renderer::ui_primary_transparent);
 }
 
 }  // namespace graphick::editor::input

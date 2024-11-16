@@ -210,8 +210,8 @@ class Path {
     using iterator_category = std::forward_iterator_tag;
     using difference_type = uint32_t;
     using value_type = Segment;
-    using pointer = value_type *;
-    using reference = value_type &;
+    using pointer = value_type*;
+    using reference = value_type&;
 
     /**
      * @brief Constructs an iterator over the given path at the given index.
@@ -223,7 +223,7 @@ class Path {
      * @param index The start index of the iterator.
      * @param index_type The type of index to use, default is IndexType::Command.
      */
-    Iterator(const Path<T> &path,
+    Iterator(const Path<T>& path,
              const uint32_t index,
              const IndexType index_type = IndexType::Command);
 
@@ -232,27 +232,27 @@ class Path {
      *
      * @param other The iterator to compare to.
      */
-    inline bool operator==(const Iterator &other) const
+    inline bool operator==(const Iterator& other) const
     {
       return m_index == other.m_index;
     }
-    inline bool operator!=(const Iterator &other) const
+    inline bool operator!=(const Iterator& other) const
     {
       return m_index != other.m_index;
     }
-    inline bool operator<(const Iterator &other) const
+    inline bool operator<(const Iterator& other) const
     {
       return m_index < other.m_index;
     }
-    inline bool operator<=(const Iterator &other) const
+    inline bool operator<=(const Iterator& other) const
     {
       return m_index <= other.m_index;
     }
-    inline bool operator>(const Iterator &other) const
+    inline bool operator>(const Iterator& other) const
     {
       return m_index > other.m_index;
     }
-    inline bool operator>=(const Iterator &other) const
+    inline bool operator>=(const Iterator& other) const
     {
       return m_index >= other.m_index;
     }
@@ -260,14 +260,14 @@ class Path {
     /**
      * @brief Pre and post increment operators.
      */
-    Iterator &operator++();
+    Iterator& operator++();
     Iterator operator++(int);
     Iterator operator+(const uint32_t n) const;
 
     /**
      * @brief Pre and post decrement operators.
      */
-    Iterator &operator--();
+    Iterator& operator--();
     Iterator operator--(int);
     Iterator operator-(const uint32_t n) const;
 
@@ -312,7 +312,7 @@ class Path {
     uint32_t m_index;        // The current command index of the iterator.
     uint32_t m_point_index;  // The index of the last point iterated over.
 
-    const Path<T> &m_path;   // The path to iterate over.
+    const Path<T>& m_path;   // The path to iterate over.
   };
 
   /**
@@ -326,8 +326,8 @@ class Path {
     using iterator_category = std::forward_iterator_tag;
     using difference_type = uint32_t;
     using value_type = Segment;
-    using pointer = value_type *;
-    using reference = value_type &;
+    using pointer = value_type*;
+    using reference = value_type&;
 
     /**
      * @brief Constructs an iterator over the given path at the given command index.
@@ -335,34 +335,34 @@ class Path {
      * @param path The path to iterate over.
      * @param index The start index of the iterator.
      */
-    ReverseIterator(const Path<T> &path, const uint32_t index);
+    ReverseIterator(const Path<T>& path, const uint32_t index);
 
     /**
      * @brief Equality, inequality and comparison operators.
      *
      * @param other The iterator to compare to.
      */
-    inline bool operator==(const ReverseIterator &other) const
+    inline bool operator==(const ReverseIterator& other) const
     {
       return m_index == other.m_index;
     }
-    inline bool operator!=(const ReverseIterator &other) const
+    inline bool operator!=(const ReverseIterator& other) const
     {
       return m_index != other.m_index;
     }
-    inline bool operator<(const ReverseIterator &other) const
+    inline bool operator<(const ReverseIterator& other) const
     {
       return m_index < other.m_index;
     }
-    inline bool operator<=(const ReverseIterator &other) const
+    inline bool operator<=(const ReverseIterator& other) const
     {
       return m_index <= other.m_index;
     }
-    inline bool operator>(const ReverseIterator &other) const
+    inline bool operator>(const ReverseIterator& other) const
     {
       return m_index > other.m_index;
     }
-    inline bool operator>=(const ReverseIterator &other) const
+    inline bool operator>=(const ReverseIterator& other) const
     {
       return m_index >= other.m_index;
     }
@@ -370,14 +370,14 @@ class Path {
     /**
      * @brief Pre and post increment operators.
      */
-    ReverseIterator &operator++();
+    ReverseIterator& operator++();
     ReverseIterator operator++(int);
     ReverseIterator operator+(const uint32_t n) const;
 
     /**
      * @brief Pre and post decrement operators.
      */
-    ReverseIterator &operator--();
+    ReverseIterator& operator--();
     ReverseIterator operator--(int);
     ReverseIterator operator-(const uint32_t n) const;
 
@@ -392,7 +392,7 @@ class Path {
     uint32_t m_index;        // The current segment index of the iterator.
     uint32_t m_point_index;  // The index of the last point iterated over.
 
-    const Path<T> &m_path;   // The path to iterate over.
+    const Path<T>& m_path;   // The path to iterate over.
   };
 
  public:
@@ -400,8 +400,8 @@ class Path {
    * @brief Constructors, copy constructor and move constructor.
    */
   Path();
-  Path(const Path<T> &other);
-  Path(Path<T> &&other) noexcept;
+  Path(const Path<T>& other);
+  Path(Path<T>&& other) noexcept;
 
   /**
    * @brief Type conversion constructor.
@@ -409,14 +409,14 @@ class Path {
    * @param other The path to convert from.
    */
   template<typename U>
-  explicit Path(const Path<U> &other);
+  explicit Path(const Path<U>& other);
 
   /**
    * @brief Constructs a path from encoded data.
    *
    * @param data The encoded data to construct the path from.
    */
-  Path(io::DataDecoder &decoder);
+  Path(io::DataDecoder& decoder);
 
   /**
    * @brief Default destructor.
@@ -426,8 +426,8 @@ class Path {
   /**
    * @brief Copy and move assignment operators.
    */
-  Path &operator=(const Path &other);
-  Path &operator=(Path &&other) noexcept;
+  Path& operator=(const Path& other);
+  Path& operator=(Path&& other) noexcept;
 
   /**
    * @brief Returns a segment iterator to the beginning of the path.
@@ -972,7 +972,7 @@ class Path {
    * @param transform The transformation matrix to apply to the path.
    * @return The bounding rectangle of the path.
    */
-  math::Rect<T> bounding_rect(const math::Mat2x3<T> &transform) const;
+  math::Rect<T> bounding_rect(const math::Mat2x3<T>& transform) const;
 
   /**
    * @brief Calculates the approximate bounding rectangle of the path considering all control
@@ -995,9 +995,9 @@ class Path {
    * @return true if the point is inside the path, false otherwise.
    */
   bool is_point_inside_path(const math::Vec2<T> point,
-                            const FillingOptions *fill,
-                            const StrokingOptions<T> *stroke,
-                            const math::Mat2x3<T> &transform,
+                            const FillingOptions* fill,
+                            const StrokingOptions<T>* stroke,
+                            const math::Mat2x3<T>& transform,
                             const T threshold = T(0),
                             const T zoom = T(1),
                             const bool deep_search = false) const;
@@ -1015,8 +1015,8 @@ class Path {
    */
   bool is_point_inside_segment(const uint32_t segment_index,
                                const math::Vec2<T> point,
-                               const StrokingOptions<T> *stroke,
-                               const math::Mat2x3<T> &transform,
+                               const StrokingOptions<T>* stroke,
+                               const math::Mat2x3<T>& transform,
                                const T threshold = T(0),
                                const T zoom = T(1)) const;
 
@@ -1034,7 +1034,7 @@ class Path {
    */
   bool is_point_inside_point(const uint32_t point_index,
                              const math::Vec2<T> point,
-                             const math::Mat2x3<T> &transform,
+                             const math::Mat2x3<T>& transform,
                              const T threshold = T(0)) const;
 
   /**
@@ -1045,7 +1045,7 @@ class Path {
    * rect.
    * @return true if the path intersects the rect, false otherwise.
    */
-  bool intersects(const math::Rect<T> &rect, std::vector<uint32_t> *indices = nullptr) const;
+  bool intersects(const math::Rect<T>& rect, std::vector<uint32_t>* indices = nullptr) const;
 
   /**
    * @brief Checks whether the path intersects the given rect or not.
@@ -1056,9 +1056,9 @@ class Path {
    * rect.
    * @return true if the path intersects the rect, false otherwise.
    */
-  bool intersects(const math::Rect<T> &rect,
-                  const math::Mat2x3<T> &transform,
-                  std::vector<uint32_t> *indices = nullptr) const;
+  bool intersects(const math::Rect<T>& rect,
+                  const math::Mat2x3<T>& transform,
+                  std::vector<uint32_t>* indices = nullptr) const;
 
   /**
    * @brief Converts the path to a list of quadratic bezier curves.
@@ -1079,20 +1079,35 @@ class Path {
    * @brief Returns a new path that is the result of transforming the current path by the given
    * matrix.
    *
-   * Does not check if the transform is an identity matrix, should be done before calling this
+   * Does not check if the transform is an identity matrix, it should be done before calling this
    * method. Incoming and outgoing handles are transformed as well.
    *
    * @param transform The transformation matrix to apply to the path.
-   * @return The transformed path.
+   * @return The transformed path with the new underlying type.
    */
-  Path<T> transformed(const math::Mat2x3<T> &transform) const;
+  template<typename U>
+  Path<U> transformed(const math::Mat2x3<T>& transform) const;
+
+  /**
+   * @brief Returns a new path that is the result of transforming the current path by the given
+   * matrix.
+   *
+   * Does not check if the transform is an identity matrix, it should be done before calling this
+   * method. Incoming and outgoing handles are transformed as well.
+   *
+   * @param transform The transformation matrix to apply to the path.
+   * @param r_bounding_rect The bounding rectangle of the transformed path to fill.
+   * @return The transformed path with the new underlying type.
+   */
+  template<typename U>
+  Path<U> transformed(const math::Mat2x3<T>& transform, math::Rect<U>& r_bounding_rect) const;
 
   /**
    * @brief Encodes the path to a list of bytes.
    *
    * @return The encoded path.
    */
-  io::EncodedData &encode(io::EncodedData &data) const;
+  io::EncodedData& encode(io::EncodedData& data) const;
 
  private:
   /**
@@ -1148,6 +1163,9 @@ class Path {
   math::Vec2<T>
       m_out_handle;  // The outgoing handle of the path, its index is Path::out_handle_index.
  private:
+  template<typename U, typename _>
+  friend class Path;
+
   template<typename U, typename _>
   friend class PathBuilder;
 };

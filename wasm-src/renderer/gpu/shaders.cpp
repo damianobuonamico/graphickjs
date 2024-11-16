@@ -69,9 +69,9 @@ ImageProgram::ImageProgram()
 
 /* -- VertexArrays -- */
 
-TileVertexArray::TileVertexArray(const TileProgram &program,
-                                 const Buffer &vertex_buffer,
-                                 const Buffer &index_buffer)
+TileVertexArray::TileVertexArray(const TileProgram& program,
+                                 const Buffer& vertex_buffer,
+                                 const Buffer& index_buffer)
 {
   VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
   VertexAttribute color_attr = Device::get_vertex_attribute(program.program, "a_color");
@@ -83,15 +83,16 @@ TileVertexArray::TileVertexArray(const TileProgram &program,
   VertexAttribute third_attr = Device::get_vertex_attribute(program.program, "a_attr_3");
 
   VertexAttrDescriptor position_desc = {
-      VertexAttrClass::Float, VertexAttrType::F32, 2, 32, 0, 0, 0};
-  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 32, 8, 0, 0};
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 36, 0, 0, 0};
+  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 36, 8, 0, 0};
   VertexAttrDescriptor tex_coords_desc = {
-      VertexAttrClass::Float, VertexAttrType::F16, 2, 32, 12, 0, 0};
+      VertexAttrClass::Float, VertexAttrType::F16, 2, 36, 12, 0, 0};
   VertexAttrDescriptor tex_coords_curves_desc = {
-      VertexAttrClass::Float, VertexAttrType::F16, 2, 32, 16, 0, 0};
-  VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 32, 20, 0, 0};
-  VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 32, 24, 0, 0};
-  VertexAttrDescriptor third_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 32, 28, 0, 0};
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 36, 16, 0, 0};
+  //   VertexAttrClass::Float, VertexAttrType::F16, 2, 36, 20, 0, 0};
+  VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 36, 24, 0, 0};
+  VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 36, 28, 0, 0};
+  VertexAttrDescriptor third_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 36, 32, 0, 0};
 
   index_buffer.bind(vertex_array);
 
@@ -105,9 +106,9 @@ TileVertexArray::TileVertexArray(const TileProgram &program,
   vertex_array.configure_attribute(third_attr, third_desc);
 }
 
-FillVertexArray::FillVertexArray(const FillProgram &program,
-                                 const Buffer &vertex_buffer,
-                                 const Buffer &index_buffer)
+FillVertexArray::FillVertexArray(const FillProgram& program,
+                                 const Buffer& vertex_buffer,
+                                 const Buffer& index_buffer)
 {
   VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
   VertexAttribute color_attr = Device::get_vertex_attribute(program.program, "a_color");
@@ -133,9 +134,9 @@ FillVertexArray::FillVertexArray(const FillProgram &program,
   vertex_array.configure_attribute(second_attr, second_desc);
 }
 
-LineVertexArray::LineVertexArray(const LineProgram &program,
-                                 const Buffer &instance_buffer,
-                                 const Buffer &vertex_buffer)
+LineVertexArray::LineVertexArray(const LineProgram& program,
+                                 const Buffer& instance_buffer,
+                                 const Buffer& vertex_buffer)
 {
   VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
   VertexAttribute instance_from_attr = Device::get_vertex_attribute(program.program,
@@ -167,9 +168,9 @@ LineVertexArray::LineVertexArray(const LineProgram &program,
   vertex_array.configure_attribute(instance_color_attr, instance_color_desc);
 }
 
-RectVertexArray::RectVertexArray(const RectProgram &program,
-                                 const Buffer &instance_buffer,
-                                 const Buffer &vertex_buffer)
+RectVertexArray::RectVertexArray(const RectProgram& program,
+                                 const Buffer& instance_buffer,
+                                 const Buffer& vertex_buffer)
 {
   VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
   VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program,
@@ -196,9 +197,9 @@ RectVertexArray::RectVertexArray(const RectProgram &program,
   vertex_array.configure_attribute(instance_color_attr, instance_color_desc);
 }
 
-CircleVertexArray::CircleVertexArray(const CircleProgram &program,
-                                     const Buffer &instance_buffer,
-                                     const Buffer &vertex_buffer)
+CircleVertexArray::CircleVertexArray(const CircleProgram& program,
+                                     const Buffer& instance_buffer,
+                                     const Buffer& vertex_buffer)
 {
   VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
   VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program,
@@ -225,9 +226,9 @@ CircleVertexArray::CircleVertexArray(const CircleProgram &program,
   vertex_array.configure_attribute(instance_color_attr, instance_color_desc);
 }
 
-ImageVertexArray::ImageVertexArray(const ImageProgram &program,
-                                   const Buffer &instance_buffer,
-                                   const Buffer &vertex_buffer)
+ImageVertexArray::ImageVertexArray(const ImageProgram& program,
+                                   const Buffer& instance_buffer,
+                                   const Buffer& vertex_buffer)
 {
   VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
   VertexAttribute instance_position_attr = Device::get_vertex_attribute(program.program,

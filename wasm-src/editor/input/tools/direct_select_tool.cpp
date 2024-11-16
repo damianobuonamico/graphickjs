@@ -126,9 +126,12 @@ void DirectSelectTool::render_overlays() const
   if (!m_selection_rect.active())
     return;
 
-  renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
+  renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
+  renderer::Renderer::draw(m_selection_rect.path(),
+                           m_selection_rect.transform(),
+                           renderer::DrawingOptions{nullptr, nullptr, &outline});
   renderer::Renderer::draw_rect(m_selection_rect.bounding_rect(),
-                                vec4(0.22f, 0.76f, 0.95f, 0.25f));
+                                Settings::Renderer::ui_primary_transparent);
 }
 
 void DirectSelectTool::translate_selected()
@@ -136,7 +139,7 @@ void DirectSelectTool::translate_selected()
   vec2 absolute_movenent = InputManager::pointer.scene.movement;
   vec2 movement = absolute_movenent;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (m_vertex.has_value()) {
     Entity entity = scene.get_entity(m_entity);
@@ -154,7 +157,7 @@ void DirectSelectTool::translate_selected()
     movement = position - vertex_position;
   }
 
-  for (auto &[id, entry] : scene.selection.selected()) {
+  for (auto& [id, entry] : scene.selection.selected()) {
     Entity entity = scene.get_entity(id);
     TransformComponent transform = entity.get_component<TransformComponent>();
 
@@ -185,7 +188,7 @@ void DirectSelectTool::on_duplicate_pointer_down()
 {
   on_entity_pointer_down();
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (!scene.selection.has(m_entity)) {
     return;
@@ -193,7 +196,7 @@ void DirectSelectTool::on_duplicate_pointer_down()
 
   std::vector<uuid> duplicated;
 
-  for (const auto &[id, _] : scene.selection.selected()) {
+  for (const auto& [id, _] : scene.selection.selected()) {
     duplicated.push_back(scene.duplicate_entity(id).id());
   }
 
@@ -212,7 +215,7 @@ void DirectSelectTool::on_duplicate_pointer_down()
 
 void DirectSelectTool::on_entity_pointer_down()
 {
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (!scene.selection.has(m_entity)) {
     if (!InputManager::keys.shift)
@@ -227,7 +230,7 @@ void DirectSelectTool::on_entity_pointer_down()
 
 void DirectSelectTool::on_element_pointer_down()
 {
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (!scene.selection.has(m_entity) || !scene.selection.get(m_entity).full()) {
     if (!InputManager::keys.shift)
@@ -242,7 +245,7 @@ void DirectSelectTool::on_element_pointer_down()
 
 void DirectSelectTool::on_segment_pointer_down()
 {
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
   Entity entity = scene.get_entity(m_entity);
 
   if (!entity.is_element()) {
@@ -291,7 +294,7 @@ void DirectSelectTool::on_segment_pointer_down()
 
 void DirectSelectTool::on_vertex_pointer_down()
 {
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (!scene.selection.has_child(m_entity, m_vertex.value())) {
     if (!InputManager::keys.shift)
@@ -314,7 +317,7 @@ void DirectSelectTool::on_handle_pointer_down()
 void DirectSelectTool::on_none_pointer_move()
 {
   if (m_selection_rect.active()) {
-    Scene &scene = Editor::scene();
+    Scene& scene = Editor::scene();
 
     m_selection_rect.size(InputManager::pointer.scene.delta);
     scene.selection.temp_select(scene.entities_in(m_selection_rect.bounding_rect(), true));
@@ -402,7 +405,7 @@ void DirectSelectTool::on_segment_pointer_move()
 
 void DirectSelectTool::on_handle_pointer_move()
 {
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
   Entity entity = scene.get_entity(m_entity);
 
   PathComponent path = entity.get_component<PathComponent>();
@@ -423,7 +426,7 @@ void DirectSelectTool::on_entity_pointer_up()
   if (m_dragging_occurred)
     return;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (scene.selection.has(m_entity) && !m_is_entity_added_to_selection) {
     if (InputManager::keys.shift) {
@@ -442,7 +445,7 @@ void DirectSelectTool::on_segment_pointer_up()
   if (m_dragging_occurred)
     return;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
   Entity entity = scene.get_entity(m_entity);
 
   const PathComponent path = entity.get_component<PathComponent>();
@@ -479,7 +482,7 @@ void DirectSelectTool::on_vertex_pointer_up()
     return;
   }
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (scene.selection.has_child(m_entity, m_vertex.value()) && !m_is_entity_added_to_selection) {
     if (InputManager::keys.shift) {

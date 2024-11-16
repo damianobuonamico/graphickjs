@@ -33,7 +33,7 @@ struct Fill {
   /**
    * @brief Complete constructor
    */
-  Fill(const vec4 &color, FillRule rule, uint32_t z_index)
+  Fill(const vec4& color, FillRule rule, uint32_t z_index)
       : color(color), rule(rule), z_index(z_index)
   {
   }
@@ -43,15 +43,15 @@ struct Fill {
  * @brief Stroke properties used to render a path.
  */
 struct Stroke {
-  vec4 color;         // The color used to stroke the path.
+  vec4 color;          // The color used to stroke the path.
 
-  LineCap cap;        // The line cap used to determine how the ends of a stroke are drawn.
-  LineJoin join;      // The line join used to determine how the corners of a stroke are drawn.
+  LineCap cap;         // The line cap used to determine how the ends of a stroke are drawn.
+  LineJoin join;       // The line join used to determine how the corners of a stroke are drawn.
 
-  float width;        // The width of the stroke.
-  float miter_limit;  // The miter limit used to determine whether the join is mitered or beveled.
+  double width;        // The width of the stroke.
+  double miter_limit;  // The miter limit used to determine whether the join is mitered or beveled.
 
-  uint32_t z_index;   // The z-index of the stroke.
+  uint32_t z_index;    // The z-index of the stroke.
 
   /**
    * @brief Default constructor
@@ -60,8 +60,8 @@ struct Stroke {
       : color(0.0f, 0.0f, 0.0f, 1.0f),
         cap(LineCap::Butt),
         join(LineJoin::Miter),
-        width(1.0f),
-        miter_limit(10.0f),
+        width(1.0),
+        miter_limit(10.0),
         z_index(0)
   {
   }
@@ -69,11 +69,11 @@ struct Stroke {
   /**
    * @brief Complete constructor
    */
-  Stroke(const vec4 &color,
+  Stroke(const vec4& color,
          LineCap cap,
          LineJoin join,
-         float width,
-         float miter_limit,
+         double width,
+         double miter_limit,
          uint32_t z_index)
       : color(color),
         cap(cap),

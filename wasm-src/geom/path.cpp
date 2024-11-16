@@ -19,6 +19,9 @@
 
 #include "../utils/assert.h"
 
+// TEMP
+#include "../utils/console.h"
+
 #define FIT_RESOLUTION 10
 
 namespace graphick::geom {
@@ -43,7 +46,7 @@ bool Path<T, _>::Segment::is_point() const
 /* -- Iterator -- */
 
 template<typename T, typename _>
-Path<T, _>::Iterator::Iterator(const Path<T> &path,
+Path<T, _>::Iterator::Iterator(const Path<T>& path,
                                const uint32_t index,
                                const IndexType index_type)
     : m_path(path), m_index(index), m_point_index(0)
@@ -138,7 +141,7 @@ Path<T, _>::Iterator::Iterator(const Path<T> &path,
 }
 
 template<typename T, typename _>
-typename Path<T, _>::Iterator &Path<T, _>::Iterator::operator++()
+typename Path<T, _>::Iterator& Path<T, _>::Iterator::operator++()
 {
   GK_ASSERT(m_index < m_path.m_commands_size, "Cannot increment the end iterator.");
 
@@ -185,7 +188,7 @@ typename Path<T, _>::Iterator Path<T, _>::Iterator::operator+(const uint32_t n) 
 }
 
 template<typename T, typename _>
-typename Path<T, _>::Iterator &Path<T, _>::Iterator::operator--()
+typename Path<T, _>::Iterator& Path<T, _>::Iterator::operator--()
 {
   GK_ASSERT(m_index > 0, "Cannot decrement the begin iterator.");
 
@@ -265,7 +268,7 @@ typename Path<T, _>::Iterator::value_type Path<T, _>::Iterator::operator*() cons
 /* -- ReverseIterator -- */
 
 template<typename T, typename _>
-Path<T, _>::ReverseIterator::ReverseIterator(const Path<T> &path, const uint32_t index)
+Path<T, _>::ReverseIterator::ReverseIterator(const Path<T>& path, const uint32_t index)
     : m_path(path), m_index(index), m_point_index(0)
 {
   if (m_index != 0 && path.get_command(m_index) == Command::Move)
@@ -309,7 +312,7 @@ Path<T, _>::ReverseIterator::ReverseIterator(const Path<T> &path, const uint32_t
 }
 
 template<typename T, typename _>
-typename Path<T, _>::ReverseIterator &Path<T, _>::ReverseIterator::operator++()
+typename Path<T, _>::ReverseIterator& Path<T, _>::ReverseIterator::operator++()
 {
   GK_ASSERT(m_index > 0, "Cannot increment the rend iterator.");
 
@@ -355,7 +358,7 @@ typename Path<T, _>::ReverseIterator Path<T, _>::ReverseIterator::operator+(cons
 }
 
 template<typename T, typename _>
-typename Path<T, _>::ReverseIterator &Path<T, _>::ReverseIterator::operator--()
+typename Path<T, _>::ReverseIterator& Path<T, _>::ReverseIterator::operator--()
 {
   GK_ASSERT(m_index < m_path.m_commands_size, "Cannot decrement the rbegin iterator.");
 
@@ -448,7 +451,7 @@ Path<T, _>::Path()
 }
 
 template<typename T, typename _>
-Path<T, _>::Path(const Path<T> &other)
+Path<T, _>::Path(const Path<T>& other)
     : m_points(other.m_points),
       m_commands(other.m_commands),
       m_commands_size(other.m_commands_size),
@@ -459,7 +462,7 @@ Path<T, _>::Path(const Path<T> &other)
 }
 
 template<typename T, typename _>
-Path<T, _>::Path(Path<T> &&other) noexcept
+Path<T, _>::Path(Path<T>&& other) noexcept
     : m_points(std::move(other.m_points)),
       m_commands(std::move(other.m_commands)),
       m_commands_size(other.m_commands_size),
@@ -471,7 +474,7 @@ Path<T, _>::Path(Path<T> &&other) noexcept
 
 template<typename T, typename _>
 template<typename U>
-Path<T, _>::Path(const Path<U> &other)
+Path<T, _>::Path(const Path<U>& other)
     : m_points(other.m_points.begin(), other.m_points.end()),
       m_commands(other.m_commands.begin(), other.m_commands.end()),
       m_commands_size(other.m_commands_size),
@@ -482,7 +485,7 @@ Path<T, _>::Path(const Path<U> &other)
 }
 
 template<typename T, typename _>
-Path<T, _>::Path(io::DataDecoder &decoder)
+Path<T, _>::Path(io::DataDecoder& decoder)
 {
   // Commands and points are always present, is_closed is encoded in the properties bitfield.
   const auto [not_vacant, is_closed, has_in_handle, has_out_handle] = decoder.bitfield<4>();
@@ -559,7 +562,7 @@ Path<T, _>::Path(io::DataDecoder &decoder)
 }
 
 template<typename T, typename _>
-Path<T, _> &Path<T, _>::operator=(const Path<T, _> &other)
+Path<T, _>& Path<T, _>::operator=(const Path<T, _>& other)
 {
   m_points = other.m_points;
   m_commands = other.m_commands;
@@ -572,7 +575,7 @@ Path<T, _> &Path<T, _>::operator=(const Path<T, _> &other)
 }
 
 template<typename T, typename _>
-Path<T, _> &Path<T, _>::operator=(Path<T, _> &&other) noexcept
+Path<T, _>& Path<T, _>::operator=(Path<T, _>&& other) noexcept
 {
   m_points = std::move(other.m_points);
   m_commands = std::move(other.m_commands);
@@ -809,10 +812,10 @@ typename Path<T, _>::VertexNode Path<T, _>::node_at(const uint32_t point_index) 
   Iterator it = {*this, point_index, IndexType::Point};
   Segment segment = *it;
 
-  int64_t *in = &node.in;
-  int64_t *in_command = &node.in_command;
-  int64_t *out = &node.out;
-  int64_t *out_command = &node.out_command;
+  int64_t* in = &node.in;
+  int64_t* in_command = &node.in_command;
+  int64_t* out = &node.out;
+  int64_t* out_command = &node.out_command;
 
   if (point_index != 0 && !(segment.type == Command::Cubic && it.point_index() >= point_index)) {
     it++;
@@ -1435,7 +1438,7 @@ uint32_t Path<T, _>::split(const uint32_t segment_index, const T t)
       return point_i;
     }
     case Command::Quadratic: {
-      const auto &[left, right] = geom::split(
+      const auto& [left, right] = geom::split(
           QuadraticBezier<T>{m_points[point_i - 1], m_points[point_i], m_points[point_i + 1]}, t);
 
       m_points[point_i] = left.p1;
@@ -1446,7 +1449,7 @@ uint32_t Path<T, _>::split(const uint32_t segment_index, const T t)
       return point_i + 1;
     }
     case Command::Cubic: {
-      const auto &[left, right] = geom::split(CubicBezier<T>{m_points[point_i - 1],
+      const auto& [left, right] = geom::split(CubicBezier<T>{m_points[point_i - 1],
                                                              m_points[point_i],
                                                              m_points[point_i + 1],
                                                              m_points[point_i + 2]},
@@ -1471,6 +1474,8 @@ uint32_t Path<T, _>::split(const uint32_t segment_index, const T t)
 template<typename T, typename _>
 math::Rect<T> Path<T, _>::bounding_rect() const
 {
+  GK_TOTAL("bounding_rect");
+
   if (empty()) {
     if (vacant())
       return {};
@@ -1532,8 +1537,10 @@ math::Rect<T> Path<T, _>::bounding_rect() const
 }
 
 template<typename T, typename _>
-math::Rect<T> Path<T, _>::bounding_rect(const math::Mat2x3<T> &transform) const
+math::Rect<T> Path<T, _>::bounding_rect(const math::Mat2x3<T>& transform) const
 {
+  GK_TOTAL("bounding_rect");
+
   if (empty()) {
     if (vacant())
       return {};
@@ -1629,9 +1636,9 @@ math::Rect<T> Path<T, _>::approx_bounding_rect() const
 
 template<typename T, typename _>
 bool Path<T, _>::is_point_inside_path(const math::Vec2<T> point,
-                                      const FillingOptions *fill,
-                                      const StrokingOptions<T> *stroke,
-                                      const math::Mat2x3<T> &transform,
+                                      const FillingOptions* fill,
+                                      const StrokingOptions<T>* stroke,
+                                      const math::Mat2x3<T>& transform,
                                       const T threshold,
                                       const T zoom,
                                       const bool deep_search) const
@@ -1678,9 +1685,10 @@ bool Path<T, _>::is_point_inside_path(const math::Vec2<T> point,
     }
   }
 
-  StrokingOptions<T> stroking_options = stroke ? *stroke :
-                                                 StrokingOptions<T>{
-                                                     T(0), T(0), LineCap::Butt, LineJoin::Round};
+  StrokingOptions<T> stroking_options = stroke ?
+                                            *stroke :
+                                            StrokingOptions<T>{
+                                                T(0), T(0), T(0), LineCap::Butt, LineJoin::Round};
 
   stroking_options.width += threshold;
   stroking_options.miter_limit = consider_miters ? stroking_options.miter_limit : T(0);
@@ -1729,8 +1737,8 @@ bool Path<T, _>::is_point_inside_path(const math::Vec2<T> point,
 template<typename T, typename _>
 bool Path<T, _>::is_point_inside_segment(const uint32_t segment_index,
                                          const math::Vec2<T> point,
-                                         const StrokingOptions<T> *stroke,
-                                         const math::Mat2x3<T> &transform,
+                                         const StrokingOptions<T>* stroke,
+                                         const math::Mat2x3<T>& transform,
                                          const T threshold,
                                          const T zoom) const
 {
@@ -1764,7 +1772,7 @@ bool Path<T, _>::is_point_inside_segment(const uint32_t segment_index,
 template<typename T, typename _>
 bool Path<T, _>::is_point_inside_point(const uint32_t point_index,
                                        const math::Vec2<T> point,
-                                       const math::Mat2x3<T> &transform,
+                                       const math::Mat2x3<T>& transform,
                                        const T threshold) const
 {
   const math::Vec2<T> p = transform * at(point_index);
@@ -1836,7 +1844,7 @@ bool Path<T, _>::is_point_inside_point(const uint32_t point_index,
 }
 
 template<typename T, typename _>
-bool Path<T, _>::intersects(const math::Rect<T> &rect, std::vector<uint32_t> *indices) const
+bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* indices) const
 {
   if (m_commands_size == 0) {
     return false;
@@ -1924,9 +1932,9 @@ bool Path<T, _>::intersects(const math::Rect<T> &rect, std::vector<uint32_t> *in
 }
 
 template<typename T, typename _>
-bool Path<T, _>::intersects(const math::Rect<T> &rect,
-                            const math::Mat2x3<T> &transform,
-                            std::vector<uint32_t> *indices) const
+bool Path<T, _>::intersects(const math::Rect<T>& rect,
+                            const math::Mat2x3<T>& transform,
+                            std::vector<uint32_t>* indices) const
 {
   if (m_commands_size == 0) {
     return false;
@@ -2097,9 +2105,11 @@ CubicPath<T> Path<T, _>::to_cubic_path() const
 }
 
 template<typename T, typename _>
-Path<T> Path<T, _>::transformed(const math::Mat2x3<T> &transform) const
+template<typename U>
+Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform) const
 {
-  Path<T> path;
+  math::Mat2x3<U> mat = math::Mat2x3<U>(transform);
+  Path<U> path;
 
   if (empty()) {
     return path;
@@ -2109,20 +2119,52 @@ Path<T> Path<T, _>::transformed(const math::Mat2x3<T> &transform) const
   path.m_commands_size = m_commands_size;
   path.m_closed = m_closed;
 
-  path.m_points = std::vector<math::Vec2<T>>(m_points.size());
+  path.m_points = std::vector<math::Vec2<U>>(m_points.size());
 
   for (uint32_t i = 0; i < m_points.size(); i++) {
-    path.m_points[i] = transform * m_points[i];
+    math::Vec2<U> p = mat * math::Vec2<U>(m_points[i]);
+    path.m_points[i] = p;
   }
 
-  path.m_in_handle = transform * m_in_handle;
-  path.m_out_handle = transform * m_out_handle;
+  path.m_in_handle = mat * math::Vec2<U>(m_in_handle);
+  path.m_out_handle = mat * math::Vec2<U>(m_out_handle);
 
   return path;
 }
 
 template<typename T, typename _>
-io::EncodedData &Path<T, _>::encode(io::EncodedData &data) const
+template<typename U>
+Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform,
+                                math::Rect<U>& r_bounding_rect) const
+{
+  math::Mat2x3<U> mat = math::Mat2x3<U>(transform);
+  Path<U> path;
+
+  if (empty()) {
+    return path;
+  }
+
+  path.m_commands = m_commands;
+  path.m_commands_size = m_commands_size;
+  path.m_closed = m_closed;
+
+  path.m_points = std::vector<math::Vec2<U>>(m_points.size());
+
+  for (uint32_t i = 0; i < m_points.size(); i++) {
+    math::Vec2<U> p = mat * math::Vec2<U>(m_points[i]);
+
+    r_bounding_rect.include(p);
+    path.m_points[i] = p;
+  }
+
+  path.m_in_handle = mat * math::Vec2<U>(m_in_handle);
+  path.m_out_handle = mat * math::Vec2<U>(m_out_handle);
+
+  return path;
+}
+
+template<typename T, typename _>
+io::EncodedData& Path<T, _>::encode(io::EncodedData& data) const
 {
   if (vacant()) {
     // The first bit is set to true to indicate that the path is vacant.
@@ -2279,5 +2321,22 @@ void Path<T, _>::remove_command(const uint32_t index)
 
 template class Path<float>;
 template class Path<double>;
+
+template Path<float>::Path(const Path<double>&);
+template Path<double>::Path(const Path<float>&);
+
+template Path<float> Path<float>::transformed(const math::Mat2x3<float>&) const;
+template Path<double> Path<float>::transformed(const math::Mat2x3<float>&) const;
+template Path<float> Path<double>::transformed(const math::Mat2x3<double>&) const;
+template Path<double> Path<double>::transformed(const math::Mat2x3<double>&) const;
+
+template Path<float> Path<float>::transformed(const math::Mat2x3<float>&,
+                                              math::Rect<float>&) const;
+template Path<double> Path<float>::transformed(const math::Mat2x3<float>&,
+                                               math::Rect<double>&) const;
+template Path<float> Path<double>::transformed(const math::Mat2x3<double>&,
+                                               math::Rect<float>&) const;
+template Path<double> Path<double>::transformed(const math::Mat2x3<double>&,
+                                                math::Rect<double>&) const;
 
 }  // namespace graphick::geom

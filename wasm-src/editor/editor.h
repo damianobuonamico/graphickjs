@@ -5,9 +5,11 @@
 
 #pragma once
 
+#include "../math/vec2.h"
+
 #include "scene/scene.h"
 
-#include "../math/vec2.h"
+#include "settings.h"
 
 #include <optional>
 #include <vector>
@@ -31,7 +33,7 @@ struct RenderRequestOptions {
    *
    * @param options The options to update with.
    */
-  inline void update(const RenderRequestOptions &options)
+  inline void update(const RenderRequestOptions& options)
   {
     ignore_cache |= options.ignore_cache;
     frame_rate = options.frame_rate;
@@ -48,8 +50,8 @@ class Editor {
   /**
    * @brief Deleted copy and move constructors.
    */
-  Editor(const Editor &) = delete;
-  Editor(Editor &&) = delete;
+  Editor(const Editor&) = delete;
+  Editor(Editor&&) = delete;
 
   /**
    * @brief Initializes the whole editor.
@@ -78,7 +80,7 @@ class Editor {
    *
    * @return The current scene.
    */
-  static Scene &scene();
+  static Scene& scene();
 
   /**
    * @brief Resizes the editor.
@@ -122,7 +124,7 @@ class Editor {
    *
    * @return The editor's instance.
    */
-  static inline Editor *get()
+  static inline Editor* get()
   {
     return s_instance;
   }
@@ -144,12 +146,12 @@ class Editor {
   double m_last_render_time = 0.0;                       // The last render time.
  private:
 #ifdef EMSCRIPTEN
-  friend int render_callback(const double time, void *user_data);
+  friend int render_callback(const double time, void* user_data);
 #else
-  friend bool render_callback(const double time, void *user_data);
+  friend bool render_callback(const double time, void* user_data);
 #endif
  private:
-  static Editor *s_instance;  // The editor's singleton instance.
+  static Editor* s_instance;  // The editor's singleton instance.
 };
 
 }  // namespace graphick::editor

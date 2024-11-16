@@ -9,18 +9,16 @@
 
 #include "pen_tool.h"
 
-#include "common.h"
-
-#include "../input_manager.h"
+#include "../../../geom/intersections.h"
+#include "../../../math/math.h"
+#include "../../../renderer/renderer.h"
 
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
-#include "../../../math/math.h"
+#include "../input_manager.h"
 
-#include "../../../geom/intersections.h"
-
-#include "../../../renderer/renderer.h"
+#include "common.h"
 
 namespace graphick::editor::input {
 
@@ -35,7 +33,7 @@ void PenTool::on_pointer_down()
     return on_new_pointer_down();
   }
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   TransformComponent transform = entity->get_component<TransformComponent>();
   PathComponent path = entity->get_component<PathComponent>();
@@ -121,7 +119,7 @@ void PenTool::on_pointer_move()
 
 void PenTool::on_pointer_up()
 {
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (m_mode == Mode::Sub) {
     if (m_vertex.has_value() &&
@@ -232,8 +230,9 @@ void PenTool::render_overlays() const
     segment.line_to(InputManager::pointer.scene.position);
   }
 
-  renderer::Renderer::draw_outline(
-      segment, mat2x3::identity(), 0.25f / Editor::scene().viewport.zoom());
+  renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
+  renderer::Renderer::draw(
+      segment, mat2x3::identity(), renderer::DrawingOptions{nullptr, nullptr, &outline});
 }
 
 void PenTool::set_pen_element(const uuid id)
@@ -248,7 +247,7 @@ void PenTool::on_new_pointer_down()
 {
   std::optional<Entity> entity = std::nullopt;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (!m_element) {
     entity = scene.create_element();
@@ -306,7 +305,7 @@ void PenTool::on_join_pointer_down()
   if (!m_element || !m_temp_element || !m_vertex)
     return;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
   Entity first_entity = scene.get_entity(m_element);
   Entity second_entity = scene.get_entity(m_temp_element);
   Entity new_entity = scene.create_element();

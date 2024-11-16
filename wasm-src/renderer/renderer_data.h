@@ -11,6 +11,7 @@
 
 #include "gpu/render_state.h"
 
+#include "drawable.h"
 #include "properties.h"
 #include "renderer_settings.h"
 
@@ -119,213 +120,10 @@ inline std::vector<uvec2> quad_vertices(const uvec2 min, const uvec2 max)
 }
 
 /**
- * @brief Represents a vertex used by the tile shader (32 bytes).
- *
- *
- * @note In attr 1, 7 bits for paint type are probably too much.
- * @note In attr_2, paint_coord is 10 bits instead of 8
- * @note In attr_3, there are a few wasted bits (max bands is 64, but 256 is used here, bands
- * coords are 12 bits instead of 10).
- */
-struct TileVertex {
-  vec2 position;                      // | position.x (32) | position.y (32) |
-  uvec4 color;                        // | color.rgba (32) |
-  math::Vec2<half> tex_coord;         // | tex_coord.x (16) - tex_coord.y (16) |
-  math::Vec2<half> tex_coord_curves;  // | tex_coord_curves.x (16) - tex_coord_curves.y (16) |
-  uint32_t attr_1;  // | blend (5) - paint_type (7) - curves_x (10) - curves_y (10) |
-  uint32_t attr_2;  // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
-  uint32_t attr_3;  // | bands_h (8) - bands_x (12) - bands_y (12) |
-
-  /**
-   * @brief Default constructor.
-   */
-  TileVertex() = default;
-
-  /**
-   * @brief Constructs a new TileVertex object.
-   *
-   * @param position The position of the vertex.
-   * @param color The color of the vertex.
-   * @param tex_coord The texture coordinate used for painting, can be outside the range [0, 1].
-   * @param tex_coord_curves The texture coordinate used for rasterization, should be in the range
-   * [0, 1].
-   * @param attr_1 The attributes of the vertex, should be created using
-   * TileVertex::create_attr_1()
-   * @param attr_2 The attributes of the vertex, should be created using
-   * TileVertex::create_attr_2()
-   * @param attr_3 The attributes of the vertex, should be created using
-   * TileVertex::create_attr_3()
-   */
-  TileVertex(const vec2 position,
-             const uvec4 color,
-             const vec2 tex_coord,
-             const vec2 tex_coord_curves,
-             const uint32_t attr_1,
-             const uint32_t attr_2,
-             const uint32_t attr_3)
-      : position(position), color(color), attr_1(attr_1), attr_2(attr_2), attr_3(attr_3)
-  {
-    this->tex_coord_curves.x = half(tex_coord_curves.x);
-    this->tex_coord_curves.y = half(tex_coord_curves.y);
-    this->tex_coord.x = half(tex_coord.x);
-    this->tex_coord.y = half(tex_coord.y);
-  }
-
-  /**
-   * @brief Creates the attr_1 attribute of the vertex.
-   *
-   * This method should be called once per object.
-   *
-   * @param blending_mode The blend mode of the vertex.
-   * @param paint_type The paint type of the vertex.
-   * @param curves_start_index The index of the first curve in the curves texture.
-   * @return The attr_1 attribute.
-   */
-  static uint32_t create_attr_1(const uint8_t blending_mode,
-                                const uint8_t paint_type,
-                                const size_t curves_start_index)
-  {
-    const uint32_t u_curves_x = (static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE)
-                                 << 22) >>
-                                22;
-    const uint32_t u_curves_y = (static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE)
-                                 << 22) >>
-                                22;
-    const uint32_t u_paint_type = (static_cast<uint32_t>(paint_type) << 25) >> 25;
-    const uint32_t u_blend = static_cast<uint32_t>(blending_mode);
-
-    return (u_blend << 27) | (u_paint_type << 20) | (u_curves_x << 10) | (u_curves_y);
-  }
-
-  /**
-   * @brief Creates the attr_2 attribute of the vertex.
-   *
-   * This method should be called once per object.
-   *
-   * @param z_index The z-index of the vertex.
-   * @param is_quadratic Whether the curves are quadratic or cubic.
-   * @param is_even_odd Whether the fill rule is even-odd or non-zero.
-   * @param paint_coord The paint coordinate of the vertex.
-   * @return The attr_2 attribute.
-   */
-  static uint32_t create_attr_2(const uint32_t z_index,
-                                const bool is_quadratic,
-                                const bool is_even_odd,
-                                const uint16_t paint_coord)
-  {
-    const uint32_t u_is_quad = static_cast<uint32_t>(is_quadratic);
-    const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
-    const uint32_t u_paint_coord = (static_cast<uint32_t>(paint_coord) << 22) >> 22;
-
-    return (z_index << 12) | (u_is_quad << 11) | (u_is_eodd << 10) | u_paint_coord;
-  }
-
-  /**
-   * @brief Creates the attr_3 attribute of the vertex.
-   *
-   * This method should be called once per object.
-   *
-   * @param horizontal_bands The number of horizontal bands.
-   * @param bands_start_index The index of the first band in the bands texture.
-   * @return The attr_3 attribute.
-   */
-  static uint32_t create_attr_3(const uint8_t horizontal_bands, const size_t bands_start_index)
-  {
-    const uint32_t u_bands_x = (static_cast<uint32_t>(bands_start_index % GK_BANDS_TEXTURE_SIZE)
-                                << 20) >>
-                               20;
-    const uint32_t u_bands_y = (static_cast<uint32_t>(bands_start_index / GK_BANDS_TEXTURE_SIZE)
-                                << 20) >>
-                               20;
-    const uint32_t u_bands_h = (horizontal_bands < 1) ?
-                                   0 :
-                                   static_cast<uint32_t>(horizontal_bands - 1);
-
-    return (u_bands_h << 24) | (u_bands_x << 12) | (u_bands_y);
-  }
-};
-
-/**
- * @brief Represents a vertex used by the fill shader (24 bytes).
- *
- *
- * @note In attr 1, 7 bits for paint type are probably too much.
- * @note In attr_1, there are 20 bits of padding
- * @note In attr_2, paint_coord is 10 bits instead of 8 and there are 2 bits of padding
- */
-struct FillVertex {
-  vec2 position;               // | position.x (32) | position.y (32) |
-  uvec4 color;                 // | color.rgba (32) |
-  math::Vec2<half> tex_coord;  // | tex_coord.x (16) - tex_coord.y (16) |
-  uint32_t attr_1;             // | blend (5) - paint_type (7) - (20) |
-  uint32_t attr_2;             // | z_index (20) - (2) - paint_coord (10) |
-
-  /**
-   * @brief Default constructor.
-   */
-  FillVertex() = default;
-
-  /**
-   * @brief Constructs a new FillVertex object.
-   *
-   * @param position The position of the vertex.
-   * @param color The color of the vertex.
-   * @param tex_coord The texture coordinate used for painting, can be outside the range [0, 1].
-   * @param attr_1 The attributes of the vertex, should be created using
-   * FillVertex::create_attr_1() or TileVertex::create_attr_1().
-   * @param attr_2 The attributes of the vertex, should be created using
-   * FillVertex::create_attr_2() or TileVertex::create_attr_2().
-   */
-  FillVertex(const vec2 position,
-             const uvec4 color,
-             const vec2 tex_coord,
-             const uint32_t attr_1,
-             const uint32_t attr_2)
-      : position(position), color(color), attr_1(attr_1), attr_2(attr_2)
-  {
-    this->tex_coord.x = half(tex_coord.x);
-    this->tex_coord.y = half(tex_coord.y);
-  }
-
-  /**
-   * @brief Creates the attr_1 attribute of the vertex.
-   *
-   * This method should be called once per object.
-   *
-   * @param blending_mode The blend mode of the vertex.
-   * @param paint_type The paint type of the vertex.
-   * @return The attr_1 attribute.
-   */
-  static uint32_t create_attr_1(const uint8_t blending_mode, const uint8_t paint_type)
-  {
-    const uint32_t u_paint_type = (static_cast<uint32_t>(paint_type) << 25) >> 25;
-    const uint32_t u_blend = static_cast<uint32_t>(blending_mode);
-
-    return (u_blend << 27) | (u_paint_type << 20);
-  }
-
-  /**
-   * @brief Creates the attr_2 attribute of the vertex.
-   *
-   * This method should be called once per object.
-   *
-   * @param z_index The z-index of the vertex.
-   * @param paint_coord The paint coordinate of the vertex.
-   * @return The attr_2 attribute.
-   */
-  static uint32_t create_attr_2(const uint32_t z_index, const uint16_t paint_coord)
-  {
-    const uint32_t u_paint_coord = (static_cast<uint32_t>(paint_coord) << 22) >> 22;
-
-    return (z_index << 12) | u_paint_coord;
-  }
-};
-
-/**
  * @brief Represents an intersection point.
  */
 struct Intersection {
-  float x;         // The x-coordinate of the intersection.
+  double x;        // The x-coordinate of the intersection.
   bool downwards;  // Whether the intersection is downwards, used for non-zero fill rule.
 };
 
@@ -333,8 +131,8 @@ struct Intersection {
  * @brief A range represinting a span.
  */
 struct Span {
-  float min;  // The minimum x-coordinate of the span.
-  float max;  // The maximum x-coordinate of the span.
+  double min;  // The minimum x-coordinate of the span.
+  double max;  // The maximum x-coordinate of the span.
 };
 
 /**
@@ -350,11 +148,11 @@ struct Band {
    * @param min The minimum x-coordinate of the curve.
    * @param max The maximum x-coordinate of the curve.
    */
-  void push_curve(float min, float max)
+  void push_curve(double min, double max)
   {
     if (min == max) {
-      min -= math::geometric_epsilon<float>;
-      max += math::geometric_epsilon<float>;
+      min -= math::geometric_epsilon<double>;
+      max += math::geometric_epsilon<double>;
     }
 
     if (disabled_spans.empty()) {
@@ -371,8 +169,8 @@ struct Band {
         return;
       }
 
-      const vec2 intersection = {std::max(min, disabled_spans[i].min),
-                                 std::min(max, disabled_spans[i].max)};
+      const dvec2 intersection = {std::max(min, disabled_spans[i].min),
+                                  std::min(max, disabled_spans[i].max)};
 
       if (intersection.x <= intersection.y) {
         // If there is an intersection, we can perform an union.
@@ -403,7 +201,8 @@ struct Band {
           continue;
         }
 
-        const vec2 intersection = {std::max(span1.min, span2.min), std::min(span1.max, span2.max)};
+        const dvec2 intersection = {std::max(span1.min, span2.min),
+                                    std::min(span1.max, span2.max)};
 
         if (intersection.x <= intersection.y) {
           // If there is an intersection, we can perform an union and disable the second span.
@@ -423,6 +222,30 @@ struct Band {
                                         [](const Span& span) { return span.min == span.max; }),
                          disabled_spans.end());
   }
+};
+
+/**
+ * @brief Groups the data required to be populated in order to generate a drawable from a path.
+ */
+struct PathData {
+  Drawable& drawable;          // The drawable to populate.
+
+  const drect& bounding_rect;  // The bounding rectangle of the path.
+  const dvec2 bounds_size;     // The size of the bounding rectangle.
+
+  const Fill& fill;            // The Fill properties to use.
+
+  const size_t num;            // The number of curves in the path.
+  const size_t curves_offset;  // The offset of the curves in the drawable.
+  const size_t bands_offset;   // The offset of the bands in the drawable.
+
+  const bool culling;          // Whether to perform culling.
+
+  std::vector<dvec2> min;      // The cached minimum points of the curves.
+  std::vector<dvec2> max;      // The cached maximum points of the curves.
+
+  double band_delta;           // The height of a band.
+  uint8_t horizontal_bands;    // The number of horizontal bands.
 };
 
 /**
@@ -756,7 +579,7 @@ struct TileBatchData {
     bands_ptr = bands;
 
     // Fill the index buffer with static quads.
-    for (size_t i = 0; i < max_indices; i += 6) {
+    for (size_t i = 0; i < max_indices - 5; i += 6) {
       indices[i + 0] = i / 6 * 4 + 0;
       indices[i + 1] = i / 6 * 4 + 1;
       indices[i + 2] = i / 6 * 4 + 2;
@@ -862,6 +685,36 @@ struct TileBatchData {
   {
     return this->bands_count() + bands < max_bands;
   }
+
+  /**
+   * @brief Uploads the vertices, curves and bands to the buffers.
+   *
+   * @param tiles The vertices to upload.
+   * @param curves The curves to upload.
+   * @param bands The bands to upload.
+   */
+  inline void upload(const std::vector<TileVertex>& tiles,
+                     const std::vector<vec2>& curves,
+                     const std::vector<uint16_t>& bands)
+  {
+    memcpy(vertices_ptr, tiles.data(), tiles.size() * sizeof(TileVertex));
+    memcpy(curves_ptr, curves.data(), curves.size() * sizeof(vec2));
+    memcpy(bands_ptr, bands.data(), bands.size() * sizeof(uint16_t));
+
+    const size_t curves_start_index = curves_count();
+    const size_t bands_start_index = bands_count();
+
+    const TileVertex* vertices_end_ptr = vertices_ptr + tiles.size();
+
+    // TODO: should change z-index too
+    for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
+      vertices_ptr->add_offset_to_curves(curves_start_index);
+      vertices_ptr->add_offset_to_bands(bands_start_index);
+    }
+
+    curves_ptr += curves.size();
+    bands_ptr += bands.size();
+  }
 };
 
 /**
@@ -905,7 +758,7 @@ struct FillBatchData {
     indices_ptr = indices;
 
     // Fill the index buffer with static quads.
-    for (size_t i = 0; i < max_indices; i += 6) {
+    for (size_t i = 0; i < max_indices - 5; i += 6) {
       indices[i + 0] = i / 6 * 4 + 0;
       indices[i + 1] = i / 6 * 4 + 1;
       indices[i + 2] = i / 6 * 4 + 2;
@@ -952,7 +805,6 @@ struct FillBatchData {
   inline void clear()
   {
     vertices_ptr = vertices;
-    indices_ptr = indices;
   }
 
   /**
@@ -964,6 +816,17 @@ struct FillBatchData {
   inline bool can_handle_quads(const size_t quads = 1) const
   {
     return this->vertices_count() + quads * 4 < max_vertices;
+  }
+
+  /**
+   * @brief Uploads the vertices to the buffer.
+   *
+   * @param fills The vertices to upload.
+   */
+  inline void upload(const std::vector<FillVertex>& fills)
+  {
+    memcpy(vertices_ptr, fills.data(), fills.size() * sizeof(FillVertex));
+    vertices_ptr += fills.size();
   }
 };
 
@@ -992,9 +855,9 @@ struct Batch {
  * @brief Represents the options to outline a path.
  */
 struct Outline {
-  std::unordered_set<uint32_t>* selected_vertices;  // The selected vertices, can be nullptr.
-  bool draw_vertices;                               // Whether to draw individual the vertices.
-  vec4 color;                                       // The color of the outline.
+  const std::unordered_set<uint32_t>* selected_vertices;  // The selected vertices, can be nullptr.
+  bool draw_vertices;  // Whether to draw individual the vertices.
+  vec4 color;          // The color of the outline.
 };
 
 /**
@@ -1010,14 +873,14 @@ struct DrawingOptions {
  * @brief Collects all the UI related options, transformed based on the viewport.
  */
 struct UIOptions {
-  dvec2 vertex_size;        // The size of a vertex.
-  dvec2 vertex_inner_size;  // The size of the white part of a vertex.
+  vec2 vertex_size;        // The size of a vertex.
+  vec2 vertex_inner_size;  // The size of the white part of a vertex.
 
-  double handle_radius;     // The radius of an handle.
-  double line_width;        // The default width of the lines.
+  float handle_radius;     // The radius of an handle.
+  float line_width;        // The default width of the lines.
 
-  vec4 primary_color;       // The primary color of the UI.
-  vec4 primary_color_05;    // The primary color 5% darker.
+  vec4 primary_color;      // The primary color of the UI.
+  vec4 primary_color_05;   // The primary color 5% darker.
 
   /**
    * @brief Constructs a new UIOptions object.
@@ -1025,14 +888,16 @@ struct UIOptions {
    * @param factor The factor to scale the options with (dpr / zoom).
    */
   UIOptions(const double factor)
-      : vertex_size(RendererSettings::ui_handle_size * factor),
-        vertex_inner_size((RendererSettings::ui_handle_size - 2.0) * factor),
-        handle_radius(RendererSettings::ui_handle_size * factor / 2.0),
-        line_width(RendererSettings::ui_line_width * factor),
+      : vertex_size(vec2(RendererSettings::ui_handle_size * factor)),
+        vertex_inner_size(vec2((RendererSettings::ui_handle_size - 2.0) * factor)),
+        handle_radius(static_cast<float>(RendererSettings::ui_handle_size * factor / 2.0)),
+        line_width(static_cast<float>(RendererSettings::ui_line_width)),
         primary_color(RendererSettings::ui_primary_color),
         primary_color_05(RendererSettings::ui_primary_color * 0.95f)
   {
   }
+
+  UIOptions() : UIOptions(1.0) {}
 };
 
 }  // namespace graphick::renderer

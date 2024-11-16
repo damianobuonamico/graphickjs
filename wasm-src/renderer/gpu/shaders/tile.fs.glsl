@@ -11,7 +11,7 @@ R"(
 
   in lowp vec4 v_color;
   in lowp vec2 v_tex_coord;
-  in lowp vec2 v_tex_coord_curves;
+  in highp vec2 v_tex_coord_curves;
 
   flat in highp uint v_attr_1;
   flat in highp uint v_attr_2;
@@ -105,20 +105,21 @@ R"(
 
     uint bands = (v_attr_3 >> 24) + 1U;
     
-    uint xBandsOffset = (v_attr_3 >> 12) & 0xFFFU;
-    uint yBandsOffset = v_attr_3 & 0xFFFU;
-    uint xCurvesOffset = (v_attr_1 >> 10) & 0x3FFU;
-    uint yCurvesOffset = v_attr_1 & 0x3FFU;
+    // TODO: remove this useless offset calculation from here and CPU
+    uint x_band_offset = (v_attr_3 >> 12) & 0xFFFU;
+    uint y_band_offset = v_attr_3 & 0xFFFU;
+    uint x_curve_offset = (v_attr_1 >> 10) & 0x3FFU;
+    uint y_curve_offset = v_attr_1 & 0x3FFU;
 
-    uint bandsIndexOffset = xBandsOffset + yBandsOffset * 256U;
-    uint curves_index_offset = xCurvesOffset + yCurvesOffset * 256U;
+    uint bands_index_offset = x_band_offset + y_band_offset * 256U;
+    uint curves_index_offset = x_curve_offset + y_curve_offset * 256U;
 
     for (int yOffset = (1 - samples) / 2; yOffset <= (samples - 1) / 2; yOffset++) {
       vec2 sample_pos = v_tex_coord_curves + vec2(0.0, yOffset) * pixel_size.y / float(samples);
     
       uint band_index = clamp(uint(floor(sample_pos.y * float(bands))), 0U, bands - 1U);
-      uint band_data_start = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 2U)).x + bandsIndexOffset;
-      uint band_curves_count = texture(u_bands_texture, to_coords(bandsIndexOffset + band_index * 2U + 1U)).x;
+      uint band_data_start = texture(u_bands_texture, to_coords(bands_index_offset + band_index * 2U)).x + bands_index_offset;
+      uint band_curves_count = texture(u_bands_texture, to_coords(bands_index_offset + band_index * 2U + 1U)).x;
 
       coverage += cubic_horizontal_coverage(sample_pos, 1.0 / pixel_size.x, curves_index_offset, band_data_start, band_curves_count);
     }

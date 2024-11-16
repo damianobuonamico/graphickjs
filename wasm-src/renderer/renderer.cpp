@@ -167,7 +167,7 @@ void Renderer::begin_frame(const RenderOptions& options)
   get()->m_last_viewport = get()->m_viewport;
   get()->m_viewport = options.viewport;
   get()->m_vp_matrix = projection_matrix * view_matrix;
-  get()->m_cache = options.cache;
+  get()->m_cache = &options.cache->renderer_cache;
   get()->m_cached_rendering = false;  // get()->m_cached_rendering = !options.ignore_cache;
   get()->m_ui_options = UIOptions(options.viewport.dpr / options.viewport.zoom);
 
@@ -186,54 +186,92 @@ void Renderer::end_frame()
   GK_TOTAL_RECORD("GPU", time);
 }
 
-void Renderer::draw(const geom::Path<float, std::enable_if<true>>& path,
-                    const mat2x3& transform,
-                    const Fill* fill,
-                    const Stroke* stroke,
-                    const rect* bounding_rect,
-                    const bool pretransformed_rect)
+bool Renderer::draw(const geom::path& path, const mat2x3& transform, const DrawingOptions& options)
 {
-  if (path.empty() || (fill == nullptr && stroke == nullptr)) {
-    return;
+  if (path.empty() ||
+      (options.fill == nullptr && options.stroke == nullptr && options.outline == nullptr))
+  {
+    return false;
   }
 
-  // TODO: when not provided, calculate bounding rect from path, stroke and possibly effects. Also
-  // transform * bounds is not the best approximation but should be good enough if most of the
-  // paths are transformed in scene.render()
-  const rect bounds = bounding_rect ? *bounding_rect : path.approx_bounding_rect();
-  const rect transformed_bounds = pretransformed_rect ? bounds : transform * bounds;
-
-  // TODO: clip if necessary
+  drect bounding_rect{};
 
   if (math::is_identity(transform)) {
-    get()->draw_transformed(path, transformed_bounds, fill, stroke);
+    geom::dpath dpath = geom::dpath(path);
+    bounding_rect = dpath.bounding_rect();
+    dpath.bounding_rect();
+
+    return get()->draw_transformed(dpath, bounding_rect, options);
   } else {
-    get()->draw_transformed(path.transformed(transform), transformed_bounds, fill, stroke);
+    geom::dpath dpath = path.transformed<double>(transform, bounding_rect);
+
+    return get()->draw_transformed(dpath, bounding_rect, options);
   }
 }
 
-void Renderer::draw_outline(const geom::Path<float, std::enable_if<true>>& path,
-                            const mat2x3& transform,
-                            const float tolerance,
-                            const bool draw_vertices,
-                            const std::unordered_set<uint32_t>* selected_vertices,
-                            const Stroke* stroke,
-                            const rect* bounding_rect,
-                            const bool pretransformed_rect)
+bool Renderer::draw(const geom::path& path,
+                    const mat2x3& transform,
+                    const DrawingOptions& options,
+                    const uuid id)
 {
-  if (path.empty()) {
-    return;
+  GK_TOTAL("-----------------------DRAW-----------------------");
+
+  if (path.empty() ||
+      (options.fill == nullptr && options.stroke == nullptr && options.outline == nullptr))
+  {
+    return false;
   }
 
-  geom::PathBuilder(path, transform, bounding_rect, pretransformed_rect)
-      .flatten(get()->m_viewport.visible(), tolerance, [&](const vec2 p0, const vec2 p1) {
-        get()->m_line_instances.instances.push_back(
-            {p0, p1, get()->m_ui_options.line_width, get()->m_ui_options.primary_color_05});
-      });
+  const bool has_transform = !math::is_identity(transform);
+  const bool outline_only = options.fill == nullptr && options.stroke == nullptr &&
+                            options.outline;
+  const bool cached = !outline_only && get()->m_cache->has_bounding_rect(id) &&
+                      get()->m_cache->has_drawable(id);
 
-  if (draw_vertices) {
-    get()->draw_outline_vertices(path, transform, tolerance, selected_vertices, stroke);
+  if (cached) {
+    const drect& bounding_rect = get()->m_cache->get_bounding_rect(id);
+
+    if (!geom::does_rect_intersect_rect(bounding_rect, get()->m_viewport.visible())) {
+      return false;
+    }
+
+    get()->draw(get()->m_cache->get_drawable(id));
+
+    if (options.outline) {
+      const DrawingOptions outline_options{nullptr, nullptr, options.outline};
+
+      geom::dpath transformed_path = has_transform ? path.transformed<double>(transform) :
+                                                     geom::dpath(path);
+
+      get()->draw_transformed(transformed_path, bounding_rect, outline_options);
+    }
+
+    return true;
   }
+
+  geom::dpath transformed_path;
+  drect bounding_rect;
+
+  if (has_transform) {
+    transformed_path = path.transformed<double>(transform, bounding_rect);
+  } else {
+    transformed_path = geom::dpath(path);
+    bounding_rect = transformed_path.bounding_rect();
+  }
+
+  const double radius = options.stroke ? (0.5 * options.stroke->width *
+                                          (options.stroke->join == LineJoin::Miter ?
+                                               std::max(1.0, options.stroke->miter_limit) :
+                                               1.0)) :
+                                         0.0;
+
+  if (!geom::does_rect_intersect_rect(drect::expand(bounding_rect, radius),
+                                      get()->m_viewport.visible()))
+  {
+    return false;
+  }
+
+  return get()->draw_transformed(transformed_path, bounding_rect, options, id);
 }
 
 void Renderer::draw_rect(const rect& rect, const std::optional<vec4> color)
@@ -295,103 +333,143 @@ Renderer::Renderer()
                                       std::move(image_vertex_array)};
 }
 
-void Renderer::draw_transformed(const geom::Path<float, std::enable_if<true>>& path,
-                                const rect& bounding_rect,
-                                const Fill* fill,
-                                const Stroke* stroke)
+bool Renderer::draw_transformed(const geom::dpath& path,
+                                const drect& bounding_rect,
+                                const DrawingOptions& options,
+                                const uuid id)
 {
-  const bool culling = bounding_rect.area() * m_viewport.zoom * m_viewport.zoom > 18.0f * 18.0f;
+  // TODO: clip if necessary
+  // if (!geom::does_rect_intersect_rect(entity_rect, visible_rect))
+  //   continue;
 
-  if (fill) {
-    geom::cubic_path cubic_path = path.to_cubic_path();
+  const bool culling = bounding_rect.area() * m_viewport.zoom * m_viewport.zoom >
+                       RendererSettings::culling_threshold * RendererSettings::culling_threshold;
+
+  Drawable drawable;
+
+  // TODO: check if intersects visible area
+  if (options.fill && options.fill->color.a > 0.0f) {
+    geom::dcubic_path cubic_path = path.to_cubic_path();
 
     if (!cubic_path.closed()) {
       cubic_path.line_to(cubic_path.front());
     }
 
-    draw_cubic_path(cubic_path, bounding_rect, *fill, culling);
+    draw_cubic_path(cubic_path, bounding_rect, *options.fill, culling, drawable);
   }
 
-  if (stroke) {
-    Fill stroke_fill{stroke->color, FillRule::NonZero, stroke->z_index};
-    geom::StrokingOptions<float> stroking_options{
-        stroke->width, stroke->miter_limit, stroke->cap, stroke->join};
+  // TODO: check if intersects visible area
+  if (options.stroke && options.stroke->color.a > 0.0f) {
+    Fill stroke_fill{options.stroke->color, FillRule::NonZero, options.stroke->z_index};
 
-    // TODO: remove identity transform from path builder
-    geom::StrokeOutline<float> stroke_path = geom::PathBuilder(
-                                                 path, mat2x3::identity(), &bounding_rect, true)
-                                                 .stroke(stroking_options, 0.0001f);
+    const geom::StrokingOptions<double> stroking_options{RendererSettings::stroking_tolerance,
+                                                         options.stroke->width,
+                                                         options.stroke->miter_limit,
+                                                         options.stroke->cap,
+                                                         options.stroke->join};
+    const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
+    const geom::StrokeOutline<double> stroke_path = builder.stroke(stroking_options);
+
+    if (id != uuid::null) {
+      m_cache->set_bounding_rect(id, stroke_path.bounding_rect);
+    }
 
     if (stroke_path.inner.empty()) {
-      draw_cubic_path(stroke_path.outer, stroke_path.bounding_rect, stroke_fill, culling);
+      draw_cubic_path(
+          stroke_path.outer, stroke_path.bounding_rect, stroke_fill, culling, drawable);
     } else {
       draw_cubic_paths({&stroke_path.outer, &stroke_path.inner},
                        stroke_path.bounding_rect,
                        stroke_fill,
-                       culling);
+                       culling,
+                       drawable);
+    }
+  } else if (id != uuid::null) {
+    m_cache->set_bounding_rect(id, bounding_rect);
+  }
+
+  if (drawable.tiles.size() || drawable.fills.size()) {
+    draw(drawable);
+
+    if (id != uuid::null) {
+      m_cache->set_drawable(id, std::move(drawable));
     }
   }
+
+  if (options.outline) {
+    const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
+
+    builder.flatten<float>(
+        get()->m_viewport.visible(),
+        RendererSettings::flattening_tolerance / m_viewport.zoom,
+        [&](const vec2 p0, const vec2 p1) {
+          get()->m_line_instances.instances.push_back(
+              {p0, p1, get()->m_ui_options.line_width, get()->m_ui_options.primary_color_05});
+        });
+
+    if (options.outline->draw_vertices) {
+      get()->draw_outline_vertices(path, *options.outline);
+    }
+  }
+
+  return true;
 }
 
-bool Renderer::draw_cubic_path_impl(PathDrawable& drawable)
+bool Renderer::draw_cubic_path_impl(PathData& data)
 {
-  TileBatchData& tiles = m_batch.tiles;
-
   /* Bands count is always between 1 and 16, based on the viewport coverage. */
 
   // TODO: this number should be different from the culling bands
-  drawable.horizontal_bands = std::clamp(
-      static_cast<int>(drawable.bounds_size.y * m_viewport.zoom / GK_VIEWPORT_BANDS_HEIGHT),
-      1,
-      64);
-  drawable.band_delta = drawable.bounds_size.y / drawable.horizontal_bands;
+  data.horizontal_bands = std::clamp(
+      static_cast<int>(data.bounds_size.y * m_viewport.zoom / GK_VIEWPORT_BANDS_HEIGHT), 1, 64);
+  data.band_delta = data.bounds_size.y / data.horizontal_bands;
 
   /* Sort curves by descending max x. */
 
-  std::vector<uint16_t> h_indices(drawable.length);
+  std::vector<uint16_t> h_indices(data.num);
 
   std::iota(h_indices.begin(), h_indices.end(), 0);
   std::sort(h_indices.begin(), h_indices.end(), [&](const uint16_t a, const uint16_t b) {
-    return drawable.max[a].x > drawable.max[b].x;
+    return data.max[a].x > data.max[b].x;
   });
 
   /* Calculate band metrics. */
 
-  float band_min = drawable.bounding_rect.min.y;
-  float band_max = drawable.bounding_rect.min.y + drawable.band_delta;
+  float band_min = data.bounding_rect.min.y;
+  float band_max = data.bounding_rect.min.y + data.band_delta;
 
   /* Preallocate horizontal bands header. */
 
-  tiles.bands_ptr += drawable.horizontal_bands * 2;
+  const size_t header_index = data.drawable.bands.size();
+  data.drawable.bands.resize(data.drawable.bands.size() + data.horizontal_bands * 2);
 
   /* Determine which curves are in each horizontal band. */
 
-  for (uint8_t i = 0; i < drawable.horizontal_bands; i++) {
-    const size_t band_start = tiles.bands_ptr - tiles.bands;
+  for (uint8_t i = 0; i < data.horizontal_bands; i++) {
+    const size_t band_start = data.drawable.bands.size();
 
     for (uint16_t j = 0; j < h_indices.size(); j++) {
-      const float min_y = drawable.min[h_indices[j]].y;
-      const float max_y = drawable.max[h_indices[j]].y;
+      const float min_y = data.min[h_indices[j]].y;
+      const float max_y = data.max[h_indices[j]].y;
 
       if (min_y == max_y || min_y > band_max || max_y < band_min) {
         continue;
       }
 
-      *(tiles.bands_ptr++) = h_indices[j];
+      data.drawable.push_band(h_indices[j]);
     }
 
     /* Each band header is an offset from this path's bands data start and the number of curves in
      * the band. */
 
-    const size_t band_end = tiles.bands_ptr - tiles.bands;
+    const size_t band_end = data.drawable.bands.size();
 
-    tiles.bands[drawable.bands_start_index + i * 2] = static_cast<uint16_t>(
-        band_start - drawable.bands_start_index);
-    tiles.bands[drawable.bands_start_index + i * 2 + 1] = static_cast<uint16_t>(band_end -
-                                                                                band_start);
+    data.drawable.bands[header_index + i * 2] = static_cast<uint16_t>(band_start -
+                                                                      data.bands_offset);
+    data.drawable.bands[header_index + i * 2 + 1] = static_cast<uint16_t>(band_end - band_start);
 
-    band_min += drawable.band_delta;
-    band_max += drawable.band_delta;
+    band_min += data.band_delta;
+    band_max += data.band_delta;
   }
 
   // TODO: check if direct rendering is an option
@@ -401,46 +479,14 @@ bool Renderer::draw_cubic_path_impl(PathDrawable& drawable)
 
   /* Push whole instance if culling is disabled. */
 
-  if (!drawable.culling) {
-    const uvec4 color = uvec4(drawable.fill.color * 255.0f);
-    const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, drawable.curves_start_index);
+  if (!data.culling) {
+    const uvec4 color = uvec4(data.fill.color * 255.0f);
+    const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, data.curves_offset);
     const uint32_t attr_2 = TileVertex::create_attr_2(
-        drawable.fill.z_index, false, drawable.fill.rule == FillRule::EvenOdd, 0);
-    const uint32_t attr_3 = TileVertex::create_attr_3(drawable.horizontal_bands,
-                                                      drawable.bands_start_index);
+        data.fill.z_index, false, data.fill.rule == FillRule::EvenOdd, 0);
+    const uint32_t attr_3 = TileVertex::create_attr_3(data.horizontal_bands, data.bands_offset);
 
-    (*tiles.vertices_ptr++) = TileVertex{
-        {drawable.bounding_rect.min.x, drawable.bounding_rect.min.y},
-        color,
-        {0.0f, 0.0f},
-        {0.0f, 0.0f},
-        attr_1,
-        attr_2,
-        attr_3};
-    (*tiles.vertices_ptr++) = TileVertex{
-        {drawable.bounding_rect.max.x, drawable.bounding_rect.min.y},
-        color,
-        {1.0f, 0.0f},
-        {1.0f, 0.0f},
-        attr_1,
-        attr_2,
-        attr_3};
-    (*tiles.vertices_ptr++) = TileVertex{
-        {drawable.bounding_rect.max.x, drawable.bounding_rect.max.y},
-        color,
-        {1.0f, 1.0f},
-        {1.0f, 1.0f},
-        attr_1,
-        attr_2,
-        attr_3};
-    (*tiles.vertices_ptr++) = TileVertex{
-        {drawable.bounding_rect.min.x, drawable.bounding_rect.max.y},
-        color,
-        {0.0f, 1.0f},
-        {0.0f, 1.0f},
-        attr_1,
-        attr_2,
-        attr_3};
+    data.drawable.push_tile(data.bounding_rect, color, attr_1, attr_2, attr_3);
 
     return true;
   }
@@ -448,59 +494,59 @@ bool Renderer::draw_cubic_path_impl(PathDrawable& drawable)
   return false;
 }
 
-void Renderer::draw_cubic_path_cull(PathDrawable& drawable,
-                                    PathCullingData& data,
-                                    const geom::CubicPath<float, std::enable_if<true>>& path)
+void Renderer::draw_cubic_path_cull(const geom::dcubic_path& path,
+                                    PathData& data,
+                                    PathCullingData& culling_data)
 {
   for (uint16_t i = 0; i < path.size(); i++) {
     /* Being monotonic, it is straightforward to determine which bands the curve intersects. */
 
-    const float start_band_factor = (drawable.min[data.accumulator + i].y -
-                                     drawable.bounding_rect.min.y) /
-                                    drawable.band_delta;
-    const float end_band_factor = (drawable.max[data.accumulator + i].y -
-                                   drawable.bounding_rect.min.y) /
-                                  drawable.band_delta;
+    const double start_band_factor = (data.min[culling_data.accumulator + i].y -
+                                      data.bounding_rect.min.y) /
+                                     data.band_delta;
+    const double end_band_factor = (data.max[culling_data.accumulator + i].y -
+                                    data.bounding_rect.min.y) /
+                                   data.band_delta;
     const int start_band = std::clamp(
-        static_cast<int>(start_band_factor), 0, drawable.horizontal_bands - 1);
+        static_cast<int>(start_band_factor), 0, data.horizontal_bands - 1);
     const int end_band = std::clamp(
-        static_cast<int>(end_band_factor), 0, drawable.horizontal_bands - 1);
+        static_cast<int>(end_band_factor), 0, data.horizontal_bands - 1);
 
     if (start_band >= end_band) {
       /* Curve is within one band. */
-      data.bands[start_band].push_curve(drawable.min[data.accumulator + i].x,
-                                        drawable.max[data.accumulator + i].x);
+      culling_data.bands[start_band].push_curve(data.min[culling_data.accumulator + i].x,
+                                                data.max[culling_data.accumulator + i].x);
       continue;
     }
 
     /* Calculate intersections with band boundaries. */
 
-    const vec2 p0 = path[i * 3];
-    const vec2 p1 = path[i * 3 + 1];
-    const vec2 p2 = path[i * 3 + 2];
-    const vec2 p3 = path[i * 3 + 3];
+    const dvec2 p0 = path[i * 3];
+    const dvec2 p1 = path[i * 3 + 1];
+    const dvec2 p2 = path[i * 3 + 2];
+    const dvec2 p3 = path[i * 3 + 3];
 
     const auto& [a, b, c, d] = geom::cubic_coefficients(p0, p1, p2, p3);
 
     const bool b01 = std::abs(p1.x - p0.x) + std::abs(p1.y - p0.y) <
-                     math::geometric_epsilon<float>;
+                     math::geometric_epsilon<double>;
     const bool b12 = std::abs(p2.x - p1.x) + std::abs(p2.y - p1.y) <
-                     math::geometric_epsilon<float>;
+                     math::geometric_epsilon<double>;
     const bool b23 = std::abs(p3.x - p2.x) + std::abs(p3.y - p2.y) <
-                     math::geometric_epsilon<float>;
+                     math::geometric_epsilon<double>;
 
     const bool linear = (b01 && (b23 || b12)) || (b23 && b12);
 
-    std::optional<float> last_intersection = std::nullopt;
+    std::optional<double> last_intersection = std::nullopt;
 
     for (int j = start_band; j <= end_band; j++) {
-      const float band_top = drawable.bounding_rect.min.y + j * drawable.band_delta -
-                             math::geometric_epsilon<float>;
-      const float band_bottom = drawable.bounding_rect.min.y + (j + 1) * drawable.band_delta +
-                                math::geometric_epsilon<float>;
+      const double band_top = data.bounding_rect.min.y + j * data.band_delta -
+                              math::geometric_epsilon<double>;
+      const double band_bottom = data.bounding_rect.min.y + (j + 1) * data.band_delta +
+                                 math::geometric_epsilon<double>;
 
-      float clipped_min = std::numeric_limits<float>::infinity();
-      float clipped_max = -std::numeric_limits<float>::infinity();
+      double clipped_min = std::numeric_limits<double>::infinity();
+      double clipped_max = -std::numeric_limits<double>::infinity();
 
       /* One of the endpoints could be within the band. */
       if (p0.y >= band_top && p0.y <= band_bottom) {
@@ -521,78 +567,75 @@ void Renderer::draw_cubic_path_cull(PathDrawable& drawable,
       }
 
       /* We need to check intersections with the bottom boundary of the band. */
-      const float y = drawable.bounding_rect.min.y + (j + 1) * drawable.band_delta;
+      const double y = data.bounding_rect.min.y + (j + 1) * data.band_delta;
       const bool is_downwards = p0.y > y || p3.y < y;
 
       if ((is_downwards && ((p0.y < y && p3.y <= y) || (p0.y > y && p3.y >= y))) ||
           (!is_downwards && ((p0.y <= y && p3.y < y) || (p0.y >= y && p3.y > y))))
       {
         /* Curve does not intersect the band. */
-        data.bands[j].push_curve(clipped_min, clipped_max);
+        culling_data.bands[j].push_curve(clipped_min, clipped_max);
         continue;
       }
 
-      const float t0 = (y - p0.y) / (p3.y - p0.y);
+      const double t0 = (y - p0.y) / (p3.y - p0.y);
 
       if (linear) {
-        if (t0 >= -math::geometric_epsilon<float> && t0 <= 1.0f + math::geometric_epsilon<float>) {
-          const float x = p0.x + t0 * (p3.x - p0.x);
+        if (t0 >= -math::geometric_epsilon<double> && t0 <= 1.0f + math::geometric_epsilon<double>)
+        {
+          const double x = p0.x + t0 * (p3.x - p0.x);
 
           last_intersection = x;
 
           clipped_min = std::min(clipped_min, x);
           clipped_max = std::max(clipped_max, x);
 
-          data.bottom_intersections[j].push_back({x, is_downwards});
+          culling_data.bottom_intersections[j].push_back({x, is_downwards});
         }
       } else {
-        const float t = geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
+        const double t = geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
 
-        if (t >= -math::geometric_epsilon<float> && t <= 1.0f + math::geometric_epsilon<float>) {
-          const float t_sq = t * t;
-          const float x = a.x * t_sq * t + b.x * t_sq + c.x * t + d.x;
+        if (t >= -math::geometric_epsilon<double> && t <= 1.0f + math::geometric_epsilon<double>) {
+          const double t_sq = t * t;
+          const double x = a.x * t_sq * t + b.x * t_sq + c.x * t + d.x;
 
           last_intersection = x;
 
           clipped_min = std::min(clipped_min, x);
           clipped_max = std::max(clipped_max, x);
 
-          data.bottom_intersections[j].push_back({x, is_downwards});
+          culling_data.bottom_intersections[j].push_back({x, is_downwards});
         }
       }
 
-      data.bands[j].push_curve(clipped_min, clipped_max);
+      culling_data.bands[j].push_curve(clipped_min, clipped_max);
     }
   }
 
-  data.accumulator += path.size();
+  culling_data.accumulator += path.size();
 }
 
-void Renderer::draw_cubic_path_cull_commit(PathDrawable& drawable, PathCullingData& data)
+void Renderer::draw_cubic_path_cull_commit(PathData& data, PathCullingData& culling_data)
 {
-  TileBatchData& tiles = m_batch.tiles;
-  FillBatchData& fills = m_batch.fills;
-
-  const uvec4 color = uvec4(drawable.fill.color * 255.0f);
-  const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, drawable.curves_start_index);
+  const uvec4 color = uvec4(data.fill.color * 255.0f);
+  const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, data.curves_offset);
   const uint32_t attr_2 = TileVertex::create_attr_2(
-      drawable.fill.z_index, false, drawable.fill.rule == FillRule::EvenOdd, 0);
-  const uint32_t attr_3 = TileVertex::create_attr_3(drawable.horizontal_bands,
-                                                    drawable.bands_start_index);
+      data.fill.z_index, false, data.fill.rule == FillRule::EvenOdd, 0);
+  const uint32_t attr_3 = TileVertex::create_attr_3(data.horizontal_bands, data.bands_offset);
 
   /* The last band cannot have filled spans. */
 
-  data.bottom_intersections.back().clear();
+  culling_data.bottom_intersections.back().clear();
 
   /* Calculate filled spans. */
 
-  for (int i = 0; i < data.bands.size(); i++) {
-    const Band& band = data.bands[i];
-    const float top_y = drawable.bounding_rect.min.y + i * drawable.band_delta;
-    const float bottom_y = drawable.bounding_rect.min.y + (i + 1) * drawable.band_delta;
+  for (int i = 0; i < culling_data.bands.size(); i++) {
+    const Band& band = culling_data.bands[i];
+    const float top_y = data.bounding_rect.min.y + i * data.band_delta;
+    const float bottom_y = data.bounding_rect.min.y + (i + 1) * data.band_delta;
 
-    std::sort(data.bottom_intersections[i].begin(),
-              data.bottom_intersections[i].end(),
+    std::sort(culling_data.bottom_intersections[i].begin(),
+              culling_data.bottom_intersections[i].end(),
               [&](const Intersection& a, const Intersection& b) { return a.x < b.x; });
 
     int winding = 0;
@@ -601,212 +644,159 @@ void Renderer::draw_cubic_path_cull_commit(PathDrawable& drawable, PathCullingDa
     if (!band.disabled_spans.empty()) {
       const Span& span = band.disabled_spans.front();
 
-      const vec2 span_min = {span.min, top_y};
-      const vec2 span_max = {span.max, bottom_y};
-      const vec2 tex_coord_min = (span_min - drawable.bounding_rect.min) / drawable.bounds_size;
-      const vec2 tex_coord_max = (span_max - drawable.bounding_rect.min) / drawable.bounds_size;
+      const vec2 span_min = {static_cast<float>(span.min), top_y};
+      const vec2 span_max = {static_cast<float>(span.max), bottom_y};
 
-      (*tiles.vertices_ptr++) = TileVertex{{span_min.x, span_min.y},
-                                           color,
-                                           {0.0f, 0.0f},
-                                           {tex_coord_min.x, tex_coord_min.y},
-                                           attr_1,
-                                           attr_2,
-                                           attr_3};
-      (*tiles.vertices_ptr++) = TileVertex{{span_max.x, span_min.y},
-                                           color,
-                                           {0.0f, 0.0f},
-                                           {tex_coord_max.x, tex_coord_min.y},
-                                           attr_1,
-                                           attr_2,
-                                           attr_3};
-      (*tiles.vertices_ptr++) = TileVertex{{span_max.x, span_max.y},
-                                           color,
-                                           {0.0f, 0.0f},
-                                           {tex_coord_max.x, tex_coord_max.y},
-                                           attr_1,
-                                           attr_2,
-                                           attr_3};
-      (*tiles.vertices_ptr++) = TileVertex{{span_min.x, span_max.y},
-                                           color,
-                                           {0.0f, 0.0f},
-                                           {tex_coord_min.x, tex_coord_max.y},
-                                           attr_1,
-                                           attr_2,
-                                           attr_3};
+      const vec2 tex_coord_min = vec2((dvec2(span_min) - data.bounding_rect.min) /
+                                      data.bounds_size);
+      const vec2 tex_coord_max = vec2((dvec2(span_max) - data.bounding_rect.min) /
+                                      data.bounds_size);
+
+      data.drawable.push_tile(
+          span_min, span_max, color, tex_coord_min, tex_coord_max, attr_1, attr_2, attr_3);
     }
 
     for (int j = 0; j < static_cast<int>(band.disabled_spans.size()) - 1; j++) {
       const Span& span1 = band.disabled_spans[j];
       const Span& span2 = band.disabled_spans[j + 1];
 
-      const vec2 span_min = {span2.min, top_y};
-      const vec2 span_max = {span2.max, bottom_y};
-      const vec2 tex_coord_min = (span_min - drawable.bounding_rect.min) / drawable.bounds_size;
-      const vec2 tex_coord_max = (span_max - drawable.bounding_rect.min) / drawable.bounds_size;
+      const vec2 span_min = vec2(span2.min, top_y);
+      const vec2 span_max = vec2(span2.max, bottom_y);
 
-      (*tiles.vertices_ptr++) = TileVertex{{span_min.x, span_min.y},
-                                           color,
-                                           {0.0f, 0.0f},
-                                           {tex_coord_min.x, tex_coord_min.y},
-                                           attr_1,
-                                           attr_2,
-                                           attr_3};
-      (*tiles.vertices_ptr++) = TileVertex{{span_max.x, span_min.y},
-                                           color,
-                                           {0.0f, 0.0f},
-                                           {tex_coord_max.x, tex_coord_min.y},
-                                           attr_1,
-                                           attr_2,
-                                           attr_3};
-      (*tiles.vertices_ptr++) = TileVertex{{span_max.x, span_max.y},
-                                           color,
-                                           {0.0f, 0.0f},
-                                           {tex_coord_max.x, tex_coord_max.y},
-                                           attr_1,
-                                           attr_2,
-                                           attr_3};
-      (*tiles.vertices_ptr++) = TileVertex{{span_min.x, span_max.y},
-                                           color,
-                                           {0.0f, 0.0f},
-                                           {tex_coord_min.x, tex_coord_max.y},
-                                           attr_1,
-                                           attr_2,
-                                           attr_3};
+      const vec2 tex_coord_min = vec2((dvec2(span_min) - data.bounding_rect.min) /
+                                      data.bounds_size);
+      const vec2 tex_coord_max = vec2((dvec2(span_max) - data.bounding_rect.min) /
+                                      data.bounds_size);
 
-      for (; winding_k < data.bottom_intersections[i].size(); winding_k++) {
-        if (data.bottom_intersections[i][winding_k].x > (span1.max + span2.min) * 0.5f) {
+      data.drawable.push_tile(
+          span_min, span_max, color, tex_coord_min, tex_coord_max, attr_1, attr_2, attr_3);
+
+      for (; winding_k < culling_data.bottom_intersections[i].size(); winding_k++) {
+        if (culling_data.bottom_intersections[i][winding_k].x > (span1.max + span2.min) * 0.5f) {
           break;
         }
 
-        winding -= int(data.bottom_intersections[i][winding_k].downwards) * 2 - 1;
+        winding -= int(culling_data.bottom_intersections[i][winding_k].downwards) * 2 - 1;
       }
 
-      if (drawable.fill.rule == FillRule::NonZero ? (winding != 0) : (winding % 2 != 0)) {
-        (*fills.vertices_ptr++) = FillVertex{
-            {span1.max, top_y}, color, {0.0f, 0.0f}, attr_1, attr_2};
-        (*fills.vertices_ptr++) = FillVertex{
-            {span2.min, top_y}, color, {0.0f, 0.0f}, attr_1, attr_2};
-        (*fills.vertices_ptr++) = FillVertex{
-            {span2.min, bottom_y}, color, {0.0f, 0.0f}, attr_1, attr_2};
-        (*fills.vertices_ptr++) = FillVertex{
-            {span1.max, bottom_y}, color, {0.0f, 0.0f}, attr_1, attr_2};
+      if (data.fill.rule == FillRule::NonZero ? (winding != 0) : (winding % 2 != 0)) {
+        const vec2 fill_min = vec2(span1.max, top_y);
+        const vec2 fill_max = vec2(span2.min, bottom_y);
+
+        data.drawable.push_fill(fill_min, fill_max, color, attr_1, attr_2);
       }
     }
   }
 }
 
-void Renderer::draw_cubic_path(const geom::CubicPath<float, std::enable_if<true>>& path,
-                               const rect& bounding_rect,
+void Renderer::draw_cubic_path(const geom::dcubic_path& path,
+                               const drect& bounding_rect,
                                const Fill& fill,
-                               const bool culling)
+                               const bool culling,
+                               Drawable& drawable)
 {
-  TileBatchData& tiles = m_batch.tiles;
-
   /* Starting indices for this path. */
 
-  const size_t length = path.size();
+  const size_t num = path.size();
 
-  // TODO: true overflow handling when caching is implemented (so that we know beforehand if we
-  // need to flush, its easier)
-  if (!tiles.can_handle_curves(length) || !tiles.can_handle_quads(length * 10)) {
-    flush_meshes();
-  }
+  PathData data{drawable,
+                bounding_rect,
+                bounding_rect.size(),
+                fill,
+                num,
+                drawable.curves.size() / 2,
+                drawable.bands.size(),
+                culling,
+                std::vector<dvec2>(num),
+                std::vector<dvec2>(num),
+                0.0,
+                0};
 
-  PathDrawable drawable{bounding_rect,
-                        bounding_rect.size(),
-                        fill,
-                        tiles.curves_count(),
-                        tiles.bands_count(),
-                        length,
-                        culling,
-                        std::vector<vec2>(length),
-                        std::vector<vec2>(length),
-                        0,
-                        0.0f};
+  /* Reserve space and setup drawable. */
+
+  data.drawable.bounding_rect = drect::from_rects(drawable.bounding_rect, bounding_rect);
+  data.drawable.curves.reserve(drawable.curves.size() + num * 4);
 
   /* Copy the curves, and cache min_max values. */
 
-  for (uint16_t i = 0; i < length; i++) {
-    const vec2 p0 = path[i * 3];
-    const vec2 p1 = path[i * 3 + 1];
-    const vec2 p2 = path[i * 3 + 2];
-    const vec2 p3 = path[i * 3 + 3];
+  for (uint32_t i = 0; i < num; i++) {
+    const dvec2 p0 = path[i * 3];
+    const dvec2 p1 = path[i * 3 + 1];
+    const dvec2 p2 = path[i * 3 + 2];
+    const dvec2 p3 = path[i * 3 + 3];
 
-    *(tiles.curves_ptr++) = (p0 - bounding_rect.min) / drawable.bounds_size;
-    *(tiles.curves_ptr++) = (p1 - bounding_rect.min) / drawable.bounds_size;
-    *(tiles.curves_ptr++) = (p2 - bounding_rect.min) / drawable.bounds_size;
-    *(tiles.curves_ptr++) = (p3 - bounding_rect.min) / drawable.bounds_size;
+    data.drawable.push_curve(vec2((p0 - bounding_rect.min) / data.bounds_size),
+                             vec2((p1 - bounding_rect.min) / data.bounds_size),
+                             vec2((p2 - bounding_rect.min) / data.bounds_size),
+                             vec2((p3 - bounding_rect.min) / data.bounds_size));
 
-    drawable.min[i] = math::min(p0, p3);
-    drawable.max[i] = math::max(p0, p3);
+    data.min[i] = math::min(p0, p3);
+    data.max[i] = math::max(p0, p3);
   }
 
   /* Draw the path if not culled. */
 
-  if (draw_cubic_path_impl(drawable)) {
+  if (draw_cubic_path_impl(data)) {
     return;
   }
 
   /* Calculate culling data. */
 
-  PathCullingData culling_data(drawable.horizontal_bands);
+  PathCullingData culling_data(data.horizontal_bands);
 
-  draw_cubic_path_cull(drawable, culling_data, path);
-  draw_cubic_path_cull_commit(drawable, culling_data);
+  draw_cubic_path_cull(path, data, culling_data);
+  draw_cubic_path_cull_commit(data, culling_data);
 }
 
-void Renderer::draw_cubic_paths(
-    const std::vector<const geom::CubicPath<float, std::enable_if<true>>*>& paths,
-    const rect& bounding_rect,
-    const Fill& fill,
-    const bool culling)
+void Renderer::draw_cubic_paths(const std::vector<const geom::dcubic_path*>& paths,
+                                const drect& bounding_rect,
+                                const Fill& fill,
+                                const bool culling,
+                                Drawable& drawable)
 {
-  TileBatchData& tiles = m_batch.tiles;
-
   /* Starting indices for this path. */
 
-  const size_t length = std::accumulate(
+  const size_t num = std::accumulate(
       paths.begin(), paths.end(), 0, [](const size_t acc, const auto* p) {
         return acc + p->size();
       });
 
-  // TODO: true overflow handling when caching is implemented (so that we know beforehand if we
-  // need to flush, its easier)
-  if (!tiles.can_handle_curves(length) || !tiles.can_handle_quads(length * 10)) {
-    flush_meshes();
-  }
+  PathData data{drawable,
+                bounding_rect,
+                bounding_rect.size(),
+                fill,
+                num,
+                drawable.curves.size() / 2,
+                drawable.bands.size(),
+                culling,
+                std::vector<dvec2>(num),
+                std::vector<dvec2>(num),
+                0.0,
+                0};
 
-  PathDrawable drawable{bounding_rect,
-                        bounding_rect.size(),
-                        fill,
-                        tiles.curves_count(),
-                        tiles.bands_count(),
-                        length,
-                        culling,
-                        std::vector<vec2>(length),
-                        std::vector<vec2>(length),
-                        0,
-                        0.0f};
+  /* Reserve space and setup drawable. */
+
+  data.drawable.bounding_rect = drect::from_rects(drawable.bounding_rect, bounding_rect);
+  data.drawable.curves.reserve(drawable.curves.size() + num * 4);
 
   /* Copy the curves, and cache min_max values. */
 
   size_t accumulator = 0;
 
   for (const auto* path : paths) {
-    for (uint16_t i = 0; i < path->size(); i++) {
-      const vec2 p0 = path->at(i * 3);
-      const vec2 p1 = path->at(i * 3 + 1);
-      const vec2 p2 = path->at(i * 3 + 2);
-      const vec2 p3 = path->at(i * 3 + 3);
+    for (uint32_t i = 0; i < path->size(); i++) {
+      const dvec2 p0 = path->at(i * 3);
+      const dvec2 p1 = path->at(i * 3 + 1);
+      const dvec2 p2 = path->at(i * 3 + 2);
+      const dvec2 p3 = path->at(i * 3 + 3);
 
-      *(tiles.curves_ptr++) = (p0 - bounding_rect.min) / drawable.bounds_size;
-      *(tiles.curves_ptr++) = (p1 - bounding_rect.min) / drawable.bounds_size;
-      *(tiles.curves_ptr++) = (p2 - bounding_rect.min) / drawable.bounds_size;
-      *(tiles.curves_ptr++) = (p3 - bounding_rect.min) / drawable.bounds_size;
+      data.drawable.push_curve(vec2((p0 - bounding_rect.min) / data.bounds_size),
+                               vec2((p1 - bounding_rect.min) / data.bounds_size),
+                               vec2((p2 - bounding_rect.min) / data.bounds_size),
+                               vec2((p3 - bounding_rect.min) / data.bounds_size));
 
-      drawable.min[accumulator + i] = math::min(p0, p3);
-      drawable.max[accumulator + i] = math::max(p0, p3);
+      data.min[accumulator + i] = math::min(p0, p3);
+      data.max[accumulator + i] = math::max(p0, p3);
     }
 
     accumulator += path->size();
@@ -814,102 +804,102 @@ void Renderer::draw_cubic_paths(
 
   /* Draw the path if not culled. */
 
-  if (draw_cubic_path_impl(drawable)) {
+  if (draw_cubic_path_impl(data)) {
     return;
   }
 
   /* Calculate culling data. */
 
-  PathCullingData culling_data(drawable.horizontal_bands);
+  PathCullingData culling_data(data.horizontal_bands);
 
   for (const auto* path : paths) {
-    draw_cubic_path_cull(drawable, culling_data, *path);
+    draw_cubic_path_cull(*path, data, culling_data);
   }
 
-  draw_cubic_path_cull_commit(drawable, culling_data);
+  draw_cubic_path_cull_commit(data, culling_data);
 }
 
-void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true>>& path,
-                                     const mat2x3& transform,
-                                     const float tolerance,
-                                     const std::unordered_set<uint32_t>* selected_vertices,
-                                     const Stroke* stroke)
+void Renderer::draw_outline_vertices(const geom::dpath& path, const Outline& outline)
 {
   InstanceBuffer<LineInstance>& lines = m_line_instances.instances;
   InstanceBuffer<RectInstance>& rects = m_rect_instances.instances;
   InstanceBuffer<CircleInstance>& circles = get()->m_circle_instances.instances;
 
   uint32_t i = path.points_count() - 1;
-  vec2 last_raw = path.at(i);
-  vec2 last = transform * last_raw;
+  vec2 last = vec2(path.at(i));
 
   if (!path.closed()) {
     rects.push_back({last, m_ui_options.vertex_size, m_ui_options.primary_color});
 
-    if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+    if (outline.selected_vertices &&
+        outline.selected_vertices->find(i) == outline.selected_vertices->end())
+    {
       rects.push_back({last, m_ui_options.vertex_inner_size, vec4::identity()});
     }
 
-    const vec2 out_handle = path.out_handle();
+    const vec2 out_handle = vec2(path.out_handle());
 
-    if (out_handle != last_raw) {
-      const vec2 h = transform * out_handle;
-
-      circles.push_back({h, m_ui_options.handle_radius, m_ui_options.primary_color});
-      lines.push_back({h, last, m_ui_options.line_width, m_ui_options.primary_color_05});
+    if (out_handle != last) {
+      circles.push_back({out_handle, m_ui_options.handle_radius, m_ui_options.primary_color});
+      lines.push_back({out_handle, last, m_ui_options.line_width, m_ui_options.primary_color_05});
     }
   }
 
   /* We draw the vertices in reverse order to be coherent with hit testing. */
 
   path.for_each_reversed(
-      [&](const vec2 p0_raw) {
-        const vec2 p0 = transform * p0_raw;
+      [&](const dvec2 p0_raw) {
+        const vec2 p0 = vec2(p0_raw);
 
         rects.push_back({p0, m_ui_options.vertex_size, m_ui_options.primary_color});
 
-        if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+        if (outline.selected_vertices &&
+            outline.selected_vertices->find(i) == outline.selected_vertices->end())
+        {
           rects.push_back({p0, m_ui_options.vertex_inner_size, vec4::identity()});
         }
 
         if (!path.closed()) {
-          vec2 in_handle = path.in_handle();
+          vec2 in_handle = vec2(path.in_handle());
 
-          if (in_handle != p0_raw) {
-            const vec2 h = transform * in_handle;
-
-            circles.push_back({h, m_ui_options.handle_radius, m_ui_options.primary_color});
-            lines.push_back({h, p0, m_ui_options.line_width, m_ui_options.primary_color_05});
+          if (in_handle != p0) {
+            circles.push_back({in_handle, m_ui_options.handle_radius, m_ui_options.primary_color});
+            lines.push_back(
+                {in_handle, p0, m_ui_options.line_width, m_ui_options.primary_color_05});
           }
         }
 
         last = p0;
         i -= 1;
       },
-      [&](const vec2 p0_raw, const vec2 p1_raw) {
-        const vec2 p0 = transform * p0_raw;
+      [&](const dvec2 p0_raw, const dvec2 p1_raw) {
+        const vec2 p0 = vec2(p0_raw);
 
         rects.push_back({p0, m_ui_options.vertex_size, m_ui_options.primary_color});
 
-        if (selected_vertices && selected_vertices->find(i - 1) == selected_vertices->end()) {
+        if (outline.selected_vertices &&
+            outline.selected_vertices->find(i - 1) == outline.selected_vertices->end())
+        {
           rects.push_back({p0, m_ui_options.vertex_inner_size, vec4::identity()});
         }
 
         last = p0;
         i -= 1;
       },
-      [&](const vec2 p0_raw, const vec2 p1_raw, const vec2 p2_raw) {
-        const vec2 p0 = transform * p0_raw;
-        const vec2 p1 = transform * p1_raw;
+      [&](const dvec2 p0_raw, const dvec2 p1_raw, const dvec2 p2_raw) {
+        const vec2 p0 = vec2(p0_raw);
+        const vec2 p1 = vec2(p1_raw);
 
         rects.push_back({p0, m_ui_options.vertex_size, m_ui_options.primary_color});
 
-        if (selected_vertices && selected_vertices->find(i - 2) == selected_vertices->end()) {
+        if (outline.selected_vertices &&
+            outline.selected_vertices->find(i - 2) == outline.selected_vertices->end())
+        {
           rects.push_back({p0, m_ui_options.vertex_inner_size, vec4::identity()});
         }
 
         if (p1_raw != p0_raw && p2_raw != p0_raw) {
-          const vec2 h = transform * p1_raw;
+          const vec2 h = vec2(p1_raw);
 
           circles.push_back({p1, m_ui_options.handle_radius, m_ui_options.primary_color});
           lines.push_back({p1, p0, m_ui_options.line_width, m_ui_options.primary_color_05});
@@ -919,14 +909,16 @@ void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true
         last = p0;
         i -= 2;
       },
-      [&](const vec2 p0_raw, const vec2 p1_raw, const vec2 p2_raw, const vec2 p3_raw) {
-        const vec2 p0 = transform * p0_raw;
-        const vec2 p1 = transform * p1_raw;
-        const vec2 p2 = transform * p2_raw;
+      [&](const dvec2 p0_raw, const dvec2 p1_raw, const dvec2 p2_raw, const dvec2 p3_raw) {
+        const vec2 p0 = vec2(p0_raw);
+        const vec2 p1 = vec2(p1_raw);
+        const vec2 p2 = vec2(p2_raw);
 
         rects.push_back({p0, m_ui_options.vertex_size, m_ui_options.primary_color});
 
-        if (selected_vertices && selected_vertices->find(i - 3) == selected_vertices->end()) {
+        if (outline.selected_vertices &&
+            outline.selected_vertices->find(i - 3) == outline.selected_vertices->end())
+        {
           rects.push_back({p0, m_ui_options.vertex_inner_size, vec4::identity()});
         }
 
@@ -943,6 +935,21 @@ void Renderer::draw_outline_vertices(const geom::Path<float, std::enable_if<true
         last = p0;
         i -= 3;
       });
+}
+
+void Renderer::draw(const Drawable& drawable)
+{
+  // TODO: check for gradients, textures, etc.
+  if (!m_batch.fills.can_handle_quads(drawable.fills.size() / 4) ||
+      !m_batch.tiles.can_handle_quads(drawable.tiles.size() / 4) ||
+      !m_batch.tiles.can_handle_curves(drawable.curves.size() / 4) ||
+      !m_batch.tiles.can_handle_bands(drawable.bands.size()))
+  {
+    flush_meshes();
+  }
+
+  m_batch.fills.upload(drawable.fills);
+  m_batch.tiles.upload(drawable.tiles, drawable.curves, drawable.bands);
 }
 
 void Renderer::flush_cache()
@@ -985,19 +992,19 @@ void Renderer::flush_cache()
     /* Draw the cached image and stencil out its bounding box. */
     flush(m_image_instances, render_state);
 
-    m_invalid_rects = m_cache->get_invalid_rects();
+    // m_invalid_rects = m_cache->get_invalid_rects();
 
-    for (const auto& r : m_invalid_rects) {
-      draw_rect(r, m_viewport.background);
-    }
+    // for (const auto& r : m_invalid_rects) {
+    //   draw_rect(r, m_viewport.background);
+    // }
 
-    render_state = RENDER_STATE(rect).no_blend().no_depth().subtract_stencil();
-    render_state.uniforms = {{m_programs.rect_program.vp_uniform, m_vp_matrix}};
+    // render_state = RENDER_STATE(rect).no_blend().no_depth().subtract_stencil();
+    // render_state.uniforms = {{m_programs.rect_program.vp_uniform, m_vp_matrix}};
 
-    /* Draw the background and stencil in the invalid regions. */
-    flush(m_rect_instances, render_state);
+    // /* Draw the background and stencil in the invalid regions. */
+    // flush(m_rect_instances, render_state);
 
-    m_cached_rendering = true;
+    // m_cached_rendering = true;
   } else {
     m_invalid_rects.clear();
     m_cached_rendering = false;

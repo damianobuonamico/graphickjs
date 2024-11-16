@@ -28,11 +28,10 @@ class QuadraticPath;
  *
  * If the path is not closed, the inner outline will be empty.
  */
-template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+template<typename T>
 struct StrokeOutline {
-  geom::CubicPath<T, std::enable_if<true>> outer;  // The outer outline of the stroke.
-  geom::CubicPath<T, std::enable_if<true>>
-      inner;                    // The inner outline of the stroke, in reverse order.
+  geom::CubicPath<T> outer;     // The outer outline of the stroke.
+  geom::CubicPath<T> inner;     // The inner outline of the stroke, in reverse order.
   math::Rect<T> bounding_rect;  // The bounding rectangle of the stroke.
 };
 
@@ -46,43 +45,26 @@ class PathBuilder {
    * @brief Constructs a PathBuilder from a quadratic path.
    *
    * @param path The quadratic path to process.
-   * @param transform The transformation matrix to apply to the path.
    * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
-   * @param pretransformed_rect Whether the bounding rectangle is already transformed, default is
-   * false.
    */
-  PathBuilder(const QuadraticPath<T, std::enable_if<true>> &path,
-              const math::Mat2x3<T> &transform,
-              const math::Rect<T> *bounding_rect = nullptr,
-              const bool pretransformed_rect = false);
+  PathBuilder(const QuadraticPath<T, std::enable_if<true>>& path,
+              const math::Rect<T>& bounding_rect);
 
   /**
    * @brief Constructs a PathBuilder from a cubic path.
    *
    * @param path The cubic path to process.
-   * @param transform The transformation matrix to apply to the path.
    * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
-   * @param pretransformed_rect Whether the bounding rectangle is already transformed, default is
-   * false.
    */
-  PathBuilder(const CubicPath<T> &path,
-              const math::Mat2x3<T> &transform,
-              const math::Rect<T> *bounding_rect = nullptr,
-              const bool pretransformed_rect = false);
+  PathBuilder(const CubicPath<T>& path, const math::Rect<T>& bounding_rect);
 
   /**
    * @brief Constructs a PathBuilder from a path.
    *
    * @param path The path to process.
-   * @param transform The transformation matrix to apply to the path.
    * @param bounding_rect The bounding rectangle of the path if known, default is nullptr.
-   * @param pretransformed_rect Whether the bounding rectangle is already transformed, default is
-   * false.
    */
-  PathBuilder(const Path<T, std::enable_if<true>> &path,
-              const math::Mat2x3<T> &transform,
-              const math::Rect<T> *bounding_rect = nullptr,
-              const bool pretransformed_rect = false);
+  PathBuilder(const Path<T, std::enable_if<true>>& path, const math::Rect<T>& bounding_rect);
 
   /**
    * @brief Flattens a path and outputs the line segments to a sink vector.
@@ -94,9 +76,10 @@ class PathBuilder {
    * @param tolerance The tolerance to use when flattening the path.
    * @param sink_callback The callback to output the lines to.
    */
-  void flatten(const math::Rect<T> &clip,
+  template<typename U>
+  void flatten(const math::Rect<T>& clip,
                const T tolerance,
-               std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback) const;
+               std::function<void(const math::Vec2<U>, const math::Vec2<U>)> sink_callback) const;
 
   /**
    * @brief Strokes a path and outputs the resulting quadratic curves grouped in contours.
@@ -107,7 +90,7 @@ class PathBuilder {
    * @param tolerance The offset error tolerance.
    * @return The resulting quadratic curves grouped in contours.
    */
-  StrokeOutline<T> stroke(const StrokingOptions<T> &options, const T tolerance) const;
+  StrokeOutline<T> stroke(const StrokingOptions<T>& options) const;
 
  private:
   /**
@@ -120,10 +103,11 @@ class PathBuilder {
    * @param tolerance_sq The squared tolerance to use when flattening the path.
    * @param sink_callback The callback to output the lines to.
    */
+  template<typename U>
   void flatten_clipped(
-      const drect &clip,
+      const drect& clip,
       const double tolerance_sq,
-      std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback) const;
+      std::function<void(const math::Vec2<U>, const math::Vec2<U>)> sink_callback) const;
 
   /**
    * @brief Flattens a path and outputs the line segments to a sink vector.
@@ -134,25 +118,27 @@ class PathBuilder {
    * @param tolerance The tolerance to use when flattening the path.
    * @param sink_callback The callback to output the lines to.
    */
+  template<typename U>
   void flatten_unclipped(
       const double tolerance,
-      std::function<void(const math::Vec2<T>, const math::Vec2<T>)> sink_callback) const;
+      std::function<void(const math::Vec2<U>, const math::Vec2<U>)> sink_callback) const;
 
  private:
+  /**
+   * @brief The type of path to process.
+   */
   enum class PathType { Quadratic, Cubic, Generic };
 
  private:
   const union {
-    const QuadraticPath<T, std::enable_if<true>>
-        *m_quadratic_path;                                // The quadratic path to process.
-    const CubicPath<T> *m_cubic_path;                     // The cubic path to process.
-    const Path<T, std::enable_if<true>> *m_generic_path;  // The generic path to process.
+    const QuadraticPath<T, std::enable_if<true>>*
+        m_quadratic_path;                                 // The quadratic path to process.
+    const CubicPath<T>* m_cubic_path;                     // The cubic path to process.
+    const Path<T, std::enable_if<true>>* m_generic_path;  // The generic path to process.
   };
 
-  const dmat2x3 m_transform;  // The transformation matrix to apply to the path.
-  const PathType m_type;      // The type of the path.
-
-  drect m_bounding_rect;      // The bounding rectangle of the path.
+  const PathType m_type;                                  // The type of the path.
+  const drect m_bounding_rect;                            // The bounding rectangle of the path.
 };
 
 }  // namespace graphick::geom

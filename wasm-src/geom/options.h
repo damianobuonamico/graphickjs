@@ -26,7 +26,7 @@ enum class LineJoin {
   Round,  // Rounds off the corners of a shape by filling an additional sector of disc centered at
           // the common endpoint of connected segments.
   Bevel   // Fills an additional triangular area between the common endpoint of connected segments,
-         // and the separate outside rectangular corners of each segment.
+          // and the separate outside rectangular corners of each segment.
 };
 
 /**
@@ -44,6 +44,7 @@ enum class FillRule {
  */
 template<typename T>
 struct StrokingOptions {
+  T tolerance;    // The tolerance used to determine the accuracy of the stroke.
   T width;        // The distance between the two offset curves of a stroke.
   T miter_limit;  // The miter limit used to determine whether the line join is mitered or beveled.
 
