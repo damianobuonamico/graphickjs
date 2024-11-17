@@ -3,6 +3,7 @@
  * @brief Entity class definition
  *
  * @todo merge old and new components if one is already present when adding a new one
+ * @todo all entities should have an IDComponent and a TransformComponent
  */
 
 #pragma once
@@ -34,7 +35,7 @@ class Entity {
    * @param handle The entity handle.
    * @param scene The scene the entity belongs to.
    */
-  Entity(entt::entity handle, Scene *scene) : m_handle(handle), m_scene(scene) {}
+  Entity(entt::entity handle, Scene* scene) : m_handle(handle), m_scene(scene) {}
 
   /**
    * @brief Constructs an entity with a handle, a scene pointer, and encoded data.
@@ -43,12 +44,12 @@ class Entity {
    * @param scene The scene the entity belongs to.
    * @param encoded_data The encoded data to get the entity's components from.
    */
-  Entity(entt::entity handle, Scene *scene, const io::EncodedData &encoded_data);
+  Entity(entt::entity handle, Scene* scene, const io::EncodedData& encoded_data);
 
   /**
    * @brief Copy constructor
    */
-  Entity(const Entity &other) = default;
+  Entity(const Entity& other) = default;
 
   /**
    * @brief Adds a component to the entity.
@@ -59,7 +60,7 @@ class Entity {
    * @return The added component.
    */
   template<typename T, typename... Args>
-  inline T add_component(Args &&...args)
+  inline T add_component(Args&&... args)
   {
     if (has_component<T>())
       remove_component<T>();
@@ -223,7 +224,7 @@ class Entity {
    *
    * @return The scene the entity belongs to.
    */
-  inline Scene *scene() const
+  inline Scene* scene() const
   {
     return m_scene;
   }
@@ -231,7 +232,7 @@ class Entity {
   /**
    * @brief Equality operator.
    */
-  inline bool operator==(const Entity &other) const
+  inline bool operator==(const Entity& other) const
   {
     return m_handle == other.m_handle && m_scene == other.m_scene;
   }
@@ -239,7 +240,7 @@ class Entity {
   /**
    * @brief Inequality operator.
    */
-  inline bool operator!=(const Entity &other) const
+  inline bool operator!=(const Entity& other) const
   {
     return !(*this == other);
   }
@@ -261,7 +262,7 @@ class Entity {
    * @brief Checks if the entity is an element.
    *
    * An element is an entity that has a PathComponent.
-   * All entities have a TransformComponent.
+   * All entities have a TransformComponent and a IDComponent.
    *
    * @return true if the entity is an element, false otherwise.
    */
@@ -294,7 +295,7 @@ class Entity {
    * @return The added component.
    */
   template<typename T, typename... Args>
-  inline T add(Args &&...args)
+  inline T add(Args&&... args)
   {
     return T{
         this,
@@ -309,7 +310,7 @@ class Entity {
    * @param encoded_data The encoded data of the component.
    * @param full_entity If true, default components will be added if they are missing.
    */
-  void add(const io::EncodedData &encoded_data, const bool full_entity = false);
+  void add(const io::EncodedData& encoded_data, const bool full_entity = false);
 
   /**
    * @brief Removes a component from the entity.
@@ -329,7 +330,7 @@ class Entity {
    *
    * @param encoded_data The encoded data of the component.
    */
-  void remove(const io::EncodedData &encoded_data);
+  void remove(const io::EncodedData& encoded_data);
 
   /**
    * @brief Modifies a component of the entity.
@@ -338,11 +339,11 @@ class Entity {
    *
    * @param encoded_data A diff of the modified component's data.
    */
-  void modify(const io::EncodedData &encoded_data);
+  void modify(const io::EncodedData& encoded_data);
 
  private:
   entt::entity m_handle;  // The entt entity handle.
-  Scene *m_scene;         // A pointer to the scene this entity belongs to.
+  Scene* m_scene;         // A pointer to the scene this entity belongs to.
  private:
   friend struct Action;
 };

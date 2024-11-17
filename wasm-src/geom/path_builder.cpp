@@ -388,7 +388,8 @@ void PathBuilder<T, _>::flatten(
 }
 
 template<typename T, typename _>
-StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options) const
+StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
+                                           const math::Rect<T>* visible) const
 {
   if (m_type != PathType::Generic || m_generic_path->empty())
     return {};
@@ -450,6 +451,8 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options) co
     add_cap(start, p0 + last_n * radius, -last_n, radius, options.cap, outline.outer);
   }
 
+  drect visible_rect = visible ? drect(*visible) : drect{};
+
   m_generic_path->for_each(
       nullptr,
       [&](const math::Vec2<T> p1) {
@@ -496,6 +499,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options) co
       [&](const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3) {
         const dcubic_bezier cubic = {p0, dvec2(p1), dvec2(p2), dvec2(p3)};
 
+        const dvec2 end_n = cubic.end_normal();
         const dvec2 start_n = cubic.start_normal();
         const dvec2 start_nr = start_n * radius;
 
@@ -526,11 +530,26 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options) co
                  outline.bounding_rect,
                  false);
 
-        // TODO: maybe join the two in one function call
-        offset_cubic(cubic, -radius, options.tolerance, outline.inner);
-        offset_cubic(cubic, radius, options.tolerance, outline.outer);
+        if (visible == nullptr ||
+            geom::does_rect_intersect_rect(math::drect::expand(cubic.bounding_rect(), radius),
+                                           visible_rect))
+        {
+          // TODO: maybe join the two in one function call
+          offset_cubic(cubic, -radius, options.tolerance, outline.inner);
+          offset_cubic(cubic, radius, options.tolerance, outline.outer);
+        } else {
+          const dvec2 end_nr = end_n * radius;
 
-        last_n = cubic.end_normal();
+          outline.inner.line_to(math::Vec2<T>(cubic.p1 - start_nr));
+          outline.inner.line_to(math::Vec2<T>(cubic.p2 - end_nr));
+          outline.inner.line_to(math::Vec2<T>(cubic.p3 - end_nr));
+
+          outline.outer.line_to(math::Vec2<T>(cubic.p1 + start_nr));
+          outline.outer.line_to(math::Vec2<T>(cubic.p2 + end_nr));
+          outline.outer.line_to(math::Vec2<T>(cubic.p3 + end_nr));
+        }
+
+        last_n = end_n;
         p0 = cubic.p3;
       });
 

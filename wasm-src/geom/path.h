@@ -999,7 +999,6 @@ class Path {
                             const StrokingOptions<T>* stroke,
                             const math::Mat2x3<T>& transform,
                             const T threshold = T(0),
-                            const T zoom = T(1),
                             const bool deep_search = false) const;
 
   /**
@@ -1017,8 +1016,7 @@ class Path {
                                const math::Vec2<T> point,
                                const StrokingOptions<T>* stroke,
                                const math::Mat2x3<T>& transform,
-                               const T threshold = T(0),
-                               const T zoom = T(1)) const;
+                               const T threshold = T(0)) const;
 
   /**
    * @brief Checks whether the given point is inside the specified path's point or not.
@@ -1150,6 +1148,22 @@ class Path {
    * @param index The index of the command to remove.
    */
   void remove_command(const uint32_t index);
+
+  /**
+   * @brief Checks whether the given point is inside the stroked path or not.
+   *
+   * The path should be pre-transformed before calling this method.
+   *
+   * @param point The point to check.
+   * @param stroke The stroke of the path, can be nullptr.
+   * @param threshold The threshold to use for the check.
+   * @param deep_search Whether to include handles in the search or not.
+   * @return true if the point is inside the stroked path, false otherwise.
+   */
+  bool is_point_inside_stroke(const math::Vec2<T> point,
+                              const StrokingOptions<T>* stroke,
+                              const T threshold = T(0),
+                              const bool deep_search = false) const;
 
  private:
   std::vector<uint8_t> m_commands;      // The commands used to traverse the path.

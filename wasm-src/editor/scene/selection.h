@@ -60,7 +60,7 @@ class Selection {
     /**
      * @brief Checks if the selection entry is empty.
      *
-     * An enitity selection entry cannot be empty.
+     * An entity selection entry cannot be empty.
      *
      * @return true if the selection entry is empty, false otherwise.
      */

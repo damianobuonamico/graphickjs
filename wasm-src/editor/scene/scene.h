@@ -37,14 +37,14 @@ class Scene {
    * @brief Default constructor, copy constructor and move constructor.
    */
   Scene();
-  Scene(const Scene &other);
-  Scene(Scene &&other) noexcept;
+  Scene(const Scene& other);
+  Scene(Scene&& other) noexcept;
 
   /**
    * @brief Deleted copy and move assignment operators.
    */
-  Scene &operator=(const Scene &other) = delete;
-  Scene &operator=(Scene &&other) = delete;
+  Scene& operator=(const Scene& other) = delete;
+  Scene& operator=(Scene&& other) = delete;
 
   /**
    * @brief Default destructor.
@@ -90,7 +90,7 @@ class Scene {
    * @param generate_tag If true, a default tag will be generated.
    * @return The new entity.
    */
-  Entity create_entity(const std::string &tag = "", const bool generate_tag = true);
+  Entity create_entity(const std::string& tag = "", const bool generate_tag = true);
 
   /**
    * @brief Creates a new element entity.
@@ -109,7 +109,7 @@ class Scene {
    * @param path The underlying path of the element.
    * @return The new element.
    */
-  Entity create_element(const geom::path &path);
+  Entity create_element(const geom::path& path);
 
   /**
    * @brief Deletes an entity.
@@ -136,12 +136,16 @@ class Scene {
   /**
    * @brief Returns the uuid of the entity at the specified position if any, uuid::null otherwise.
    *
+   * The entities are traversed front to back, giving priority to the selected ones.
+   *
    * @param position The position to check.
    * @param deep_search If true, individual vertices and other handles will be checked.
    * @param threshold The threshold to use when hit testing.
    * @return The entity at the specified position.
    */
-  uuid entity_at(const vec2 position, bool deep_search = false, float threshold = 0.0f);
+  uuid entity_at(const vec2 position,
+                 const bool deep_search = false,
+                 const float threshold = 0.0f) const;
 
   /**
    * @brief Returns the entities in the specified rectangle.
@@ -150,8 +154,18 @@ class Scene {
    * @param deep_search If true, individual vertices and other handles will be checked.
    * @return The entities in the specified rectangle.
    */
-  std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const math::rect &rect,
+  std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const math::rect& rect,
                                                                   bool deep_search = false);
+
+ private:
+  /**
+   * @brief The type of hit test to perform.
+   */
+  enum class HitTestType {
+    All,         // Both fill, stroke and outline.
+    EntityOnly,  // Only the fill and stroke, no outline.
+    OutlineOnly  // Only the outline (used for selected entities priority).
+  };
 
  private:
   /**
@@ -171,7 +185,7 @@ class Scene {
    * @param id The unique identifier of the entity.
    * @param encoded_data The encoded data of the entity.
    */
-  void add(const uuid id, const io::EncodedData &encoded_data);
+  void add(const uuid id, const io::EncodedData& encoded_data);
 
   /**
    * @brief Removes an entity from the scene.
@@ -179,6 +193,22 @@ class Scene {
    * This method should only be called by the history manager.
    */
   void remove(const uuid id);
+
+  /**
+   * @brief Check if the entity is at the specified position.
+   *
+   * @param position The position to check.
+   * @param deep_search If true, individual vertices and other handles will be checked.
+   * @param threshold The threshold to use when hit testing.
+   * @param fill If true, the fill of the entity will be hit tested.
+   * @param stroke If true, the stroke of the entity will be hit tested.
+   * @return true if the entity is at the specified position, false otherwise.
+   */
+  bool is_entity_at(const Entity entity,
+                    const vec2 position,
+                    const bool deep_search,
+                    const float threshold,
+                    const HitTestType hit_test_type) const;
 
  private:
   entt::registry m_registry;          // The main entt registry of the scene.

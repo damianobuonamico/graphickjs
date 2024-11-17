@@ -124,9 +124,10 @@ void Renderer::init()
    * <https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#avoid_alphafalse_which_can_be_expensive>,
    * when using desynchronized context (essential for responsive input), is better to use
    * alpha=false to avoid expensive blending operations if there are elements on top.
+   * Emscripten doesn't support desynchronized context yet, so we set it to true after compilation
+   * (see script compile.py).
    */
   attr.alpha = false;
-  attr.desynchronized = true;
   attr.premultipliedAlpha = false;
   attr.majorVersion = 2;
   attr.antialias = false;
@@ -581,7 +582,7 @@ void Renderer::draw_cubic_path_cull(const geom::dcubic_path& path,
       const double t0 = (y - p0.y) / (p3.y - p0.y);
 
       if (linear) {
-        if (t0 >= -math::geometric_epsilon<double> && t0 <= 1.0f + math::geometric_epsilon<double>)
+        if (t0 >= -math::geometric_epsilon<double> && t0 <= 1.0 + math::geometric_epsilon<double>)
         {
           const double x = p0.x + t0 * (p3.x - p0.x);
 
@@ -595,7 +596,7 @@ void Renderer::draw_cubic_path_cull(const geom::dcubic_path& path,
       } else {
         const double t = geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
 
-        if (t >= -math::geometric_epsilon<double> && t <= 1.0f + math::geometric_epsilon<double>) {
+        if (t >= -math::geometric_epsilon<double> && t <= 1.0 + math::geometric_epsilon<double>) {
           const double t_sq = t * t;
           const double x = a.x * t_sq * t + b.x * t_sq + c.x * t + d.x;
 

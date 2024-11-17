@@ -35,7 +35,7 @@ struct ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  ComponentWrapper(const Entity *entity) : m_entity(entity) {}
+  ComponentWrapper(const Entity* entity) : m_entity(entity) {}
 
   /**
    * @brief Encodes the component in binary format.
@@ -45,7 +45,7 @@ struct ComponentWrapper {
    * true.
    * @return A reference to the encoded data.
    */
-  virtual io::EncodedData &encode(io::EncodedData &data, const bool optimize = false) const = 0;
+  virtual io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const = 0;
 
  protected:
   /**
@@ -53,10 +53,10 @@ struct ComponentWrapper {
    *
    * @param decoder A diff of the modified component's data.
    */
-  virtual void modify(io::DataDecoder &decoder) = 0;
+  virtual void modify(io::DataDecoder& decoder) = 0;
 
  protected:
-  const Entity *m_entity;  // A pointer to the entity this component belongs to.
+  const Entity* m_entity;  // A pointer to the entity this component belongs to.
 };
 
 /**
@@ -69,7 +69,7 @@ struct IDComponentData {
 
   IDComponentData();
   IDComponentData(const uuid id);
-  IDComponentData(io::DataDecoder &decoder);
+  IDComponentData(io::DataDecoder& decoder);
 };
 
 /**
@@ -86,7 +86,7 @@ struct IDComponent : public ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  IDComponent(const Entity *entity, Data *data) : ComponentWrapper(entity), m_data(data) {}
+  IDComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
   /**
    * @brief Conversion operator to uuid.
@@ -114,7 +114,7 @@ struct IDComponent : public ComponentWrapper {
    * true.
    * @return A reference to the encoded data.
    */
-  io::EncodedData &encode(io::EncodedData &data, const bool optimize = false) const override;
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
 
  private:
   /**
@@ -122,10 +122,10 @@ struct IDComponent : public ComponentWrapper {
    *
    * @param decoder A diff of the modified component's data.
    */
-  inline void modify(io::DataDecoder &decoder) override {};
+  inline void modify(io::DataDecoder& decoder) override {};
 
  private:
-  Data *m_data;  // The actual component data.
+  Data* m_data;  // The actual component data.
 };
 
 /**
@@ -137,8 +137,8 @@ struct TagComponentData {
   std::string tag = "";  // The tag of the entity.
 
   TagComponentData() = default;
-  TagComponentData(const std::string &tag);
-  TagComponentData(io::DataDecoder &decoder);
+  TagComponentData(const std::string& tag);
+  TagComponentData(io::DataDecoder& decoder);
 };
 
 /**
@@ -155,12 +155,12 @@ struct TagComponent : public ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  TagComponent(const Entity *entity, Data *data) : ComponentWrapper(entity), m_data(data) {}
+  TagComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
   /**
    * @brief Conversion operator to std::string&.
    */
-  inline operator const std::string &() const
+  inline operator const std::string&() const
   {
     return m_data->tag;
   }
@@ -170,7 +170,7 @@ struct TagComponent : public ComponentWrapper {
    *
    * @return The tag of the entity.
    */
-  inline const std::string &tag() const
+  inline const std::string& tag() const
   {
     return m_data->tag;
   }
@@ -183,7 +183,7 @@ struct TagComponent : public ComponentWrapper {
    * true.
    * @return A reference to the encoded data.
    */
-  io::EncodedData &encode(io::EncodedData &data, const bool optimize = false) const override;
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
 
  private:
   /**
@@ -191,10 +191,10 @@ struct TagComponent : public ComponentWrapper {
    *
    * @param decoder A diff of the modified component's data.
    */
-  void modify(io::DataDecoder &decoder) override;
+  void modify(io::DataDecoder& decoder) override;
 
  private:
-  Data *m_data;  // The actual component data.
+  Data* m_data;  // The actual component data.
  private:
   friend class Entity;
 };
@@ -214,7 +214,7 @@ struct CategoryComponentData {
 
   CategoryComponentData() = default;
   CategoryComponentData(const int category);
-  CategoryComponentData(io::DataDecoder &decoder);
+  CategoryComponentData(io::DataDecoder& decoder);
 };
 
 /**
@@ -232,7 +232,7 @@ struct CategoryComponent : public ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  CategoryComponent(const Entity *entity, Data *data) : ComponentWrapper(entity), m_data(data) {}
+  CategoryComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
   /**
    * @brief Conversion operator to int.
@@ -271,7 +271,7 @@ struct CategoryComponent : public ComponentWrapper {
    * true.
    * @return A reference to the encoded data.
    */
-  io::EncodedData &encode(io::EncodedData &data, const bool optimize = false) const override;
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
 
  private:
   /**
@@ -279,10 +279,10 @@ struct CategoryComponent : public ComponentWrapper {
    *
    * @param decoder A diff of the modified component's data.
    */
-  void modify(io::DataDecoder &decoder) override;
+  void modify(io::DataDecoder& decoder) override;
 
  private:
-  Data *m_data;  // The actual component data.
+  Data* m_data;  // The actual component data.
  private:
   friend class Entity;
 };
@@ -303,12 +303,12 @@ struct PathComponent : public ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  PathComponent(const Entity *entity, Data *data) : ComponentWrapper(entity), m_data(data) {}
+  PathComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
   /**
    * @brief Conversion operator to geom::path&.
    */
-  inline operator const geom::path &() const
+  inline operator const geom::path&() const
   {
     return *m_data;
   }
@@ -318,7 +318,7 @@ struct PathComponent : public ComponentWrapper {
    *
    * @return The path data of the entity.
    */
-  inline const geom::path &data() const
+  inline const geom::path& data() const
   {
     return *m_data;
   }
@@ -427,7 +427,7 @@ struct PathComponent : public ComponentWrapper {
    * true.
    * @return A reference to the encoded data.
    */
-  io::EncodedData &encode(io::EncodedData &data, const bool optimize = false) const override;
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
 
  private:
   /**
@@ -441,7 +441,7 @@ struct PathComponent : public ComponentWrapper {
    *
    * @param decoder A diff of the modified component's data.
    */
-  void modify(io::DataDecoder &decoder) override;
+  void modify(io::DataDecoder& decoder) override;
 
   /**
    * @brief Commits a PathModifyAction::LoadData to the history.
@@ -452,7 +452,7 @@ struct PathComponent : public ComponentWrapper {
   size_t commit_load(const std::function<size_t()> action);
 
  private:
-  Data *m_data;  // The actual component data.
+  Data* m_data;  // The actual component data.
  private:
   friend class Entity;
 };
@@ -466,8 +466,8 @@ struct TransformComponentData {
   mat2x3 matrix = mat2x3{1.0f};  // The transformation matrix.
 
   TransformComponentData() = default;
-  TransformComponentData(const mat2x3 &matrix);
-  TransformComponentData(io::DataDecoder &decoder);
+  TransformComponentData(const mat2x3& matrix);
+  TransformComponentData(io::DataDecoder& decoder);
 };
 
 /**
@@ -485,7 +485,7 @@ struct TransformComponent : public ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  TransformComponent(const Entity *entity, Data *data, const PathComponentData *path_ptr = nullptr)
+  TransformComponent(const Entity* entity, Data* data, const PathComponentData* path_ptr = nullptr)
       : ComponentWrapper(entity), m_data(data), m_path_ptr(path_ptr)
   {
   }
@@ -493,7 +493,7 @@ struct TransformComponent : public ComponentWrapper {
   /**
    * @brief Conversion operator to mat2x3.
    */
-  inline operator mat2x3() const
+  inline operator const mat2x3&() const
   {
     return m_data->matrix;
   }
@@ -503,7 +503,7 @@ struct TransformComponent : public ComponentWrapper {
    *
    * @return A mat2x3 representing the transformation matrix of the entity.
    */
-  inline mat2x3 matrix() const
+  inline const mat2x3& matrix() const
   {
     return m_data->matrix;
   }
@@ -586,7 +586,7 @@ struct TransformComponent : public ComponentWrapper {
    * true.
    * @return A reference to the encoded data.
    */
-  io::EncodedData &encode(io::EncodedData &data, const bool optimize = false) const override;
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
 
  private:
   /**
@@ -594,12 +594,12 @@ struct TransformComponent : public ComponentWrapper {
    *
    * @param decoder A diff of the modified component's data.
    */
-  void modify(io::DataDecoder &decoder) override;
+  void modify(io::DataDecoder& decoder) override;
 
  private:
-  Data *m_data;                         // The actual component data.
+  Data* m_data;                         // The actual component data.
 
-  const PathComponentData *m_path_ptr;  // A pointer to the path component of the entity, can be
+  const PathComponentData* m_path_ptr;  // A pointer to the path component of the entity, can be
                                         // nullptr if the entity is not an element.
  private:
   friend class Entity;
@@ -622,9 +622,9 @@ struct StrokeComponentData {
   bool visible = true;        // Whether or not to display the stroke.
 
   StrokeComponentData() = default;
-  StrokeComponentData(const vec4 &color);
-  StrokeComponentData(const vec4 &color, const float width);
-  StrokeComponentData(io::DataDecoder &decoder);
+  StrokeComponentData(const vec4& color);
+  StrokeComponentData(const vec4& color, const float width);
+  StrokeComponentData(io::DataDecoder& decoder);
 };
 
 /**
@@ -641,10 +641,10 @@ struct StrokeComponent : public ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  StrokeComponent(const Entity *entity, Data *data) : ComponentWrapper(entity), m_data(data) {}
+  StrokeComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
   // TEMP
-  const Data &stroke_TEMP() const
+  const Data& stroke_TEMP() const
   {
     return *m_data;
   }
@@ -657,7 +657,7 @@ struct StrokeComponent : public ComponentWrapper {
    * true.
    * @return A reference to the encoded data.
    */
-  io::EncodedData &encode(io::EncodedData &data, const bool optimize = false) const override;
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
 
  private:
   /**
@@ -665,10 +665,10 @@ struct StrokeComponent : public ComponentWrapper {
    *
    * @param decoder A diff of the modified component's data.
    */
-  void modify(io::DataDecoder &decoder) override;
+  void modify(io::DataDecoder& decoder) override;
 
  private:
-  Data *m_data;  // The actual component data.
+  Data* m_data;  // The actual component data.
  private:
   friend class Entity;
 };
@@ -686,8 +686,8 @@ struct FillComponentData {
   bool visible = true;                                    // Whether or not to display the stroke.
 
   FillComponentData() = default;
-  FillComponentData(const vec4 &color);
-  FillComponentData(io::DataDecoder &decoder);
+  FillComponentData(const vec4& color);
+  FillComponentData(io::DataDecoder& decoder);
 };
 
 /**
@@ -704,10 +704,10 @@ struct FillComponent : public ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  FillComponent(const Entity *entity, Data *data) : ComponentWrapper(entity), m_data(data) {}
+  FillComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
 
   // TEMP
-  const Data &fill_TEMP() const
+  const Data& fill_TEMP() const
   {
     return *m_data;
   }
@@ -720,7 +720,7 @@ struct FillComponent : public ComponentWrapper {
    * true.
    * @return A reference to the encoded data.
    */
-  io::EncodedData &encode(io::EncodedData &data, const bool optimize = false) const override;
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
 
  private:
   /**
@@ -728,10 +728,10 @@ struct FillComponent : public ComponentWrapper {
    *
    * @param decoder A diff of the modified component's data.
    */
-  void modify(io::DataDecoder &decoder) override;
+  void modify(io::DataDecoder& decoder) override;
 
  private:
-  Data *m_data;  // The actual component data.
+  Data* m_data;  // The actual component data.
  private:
   friend class Entity;
 };

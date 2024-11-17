@@ -82,15 +82,16 @@ class PathBuilder {
                std::function<void(const math::Vec2<U>, const math::Vec2<U>)> sink_callback) const;
 
   /**
-   * @brief Strokes a path and outputs the resulting quadratic curves grouped in contours.
+   * @brief Strokes a path and outputs the resulting cubic curves grouped in contours.
    *
    * This method is only available for generic paths.
    *
    * @param options The options to use when stroking the path.
-   * @param tolerance The offset error tolerance.
-   * @return The resulting quadratic curves grouped in contours.
+   * @param visible The portion of the path visible, curves outside will be treated as lines.
+   * @return The resulting cubic curves grouped in contours.
    */
-  StrokeOutline<T> stroke(const StrokingOptions<T>& options) const;
+  StrokeOutline<T> stroke(const StrokingOptions<T>& options,
+                          const math::Rect<T>* visible = nullptr) const;
 
  private:
   /**

@@ -19,9 +19,6 @@
 
 #include "../utils/assert.h"
 
-// TEMP
-#include "../utils/console.h"
-
 #define FIT_RESOLUTION 10
 
 namespace graphick::geom {
@@ -1474,8 +1471,6 @@ uint32_t Path<T, _>::split(const uint32_t segment_index, const T t)
 template<typename T, typename _>
 math::Rect<T> Path<T, _>::bounding_rect() const
 {
-  GK_TOTAL("bounding_rect");
-
   if (empty()) {
     if (vacant())
       return {};
@@ -1539,8 +1534,6 @@ math::Rect<T> Path<T, _>::bounding_rect() const
 template<typename T, typename _>
 math::Rect<T> Path<T, _>::bounding_rect(const math::Mat2x3<T>& transform) const
 {
-  GK_TOTAL("bounding_rect");
-
   if (empty()) {
     if (vacant())
       return {};
@@ -1640,7 +1633,6 @@ bool Path<T, _>::is_point_inside_path(const math::Vec2<T> point,
                                       const StrokingOptions<T>* stroke,
                                       const math::Mat2x3<T>& transform,
                                       const T threshold,
-                                      const T zoom,
                                       const bool deep_search) const
 {
   if (empty()) {
@@ -1653,30 +1645,29 @@ bool Path<T, _>::is_point_inside_path(const math::Vec2<T> point,
                              is_point_in_circle(point, transform * m_out_handle, threshold))));
   }
 
-  const math::Rect<T> bounds = approx_bounding_rect();
-  const math::Mat2x3<T> inverse_transform = math::inverse(transform);
-  const math::Vec2<T> local_point = inverse_transform * point;
+  if (deep_search) {
+    /* In case of deep search, it wasn't possible to check whether the point is inside the
+     * bounding_box previously, because the cached bounding box doesn't include control points. */
 
-  const bool consider_miters = stroke ? (stroke->join == LineJoin::Miter) &&
-                                            (stroke->width > threshold) :
-                                        false;
+    const math::Rect<T> bounding_rect = math::Rect<T>::expand(
+        transform * approx_bounding_rect(),
+        stroke ? (stroke->width / T(2) *
+                  (stroke->join == LineJoin::Miter ? std::max(T(1), stroke->miter_limit) : T(1))) :
+                 T(0));
 
-  if (!is_point_in_rect(local_point,
-                        bounds,
-                        stroke ?
-                            stroke->width / T(2) * (consider_miters ? stroke->miter_limit : T(1)) +
-                                threshold :
-                            threshold))
-    return false;
-
-  QuadraticPath<T> path = to_quadratic_path();
+    if (!is_point_in_rect(point, bounding_rect, threshold)) {
+      return false;
+    }
+  }
 
   if (fill) {
+    CubicPath<T> path = to_cubic_path();
+
     if (!closed()) {
       path.line_to(path.back());
     }
 
-    const int winding = path.winding_of(local_point);
+    const int winding = path.winding_of(math::inverse(transform) * point);
 
     if ((fill->rule == FillRule::NonZero && winding != 0) ||
         (fill->rule == FillRule::EvenOdd && winding % 2 != 0))
@@ -1685,53 +1676,17 @@ bool Path<T, _>::is_point_inside_path(const math::Vec2<T> point,
     }
   }
 
-  StrokingOptions<T> stroking_options = stroke ?
-                                            *stroke :
-                                            StrokingOptions<T>{
-                                                T(0), T(0), T(0), LineCap::Butt, LineJoin::Round};
-
-  stroking_options.width += threshold;
-  stroking_options.miter_limit = consider_miters ? stroking_options.miter_limit : T(0);
-
-  // TODO: implement stroking
-  for (uint32_t point_index = 0; point_index < m_points.size(); point_index++) {
-    if (is_point_in_circle(point, transform * m_points[point_index], threshold)) {
-      if (deep_search || point_index == 0)
-        return true;
-
-      for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
-        switch (get_command(i)) {
-          case Command::Move:
-          case Command::Line:
-            if (point_i == point_index) {
-              return true;
-            }
-
-            point_i += 1;
-            break;
-          case Command::Quadratic:
-            if (point_i + 1 == point_index) {
-              return true;
-            }
-
-            point_i += 2;
-            break;
-          case Command::Cubic:
-            if (point_i + 2 == point_index) {
-              return true;
-            }
-
-            point_i += 3;
-            break;
-        }
-      }
-
-      return false;
-    }
+  if (stroke == nullptr) {
+    return false;
   }
 
-  return (deep_search && (is_point_in_circle(point, transform * m_in_handle, threshold) ||
-                          is_point_in_circle(point, transform * m_out_handle, threshold)));
+  if (math::is_identity(transform)) {
+    return is_point_inside_stroke(point, stroke, threshold, deep_search);
+  }
+
+  Path<T> transformed_path = transformed<T>(transform);
+
+  return transformed_path.is_point_inside_stroke(point, stroke, threshold, deep_search);
 }
 
 template<typename T, typename _>
@@ -1739,8 +1694,7 @@ bool Path<T, _>::is_point_inside_segment(const uint32_t segment_index,
                                          const math::Vec2<T> point,
                                          const StrokingOptions<T>* stroke,
                                          const math::Mat2x3<T>& transform,
-                                         const T threshold,
-                                         const T zoom) const
+                                         const T threshold) const
 {
   const Segment segment = segment_at(segment_index);
 
@@ -1766,7 +1720,7 @@ bool Path<T, _>::is_point_inside_segment(const uint32_t segment_index,
       break;
   }
 
-  return path.is_point_inside_path(point, nullptr, stroke, transform, threshold, zoom, false);
+  return path.is_point_inside_path(point, nullptr, stroke, transform, threshold, false);
 }
 
 template<typename T, typename _>
@@ -2315,6 +2269,70 @@ void Path<T, _>::remove_command(const uint32_t index)
   for (uint32_t i = 0; i < commands.size(); i++) {
     push_command(commands[i]);
   }
+}
+
+template<typename T, typename _>
+bool Path<T, _>::is_point_inside_stroke(const math::Vec2<T> point,
+                                        const StrokingOptions<T>* stroke,
+                                        const T threshold,
+                                        const bool deep_search) const
+{
+  for (uint32_t point_index = 0; point_index < m_points.size(); point_index++) {
+    if (!is_point_in_circle(point, m_points[point_index], threshold)) {
+      continue;
+    }
+
+    if (deep_search || point_index == 0) {
+      return true;
+    }
+
+    for (uint32_t i = 0, point_i = 0; i < m_commands_size; i++) {
+      switch (get_command(i)) {
+        case Command::Move:
+        case Command::Line:
+          if (point_i == point_index) {
+            return true;
+          }
+
+          point_i += 1;
+          break;
+        case Command::Quadratic:
+          if (point_i + 1 == point_index) {
+            return true;
+          }
+
+          point_i += 2;
+          break;
+        case Command::Cubic:
+          if (point_i + 2 == point_index) {
+            return true;
+          }
+
+          point_i += 3;
+          break;
+      }
+    }
+
+    return false;
+  }
+
+  if (deep_search && (is_point_in_circle(point, m_in_handle, threshold) ||
+                      is_point_in_circle(point, m_out_handle, threshold)))
+  {
+    return true;
+  }
+
+  const math::Rect<T> point_threshold = {point - threshold, point + threshold};
+  const geom::PathBuilder<T> builder = geom::PathBuilder<T>(*this, math::Rect<T>{});
+  const geom::StrokeOutline<T> stroke_path = builder.stroke(*stroke, &point_threshold);
+
+  int winding = stroke_path.outer.winding_of(point);
+
+  if (!stroke_path.inner.empty()) {
+    winding += stroke_path.inner.winding_of(point);
+  }
+
+  return winding != 0;
 }
 
 /* -- Template Instantiation -- */

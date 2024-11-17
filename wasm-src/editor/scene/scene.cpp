@@ -90,20 +90,6 @@ Entity Scene::create_entity(const std::string& tag, const bool generate_tag)
 
   history.add(id, Action::Target::Entity, std::move(data));
 
-  // Entity entity = { m_registry.create(), this };
-
-  // uuid id = uuid();
-
-  // entity.add_component<IDComponent>(id);
-
-  // if (generate_tag) {
-  //   entity.add_component<TagComponent>(tag.empty() ? "Entity " +
-  //   std::to_string(m_entity_tag_number) : tag); m_entity_tag_number++;
-  // }
-
-  // m_entities[id] = entity;
-  // m_order.push_back(entity);
-
   return get_entity(id);
 }
 
@@ -125,16 +111,6 @@ Entity Scene::create_element()
   data.component_id(TransformComponent::component_id).mat2x3(mat2x3(1.0f));
 
   history.add(id, Action::Target::Entity, std::move(data));
-
-  // Entity entity = create_entity("Element" +
-  // std::to_string(m_entity_tag_number));
-
-  // PathComponent& path_component = entity.add_component<PathComponent>();
-
-  // entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-  // entity.add_component<TransformComponent>(entity.id(), &path_component);
-
-  // entity.encode();
 
   return get_entity(id);
 }
@@ -159,15 +135,6 @@ Entity Scene::create_element(const geom::path& path)
 
   history.add(id, Action::Target::Entity, std::move(data));
 
-  // Entity entity = create_entity("Element" +
-  // std::to_string(m_entity_tag_number));
-
-  // PathComponent& path_component =
-  // entity.add_component<PathComponent>(std::move(path));
-
-  // entity.add_component<CategoryComponent>(CategoryComponent::Selectable);
-  // entity.add_component<TransformComponent>(entity.id(), &path_component);
-
   return get_entity(id);
 }
 
@@ -181,67 +148,33 @@ void Scene::delete_entity(uuid id)
   delete_entity(get_entity(id));
 }
 
-uuid Scene::entity_at(const vec2 position, bool deep_search, float threshold)
+uuid Scene::entity_at(const vec2 position, const bool deep_search, const float threshold) const
 {
-  const double zoom = viewport.zoom();
-  threshold /= zoom;
+  GK_TOTAL("Scene::entity_atttttttttttttttttttttttttttttttttttttttttttttt");
 
-  for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
-    const Entity entity = {*it, this};
+  const float zoom = viewport.zoom();
+  const float local_threshold = threshold / zoom;
 
-    if (entity.has_components<IDComponent, PathComponent, TransformComponent>()) {
-      const auto& path = entity.get_component<PathComponent>().data();
-      const TransformComponent transform = entity.get_component<TransformComponent>();
-      const uuid id = entity.id();
-
-      bool has_fill = false;
-      bool has_stroke = false;
-
-      renderer::Fill fill;
-      renderer::Stroke stroke;
-
-      if (entity.has_component<FillComponent>()) {
-        has_fill = true;
-        auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
-
-        fill = renderer::Fill{fill_component.color, fill_component.rule, 0};
-      }
-
-      if (entity.has_component<StrokeComponent>()) {
-        has_stroke = true;
-        auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
-
-        stroke = renderer::Stroke{stroke_component.color,
-                                  stroke_component.cap,
-                                  stroke_component.join,
-                                  stroke_component.width,
-                                  stroke_component.miter_limit,
-                                  0};
-      }
-
-      geom::FillingOptions filling_options = !has_fill ? geom::FillingOptions{} :
-                                                         geom::FillingOptions{fill.rule};
-
-      geom::StrokingOptions<float> stroking_options =
-          !has_stroke ? geom::StrokingOptions<float>{} :
-                        geom::StrokingOptions<float>{
-                            0.0001f, float(stroke.width), float(stroke.miter_limit), stroke.cap, stroke.join};
-
-      if (path.is_point_inside_path(position,
-                                    has_fill ? &filling_options : nullptr,
-                                    has_stroke ? &stroking_options : nullptr,
-                                    transform,
-                                    // TODO: remove zoom
-                                    threshold,
-                                    zoom,
-                                    deep_search && selection.has(id)))
-      {
-        return id;
-      }
+  // TODO: only check outline here
+  for (const auto& [id, entry] : selection.selected()) {
+    if (is_entity_at(
+            get_entity(id), position, deep_search, local_threshold, HitTestType::OutlineOnly))
+    {
+      return id;
     }
   }
 
-  return {0};
+  for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
+    const Entity entity = {*it, const_cast<Scene*>(this)};
+    const HitTestType hit_test_type = selection.has(entity.id()) ? HitTestType::EntityOnly :
+                                                                   HitTestType::All;
+
+    if (is_entity_at(entity, position, deep_search, local_threshold, hit_test_type)) {
+      return entity.id();
+    }
+  }
+
+  return uuid::null;
 }
 
 Entity Scene::duplicate_entity(const uuid id)
@@ -523,6 +456,83 @@ void Scene::remove(const uuid id)
   m_entities.erase(it);
   m_order.erase(std::remove(m_order.begin(), m_order.end(), entity), m_order.end());
   m_registry.destroy(entity);
+}
+
+bool Scene::is_entity_at(const Entity entity,
+                         const vec2 position,
+                         const bool deep_search,
+                         const float threshold,
+                         const HitTestType hit_test_type) const
+{
+  const uuid id = entity.id();
+  const bool is_element = entity.is_element();
+
+  const bool deep_search_entity = deep_search && selection.has(id);
+
+  if ((!deep_search_entity || !is_element) && m_cache.renderer_cache.has_bounding_rect(id)) {
+    const rect bounding_rect = rect(m_cache.renderer_cache.get_bounding_rect(id));
+
+    if (!geom::is_point_in_rect(position, bounding_rect, threshold)) {
+      return false;
+    }
+  }
+
+  const TransformComponent transform = entity.get_component<TransformComponent>();
+
+  if (!is_element) {
+    // TODO: what to do here?
+    return geom::is_point_in_rect(position, transform.bounding_rect(), threshold);
+  }
+
+  const PathComponent& path_component = entity.get_component<PathComponent>();
+
+  const geom::path& path = path_component.data();
+
+  bool has_fill = false;
+  bool has_stroke = false;
+
+  geom::FillingOptions filling_options;
+  geom::StrokingOptions<float> stroking_options;
+
+  if (hit_test_type != HitTestType::OutlineOnly && entity.has_component<FillComponent>()) {
+    // TODO: new fill and stroke components
+    auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
+
+    filling_options = geom::FillingOptions{fill_component.rule};
+    has_fill = fill_component.visible && fill_component.color.a > 0.0f;
+  }
+
+  if (entity.has_component<StrokeComponent>()) {
+    auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
+
+    stroking_options = geom::StrokingOptions<float>{
+        static_cast<float>(Settings::Renderer::stroking_tolerance),
+        stroke_component.width + threshold,
+        stroke_component.miter_limit + threshold,
+        stroke_component.cap,
+        stroke_component.join};
+    has_stroke = stroke_component.visible && stroke_component.color.a > 0.0f;
+  }
+
+  if (hit_test_type == HitTestType::OutlineOnly ||
+      (!has_stroke && hit_test_type == HitTestType::All))
+  {
+    stroking_options = geom::StrokingOptions<float>{
+        static_cast<float>(Settings::Renderer::stroking_tolerance),
+        threshold,
+        0.0f,
+        geom::LineCap::Square,
+        geom::LineJoin::Bevel};
+    has_stroke = true;
+  }
+
+  // TODO: check why path is empty when duplicated...
+  return path.is_point_inside_path(position,
+                                   has_fill ? &filling_options : nullptr,
+                                   has_stroke ? &stroking_options : nullptr,
+                                   transform,
+                                   threshold,
+                                   deep_search_entity);
 }
 
 }  // namespace graphick::editor

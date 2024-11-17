@@ -395,19 +395,20 @@ int main()
 
   // path1.close();
 
-  graphick::editor::Entity test_entity = graphick::editor::Editor::scene().create_element(path1);
+  // graphick::editor::Entity test_entity =
+  // graphick::editor::Editor::scene().create_element(path1);
 
-  test_entity.add_component<graphick::editor::FillComponent>(
-      graphick::vec4{0.8f, 0.3f, 0.3f, 1.0f});
-  graphick::editor::StrokeComponent stroke =
-      test_entity.add_component<graphick::editor::StrokeComponent>(
-          graphick::vec4{0.93f, 0.64f, 0.74f, 1.0f});
+  // test_entity.add_component<graphick::editor::FillComponent>(
+  //     graphick::vec4{0.8f, 0.3f, 0.3f, 1.0f});
+  // graphick::editor::StrokeComponent stroke =
+  //     test_entity.add_component<graphick::editor::StrokeComponent>(
+  //         graphick::vec4{0.93f, 0.64f, 0.74f, 1.0f});
 
-  const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 20.0f;
-  const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap =
-      graphick::renderer::LineCap::Round;
-  const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join =
-      graphick::renderer::LineJoin::Round;
+  // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->width = 20.0f;
+  // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->cap =
+  //     graphick::renderer::LineCap::Round;
+  // const_cast<graphick::editor::StrokeComponent::Data*>(&stroke.stroke_TEMP())->join =
+  //     graphick::renderer::LineJoin::Round;
 
   // test_entity1.add_component<graphick::editor::FillComponent>(graphick::vec4{ 1.0f, 0.3f,
   // 0.3f, 1.0f }); test_entity1.add_component<graphick::editor::StrokeComponent>(graphick::vec4{
