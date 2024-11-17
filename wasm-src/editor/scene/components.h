@@ -324,6 +324,16 @@ struct PathComponent : public ComponentWrapper {
   }
 
   /**
+   * @brief Returns the path data of the entity.
+   *
+   * @return The path data of the entity.
+   */
+  inline const geom::path* operator->() const
+  {
+    return m_data;
+  }
+
+  /**
    * @brief Moves the path cursor to the given point.
    *
    * @param p0 The point to move the cursor to.

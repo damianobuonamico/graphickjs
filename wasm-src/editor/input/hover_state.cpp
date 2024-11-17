@@ -51,7 +51,7 @@ void HoverState::set_hovered(
 {
   reset();
 
-  const Scene &scene = Editor::scene();
+  const Scene& scene = Editor::scene();
   m_entity = id;
 
   if (id == uuid::null || !scene.has_entity(id)) {
@@ -128,15 +128,21 @@ void HoverState::set_hovered(
   }
 
   if (!path.data().empty()) {
+    const geom::StrokingOptions<float> stroke = {
+        static_cast<float>(Settings::Renderer::stroking_tolerance),
+        0.0f,
+        0.0f,
+        geom::LineCap::Square,
+        geom::LineJoin::Bevel};
+
     for (uint32_t i = 0; i < path.data().size(); i++) {
-      // if (path.data().is_point_inside_segment(i, position, nullptr, transform, threshold, zoom))
-      // {
-      m_type = HoverType::Segment;
-      m_segment = i;
-      m_vertex = -1;
-      m_handle = -1;
-      return;
-      // }
+      if (path.data().is_point_inside_segment(i, position, stroke, transform, threshold)) {
+        m_type = HoverType::Segment;
+        m_segment = i;
+        m_vertex = -1;
+        m_handle = -1;
+        return;
+      }
     }
   }
 }

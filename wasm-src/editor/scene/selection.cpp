@@ -16,7 +16,7 @@
 
 namespace graphick::editor {
 
-Selection::Selection(Scene *scene) : m_scene(scene) {}
+Selection::Selection(Scene* scene) : m_scene(scene) {}
 
 rect Selection::bounding_rect() const
 {
@@ -24,7 +24,7 @@ rect Selection::bounding_rect() const
 
   rect selection_rect;
 
-  for (auto &[id, _] : m_selected) {
+  for (auto& [id, _] : m_selected) {
     const Entity entity = m_scene->get_entity(id);
     const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
 
@@ -80,8 +80,18 @@ void Selection::select(const uuid id)
   }
 }
 
-void Selection::select_child(const uuid element_id, const uint32_t child_index)
+void Selection::select_child(const uuid element_id, uint32_t child_index)
 {
+  Entity element = m_scene->get_entity(element_id);
+
+  if (element.is_element()) {
+    const PathComponent path = element.get_component<PathComponent>();
+
+    if (path->closed() && child_index == path->points_count() - 1) {
+      child_index = 0;
+    }
+  }
+
   auto it = m_selected.find(element_id);
 
   if (it == m_selected.end()) {
@@ -99,22 +109,35 @@ void Selection::deselect(const uuid id)
   m_selected.erase(id);
 }
 
-void Selection::deselect_child(const uuid element_id, const uint32_t child_index)
+void Selection::deselect_child(const uuid element_id, uint32_t child_index)
 {
   auto it = m_selected.find(element_id);
 
-  if (it == m_selected.end())
+  if (it == m_selected.end()) {
     return;
+  }
+
+  Entity element = m_scene->get_entity(element_id);
+
+  if (!element.is_element()) {
+    m_selected.erase(element_id);
+    return;
+  }
+
+  const PathComponent path = element.get_component<PathComponent>();
+
+  if (path->closed() && child_index == path->points_count() - 1) {
+    child_index = 0;
+  }
 
   if (it->second.full()) {
-    Entity element = m_scene->get_entity(element_id);
-
     it->second.indices.clear();
     it->second.type = SelectionEntry::Type::Element;
 
-    for (uint32_t i : element.get_component<PathComponent>().data().vertex_indices()) {
-      if (i == child_index)
+    for (const uint32_t i : path->vertex_indices()) {
+      if (i == child_index) {
         continue;
+      }
 
       it->second.indices.insert(i);
     }
@@ -127,14 +150,14 @@ void Selection::deselect_child(const uuid element_id, const uint32_t child_index
   }
 }
 
-void Selection::temp_select(const std::unordered_map<uuid, SelectionEntry> &entities)
+void Selection::temp_select(const std::unordered_map<uuid, SelectionEntry>& entities)
 {
   m_temp_selected = entities;
 }
 
 void Selection::sync()
 {
-  for (auto &[id, entry] : m_temp_selected) {
+  for (auto& [id, entry] : m_temp_selected) {
     if (entry.type == SelectionEntry::Type::Element) {
       auto it = m_selected.find(id);
 

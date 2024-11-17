@@ -1684,15 +1684,13 @@ bool Path<T, _>::is_point_inside_path(const math::Vec2<T> point,
     return is_point_inside_stroke(point, stroke, threshold, deep_search);
   }
 
-  Path<T> transformed_path = transformed<T>(transform);
-
-  return transformed_path.is_point_inside_stroke(point, stroke, threshold, deep_search);
+  return transformed<T>(transform).is_point_inside_stroke(point, stroke, threshold, deep_search);
 }
 
 template<typename T, typename _>
 bool Path<T, _>::is_point_inside_segment(const uint32_t segment_index,
                                          const math::Vec2<T> point,
-                                         const StrokingOptions<T>* stroke,
+                                         const StrokingOptions<T>& stroke,
                                          const math::Mat2x3<T>& transform,
                                          const T threshold) const
 {
@@ -1720,7 +1718,7 @@ bool Path<T, _>::is_point_inside_segment(const uint32_t segment_index,
       break;
   }
 
-  return path.is_point_inside_path(point, nullptr, stroke, transform, threshold, false);
+  return path.is_point_inside_path(point, nullptr, &stroke, transform, threshold, false);
 }
 
 template<typename T, typename _>
@@ -2322,9 +2320,15 @@ bool Path<T, _>::is_point_inside_stroke(const math::Vec2<T> point,
     return true;
   }
 
+  const StrokingOptions<T> stroking_options = {stroke->tolerance,
+                                               stroke->width + T(2) * threshold,
+                                               stroke->miter_limit,
+                                               stroke->cap,
+                                               stroke->join};
+
   const math::Rect<T> point_threshold = {point - threshold, point + threshold};
-  const geom::PathBuilder<T> builder = geom::PathBuilder<T>(*this, math::Rect<T>{});
-  const geom::StrokeOutline<T> stroke_path = builder.stroke(*stroke, &point_threshold);
+  const PathBuilder<T> builder = PathBuilder<T>(*this, math::Rect<T>{});
+  const StrokeOutline<T> stroke_path = builder.stroke(stroking_options, &point_threshold);
 
   int winding = stroke_path.outer.winding_of(point);
 

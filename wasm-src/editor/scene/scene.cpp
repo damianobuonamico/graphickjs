@@ -507,8 +507,8 @@ bool Scene::is_entity_at(const Entity entity,
 
     stroking_options = geom::StrokingOptions<float>{
         static_cast<float>(Settings::Renderer::stroking_tolerance),
-        stroke_component.width + threshold,
-        stroke_component.miter_limit + threshold,
+        stroke_component.width,
+        stroke_component.miter_limit,
         stroke_component.cap,
         stroke_component.join};
     has_stroke = stroke_component.visible && stroke_component.color.a > 0.0f;
@@ -519,7 +519,7 @@ bool Scene::is_entity_at(const Entity entity,
   {
     stroking_options = geom::StrokingOptions<float>{
         static_cast<float>(Settings::Renderer::stroking_tolerance),
-        threshold,
+        0.0f,
         0.0f,
         geom::LineCap::Square,
         geom::LineJoin::Bevel};

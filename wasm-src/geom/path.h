@@ -1006,7 +1006,7 @@ class Path {
    *
    * @param segment_index The index of the segment to check.
    * @param point The point to check.
-   * @param stroke The stroke of the path, can be nullptr.
+   * @param stroke The stroke properties to use.
    * @param transform The transformation matrix to apply to the path.
    * @param threshold The threshold to use for the check.
    * @param zoom The zoom level to use for the check.
@@ -1014,7 +1014,7 @@ class Path {
    */
   bool is_point_inside_segment(const uint32_t segment_index,
                                const math::Vec2<T> point,
-                               const StrokingOptions<T>* stroke,
+                               const StrokingOptions<T>& stroke,
                                const math::Mat2x3<T>& transform,
                                const T threshold = T(0)) const;
 

@@ -89,14 +89,14 @@ class Selection {
    *
    * @param scene The scene that the selection manager belongs to.
    */
-  Selection(Scene *scene);
+  Selection(Scene* scene);
 
   /**
    * @brief Returns the selected entities and children.
    *
    * @return The selected entities and children.
    */
-  inline const std::unordered_map<uuid, SelectionEntry> &selected() const
+  inline const std::unordered_map<uuid, SelectionEntry>& selected() const
   {
     return m_selected;
   }
@@ -106,7 +106,7 @@ class Selection {
    *
    * @return The temporary selected entities and children.
    */
-  inline const std::unordered_map<uuid, SelectionEntry> &temp_selected() const
+  inline const std::unordered_map<uuid, SelectionEntry>& temp_selected() const
   {
     return m_temp_selected;
   }
@@ -141,7 +141,7 @@ class Selection {
    * @param id The ID of the entity.
    * @return The selection entry of the entity.
    */
-  inline const SelectionEntry &get(const uuid id) const
+  inline const SelectionEntry& get(const uuid id) const
   {
     return m_selected.at(id);
   }
@@ -194,7 +194,7 @@ class Selection {
    * @param id The ID of the element the child belongs to.
    * @param child_index The index of the child within the element.
    */
-  void select_child(const uuid element_id, const uint32_t child_index);
+  void select_child(const uuid element_id, uint32_t child_index);
 
   /**
    * @brief Deselects the entity with the given ID.
@@ -209,14 +209,14 @@ class Selection {
    * @param id The ID of the element the child belongs to.
    * @param child_index The index of the child within the element.
    */
-  void deselect_child(const uuid element_id, const uint32_t child_index);
+  void deselect_child(const uuid element_id, uint32_t child_index);
 
   /**
    * @brief Adds all of the provided selection entries to the temporarily selected ones.
    *
    * @param entities A std::unordered_map<uuid, SelectionEntry> of selection entries.
    */
-  void temp_select(const std::unordered_map<uuid, SelectionEntry> &entities);
+  void temp_select(const std::unordered_map<uuid, SelectionEntry>& entities);
 
   /**
    * @brief Selects all of the temporarily selected entities.
@@ -227,7 +227,7 @@ class Selection {
   std::unordered_map<uuid, SelectionEntry> m_selected;       // The selected entities.
   std::unordered_map<uuid, SelectionEntry> m_temp_selected;  // The temporarily selected entities.
 
-  Scene *m_scene;  // A pointer to the scene the selection manager belongs to.
+  Scene* m_scene;  // A pointer to the scene the selection manager belongs to.
 };
 
 }  // namespace graphick::editor

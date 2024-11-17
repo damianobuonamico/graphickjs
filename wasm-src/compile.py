@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 DEBUG = False
+DESYNCHRONIZED = False
 
 EMCC_PATH = '%EMSDK%/upstream/emscripten/emcc'
 OUTPUT = '..\src\wasm\editor.js'
@@ -46,10 +47,11 @@ if (DEBUG):
 else:
   os.system(' '.join([*COMMON, '-DGK_CONF_DIST=1', '-O3', '-fno-rtti', '-fno-exceptions', '-funsafe-math-optimizations', '-DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0']))
 
-with open(OUTPUT, 'r') as file:
-  filedata = file.read()
+if (DESYNCHRONIZED):
+  with open(OUTPUT, 'r') as file:
+    filedata = file.read()
 
-filedata = filedata.replace('"stencil":!!HEAP32[a+(8>>2)],"antialias"', '"stencil":!!HEAP32[a+(8>>2)],"desynchronized":true,"antialias"')
+  filedata = filedata.replace('"stencil":!!HEAP32[a+(8>>2)],"antialias"', '"stencil":!!HEAP32[a+(8>>2)],"desynchronized":true,"antialias"')
 
-with open(OUTPUT, 'w') as file:
-  file.write(filedata)
+  with open(OUTPUT, 'w') as file:
+    file.write(filedata)
