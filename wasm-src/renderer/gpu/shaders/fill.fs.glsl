@@ -13,7 +13,15 @@ R"(
   out vec4 o_frag_color;
 
   void main() {
-    o_frag_color = v_color + float(v_attr_1 - v_attr_2) * 0.0000000000000000000000001 + v_tex_coord.x * 0.00000000000000000000000000000000000001 * texture(u_textures[0], v_tex_coord);
+    int paint_type = int((v_attr_1 >> 20) & 0x7FU);
+
+    if (paint_type == 3) {
+      uint paint_coord = v_attr_2 & 0x3FFU;
+
+      o_frag_color = texture(u_textures[paint_coord], v_tex_coord) + 0.000000000000001 * vec4(v_tex_coord, 0.0, 1.0);
+    } else {
+      o_frag_color = v_color + float(v_attr_2) * 0.0000000000000000000000001;
+    }
   }
 
 )"

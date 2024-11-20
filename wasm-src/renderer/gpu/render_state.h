@@ -68,13 +68,13 @@ using UniformBinding = std::pair<Uniform, UniformData>;
 /**
  * @brief A texture binding is used to bind a texture to a texture unit and uniform.
  */
-using TextureBinding = std::pair<TextureUniform, const Texture *>;
+using TextureBinding = std::pair<TextureUniform, const Texture*>;
 
 /**
  * @brief A texture array binding is used to bind an array of textures to texture units and a
  * uniform.
  */
-using TextureArrayBinding = std::pair<TexturesUniform, const std::vector<const Texture *>>;
+using TextureArrayBinding = std::pair<TexturesUniform, std::vector<const Texture*>>;
 
 /**
  * @brief The render state.
@@ -83,7 +83,7 @@ using TextureArrayBinding = std::pair<TexturesUniform, const std::vector<const T
  */
 struct RenderState {
   Program program;                                  // The current program.
-  VertexArray *vertex_array;                        // The current vertex array.
+  VertexArray* vertex_array;                        // The current vertex array.
   Primitive primitive;                              // The current primitive.
   irect viewport;                                   // The current viewport.
 
@@ -102,7 +102,7 @@ struct RenderState {
   RenderState() = default;
 
   RenderState(Program program,
-              VertexArray *vertex_array,
+              VertexArray* vertex_array,
               Primitive primitive,
               irect viewport,
               std::vector<UniformBinding> uniforms = {},
@@ -118,7 +118,7 @@ struct RenderState {
   }
 
   RenderState(Program program,
-              VertexArray *vertex_array,
+              VertexArray* vertex_array,
               Primitive primitive,
               irect viewport,
               std::vector<UniformBinding> uniforms,
@@ -140,7 +140,7 @@ struct RenderState {
   {
   }
 
-  RenderState &operator=(const RenderState &other)
+  RenderState& operator=(const RenderState& other)
   {
     program = other.program;
     vertex_array = other.vertex_array;
@@ -158,7 +158,7 @@ struct RenderState {
     return *this;
   }
 
-  RenderState &default_blend()
+  RenderState& default_blend()
   {
     blend = BlendState{BlendFactor::One,
                        BlendFactor::OneMinusSrcAlpha,
@@ -169,56 +169,56 @@ struct RenderState {
     return *this;
   }
 
-  RenderState &no_blend()
+  RenderState& no_blend()
   {
     blend = std::nullopt;
 
     return *this;
   }
 
-  RenderState &default_depth()
+  RenderState& default_depth()
   {
-    depth = DepthState{DepthFunc::Less, true};
+    depth = DepthState{DepthFunc::Lequal, true};
 
     return *this;
   }
 
-  RenderState &no_depth_write()
+  RenderState& no_depth_write()
   {
-    depth = DepthState{DepthFunc::Less, false};
+    depth = DepthState{DepthFunc::Lequal, false};
 
     return *this;
   }
 
-  RenderState &no_depth()
+  RenderState& no_depth()
   {
     depth = std::nullopt;
 
     return *this;
   }
 
-  RenderState &add_stencil()
+  RenderState& add_stencil()
   {
     stencil = StencilState{StencilFunc::Always, 1, 0xFF, true};
 
     return *this;
   }
 
-  RenderState &subtract_stencil()
+  RenderState& subtract_stencil()
   {
     stencil = StencilState{StencilFunc::Always, 0, 0xFF, true};
 
     return *this;
   }
 
-  RenderState &no_stencil()
+  RenderState& no_stencil()
   {
     stencil = std::nullopt;
 
     return *this;
   }
 
-  RenderState &keep_stencil()
+  RenderState& keep_stencil()
   {
     stencil = StencilState{StencilFunc::Nequal, 1, 0xFF, false};
 

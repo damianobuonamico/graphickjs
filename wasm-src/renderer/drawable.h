@@ -7,9 +7,10 @@
 
 #pragma once
 
+#include "properties.h"
+
 #include "../math/rect.h"
 #include "../math/vec2.h"
-#include "../math/vec4.h"
 
 #include "../utils/half.h"
 
@@ -181,6 +182,28 @@ struct TileVertex {
 
     attr_3 = (attr_3 >> 24 << 24) | (u_bands_x << 12) | u_bands_y;
   }
+
+  /**
+   * @brief Updates the z-index of the vertex.
+   *
+   * @param z_index The new z-index.
+   */
+  inline void update_z_index(const uint32_t z_index)
+  {
+    attr_2 = (attr_2 << 20 >> 20) | (z_index << 12);
+  }
+
+  /**
+   * @brief Updates the paint coordinate of the vertex.
+   *
+   * @param paint_coord The new paint coordinate.
+   */
+  inline void update_paint_coord(const uint16_t paint_coord)
+  {
+    const uint32_t u_paint_coord = (static_cast<uint32_t>(paint_coord) << 22) >> 22;
+
+    attr_2 = (attr_2 >> 10 << 10) | (paint_coord);
+  }
 };
 
 /**
@@ -257,6 +280,35 @@ struct FillVertex {
 
     return (z_index << 12) | u_paint_coord;
   }
+
+  /**
+   * @brief Updates the z-index of the vertex.
+   *
+   * @param z_index The new z-index.
+   */
+  inline void update_z_index(const uint32_t z_index)
+  {
+    attr_2 = (attr_2 << 20 >> 20) | (z_index << 12);
+  }
+
+  /**
+   * @brief Updates the paint coordinate of the vertex.
+   *
+   * @param paint_coord The new paint coordinate.
+   */
+  inline void update_paint_coord(const uint16_t paint_coord)
+  {
+    const uint32_t u_paint_coord = (static_cast<uint32_t>(paint_coord) << 22) >> 22;
+
+    attr_2 = (attr_2 >> 10 << 10) | (paint_coord);
+  }
+};
+
+struct DrawablePaintBinding {
+  size_t last_tile_index = 0;
+  size_t last_fill_index = 0;
+  Paint::Type paint_type;
+  uuid paint_id;
 };
 
 /**
@@ -271,6 +323,10 @@ struct Drawable {
   std::vector<TileVertex> tiles;  // The tiles of the drawable.
   std::vector<FillVertex> fills;  // The fills of the drawable.
 
+  // TODO: add z_index intervals
+
+  std::vector<DrawablePaintBinding> paints;  // The paint bindings of the drawable.
+
   inline void push_curve(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3)
   {
     curves.insert(curves.end(), {p0, p1, p2, p3});
@@ -283,6 +339,7 @@ struct Drawable {
 
   inline void push_tile(const drect& bounding_rect,
                         const uvec4 color,
+                        const std::array<vec2, 4>& tex_coords,
                         const uint32_t attr_1,
                         const uint32_t attr_2,
                         const uint32_t attr_3)
@@ -291,10 +348,10 @@ struct Drawable {
 
     tiles.insert(
         tiles.end(),
-        {TileVertex(vec2(v0), color, {0.0f, 0.0f}, {0.0f, 0.0f}, attr_1, attr_2, attr_3),
-         TileVertex(vec2(v1), color, {1.0f, 0.0f}, {1.0f, 0.0f}, attr_1, attr_2, attr_3),
-         TileVertex(vec2(v2), color, {1.0f, 1.0f}, {1.0f, 1.0f}, attr_1, attr_2, attr_3),
-         TileVertex(vec2(v3), color, {0.0f, 1.0f}, {0.0f, 1.0f}, attr_1, attr_2, attr_3)});
+        {TileVertex(vec2(v0), color, tex_coords[0], {0.0f, 0.0f}, attr_1, attr_2, attr_3),
+         TileVertex(vec2(v1), color, tex_coords[1], {1.0f, 0.0f}, attr_1, attr_2, attr_3),
+         TileVertex(vec2(v2), color, tex_coords[2], {1.0f, 1.0f}, attr_1, attr_2, attr_3),
+         TileVertex(vec2(v3), color, tex_coords[3], {0.0f, 1.0f}, attr_1, attr_2, attr_3)});
   }
 
   inline void push_tile(const vec2 min,
@@ -302,6 +359,7 @@ struct Drawable {
                         const uvec4 color,
                         const vec2 tex_coord_curve_min,
                         const vec2 tex_coord_curve_max,
+                        const std::array<vec2, 4>& tex_coords,
                         const uint32_t attr_1,
                         const uint32_t attr_2,
                         const uint32_t attr_3)
@@ -317,15 +375,16 @@ struct Drawable {
     const vec2 c3 = {tex_coord_curve_min.x, tex_coord_curve_max.y};
 
     tiles.insert(tiles.end(),
-                 {TileVertex(v0, color, {0.0f, 0.0f}, c0, attr_1, attr_2, attr_3),
-                  TileVertex(v1, color, {1.0f, 0.0f}, c1, attr_1, attr_2, attr_3),
-                  TileVertex(v2, color, {1.0f, 1.0f}, c2, attr_1, attr_2, attr_3),
-                  TileVertex(v3, color, {0.0f, 1.0f}, c3, attr_1, attr_2, attr_3)});
+                 {TileVertex(v0, color, tex_coords[0], c0, attr_1, attr_2, attr_3),
+                  TileVertex(v1, color, tex_coords[1], c1, attr_1, attr_2, attr_3),
+                  TileVertex(v2, color, tex_coords[2], c2, attr_1, attr_2, attr_3),
+                  TileVertex(v3, color, tex_coords[3], c3, attr_1, attr_2, attr_3)});
   }
 
   inline void push_fill(const vec2 min,
                         const vec2 max,
                         const uvec4 color,
+                        const std::array<vec2, 4>& tex_coords,
                         const uint32_t attr_1,
                         const uint32_t attr_2)
   {
@@ -335,10 +394,10 @@ struct Drawable {
     const vec2 v3 = {min.x, max.y};
 
     fills.insert(fills.end(),
-                 {FillVertex(v0, color, {0.0f, 0.0f}, attr_1, attr_2),
-                  FillVertex(v1, color, {1.0f, 0.0f}, attr_1, attr_2),
-                  FillVertex(v2, color, {1.0f, 1.0f}, attr_1, attr_2),
-                  FillVertex(v3, color, {0.0f, 1.0f}, attr_1, attr_2)});
+                 {FillVertex(v0, color, tex_coords[0], attr_1, attr_2),
+                  FillVertex(v1, color, tex_coords[1], attr_1, attr_2),
+                  FillVertex(v2, color, tex_coords[2], attr_1, attr_2),
+                  FillVertex(v3, color, tex_coords[3], attr_1, attr_2)});
   }
 };
 

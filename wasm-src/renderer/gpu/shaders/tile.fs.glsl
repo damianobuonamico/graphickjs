@@ -130,6 +130,7 @@ R"(
   void main() {
     bool is_even_odd = bool((v_attr_2 >> 10) & 0x1U);
     bool is_quadratic = bool((v_attr_2 >> 11) & 0x1U);
+    uint paint_type = uint((v_attr_1 >> 20) & 0x7FU);
 
     int samples = u_samples % 2 == 0 ? u_samples + 1 : u_samples;
 
@@ -142,12 +143,14 @@ R"(
       alpha = alpha * min(abs(coverage), 1.0);
     }
 
-    o_frag_color = vec4(v_color.rgb + texture(u_textures[0], v_tex_coord).rgb, 1.0 + 0.0000000000000000001 * v_tex_coord.x) * alpha;
+    // TODO: shader includes
+    if (paint_type == 3U) {
+      uint paint_coord = v_attr_2 & 0x3FFU;
 
-    // if (v_tex_coord_curves.y == 1.0) {
-    //   o_frag_color = vec4(1.0, 0.0, 0.0, 1.0);
-    // }
-    // * 0.000000000001 + vec4(v_tex_coord_curves.x, v_tex_coord_curves.y, 0.0, 1.0);
+      o_frag_color = texture(u_textures[paint_coord], v_tex_coord) * alpha;
+    } else {
+      o_frag_color = vec4(v_color.rgb, 1.0) * alpha;
+    }
   }
 
 )"

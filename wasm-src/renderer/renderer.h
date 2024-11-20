@@ -210,6 +210,7 @@ class Renderer {
   bool draw_transformed(const geom::dpath& path,
                         const drect& bounding_rect,
                         const DrawingOptions& options,
+                        const std::array<vec2, 4>& fill_texture_coords,
                         const uuid id = uuid::null);
 
   /**
@@ -252,6 +253,7 @@ class Renderer {
                        const drect& bounding_rect,
                        const Fill& fill,
                        const bool culling,
+                       const std::array<vec2, 4>& texture_coords,
                        Drawable& drawable);
 
   /**
@@ -267,6 +269,7 @@ class Renderer {
                         const drect& bounding_rect,
                         const Fill& fill,
                         const bool culling,
+                        const std::array<vec2, 4>& texture_coords,
                         Drawable& drawable);
 
   /**
@@ -286,6 +289,13 @@ class Renderer {
    * @param drawable The Drawable object to upload.
    */
   void draw(const Drawable& drawable);
+
+  /**
+   * @brief If needed, uploads the texture to the GPU.
+   *
+   * @param texture_id The id of the texture stored in the ResourceManager cache.
+   */
+  void request_texture(const uuid texture_id);
 
   /**
    * @brief Flushes the cached elements to the framebuffer.
@@ -323,12 +333,18 @@ class Renderer {
 
   dmat4 m_vp_matrix;        // The view-projection matrix.
 
-  InstancedData<LineInstance> m_line_instances;      // The line instances to render.
-  InstancedData<CircleInstance> m_circle_instances;  // The handle instances to render.
-  InstancedData<RectInstance> m_rect_instances;      // The rect instances to render.
-  InstancedData<ImageInstance> m_image_instances;    // The image instances to render.
+  InstancedData<LineInstance> m_line_instances;       // The line instances to render.
+  InstancedData<CircleInstance> m_circle_instances;   // The handle instances to render.
+  InstancedData<RectInstance> m_rect_instances;       // The rect instances to render.
+  InstancedData<ImageInstance> m_image_instances;     // The image instances to render.
 
-  Batch m_batch;                                     // The tile/fill batch to render.
+  Batch m_batch;                                      // The tile/fill batch to render.
+
+  std::unordered_map<uuid, GPU::Texture> m_textures;  // The textures loaded in the GPU.
+
+  // TODO: should move this into the batch I think
+  std::unordered_map<uuid, uint32_t> m_binded_textures;  // The textures bound to the GPU.
+  uint32_t m_z_index;                                    // The current z-index.
 
   UIOptions m_ui_options;       // The UI options (i.e. handle size, colors, etc.).
  private:

@@ -530,9 +530,11 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
                  outline.bounding_rect,
                  false);
 
+        /* Here we are using the approximate bounding rect because it could be visible event if the
+         * exact one is not. */
         if (visible == nullptr ||
-            geom::does_rect_intersect_rect(math::drect::expand(cubic.bounding_rect(), radius),
-                                           visible_rect))
+            geom::does_rect_intersect_rect(
+                math::drect::expand(cubic.approx_bounding_rect(), radius), visible_rect))
         {
           // TODO: maybe join the two in one function call
           offset_cubic(cubic, -radius, options.tolerance, outline.inner);

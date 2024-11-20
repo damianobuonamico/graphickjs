@@ -84,7 +84,7 @@ enum class VertexAttrClass {
 /**
  * @brief The texture format.
  */
-enum class TextureFormat { R8, R16UI, RGBA8, RGBA8UI, R16F, R32F, RGBA16F, RGBA32F };
+enum class TextureFormat { R8, R16UI, RGB8, RGBA8, RGBA8UI, R16F, R32F, RGBA16F, RGBA32F };
 
 /**
  * @brief The texture sampling flags.
@@ -94,7 +94,8 @@ enum TextureSamplingFlag {
   TextureSamplingFlagRepeatU = 1 << 0,
   TextureSamplingFlagRepeatV = 1 << 1,
   TextureSamplingFlagNearestMin = 1 << 2,
-  TextureSamplingFlagNearestMag = 1 << 3
+  TextureSamplingFlagNearestMag = 1 << 3,
+  TextureSamplingFlagMipmapMin = 1 << 4
 };
 
 /**
@@ -134,14 +135,14 @@ struct BlendState {
   BlendFactor dest_alpha_factor;  // The destination alpha factor.
   BlendOp op;                     // The blend operation.
 
-  bool operator==(const BlendState &other) const
+  bool operator==(const BlendState& other) const
   {
     return src_rgb_factor == other.src_rgb_factor && dest_rgb_factor == other.dest_rgb_factor &&
            src_alpha_factor == other.src_alpha_factor &&
            dest_alpha_factor == other.dest_alpha_factor && op == other.op;
   }
 
-  bool operator!=(const BlendState &other) const
+  bool operator!=(const BlendState& other) const
   {
     return !operator==(other);
   }
@@ -154,12 +155,12 @@ struct DepthState {
   DepthFunc func;  // The depth function.
   bool write;      // Whether to write to the depth buffer.
 
-  bool operator==(const DepthState &other) const
+  bool operator==(const DepthState& other) const
   {
     return func == other.func && write == other.write;
   }
 
-  bool operator!=(const DepthState &other) const
+  bool operator!=(const DepthState& other) const
   {
     return !operator==(other);
   }
@@ -174,13 +175,13 @@ struct StencilState {
   uint32_t mask;       // The mask value.
   bool write;          // Whether to write to the stencil buffer.
 
-  bool operator==(const StencilState &other) const
+  bool operator==(const StencilState& other) const
   {
     return func == other.func && reference == other.reference && mask == other.mask &&
            write == other.write;
   }
 
-  bool operator!=(const StencilState &other) const
+  bool operator!=(const StencilState& other) const
   {
     return !operator==(other);
   }

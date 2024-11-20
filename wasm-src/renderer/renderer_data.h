@@ -228,24 +228,26 @@ struct Band {
  * @brief Groups the data required to be populated in order to generate a drawable from a path.
  */
 struct PathData {
-  Drawable& drawable;          // The drawable to populate.
+  Drawable& drawable;                         // The drawable to populate.
 
-  const drect& bounding_rect;  // The bounding rectangle of the path.
-  const dvec2 bounds_size;     // The size of the bounding rectangle.
+  const std::array<vec2, 4>& texture_coords;  // The texture coordinates of the bounding box.
 
-  const Fill& fill;            // The Fill properties to use.
+  const drect& bounding_rect;                 // The bounding rectangle of the path.
+  const dvec2 bounds_size;                    // The size of the bounding rectangle.
 
-  const size_t num;            // The number of curves in the path.
-  const size_t curves_offset;  // The offset of the curves in the drawable.
-  const size_t bands_offset;   // The offset of the bands in the drawable.
+  const Fill& fill;                           // The Fill properties to use.
 
-  const bool culling;          // Whether to perform culling.
+  const size_t num;                           // The number of curves in the path.
+  const size_t curves_offset;                 // The offset of the curves in the drawable.
+  const size_t bands_offset;                  // The offset of the bands in the drawable.
 
-  std::vector<dvec2> min;      // The cached minimum points of the curves.
-  std::vector<dvec2> max;      // The cached maximum points of the curves.
+  const bool culling;                         // Whether to perform culling.
 
-  double band_delta;           // The height of a band.
-  uint8_t horizontal_bands;    // The number of horizontal bands.
+  std::vector<dvec2> min;                     // The cached minimum points of the curves.
+  std::vector<dvec2> max;                     // The cached maximum points of the curves.
+
+  double band_delta;                          // The height of a band.
+  uint8_t horizontal_bands;                   // The number of horizontal bands.
 };
 
 /**
@@ -689,31 +691,83 @@ struct TileBatchData {
   /**
    * @brief Uploads the vertices, curves and bands to the buffers.
    *
-   * @param tiles The vertices to upload.
-   * @param curves The curves to upload.
-   * @param bands The bands to upload.
+   * @param drawable The drawable with the tile vertices, curves and bands to upload.
+   * @param z_index The z-index of the drawable.
    */
-  inline void upload(const std::vector<TileVertex>& tiles,
-                     const std::vector<vec2>& curves,
-                     const std::vector<uint16_t>& bands)
+  inline void upload(const Drawable& drawable, const uint32_t z_index)
   {
-    memcpy(vertices_ptr, tiles.data(), tiles.size() * sizeof(TileVertex));
-    memcpy(curves_ptr, curves.data(), curves.size() * sizeof(vec2));
-    memcpy(bands_ptr, bands.data(), bands.size() * sizeof(uint16_t));
+    memcpy(vertices_ptr, drawable.tiles.data(), drawable.tiles.size() * sizeof(TileVertex));
+    memcpy(curves_ptr, drawable.curves.data(), drawable.curves.size() * sizeof(vec2));
+    memcpy(bands_ptr, drawable.bands.data(), drawable.bands.size() * sizeof(uint16_t));
 
     const size_t curves_start_index = curves_count();
     const size_t bands_start_index = bands_count();
 
-    const TileVertex* vertices_end_ptr = vertices_ptr + tiles.size();
+    const TileVertex* vertices_end_ptr = vertices_ptr + drawable.tiles.size();
 
-    // TODO: should change z-index too
     for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
       vertices_ptr->add_offset_to_curves(curves_start_index);
       vertices_ptr->add_offset_to_bands(bands_start_index);
+      vertices_ptr->update_z_index(z_index);
     }
 
-    curves_ptr += curves.size();
-    bands_ptr += bands.size();
+    curves_ptr += drawable.curves.size();
+    bands_ptr += drawable.bands.size();
+  }
+
+  /**
+   * @brief Uploads the vertices, curves and bands to the buffers.
+   *
+   * @param drawable The drawable with the tile vertices, curves and bands to upload.
+   * @param z_index The z-index of the drawable.
+   * @param textures The texture bindings to use for the drawable.
+   */
+  inline void upload(const Drawable& drawable,
+                     const uint32_t z_index,
+                     const std::unordered_map<uuid, uint32_t>& textures)
+  {
+    memcpy(vertices_ptr, drawable.tiles.data(), drawable.tiles.size() * sizeof(TileVertex));
+    memcpy(curves_ptr, drawable.curves.data(), drawable.curves.size() * sizeof(vec2));
+    memcpy(bands_ptr, drawable.bands.data(), drawable.bands.size() * sizeof(uint16_t));
+
+    const size_t curves_start_index = curves_count();
+    const size_t bands_start_index = bands_count();
+
+    size_t local_z_index = z_index;
+
+    const TileVertex* vertices_start_ptr = vertices_ptr;
+
+    for (const DrawablePaintBinding& binding : drawable.paints) {
+      const TileVertex* vertices_end_ptr = vertices_start_ptr + binding.last_tile_index;
+
+      if (binding.paint_type == Paint::Type::TexturePaint) {
+        const auto it = textures.find(binding.paint_id);
+
+        if (it == textures.end()) {
+          continue;
+        }
+
+        const uint32_t texture_index = it->second;
+
+        for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
+          vertices_ptr->add_offset_to_curves(curves_start_index);
+          vertices_ptr->add_offset_to_bands(bands_start_index);
+          vertices_ptr->update_z_index(local_z_index);
+          vertices_ptr->update_paint_coord(texture_index);
+        }
+      } else {
+        for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
+          vertices_ptr->add_offset_to_curves(curves_start_index);
+          vertices_ptr->add_offset_to_bands(bands_start_index);
+          vertices_ptr->update_z_index(local_z_index);
+        }
+      }
+
+      local_z_index++;
+    }
+
+    curves_ptr += drawable.curves.size();
+    bands_ptr += drawable.bands.size();
   }
 };
 
@@ -821,12 +875,61 @@ struct FillBatchData {
   /**
    * @brief Uploads the vertices to the buffer.
    *
-   * @param fills The vertices to upload.
+   * @param drawable The drawable with the fill vertices to upload.
+   * @param z_index The z-index of the drawable.
    */
-  inline void upload(const std::vector<FillVertex>& fills)
+  inline void upload(const Drawable& drawable, const uint32_t z_index)
   {
-    memcpy(vertices_ptr, fills.data(), fills.size() * sizeof(FillVertex));
-    vertices_ptr += fills.size();
+    memcpy(vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
+
+    const FillVertex* vertices_end_ptr = vertices_ptr + drawable.fills.size();
+
+    for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
+      vertices_ptr->update_z_index(z_index);
+    }
+  }
+
+  /**
+   * @brief Uploads the vertices, curves and bands to the buffers.
+   *
+   * @param drawable The drawable with the tile vertices, curves and bands to upload.
+   * @param z_index The z-index of the drawable.
+   * @param textures The texture bindings to use for the drawable.
+   */
+  inline void upload(const Drawable& drawable,
+                     const uint32_t z_index,
+                     const std::unordered_map<uuid, uint32_t>& textures)
+  {
+    memcpy(vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
+
+    uint32_t local_z_index = z_index;
+
+    const FillVertex* vertices_start_ptr = vertices_ptr;
+
+    for (const DrawablePaintBinding& binding : drawable.paints) {
+      const FillVertex* vertices_end_ptr = vertices_start_ptr + binding.last_fill_index;
+
+      if (binding.paint_type == Paint::Type::TexturePaint) {
+        const auto it = textures.find(binding.paint_id);
+
+        if (it == textures.end()) {
+          continue;
+        }
+
+        const uint32_t texture_index = it->second;
+
+        for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
+          vertices_ptr->update_z_index(local_z_index);
+          vertices_ptr->update_paint_coord(texture_index);
+        }
+      } else {
+        for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
+          vertices_ptr->update_z_index(local_z_index);
+        }
+      }
+
+      local_z_index++;
+    }
   }
 };
 

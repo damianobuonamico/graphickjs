@@ -7,8 +7,8 @@
 
 #include "vec2.h"
 
-#include <initializer_list>
 #include <array>
+#include <initializer_list>
 
 namespace graphick::math {
 
@@ -156,6 +156,26 @@ struct Rect {
   constexpr std::array<Vec2<T>, 4> vertices() const
   {
     return {min, {max.x, min.y}, max, {min.x, max.y}};
+  }
+
+  constexpr Vec2<T> top_left() const
+  {
+    return min;
+  }
+
+  constexpr Vec2<T> top_right() const
+  {
+    return {max.x, min.y};
+  }
+
+  constexpr Vec2<T> bottom_left() const
+  {
+    return {min.x, max.y};
+  }
+
+  constexpr Vec2<T> bottom_right() const
+  {
+    return max;
   }
 
   /* -- Unary arithmetic operators -- */

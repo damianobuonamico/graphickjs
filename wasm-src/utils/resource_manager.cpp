@@ -9,12 +9,12 @@
 
 #define SHADERS_LENGTH 6
 
-static constexpr const char *shader_names[SHADERS_LENGTH] = {
+static constexpr const char* shader_names[SHADERS_LENGTH] = {
     "tile", "fill", "line", "rect", "circle", "image"};
 
 namespace graphick::utils {
 
-ResourceManager *ResourceManager::s_instance = nullptr;
+ResourceManager* ResourceManager::s_instance = nullptr;
 
 void ResourceManager::init()
 {
@@ -30,14 +30,34 @@ void ResourceManager::init()
 
 void ResourceManager::shutdown() {}
 
-std::string ResourceManager::get_shader(const std::string &name)
+std::string ResourceManager::get_shader(const std::string& name)
 {
   return s_instance->m_shaders.at(name);
 }
 
+uuid ResourceManager::load_image(std::unique_ptr<uint8_t[]>&& data,
+                                 const ivec2 size,
+                                 const uint8_t channels)
+{
+  const uuid id = uuid();
+  s_instance->m_images.insert(std::make_pair(id, ImageData{std::move(data), size, channels}));
+  return id;
+}
+
+Image ResourceManager::get_image(const uuid id)
+{
+  const auto it = s_instance->m_images.find(id);
+  if (it == s_instance->m_images.end()) {
+    console::error("Image not found in cache!");
+    return Image{nullptr, ivec2{0, 0}, 0};
+  }
+
+  return Image{it->second.data.get(), it->second.size, it->second.channels};
+}
+
 void ResourceManager::prefetch_shaders()
 {
-  static const char *shader_sources[SHADERS_LENGTH * 2] = {
+  static const char* shader_sources[SHADERS_LENGTH * 2] = {
 #include "../renderer/gpu/shaders/tile.vs.glsl"
       ,
 #include "../renderer/gpu/shaders/tile.fs.glsl"

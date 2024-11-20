@@ -41,7 +41,7 @@ namespace graphick::editor {
     break; \
   }
 
-Entity::Entity(entt::entity handle, Scene *scene, const io::EncodedData &encoded_data)
+Entity::Entity(entt::entity handle, Scene* scene, const io::EncodedData& encoded_data)
     : m_handle(handle), m_scene(scene)
 {
   add(encoded_data, true);
@@ -55,6 +55,7 @@ io::EncodedData Entity::encode() const
   ENCODE_COMPONENT(TagComponent);
   ENCODE_COMPONENT(CategoryComponent);
   ENCODE_COMPONENT(PathComponent);
+  ENCODE_COMPONENT(ImageComponent);
   ENCODE_COMPONENT(TransformComponent);
   ENCODE_COMPONENT(StrokeComponent);
   ENCODE_COMPONENT(FillComponent);
@@ -76,6 +77,7 @@ std::pair<uuid, io::EncodedData> Entity::duplicate() const
 
   ENCODE_COMPONENT(CategoryComponent);
   ENCODE_COMPONENT(PathComponent);
+  ENCODE_COMPONENT(ImageComponent);
   ENCODE_COMPONENT(TransformComponent);
   ENCODE_COMPONENT(StrokeComponent);
   ENCODE_COMPONENT(FillComponent);
@@ -83,7 +85,8 @@ std::pair<uuid, io::EncodedData> Entity::duplicate() const
   return {id_data.id, data};
 }
 
-void Entity::add(const io::EncodedData &encoded_data, const bool full_entity)
+// TODO: error handling
+void Entity::add(const io::EncodedData& encoded_data, const bool full_entity)
 {
   io::DataDecoder decoder(&encoded_data);
 
@@ -96,12 +99,13 @@ void Entity::add(const io::EncodedData &encoded_data, const bool full_entity)
   DECODE_COMPONENT(TagComponent);
   DECODE_COMPONENT(CategoryComponent);
   DECODE_COMPONENT(PathComponent);
+  DECODE_COMPONENT(ImageComponent);
   DECODE_COMPONENT(TransformComponent);
   DECODE_COMPONENT(StrokeComponent);
   DECODE_COMPONENT(FillComponent);
 }
 
-void Entity::remove(const io::EncodedData &encoded_data)
+void Entity::remove(const io::EncodedData& encoded_data)
 {
   io::DataDecoder decoder(&encoded_data);
 
@@ -114,12 +118,13 @@ void Entity::remove(const io::EncodedData &encoded_data)
   REMOVE_COMPONENT(TagComponent);
   REMOVE_COMPONENT(CategoryComponent);
   REMOVE_COMPONENT(PathComponent);
+  REMOVE_COMPONENT(ImageComponent);
   REMOVE_COMPONENT(TransformComponent);
   REMOVE_COMPONENT(StrokeComponent);
   REMOVE_COMPONENT(FillComponent);
 }
 
-void Entity::modify(const io::EncodedData &encoded_data)
+void Entity::modify(const io::EncodedData& encoded_data)
 {
   io::DataDecoder decoder(&encoded_data);
   if (decoder.end_of_data())
@@ -133,6 +138,7 @@ void Entity::modify(const io::EncodedData &encoded_data)
     MODIFY_COMPONENT(TagComponent);
     MODIFY_COMPONENT(CategoryComponent);
     MODIFY_COMPONENT(PathComponent);
+    MODIFY_COMPONENT(ImageComponent);
     MODIFY_COMPONENT(TransformComponent);
     MODIFY_COMPONENT(StrokeComponent);
     MODIFY_COMPONENT(FillComponent);

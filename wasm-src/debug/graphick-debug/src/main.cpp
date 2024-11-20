@@ -7,6 +7,7 @@
 #include "wasm-src/io/svg/svg.h"
 
 #include "wasm-src/utils/console.h"
+#include "wasm-src/utils/resource_manager.h"
 
 #include "wasm-src/geom/path.h"
 
@@ -17,6 +18,9 @@
 
 #include <fstream>
 #include <stdio.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "../lib/stb/stb_image.h"
 
 struct PointerState {
   graphick::vec2 position;
@@ -165,11 +169,35 @@ int main()
 #define TIGER
   // #define OBJECTS
 
+  // TODO: fix triangle culling
+
 #ifdef TIGER
-  // std::ifstream ifs("res\\test4.svg");
-  std::ifstream ifs("res\\Ghostscript_Tiger.svg");
+  // std::ifstream ifs("res/vectors/test4.svg");
+  std::ifstream ifs("res/vectors/Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   graphick::io::svg::parse_svg(content);
+
+  int w, h, n;
+  unsigned char* data = stbi_load("res/images/demo_image.png", &w, &h, &n, 0);
+  std::unique_ptr<uint8_t[]> image_data = std::make_unique<uint8_t[]>(w * h * n);
+  memcpy(image_data.get(), data, w * h * n);
+  stbi_image_free(data);
+
+  graphick::utils::uuid image_id = graphick::utils::ResourceManager::load_image(
+      std::move(image_data), {w, h}, n);
+
+  graphick::editor::Editor::scene().create_image(image_id);
+
+  data = stbi_load("res/images/demo_image_2.jpg", &w, &h, &n, 4);
+  std::unique_ptr<uint8_t[]> image_data_2 = std::make_unique<uint8_t[]>(w * h * 4);
+  memcpy(image_data_2.get(), data, w * h * 4);
+  stbi_image_free(data);
+
+  graphick::utils::uuid image_id_2 = graphick::utils::ResourceManager::load_image(
+      std::move(image_data_2), {w, h}, 4);
+
+  graphick::editor::Editor::scene().create_image(image_id_2);
+
 #elif defined(OBJECTS)
   graphick::geom::path path1;
 

@@ -4,6 +4,7 @@
  *
  * @todo snapping and maybe grid
  * @todo curve molding
+ * @todo fix moving the last segment in a closed path (I think).
  */
 
 #include "direct_select_tool.h"

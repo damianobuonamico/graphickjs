@@ -1,10 +1,16 @@
 /**
  * @file resource_manager.h
  * @brief The file contains the definition of the resource manager.
+ * @todo The resource manager should be moved to the io directory (when it will also handle generic
+ * file loading, fonts, etc).
  */
 
 #pragma once
 
+#include "image.h"
+#include "uuid.h"
+
+#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -20,10 +26,10 @@ class ResourceManager {
   /**
    * @brief Deleted copy, move constructor and assignment operators.
    */
-  ResourceManager(const ResourceManager &) = delete;
-  ResourceManager(ResourceManager &&) = delete;
-  ResourceManager &operator=(const ResourceManager &) = delete;
-  ResourceManager &operator=(ResourceManager &&) = delete;
+  ResourceManager(const ResourceManager&) = delete;
+  ResourceManager(ResourceManager&&) = delete;
+  ResourceManager& operator=(const ResourceManager&) = delete;
+  ResourceManager& operator=(ResourceManager&&) = delete;
 
   /**
    * @brief Initializes the resource manager.
@@ -40,7 +46,35 @@ class ResourceManager {
    *
    * @return The instance of the resource manager.
    */
-  static std::string get_shader(const std::string &name);
+  static std::string get_shader(const std::string& name);
+
+  /**
+   * @brief Loads an image into the cache.
+   *
+   * @param data The image data.
+   * @return The UUID of the image.
+   */
+  static uuid load_image(std::unique_ptr<uint8_t[]>&& data,
+                         const ivec2 size,
+                         const uint8_t channels);
+
+  /**
+   * @brief Retrieves an image from the cache.
+   *
+   * @param id The UUID of the image.
+   * @return A lightweight wrapper around the image data.
+   */
+  static Image get_image(uuid id);
+
+ private:
+  /**
+   * @brief The struct that represents the image data in the cache.
+   */
+  struct ImageData {
+    std::unique_ptr<uint8_t[]> data;  // A smart pointer to the image data.
+    ivec2 size;                       // The size of the image.
+    uint8_t channels;                 // The number of channels of the image.
+  };
 
  private:
   /**
@@ -58,8 +92,9 @@ class ResourceManager {
 
  private:
   std::unordered_map<std::string, std::string> m_shaders;  // The cache of shaders.
+  std::unordered_map<uuid, ImageData> m_images;            // The cache of images.
  private:
-  static ResourceManager *s_instance;  // The instance of the resource manager singleton.
+  static ResourceManager* s_instance;  // The instance of the resource manager singleton.
 };
 
 }  // namespace graphick::utils

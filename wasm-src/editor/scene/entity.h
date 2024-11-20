@@ -96,6 +96,10 @@ class Entity {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
                                 &m_scene->m_registry.get<PathComponent::Data>(m_handle)};
+    } else if (has_component<ImageComponent>()) {
+      return TransformComponent{this,
+                                &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
+                                &m_scene->m_registry.get<ImageComponent::Data>(m_handle)};
     } else {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle)};
@@ -122,6 +126,10 @@ class Entity {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
                                 &m_scene->m_registry.get<PathComponent::Data>(m_handle)};
+    } else if (has_component<ImageComponent>()) {
+      return TransformComponent{this,
+                                &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
+                                &m_scene->m_registry.get<ImageComponent::Data>(m_handle)};
     } else {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle)};
@@ -269,6 +277,19 @@ class Entity {
   inline bool is_element() const
   {
     return has_components<PathComponent>();
+  }
+
+  /**
+   * @brief Checks if the entity is an image.
+   *
+   * An image is an entity that has an ImageComponent.
+   * All entities have a TransformComponent and a IDComponent.
+   *
+   * @return true if the entity is an image, false otherwise.
+   */
+  inline bool is_image() const
+  {
+    return has_components<ImageComponent>();
   }
 
   /**

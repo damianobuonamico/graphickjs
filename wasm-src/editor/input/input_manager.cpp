@@ -23,7 +23,7 @@
 
 namespace graphick::editor::input {
 
-InputManager *InputManager::s_instance = nullptr;
+InputManager* InputManager::s_instance = nullptr;
 InputManager::Pointer InputManager::pointer{};
 InputManager::KeysState InputManager::keys{};
 HoverState InputManager::hover{};
@@ -78,7 +78,7 @@ bool InputManager::on_pointer_event(PointerTarget target,
 bool InputManager::on_keyboard_event(
     KeyboardEvent event, KeyboardKey key, bool repeat, bool alt, bool ctrl, bool shift)
 {
-  InputManager *instance = get();
+  InputManager* instance = get();
 
   instance->set_keys_state(alt, ctrl, shift);
 
@@ -158,7 +158,7 @@ bool InputManager::on_touch_drag(PointerTarget target, float delta_x, float delt
   return get()->on_drag(target, delta_x, delta_y);
 }
 
-const Tool &InputManager::tool()
+const Tool& InputManager::tool()
 {
   return Editor::scene().tool_state.active();
 }
@@ -184,10 +184,10 @@ void InputManager::recalculate_hover()
 {
   OPTICK_EVENT();
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (!scene.tool_state.active().is_in_category(Tool::CategoryImmediate)) {
-    float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 5.0f;
+    float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 2.5f;
 
     hover.set_hovered(
         scene.entity_at(pointer.scene.position,
@@ -207,7 +207,7 @@ bool InputManager::on_pointer_down(PointerTarget target, PointerButton button, f
   if (target != PointerTarget::Canvas)
     return false;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   vec2 current_position = {x, y};
 
@@ -249,7 +249,7 @@ bool InputManager::on_pointer_move(PointerTarget target, float x, float y)
 
   OPTICK_EVENT();
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   vec2 current_position = {x, y};
 
@@ -292,7 +292,7 @@ bool InputManager::on_pointer_up()
   if (!pointer.down)
     return false;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   pointer.target = PointerTarget::Other;
   pointer.down = false;
@@ -329,7 +329,7 @@ bool InputManager::on_pointer_leave()
 
 bool InputManager::on_key_down(KeyboardKey key)
 {
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if ((key == KeyboardKey::Z || (int)key == 90 /* TEMP: GLFW */) && keys.ctrl) {
     if (keys.shift) {
@@ -370,7 +370,7 @@ bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y, 
   keys.ctrl_state_changed = keys.ctrl != ctrl;
   keys.ctrl = ctrl;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   if (keys.ctrl) {
     scene.viewport.zoom_to(math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) *
@@ -405,7 +405,7 @@ bool InputManager::on_pinch(PointerTarget target, float delta, float center_x, f
   if (target == PointerTarget::Other)
     return false;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   scene.viewport.zoom_to(scene.viewport.zoom() * delta, vec2{center_x, center_y});
   Editor::request_render();
@@ -418,7 +418,7 @@ bool InputManager::on_drag(PointerTarget target, float delta_x, float delta_y)
   if (target == PointerTarget::Other)
     return false;
 
-  Scene &scene = Editor::scene();
+  Scene& scene = Editor::scene();
 
   scene.viewport.move(math::round(vec2{delta_x, delta_y}) / scene.viewport.zoom());
   Editor::request_render();

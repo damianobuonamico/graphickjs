@@ -25,6 +25,7 @@
 #include "../utils/assert.h"
 #include "../utils/console.h"
 #include "../utils/defines.h"
+#include "../utils/resource_manager.h"
 
 #include <algorithm>
 
@@ -171,6 +172,7 @@ void Renderer::begin_frame(const RenderOptions& options)
   get()->m_cache = &options.cache->renderer_cache;
   get()->m_cached_rendering = false;  // get()->m_cached_rendering = !options.ignore_cache;
   get()->m_ui_options = UIOptions(options.viewport.dpr / options.viewport.zoom);
+  get()->m_z_index = 0;
 
   GPU::Device::begin_commands();
 
@@ -195,18 +197,56 @@ bool Renderer::draw(const geom::path& path, const mat2x3& transform, const Drawi
     return false;
   }
 
+  const bool has_transform = !math::is_identity(transform);
+
   drect bounding_rect{};
 
-  if (math::is_identity(transform)) {
+  // TODO: extract into functions (there is duplicated code in the draw(..., id) method)
+  if (has_transform && options.fill &&
+      (options.fill->paint.is_gradient() || options.fill->paint.is_texture()))
+  {
+    geom::dpath transformed_path = path.transformed<double>(transform, bounding_rect);
+
+    rect raw_bounding_rect = path.bounding_rect();
+
+    const dmat2x3 inverse_transform = math::inverse(dmat2x3(transform));
+
+    const auto& [v0_t, v1_t, v2_t, v3_t] = bounding_rect.vertices();
+
+    const dvec2 v0 = inverse_transform * v0_t;
+    const dvec2 v1 = inverse_transform * v1_t;
+    const dvec2 v2 = inverse_transform * v2_t;
+    const dvec2 v3 = inverse_transform * v3_t;
+
+    const vec2 size = raw_bounding_rect.size();
+
+    const vec2 tex0 = vec2(v0) / size;
+    const vec2 tex1 = vec2(v1) / size;
+    const vec2 tex2 = vec2(v2) / size;
+    const vec2 tex3 = vec2(v3) / size;
+
+    return get()->draw_transformed(
+        transformed_path, bounding_rect, options, {tex0, tex1, tex2, tex3});
+  }
+
+  if (!has_transform) {
     geom::dpath dpath = geom::dpath(path);
     bounding_rect = dpath.bounding_rect();
     dpath.bounding_rect();
 
-    return get()->draw_transformed(dpath, bounding_rect, options);
+    return get()->draw_transformed(
+        dpath,
+        bounding_rect,
+        options,
+        {vec2::zero(), vec2(1.0, 0.0), vec2::identity(), vec2(0.0, 1.0)});
   } else {
     geom::dpath dpath = path.transformed<double>(transform, bounding_rect);
 
-    return get()->draw_transformed(dpath, bounding_rect, options);
+    return get()->draw_transformed(
+        dpath,
+        bounding_rect,
+        options,
+        {vec2::zero(), vec2(1.0, 0.0), vec2::identity(), vec2(0.0, 1.0)});
   }
 }
 
@@ -244,7 +284,10 @@ bool Renderer::draw(const geom::path& path,
       geom::dpath transformed_path = has_transform ? path.transformed<double>(transform) :
                                                      geom::dpath(path);
 
-      get()->draw_transformed(transformed_path, bounding_rect, outline_options);
+      get()->draw_transformed(transformed_path,
+                              bounding_rect,
+                              outline_options,
+                              {vec2::zero(), vec2(1.0, 0.0), vec2::identity(), vec2(0.0, 1.0)});
     }
 
     return true;
@@ -272,7 +315,37 @@ bool Renderer::draw(const geom::path& path,
     return false;
   }
 
-  return get()->draw_transformed(transformed_path, bounding_rect, options, id);
+  // TODO: extract into functions (there is duplicated code in the draw(..., id) method)
+  if (has_transform && options.fill &&
+      (options.fill->paint.is_gradient() || options.fill->paint.is_texture()))
+  {
+    rect raw_bounding_rect = path.bounding_rect();
+
+    const dmat2x3 inverse_transform = math::inverse(dmat2x3(transform));
+
+    const auto& [v0_t, v1_t, v2_t, v3_t] = bounding_rect.vertices();
+
+    const dvec2 v0 = inverse_transform * v0_t;
+    const dvec2 v1 = inverse_transform * v1_t;
+    const dvec2 v2 = inverse_transform * v2_t;
+    const dvec2 v3 = inverse_transform * v3_t;
+
+    const vec2 size = raw_bounding_rect.size();
+
+    const vec2 tex0 = vec2(v0) / size;
+    const vec2 tex1 = vec2(v1) / size;
+    const vec2 tex2 = vec2(v2) / size;
+    const vec2 tex3 = vec2(v3) / size;
+
+    return get()->draw_transformed(
+        transformed_path, bounding_rect, options, {tex0, tex1, tex2, tex3}, id);
+  }
+
+  return get()->draw_transformed(transformed_path,
+                                 bounding_rect,
+                                 options,
+                                 {vec2::zero(), vec2(1.0, 0.0), vec2::identity(), vec2(0.0, 1.0)},
+                                 id);
 }
 
 void Renderer::draw_rect(const rect& rect, const std::optional<vec4> color)
@@ -337,6 +410,7 @@ Renderer::Renderer()
 bool Renderer::draw_transformed(const geom::dpath& path,
                                 const drect& bounding_rect,
                                 const DrawingOptions& options,
+                                const std::array<vec2, 4>& fill_texture_coords,
                                 const uuid id)
 {
   // TODO: clip if necessary
@@ -349,19 +423,20 @@ bool Renderer::draw_transformed(const geom::dpath& path,
   Drawable drawable;
 
   // TODO: check if intersects visible area
-  if (options.fill && options.fill->color.a > 0.0f) {
+  if (options.fill && options.fill->visible()) {
     geom::dcubic_path cubic_path = path.to_cubic_path();
 
     if (!cubic_path.closed()) {
       cubic_path.line_to(cubic_path.front());
     }
 
-    draw_cubic_path(cubic_path, bounding_rect, *options.fill, culling, drawable);
+    draw_cubic_path(
+        cubic_path, bounding_rect, *options.fill, culling, fill_texture_coords, drawable);
   }
 
   // TODO: check if intersects visible area
-  if (options.stroke && options.stroke->color.a > 0.0f) {
-    Fill stroke_fill{options.stroke->color, FillRule::NonZero, options.stroke->z_index};
+  if (options.stroke && options.stroke->visible()) {
+    Fill stroke_fill{options.stroke->paint, FillRule::NonZero};
 
     const geom::StrokingOptions<double> stroking_options{RendererSettings::stroking_tolerance,
                                                          options.stroke->width,
@@ -375,14 +450,20 @@ bool Renderer::draw_transformed(const geom::dpath& path,
       m_cache->set_bounding_rect(id, stroke_path.bounding_rect);
     }
 
+    // TODO: stroke texture coordinates
     if (stroke_path.inner.empty()) {
-      draw_cubic_path(
-          stroke_path.outer, stroke_path.bounding_rect, stroke_fill, culling, drawable);
+      draw_cubic_path(stroke_path.outer,
+                      stroke_path.bounding_rect,
+                      stroke_fill,
+                      culling,
+                      fill_texture_coords,
+                      drawable);
     } else {
       draw_cubic_paths({&stroke_path.outer, &stroke_path.inner},
                        stroke_path.bounding_rect,
                        stroke_fill,
                        culling,
+                       fill_texture_coords,
                        drawable);
     }
   } else if (id != uuid::null) {
@@ -474,20 +555,34 @@ bool Renderer::draw_cubic_path_impl(PathData& data)
   }
 
   // TODO: check if direct rendering is an option
-  // TODO: atlasing (when rendering text merge characters together)
+  // TODO: atlasing (when rendering text, merge characters together)
   // TODO: adjust instance buffer sizes and flush when necessary
   // TODO: masking (decide whether to use CPU or GPU)
 
   /* Push whole instance if culling is disabled. */
 
   if (!data.culling) {
-    const uvec4 color = uvec4(data.fill.color * 255.0f);
-    const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, data.curves_offset);
+    const uvec4 color = data.fill.paint.is_color() ? uvec4(data.fill.paint.color() * 255.0f) :
+                                                     uvec4(255, 255, 255, 255);
+    const uint32_t attr_1 = TileVertex::create_attr_1(
+        0, data.fill.paint.type(), data.curves_offset);
     const uint32_t attr_2 = TileVertex::create_attr_2(
-        data.fill.z_index, false, data.fill.rule == FillRule::EvenOdd, 0);
+        0, false, data.fill.rule == FillRule::EvenOdd, 0);
     const uint32_t attr_3 = TileVertex::create_attr_3(data.horizontal_bands, data.bands_offset);
 
-    data.drawable.push_tile(data.bounding_rect, color, attr_1, attr_2, attr_3);
+    data.drawable.push_tile(
+        data.bounding_rect, color, data.texture_coords, attr_1, attr_2, attr_3);
+
+    if (data.fill.paint.is_texture()) {
+      const uuid texture_id = data.fill.paint.id();
+
+      request_texture(texture_id);
+    }
+
+    data.drawable.paints.push_back({data.drawable.tiles.size(),
+                                    data.drawable.fills.size(),
+                                    data.fill.paint.type(),
+                                    data.fill.paint.id()});
 
     return true;
   }
@@ -618,10 +713,11 @@ void Renderer::draw_cubic_path_cull(const geom::dcubic_path& path,
 
 void Renderer::draw_cubic_path_cull_commit(PathData& data, PathCullingData& culling_data)
 {
-  const uvec4 color = uvec4(data.fill.color * 255.0f);
-  const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, data.curves_offset);
+  const uvec4 color = data.fill.paint.is_color() ? uvec4(data.fill.paint.color() * 255.0f) :
+                                                   uvec4(255, 255, 255, 255);
+  const uint32_t attr_1 = TileVertex::create_attr_1(0, data.fill.paint.type(), data.curves_offset);
   const uint32_t attr_2 = TileVertex::create_attr_2(
-      data.fill.z_index, false, data.fill.rule == FillRule::EvenOdd, 0);
+      0, false, data.fill.rule == FillRule::EvenOdd, 0);
   const uint32_t attr_3 = TileVertex::create_attr_3(data.horizontal_bands, data.bands_offset);
 
   /* The last band cannot have filled spans. */
@@ -648,13 +744,35 @@ void Renderer::draw_cubic_path_cull_commit(PathData& data, PathCullingData& cull
       const vec2 span_min = {static_cast<float>(span.min), top_y};
       const vec2 span_max = {static_cast<float>(span.max), bottom_y};
 
-      const vec2 tex_coord_min = vec2((dvec2(span_min) - data.bounding_rect.min) /
-                                      data.bounds_size);
-      const vec2 tex_coord_max = vec2((dvec2(span_max) - data.bounding_rect.min) /
-                                      data.bounds_size);
+      const vec2 tex_coord_curves_min = vec2((dvec2(span_min) - data.bounding_rect.min) /
+                                             data.bounds_size);
+      const vec2 tex_coord_curves_max = vec2((dvec2(span_max) - data.bounding_rect.min) /
+                                             data.bounds_size);
 
-      data.drawable.push_tile(
-          span_min, span_max, color, tex_coord_min, tex_coord_max, attr_1, attr_2, attr_3);
+      const vec2 interp_03_min_y = math::lerp(
+          data.texture_coords[0], data.texture_coords[3], tex_coord_curves_min.y);
+      const vec2 interp_12_min_y = math::lerp(
+          data.texture_coords[1], data.texture_coords[2], tex_coord_curves_min.y);
+      const vec2 interp_03_max_y = math::lerp(
+          data.texture_coords[0], data.texture_coords[3], tex_coord_curves_max.y);
+      const vec2 interp_12_max_y = math::lerp(
+          data.texture_coords[1], data.texture_coords[2], tex_coord_curves_max.y);
+
+      const std::array<vec2, 4> tex_coords = {
+          math::lerp(interp_03_min_y, interp_12_min_y, tex_coord_curves_min.x),
+          math::lerp(interp_03_min_y, interp_12_min_y, tex_coord_curves_max.x),
+          math::lerp(interp_03_max_y, interp_12_max_y, tex_coord_curves_max.x),
+          math::lerp(interp_03_max_y, interp_12_max_y, tex_coord_curves_min.x)};
+
+      data.drawable.push_tile(span_min,
+                              span_max,
+                              color,
+                              tex_coord_curves_min,
+                              tex_coord_curves_max,
+                              tex_coords,
+                              attr_1,
+                              attr_2,
+                              attr_3);
     }
 
     for (int j = 0; j < static_cast<int>(band.disabled_spans.size()) - 1; j++) {
@@ -664,13 +782,35 @@ void Renderer::draw_cubic_path_cull_commit(PathData& data, PathCullingData& cull
       const vec2 span_min = vec2(span2.min, top_y);
       const vec2 span_max = vec2(span2.max, bottom_y);
 
-      const vec2 tex_coord_min = vec2((dvec2(span_min) - data.bounding_rect.min) /
-                                      data.bounds_size);
-      const vec2 tex_coord_max = vec2((dvec2(span_max) - data.bounding_rect.min) /
-                                      data.bounds_size);
+      const vec2 tex_coord_curves_min = vec2((dvec2(span_min) - data.bounding_rect.min) /
+                                             data.bounds_size);
+      const vec2 tex_coord_curves_max = vec2((dvec2(span_max) - data.bounding_rect.min) /
+                                             data.bounds_size);
 
-      data.drawable.push_tile(
-          span_min, span_max, color, tex_coord_min, tex_coord_max, attr_1, attr_2, attr_3);
+      const vec2 interp_03_min_y = math::lerp(
+          data.texture_coords[0], data.texture_coords[3], tex_coord_curves_min.y);
+      const vec2 interp_12_min_y = math::lerp(
+          data.texture_coords[1], data.texture_coords[2], tex_coord_curves_min.y);
+      const vec2 interp_03_max_y = math::lerp(
+          data.texture_coords[0], data.texture_coords[3], tex_coord_curves_max.y);
+      const vec2 interp_12_max_y = math::lerp(
+          data.texture_coords[1], data.texture_coords[2], tex_coord_curves_max.y);
+
+      const std::array<vec2, 4> tex_coords = {
+          math::lerp(interp_03_min_y, interp_12_min_y, tex_coord_curves_min.x),
+          math::lerp(interp_03_min_y, interp_12_min_y, tex_coord_curves_max.x),
+          math::lerp(interp_03_max_y, interp_12_max_y, tex_coord_curves_max.x),
+          math::lerp(interp_03_max_y, interp_12_max_y, tex_coord_curves_min.x)};
+
+      data.drawable.push_tile(span_min,
+                              span_max,
+                              color,
+                              tex_coord_curves_min,
+                              tex_coord_curves_max,
+                              tex_coords,
+                              attr_1,
+                              attr_2,
+                              attr_3);
 
       for (; winding_k < culling_data.bottom_intersections[i].size(); winding_k++) {
         if (culling_data.bottom_intersections[i][winding_k].x > (span1.max + span2.min) * 0.5f) {
@@ -684,16 +824,48 @@ void Renderer::draw_cubic_path_cull_commit(PathData& data, PathCullingData& cull
         const vec2 fill_min = vec2(span1.max, top_y);
         const vec2 fill_max = vec2(span2.min, bottom_y);
 
-        data.drawable.push_fill(fill_min, fill_max, color, attr_1, attr_2);
+        const vec2 tex_coord_curves_min = vec2((dvec2(fill_min) - data.bounding_rect.min) /
+                                               data.bounds_size);
+        const vec2 tex_coord_curves_max = vec2((dvec2(fill_max) - data.bounding_rect.min) /
+                                               data.bounds_size);
+
+        const vec2 interp_03_min_y = math::lerp(
+            data.texture_coords[0], data.texture_coords[3], tex_coord_curves_min.y);
+        const vec2 interp_12_min_y = math::lerp(
+            data.texture_coords[1], data.texture_coords[2], tex_coord_curves_min.y);
+        const vec2 interp_03_max_y = math::lerp(
+            data.texture_coords[0], data.texture_coords[3], tex_coord_curves_max.y);
+        const vec2 interp_12_max_y = math::lerp(
+            data.texture_coords[1], data.texture_coords[2], tex_coord_curves_max.y);
+
+        const std::array<vec2, 4> tex_coords = {
+            math::lerp(interp_03_min_y, interp_12_min_y, tex_coord_curves_min.x),
+            math::lerp(interp_03_min_y, interp_12_min_y, tex_coord_curves_max.x),
+            math::lerp(interp_03_max_y, interp_12_max_y, tex_coord_curves_max.x),
+            math::lerp(interp_03_max_y, interp_12_max_y, tex_coord_curves_min.x)};
+
+        data.drawable.push_fill(fill_min, fill_max, color, tex_coords, attr_1, attr_2);
       }
     }
   }
+
+  if (data.fill.paint.is_texture()) {
+    const uuid texture_id = data.fill.paint.id();
+
+    request_texture(texture_id);
+  }
+
+  data.drawable.paints.push_back({data.drawable.tiles.size(),
+                                  data.drawable.fills.size(),
+                                  data.fill.paint.type(),
+                                  data.fill.paint.id()});
 }
 
 void Renderer::draw_cubic_path(const geom::dcubic_path& path,
                                const drect& bounding_rect,
                                const Fill& fill,
                                const bool culling,
+                               const std::array<vec2, 4>& texture_coords,
                                Drawable& drawable)
 {
   /* Starting indices for this path. */
@@ -701,6 +873,7 @@ void Renderer::draw_cubic_path(const geom::dcubic_path& path,
   const size_t num = path.size();
 
   PathData data{drawable,
+                texture_coords,
                 bounding_rect,
                 bounding_rect.size(),
                 fill,
@@ -753,6 +926,7 @@ void Renderer::draw_cubic_paths(const std::vector<const geom::dcubic_path*>& pat
                                 const drect& bounding_rect,
                                 const Fill& fill,
                                 const bool culling,
+                                const std::array<vec2, 4>& texture_coords,
                                 Drawable& drawable)
 {
   /* Starting indices for this path. */
@@ -763,6 +937,7 @@ void Renderer::draw_cubic_paths(const std::vector<const geom::dcubic_path*>& pat
       });
 
   PathData data{drawable,
+                texture_coords,
                 bounding_rect,
                 bounding_rect.size(),
                 fill,
@@ -949,8 +1124,76 @@ void Renderer::draw(const Drawable& drawable)
     flush_meshes();
   }
 
-  m_batch.fills.upload(drawable.fills);
-  m_batch.tiles.upload(drawable.tiles, drawable.curves, drawable.bands);
+  uint32_t texture_index = 0;
+  // TODO: should be non_color_paint
+  bool has_texture_paint = false;
+
+  for (const DrawablePaintBinding& binding : drawable.paints) {
+    if (binding.paint_type != Paint::Type::TexturePaint) {
+      continue;
+    }
+
+    has_texture_paint = true;
+
+    const auto it = m_textures.find(binding.paint_id);
+    const auto binded_it = m_binded_textures.find(binding.paint_id);
+
+    if (it == m_textures.end()) {
+      continue;
+    }
+
+    if (binded_it != m_binded_textures.end()) {
+      texture_index = binded_it->second;
+    } else {
+      /* We add 1 to the index to avoid binding the gradients texture. */
+      m_binded_textures.insert(std::make_pair(binding.paint_id, m_binded_textures.size() + 1));
+    }
+  }
+
+  if (!has_texture_paint && drawable.paints.size() == 1) {
+    m_batch.fills.upload(drawable, m_z_index);
+    m_batch.tiles.upload(drawable, m_z_index);
+  } else {
+    m_batch.fills.upload(drawable, m_z_index, m_binded_textures);
+    m_batch.tiles.upload(drawable, m_z_index, m_binded_textures);
+  }
+
+  m_z_index += drawable.paints.size();
+}
+
+// TODO: error handling
+void Renderer::request_texture(const uuid texture_id)
+{
+  if (m_textures.find(texture_id) != m_textures.end()) {
+    return;
+  }
+
+  utils::Image image_texture = utils::ResourceManager::get_image(texture_id);
+
+  GPU::TextureFormat format;
+
+  switch (image_texture.channels) {
+    case 1:
+      format = GPU::TextureFormat::R8;
+      break;
+    case 3:
+      format = GPU::TextureFormat::RGB8;
+      break;
+    case 4:
+    default:
+      format = GPU::TextureFormat::RGBA8;
+      break;
+  }
+
+  GPU::Texture texture = GPU::Texture(format,
+                                      image_texture.size,
+                                      GPU::TextureSamplingFlagRepeatU |
+                                          GPU::TextureSamplingFlagRepeatV |
+                                          GPU::TextureSamplingFlagMipmapMin,
+                                      image_texture.data,
+                                      true);
+
+  m_textures.insert(std::make_pair(texture_id, std::move(texture)));
 }
 
 void Renderer::flush_cache()
@@ -1047,6 +1290,12 @@ void Renderer::flush_meshes()
   state.texture_arrays = std::vector<GPU::TextureArrayBinding>{
       {m_programs.tile_program.textures_uniform, {&data.gradients_texture}}};
 
+  for (const auto& [texture_id, texture] : m_textures) {
+    if (m_binded_textures.find(texture_id) != m_binded_textures.end()) {
+      state.texture_arrays[0].second.push_back(&texture);
+    }
+  }
+
   GPU::Device::draw_elements(fills.indices_count(), state);
 
   // Render the tiles.
@@ -1072,9 +1321,16 @@ void Renderer::flush_meshes()
   state.texture_arrays = std::vector<GPU::TextureArrayBinding>{
       {m_programs.tile_program.textures_uniform, {&data.gradients_texture}}};
 
+  for (const auto& [texture_id, texture] : m_textures) {
+    if (m_binded_textures.find(texture_id) != m_binded_textures.end()) {
+      state.texture_arrays[0].second.push_back(&texture);
+    }
+  }
+
   GPU::Device::draw_elements(tiles.indices_count(), state);
 
   m_batch.clear();
+  m_binded_textures.clear();
 }
 
 void Renderer::flush_overlay_meshes()

@@ -80,13 +80,13 @@ Entity Scene::create_entity(const std::string& tag, const bool generate_tag)
 
   if (generate_tag) {
     data.component_id(TagComponent::component_id)
-        .string(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number) : tag);
+        .string(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number++) : tag);
   }
 
   data.component_id(CategoryComponent::component_id)
       .uint8(static_cast<uint8_t>(CategoryComponent::Category::None));
 
-  data.component_id(TransformComponent::component_id).mat2x3(mat2x3(1.0f));
+  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
 
   history.add(id, Action::Target::Entity, std::move(data));
 
@@ -101,14 +101,14 @@ Entity Scene::create_element()
   data.component_id(IDComponent::component_id).uuid(id);
 
   data.component_id(TagComponent::component_id)
-      .string("Element " + std::to_string(m_entity_tag_number));
+      .string("Element " + std::to_string(m_entity_tag_number++));
 
   data.component_id(CategoryComponent::component_id)
       .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
 
   data.component_id(PathComponent::component_id).uint8(0);
 
-  data.component_id(TransformComponent::component_id).mat2x3(mat2x3(1.0f));
+  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
 
   history.add(id, Action::Target::Entity, std::move(data));
 
@@ -123,7 +123,7 @@ Entity Scene::create_element(const geom::path& path)
   data.component_id(IDComponent::component_id).uuid(id);
 
   data.component_id(TagComponent::component_id)
-      .string("Element " + std::to_string(m_entity_tag_number));
+      .string("Element " + std::to_string(m_entity_tag_number++));
 
   data.component_id(CategoryComponent::component_id)
       .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
@@ -131,7 +131,29 @@ Entity Scene::create_element(const geom::path& path)
   data.component_id(PathComponent::component_id);
   path.encode(data);
 
-  data.component_id(TransformComponent::component_id).mat2x3(mat2x3(1.0f));
+  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
+
+  history.add(id, Action::Target::Entity, std::move(data));
+
+  return get_entity(id);
+}
+
+Entity Scene::create_image(const uuid image_id)
+{
+  io::EncodedData data;
+  uuid id = uuid();
+
+  data.component_id(IDComponent::component_id).uuid(id);
+
+  data.component_id(TagComponent::component_id)
+      .string("Image " + std::to_string(m_entity_tag_number++));
+
+  data.component_id(CategoryComponent::component_id)
+      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
+
+  data.component_id(ImageComponent::component_id).uuid(image_id);
+
+  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
 
   history.add(id, Action::Target::Entity, std::move(data));
 
@@ -155,7 +177,6 @@ uuid Scene::entity_at(const vec2 position, const bool deep_search, const float t
   const float zoom = viewport.zoom();
   const float local_threshold = threshold / zoom;
 
-  // TODO: only check outline here
   for (const auto& [id, entry] : selection.selected()) {
     if (is_entity_at(
             get_entity(id), position, deep_search, local_threshold, HitTestType::OutlineOnly))
@@ -188,6 +209,7 @@ Entity Scene::duplicate_entity(const uuid id)
   return get_entity(new_id);
 }
 
+// TODO: transformed images are not being tested correctly
 std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect,
                                                                        bool deep_search)
 {
@@ -294,17 +316,41 @@ void Scene::render(const bool ignore_cache) const
 
   bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
 
+  // TODO: handle objects with transparency
   for (auto it = m_order.begin(); it != m_order.end(); it++) {
     const Entity entity = {*it, const_cast<Scene*>(this)};
-    if (!entity.has_components<IDComponent, PathComponent, TransformComponent>())
-      continue;
-
     const uuid id = entity.id();
-    const geom::path& path = entity.get_component<PathComponent>().data();
     const TransformComponent transform = entity.get_component<TransformComponent>();
 
-    if (!has_entity(id))
+    if (!has_entity(id)) {
       return;
+    }
+
+    const bool is_selected = selected.find(id) != selected.end();
+    const bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
+    const bool has_outline = is_selected || is_temp_selected;
+
+    // TODO: this is temp, every tipe of entity should be extracted in a separate method
+    if (entity.is_image()) {
+      const ImageComponent image = entity.get_component<ImageComponent>();
+      const vec2 size = vec2(image.size());
+
+      renderer::Fill fill{
+          image.id(), renderer::Paint::Type::TexturePaint, renderer::FillRule::NonZero};
+
+      renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
+
+      // TODO: if possible, should render as 4 tiles and 1 fill (not 1 fill due to subpixel
+      // positioning)
+      renderer::Renderer::draw(image.path(),
+                               transform.matrix(),
+                               {&fill, nullptr, has_outline ? &outline : nullptr},
+                               id);
+
+      continue;
+    }
+
+    const geom::path& path = entity.get_component<PathComponent>().data();
 
     if (should_rehydrate) {
       // path.rehydrate_cache();
@@ -328,15 +374,11 @@ void Scene::render(const bool ignore_cache) const
       has_stroke = false;
     }
 
-    const bool is_selected = selected.find(id) != selected.end();
-    const bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
-    const bool has_outline = is_selected || is_temp_selected;
-
     if (!has_fill && !has_stroke && !has_outline) {
       continue;
     }
 
-    mat2x3 transform_matrix = transform.matrix();
+    const mat2x3& transform_matrix = transform.matrix();
     std::unordered_set<uint32_t> selected_vertices;
 
     renderer::Fill fill_opt;
@@ -344,14 +386,12 @@ void Scene::render(const bool ignore_cache) const
     renderer::Outline outline_opt;
 
     if (has_fill) {
-      fill_opt = renderer::Fill(fill->color, fill->rule, z_index);
-      z_index += 1;
+      fill_opt = renderer::Fill(fill->color, fill->rule);
     }
 
     if (has_stroke) {
       stroke_opt = renderer::Stroke(
-          stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit, z_index);
-      z_index += 1;
+          stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit);
     }
 
     if (has_outline) {
@@ -481,6 +521,27 @@ bool Scene::is_entity_at(const Entity entity,
 
   if (!is_element) {
     // TODO: what to do here?
+    if (entity.is_image()) {
+      const ImageComponent image = entity.get_component<ImageComponent>();
+      const geom::path path = image.path();
+
+      const geom::FillingOptions filling_options{geom::FillRule::NonZero};
+      const geom::StrokingOptions<float> stroking_options{
+          static_cast<float>(Settings::Renderer::stroking_tolerance),
+          0.0f,
+          0.0f,
+          geom::LineCap::Square,
+          geom::LineJoin::Bevel};
+
+      return path.is_point_inside_path(
+          position,
+          hit_test_type != HitTestType::OutlineOnly ? &filling_options : nullptr,
+          hit_test_type != HitTestType::EntityOnly ? &stroking_options : nullptr,
+          transform,
+          threshold,
+          deep_search_entity);
+    }
+
     return geom::is_point_in_rect(position, transform.bounding_rect(), threshold);
   }
 

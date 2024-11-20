@@ -112,6 +112,16 @@ class Scene {
   Entity create_element(const geom::path& path);
 
   /**
+   * @brief Creates a new image entity.
+   *
+   * This method automatically adds all the required components of an image entity.
+   *
+   * @param image_id The UUID of the image.
+   * @return The new image.
+   */
+  Entity create_image(const uuid image_id);
+
+  /**
    * @brief Deletes an entity.
    *
    * @param entity The entity to delete.
@@ -197,6 +207,7 @@ class Scene {
   /**
    * @brief Check if the entity is at the specified position.
    *
+   * @param entity The entity to check.
    * @param position The position to check.
    * @param deep_search If true, individual vertices and other handles will be checked.
    * @param threshold The threshold to use when hit testing.

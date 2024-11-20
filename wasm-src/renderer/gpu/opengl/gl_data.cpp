@@ -28,6 +28,8 @@ static constexpr GLint gl_internal_format(TextureFormat format)
       return GL_R32F;
     case TextureFormat::R16F:
       return GL_R16F;
+    case TextureFormat::RGB8:
+      return GL_RGB8;
     case TextureFormat::RGBA8:
       return GL_RGBA8;
     case TextureFormat::RGBA8UI:
@@ -56,6 +58,8 @@ static constexpr GLuint gl_format(TextureFormat format)
       return GL_RED;
     case TextureFormat::R16UI:
       return GL_RED_INTEGER;
+    case TextureFormat::RGB8:
+      return GL_RGB;
     case TextureFormat::RGBA8:
       return GL_RGBA;
     case TextureFormat::RGBA8UI:
@@ -77,6 +81,7 @@ static constexpr GLuint gl_type(TextureFormat format)
 {
   switch (format) {
     case TextureFormat::R8:
+    case TextureFormat::RGB8:
     case TextureFormat::RGBA8:
     case TextureFormat::RGBA8UI:
       return GL_UNSIGNED_BYTE;
@@ -237,7 +242,7 @@ GLenum gl_stencil_func(StencilFunc func)
 
 /* -- GLUniform -- */
 
-void GLUniform::set(const UniformData &data) const
+void GLUniform::set(const UniformData& data) const
 {
   // TODO: make better!
   if (std::holds_alternative<int>(data)) {
@@ -297,7 +302,7 @@ void GLVertexArray::unbind() const
 }
 
 void GLVertexArray::configure_attribute(const GLVertexAttribute attr,
-                                        const VertexAttrDescriptor &desc) const
+                                        const VertexAttrDescriptor& desc) const
 {
   bind();
 
@@ -308,7 +313,7 @@ void GLVertexArray::configure_attribute(const GLVertexAttribute attr,
                                   (GLint)desc.size,
                                   attr_type,
                                   (GLsizei)desc.stride,
-                                  (const void *)desc.offset));
+                                  (const void*)desc.offset));
   } else {
     bool normalized = desc.attr_class == VertexAttrClass::FloatNorm;
     glCall(glVertexAttribPointer(attr.attribute,
@@ -316,7 +321,7 @@ void GLVertexArray::configure_attribute(const GLVertexAttribute attr,
                                  attr_type,
                                  normalized,
                                  (GLsizei)desc.stride,
-                                 (const void *)desc.offset));
+                                 (const void*)desc.offset));
   }
 
   glCall(glVertexAttribDivisor(attr.attribute, desc.divisor));
@@ -330,7 +335,8 @@ void GLVertexArray::configure_attribute(const GLVertexAttribute attr,
 GLTexture::GLTexture(const TextureFormat format,
                      const ivec2 size,
                      const int sampling_flags,
-                     const void *data)
+                     const void* data,
+                     const bool mipmaps)
     : format(format), size(size), sampling_flags(sampling_flags)
 {
   glCall(glGenTextures(1, &gl_texture));
@@ -345,12 +351,18 @@ GLTexture::GLTexture(const TextureFormat format,
                gl_type(format),
                data);
 
+  if (mipmaps) {
+    glCall(glGenerateMipmap(GL_TEXTURE_2D));
+  }
+
   set_sampling_flags(sampling_flags);
 }
 
 GLTexture::~GLTexture()
 {
-  glCall(glDeleteTextures(1, &gl_texture));
+  if (gl_texture < std::numeric_limits<GLuint>::max()) {
+    glCall(glDeleteTextures(1, &gl_texture));
+  }
 }
 
 void GLTexture::bind(GLuint unit) const
@@ -369,9 +381,13 @@ void GLTexture::set_sampling_flags(const int flags)
 {
   bind(0);
 
-  glCall(glTexParameteri(GL_TEXTURE_2D,
-                         GL_TEXTURE_MIN_FILTER,
-                         flags & TextureSamplingFlagNearestMin ? GL_NEAREST : GL_LINEAR));
+  glCall(glTexParameteri(
+      GL_TEXTURE_2D,
+      GL_TEXTURE_MIN_FILTER,
+      flags & TextureSamplingFlagNearestMin ?
+          GL_NEAREST :
+          (flags & TextureSamplingFlagMipmapMin ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR)));
+
   glCall(glTexParameteri(GL_TEXTURE_2D,
                          GL_TEXTURE_MAG_FILTER,
                          flags & TextureSamplingFlagNearestMag ? GL_NEAREST : GL_LINEAR));
@@ -383,7 +399,7 @@ void GLTexture::set_sampling_flags(const int flags)
                          flags & TextureSamplingFlagRepeatV ? GL_REPEAT : GL_CLAMP_TO_EDGE));
 }
 
-void GLTexture::upload(const void *data, const irect region) const
+void GLTexture::upload(const void* data, const irect region) const
 {
   bind(0);
 
@@ -405,7 +421,7 @@ void GLTexture::upload(const void *data, const irect region) const
 }
 
 // TODO: try to implement offset
-void GLTexture::upload(const void *data, const size_t byte_size, const size_t offset) const
+void GLTexture::upload(const void* data, const size_t byte_size, const size_t offset) const
 {
   bind(0);
 
@@ -463,7 +479,7 @@ GLFramebuffer::~GLFramebuffer()
   glCall(glDeleteFramebuffers(1, &gl_framebuffer));
 }
 
-GLFramebuffer::GLFramebuffer(GLFramebuffer &&other) noexcept
+GLFramebuffer::GLFramebuffer(GLFramebuffer&& other) noexcept
     : texture(std::move(other.texture)),
       gl_framebuffer(other.gl_framebuffer),
       gl_renderbuffer(other.gl_renderbuffer),
@@ -472,7 +488,7 @@ GLFramebuffer::GLFramebuffer(GLFramebuffer &&other) noexcept
 {
 }
 
-GLFramebuffer &GLFramebuffer::operator=(GLFramebuffer &&other) noexcept
+GLFramebuffer& GLFramebuffer::operator=(GLFramebuffer&& other) noexcept
 {
   texture = std::move(other.texture);
   gl_framebuffer = other.gl_framebuffer;
@@ -502,7 +518,7 @@ void GLFramebuffer::unbind() const
 GLBuffer::GLBuffer(const BufferTarget target,
                    const BufferUploadMode mode,
                    const size_t size,
-                   const void *data)
+                   const void* data)
     : target(target), mode(mode), size(size)
 {
   glCall(glGenBuffers(1, &gl_buffer));
@@ -524,7 +540,7 @@ void GLBuffer::bind() const
   glCall(glBindBuffer(gl_target(target), gl_buffer));
 }
 
-void GLBuffer::bind(const GLVertexArray &vertex_array) const
+void GLBuffer::bind(const GLVertexArray& vertex_array) const
 {
   vertex_array.bind();
   bind();
@@ -536,7 +552,7 @@ void GLBuffer::unbind() const
   glCall(glBindBuffer(gl_target(target), 0));
 }
 
-void GLBuffer::upload(const void *data, const size_t size, const size_t offset) const
+void GLBuffer::upload(const void* data, const size_t size, const size_t offset) const
 {
   bind();
   glCall(glBufferSubData(gl_target(target), (GLintptr)offset, (GLsizeiptr)size, data));

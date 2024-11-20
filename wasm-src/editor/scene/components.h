@@ -15,6 +15,7 @@
 
 #include "../../geom/path.h"
 
+#include "../../utils/image.h"
 #include "../../utils/uuid.h"
 
 #include <string>
@@ -468,6 +469,186 @@ struct PathComponent : public ComponentWrapper {
 };
 
 /**
+ * @brief ImageComponent data.
+ *
+ * This struct should not be used directly, use the ImageComponent wrapper instead.
+ */
+struct ImageComponentData {
+  uuid image_id;  // The UUID of the image data in the ResourceManager cache.
+
+  ImageComponentData() = default;
+  ImageComponentData(const uuid image_id);
+  ImageComponentData(io::DataDecoder& decoder);
+};
+
+/**
+ * @brief ImageComponent wrapper.
+ *
+ * An ImageComponent is the base of the image entity.
+ */
+struct ImageComponent : public ComponentWrapper {
+ public:
+  static constexpr uint8_t component_id = 7;  // The component id.
+
+  using Data = ImageComponentData;            // The component underlying data type.
+ public:
+  /**
+   * @brief Constructor.
+   */
+  ImageComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
+
+  /**
+   * @brief Returns the id of the image_data.
+   *
+   * @return The id of the image_data.
+   */
+  inline uuid id() const
+  {
+    return m_data->image_id;
+  }
+
+  /**
+   * @brief Returns the image data of the entity.
+   *
+   * @return The image data of the entity.
+   */
+  const uint8_t* data() const;
+
+  /**
+   * @brief Returns the size of the image.
+   *
+   * @return The size of the image.
+   */
+  ivec2 size() const;
+
+  /**
+   * @brief Returns the number of channels of the image.
+   *
+   * @return The number of channels of the image.
+   */
+  uint8_t channels() const;
+
+  /**
+   * @brief Returns the outline path of the image.
+   *
+   * @return The outline path of the image.
+   */
+  geom::path path() const;
+
+  /**
+   * @brief Encodes the component in binary format.
+   *
+   * @param data The encoded data to append the component to.
+   * @param optimize Whether to skip encoding if the component is in a default state. Default is
+   * true.
+   * @return A reference to the encoded data.
+   */
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+
+ private:
+  /**
+   * @brief Modifies the underlying data of the component.
+   *
+   * @param decoder A diff of the modified component's data.
+   */
+  void modify(io::DataDecoder& decoder) override {};
+
+ private:
+  Data* m_data;  // The actual component data.
+ private:
+  friend class Entity;
+};
+
+/**
+ * @brief A ParentComponentData is a pointer to one of the components that define the entity.
+ *
+ * Can be: PathComponentData*, ImageComponentData*.
+ */
+struct ParentComponentData {
+ public:
+  /**
+   * @brief The type of the parent component.
+   */
+  enum class Type : uint8_t { Path, Image };
+
+ public:
+  /**
+   * @brief Constructor.
+   */
+  ParentComponentData(const std::nullptr_t ptr) : m_type(Type::Path), m_ptr(nullptr) {}
+  ParentComponentData(const PathComponentData* path_ptr) : m_type(Type::Path), m_ptr(path_ptr) {}
+  ParentComponentData(const ImageComponentData* image_ptr) : m_type(Type::Image), m_ptr(image_ptr)
+  {
+  }
+
+  /**
+   * @brief Checks if the parent component is valid.
+   *
+   * @return true if the parent component is valid, false otherwise.
+   */
+  inline bool is_valid() const
+  {
+    return m_ptr != nullptr;
+  }
+
+  /**
+   * @brief Checks if the parent component is a path.
+   *
+   * @return true if the parent component is a path, false otherwise.
+   */
+  inline bool is_path() const
+  {
+    return is_valid() && m_type == Type::Path;
+  }
+
+  /**
+   * @brief Checks if the parent component is an image.
+   *
+   * @return true if the parent component is an image, false otherwise.
+   */
+  inline bool is_image() const
+  {
+    return is_valid() && m_type == Type::Image;
+  }
+
+  /**
+   * @brief Returns the type of the parent component.
+   */
+  inline Type type() const
+  {
+    return m_type;
+  }
+
+  /**
+   * @brief Returns the pointer to the path parent component.
+   *
+   * This method does not perform any type checking, type() should be called first.
+   *
+   * @return The pointer to the path parent component.
+   */
+  inline const PathComponentData* path_ptr() const
+  {
+    return static_cast<const PathComponentData*>(m_ptr);
+  }
+
+  /**
+   * @brief Returns the pointer to the image parent component.
+   *
+   * This method does not perform any type checking, type() should be called first.
+   *
+   * @return The pointer to the path parent component.
+   */
+  inline const ImageComponentData* image_ptr() const
+  {
+    return static_cast<const ImageComponentData*>(m_ptr);
+  }
+
+ private:
+  Type m_type;        // The type of the parent component.
+  const void* m_ptr;  // The pointer to the parent component.
+};
+
+/**
  * @brief TransformComponent data.
  *
  * This struct should not be used directly, use the TransformComponent wrapper instead.
@@ -495,8 +676,10 @@ struct TransformComponent : public ComponentWrapper {
   /**
    * @brief Constructor.
    */
-  TransformComponent(const Entity* entity, Data* data, const PathComponentData* path_ptr = nullptr)
-      : ComponentWrapper(entity), m_data(data), m_path_ptr(path_ptr)
+  TransformComponent(const Entity* entity,
+                     Data* data,
+                     const ParentComponentData parent_ptr = nullptr)
+      : ComponentWrapper(entity), m_data(data), m_parent_ptr(parent_ptr)
   {
   }
 
@@ -607,10 +790,10 @@ struct TransformComponent : public ComponentWrapper {
   void modify(io::DataDecoder& decoder) override;
 
  private:
-  Data* m_data;                         // The actual component data.
+  Data* m_data;                            // The actual component data.
 
-  const PathComponentData* m_path_ptr;  // A pointer to the path component of the entity, can be
-                                        // nullptr if the entity is not an element.
+  const ParentComponentData m_parent_ptr;  // A pointer to the path component of the entity, can be
+                                           // nullptr if the entity is not an element.
  private:
   friend class Entity;
 };

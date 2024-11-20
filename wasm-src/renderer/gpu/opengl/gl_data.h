@@ -66,7 +66,7 @@ GLenum gl_stencil_func(StencilFunc func);
 struct GLUniform {
   GLint location;
 
-  bool operator==(const GLUniform &other) const
+  bool operator==(const GLUniform& other) const
   {
     return location == other.location;
   }
@@ -76,7 +76,7 @@ struct GLUniform {
    *
    * @param data The data to set.
    */
-  void set(const UniformData &data) const;
+  void set(const UniformData& data) const;
 };
 
 /**
@@ -143,7 +143,7 @@ struct GLVertexArray {
    * @param attr The attribute to configure.
    * @param desc The attribute descriptor.
    */
-  void configure_attribute(const GLVertexAttribute attr, const VertexAttrDescriptor &desc) const;
+  void configure_attribute(const GLVertexAttribute attr, const VertexAttrDescriptor& desc) const;
 };
 
 /**
@@ -159,8 +159,35 @@ struct GLTexture {
   GLTexture(const TextureFormat format,
             const ivec2 size,
             const int sampling_flags = TextureSamplingFlagNone,
-            const void *data = nullptr);
+            const void* data = nullptr,
+            const bool mipmaps = false);
   ~GLTexture();
+
+  GLTexture(const GLTexture&) = delete;
+  GLTexture& operator=(const GLTexture&) = delete;
+
+  GLTexture(GLTexture&& other) noexcept
+      : format(other.format),
+        gl_texture(other.gl_texture),
+        size(other.size),
+        sampling_flags(other.sampling_flags)
+  {
+    other.gl_texture = std::numeric_limits<GLuint>::max();
+  }
+
+  GLTexture& operator=(GLTexture&& other) noexcept
+  {
+    this->~GLTexture();
+
+    format = other.format;
+    gl_texture = other.gl_texture;
+    size = other.size;
+    sampling_flags = other.sampling_flags;
+
+    other.gl_texture = std::numeric_limits<GLuint>::max();
+
+    return *this;
+  }
 
   /**
    * @brief Binds the texture.
@@ -189,7 +216,7 @@ struct GLTexture {
    * @param data The data to upload.
    * @param region The region to upload the data to.
    */
-  void upload(const void *data, const irect region) const;
+  void upload(const void* data, const irect region) const;
 
   /**
    * @brief Uploads the data to the texture, treating it as a 1D buffer.
@@ -198,7 +225,7 @@ struct GLTexture {
    * @param byte_size The size of the data in bytes.
    * @param offset The offset to upload the data to.
    */
-  void upload(const void *data, const size_t byte_size, const size_t offset = 0) const;
+  void upload(const void* data, const size_t byte_size, const size_t offset = 0) const;
 };
 
 /**
@@ -215,11 +242,11 @@ struct GLFramebuffer {
   GLFramebuffer(const ivec2 size, const bool has_depth);
   ~GLFramebuffer();
 
-  GLFramebuffer(const GLFramebuffer &) = delete;
-  GLFramebuffer &operator=(const GLFramebuffer &) = delete;
+  GLFramebuffer(const GLFramebuffer&) = delete;
+  GLFramebuffer& operator=(const GLFramebuffer&) = delete;
 
-  GLFramebuffer(GLFramebuffer &&other) noexcept;
-  GLFramebuffer &operator=(GLFramebuffer &&other) noexcept;
+  GLFramebuffer(GLFramebuffer&& other) noexcept;
+  GLFramebuffer& operator=(GLFramebuffer&& other) noexcept;
 
   /**
    * @brief Returns the size of the framebuffer.
@@ -261,7 +288,7 @@ struct GLBuffer {
   GLBuffer(const BufferTarget target,
            const BufferUploadMode mode,
            const size_t size,
-           const void *data = nullptr);
+           const void* data = nullptr);
   ~GLBuffer();
 
   /**
@@ -274,7 +301,7 @@ struct GLBuffer {
    *
    * @param vertex_array The vertex array to bind the buffer to.
    */
-  void bind(const GLVertexArray &vertex_array) const;
+  void bind(const GLVertexArray& vertex_array) const;
 
   /**
    * @brief Unbinds the buffer.
@@ -288,7 +315,7 @@ struct GLBuffer {
    * @param size The size of the data in bytes.
    * @param offset The offset to upload the data to.
    */
-  void upload(const void *data, const size_t size, const size_t offset = 0) const;
+  void upload(const void* data, const size_t size, const size_t offset = 0) const;
 };
 
 }  // namespace graphick::renderer::GPU::GL
