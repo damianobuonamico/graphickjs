@@ -7,6 +7,8 @@
 
 #include "console.h"
 
+#include "../lib/stb/stb_image.h"
+
 #define SHADERS_LENGTH 6
 
 static constexpr const char* shader_names[SHADERS_LENGTH] = {
@@ -42,6 +44,23 @@ uuid ResourceManager::load_image(std::unique_ptr<uint8_t[]>&& data,
   const uuid id = uuid();
   s_instance->m_images.insert(std::make_pair(id, ImageData{std::move(data), size, channels}));
   return id;
+}
+
+uuid ResourceManager::load_image(const uint8_t* data, const size_t size)
+{
+  int width, height, channels;
+
+  // TODO: custom allocator for stb_image to avoid double copy
+  uint8_t* buffer = stbi_load_from_memory(data, size, &width, &height, &channels, 0);
+
+  const size_t buffer_size = width * height * channels;
+
+  std::unique_ptr<uint8_t[]> image_data = std::make_unique<uint8_t[]>(buffer_size);
+
+  memcpy(image_data.get(), buffer, buffer_size);
+  stbi_image_free(buffer);
+
+  return load_image(std::move(image_data), {width, height}, channels);
 }
 
 Image ResourceManager::get_image(const uuid id)

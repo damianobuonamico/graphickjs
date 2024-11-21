@@ -147,7 +147,19 @@ R"(
     if (paint_type == 3U) {
       uint paint_coord = v_attr_2 & 0x3FFU;
 
-      o_frag_color = texture(u_textures[paint_coord], v_tex_coord) * alpha;
+       // TODO: more than these 3 textures should be supported in CPU shader precompilation
+      switch (paint_coord) {
+      case 1U:
+        o_frag_color = texture(u_textures[1], v_tex_coord) * alpha;
+        return;
+      case 2U:
+        o_frag_color = texture(u_textures[2], v_tex_coord) * alpha;
+        return;
+      case 0U:
+      default:
+        o_frag_color = vec4(0.0, 0.0, 0.0, 1.0) * alpha;
+        return;
+      }
     } else {
       o_frag_color = vec4(v_color.rgb, 1.0) * alpha;
     }

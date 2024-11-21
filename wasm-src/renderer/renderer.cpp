@@ -250,6 +250,9 @@ bool Renderer::draw(const geom::path& path, const mat2x3& transform, const Drawi
   }
 }
 
+// TODO: if stroking is the bottleneck when manipulating a path, consider approximate stroking
+// during manipulation TOOD: if manipulation is only translation, consider translating the cached
+// drawable
 bool Renderer::draw(const geom::path& path,
                     const mat2x3& transform,
                     const DrawingOptions& options,

@@ -59,6 +59,15 @@ class ResourceManager {
                          const uint8_t channels);
 
   /**
+   * @brief Loads an image into the cache.
+   *
+   * @param data The image data.
+   * @param size The size of the image data.
+   * @return The UUID of the image.
+   */
+  static uuid load_image(const uint8_t* data, const size_t size);
+
+  /**
    * @brief Retrieves an image from the cache.
    *
    * @param id The UUID of the image.

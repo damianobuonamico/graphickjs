@@ -188,13 +188,30 @@ int main()
 
   graphick::editor::Editor::scene().create_image(image_id);
 
-  data = stbi_load("res/images/demo_image_2.jpg", &w, &h, &n, 4);
-  std::unique_ptr<uint8_t[]> image_data_2 = std::make_unique<uint8_t[]>(w * h * 4);
-  memcpy(image_data_2.get(), data, w * h * 4);
-  stbi_image_free(data);
+  // FILE* f = stbi__fopen("res/images/demo_image_2.jpg", "rb");
+  // uint8_t* buffer = stbi_load_from_file(f, &w, &h, &n, 0);
+  // fclose(f);
+
+  // graphick::utils::uuid image_id_2 = graphick::utils::ResourceManager::load_image(
+  //     static_cast<const uint8_t*>(f->_Placeholder));
+
+  std::ifstream ifs2("res/images/demo_image_2.jpg", std::ios::binary | std::ios::ate);
+  std::streamsize size2 = ifs2.tellg();
+  std::vector<uint8_t> image_data_2(size2);
+
+  ifs2.seekg(0, std::ios::beg);
+  ifs2.read(reinterpret_cast<char*>(image_data_2.data()), size2);
 
   graphick::utils::uuid image_id_2 = graphick::utils::ResourceManager::load_image(
-      std::move(image_data_2), {w, h}, 4);
+      image_data_2.data(), image_data_2.size());
+
+  // data = stbi_load("res/images/demo_image_2.jpg", &w, &h, &n, 0);
+  // std::unique_ptr<uint8_t[]> image_data_2 = std::make_unique<uint8_t[]>(w * h * n);
+  // memcpy(image_data_2.get(), buffer, w * h * n);
+  // stbi_image_free(buffer);
+
+  // graphick::utils::uuid image_id_2 = graphick::utils::ResourceManager::load_image(
+  //     std::move(image_data_2), {w, h}, n);
 
   graphick::editor::Editor::scene().create_image(image_id_2);
 
