@@ -72,8 +72,6 @@ void SelectTool::on_pointer_move()
       }
     }
   } else if (m_selection_rect.active()) {
-    OPTICK_EVENT();
-
     m_selection_rect.size(InputManager::pointer.scene.delta);
     Editor::scene().selection.temp_select(
         Editor::scene().entities_in(m_selection_rect.bounding_rect()));

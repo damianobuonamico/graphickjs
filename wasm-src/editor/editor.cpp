@@ -12,10 +12,11 @@
 #include "input/input_manager.h"
 #include "scene/scene.h"
 
+#include "../io/resource_manager.h"
+
 #include "../renderer/renderer.h"
 
 #include "../utils/console.h"
-#include "../utils/resource_manager.h"
 
 #ifdef EMSCRIPTEN
 #  include <emscripten/html5.h>
@@ -24,19 +25,19 @@
 namespace graphick::editor {
 
 #ifdef EMSCRIPTEN
-int render_callback(const double time, void *user_data)
+int render_callback(const double time, void* user_data)
 {
   Editor::get()->render_frame(time);
   return 1;
 }
 #else
-bool render_callback(const double time, void *user_data)
+bool render_callback(const double time, void* user_data)
 {
   return Editor::get()->render_frame(time);
 }
 #endif
 
-Editor *Editor::s_instance = nullptr;
+Editor* Editor::s_instance = nullptr;
 
 void Editor::init()
 {
@@ -48,7 +49,7 @@ void Editor::init()
   s_instance = new Editor();
 
   input::InputManager::init();
-  utils::ResourceManager::init();
+  io::ResourceManager::init();
   renderer::Renderer::init();
 
   s_instance->m_scenes.emplace_back();
@@ -76,14 +77,14 @@ void Editor::shutdown()
   }
 
   renderer::Renderer::shutdown();
-  utils::ResourceManager::shutdown();
+  io::ResourceManager::shutdown();
   input::InputManager::shutdown();
 
   delete s_instance;
   s_instance = nullptr;
 }
 
-Scene &Editor::scene()
+Scene& Editor::scene()
 {
   if (get()->m_scenes.empty()) {
     get()->m_scenes.emplace_back();
@@ -94,7 +95,7 @@ Scene &Editor::scene()
 
 void Editor::resize(const ivec2 size, const ivec2 offset, float dpr)
 {
-  for (auto &scene : get()->m_scenes) {
+  for (auto& scene : get()->m_scenes) {
     scene.viewport.resize(size, offset, dpr);
   }
 }

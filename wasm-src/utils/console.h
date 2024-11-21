@@ -22,13 +22,6 @@
 #include <unordered_map>
 #include <vector>
 
-#if defined(GK_USE_OPTICK) && !defined(GK_CONF_DIST)
-#  include <optick.h>
-#else
-#  define OPTICK_EVENT(...) ((void)0)
-#  define OPTICK_FRAME(...) ((void)0)
-#endif
-
 #define RECORDS_SIZE 150
 
 namespace graphick::utils {
@@ -127,7 +120,7 @@ struct console {
    * @param value The message to log.
    */
   template<typename T>
-  static inline void log(const std::string &name, T value)
+  static inline void log(const std::string& name, T value)
   {
     std::stringstream stream;
     stream << name << ": " << value;
@@ -156,7 +149,7 @@ struct console {
    * @param value The value to bitset.
    */
   template<typename T>
-  static inline void bitset(const std::string &name, T value)
+  static inline void bitset(const std::string& name, T value)
   {
     std::stringstream stream;
     stream << name << ": " << std::bitset<8 * sizeof(value)>(value);
@@ -185,7 +178,7 @@ struct console {
    * @param value The error message to log.
    */
   template<typename T>
-  static inline void error(const std::string &name, T value)
+  static inline void error(const std::string& name, T value)
   {
     std::stringstream stream;
     stream << name << ": " << value;
@@ -210,7 +203,7 @@ struct console {
    *
    * @param name The name of the time elapsed message.
    */
-  static inline void time_end(const std::string &name = "Time Elapsed")
+  static inline void time_end(const std::string& name = "Time Elapsed")
   {
     log(name,
         std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -223,13 +216,13 @@ struct console {
    *
    * @param name The name of the frame.
    */
-  static inline void frame(const std::string &name)
+  static inline void frame(const std::string& name)
   {
 #if 0
       GK_DEBUGGER_CLEAR();
 #endif
 
-    for (auto &[name, timer] : m_total_timers) {
+    for (auto& [name, timer] : m_total_timers) {
       console::log("Total " + name + ": " + std::to_string((float)timer.average() / 1000000.0f) +
                    "ms");
 #if 0
@@ -244,7 +237,7 @@ struct console {
    *
    * @param name The name of the timer.
    */
-  static inline void total_start(const std::string &name)
+  static inline void total_start(const std::string& name)
   {
     auto it = m_total_timers.find(name);
     auto time = std::chrono::high_resolution_clock::now();
@@ -264,7 +257,7 @@ struct console {
    *
    * @param name The name of the timer.
    */
-  static inline void total_end(const std::string &name)
+  static inline void total_end(const std::string& name)
   {
     auto it = m_total_timers.find(name);
     if (it == m_total_timers.end())
@@ -279,7 +272,7 @@ struct console {
    * @param name The name of the timer.
    * @param record The time to record.
    */
-  static inline void total_record(const std::string &name, const size_t record)
+  static inline void total_record(const std::string& name, const size_t record)
   {
     auto it = m_total_timers.find(name);
     auto time = std::chrono::high_resolution_clock::now();
@@ -299,7 +292,7 @@ struct console {
    *
    * @param name The name of the timer.
    */
-  static inline void average_start(const std::string &name)
+  static inline void average_start(const std::string& name)
   {
     auto it = m_timers.find(name);
     auto time = std::chrono::high_resolution_clock::now();
@@ -316,7 +309,7 @@ struct console {
    *
    * @param name The name of the timer.
    */
-  static inline void average_end(const std::string &name)
+  static inline void average_end(const std::string& name)
   {
     auto it = m_timers.find(name);
     auto time = std::chrono::high_resolution_clock::now();
@@ -351,7 +344,7 @@ struct ScopedTimer {
   std::string id;  // The name of the timer.
   bool total;      // True if the timer is a total timer, false otherwise.
 
-  ScopedTimer(const std::string &id, const bool total = false) : id(id), total(total)
+  ScopedTimer(const std::string& id, const bool total = false) : id(id), total(total)
   {
     if (total)
       console::total_start(id);
@@ -373,21 +366,21 @@ struct ScopedTimer {
 namespace std {
 
 template<typename T>
-inline ostream &operator<<(ostream &os, const graphick::math::Vec2<T> v)
+inline ostream& operator<<(ostream& os, const graphick::math::Vec2<T> v)
 {
   os << "(" << v.x << ", " << v.y << ")";
   return os;
 }
 
 template<typename T>
-inline ostream &operator<<(ostream &os, const graphick::math::Vec3<T> &v)
+inline ostream& operator<<(ostream& os, const graphick::math::Vec3<T>& v)
 {
   os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << ")";
   return os;
 }
 
 template<typename T>
-inline ostream &operator<<(ostream &os, const graphick::math::Vec4<T> &v)
+inline ostream& operator<<(ostream& os, const graphick::math::Vec4<T>& v)
 {
   os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
   return os;

@@ -213,16 +213,12 @@ Entity Scene::duplicate_entity(const uuid id)
 std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect,
                                                                        bool deep_search)
 {
-  OPTICK_EVENT();
-
   std::unordered_map<uuid, Selection::SelectionEntry> entities;
   std::vector<uint32_t> vertices;
 
   auto view = get_all_entities_with<IDComponent::Data, TransformComponent::Data>();
 
   for (entt::entity handle : view) {
-    OPTICK_EVENT("entity_in_rect");
-
     const Entity entity = {handle, this};
     const uuid id = entity.id();
     const TransformComponent transform = entity.get_component<TransformComponent>();
@@ -444,8 +440,6 @@ void Scene::render(const bool ignore_cache) const
   // }
 
   {
-    OPTICK_EVENT("Render Overlays");
-
     tool_state.render_overlays(viewport.zoom());
   }
 

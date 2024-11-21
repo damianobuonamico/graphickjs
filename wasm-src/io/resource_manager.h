@@ -1,20 +1,21 @@
 /**
- * @file resource_manager.h
+ * @file io/resource_manager.h
  * @brief The file contains the definition of the resource manager.
- * @todo The resource manager should be moved to the io directory (when it will also handle generic
- * file loading, fonts, etc).
+ *
+ * @todo The resource manager should also handle generic file loading, fonts, etc.
  */
 
 #pragma once
 
-#include "image.h"
-#include "uuid.h"
+#include "image/image.h"
+
+#include "../utils/uuid.h"
 
 #include <memory>
 #include <string>
 #include <unordered_map>
 
-namespace graphick::utils {
+namespace graphick::io {
 
 /**
  * @brief The class that represents the resource manager.
@@ -52,16 +53,6 @@ class ResourceManager {
    * @brief Loads an image into the cache.
    *
    * @param data The image data.
-   * @return The UUID of the image.
-   */
-  static uuid load_image(std::unique_ptr<uint8_t[]>&& data,
-                         const ivec2 size,
-                         const uint8_t channels);
-
-  /**
-   * @brief Loads an image into the cache.
-   *
-   * @param data The image data.
    * @param size The size of the image data.
    * @return The UUID of the image.
    */
@@ -80,9 +71,20 @@ class ResourceManager {
    * @brief The struct that represents the image data in the cache.
    */
   struct ImageData {
-    std::unique_ptr<uint8_t[]> data;  // A smart pointer to the image data.
-    ivec2 size;                       // The size of the image.
-    uint8_t channels;                 // The number of channels of the image.
+    uint8_t* data;     // A pointer to the image data (allocated by stb_image).
+    ivec2 size;        // The size of the image.
+    uint8_t channels;  // The number of channels of the image.
+
+    ImageData(uint8_t* data, ivec2 size, uint8_t channels);
+    ImageData(const ImageData&) = delete;
+    ImageData(ImageData&& other) noexcept;
+    ImageData& operator=(const ImageData&) = delete;
+    ImageData& operator=(ImageData&& other) noexcept;
+
+    /**
+     * @brief Custom destructor to call stbi_image_free.
+     */
+    ~ImageData();
   };
 
  private:
@@ -106,4 +108,4 @@ class ResourceManager {
   static ResourceManager* s_instance;  // The instance of the resource manager singleton.
 };
 
-}  // namespace graphick::utils
+}  // namespace graphick::io

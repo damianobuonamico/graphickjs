@@ -52,8 +52,6 @@ bool InputManager::on_pointer_event(PointerTarget target,
                                     bool ctrl,
                                     bool shift)
 {
-  OPTICK_EVENT();
-
   get()->set_keys_state(alt, ctrl, shift);
   pointer.type = type;
   pointer.pressure = pressure;
@@ -182,8 +180,6 @@ void InputManager::set_keys_state(bool alt, bool ctrl, bool shift)
 
 void InputManager::recalculate_hover()
 {
-  OPTICK_EVENT();
-
   Scene& scene = Editor::scene();
 
   if (!scene.tool_state.active().is_in_category(Tool::CategoryImmediate)) {
@@ -246,8 +242,6 @@ bool InputManager::on_pointer_move(PointerTarget target, float x, float y)
 {
   if (pointer.target != PointerTarget::Canvas && target != PointerTarget::Canvas)
     return false;
-
-  OPTICK_EVENT();
 
   Scene& scene = Editor::scene();
 

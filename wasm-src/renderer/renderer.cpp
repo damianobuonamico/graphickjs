@@ -13,19 +13,20 @@
 
 #include "gpu/device.h"
 
-#include "../math/matrix.h"
-#include "../math/vector.h"
+#include "../editor/scene/cache.h"
 
 #include "../geom/intersections.h"
 #include "../geom/path.h"
 #include "../geom/path_builder.h"
 
-#include "../editor/scene/cache.h"
+#include "../io/resource_manager.h"
+
+#include "../math/matrix.h"
+#include "../math/vector.h"
 
 #include "../utils/assert.h"
 #include "../utils/console.h"
 #include "../utils/defines.h"
-#include "../utils/resource_manager.h"
 
 #include <algorithm>
 
@@ -1171,7 +1172,7 @@ void Renderer::request_texture(const uuid texture_id)
     return;
   }
 
-  utils::Image image_texture = utils::ResourceManager::get_image(texture_id);
+  io::Image image_texture = io::ResourceManager::get_image(texture_id);
 
   GPU::TextureFormat format;
 

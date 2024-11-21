@@ -12,11 +12,12 @@
 
 #include "../editor.h"
 
+#include "../../io/resource_manager.h"
+
 #include "../../math/math.h"
 #include "../../math/matrix.h"
 
 #include "../../utils/console.h"
-#include "../../utils/resource_manager.h"
 
 namespace graphick::editor {
 
@@ -253,17 +254,17 @@ ImageComponentData::ImageComponentData(io::DataDecoder& decoder) : image_id(deco
 
 const uint8_t* ImageComponent::data() const
 {
-  return utils::ResourceManager::get_image(m_data->image_id).data;
+  return io::ResourceManager::get_image(m_data->image_id).data;
 }
 
 ivec2 ImageComponent::size() const
 {
-  return utils::ResourceManager::get_image(m_data->image_id).size;
+  return io::ResourceManager::get_image(m_data->image_id).size;
 }
 
 uint8_t ImageComponent::channels() const
 {
-  return utils::ResourceManager::get_image(m_data->image_id).channels;
+  return io::ResourceManager::get_image(m_data->image_id).channels;
 }
 
 geom::path ImageComponent::path() const
@@ -313,7 +314,7 @@ rect TransformComponent::bounding_rect() const
     }
   } else if (m_parent_ptr.is_image()) {
     const vec2 size = vec2(
-        utils::ResourceManager::get_image(m_parent_ptr.image_ptr()->image_id).size);
+        io::ResourceManager::get_image(m_parent_ptr.image_ptr()->image_id).size);
 
     const vec2 p0 = m_data->matrix * vec2(0.0f, 0.0f);
     const vec2 p1 = m_data->matrix * vec2(size.x, 0.0f);

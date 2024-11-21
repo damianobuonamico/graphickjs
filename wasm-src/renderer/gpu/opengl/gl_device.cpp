@@ -7,8 +7,9 @@
 
 #include "opengl.h"
 
+#include "../../../io/resource_manager.h"
+
 #include "../../../utils/console.h"
-#include "../../../utils/resource_manager.h"
 
 namespace graphick::renderer::GPU::GL {
 
@@ -24,23 +25,23 @@ namespace graphick::renderer::GPU::GL {
  * @return The created shader.
  */
 inline static GLuint create_shader(
-    const std::string &name,
+    const std::string& name,
     const ShaderKind kind,
-    const std::string &glsl_version_spec,
-    const std::vector<std::pair<std::string, std::string>> &variables)
+    const std::string& glsl_version_spec,
+    const std::vector<std::pair<std::string, std::string>>& variables)
 {
   const bool is_vertex = kind == ShaderKind::Vertex;
 
   std::string source = "#version " + glsl_version_spec + "\n" +
-                       utils::ResourceManager::get_shader(name + (is_vertex ? ".vs" : ".fs"));
+                       io::ResourceManager::get_shader(name + (is_vertex ? ".vs" : ".fs"));
 
-  for (auto &[name, value] : variables) {
+  for (auto& [name, value] : variables) {
     std::string variants[4] = {std::string("${") + name + "}",
                                std::string("${ ") + name + " }",
                                std::string("${") + name + "}",
                                std::string("${ ") + name + " }"};
 
-    for (auto &variant : variants) {
+    for (auto& variant : variants) {
       size_t pos = 0;
       while ((pos = source.find(variant, pos)) != std::string::npos) {
         source.replace(pos, variant.length(), value);
@@ -49,7 +50,7 @@ inline static GLuint create_shader(
     }
   }
 
-  const char *source_ptr = source.c_str();
+  const char* source_ptr = source.c_str();
 
   glCall(GLuint gl_shader = glCreateShader(is_vertex ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER));
   glCall(glShaderSource(gl_shader, 1, &source_ptr, nullptr));
@@ -62,7 +63,7 @@ inline static GLuint create_shader(
     GLint maxLength = 0;
     glCall(glGetShaderiv(gl_shader, GL_INFO_LOG_LENGTH, &maxLength));
 
-    char *buf = (char *)malloc(maxLength + 1);
+    char* buf = (char*)malloc(maxLength + 1);
     glCall(glGetShaderInfoLog(gl_shader, maxLength, &maxLength, buf));
 
     console::error("Shader " + name + " compilation failed", buf);
@@ -73,7 +74,7 @@ inline static GLuint create_shader(
 
 /* -- Static member initialization -- */
 
-GLDevice *GLDevice::s_device = nullptr;
+GLDevice* GLDevice::s_device = nullptr;
 
 /* -- GLDevice -- */
 
@@ -117,8 +118,8 @@ GLDevice::GLDevice(const DeviceVersion version)
 
   console::log("Initializing Device:");
 
-  glCall(m_device_name = (const char *)(glGetString(GL_RENDERER)));
-  glCall(m_backend_name = (const char *)(glGetString(GL_VERSION)));
+  glCall(m_device_name = (const char*)(glGetString(GL_RENDERER)));
+  glCall(m_backend_name = (const char*)(glGetString(GL_VERSION)));
   glCall(glGenQueries(1, &m_timer_query));
 
   console::log("  Device Name", m_device_name);
@@ -180,7 +181,7 @@ void GLDevice::set_color_mask(const bool red, const bool green, const bool blue,
   glCall(glColorMask(red, green, blue, alpha));
 }
 
-void GLDevice::clear(const ClearOps &ops)
+void GLDevice::clear(const ClearOps& ops)
 {
   GLuint flags = 0;
 
@@ -222,7 +223,7 @@ void GLDevice::clear(const ClearOps &ops)
 }
 
 GLProgram GLDevice::create_program(
-    const std::string &name, const std::vector<std::pair<std::string, std::string>> &variables)
+    const std::string& name, const std::vector<std::pair<std::string, std::string>>& variables)
 {
   GLuint vertex = create_shader(
       name, ShaderKind::Vertex, s_device->m_glsl_version_spec, variables);
@@ -242,7 +243,7 @@ GLProgram GLDevice::create_program(
     GLint maxLength = 0;
     glCall(glGetProgramiv(gl_program, GL_INFO_LOG_LENGTH, &maxLength));
 
-    char *buf = (char *)malloc(maxLength + 1);
+    char* buf = (char*)malloc(maxLength + 1);
     glCall(glGetProgramInfoLog(gl_program, maxLength, &maxLength, buf));
 
     console::error("Program " + name + " linking failed", buf);
@@ -251,7 +252,7 @@ GLProgram GLDevice::create_program(
   return GLProgram{gl_program, vertex, fragment};
 }
 
-GLUniform GLDevice::get_uniform(const GLProgram &program, const std::string &name)
+GLUniform GLDevice::get_uniform(const GLProgram& program, const std::string& name)
 {
   glCall(GLint location = glGetUniformLocation(program.gl_program, name.c_str()));
 
@@ -263,7 +264,7 @@ GLUniform GLDevice::get_uniform(const GLProgram &program, const std::string &nam
   return GLUniform{location};
 }
 
-GLTextureUniform GLDevice::get_texture_uniform(GLProgram &program, const std::string &name)
+GLTextureUniform GLDevice::get_texture_uniform(GLProgram& program, const std::string& name)
 {
   GLUniform uniform = get_uniform(program, name);
   GLuint unit;
@@ -280,8 +281,8 @@ GLTextureUniform GLDevice::get_texture_uniform(GLProgram &program, const std::st
   return GLTextureUniform{uniform, unit};
 }
 
-GLTexturesUniform GLDevice::get_textures_uniform(GLProgram &program,
-                                                 const std::string &name,
+GLTexturesUniform GLDevice::get_textures_uniform(GLProgram& program,
+                                                 const std::string& name,
                                                  const size_t count)
 {
   GLUniform uniform = get_uniform(program, name);
@@ -301,7 +302,7 @@ GLTexturesUniform GLDevice::get_textures_uniform(GLProgram &program,
   return GLTexturesUniform{uniform, units};
 }
 
-GLVertexAttribute GLDevice::get_vertex_attribute(const GLProgram &program, const std::string &name)
+GLVertexAttribute GLDevice::get_vertex_attribute(const GLProgram& program, const std::string& name)
 {
   glCall(GLint attribute = glGetAttribLocation(program.gl_program, name.c_str()));
 
@@ -313,14 +314,14 @@ GLVertexAttribute GLDevice::get_vertex_attribute(const GLProgram &program, const
   return GLVertexAttribute{static_cast<GLuint>(attribute)};
 }
 
-void GLDevice::draw_elements(const size_t index_count, const RenderState &render_state)
+void GLDevice::draw_elements(const size_t index_count, const RenderState& render_state)
 {
   s_device->set_render_state(render_state);
   glCall(glDrawElements(
       gl_primitive(render_state.primitive), (GLsizei)index_count, GL_UNSIGNED_SHORT, nullptr));
 }
 
-void GLDevice::draw_arrays(const size_t vertex_count, const RenderState &render_state)
+void GLDevice::draw_arrays(const size_t vertex_count, const RenderState& render_state)
 {
   s_device->set_render_state(render_state);
   glCall(glDrawArrays(gl_primitive(render_state.primitive), 0, (GLsizei)vertex_count));
@@ -328,14 +329,14 @@ void GLDevice::draw_arrays(const size_t vertex_count, const RenderState &render_
 
 void GLDevice::draw_arrays_instanced(const size_t vertex_count,
                                      const size_t instance_count,
-                                     const RenderState &render_state)
+                                     const RenderState& render_state)
 {
   s_device->set_render_state(render_state);
   glCall(glDrawArraysInstanced(
       gl_primitive(render_state.primitive), 0, (GLsizei)vertex_count, (GLsizei)instance_count));
 }
 
-void GLDevice::blit_framebuffer(const GLFramebuffer &src,
+void GLDevice::blit_framebuffer(const GLFramebuffer& src,
                                 const irect src_rect,
                                 const irect dst_rect,
                                 const bool reverse)
@@ -373,25 +374,25 @@ void GLDevice::blit_framebuffer(const GLFramebuffer &src,
   glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 }
 
-void GLDevice::set_uniforms(const GLProgram &program, const std::vector<UniformBinding> &uniforms)
+void GLDevice::set_uniforms(const GLProgram& program, const std::vector<UniformBinding>& uniforms)
 {
-  for (const auto &[uniform, data] : uniforms) {
+  for (const auto& [uniform, data] : uniforms) {
     uniform.set(data);
   }
 }
 
-void GLDevice::set_textures(const GLProgram &program, const std::vector<TextureBinding> &textures)
+void GLDevice::set_textures(const GLProgram& program, const std::vector<TextureBinding>& textures)
 {
-  for (const auto &[texture_uniform, texture] : textures) {
+  for (const auto& [texture_uniform, texture] : textures) {
     texture->bind(texture_uniform.unit);
     program.textures[texture_uniform.unit].set(static_cast<int>(texture_uniform.unit));
   }
 }
 
-void GLDevice::set_texture_arrays(const GLProgram &program,
-                                  const std::vector<TextureArrayBinding> &texture_arrays)
+void GLDevice::set_texture_arrays(const GLProgram& program,
+                                  const std::vector<TextureArrayBinding>& texture_arrays)
 {
-  for (const auto &[textures_uniform, textures] : texture_arrays) {
+  for (const auto& [textures_uniform, textures] : texture_arrays) {
     std::vector<int> units(textures.size());
 
     for (int i = 0; i < textures.size(); i++) {
@@ -405,7 +406,7 @@ void GLDevice::set_texture_arrays(const GLProgram &program,
   }
 }
 
-void GLDevice::set_render_state(const RenderState &render_state)
+void GLDevice::set_render_state(const RenderState& render_state)
 {
   const GLuint program = render_state.program.gl_program;
 

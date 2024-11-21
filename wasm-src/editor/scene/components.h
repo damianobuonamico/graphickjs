@@ -7,15 +7,16 @@
 
 #pragma once
 
-#include "../../renderer/properties.h"
+#include "../../io/image/image.h"
+
+#include "../../geom/path.h"
 
 #include "../../math/mat2x3.h"
 #include "../../math/rect.h"
 #include "../../math/vec4.h"
 
-#include "../../geom/path.h"
+#include "../../renderer/properties.h"
 
-#include "../../utils/image.h"
 #include "../../utils/uuid.h"
 
 #include <string>

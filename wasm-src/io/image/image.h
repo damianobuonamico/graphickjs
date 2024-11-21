@@ -1,14 +1,14 @@
 /**
- * @file utils/image.h
+ * @file io/image.h
  * @brief The file contains the definition of the image utility wrapper.
  * @todo Eventually all the image related utility functions should be moved in another directory.
  */
 
 #pragma once
 
-#include "../math/vec2.h"
+#include "../../math/vec2.h"
 
-namespace graphick::utils {
+namespace graphick::io {
 
 /**
  * @brief The Image struct is a lightweight wrapper around the image data.
@@ -21,4 +21,4 @@ struct Image {
   uint8_t channels;  // The number of channels of the image.
 };
 
-}  // namespace graphick::utils
+}  // namespace graphick::io
