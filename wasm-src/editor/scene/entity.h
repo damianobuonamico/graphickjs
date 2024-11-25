@@ -96,6 +96,10 @@ class Entity {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
                                 &m_scene->m_registry.get<PathComponent::Data>(m_handle)};
+    } else if (has_component<TextComponent>()) {
+      return TransformComponent{this,
+                                &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
+                                &m_scene->m_registry.get<TextComponent::Data>(m_handle)};
     } else if (has_component<ImageComponent>()) {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
@@ -277,6 +281,19 @@ class Entity {
   inline bool is_element() const
   {
     return has_components<PathComponent>();
+  }
+
+  /**
+   * @brief Checks if the entity is a text.
+   *
+   * A text is an entity that has a TextComponent.
+   * All entities have a TransformComponent and a IDComponent.
+   *
+   * @return true if the entity is a text, false otherwise.
+   */
+  inline bool is_text() const
+  {
+    return has_components<TextComponent>();
   }
 
   /**

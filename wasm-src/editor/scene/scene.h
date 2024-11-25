@@ -122,6 +122,17 @@ class Scene {
   Entity create_image(const uuid image_id);
 
   /**
+   * @brief Creates a new text entity.
+   *
+   * This method automatically adds all the required components of a text entity.
+   *
+   * @param text The text of the entity.
+   * @param font_id The UUID of the font.
+   * @return The new text.
+   */
+  Entity create_text(const std::string& text, const uuid font_id);
+
+  /**
    * @brief Deletes an entity.
    *
    * @param entity The entity to delete.

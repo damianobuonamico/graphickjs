@@ -289,6 +289,20 @@ io::EncodedData& ImageComponent::encode(io::EncodedData& data, const bool optimi
   return data;
 }
 
+/* -- TextComponent -- */
+
+TextComponentData::TextComponentData(io::DataDecoder& decoder)
+    : text(decoder.string()), font_id(decoder.uuid())
+{
+}
+
+io::EncodedData& TextComponent::encode(io::EncodedData& data, const bool optimize) const
+{
+  data.component_id(component_id).string(m_data->text).uuid(m_data->font_id);
+
+  return data;
+}
+
 /* -- TransformComponent -- */
 
 TransformComponentData::TransformComponentData(const mat2x3& matrix) : matrix(matrix) {}
@@ -312,6 +326,9 @@ rect TransformComponent::bounding_rect() const
     } else {
       return m_parent_ptr.path_ptr()->bounding_rect(m_data->matrix);
     }
+  } else if (m_parent_ptr.is_text()) {
+    // TODO: implement
+    return rect{vec2::zero(), vec2::zero()};
   } else if (m_parent_ptr.is_image()) {
     const vec2 size = vec2(
         io::ResourceManager::get_image(m_parent_ptr.image_ptr()->image_id).size);

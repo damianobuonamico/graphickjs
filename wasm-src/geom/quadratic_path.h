@@ -43,7 +43,7 @@ struct QuadraticPath {
    *
    * @return The number of curves in the path.
    */
-  inline size_t size() const
+  inline virtual size_t size() const
   {
     return empty() ? 0 : (points.size() - 1) / 2;
   }
@@ -65,7 +65,7 @@ struct QuadraticPath {
    *
    * @return The first control point.
    */
-  inline math::Vec2<T> &front()
+  inline math::Vec2<T>& front()
   {
     return points.front();
   }
@@ -75,7 +75,7 @@ struct QuadraticPath {
    *
    * @return The last control point.
    */
-  inline math::Vec2<T> &back()
+  inline math::Vec2<T>& back()
   {
     return points.back();
   }
@@ -122,7 +122,7 @@ struct QuadraticPath {
    *
    * @param p The point to move the cursor to.
    */
-  inline void move_to(const math::Vec2<T> p)
+  inline virtual void move_to(const math::Vec2<T> p)
   {
     points.push_back(p);
   }
@@ -183,6 +183,34 @@ struct QuadraticPath {
   int winding_of(const math::Vec2<T> p) const;
 };
 
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+struct QuadraticMultipath : public QuadraticPath<T> {
+  std::vector<size_t> starts;  // The starting indices of the paths.
+
+  /**
+   * @brief Returns the number of curves in the path.
+   *
+   * @return The number of curves in the path.
+   */
+  inline size_t size() const override
+  {
+    return empty() ? 0 : (points.size() - starts.size()) / 2;
+  }
+
+  /**
+   * @brief Moves the path cursor to the given point.
+   *
+   * Adds a new path to the multipath (i.e. a new starting index).
+   *
+   * @param p The point to move the cursor to.
+   */
+  void move_to(const math::Vec2<T> p) override
+  {
+    starts.push_back(points.size());
+    points.push_back(p);
+  }
+};
+
 }  // namespace graphick::geom
 
 /* -- Aliases -- */
@@ -191,5 +219,8 @@ namespace graphick::geom {
 
 using quadratic_path = QuadraticPath<float>;
 using dquadratic_path = QuadraticPath<double>;
+
+using quadratic_multipath = QuadraticMultipath<float>;
+using dquadratic_multipath = QuadraticMultipath<double>;
 
 }  // namespace graphick::geom

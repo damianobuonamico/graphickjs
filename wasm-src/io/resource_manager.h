@@ -8,6 +8,7 @@
 #pragma once
 
 #include "image/image.h"
+#include "text/font.h"
 
 #include "../utils/uuid.h"
 
@@ -59,12 +60,25 @@ class ResourceManager {
   static uuid load_image(const uint8_t* data, const size_t size);
 
   /**
+   * @brief Loads a font into the cache.
+   *
+   * @param data The font data.
+   * @param size The size of the font data.
+   * @return The UUID of the font.
+   */
+  static uuid load_font(const uint8_t* data, const size_t size);
+
+  /**
    * @brief Retrieves an image from the cache.
    *
    * @param id The UUID of the image.
    * @return A lightweight wrapper around the image data.
    */
   static Image get_image(uuid id);
+
+  static const Font& get_font(const uuid id);
+
+  static const geom::quadratic_multipath& get_glyph(const Font& font, const uint32_t codepoint);
 
  private:
   /**
@@ -104,6 +118,7 @@ class ResourceManager {
  private:
   std::unordered_map<std::string, std::string> m_shaders;  // The cache of shaders.
   std::unordered_map<uuid, ImageData> m_images;            // The cache of images.
+  std::unordered_map<uuid, Font> m_fonts;                  // The cache of fonts.
  private:
   static ResourceManager* s_instance;  // The instance of the resource manager singleton.
 };

@@ -160,6 +160,28 @@ Entity Scene::create_image(const uuid image_id)
   return get_entity(id);
 }
 
+Entity Scene::create_text(const std::string& text, const uuid font_id = uuid::null)
+{
+  io::EncodedData data;
+  uuid id = uuid();
+
+  data.component_id(IDComponent::component_id).uuid(id);
+
+  data.component_id(TagComponent::component_id)
+      .string("Text " + std::to_string(m_entity_tag_number++));
+
+  data.component_id(CategoryComponent::component_id)
+      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
+
+  data.component_id(TextComponent::component_id).string(text).uuid(font_id);
+
+  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
+
+  history.add(id, Action::Target::Entity, std::move(data));
+
+  return get_entity(id);
+}
+
 void Scene::delete_entity(Entity entity)
 {
   history.remove(entity.id(), Action::Target::Entity, entity.encode());
@@ -342,6 +364,17 @@ void Scene::render(const bool ignore_cache) const
                                transform.matrix(),
                                {&fill, nullptr, has_outline ? &outline : nullptr},
                                id);
+
+      continue;
+    } else if (entity.is_text()) {
+      const TextComponent text = entity.get_component<TextComponent>();
+
+      // TODO: in the TextComponent there should be an array of fills and strokes for each
+      // character range.
+      // TODO: there should be a uuid set in addition to the cache map: when we query the cache, we
+      // should remove the uuid from the set. At the end of the frame, we remove all the uuids that
+      // are still in the set from the cache.
+      renderer::Renderer::draw(text, transform.matrix(), vec4(0.9f));
 
       continue;
     }

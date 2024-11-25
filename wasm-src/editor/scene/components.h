@@ -561,6 +561,86 @@ struct ImageComponent : public ComponentWrapper {
 };
 
 /**
+ * @brief ImageComponent data.
+ *
+ * This struct should not be used directly, use the ImageComponent wrapper instead.
+ */
+struct TextComponentData {
+  std::string text;  // The text of the entity.
+  uuid font_id;      // The UUID of the image data in the ResourceManager cache.
+
+  TextComponentData() = default;
+  TextComponentData(io::DataDecoder& decoder);
+};
+
+/**
+ * @brief TextComponent wrapper.
+ *
+ * An TextComponent is the base of the text entity.
+ */
+struct TextComponent : public ComponentWrapper {
+ public:
+  static constexpr uint8_t component_id = 8;  // The component id.
+
+  using Data = TextComponentData;             // The component underlying data type.
+ public:
+  /**
+   * @brief Constructor.
+   */
+  TextComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
+
+  /**
+   * @brief Returns the id of the image_data.
+   *
+   * @return The id of the image_data.
+   */
+  inline uuid font_id() const
+  {
+    return m_data->font_id;
+  }
+
+  /**
+   * @brief Returns the image data of the entity.
+   *
+   * @return The image data of the entity.
+   */
+  inline const std::string& text() const
+  {
+    return m_data->text;
+  }
+
+  /**
+   * @brief Returns the actual bounding rect of the text.
+   * 
+   * @return The bounding rect of the text.
+   */
+  rect bounding_rect() const;
+
+  /**
+   * @brief Encodes the component in binary format.
+   *
+   * @param data The encoded data to append the component to.
+   * @param optimize Whether to skip encoding if the component is in a default state. Default is
+   * true.
+   * @return A reference to the encoded data.
+   */
+  io::EncodedData& encode(io::EncodedData& data, const bool optimize = false) const override;
+
+ private:
+  /**
+   * @brief Modifies the underlying data of the component.
+   *
+   * @param decoder A diff of the modified component's data.
+   */
+  void modify(io::DataDecoder& decoder) override {};
+
+ private:
+  Data* m_data;  // The actual component data.
+ private:
+  friend class Entity;
+};
+
+/**
  * @brief A ParentComponentData is a pointer to one of the components that define the entity.
  *
  * Can be: PathComponentData*, ImageComponentData*.
@@ -570,7 +650,7 @@ struct ParentComponentData {
   /**
    * @brief The type of the parent component.
    */
-  enum class Type : uint8_t { Path, Image };
+  enum class Type : uint8_t { Path, Text, Image };
 
  public:
   /**
@@ -578,6 +658,7 @@ struct ParentComponentData {
    */
   ParentComponentData(const std::nullptr_t ptr) : m_type(Type::Path), m_ptr(nullptr) {}
   ParentComponentData(const PathComponentData* path_ptr) : m_type(Type::Path), m_ptr(path_ptr) {}
+  ParentComponentData(const TextComponentData* text_ptr) : m_type(Type::Text), m_ptr(text_ptr) {}
   ParentComponentData(const ImageComponentData* image_ptr) : m_type(Type::Image), m_ptr(image_ptr)
   {
   }
@@ -600,6 +681,16 @@ struct ParentComponentData {
   inline bool is_path() const
   {
     return is_valid() && m_type == Type::Path;
+  }
+
+  /**
+   * @brief Checks if the parent component is a text.
+   *
+   * @return true if the parent component is a text, false otherwise.
+   */
+  inline bool is_text() const
+  {
+    return is_valid() && m_type == Type::Text;
   }
 
   /**
@@ -630,6 +721,18 @@ struct ParentComponentData {
   inline const PathComponentData* path_ptr() const
   {
     return static_cast<const PathComponentData*>(m_ptr);
+  }
+
+  /**
+   * @brief Returns the pointer to the text parent component.
+   *
+   * This method does not perform any type checking, type() should be called first.
+   *
+   * @return The pointer to the path parent component.
+   */
+  inline const TextComponentData* text_ptr() const
+  {
+    return static_cast<const TextComponentData*>(m_ptr);
   }
 
   /**
@@ -793,8 +896,8 @@ struct TransformComponent : public ComponentWrapper {
  private:
   Data* m_data;                            // The actual component data.
 
-  const ParentComponentData m_parent_ptr;  // A pointer to the path component of the entity, can be
-                                           // nullptr if the entity is not an element.
+  const ParentComponentData m_parent_ptr;  // A pointer to the path component of the entity, can
+                                           // be nullptr if the entity is not an element.
  private:
   friend class Entity;
 };

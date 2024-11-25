@@ -56,6 +56,7 @@ io::EncodedData Entity::encode() const
   ENCODE_COMPONENT(CategoryComponent);
   ENCODE_COMPONENT(PathComponent);
   ENCODE_COMPONENT(ImageComponent);
+  ENCODE_COMPONENT(TextComponent);
   ENCODE_COMPONENT(TransformComponent);
   ENCODE_COMPONENT(StrokeComponent);
   ENCODE_COMPONENT(FillComponent);
@@ -78,6 +79,7 @@ std::pair<uuid, io::EncodedData> Entity::duplicate() const
   ENCODE_COMPONENT(CategoryComponent);
   ENCODE_COMPONENT(PathComponent);
   ENCODE_COMPONENT(ImageComponent);
+  ENCODE_COMPONENT(TextComponent);
   ENCODE_COMPONENT(TransformComponent);
   ENCODE_COMPONENT(StrokeComponent);
   ENCODE_COMPONENT(FillComponent);
@@ -100,6 +102,7 @@ void Entity::add(const io::EncodedData& encoded_data, const bool full_entity)
   DECODE_COMPONENT(CategoryComponent);
   DECODE_COMPONENT(PathComponent);
   DECODE_COMPONENT(ImageComponent);
+  DECODE_COMPONENT(TextComponent);
   DECODE_COMPONENT(TransformComponent);
   DECODE_COMPONENT(StrokeComponent);
   DECODE_COMPONENT(FillComponent);
@@ -119,6 +122,7 @@ void Entity::remove(const io::EncodedData& encoded_data)
   REMOVE_COMPONENT(CategoryComponent);
   REMOVE_COMPONENT(PathComponent);
   REMOVE_COMPONENT(ImageComponent);
+  REMOVE_COMPONENT(TextComponent);
   REMOVE_COMPONENT(TransformComponent);
   REMOVE_COMPONENT(StrokeComponent);
   REMOVE_COMPONENT(FillComponent);
@@ -139,6 +143,7 @@ void Entity::modify(const io::EncodedData& encoded_data)
     MODIFY_COMPONENT(CategoryComponent);
     MODIFY_COMPONENT(PathComponent);
     MODIFY_COMPONENT(ImageComponent);
+    MODIFY_COMPONENT(TextComponent);
     MODIFY_COMPONENT(TransformComponent);
     MODIFY_COMPONENT(StrokeComponent);
     MODIFY_COMPONENT(FillComponent);

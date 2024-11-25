@@ -1,7 +1,6 @@
 /**
  * @file io/image.h
- * @brief The file contains the definition of the image utility wrapper.
- * @todo Eventually all the image related utility functions should be moved in another directory.
+ * @brief The file contains the definition of the image utility functions.
  */
 
 #pragma once

@@ -23,9 +23,34 @@ int main()
     return -1;
   }
 
-#define IMAGES
-#define TIGER
-#define OBJECTS
+#define TEXT
+  // #define IMAGES
+  // #define TIGER
+  // #define OBJECTS
+
+#ifdef TEXT
+  std::ifstream font_file1("res/fonts/consolas.ttf", std::ios::binary | std::ios::ate);
+  std::ifstream font_file2("res/fonts/times.ttf", std::ios::binary | std::ios::ate);
+
+  std::streamsize font_size1 = font_file1.tellg();
+  std::streamsize font_size2 = font_file2.tellg();
+
+  std::vector<uint8_t> font_data1(font_size1);
+  std::vector<uint8_t> font_data2(font_size2);
+
+  font_file1.seekg(0, std::ios::beg);
+  font_file2.seekg(0, std::ios::beg);
+
+  font_file1.read(reinterpret_cast<char*>(font_data1.data()), font_size1);
+  font_file2.read(reinterpret_cast<char*>(font_data2.data()), font_size2);
+
+  utils::uuid font_id1 = io::ResourceManager::load_font(font_data1.data(), font_data1.size());
+  utils::uuid font_id2 = io::ResourceManager::load_font(font_data2.data(), font_data2.size());
+
+  editor::Editor::scene().create_text("Hello, World!", font_id1);
+  // editor::Editor::scene().create_text(
+  //     "abcdefghijklmnopqrstuvwxyz1234567890|!\"£$%&/()=?^'ìèé[]*+ù§à°#@çò-_.:,;<>", font_id2);
+#endif
 
 #ifdef IMAGES
   std::ifstream image_file1("res/images/demo_image1.png", std::ios::binary | std::ios::ate);

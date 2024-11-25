@@ -34,6 +34,11 @@ using dpath = geom::Path<double, std::enable_if<true>>;
 
 }  // namespace graphick::geom
 
+// TEMP
+namespace graphick::editor {
+class TextComponent;
+}
+
 namespace graphick::renderer {
 
 /**
@@ -101,6 +106,10 @@ class Renderer {
                    const mat2x3& transform,
                    const DrawingOptions& options,
                    const uuid id);
+
+  // TODO: this is temp, the renderer should not know about the editor
+  // TODO: this should be cachable too
+  static bool draw(const editor::TextComponent& text, const mat2x3& transform, const vec4& color);
 
   /**
    * @brief Draws a rectangle with the provided color.

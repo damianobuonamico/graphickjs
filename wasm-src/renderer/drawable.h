@@ -327,6 +327,11 @@ struct Drawable {
 
   std::vector<DrawablePaintBinding> paints;  // The paint bindings of the drawable.
 
+  inline void push_curve(const vec2 p0, const vec2 p1, const vec2 p2)
+  {
+    curves.insert(curves.end(), {p0, p1, p2, vec2::zero()});
+  }
+
   inline void push_curve(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3)
   {
     curves.insert(curves.end(), {p0, p1, p2, p3});
