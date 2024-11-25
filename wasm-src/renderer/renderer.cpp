@@ -31,6 +31,7 @@
 #include "../utils/defines.h"
 
 // TEMP
+#include "../io/text/unicode.h"
 #include "../lib/stb/stb_truetype.h"
 
 #include <algorithm>
@@ -368,21 +369,37 @@ bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, 
   float cursor = 0.0f;
   uint32_t prev_c = 0;
 
-  for (const char c : text.text()) {
+  std::vector<int> codepoints = io::text::utf8_decode(text.text());
+
+  for (const int codepoint : codepoints) {
     // This should be font.get_glyph(c) but it's not implemented yet, should return the path,
     // advance, ...
-    const geom::quadratic_multipath& glyph = io::ResourceManager::get_glyph(
-        font, static_cast<uint32_t>(c));
-
-    if (glyph.empty()) {
-      // TODO: fallback glyph, error handling in get_glyph
-      continue;
-    }
+    const geom::quadratic_multipath& glyph = io::ResourceManager::get_glyph(font, codepoint);
 
     int kerning = stbtt_GetCodepointKernAdvance(
-        static_cast<const stbtt_fontinfo*>(static_cast<const void*>(&font.info)), prev_c, c);
+        static_cast<const stbtt_fontinfo*>(static_cast<const void*>(&font.info)),
+        prev_c,
+        codepoint);
 
     cursor += kerning * font.scale_factor * font_size;
+
+    int advance_int, left_size_bearing_int;
+    stbtt_GetCodepointHMetrics(
+        static_cast<const stbtt_fontinfo*>(static_cast<const void*>(&font.info)),
+        codepoint,
+        &advance_int,
+        &left_size_bearing_int);
+
+    const float advance = static_cast<float>(advance_int) * font.scale_factor * font_size;
+    const float left_side_bearing = static_cast<float>(left_size_bearing_int) * font.scale_factor *
+                                    font_size;
+
+    if (glyph.empty()) {
+      cursor += advance;
+      drawable.bounding_rect.max.x += advance;
+      prev_c = codepoint;
+      continue;
+    }
 
     const size_t num = glyph.size();
     const size_t bands_offset = drawable.bands.size();
@@ -390,24 +407,14 @@ bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, 
 
     /* Reserve space and setup drawable. */
 
-    int advance_int, left_size_bearing_int;
-    stbtt_GetCodepointHMetrics(
-        static_cast<const stbtt_fontinfo*>(static_cast<const void*>(&font.info)),
-        c,
-        &advance_int,
-        &left_size_bearing_int);
-
     int x0, y0, x1, y1;
     stbtt_GetCodepointBox(static_cast<const stbtt_fontinfo*>(static_cast<const void*>(&font.info)),
-                          c,
+                          codepoint,
                           &x0,
                           &y0,
                           &x1,
                           &y1);
 
-    const float advance = static_cast<float>(advance_int) * font.scale_factor * font_size;
-    const float left_side_bearing = static_cast<float>(left_size_bearing_int) * font.scale_factor *
-                                    font_size;
     const float ascent = font.ascent * font_size;
     const float descent = font.descent * font_size;
 
@@ -532,10 +539,10 @@ bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, 
     //                    attr_2);
 
     cursor += advance;
-    // TODO:
+    // TODO: optimize maybe
     drawable.bounding_rect = drect::from_rects(drawable.bounding_rect, glyph_bounds);
 
-    prev_c = static_cast<uint32_t>(c);
+    prev_c = codepoint;
   }
 
   drawable.paints.push_back(

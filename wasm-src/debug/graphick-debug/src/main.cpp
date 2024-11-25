@@ -47,7 +47,7 @@ int main()
   utils::uuid font_id1 = io::ResourceManager::load_font(font_data1.data(), font_data1.size());
   utils::uuid font_id2 = io::ResourceManager::load_font(font_data2.data(), font_data2.size());
 
-  editor::Editor::scene().create_text("Hello, World!", font_id1);
+  editor::Editor::scene().create_text("Hello, World!", font_id2);
   // editor::Editor::scene().create_text(
   //     "abcdefghijklmnopqrstuvwxyz1234567890|!\"£$%&/()=?^'ìèé[]*+ù§à°#@çò-_.:,;<>", font_id2);
 #endif

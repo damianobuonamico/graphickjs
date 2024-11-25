@@ -42,7 +42,7 @@ struct FontInfo {
 
 /**
  * @brief The font.
- * 
+ *
  * @todo convert to class with private members and public getters
  */
 struct Font {

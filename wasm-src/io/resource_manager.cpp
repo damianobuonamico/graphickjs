@@ -141,8 +141,9 @@ const geom::quadratic_multipath& ResourceManager::get_glyph(const Font& font,
   num_vertices = stbtt_GetCodepointShape(font_info, codepoint, &vertices);
 
   if (num_vertices == 0) {
-    // TODO: return a default glyph
-    return path;
+    return const_cast<Font&>(font)
+        .glyphs.insert(std::make_pair(codepoint, std::move(path)))
+        .first->second;
   }
 
   for (int j = 0; j < num_vertices; j++) {
