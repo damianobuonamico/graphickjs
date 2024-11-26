@@ -24,7 +24,7 @@ int main()
   }
 
 #define TEXT
-  // #define IMAGES
+#define IMAGES
   // #define TIGER
   // #define OBJECTS
 
@@ -54,7 +54,7 @@ int main()
 
 #ifdef IMAGES
   std::ifstream image_file1("res/images/demo_image1.png", std::ios::binary | std::ios::ate);
-  std::ifstream image_file2("res/images/demo_image2.jpg", std::ios::binary | std::ios::ate);
+  std::ifstream image_file2("res/images/demo_image3.png", std::ios::binary | std::ios::ate);
 
   std::streamsize image_size1 = image_file1.tellg();
   std::streamsize image_size2 = image_file2.tellg();

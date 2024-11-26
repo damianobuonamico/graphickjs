@@ -10,10 +10,8 @@
 #include "../lib/stb/stb_image.h"
 #include "../lib/stb/stb_truetype.h"
 
-#define SHADERS_LENGTH 6
-
-static constexpr const char* shader_names[SHADERS_LENGTH] = {
-    "tile", "fill", "line", "rect", "circle", "image"};
+static const std::string shader_include_names[] = {"quadratic", "cubic", "texture"};
+static const std::string shader_names[] = {"tile", "fill", "line", "rect", "circle", "image"};
 
 namespace graphick::io {
 
@@ -101,7 +99,15 @@ const text::Font& ResourceManager::get_font(const uuid id)
 
 void ResourceManager::prefetch_shaders()
 {
-  static const char* shader_sources[SHADERS_LENGTH * 2] = {
+  static std::string shader_include_sources[std::size(shader_include_names)] = {
+#include "../renderer/gpu/shaders/include/quadratic.glsl"
+      ,
+#include "../renderer/gpu/shaders/include/cubic.glsl"
+      ,
+#include "../renderer/gpu/shaders/include/texture.glsl"
+  };
+
+  static std::string shader_sources[std::size(shader_names) * 2] = {
 #include "../renderer/gpu/shaders/tile.vs.glsl"
       ,
 #include "../renderer/gpu/shaders/tile.fs.glsl"
@@ -127,10 +133,22 @@ void ResourceManager::prefetch_shaders()
 #include "../renderer/gpu/shaders/image.fs.glsl"
   };
 
-  for (unsigned int i = 0; i < SHADERS_LENGTH; ++i) {
-    std::string name{shader_names[i]};
-    m_shaders.insert({name + ".vs", shader_sources[i * 2 + 0]});
-    m_shaders.insert({name + ".fs", shader_sources[i * 2 + 1]});
+  for (unsigned int i = 0; i < std::size(shader_names); i++) {
+    for (unsigned int j = 0; j < std::size(shader_include_names); j++) {
+      std::string include = "#include \"" + shader_include_names[j] + ".glsl\"";
+
+      for (int k = 0; k < 2; k++) {
+        size_t pos = 0;
+
+        while ((pos = shader_sources[i * 2 + k].find(include, pos)) != std::string::npos) {
+          shader_sources[i * 2 + k].replace(pos, include.length(), shader_include_sources[j]);
+          pos += shader_include_sources[j].length();
+        }
+      }
+    }
+
+    m_shaders.insert({shader_names[i] + ".vs", shader_sources[i * 2 + 0]});
+    m_shaders.insert({shader_names[i] + ".fs", shader_sources[i * 2 + 1]});
   }
 }
 

@@ -1,39 +1,29 @@
 R"(
-  precision mediump float;
-  precision mediump sampler2D;
 
-  uniform sampler2D u_textures[${MAX_TEXTURES}];
+precision mediump float;
+precision mediump sampler2D;
 
-  in lowp vec4 v_color;
-  in lowp vec2 v_tex_coord;
+uniform sampler2D u_textures[${MAX_TEXTURES}];
 
-  flat in highp uint v_attr_1;
-  flat in highp uint v_attr_2;
+in lowp vec4 v_color;
+in lowp vec2 v_tex_coord;
 
-  out vec4 o_frag_color;
+flat in highp uint v_attr_1;
+flat in highp uint v_attr_2;
 
-  void main() {
-    int paint_type = int((v_attr_1 >> 20) & 0x7FU);
+out vec4 o_frag_color;
 
-    if (paint_type == 3) {
-      uint paint_coord = v_attr_2 & 0x3FFU;
+#include "texture.glsl"
 
-      // TODO: more than these 3 textures should be supported in CPU shader precompilation
-      switch (paint_coord) {
-      case 1U:
-        o_frag_color = texture(u_textures[1], v_tex_coord);
-        return;
-      case 2U:
-        o_frag_color = texture(u_textures[2], v_tex_coord);
-        return;
-      case 0U:
-      default:
-        o_frag_color = vec4(0.0, 0.0, 0.0, 1.0);
-        return;
-      }
-    } else {
-      o_frag_color = v_color + float(v_attr_2) * 0.0000000000000000000000001;
-    }
+void main() {
+  int paint_type = int((v_attr_1 >> 20) & 0x7FU);
+
+  if (paint_type == 3) {
+    vec4 color = texture_fill(v_attr_2 & 0x3FFU, v_tex_coord);
+    o_frag_color = vec4(color.rgb, 1.0) * color.a;
+  } else {
+    o_frag_color = vec4(v_color.rgb, 1.0) * v_color.a;
   }
+}
 
 )"

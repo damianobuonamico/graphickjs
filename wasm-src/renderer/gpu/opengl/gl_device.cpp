@@ -22,18 +22,38 @@ namespace graphick::renderer::GPU::GL {
  * @param kind The kind of the shader.
  * @param glsl_version_spec The GLSL version specification.
  * @param variables The variables of the shader.
+ * @param max_texture_image_units The maximum number of bound texture image units
  * @return The created shader.
  */
 inline static GLuint create_shader(
     const std::string& name,
     const ShaderKind kind,
     const std::string& glsl_version_spec,
-    const std::vector<std::pair<std::string, std::string>>& variables)
+    const std::vector<std::pair<std::string, std::string>>& variables,
+    const size_t max_texture_image_units)
 {
   const bool is_vertex = kind == ShaderKind::Vertex;
 
   std::string source = "#version " + glsl_version_spec + "\n" +
                        io::ResourceManager::get_shader(name + (is_vertex ? ".vs" : ".fs"));
+
+  if (!is_vertex) {
+    const std::string placeholder = "${TEXTURE_CASES}";
+
+    size_t pos = 0;
+
+    while ((pos = source.find(placeholder, pos)) != std::string::npos) {
+      std::string cases;
+
+      for (size_t i = 1; i < max_texture_image_units - 2; i++) {
+        cases += "case " + std::to_string(i) + "U: return texture(u_textures[" +
+                 std::to_string(i) + "], tex_coord);";
+      }
+
+      source.replace(pos, placeholder.size(), cases);
+      pos += cases.size();
+    }
+  }
 
   for (auto& [name, value] : variables) {
     std::string variants[4] = {std::string("${") + name + "}",
@@ -225,10 +245,16 @@ void GLDevice::clear(const ClearOps& ops)
 GLProgram GLDevice::create_program(
     const std::string& name, const std::vector<std::pair<std::string, std::string>>& variables)
 {
-  GLuint vertex = create_shader(
-      name, ShaderKind::Vertex, s_device->m_glsl_version_spec, variables);
-  GLuint fragment = create_shader(
-      name, ShaderKind::Fragment, s_device->m_glsl_version_spec, variables);
+  GLuint vertex = create_shader(name,
+                                ShaderKind::Vertex,
+                                s_device->m_glsl_version_spec,
+                                variables,
+                                s_device->max_texture_image_units());
+  GLuint fragment = create_shader(name,
+                                  ShaderKind::Fragment,
+                                  s_device->m_glsl_version_spec,
+                                  variables,
+                                  s_device->max_texture_image_units());
 
   GLuint gl_program = glCreateProgram();
 

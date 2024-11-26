@@ -194,7 +194,7 @@ struct QuadraticMultipath : public QuadraticPath<T> {
    */
   inline size_t size() const override
   {
-    return empty() ? 0 : (points.size() - starts.size()) / 2;
+    return this->empty() ? 0 : (this->points.size() - starts.size()) / 2;
   }
 
   /**
@@ -206,8 +206,8 @@ struct QuadraticMultipath : public QuadraticPath<T> {
    */
   void move_to(const math::Vec2<T> p) override
   {
-    starts.push_back(points.size());
-    points.push_back(p);
+    starts.push_back(this->points.size());
+    this->points.push_back(p);
   }
 };
 

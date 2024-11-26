@@ -30,9 +30,9 @@ struct TileVertex {
   uvec4 color;                 // | color.rgba (32) |
   math::Vec2<half> tex_coord;  // | tex_coord.x (16) - tex_coord.y (16) |
   vec2 tex_coord_curves;       // | tex_coord_curves.x (32) - tex_coord_curves.y (32) |
-  uint32_t attr_1;             // | blend (5) - paint_type (7) - curves_x (10) - curves_y (10) |
+  uint32_t attr_1;             // | blend (5) - paint_type (7) - curves_offset (20) |
   uint32_t attr_2;             // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
-  uint32_t attr_3;             // | bands_h (8) - bands_x (12) - bands_y (12) |
+  uint32_t attr_3;             // | bands_h (8) - bands_offset (24) |
 
   /**
    * @brief Default constructor.
@@ -86,16 +86,11 @@ struct TileVertex {
                                 const uint8_t paint_type,
                                 const size_t curves_start_index)
   {
-    const uint32_t u_curves_x = (static_cast<uint32_t>(curves_start_index % GK_CURVES_TEXTURE_SIZE)
-                                 << 22) >>
-                                22;
-    const uint32_t u_curves_y = (static_cast<uint32_t>(curves_start_index / GK_CURVES_TEXTURE_SIZE)
-                                 << 22) >>
-                                22;
+    const uint32_t u_curves_offset = static_cast<uint32_t>(curves_start_index) << 12 >> 12;
     const uint32_t u_paint_type = (static_cast<uint32_t>(paint_type) << 25) >> 25;
     const uint32_t u_blend = static_cast<uint32_t>(blending_mode);
 
-    return (u_blend << 27) | (u_paint_type << 20) | (u_curves_x << 10) | (u_curves_y);
+    return (u_blend << 27) | (u_paint_type << 20) | (u_curves_offset);
   }
 
   /**
@@ -132,17 +127,12 @@ struct TileVertex {
    */
   static uint32_t create_attr_3(const uint8_t horizontal_bands, const size_t bands_start_index)
   {
-    const uint32_t u_bands_x = (static_cast<uint32_t>(bands_start_index % GK_BANDS_TEXTURE_SIZE)
-                                << 20) >>
-                               20;
-    const uint32_t u_bands_y = (static_cast<uint32_t>(bands_start_index / GK_BANDS_TEXTURE_SIZE)
-                                << 20) >>
-                               20;
+    const uint32_t u_bands_offset = (static_cast<uint32_t>(bands_start_index) << 8) >> 8;
     const uint32_t u_bands_h = (horizontal_bands < 1) ?
                                    0 :
                                    static_cast<uint32_t>(horizontal_bands - 1);
 
-    return (u_bands_h << 24) | (u_bands_x << 12) | (u_bands_y);
+    return (u_bands_h << 24) | (u_bands_offset);
   }
 
   /**
@@ -152,17 +142,8 @@ struct TileVertex {
    */
   inline void add_offset_to_curves(const size_t offset)
   {
-    uint32_t curves_x = (attr_1 >> 10) & 0x3FFU;
-    uint32_t curves_y = attr_1 & 0x3FFU;
-
-    size_t index = curves_x + curves_y * GK_CURVES_TEXTURE_SIZE + offset;
-
-    const uint32_t u_curves_x = (static_cast<uint32_t>(index % GK_CURVES_TEXTURE_SIZE) << 22) >>
-                                22;
-    const uint32_t u_curves_y = (static_cast<uint32_t>(index / GK_CURVES_TEXTURE_SIZE) << 22) >>
-                                22;
-
-    attr_1 = (attr_1 >> 20 << 20) | (u_curves_x << 10) | u_curves_y;
+    const uint32_t u_curves_offset = ((attr_1 & 0xFFFFFU) + offset) << 12 >> 12;
+    attr_1 = (attr_1 >> 20 << 20) | (u_curves_offset);
   }
 
   /**
@@ -172,15 +153,8 @@ struct TileVertex {
    */
   inline void add_offset_to_bands(const size_t offset)
   {
-    uint32_t bands_x = (attr_3 >> 12) & 0xFFFU;
-    uint32_t bands_y = attr_3 & 0xFFFU;
-
-    size_t index = bands_x + bands_y * GK_BANDS_TEXTURE_SIZE + offset;
-
-    const uint32_t u_bands_x = (static_cast<uint32_t>(index % GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
-    const uint32_t u_bands_y = (static_cast<uint32_t>(index / GK_BANDS_TEXTURE_SIZE) << 20) >> 20;
-
-    attr_3 = (attr_3 >> 24 << 24) | (u_bands_x << 12) | u_bands_y;
+    const uint32_t u_bands_offset = ((attr_3 & 0xFFFFFFU) + offset) << 8 >> 8;
+    attr_3 = (attr_3 >> 24 << 24) | (u_bands_offset);
   }
 
   /**
