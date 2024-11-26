@@ -22,6 +22,8 @@
 #include "../geom/path_builder.h"
 
 #include "../io/resource_manager.h"
+#include "../io/text/font.h"
+#include "../io/text/unicode.h"
 
 #include "../math/matrix.h"
 #include "../math/vector.h"
@@ -29,10 +31,6 @@
 #include "../utils/assert.h"
 #include "../utils/console.h"
 #include "../utils/defines.h"
-
-// TEMP
-#include "../io/text/unicode.h"
-#include "../lib/stb/stb_truetype.h"
 
 #include <algorithm>
 
@@ -361,81 +359,40 @@ bool Renderer::draw(const geom::path& path,
 
 bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, const vec4& color)
 {
-  const io::Font& font = io::ResourceManager::get_font(text.font_id());
+  const io::text::Font& font = io::ResourceManager::get_font(text.font_id());
   const float font_size = 11.0f;
 
   Drawable drawable;
 
   float cursor = 0.0f;
-  uint32_t prev_c = 0;
+  int prev_index = 0;
 
-  std::vector<int> codepoints = io::text::utf8_decode(text.text());
+  const std::vector<int> codepoints = io::text::utf8_decode(text.text());
 
   for (const int codepoint : codepoints) {
-    // This should be font.get_glyph(c) but it's not implemented yet, should return the path,
-    // advance, ...
-    const geom::quadratic_multipath& glyph = io::ResourceManager::get_glyph(font, codepoint);
+    // TODO: handle line breaks, tabs, etc.
+    const io::text::Glyph& glyph = font.get_glyph(codepoint);
+    const float kerning = font.get_kerning(prev_index, glyph.index);
 
-    int kerning = stbtt_GetCodepointKernAdvance(
-        static_cast<const stbtt_fontinfo*>(static_cast<const void*>(&font.info)),
-        prev_c,
-        codepoint);
+    cursor += kerning * font_size;
 
-    cursor += kerning * font.scale_factor * font_size;
+    if (glyph.path.empty()) {
+      cursor += glyph.advance * font_size;
+      drawable.bounding_rect.max.x += glyph.advance * font_size;
+      prev_index = glyph.index;
 
-    int advance_int, left_size_bearing_int;
-    stbtt_GetCodepointHMetrics(
-        static_cast<const stbtt_fontinfo*>(static_cast<const void*>(&font.info)),
-        codepoint,
-        &advance_int,
-        &left_size_bearing_int);
-
-    const float advance = static_cast<float>(advance_int) * font.scale_factor * font_size;
-    const float left_side_bearing = static_cast<float>(left_size_bearing_int) * font.scale_factor *
-                                    font_size;
-
-    if (glyph.empty()) {
-      cursor += advance;
-      drawable.bounding_rect.max.x += advance;
-      prev_c = codepoint;
       continue;
     }
 
-    const size_t num = glyph.size();
+    const size_t num = glyph.path.size();
     const size_t bands_offset = drawable.bands.size();
     const size_t curves_offset = drawable.curves.size() / 2;
 
     /* Reserve space and setup drawable. */
 
-    int x0, y0, x1, y1;
-    stbtt_GetCodepointBox(static_cast<const stbtt_fontinfo*>(static_cast<const void*>(&font.info)),
-                          codepoint,
-                          &x0,
-                          &y0,
-                          &x1,
-                          &y1);
+    drect glyph_bounds = drect(glyph.bounding_rect) * font_size + dvec2(cursor, 0.0);
 
-    const float ascent = font.ascent * font_size;
-    const float descent = font.descent * font_size;
-
-    drect glyph_bounds = {dvec2(x0, -y1) * font.scale_factor * font_size + dvec2(cursor, 0.0),
-                          dvec2(x1, -y0) * font.scale_factor * font_size + dvec2(cursor, 0.0)};
     drawable.curves.reserve(drawable.curves.size() + num * 4);
-
-    float fx0 = static_cast<float>(x0) * font.scale_factor;
-    float fy0 = static_cast<float>(-y0) * font.scale_factor;
-    float fx1 = static_cast<float>(x1) * font.scale_factor;
-    float fy1 = static_cast<float>(-y1) * font.scale_factor;
-
-    const vec2 curves_delta = {-fx0, -fy1};
-    const vec2 curves_factor = {1.0f / std::abs(fx1 - fx0), 1.0f / std::abs(fy1 - fy0)};
-
-    // draw_rect(
-    //     vec2(x0, -y0) * font.scale_factor * font_size, vec2(0.4f), vec4(1.0f, 0.0f,
-    //     0.0f, 1.0f));
-    // draw_rect(
-    //     vec2(x1, -y1) * font.scale_factor * font_size, vec2(0.4f), vec4(0.0f, 1.0f,
-    //     0.0f, 1.0f));
 
     draw_rect(vec2(cursor, 0.0f), vec2(0.3f));
 
@@ -446,19 +403,19 @@ bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, 
 
     size_t accumulated_size = 0;
 
-    for (int k = 0; k < glyph.starts.size(); k++) {
-      const size_t start_i = glyph.starts[k];
-      const size_t end_i = k + 1 < glyph.starts.size() ? glyph.starts[k + 1] - 2 :
-                                                         glyph.points.size() - 2;
+    for (int k = 0; k < glyph.path.starts.size(); k++) {
+      const size_t start_i = glyph.path.starts[k];
+      const size_t end_i = k + 1 < glyph.path.starts.size() ? glyph.path.starts[k + 1] - 2 :
+                                                              glyph.path.points.size() - 2;
 
       // TODO: Horizontal segments should not be added
+      // TODO: already added glyphs should not be added again, offsetts should be cached
       for (size_t i = start_i; i < end_i; i += 2) {
-        const vec2 p0 = (glyph[i] + curves_delta) * curves_factor;
-        const vec2 p1 = (glyph[i + 1] + curves_delta) * curves_factor;
-        const vec2 p2 = (glyph[i + 2] + curves_delta) * curves_factor;
+        const vec2 p0 = glyph.path[i];
+        const vec2 p1 = glyph.path[i + 1];
+        const vec2 p2 = glyph.path[i + 2];
 
         drawable.push_curve(p0, p1, p2);
-        // draw_rect(vec2(cursor, 0.0f) + glyph[i] * 24.0f, vec2(0.2f), vec4(1.0f));
 
         min[(i - k) / 2] = math::min(p0, p2);
         max[(i - k) / 2] = math::max(p0, p2);
@@ -531,18 +488,10 @@ bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, 
                        attr_2,
                        attr_3);
 
-    // drawable.push_fill(vec2(drawable.bounding_rect.min),
-    //                    vec2(drawable.bounding_rect.max),
-    //                    uvec4(color * 255.0f),
-    //                    {vec2::zero(), vec2(1.0f, 0.0f), vec2::identity(), vec2(0.0f, 1.0f)},
-    //                    attr_1,
-    //                    attr_2);
-
-    cursor += advance;
-    // TODO: optimize maybe
     drawable.bounding_rect = drect::from_rects(drawable.bounding_rect, glyph_bounds);
 
-    prev_c = codepoint;
+    cursor += glyph.advance * font_size;
+    prev_index = glyph.index;
   }
 
   drawable.paints.push_back(

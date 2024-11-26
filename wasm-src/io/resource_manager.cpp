@@ -62,41 +62,17 @@ uuid ResourceManager::load_image(const uint8_t* data, const size_t size)
   return id;
 }
 
-inline static stbtt_fontinfo* to_stbtt_fontinfo(FontInfo* font_info)
-{
-  return static_cast<stbtt_fontinfo*>(static_cast<void*>(font_info));
-}
-
-inline static const stbtt_fontinfo* to_stbtt_fontinfo(const FontInfo* font_info)
-{
-  return static_cast<const stbtt_fontinfo*>(static_cast<const void*>(font_info));
-}
-
 uuid ResourceManager::load_font(const uint8_t* data, const size_t size)
 {
-  const uuid id = uuid();
-
-  Font font(data, size);
-  stbtt_fontinfo* font_info = to_stbtt_fontinfo(&font.info);
+  text::Font font(data, size);
 
   // TODO: load multiple fonts from the same file if needed
-  if (!stbtt_InitFont(font_info, font.data, 0)) {
+  if (!font.valid()) {
     console::error("Failed to load font from memory!");
     return uuid::null;
   }
 
-  int ascent, descent, line_spacing;
-
-  stbtt_GetFontVMetrics(font_info, &ascent, &descent, &line_spacing);
-
-  font.scale_factor = stbtt_ScaleForPixelHeight(font_info, 1.0f);
-  font.ascent = ascent * font.scale_factor;
-  font.descent = descent * font.scale_factor;
-  font.line_spacing = line_spacing * font.scale_factor;
-
-  s_instance->m_fonts.insert({id, std::move(font)});
-
-  return id;
+  return s_instance->m_fonts.insert(std::make_pair(uuid(), std::move(font))).first->first;
 }
 
 Image ResourceManager::get_image(const uuid id)
@@ -110,7 +86,7 @@ Image ResourceManager::get_image(const uuid id)
   return Image{it->second.data, it->second.size, it->second.channels};
 }
 
-const Font& ResourceManager::get_font(const uuid id)
+const text::Font& ResourceManager::get_font(const uuid id)
 {
   const auto it = s_instance->m_fonts.find(id);
 
@@ -121,60 +97,6 @@ const Font& ResourceManager::get_font(const uuid id)
   }
 
   return it->second;
-}
-
-const geom::quadratic_multipath& ResourceManager::get_glyph(const Font& font,
-                                                            const uint32_t codepoint)
-{
-  const auto it = font.glyphs.find(codepoint);
-
-  if (it != font.glyphs.end()) {
-    return it->second;
-  }
-
-  const stbtt_fontinfo* font_info = to_stbtt_fontinfo(&font.info);
-
-  geom::quadratic_multipath path;
-  stbtt_vertex* vertices;
-  size_t num_vertices;
-
-  num_vertices = stbtt_GetCodepointShape(font_info, codepoint, &vertices);
-
-  if (num_vertices == 0) {
-    return const_cast<Font&>(font)
-        .glyphs.insert(std::make_pair(codepoint, std::move(path)))
-        .first->second;
-  }
-
-  for (int j = 0; j < num_vertices; j++) {
-    const stbtt_vertex& vertex = vertices[j];
-
-    switch (vertex.type) {
-      case STBTT_vline:
-        path.line_to(font.scale_factor * vec2(vertex.x, -vertex.y));
-        break;
-      case STBTT_vcurve:
-        path.quadratic_to(font.scale_factor * vec2(vertex.cx, -vertex.cy),
-                          font.scale_factor * vec2(vertex.x, -vertex.y));
-        break;
-      case STBTT_vcubic:
-        path.cubic_to(font.scale_factor * vec2(vertex.cx, -vertex.cy),
-                      font.scale_factor * vec2(vertex.cx1, -vertex.cy1),
-                      font.scale_factor * vec2(vertex.x, -vertex.y));
-        break;
-      default:
-      case STBTT_vmove:
-        path.move_to(font.scale_factor * vec2(vertex.x, -vertex.y));
-        break;
-    }
-  }
-
-  delete[] vertices;
-
-  // TODO: copy this format of cache insert/return to other functions
-  return const_cast<Font&>(font)
-      .glyphs.insert(std::make_pair(codepoint, std::move(path)))
-      .first->second;
 }
 
 void ResourceManager::prefetch_shaders()

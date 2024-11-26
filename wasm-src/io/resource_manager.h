@@ -76,9 +76,7 @@ class ResourceManager {
    */
   static Image get_image(uuid id);
 
-  static const Font& get_font(const uuid id);
-
-  static const geom::quadratic_multipath& get_glyph(const Font& font, const uint32_t codepoint);
+  static const text::Font& get_font(const uuid id);
 
  private:
   /**
@@ -118,7 +116,7 @@ class ResourceManager {
  private:
   std::unordered_map<std::string, std::string> m_shaders;  // The cache of shaders.
   std::unordered_map<uuid, ImageData> m_images;            // The cache of images.
-  std::unordered_map<uuid, Font> m_fonts;                  // The cache of fonts.
+  std::unordered_map<uuid, text::Font> m_fonts;            // The cache of fonts.
  private:
   static ResourceManager* s_instance;  // The instance of the resource manager singleton.
 };

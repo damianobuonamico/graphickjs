@@ -9,7 +9,18 @@
 
 #include <unordered_map>
 
-namespace graphick::io {
+namespace graphick::io::text {
+
+/**
+ * @brief The glyph data.
+ */
+struct Glyph {
+  int index;                       // The glyph index, use this instead of the codepoint for speed.
+  float advance;                   // Offset from the current position to the next.
+  rect bounding_rect;              // The bounding rectangle of the glyph.
+
+  geom::quadratic_multipath path;  // The glyph path.
+};
 
 /**
  * @brief The font information, compatible with stb_truetype.
@@ -42,20 +53,9 @@ struct FontInfo {
 
 /**
  * @brief The font.
- *
- * @todo convert to class with private members and public getters
  */
-struct Font {
-  uint8_t* data;       // The font data.
-  FontInfo info;       // The font information, (specific to stb_truetype).
-
-  float scale_factor;  // Factor to multiply the glyphs by to get unit scale.
-  float ascent;        // The ascent of the font, in unit scale.
-  float descent;       // The descent of the font, in unit scale.
-  float line_spacing;  // The distance between two lines of text, in unit scale.
-
-  std::unordered_map<uint32_t, geom::quadratic_multipath> glyphs;  // The loaded glyphs map.
-
+class Font {
+ public:
   /**
    * @brief Copies the font file locally. It doesn't delete the original data.
    *
@@ -63,26 +63,20 @@ struct Font {
    *
    * @param data The font file.
    */
-  inline Font(const uint8_t* data, const size_t size)
-  {
-    this->data = new uint8_t[size];
-    std::copy(data, data + size, this->data);
-  }
+  Font(const uint8_t* data, const size_t size);
 
   /**
    * @brief Copy and move constructors.
    */
   Font(const Font&) = delete;
   Font(Font&& other)
-      : data(other.data),
-        info(other.info),
-        scale_factor(other.scale_factor),
-        ascent(other.ascent),
-        descent(other.descent),
-        line_spacing(other.line_spacing),
-        glyphs(std::move(other.glyphs))
+      : m_data(other.m_data),
+        m_info(other.m_info),
+        m_scale_factor(other.m_scale_factor),
+        m_line_spacing(other.m_line_spacing),
+        m_glyphs(std::move(other.m_glyphs))
   {
-    other.data = nullptr;
+    other.m_data = nullptr;
   }
 
   /**
@@ -92,17 +86,15 @@ struct Font {
   Font& operator=(Font&& other)
   {
     if (this != &other) {
-      delete[] data;
+      delete[] m_data;
 
-      data = other.data;
-      info = other.info;
-      scale_factor = other.scale_factor;
-      ascent = other.ascent;
-      descent = other.descent;
-      line_spacing = other.line_spacing;
-      glyphs = std::move(other.glyphs);
+      m_data = other.m_data;
+      m_info = other.m_info;
+      m_scale_factor = other.m_scale_factor;
+      m_line_spacing = other.m_line_spacing;
+      m_glyphs = std::move(other.m_glyphs);
 
-      other.data = nullptr;
+      other.m_data = nullptr;
     }
 
     return *this;
@@ -111,10 +103,65 @@ struct Font {
   /**
    * @brief Frees the font data.
    */
-  inline ~Font()
+  ~Font()
   {
-    delete[] data;
+    delete[] m_data;
   }
+
+  /**
+   * @brief Returns whether the font is valid.
+   *
+   * @return Whether the font is valid.
+   */
+  inline bool valid() const
+  {
+    return m_data != nullptr;
+  }
+
+  /**
+   * @brief Returns the glyph for the given codepoint.
+   *
+   * @param codepoint The Unicode codepoint.
+   * @return The glyph for the codepoint.
+   */
+  inline const Glyph& get_glyph(const int codepoint) const
+  {
+    const auto it = m_glyphs.find(codepoint);
+
+    if (it != m_glyphs.end()) {
+      return it->second;
+    }
+
+    return m_glyphs.insert(std::make_pair(codepoint, std::move(load_glyph(codepoint))))
+        .first->second;
+  }
+
+  /**
+   * @brief Returns the kerning between two glyphs.
+   *
+   * @param glyph1 The first glyph index.
+   * @param glyph2 The second glyph index.
+   * @return The kerning between the two glyphs.
+   */
+  float get_kerning(const int glyph1, const int glyph2) const;
+
+ private:
+  /**
+   * @brief Loads the glyph for the given codepoint.
+   *
+   * @param codepoint The Unicode codepoint.
+   * @return The glyph for the codepoint.
+   */
+  const Glyph load_glyph(const int codepoint) const;
+
+ private:
+  uint8_t* m_data;       // The font data.
+  FontInfo m_info;       // The font information, (specific to stb_truetype).
+
+  float m_scale_factor;  // Factor to multiply the glyphs by to get unit scale.
+  float m_line_spacing;  // The distance between two lines of text, in unit scale.
+
+  mutable std::unordered_map<int, Glyph> m_glyphs;  // A map of cached codepoints to glyphs.
 };
 
-}  // namespace graphick::io
+}  // namespace graphick::io::text
