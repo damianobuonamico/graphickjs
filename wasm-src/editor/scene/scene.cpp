@@ -71,115 +71,52 @@ const Entity Scene::get_entity(const uuid id) const
   return {m_entities.at(id), const_cast<Scene*>(this)};
 }
 
-Entity Scene::create_entity(const std::string& tag, const bool generate_tag)
-{
-  io::EncodedData data;
-  uuid id = uuid();
-
-  data.component_id(IDComponent::component_id).uuid(id);
-
-  if (generate_tag) {
-    data.component_id(TagComponent::component_id)
-        .string(tag.empty() ? "Entity " + std::to_string(m_entity_tag_number++) : tag);
-  }
-
-  data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Category::None));
-
-  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
-
-  history.add(id, Action::Target::Entity, std::move(data));
-
-  return get_entity(id);
-}
-
 Entity Scene::create_element()
 {
-  io::EncodedData data;
-  uuid id = uuid();
+  const uuid id = uuid();
 
-  data.component_id(IDComponent::component_id).uuid(id);
+  Entity entity = create_entity(id, "Element");
 
-  data.component_id(TagComponent::component_id)
-      .string("Element " + std::to_string(m_entity_tag_number++));
+  entity.add<PathComponent>();
+  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
 
-  data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
-
-  data.component_id(PathComponent::component_id).uint8(0);
-
-  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
-
-  history.add(id, Action::Target::Entity, std::move(data));
-
-  return get_entity(id);
+  return entity;
 }
 
 Entity Scene::create_element(const geom::path& path)
 {
-  io::EncodedData data;
-  uuid id = uuid();
+  const uuid id = uuid();
 
-  data.component_id(IDComponent::component_id).uuid(id);
+  Entity entity = create_entity(id, "Element");
 
-  data.component_id(TagComponent::component_id)
-      .string("Element " + std::to_string(m_entity_tag_number++));
+  entity.add<PathComponent>(path);
+  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
 
-  data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
-
-  data.component_id(PathComponent::component_id);
-  path.encode(data);
-
-  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
-
-  history.add(id, Action::Target::Entity, std::move(data));
-
-  return get_entity(id);
+  return entity;
 }
 
 Entity Scene::create_image(const uuid image_id)
 {
-  io::EncodedData data;
-  uuid id = uuid();
+  const uuid id = uuid();
 
-  data.component_id(IDComponent::component_id).uuid(id);
+  Entity entity = create_entity(id, "Image");
 
-  data.component_id(TagComponent::component_id)
-      .string("Image " + std::to_string(m_entity_tag_number++));
+  entity.add<ImageComponent>(image_id);
+  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
 
-  data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
-
-  data.component_id(ImageComponent::component_id).uuid(image_id);
-
-  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
-
-  history.add(id, Action::Target::Entity, std::move(data));
-
-  return get_entity(id);
+  return entity;
 }
 
 Entity Scene::create_text(const std::string& text, const uuid font_id = uuid::null)
 {
-  io::EncodedData data;
-  uuid id = uuid();
+  const uuid id = uuid();
 
-  data.component_id(IDComponent::component_id).uuid(id);
+  Entity entity = create_entity(id, "Text");
 
-  data.component_id(TagComponent::component_id)
-      .string("Text " + std::to_string(m_entity_tag_number++));
+  entity.add<TextComponent>(text, font_id);
+  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
 
-  data.component_id(CategoryComponent::component_id)
-      .uint8(static_cast<uint8_t>(CategoryComponent::Category::Selectable));
-
-  data.component_id(TextComponent::component_id).string(text).uuid(font_id);
-
-  data.component_id(TransformComponent::component_id).mat2x3(mat2x3::identity());
-
-  history.add(id, Action::Target::Entity, std::move(data));
-
-  return get_entity(id);
+  return entity;
 }
 
 void Scene::delete_entity(Entity entity)
@@ -194,7 +131,7 @@ void Scene::delete_entity(uuid id)
 
 uuid Scene::entity_at(const vec2 position, const bool deep_search, const float threshold) const
 {
-  GK_TOTAL("Scene::entity_atttttttttttttttttttttttttttttttttttttttttttttt");
+  GK_TOTAL("Scene::entity_at");
 
   const float zoom = viewport.zoom();
   const float local_threshold = threshold / zoom;
@@ -415,12 +352,12 @@ void Scene::render(const bool ignore_cache) const
     renderer::Outline outline_opt;
 
     if (has_fill) {
-      fill_opt = renderer::Fill(fill->color, fill->rule);
+      fill_opt = renderer::Fill(fill->paint, fill->rule);
     }
 
     if (has_stroke) {
       stroke_opt = renderer::Stroke(
-          stroke->color, stroke->cap, stroke->join, stroke->width, stroke->miter_limit);
+          stroke->paint, stroke->cap, stroke->join, stroke->width, stroke->miter_limit);
     }
 
     if (has_outline) {
@@ -503,6 +440,21 @@ void Scene::render(const bool ignore_cache) const
 #endif
 }
 
+Entity Scene::create_entity(const uuid id, const std::string& tag_type)
+{
+  Entity entity = {m_registry.create(), this};
+
+  entity.add<IDComponent>(id);
+  entity.add<TagComponent>(tag_type + " " + std::to_string(m_entity_tag_number++));
+  entity.add<CategoryComponent>(CategoryComponent::Category::Selectable);
+  entity.add<TransformComponent>();
+
+  m_entities[id] = entity;
+  m_order.push_back(entity);
+
+  return entity;
+}
+
 void Scene::add(const uuid id, const io::EncodedData& encoded_data)
 {
   Entity entity = {m_registry.create(), this, encoded_data};
@@ -568,7 +520,6 @@ bool Scene::is_entity_at(const Entity entity,
           threshold,
           deep_search_entity);
     }
-
     return geom::is_point_in_rect(position, transform.bounding_rect(), threshold);
   }
 
@@ -583,23 +534,22 @@ bool Scene::is_entity_at(const Entity entity,
   geom::StrokingOptions<float> stroking_options;
 
   if (hit_test_type != HitTestType::OutlineOnly && entity.has_component<FillComponent>()) {
-    // TODO: new fill and stroke components
-    auto& fill_component = entity.get_component<FillComponent>().fill_TEMP();
+    auto& fill_component = entity.get_component<FillComponent>();
 
-    filling_options = geom::FillingOptions{fill_component.rule};
-    has_fill = fill_component.visible && fill_component.color.a > 0.0f;
+    filling_options = geom::FillingOptions{fill_component.rule()};
+    has_fill = fill_component.visible() && fill_component.paint().visible();
   }
 
   if (entity.has_component<StrokeComponent>()) {
-    auto& stroke_component = entity.get_component<StrokeComponent>().stroke_TEMP();
+    auto& stroke_component = entity.get_component<StrokeComponent>();
 
     stroking_options = geom::StrokingOptions<float>{
         static_cast<float>(Settings::Renderer::stroking_tolerance),
-        stroke_component.width,
-        stroke_component.miter_limit,
-        stroke_component.cap,
-        stroke_component.join};
-    has_stroke = stroke_component.visible && stroke_component.color.a > 0.0f;
+        stroke_component.width(),
+        stroke_component.miter_limit(),
+        stroke_component.cap(),
+        stroke_component.join()};
+    has_stroke = stroke_component.visible() && stroke_component.paint().visible();
   }
 
   if (hit_test_type == HitTestType::OutlineOnly ||

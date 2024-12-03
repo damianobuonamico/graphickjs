@@ -8,7 +8,9 @@
 
 #pragma once
 
-#include "components.h"
+#include "components/appearance.h"
+#include "components/base.h"
+
 #include "scene.h"
 
 #include "../../utils/assert.h"
@@ -62,18 +64,18 @@ class Entity {
   template<typename T, typename... Args>
   inline T add_component(Args&&... args)
   {
-    if (has_component<T>())
+    if (has_component<T>()) {
       remove_component<T>();
+    }
 
-    using Data = typename T::Data;
+    T component = add<T>(std::forward<Args>(args)...);
 
-    Data data = Data(std::forward<Args>(args)...);
-    io::EncodedData encoded_data{};
+    io::EncodedData encoded_data;
+    component.encode(encoded_data);
 
-    m_scene->history.add(
-        id(), Action::Target::Component, std::move(T(this, &data).encode(encoded_data)));
+    m_scene->history.add(id(), Action::Target::Component, std::move(encoded_data), false);
 
-    return get_component<T>();
+    return component;
   }
 
   /**
@@ -124,7 +126,7 @@ class Entity {
   template<>
   inline const TransformComponent get_component() const
   {
-    GK_ASSERT(has_component<TransformComponent>(), "Entity does not have component!");
+    GK_ASSERT(has_component<TransformComponent>(), "Entity does not have a TransformComponent!");
 
     if (has_component<PathComponent>()) {
       return TransformComponent{this,
@@ -384,6 +386,7 @@ class Entity {
   Scene* m_scene;         // A pointer to the scene this entity belongs to.
  private:
   friend struct Action;
+  friend class Scene;
 };
 
 }  // namespace graphick::editor

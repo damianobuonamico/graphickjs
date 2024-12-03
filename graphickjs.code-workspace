@@ -7,6 +7,7 @@
   "settings": {
     "files.associations": {
       "*.h": "cpp",
+      ".clang-format": "yaml",
       "algorithm": "cpp",
       "cmath": "cpp",
       "array": "cpp",
@@ -82,7 +83,10 @@
       "xutility": "cpp",
       "iostream": "cpp",
       "random": "cpp",
-      "*.glsl": "glsl"
+      "*.glsl": "glsl",
+      "condition_variable": "cpp",
+      "coroutine": "cpp",
+      "shared_mutex": "cpp"
     }
   }
 }

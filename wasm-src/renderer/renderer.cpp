@@ -15,7 +15,7 @@
 
 // TODO: this is temp, the renderer should not know about the editor
 #include "../editor/scene/cache.h"
-#include "../editor/scene/components.h"
+#include "../editor/scene/components/text.h"
 
 #include "../geom/intersections.h"
 #include "../geom/path.h"
@@ -577,7 +577,7 @@ bool Renderer::draw_transformed(const geom::dpath& path,
   Drawable drawable;
 
   // TODO: check if intersects visible area
-  if (options.fill && options.fill->visible()) {
+  if (options.fill && options.fill->paint.visible()) {
     geom::dcubic_path cubic_path = path.to_cubic_path();
 
     if (!cubic_path.closed()) {
@@ -589,7 +589,7 @@ bool Renderer::draw_transformed(const geom::dpath& path,
   }
 
   // TODO: check if intersects visible area
-  if (options.stroke && options.stroke->visible()) {
+  if (options.stroke && options.stroke->paint.visible()) {
     Fill stroke_fill{options.stroke->paint, FillRule::NonZero};
 
     const geom::StrokingOptions<double> stroking_options{RendererSettings::stroking_tolerance,
@@ -1444,7 +1444,7 @@ void Renderer::flush_meshes()
   state.texture_arrays = std::vector<GPU::TextureArrayBinding>{
       {m_programs.tile_program.textures_uniform, {&data.gradients_texture}}};
 
-  // TODO: binded textures should be an array, not a map
+  // TODO: binded textures should be an array, not a map, like this texture may be swapped
   for (const auto& [texture_id, _] : m_binded_textures) {
     const auto it = m_textures.find(texture_id);
 

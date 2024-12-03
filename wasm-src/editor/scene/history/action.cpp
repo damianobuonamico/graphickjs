@@ -136,6 +136,7 @@ void Action::revert(Scene* scene) const
   }
 }
 
+// TODO: decoder error handling and robust merging
 bool Action::merge(Action& other)
 {
   if (entity_id != other.entity_id || type != Type::Modify || other.type != Type::Modify ||

@@ -1,5 +1,5 @@
 /**
- * @file properties.h
+ * @file renderer/properties.h
  * @brief Contains the properties used to render a path.
  */
 
@@ -10,6 +10,13 @@
 #include "../geom/options.h"
 
 #include "../utils/uuid.h"
+
+namespace graphick::io {
+
+class DataDecoder;
+class EncodedData;
+
+}  // namespace graphick::io
 
 namespace graphick::renderer {
 
@@ -33,12 +40,8 @@ struct Paint {
    */
   Paint(const Paint& paint) : m_type(paint.m_type), m_color(paint.m_color) {}
   Paint(const vec4& color) : m_type(Type::ColorPaint), m_color(color) {}
-  Paint(const uuid paint_id, const Type type) : m_type(type), m_id(paint_id)
-  {
-    if (m_type == Type::ColorPaint) {
-      m_type = Type::SwatchPaint;
-    }
-  }
+  Paint(const uuid paint_id, const Type type);
+  Paint(io::DataDecoder& decoder);
 
   /**
    * @brief Assignment operators.
@@ -114,6 +117,19 @@ struct Paint {
     return m_id;
   }
 
+  inline bool visible() const
+  {
+    return m_type != Type::ColorPaint || m_color.a > 0.0f;
+  }
+
+  /**
+   * @brief Encodes the component in binary format.
+   *
+   * @param data The encoded data to append the component to.
+   * @return A reference to the encoded data.
+   */
+  io::EncodedData& encode(io::EncodedData& data) const;
+
  private:
   Type m_type;     // The type of the paint.
 
@@ -158,14 +174,6 @@ struct Fill {
     rule = fill.rule;
     return *this;
   }
-
-  /**
-   * @brief Checks if the fill is visible.
-   */
-  inline bool visible() const
-  {
-    return paint.type() != Paint::Type::ColorPaint || paint.color().a > 0.0f;
-  }
 };
 
 /**
@@ -177,8 +185,8 @@ struct Stroke {
   LineCap cap;         // The line cap used to determine how the ends of a stroke are drawn.
   LineJoin join;       // The line join used to determine how the corners of a stroke are drawn.
 
-  double width;        // The width of the stroke.
   double miter_limit;  // The miter limit used to determine whether the join is mitered or beveled.
+  double width;        // The width of the stroke.
 
   /**
    * @brief Default constructor
@@ -228,14 +236,6 @@ struct Stroke {
     width = stroke.width;
     miter_limit = stroke.miter_limit;
     return *this;
-  }
-
-  /**
-   * @brief Checks if the stroke is visible.
-   */
-  inline bool visible() const
-  {
-    return paint.type() != Paint::Type::ColorPaint || paint.color().a > 0.0f;
   }
 };
 

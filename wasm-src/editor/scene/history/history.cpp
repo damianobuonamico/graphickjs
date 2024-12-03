@@ -5,35 +5,49 @@
 
 #include "history.h"
 
+#include "../scene.h"
+
 #include "../../../utils/console.h"
 
 namespace graphick::editor {
 
-History::History(Scene *scene) : m_scene(scene), m_batch_indices({0}) {}
+History::History(Scene* scene) : m_scene(scene), m_batch_indices({0}) {}
 
-void History::add(uuid entity_id, Action::Target target, const io::EncodedData &encoded_data)
+void History::add(uuid entity_id,
+                  Action::Target target,
+                  const io::EncodedData& encoded_data,
+                  const bool execute)
 {
-  push(Action{entity_id, target, Action::Type::Add, encoded_data});
+  push(Action{entity_id, target, Action::Type::Add, encoded_data}, execute);
 }
 
-void History::add(uuid entity_id, Action::Target target, io::EncodedData &&encoded_data)
+void History::add(uuid entity_id,
+                  Action::Target target,
+                  io::EncodedData&& encoded_data,
+                  const bool execute)
 {
-  push(Action{entity_id, target, Action::Type::Add, std::move(encoded_data)});
+  push(Action{entity_id, target, Action::Type::Add, std::move(encoded_data)}, execute);
 }
 
-void History::remove(uuid entity_id, Action::Target target, const io::EncodedData &encoded_data)
+void History::remove(uuid entity_id,
+                     Action::Target target,
+                     const io::EncodedData& encoded_data,
+                     const bool execute)
 {
-  push(Action{entity_id, target, Action::Type::Remove, encoded_data});
+  push(Action{entity_id, target, Action::Type::Remove, encoded_data}, execute);
 }
 
-void History::remove(uuid entity_id, Action::Target target, io::EncodedData &&encoded_data)
+void History::remove(uuid entity_id,
+                     Action::Target target,
+                     io::EncodedData&& encoded_data,
+                     const bool execute)
 {
-  push(Action{entity_id, target, Action::Type::Remove, std::move(encoded_data)});
+  push(Action{entity_id, target, Action::Type::Remove, std::move(encoded_data)}, execute);
 }
 
 void History::modify(uuid entity_id,
-                     const io::EncodedData &encoded_data,
-                     const io::EncodedData &backup_data,
+                     const io::EncodedData& encoded_data,
+                     const io::EncodedData& backup_data,
                      const bool execute)
 {
   push(
@@ -43,12 +57,10 @@ void History::modify(uuid entity_id,
 }
 
 void History::modify(uuid entity_id,
-                     io::EncodedData &&encoded_data,
-                     io::EncodedData &&backup_data,
+                     io::EncodedData&& encoded_data,
+                     io::EncodedData&& backup_data,
                      const bool execute)
 {
-  // console::log("history_size", m_actions.size());
-
   push(
       Action{
           entity_id, Action::Target::Component, Action::Type::Modify, encoded_data, backup_data},
@@ -111,14 +123,17 @@ void History::end_batch()
   m_batch_index++;
 }
 
-void History::push(Action &&action, const bool execute)
+void History::push(Action&& action, const bool execute)
 {
   bool merged = false;
 
-  // TODO: Think of how to implement this.
-  // if (execute) {
-  action.execute(m_scene);
-  // }
+  // TODO: Think of how to implement caching of actions executed outside of the history manager.
+  // Maybe just check with the id of the entity in the action
+  if (execute) {
+    action.execute(m_scene);
+  } else {
+    m_scene->m_cache.clear(action.entity_id);
+  }
 
   seal();
 
@@ -129,7 +144,7 @@ void History::push(Action &&action, const bool execute)
 
       while (!merged && i < m_actions.size()) {
         /* Try to merge the new action with this action from the batch. */
-        merged = m_actions[i].merge(static_cast<Action &>(action));
+        merged = m_actions[i].merge(static_cast<Action&>(action));
 
         i++;
       }

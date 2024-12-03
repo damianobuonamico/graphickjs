@@ -10,19 +10,9 @@
 namespace graphick::editor {
 
 #define DECODE_COMPONENT(component_type) \
-  if (component_id == component_type::component_id) { \
+  case (component_type::component_id): { \
     add<component_type>(decoder); \
-    if (decoder.end_of_data()) \
-      return; \
-    component_id = decoder.component_id(); \
-  }
-
-#define DECODE_COMPONENT_WITH_DATA(component_type, ...) \
-  if (component_id == component_type::component_id) { \
-    add<component_type>(__VA_ARGS__); \
-    if (decoder.end_of_data()) \
-      return; \
-    component_id = decoder.component_id(); \
+    break; \
   }
 
 #define ENCODE_COMPONENT(component_type) \
@@ -30,9 +20,12 @@ namespace graphick::editor {
     component_type(this, handle).encode(data); \
   }
 
+/* component_type::Data(decoder) moves the decoder to the next component. */
 #define REMOVE_COMPONENT(component_type) \
-  if (component_id == component_type::component_id) { \
+  case (component_type::component_id): { \
     remove<component_type>(); \
+    component_type::Data(decoder); \
+    break; \
   }
 
 #define MODIFY_COMPONENT(component_type) \
@@ -68,11 +61,11 @@ std::pair<uuid, io::EncodedData> Entity::duplicate() const
 {
   io::EncodedData data;
 
-  IDComponentData id_data = {uuid()};
+  IDData id_data = {uuid()};
   IDComponent(this, &id_data).encode(data);
 
   if (auto tag_handle = m_scene->m_registry.try_get<TagComponent::Data>(m_handle); tag_handle) {
-    TagComponentData tag_data = {tag_handle->tag + " (Copy)"};
+    TagData tag_data = {tag_handle->tag + " (Copy)"};
     TagComponent(this, &tag_data).encode(data);
   }
 
@@ -87,66 +80,64 @@ std::pair<uuid, io::EncodedData> Entity::duplicate() const
   return {id_data.id, data};
 }
 
-// TODO: error handling
 void Entity::add(const io::EncodedData& encoded_data, const bool full_entity)
 {
   io::DataDecoder decoder(&encoded_data);
 
-  if (decoder.end_of_data())
-    return;
+  while (!decoder.end_of_data()) {
+    const uint8_t component_id = decoder.component_id();
 
-  uint8_t component_id = decoder.component_id();
-
-  DECODE_COMPONENT(IDComponent);
-  DECODE_COMPONENT(TagComponent);
-  DECODE_COMPONENT(CategoryComponent);
-  DECODE_COMPONENT(PathComponent);
-  DECODE_COMPONENT(ImageComponent);
-  DECODE_COMPONENT(TextComponent);
-  DECODE_COMPONENT(TransformComponent);
-  DECODE_COMPONENT(StrokeComponent);
-  DECODE_COMPONENT(FillComponent);
+    switch (component_id) {
+      DECODE_COMPONENT(IDComponent);
+      DECODE_COMPONENT(TagComponent);
+      DECODE_COMPONENT(CategoryComponent);
+      DECODE_COMPONENT(PathComponent);
+      DECODE_COMPONENT(ImageComponent);
+      DECODE_COMPONENT(TextComponent);
+      DECODE_COMPONENT(TransformComponent);
+      DECODE_COMPONENT(StrokeComponent);
+      DECODE_COMPONENT(FillComponent);
+    }
+  }
 }
 
 void Entity::remove(const io::EncodedData& encoded_data)
 {
   io::DataDecoder decoder(&encoded_data);
 
-  if (decoder.end_of_data())
-    return;
+  while (!decoder.end_of_data()) {
+    const uint8_t component_id = decoder.component_id();
 
-  uint8_t component_id = decoder.component_id();
-
-  REMOVE_COMPONENT(IDComponent);
-  REMOVE_COMPONENT(TagComponent);
-  REMOVE_COMPONENT(CategoryComponent);
-  REMOVE_COMPONENT(PathComponent);
-  REMOVE_COMPONENT(ImageComponent);
-  REMOVE_COMPONENT(TextComponent);
-  REMOVE_COMPONENT(TransformComponent);
-  REMOVE_COMPONENT(StrokeComponent);
-  REMOVE_COMPONENT(FillComponent);
+    switch (component_id) {
+      REMOVE_COMPONENT(TagComponent);
+      REMOVE_COMPONENT(CategoryComponent);
+      REMOVE_COMPONENT(PathComponent);
+      REMOVE_COMPONENT(ImageComponent);
+      REMOVE_COMPONENT(TextComponent);
+      REMOVE_COMPONENT(TransformComponent);
+      REMOVE_COMPONENT(StrokeComponent);
+      REMOVE_COMPONENT(FillComponent);
+    }
+  }
 }
 
 void Entity::modify(const io::EncodedData& encoded_data)
 {
   io::DataDecoder decoder(&encoded_data);
-  if (decoder.end_of_data())
-    return;
 
-  uint8_t component_id = decoder.component_id();
-  if (decoder.end_of_data())
-    return;
+  while (!decoder.end_of_data()) {
+    const uint8_t component_id = decoder.component_id();
 
-  switch (component_id) {
-    MODIFY_COMPONENT(TagComponent);
-    MODIFY_COMPONENT(CategoryComponent);
-    MODIFY_COMPONENT(PathComponent);
-    MODIFY_COMPONENT(ImageComponent);
-    MODIFY_COMPONENT(TextComponent);
-    MODIFY_COMPONENT(TransformComponent);
-    MODIFY_COMPONENT(StrokeComponent);
-    MODIFY_COMPONENT(FillComponent);
+    switch (component_id) {
+      MODIFY_COMPONENT(TagComponent);
+      MODIFY_COMPONENT(CategoryComponent);
+      MODIFY_COMPONENT(PathComponent);
+      MODIFY_COMPONENT(ImageComponent);
+      MODIFY_COMPONENT(TextComponent);
+      MODIFY_COMPONENT(TransformComponent);
+      MODIFY_COMPONENT(StrokeComponent);
+      MODIFY_COMPONENT(FillComponent);
+    }
   }
 }
 

@@ -22,9 +22,9 @@ class History {
   /**
    * @brief Default, move and copy constructors.
    */
-  History(Scene *scene);
-  History(const History &) = delete;
-  History(History &&) = delete;
+  History(Scene* scene);
+  History(const History&) = delete;
+  History(History&&) = delete;
 
   /**
    * @brief Default constructor.
@@ -37,9 +37,16 @@ class History {
    * @param entity_id The id of the entity the action is related to.
    * @param target The target of the entity the action is related to.
    * @param encoded_data The encoded data of the target.
+   * @param execute Whether to execute the action or not (i.e. the action was already executed),
    */
-  void add(uuid entity_id, Action::Target target, const io::EncodedData &encoded_data);
-  void add(uuid entity_id, Action::Target target, io::EncodedData &&encoded_data);
+  void add(uuid entity_id,
+           Action::Target target,
+           const io::EncodedData& encoded_data,
+           const bool execute = true);
+  void add(uuid entity_id,
+           Action::Target target,
+           io::EncodedData&& encoded_data,
+           const bool execute = true);
 
   /**
    * @brief Push a Remove action to the history.
@@ -47,9 +54,16 @@ class History {
    * @param entity_id The id of the entity the action is related to.
    * @param target The target of the entity the action is related to.
    * @param encoded_data The encoded data of the target.
+   * @param execute Whether to execute the action or not (i.e. the action was already executed),
    */
-  void remove(uuid entity_id, Action::Target target, const io::EncodedData &encoded_data);
-  void remove(uuid entity_id, Action::Target target, io::EncodedData &&encoded_data);
+  void remove(uuid entity_id,
+              Action::Target target,
+              const io::EncodedData& encoded_data,
+              const bool execute = true);
+  void remove(uuid entity_id,
+              Action::Target target,
+              io::EncodedData&& encoded_data,
+              const bool execute = true);
 
   /**
    * @brief Push a Modify action to the history.
@@ -61,12 +75,12 @@ class History {
    * default is true.
    */
   void modify(uuid entity_id,
-              const io::EncodedData &encoded_data,
-              const io::EncodedData &backup_data,
+              const io::EncodedData& encoded_data,
+              const io::EncodedData& backup_data,
               const bool execute = true);
   void modify(uuid entity_id,
-              io::EncodedData &&encoded_data,
-              io::EncodedData &&backup_data,
+              io::EncodedData&& encoded_data,
+              io::EncodedData&& backup_data,
               const bool execute = true);
 
   /**
@@ -98,7 +112,7 @@ class History {
    * @param action The action to add.
    * @param execute Whether to execute the action or just push it, default is true.
    */
-  void push(Action &&action, const bool execute = true);
+  void push(Action&& action, const bool execute = true);
 
   /**
    * @brief Seal the history.
@@ -118,7 +132,7 @@ class History {
 
   int64_t m_batch_index = 0;            // The index of the last batch.
 
-  Scene *m_scene;                       // The scene the history is related to.
+  Scene* m_scene;                       // The scene the history is related to.
 };
 
 }  // namespace graphick::editor

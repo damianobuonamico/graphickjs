@@ -84,15 +84,6 @@ class Scene {
   const Entity get_entity(const uuid id) const;
 
   /**
-   * @brief Creates a new entity.
-   *
-   * @param tag The tag of the entity, if empty a default tag will be generated.
-   * @param generate_tag If true, a default tag will be generated.
-   * @return The new entity.
-   */
-  Entity create_entity(const std::string& tag = "", const bool generate_tag = true);
-
-  /**
    * @brief Creates a new element entity.
    *
    * This method automatically adds all the required components of an element entity.
@@ -199,6 +190,16 @@ class Scene {
   void render(const bool ignore_cache) const;
 
   /**
+   * @brief Creates a new entity with the specified unique identifier.
+   *
+   * This method should only be called internally to create elements, images, text, ecc.
+   *
+   * @param id The unique identifier of the entity.
+   * @param tag_type The display name of the entity type.
+   */
+  Entity create_entity(const uuid id, const std::string& tag_type);
+
+  /**
    * @brief Adds a new entity to the scene from encoded data.
    *
    * This method should only be called by the history manager.
@@ -246,6 +247,7 @@ class Scene {
  private:
   friend class Editor;
   friend class Entity;
+  friend class History;
   friend struct Action;
 };
 

@@ -11,6 +11,7 @@
 
 #include "../../utils/assert.h"
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@ struct EncodedData {
    *
    * @param t The boolean to encode.
    */
-  inline EncodedData &boolean(const bool t)
+  inline EncodedData& boolean(const bool t)
   {
     data.push_back(static_cast<uint8_t>(t));
     return *this;
@@ -41,7 +42,7 @@ struct EncodedData {
    *
    * @param t The int8_t to encode.
    */
-  inline EncodedData &int8(const int8_t t)
+  inline EncodedData& int8(const int8_t t)
   {
     data.push_back(static_cast<uint8_t>(t));
     return *this;
@@ -52,11 +53,11 @@ struct EncodedData {
    *
    * @param t The int16_t to encode.
    */
-  inline EncodedData &int16(const int16_t t)
+  inline EncodedData& int16(const int16_t t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(int16_t));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(int16_t));
     return *this;
   }
 
@@ -65,11 +66,11 @@ struct EncodedData {
    *
    * @param t The int32_t to encode.
    */
-  inline EncodedData &int32(const int32_t t)
+  inline EncodedData& int32(const int32_t t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(int32_t));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(int32_t));
     return *this;
   }
 
@@ -78,11 +79,11 @@ struct EncodedData {
    *
    * @param t The int64_t to encode.
    */
-  inline EncodedData &int64(const int64_t t)
+  inline EncodedData& int64(const int64_t t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(int64_t));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(int64_t));
     return *this;
   }
 
@@ -91,7 +92,7 @@ struct EncodedData {
    *
    * @param t The uint8_t to encode.
    */
-  inline EncodedData &uint8(const uint8_t t)
+  inline EncodedData& uint8(const uint8_t t)
   {
     data.push_back(t);
     return *this;
@@ -102,11 +103,11 @@ struct EncodedData {
    *
    * @param t The uint16_t to encode.
    */
-  inline EncodedData &uint16(const uint16_t t)
+  inline EncodedData& uint16(const uint16_t t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(uint16_t));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(uint16_t));
     return *this;
   }
 
@@ -115,11 +116,11 @@ struct EncodedData {
    *
    * @param t The uint32_t to encode.
    */
-  inline EncodedData &uint32(const uint32_t t)
+  inline EncodedData& uint32(const uint32_t t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(uint32_t));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(uint32_t));
     return *this;
   }
 
@@ -128,11 +129,11 @@ struct EncodedData {
    *
    * @param t The uint64_t to encode.
    */
-  inline EncodedData &uint64(const uint64_t t)
+  inline EncodedData& uint64(const uint64_t t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(uint64_t));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(uint64_t));
     return *this;
   }
 
@@ -141,11 +142,11 @@ struct EncodedData {
    *
    * @param t The float to encode.
    */
-  inline EncodedData &float32(const float t)
+  inline EncodedData& float32(const float t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(float));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(float));
     return *this;
   }
 
@@ -154,11 +155,11 @@ struct EncodedData {
    *
    * @param t The double to encode.
    */
-  inline EncodedData &float64(const double t)
+  inline EncodedData& float64(const double t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(double));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(double));
     return *this;
   }
 
@@ -169,7 +170,7 @@ struct EncodedData {
    *
    * @param t The bitfield to encode.
    */
-  inline EncodedData &bitfield(std::initializer_list<bool> field)
+  inline EncodedData& bitfield(std::initializer_list<bool> field)
   {
     std::initializer_list<bool>::const_iterator b = field.begin();
     uint8_t data = 0;
@@ -192,7 +193,7 @@ struct EncodedData {
    *
    * @param t The component id to encode.
    */
-  inline EncodedData &component_id(const uint8_t t)
+  inline EncodedData& component_id(const uint8_t t)
   {
     return uint8(t);
   }
@@ -204,7 +205,7 @@ struct EncodedData {
    *
    * @param t The UUID to encode.
    */
-  inline EncodedData &uuid(const uint64_t t)
+  inline EncodedData& uuid(const uint64_t t)
   {
     return uint64(t);
   }
@@ -217,7 +218,7 @@ struct EncodedData {
    *
    * @param t The string to encode.
    */
-  inline EncodedData &string(const std::string &t)
+  inline EncodedData& string(const std::string& t)
   {
     uint16(static_cast<uint16_t>(t.size()));
     data.insert(data.end(), t.begin(), t.end());
@@ -233,12 +234,12 @@ struct EncodedData {
    * @param t The vector to encode.
    */
   template<typename T>
-  inline EncodedData &vector(const std::vector<T> &t)
+  inline EncodedData& vector(const std::vector<T>& t)
   {
     uint32(static_cast<uint32_t>(t.size()));
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(t.data()),
-                reinterpret_cast<const uint8_t *>(t.data()) + t.size() * sizeof(T));
+                reinterpret_cast<const uint8_t*>(t.data()),
+                reinterpret_cast<const uint8_t*>(t.data()) + t.size() * sizeof(T));
     return *this;
   }
 
@@ -249,11 +250,11 @@ struct EncodedData {
    *
    * @param t The vec2 to encode.
    */
-  inline EncodedData &vec2(const math::vec2 &t)
+  inline EncodedData& vec2(const math::vec2& t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(math::vec2));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(math::vec2));
     return *this;
   }
 
@@ -264,11 +265,11 @@ struct EncodedData {
    *
    * @param t The mat2x3 to encode.
    */
-  inline EncodedData &mat2x3(const math::mat2x3 &t)
+  inline EncodedData& mat2x3(const math::mat2x3& t)
   {
     data.insert(data.end(),
-                reinterpret_cast<const uint8_t *>(&t),
-                reinterpret_cast<const uint8_t *>(&t) + sizeof(math::mat2x3));
+                reinterpret_cast<const uint8_t*>(&t),
+                reinterpret_cast<const uint8_t*>(&t) + sizeof(math::mat2x3));
     return *this;
   }
 
@@ -279,7 +280,7 @@ struct EncodedData {
    *
    * @param t The vec4 to encode.
    */
-  inline EncodedData &color(const vec4 &t)
+  inline EncodedData& color(const vec4& t)
   {
     uint8(static_cast<uint8_t>(t.r * 255.0f));
     uint8(static_cast<uint8_t>(t.g * 255.0f));
@@ -299,7 +300,7 @@ struct DataDecoder {
    *
    * @param data The EncodedData to decode.
    */
-  DataDecoder(const EncodedData *data) : m_data(data) {}
+  DataDecoder(const EncodedData* data) : m_data(data) {}
 
   /**
    * @brief Checks if the decoder has reached the end of the data.
@@ -644,7 +645,7 @@ struct DataDecoder {
   }
 
  private:
-  const EncodedData *m_data;  // A pointer to the underlying data to decode.
+  const EncodedData* m_data;  // A pointer to the underlying data to decode.
   size_t m_index = 0;         // The current index in the data.
 };
 

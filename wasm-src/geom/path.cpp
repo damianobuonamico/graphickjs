@@ -484,7 +484,7 @@ Path<T, _>::Path(const Path<U>& other)
 template<typename T, typename _>
 Path<T, _>::Path(io::DataDecoder& decoder)
 {
-  // Commands and points are always present, is_closed is encoded in the properties bitfield.
+  /* Commands and points are always present, is_closed is encoded in the properties bitfield. */
   const auto [not_vacant, is_closed, has_in_handle, has_out_handle] = decoder.bitfield<4>();
 
   if (!not_vacant) {
@@ -494,7 +494,7 @@ Path<T, _>::Path(io::DataDecoder& decoder)
     return;
   }
 
-  // Commands are stored in encoded form.
+  /* Commands are stored in encoded form. */
   m_commands = decoder.vector<uint8_t>();
 
   if (m_commands.empty()) {
@@ -504,7 +504,7 @@ Path<T, _>::Path(io::DataDecoder& decoder)
     return;
   }
 
-  // Points are just stored as a list of coordinates.
+  /* Points are just stored as a list of coordinates. */
   m_points = decoder.vector<math::Vec2<T>>();
   m_closed = is_closed;
 
@@ -535,12 +535,12 @@ Path<T, _>::Path(io::DataDecoder& decoder)
   }
 
   if (last_index == 0) {
-    // If there is only one command, it must be a move command.
+    /* If there is only one command, it must be a move command. */
     m_commands_size = 1;
     m_commands.resize(1);
     m_points.resize(1);
   } else {
-    // Trim the points in case the last command was a move command.
+    /* Trim the points in case the last command was a move command. */
     m_commands_size = last_index + 1;
     m_points.resize(last_point_index);
   }
@@ -2119,23 +2119,25 @@ template<typename T, typename _>
 io::EncodedData& Path<T, _>::encode(io::EncodedData& data) const
 {
   if (vacant()) {
-    // The first bit is set to true to indicate that the path is vacant.
+    /* The bitset, in particular first bit is set to 0 if the path is vacant. */
     return data.uint8(0);
   }
 
+  bool is_closed = closed();
   bool has_in = has_in_handle();
   bool has_out = has_out_handle();
 
-  // Bitfield [not_vacant, is_closed, has_in_handle, has_out_handle]
-  data.bitfield({true, closed(), has_in, has_out});
-
+  data.bitfield({true, is_closed, has_in, has_out});
   data.vector(m_commands);
   data.vector(m_points);
 
-  if (has_in)
+  if (has_in) {
     data.vec2(vec2(m_in_handle));
-  if (has_out)
+  }
+
+  if (has_out) {
     data.vec2(vec2(m_out_handle));
+  }
 
   return data;
 }
