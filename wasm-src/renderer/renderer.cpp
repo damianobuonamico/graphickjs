@@ -357,9 +357,12 @@ bool Renderer::draw(const geom::path& path,
                                  id);
 }
 
-bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, const vec4& color)
+bool Renderer::draw(const renderer::Text& text,
+                    const mat2x3& transform,
+                    const DrawingOptions& options,
+                    const uuid id)
 {
-  const io::text::Font& font = io::ResourceManager::get_font(text.font_id());
+  const io::text::Font& font = io::ResourceManager::get_font(text.font_id);
   const float font_size = 11.0f;
 
   Drawable drawable;
@@ -367,7 +370,7 @@ bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, 
   float cursor = 0.0f;
   int prev_index = 0;
 
-  const std::vector<int> codepoints = io::text::utf8_decode(text.text());
+  const std::vector<int> codepoints = io::text::utf8_decode(text.text);
 
   for (const int codepoint : codepoints) {
     // TODO: handle line breaks, tabs, etc.
@@ -476,17 +479,19 @@ bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, 
 
     /* Setup attributes. */
 
-    const uvec4 col = uvec4(color * 255.0f);
-    const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, curves_offset);
-    const uint32_t attr_2 = TileVertex::create_attr_2(0, true, true, 0);
-    const uint32_t attr_3 = TileVertex::create_attr_3(horizontal_bands, bands_offset);
+    if (options.fill) {
+      const uvec4 col = uvec4(options.fill->paint.color() * 255.0f);
+      const uint32_t attr_1 = TileVertex::create_attr_1(0, 0, curves_offset);
+      const uint32_t attr_2 = TileVertex::create_attr_2(0, true, true, 0);
+      const uint32_t attr_3 = TileVertex::create_attr_3(horizontal_bands, bands_offset);
 
-    drawable.push_tile(glyph_bounds,
-                       col,
-                       {vec2::zero(), vec2(1.0f, 0.0f), vec2::identity(), vec2(0.0f, 1.0f)},
-                       attr_1,
-                       attr_2,
-                       attr_3);
+      drawable.push_tile(glyph_bounds,
+                         col,
+                         {vec2::zero(), vec2(1.0f, 0.0f), vec2::identity(), vec2(0.0f, 1.0f)},
+                         attr_1,
+                         attr_2,
+                         attr_3);
+    }
 
     drawable.bounding_rect = drect::from_rects(drawable.bounding_rect, glyph_bounds);
 
@@ -500,6 +505,18 @@ bool Renderer::draw(const editor::TextComponent& text, const mat2x3& transform, 
   get()->draw(drawable);
 
   return true;
+}
+
+bool Renderer::draw_image(const uuid image_id, const mat2x3& transform)
+{
+  const io::Image& image = io::ResourceManager::get_image(image_id);
+
+  geom::path path;
+  Fill fill = {Paint(image_id, Paint::Type::TexturePaint), FillRule::NonZero};
+
+  path.rect(vec2::zero(), vec2(image.size));
+
+  return get()->draw(path, transform, {&fill, nullptr, nullptr});
 }
 
 void Renderer::draw_rect(const rect& rect, const std::optional<vec4> color)

@@ -107,9 +107,26 @@ class Renderer {
                    const DrawingOptions& options,
                    const uuid id);
 
-  // TODO: this is temp, the renderer should not know about the editor
-  // TODO: this should be cachable too
-  static bool draw(const editor::TextComponent& text, const mat2x3& transform, const vec4& color);
+  /**
+   * @brief Draws a Text with the provided Fill and Stroke properties.
+   *
+   * @param text The Text to draw.
+   * @param transform The transformation matrix to apply to the text.
+   * @param options The DrawingOptions to use.
+   * @param id The id used for caching.
+   * @return true if the text was visible and drawn, false otherwise.
+   */
+  static bool draw(const renderer::Text& text,
+                   const mat2x3& transform,
+                   const DrawingOptions& options,
+                   const uuid id);
+  /**
+   * @brief Draws an image with the provided image_id.
+   *
+   * @param image_id The id of the image in the ResourceManager to draw.
+   * @param transform The transformation matrix to apply to the image.
+   */
+  static bool draw_image(const uuid image_id, const mat2x3& transform);
 
   /**
    * @brief Draws a rectangle with the provided color.

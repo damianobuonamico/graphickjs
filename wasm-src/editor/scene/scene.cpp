@@ -247,197 +247,141 @@ std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const mat
   return entities;
 }
 
+static void render_image(const Entity& entity,
+                         const uuid id,
+                         const mat2x3& transform,
+                         const renderer::Outline* outline)
+{
+  const ImageComponent image = entity.get_component<ImageComponent>();
+  const vec2 size = vec2(image.size());
+
+  renderer::Fill fill{
+      image.id(), renderer::Paint::Type::TexturePaint, renderer::FillRule::NonZero};
+
+  renderer::Renderer::draw(
+      image.path(), transform, renderer::DrawingOptions{&fill, nullptr, outline}, id);
+}
+
 void Scene::render(const bool ignore_cache) const
 {
   GK_TOTAL("Scene::render");
 
-  const math::rect visible_rect = viewport.visible();
+  /* Flooring to avoid banding artifacts. */
+  const ivec2 viewport_size = ivec2(math::floor(vec2(viewport.size()) * viewport.dpr()));
   const renderer::Viewport rendering_viewport = {
-      ivec2(math::floor(vec2(viewport.size()) *
-                        viewport.dpr())),  // Flooring to avoid banding artifacts.
+      viewport_size,
       dvec2(viewport.position()),
-      double(viewport.zoom() * viewport.dpr()),
-      double(viewport.dpr()),
+      static_cast<double>(viewport.zoom() * viewport.dpr()),
+      static_cast<double>(viewport.dpr()),
       vec4{0.2f, 0.2f, 0.21f, 1.0f}};
 
   renderer::Renderer::begin_frame({rendering_viewport, &m_cache, ignore_cache});
 
-  uint32_t z_index = 1;
+  const auto& selected = selection.selected();
+  const auto& temp_selected = selection.temp_selected();
+  const bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
 
-  bool should_rehydrate = true;
-
-  auto& selected = selection.selected();
-  auto& temp_selected = selection.temp_selected();
-
-  bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
-
-  // TODO: handle objects with transparency
   for (auto it = m_order.begin(); it != m_order.end(); it++) {
     const Entity entity = {*it, const_cast<Scene*>(this)};
     const uuid id = entity.id();
-    const TransformComponent transform = entity.get_component<TransformComponent>();
 
-    if (!has_entity(id)) {
-      return;
-    }
-
+    const bool is_element = entity.is_element();
+    const bool is_text = entity.is_text();
     const bool is_selected = selected.find(id) != selected.end();
     const bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
     const bool has_outline = is_selected || is_temp_selected;
 
-    // TODO: this is temp, every tipe of entity should be extracted in a separate method
+    const mat2x3& transform_matrix = m_registry.get<TransformData>(*it).matrix;
+
+    renderer::Outline outline_opt = {
+        nullptr, is_element && draw_vertices, Settings::Renderer::ui_primary_color};
+
     if (entity.is_image()) {
-      const ImageComponent image = entity.get_component<ImageComponent>();
-      const vec2 size = vec2(image.size());
-
-      renderer::Fill fill{
-          image.id(), renderer::Paint::Type::TexturePaint, renderer::FillRule::NonZero};
-
-      renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
-
-      // TODO: if possible, should render as 4 tiles and 1 fill (not 1 fill due to subpixel
-      // positioning)
-      renderer::Renderer::draw(image.path(),
-                               transform.matrix(),
-                               {&fill, nullptr, has_outline ? &outline : nullptr},
-                               id);
-
+      render_image(entity, id, transform_matrix, has_outline ? &outline_opt : nullptr);
       continue;
-    } else if (entity.is_text()) {
-      const TextComponent text = entity.get_component<TextComponent>();
-
-      // TODO: in the TextComponent there should be an array of fills and strokes for each
-      // character range.
-      // TODO: there should be a uuid set in addition to the cache map: when we query the cache, we
-      // should remove the uuid from the set. At the end of the frame, we remove all the uuids that
-      // are still in the set from the cache.
-      renderer::Renderer::draw(text, transform.matrix(), vec4(0.9f));
-
+    } else if (!(is_element || is_text)) {
       continue;
     }
 
-    const geom::path& path = entity.get_component<PathComponent>().data();
+    renderer::Fill fill_opt;
+    renderer::Stroke stroke_opt;
+    renderer::DrawingOptions options;
 
-    if (should_rehydrate) {
-      // path.rehydrate_cache();
+    options.outline = has_outline ? &outline_opt : nullptr;
+
+    bool has_fill = m_registry.all_of<FillData>(*it);
+    bool has_stroke = m_registry.all_of<StrokeData>(*it);
+
+    if (has_fill) {
+      const FillData& fill = m_registry.get<FillData>(*it);
+
+      if (fill.visible && fill.paint.visible()) {
+        fill_opt = renderer::Fill(fill);
+        options.fill = &fill_opt;
+      } else {
+        has_fill = false;
+      }
     }
 
-    bool has_fill = m_registry.all_of<FillComponent::Data>(*it);
-    bool has_stroke = m_registry.all_of<StrokeComponent::Data>(*it);
+    if (has_stroke) {
+      const StrokeData& stroke = m_registry.get<StrokeData>(*it);
 
-    const std::optional<FillComponent::Data> fill =
-        has_fill ? std::optional<FillComponent::Data>(m_registry.get<FillComponent::Data>(*it)) :
-                   std::nullopt;
-    const std::optional<StrokeComponent::Data> stroke =
-        has_stroke ?
-            std::optional<StrokeComponent::Data>(m_registry.get<StrokeComponent::Data>(*it)) :
-            std::nullopt;
-
-    if (has_fill && !fill->visible) {
-      has_fill = false;
-    }
-    if (has_stroke && !stroke->visible) {
-      has_stroke = false;
+      if (stroke.visible && stroke.paint.visible()) {
+        stroke_opt = renderer::Stroke(stroke);
+        options.stroke = &stroke_opt;
+      } else {
+        has_stroke = false;
+      }
     }
 
     if (!has_fill && !has_stroke && !has_outline) {
       continue;
     }
 
-    const mat2x3& transform_matrix = transform.matrix();
+    if (is_text) {
+      renderer::Renderer::draw(
+          renderer::Text(m_registry.get<TextData>(*it)), transform_matrix, options, id);
+      continue;
+    }
+
+    const geom::path& path = m_registry.get<PathData>(*it);
+
+    if (!has_outline) {
+      renderer::Renderer::draw(path, transform_matrix, options, id);
+      continue;
+    }
+
     std::unordered_set<uint32_t> selected_vertices;
+    bool is_full = false;
 
-    renderer::Fill fill_opt;
-    renderer::Stroke stroke_opt;
-    renderer::Outline outline_opt;
+    if (is_selected) {
+      const Selection::SelectionEntry& entry = selected.at(id);
 
-    if (has_fill) {
-      fill_opt = renderer::Fill(fill->paint, fill->rule);
-    }
+      is_full = entry.full();
 
-    if (has_stroke) {
-      stroke_opt = renderer::Stroke(
-          stroke->paint, stroke->cap, stroke->join, stroke->width, stroke->miter_limit);
-    }
-
-    if (has_outline) {
-      bool is_full = false;
-
-      if (is_selected) {
-        Selection::SelectionEntry entry = selected.at(id);
-
-        is_full = entry.full();
-
-        if (!is_full) {
-          selected_vertices = entry.indices;
-        }
+      if (!is_full) {
+        selected_vertices = entry.indices;
       }
-
-      if (is_temp_selected && !is_full) {
-        Selection::SelectionEntry entry = temp_selected.at(id);
-
-        is_full = entry.full();
-
-        if (!is_full) {
-          selected_vertices.insert(temp_selected.at(id).indices.begin(),
-                                   temp_selected.at(id).indices.end());
-        }
-      }
-
-      outline_opt = renderer::Outline{is_full ? nullptr : &selected_vertices,
-                                      draw_vertices,
-                                      Settings::Renderer::ui_primary_color};
     }
 
-    renderer::Renderer::draw(path,
-                             transform_matrix,
-                             renderer::DrawingOptions{has_fill ? &fill_opt : nullptr,
-                                                      has_stroke ? &stroke_opt : nullptr,
-                                                      has_outline ? &outline_opt : nullptr},
-                             m_registry.get<IDComponent::Data>(*it).id);
+    if (is_temp_selected && !is_full) {
+      const Selection::SelectionEntry& entry = temp_selected.at(id);
+
+      is_full = entry.full();
+
+      if (!is_full) {
+        selected_vertices.insert(temp_selected.at(id).indices.begin(),
+                                 temp_selected.at(id).indices.end());
+      }
+    }
+
+    outline_opt.selected_vertices = is_full ? nullptr : &selected_vertices;
+
+    renderer::Renderer::draw(path, transform_matrix, options, id);
   }
 
-  // {
-  //   std::vector<math::rect> lines =
-  //   math::lines_from_rect(viewport.visible()); geom::path rect;
-  //   rect.move_to(lines[0].min);
-
-  //   for (auto& line : lines) {
-  //     rect.line_to(line.max);
-  //   }
-
-  //   Renderer::Renderer::draw_outline(0, rect, { 0.0f, 0.0f });
-  // }
-
-  {
-    tool_state.render_overlays(viewport.zoom());
-  }
-
-  // #ifdef GK_DEBUG
-  //     if (!selected.empty()) {
-  //       const Entity entity = { m_entities.at(selected.begin()->first),
-  //       const_cast<Scene*>(this) };
-
-  //       if (entity.has_component<PathComponent>()) {
-  //         const geom::path& path =
-  //         entity.get_component<PathComponent>().data();
-
-  //         if (!path.empty()) {
-  //           const geom::path::Segment segment = path.segment_at(0);
-  //           renderer::Renderer::draw_debug_overlays({ segment.p0, segment.p1,
-  //           segment.p2, segment.p3 });
-  //         }
-  //       }
-  //     }
-  // #endif
-
+  tool_state.render_overlays(viewport.zoom());
   renderer::Renderer::end_frame();
-
-  m_cache.set_grid_rect(viewport.visible(), ivec2(viewport.size() / 128.0f));
-
-#if 0
-    GK_DEBUGGER_RENDER(vec2(viewport.size()) * viewport.dpr());
-#endif
 }
 
 Entity Scene::create_entity(const uuid id, const std::string& tag_type)

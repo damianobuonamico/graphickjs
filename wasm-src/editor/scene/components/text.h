@@ -27,6 +27,11 @@ struct TextData {
   TextData(const std::string& text, const uuid font_id) : text(text), font_id(font_id) {}
   TextData(io::DataDecoder& decoder);
 
+  inline operator renderer::Text() const
+  {
+    return {text, font_id};
+  }
+
   /**
    * @brief Returns the bounding rect of the image.
    *

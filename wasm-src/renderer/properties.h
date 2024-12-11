@@ -11,6 +11,8 @@
 
 #include "../utils/uuid.h"
 
+#include <string>
+
 namespace graphick::io {
 
 class DataDecoder;
@@ -237,6 +239,14 @@ struct Stroke {
     miter_limit = stroke.miter_limit;
     return *this;
   }
+};
+
+/**
+ * @brief Text properties used to render text.
+ */
+struct Text {
+  const std::string& text;  // The text to render.
+  uuid font_id;             // The font to use.
 };
 
 }  // namespace graphick::renderer

@@ -27,6 +27,14 @@ struct FillData {
   FillData() = default;
   FillData(const vec4& color) : paint(color) {}
   FillData(io::DataDecoder& decoder);
+
+  /**
+   * @brief Conversion operator to renderer::Fill.
+   */
+  inline operator renderer::Fill() const
+  {
+    return renderer::Fill(paint, rule);
+  }
 };
 
 /**
@@ -133,6 +141,14 @@ struct StrokeData {
   StrokeData(const vec4& color) : paint(color) {}
   StrokeData(const vec4& color, const float width) : paint(color), width(width) {}
   StrokeData(io::DataDecoder& decoder);
+
+  /**
+   * @brief Conversion operator to renderer::Stroke.
+   */
+  inline operator renderer::Stroke() const
+  {
+    return renderer::Stroke(paint, cap, join, miter_limit, width);
+  }
 };
 
 /**

@@ -47,9 +47,11 @@ int main()
   utils::uuid font_id1 = io::ResourceManager::load_font(font_data1.data(), font_data1.size());
   utils::uuid font_id2 = io::ResourceManager::load_font(font_data2.data(), font_data2.size());
 
-  editor::Editor::scene().create_text("Hello, World!", font_id2);
+  editor::Entity text1 = editor::Editor::scene().create_text("Hello, World!", font_id2);
   // editor::Editor::scene().create_text(
   //     "abcdefghijklmnopqrstuvwxyz1234567890|!\"£$%&/()=?^'ìèé[]*+ù§à°#@çò-_.:,;<>", font_id2);
+
+  text1.add_component<editor::FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
 #endif
 
 #ifdef IMAGES
@@ -92,10 +94,8 @@ int main()
 
   editor::Entity entity1 = editor::Editor::scene().create_element(path1);
 
-  editor::FillComponent fill = entity1.add_component<editor::FillComponent>(
-      vec4{0.8f, 0.3f, 0.3f, 1.0f});
-  editor::StrokeComponent stroke = entity1.add_component<editor::StrokeComponent>(
-      vec4{0.93f, 0.64f, 0.74f, 1.0f}, 50.0f);
+  entity1.add_component<editor::FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
+  entity1.add_component<editor::StrokeComponent>(vec4{0.93f, 0.64f, 0.74f, 1.0f}, 50.0f);
 #endif
 
   while (!glfwWindowShouldClose(window)) {

@@ -967,9 +967,9 @@ struct Outline {
  * @brief Represents the options to draw a path: fill, stroke and outline.
  */
 struct DrawingOptions {
-  Fill* fill;        // The fill to use, can be nullptr.
-  Stroke* stroke;    // The stroke to use, can be nullptr.
-  Outline* outline;  // The outline to use, can be nullptr.
+  const Fill* fill;        // The fill to use, can be nullptr.
+  const Stroke* stroke;    // The stroke to use, can be nullptr.
+  const Outline* outline;  // The outline to use, can be nullptr.
 };
 
 /**
