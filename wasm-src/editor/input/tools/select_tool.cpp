@@ -113,7 +113,7 @@ void SelectTool::render_overlays() const
   renderer::Renderer::draw(m_selection_rect.path(),
                            m_selection_rect.transform(),
                            renderer::DrawingOptions{nullptr, nullptr, &outline});
-  renderer::Renderer::draw_rect(m_selection_rect.bounding_rect(),
+  renderer::Renderer::ui_rect(m_selection_rect.bounding_rect(),
                                 Settings::Renderer::ui_primary_transparent);
 }
 

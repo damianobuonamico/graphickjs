@@ -242,11 +242,29 @@ struct Stroke {
 };
 
 /**
+ * @brief Represents the options to outline a path.
+ *
+ * If selected_vertices is nullptr, all vertices are considered selected.
+ */
+struct Outline {
+  const void* selected_vertices;  // The selected vertices (std::unordered_set<uint32_t>*).
+  bool draw_vertices;             // Whether to draw individual the vertices.
+  vec4 color;                     // The color of the outline.
+};
+
+/**
  * @brief Text properties used to render text.
  */
 struct Text {
   const std::string& text;  // The text to render.
   uuid font_id;             // The font to use.
+};
+
+/**
+ * @brief Image properties used to render an image.
+ */
+struct Image {
+  const uuid image_id;  // The image to render.
 };
 
 }  // namespace graphick::renderer

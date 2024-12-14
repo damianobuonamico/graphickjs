@@ -24,11 +24,9 @@
 #include "../utils/half.h"
 #include "../utils/uuid.h"
 
-namespace graphick::editor {
-class Cache;
-}
-
 namespace graphick::renderer {
+
+class RendererCache;
 
 /**
  * @brief Represents the viewport of the renderer.
@@ -102,7 +100,7 @@ struct Viewport {
  */
 struct RenderOptions {
   Viewport viewport;     // The viewport to render to.
-  editor::Cache* cache;  // The cache to use for rendering, can be nullptr.
+  RendererCache* cache;  // The cache to use for rendering, can be nullptr.
 
   bool ignore_cache;     // Whether to ignore the cache and redraw everything.
 };
@@ -248,6 +246,19 @@ struct PathData {
 
   double band_delta;                          // The height of a band.
   uint8_t horizontal_bands;                   // The number of horizontal bands.
+};
+
+/**
+ * @brief Groups the data required to perform culling on a path.
+ */
+struct PathCullingData {
+  std::vector<Band> bands;   // The culling bands.
+  std::vector<std::vector<Intersection>>
+      bottom_intersections;  // The intersections with the bottom edge of the bands.
+
+  size_t accumulator = 0;    // The number of contours processed.
+
+  inline PathCullingData(const size_t num) : bands(num), bottom_intersections(num) {}
 };
 
 /**

@@ -275,7 +275,7 @@ void Scene::render(const bool ignore_cache) const
       static_cast<double>(viewport.dpr()),
       vec4{0.2f, 0.2f, 0.21f, 1.0f}};
 
-  renderer::Renderer::begin_frame({rendering_viewport, &m_cache, ignore_cache});
+  renderer::Renderer::begin_frame({rendering_viewport, &m_cache.renderer_cache, ignore_cache});
 
   const auto& selected = selection.selected();
   const auto& temp_selected = selection.temp_selected();

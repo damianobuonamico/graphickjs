@@ -40,6 +40,68 @@
 
 namespace graphick::renderer {
 
+void Renderer::init() {}
+
+void Renderer::shutdown() {}
+
+void Renderer::begin_frame(const RenderOptions& options) {}
+
+void Renderer::end_frame() {}
+
+bool Renderer::draw(const geom::path& path,
+                    const mat2x3& transform,
+                    const DrawingOptions& options,
+                    const uuid)
+{
+  return false;
+}
+
+bool Renderer::draw(const renderer::Text& text,
+                    const mat2x3& transform,
+                    const DrawingOptions& options,
+                    const uuid)
+{
+  return false;
+}
+
+bool Renderer::draw(const renderer::Image& image,
+                    const mat2x3& transform,
+                    const DrawingOptions& options,
+                    const uuid)
+{
+  return false;
+}
+
+void Renderer::ui_rect(const rect& rect, const vec4& color) {}
+
+void Renderer::ui_square(const vec2 center, const float radius, const vec4& color) {}
+
+void Renderer::ui_circle(const vec2 center, const float radius, const vec4& color) {}
+
+#ifdef GK_DEBUG
+
+void Renderer::__debug_rect_impl(const rect& rect, const vec4& color) {}
+
+void Renderer::__debug_square_impl(const vec2 center, const float radius, const vec4& color) {}
+
+void Renderer::__debug_circle_impl(const vec2 center, const float radius, const vec4& color) {}
+
+void Renderer::__debug_line_impl(const vec2 start, const vec2 end, const vec4& color) {}
+
+void Renderer::__debug_text_impl(const std::string& text, const vec2 position, const vec4& color)
+{
+}
+
+#endif
+
+Renderer::Renderer() {}
+
+}  // namespace graphick::renderer
+
+#if 0
+
+namespace graphick::renderer {
+
 /* -- Static Methods -- */
 
 /**
@@ -78,12 +140,12 @@ static dmat4 orthographic_translation(const Viewport& viewport)
                {0.0, 0.0, 0.0, 1.0}};
 }
 
-#define RENDER_STATE(name) \
-  GPU::RenderState \
-  { \
-    m_programs.name##_program.program, &m_vertex_arrays.name##_vertex_array->vertex_array, \
-        m_##name##_instances.primitive, irect(ivec2::zero(), m_viewport.size) \
-  }
+#  define RENDER_STATE(name) \
+    GPU::RenderState \
+    { \
+      m_programs.name##_program.program, &m_vertex_arrays.name##_vertex_array->vertex_array, \
+          m_##name##_instances.primitive, irect(ivec2::zero(), m_viewport.size) \
+    }
 
 /**
  * @brief Flushes the instanced data to the GPU.
@@ -122,7 +184,7 @@ void Renderer::init()
   GK_ASSERT(s_instance == nullptr,
             "Renderer already initialized, call shutdown() before reinitializing!");
 
-#ifdef EMSCRIPTEN
+#  ifdef EMSCRIPTEN
   EmscriptenWebGLContextAttributes attr;
   emscripten_webgl_init_context_attributes(&attr);
 
@@ -144,9 +206,9 @@ void Renderer::init()
   emscripten_webgl_make_context_current(ctx);
 
   GPU::Device::init(GPU::DeviceVersion::GLES3);
-#else
+#  else
   GPU::Device::init(GPU::DeviceVersion::GL3);
-#endif
+#  endif
 
   s_instance = new Renderer();
 }
@@ -160,10 +222,10 @@ void Renderer::shutdown()
 
   GPU::Device::shutdown();
 
-#ifdef EMSCRIPTEN
+#  ifdef EMSCRIPTEN
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_get_current_context();
   emscripten_webgl_destroy_context(ctx);
-#endif
+#  endif
 }
 
 void Renderer::begin_frame(const RenderOptions& options)
@@ -1544,3 +1606,5 @@ void Renderer::flush_overlay_meshes()
 }
 
 }  // namespace graphick::renderer
+
+#endif
