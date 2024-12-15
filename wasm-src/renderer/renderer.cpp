@@ -11,28 +11,33 @@
 
 #include "renderer.h"
 
+#include "../utils/assert.h"
+#include "../utils/debugger.h"
+
 #include "gpu/device.h"
 
+#if 0
 // TODO: this is temp, the renderer should not know about the editor
-#include "../editor/scene/cache.h"
-#include "../editor/scene/components/text.h"
+#  include "../editor/scene/cache.h"
+#  include "../editor/scene/components/text.h"
 
-#include "../geom/intersections.h"
-#include "../geom/path.h"
-#include "../geom/path_builder.h"
+#  include "../geom/intersections.h"
+#  include "../geom/path.h"
+#  include "../geom/path_builder.h"
 
-#include "../io/resource_manager.h"
-#include "../io/text/font.h"
-#include "../io/text/unicode.h"
+#  include "../io/resource_manager.h"
+#  include "../io/text/font.h"
+#  include "../io/text/unicode.h"
 
-#include "../math/matrix.h"
-#include "../math/vector.h"
+#  include "../math/matrix.h"
+#  include "../math/vector.h"
 
-#include "../utils/assert.h"
-#include "../utils/console.h"
-#include "../utils/defines.h"
+#  include "../utils/assert.h"
+#  include "../utils/console.h"
+#  include "../utils/defines.h"
 
-#include <algorithm>
+#  include <algorithm>
+#endif
 
 #ifdef EMSCRIPTEN
 #  include <emscripten/html5.h>
@@ -40,13 +45,70 @@
 
 namespace graphick::renderer {
 
-void Renderer::init() {}
+/* -- Static Member Initialization -- */
 
-void Renderer::shutdown() {}
+Renderer* Renderer::s_instance = nullptr;
 
-void Renderer::begin_frame(const RenderOptions& options) {}
+/* -- Renderer -- */
 
-void Renderer::end_frame() {}
+void Renderer::init()
+{
+#ifdef EMSCRIPTEN
+  EmscriptenWebGLContextAttributes attr;
+  emscripten_webgl_init_context_attributes(&attr);
+
+  const bool desynchronized = false;
+
+  /* Despite
+   * <https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#avoid_alphafalse_which_can_be_expensive>,
+   * when using desynchronized context, is better to use alpha=false to avoid expensive blending
+   * operations if there are elements on top. Emscripten doesn't support desynchronized context
+   * yet, so we set it to true after compilation (see script compile.py).
+   */
+  attr.alpha = !desynchronized;
+  attr.premultipliedAlpha = false;
+  attr.majorVersion = 2;
+  attr.antialias = false;
+  attr.stencil = true;
+  attr.depth = true;
+
+  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
+  emscripten_webgl_make_context_current(ctx);
+
+  GPU::Device::init(GPU::DeviceVersion::GLES3);
+#else
+  GPU::Device::init(GPU::DeviceVersion::GL3);
+#endif
+
+  s_instance = new Renderer();
+}
+
+void Renderer::shutdown()
+{
+  GK_ASSERT(s_instance != nullptr, "Renderer not initialized, call init() before shutting down!");
+
+  delete s_instance;
+  s_instance = nullptr;
+
+  GPU::Device::shutdown();
+
+#ifdef EMSCRIPTEN
+  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_get_current_context();
+  emscripten_webgl_destroy_context(ctx);
+#endif
+}
+
+void Renderer::begin_frame(const RenderOptions& options)
+{
+  GPU::Device::begin_commands();
+}
+
+void Renderer::end_frame()
+{
+  size_t time = GPU::Device::end_commands();
+
+  __debug_time_total_record("GPU", time);
+}
 
 bool Renderer::draw(const geom::path& path,
                     const mat2x3& transform,
