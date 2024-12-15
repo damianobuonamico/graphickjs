@@ -67,6 +67,17 @@ ImageProgram::ImageProgram()
 {
 }
 
+#ifdef GK_DEBUG
+
+DebugRectProgram::DebugRectProgram()
+    : program(Device::create_program("debug_rect")),
+      vp_uniform(Device::get_uniform(program, "u_view_projection")),
+      texture(Device::get_texture_uniform(program, "u_texture"))
+{
+}
+
+#endif
+
 /* -- VertexArrays -- */
 
 TileVertexArray::TileVertexArray(const TileProgram& program,
@@ -249,5 +260,32 @@ ImageVertexArray::ImageVertexArray(const ImageProgram& program,
   vertex_array.configure_attribute(instance_position_attr, instance_position_desc);
   vertex_array.configure_attribute(instance_size_attr, instance_size_desc);
 }
+
+#ifdef GK_DEBUG
+
+DebugRectVertexArray::DebugRectVertexArray(const DebugRectProgram& program,
+                                           const Buffer& vertex_buffer)
+{
+  VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+  VertexAttribute tex_coord_attr = Device::get_vertex_attribute(program.program, "a_tex_coord");
+  VertexAttribute color_attr = Device::get_vertex_attribute(program.program, "a_color");
+  VertexAttribute primitive_attr = Device::get_vertex_attribute(program.program, "a_primitive");
+
+  VertexAttrDescriptor position_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 24, 0, 0, 0};
+  VertexAttrDescriptor tex_coords_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 24, 8, 0, 0};
+  VertexAttrDescriptor primitive_desc = {
+      VertexAttrClass::Int, VertexAttrType::U32, 1, 24, 16, 0, 0};
+  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 24, 20, 0, 0};
+
+  vertex_buffer.bind(vertex_array);
+  vertex_array.configure_attribute(position_attr, position_desc);
+  vertex_array.configure_attribute(tex_coord_attr, tex_coords_desc);
+  vertex_array.configure_attribute(primitive_attr, primitive_desc);
+  vertex_array.configure_attribute(color_attr, color_desc);
+}
+
+#endif
 
 }  // namespace graphick::renderer::GPU

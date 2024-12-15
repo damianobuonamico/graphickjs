@@ -6,7 +6,7 @@
 #include "wasm-src/io/resource_manager.h"
 #include "wasm-src/io/svg/svg.h"
 
-#include "wasm-src/utils/console.h"
+#include "wasm-src/utils/debugger.h"
 
 #include "callbacks.h"
 
@@ -44,7 +44,8 @@ int main()
   font_file1.read(reinterpret_cast<char*>(font_data1.data()), font_size1);
   font_file2.read(reinterpret_cast<char*>(font_data2.data()), font_size2);
 
-  utils::uuid font_id1 = io::ResourceManager::load_font(font_data1.data(), font_data1.size());
+  utils::uuid font_id1 = io::ResourceManager::load_default_font(font_data1.data(),
+                                                                font_data1.size());
   utils::uuid font_id2 = io::ResourceManager::load_font(font_data2.data(), font_data2.size());
 
   editor::Entity text1 = editor::Editor::scene().create_text("Hello, World!", font_id2);
@@ -99,9 +100,13 @@ int main()
 #endif
 
   while (!glfwWindowShouldClose(window)) {
-    GK_FRAME("MainThread");
+    __debug_time_frame();
 
     glfwPollEvents();
+
+#ifdef GK_DEBUG
+    graphick::editor::Editor::request_render(false);
+#endif
 
     const bool swap = graphick::editor::Editor::render_loop(glfwGetTime());
 

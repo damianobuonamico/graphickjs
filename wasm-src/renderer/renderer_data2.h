@@ -11,6 +11,7 @@
 
 #include "properties.h"
 
+#include "../math/mat4.h"
 #include "../math/rect.h"
 
 namespace graphick::renderer {
@@ -23,13 +24,18 @@ class RendererCache;
  * The viewport is the area of the screen where the renderer will draw.
  */
 struct Viewport {
-  ivec2 size;       // The size of the viewport.
-  dvec2 position;   // The position of the viewport.
+  ivec2 size;               // The size of the viewport.
+  dvec2 position;           // The position of the viewport.
 
-  double zoom;      // The zoom level of the viewport (it is pre-multiplied by the dpr).
-  double dpr;       // The device pixel ratio.
+  double zoom;              // The zoom level of the viewport (it is pre-multiplied by the dpr).
+  double dpr;               // The device pixel ratio.
 
-  vec4 background;  // The background color to clear the viewport with.
+  vec4 background;          // The background color to clear the viewport with.
+
+  dmat4 view_matrix;        // The view matrix of the viewport.
+  dmat4 projection_matrix;  // The projection matrix of the viewport.
+  dmat4 vp_matrix;          // The view-projection matrix of the viewport.
+  dmat4 screen_vp_matrix;   // The screen view-projection matrix of the viewport.
 
   /**
    * @brief Default constructor.
@@ -57,6 +63,34 @@ struct Viewport {
         background(background),
         m_visible({-position, dvec2(size) / zoom - position})
   {
+    const dvec2 dsize = dvec2(size);
+
+    const double factor = 0.5 / zoom;
+    const double half_width = -dsize.x * factor;
+    const double half_height = dsize.y * factor;
+
+    projection_matrix = dmat4{{-1.0 / half_width, 0.0, 0.0, 0.0},
+                              {0.0, -1.0 / half_height, 0.0, 0.0},
+                              {0.0, 0.0, -1.0, 0.0},
+                              {0.0, 0.0, 0.0, 1.0}};
+
+    view_matrix = dmat4{{1.0, 0.0, 0.0, 0.5 * (-dsize.x / zoom + 2.0 * position.x)},
+                        {0.0, 1.0, 0.0, 0.5 * (-dsize.y / zoom + 2.0 * position.y)},
+                        {0.0, 0.0, 1.0, 0.0},
+                        {0.0, 0.0, 0.0, 1.0}};
+
+    dmat4 screen_projection = dmat4{{2.0 / dsize.x, 0.0, 0.0, 0.0},
+                                    {0.0, -2.0 / dsize.y, 0.0, 0.0},
+                                    {0.0, 0.0, -1.0, 0.0},
+                                    {0.0, 0.0, 0.0, 1.0}};
+
+    dmat4 screen_view = dmat4{{1.0, 0.0, 0.0, -0.5 * dsize.x},
+                              {0.0, 1.0, 0.0, -0.5 * dsize.y},
+                              {0.0, 0.0, 1.0, 0.0},
+                              {0.0, 0.0, 0.0, 1.0}};
+
+    vp_matrix = projection_matrix * view_matrix;
+    screen_vp_matrix = screen_projection * screen_view;
   }
 
   /**

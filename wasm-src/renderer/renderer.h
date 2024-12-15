@@ -9,6 +9,8 @@
 
 #include "../utils/defines.h"
 
+#include "gpu/shaders.h"
+
 #include "renderer_data2.h"
 
 #if 0
@@ -21,8 +23,6 @@
 
 #  include "../math/mat2x3.h"
 #  include "../math/mat4.h"
-
-#  include "gpu/shaders.h"
 
 #  include "renderer_cache.h"
 #  include "renderer_data.h"
@@ -67,6 +67,8 @@ namespace graphick::renderer {
  *  4. The debug layer (bounding rects, timings, etc.), screen-space coordinates.
  *
  * The __debug_[...] methods are stripped away if GK_DEBUG is not defined.
+ * The debug layer has no flush method, it is drawn in immediate mode through the __debug_[...]
+ * methods.
  *
  * Takes floats as input, but uses doubles internally for better precision.
  */
@@ -74,6 +76,16 @@ class Renderer {
  public:
   Renderer(const Renderer&) = delete;
   Renderer(Renderer&&) = delete;
+
+  /**
+   * @brief Returns the viewport size of the renderer.
+   *
+   * @return The viewport size of the renderer.
+   */
+  inline static ivec2 viewport_size()
+  {
+    return get()->m_viewport.size;
+  }
 
   /**
    * @brief Initializes the renderer.
@@ -235,10 +247,11 @@ class Renderer {
    * @param text The text to draw.
    * @param position The position of the text.
    * @param color The color to use, default is white.
+   * @return The width of the text.
    */
-  static void __debug_text_impl(const std::string& text,
-                                const vec2 position,
-                                const vec4& color = vec4::identity());
+  static float __debug_text_impl(const std::string& text,
+                                 const vec2 position,
+                                 const vec4& color = vec4::identity());
 
 #endif
 
@@ -259,8 +272,30 @@ class Renderer {
     return s_instance;
   }
 
+  /**
+   * @brief Flushes the background layer.
+   *
+   * This method takes care of the viewport setup (i.e. setting the viewport size)
+   */
+  void flush_background_layer();
+
+  /**
+   * @brief Flushes the scene layer.
+   */
+  void flush_scene_layer();
+
+  /**
+   * @brief Flushes the UI layer.
+   */
+  void flush_ui_layer();
+
  private:
-  static Renderer* s_instance;  // The singleton instance of the renderer.
+  GPU::Programs m_programs;           // The shader programs to use.
+  GPU::VertexArrays m_vertex_arrays;  // The vertex arrays to use.
+
+  Viewport m_viewport;                // The viewport of the renderer.
+ private:
+  static Renderer* s_instance;        // The singleton instance of the renderer.
 };
 
 }  // namespace graphick::renderer

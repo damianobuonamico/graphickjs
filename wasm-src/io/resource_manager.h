@@ -69,6 +69,15 @@ class ResourceManager {
   static uuid load_font(const uint8_t* data, const size_t size);
 
   /**
+   * @brief Loads the default font into the cache.
+   *
+   * @param data The font data.
+   * @param size The size of the font data.
+   * @return The UUID of the font (uuid::null)
+   */
+  static uuid load_default_font(const uint8_t* data, const size_t size);
+
+  /**
    * @brief Retrieves an image from the cache.
    *
    * @param id The UUID of the image.

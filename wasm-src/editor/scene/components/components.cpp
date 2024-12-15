@@ -19,7 +19,7 @@
 #include "../../../math/math.h"
 #include "../../../math/matrix.h"
 
-#include "../../../utils/console.h"
+#include "../../../utils/debugger.h"
 
 namespace graphick::editor {
 
@@ -114,7 +114,7 @@ vec2 TransformComponent::revert(const vec2 point) const
 
 void TransformComponent::translate(const vec2 delta)
 {
-  GK_TOTAL("TransformComponent::translate");
+  __debug_time_total();
 
   if (math::is_almost_zero(delta)) {
     return;
@@ -125,7 +125,7 @@ void TransformComponent::translate(const vec2 delta)
 
 void TransformComponent::scale(const vec2 delta)
 {
-  GK_TOTAL("TransformComponent::scale");
+  __debug_time_total();
 
   if (math::is_almost_zero(delta)) {
     return;
@@ -136,7 +136,7 @@ void TransformComponent::scale(const vec2 delta)
 
 void TransformComponent::rotate(const float angle)
 {
-  GK_TOTAL("TransformComponent::rotate");
+  __debug_time_total();
 
   if (math::is_almost_zero(angle)) {
     return;
@@ -147,7 +147,7 @@ void TransformComponent::rotate(const float angle)
 
 void TransformComponent::set(const mat2x3 matrix)
 {
-  GK_TOTAL("TransformComponent::set");
+  __debug_time_total();
 
   if (m_data->matrix == matrix) {
     return;
@@ -235,7 +235,7 @@ size_t PathComponent::close(const bool reverse)
 // TODO: join path modify actions
 void PathComponent::translate(const size_t point_index, const vec2 delta)
 {
-  GK_TOTAL("PathComponent::translate");
+  __debug_time_total();
 
   if (math::is_almost_zero(delta))
     return;

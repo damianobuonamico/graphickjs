@@ -6,12 +6,23 @@
 #include "resource_manager.h"
 
 #include "../utils/console.h"
+#include "../utils/defines.h"
 
 #include "../lib/stb/stb_image.h"
 #include "../lib/stb/stb_truetype.h"
 
 static const std::string shader_include_names[] = {"quadratic", "cubic", "texture"};
-static const std::string shader_names[] = {"tile", "fill", "line", "rect", "circle", "image"};
+
+static const std::string shader_names[] = {"tile",
+                                           "fill",
+                                           "line",
+                                           "rect",
+                                           "circle",
+                                           "image",
+#ifdef GK_DEBUG
+                                           "debug_rect"
+#endif
+};
 
 namespace graphick::io {
 
@@ -73,6 +84,18 @@ uuid ResourceManager::load_font(const uint8_t* data, const size_t size)
   return s_instance->m_fonts.insert(std::make_pair(uuid(), std::move(font))).first->first;
 }
 
+uuid ResourceManager::load_default_font(const uint8_t* data, const size_t size)
+{
+  text::Font font(data, size);
+
+  if (!font.valid()) {
+    console::error("Failed to load font from memory!");
+    return uuid::null;
+  }
+
+  return s_instance->m_fonts.insert(std::make_pair(uuid::null, std::move(font))).first->first;
+}
+
 Image ResourceManager::get_image(const uuid id)
 {
   const auto it = s_instance->m_images.find(id);
@@ -131,6 +154,12 @@ void ResourceManager::prefetch_shaders()
 #include "../renderer/gpu/shaders/image.vs.glsl"
       ,
 #include "../renderer/gpu/shaders/image.fs.glsl"
+#ifdef GK_DEBUG
+      ,
+#  include "../renderer/gpu/shaders/debug_rect.vs.glsl"
+      ,
+#  include "../renderer/gpu/shaders/debug_rect.fs.glsl"
+#endif
   };
 
   for (unsigned int i = 0; i < std::size(shader_names); i++) {

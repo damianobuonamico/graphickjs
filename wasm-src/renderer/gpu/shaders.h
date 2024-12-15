@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "../../utils/defines.h"
+
 #include "render_state.h"
 
 #include <memory>
@@ -88,16 +90,35 @@ struct ImageProgram {
   ImageProgram();
 };
 
+#ifdef GK_DEBUG
+
+/**
+ * @brief Debug rect shader program.
+ */
+struct DebugRectProgram {
+  Program program;     // The shader program.
+  Uniform vp_uniform;  // The view projection uniform.
+  TextureUniform texture;  // The image texture.
+
+  DebugRectProgram();
+};
+
+#endif
+
 /**
  * @brief Groups all of the available shaders together.
  */
 struct Programs {
-  TileProgram tile_program;      // The tile shader program.
-  FillProgram fill_program;      // The fill shader program.
-  LineProgram line_program;      // The line shader program.
-  RectProgram rect_program;      // The square shader program.
-  CircleProgram circle_program;  // The circle shader program.
-  ImageProgram image_program;    // The image shader program.
+  // TileProgram tile_program;             // The tile shader program.
+  // FillProgram fill_program;             // The fill shader program.
+  // LineProgram line_program;             // The line shader program.
+  // RectProgram rect_program;             // The square shader program.
+  // CircleProgram circle_program;         // The circle shader program.
+  // ImageProgram image_program;           // The image shader program.
+
+#ifdef GK_DEBUG
+  DebugRectProgram debug_rect_program;  // The debug rect shader program.
+#endif
 };
 
 /**
@@ -106,17 +127,17 @@ struct Programs {
 struct TileVertexArray {
   VertexArray vertex_array;  // The vertex array.
 
-  TileVertexArray(const TileProgram &program,
-                  const Buffer &vertex_buffer,
-                  const Buffer &index_buffer);
+  TileVertexArray(const TileProgram& program,
+                  const Buffer& vertex_buffer,
+                  const Buffer& index_buffer);
 };
 
 struct FillVertexArray {
   VertexArray vertex_array;  // The vertex array.
 
-  FillVertexArray(const FillProgram &program,
-                  const Buffer &vertex_buffer,
-                  const Buffer &index_buffer);
+  FillVertexArray(const FillProgram& program,
+                  const Buffer& vertex_buffer,
+                  const Buffer& index_buffer);
 };
 
 /**
@@ -125,9 +146,9 @@ struct FillVertexArray {
 struct LineVertexArray {
   VertexArray vertex_array;  // The vertex array.
 
-  LineVertexArray(const LineProgram &program,
-                  const Buffer &instance_buffer,
-                  const Buffer &vertex_buffer);
+  LineVertexArray(const LineProgram& program,
+                  const Buffer& instance_buffer,
+                  const Buffer& vertex_buffer);
 };
 
 /**
@@ -136,9 +157,9 @@ struct LineVertexArray {
 struct RectVertexArray {
   VertexArray vertex_array;  // The vertex array.
 
-  RectVertexArray(const RectProgram &program,
-                  const Buffer &instance_buffer,
-                  const Buffer &vertex_buffer);
+  RectVertexArray(const RectProgram& program,
+                  const Buffer& instance_buffer,
+                  const Buffer& vertex_buffer);
 };
 
 /**
@@ -147,9 +168,9 @@ struct RectVertexArray {
 struct CircleVertexArray {
   VertexArray vertex_array;  // The vertex array.
 
-  CircleVertexArray(const CircleProgram &program,
-                    const Buffer &instance_buffer,
-                    const Buffer &vertex_buffer);
+  CircleVertexArray(const CircleProgram& program,
+                    const Buffer& instance_buffer,
+                    const Buffer& vertex_buffer);
 };
 
 /**
@@ -158,38 +179,62 @@ struct CircleVertexArray {
 struct ImageVertexArray {
   VertexArray vertex_array;  // The vertex array.
 
-  ImageVertexArray(const ImageProgram &program,
-                   const Buffer &instance_buffer,
-                   const Buffer &vertex_buffer);
+  ImageVertexArray(const ImageProgram& program,
+                   const Buffer& instance_buffer,
+                   const Buffer& vertex_buffer);
 };
+
+#ifdef GK_DEBUG
+
+/**
+ * @brief Vertex array to use with DebugRectProgram.
+ */
+struct DebugRectVertexArray {
+  VertexArray vertex_array;  // The vertex array.
+
+  DebugRectVertexArray(const DebugRectProgram& program, const Buffer& vertex_buffer);
+};
+
+#endif
 
 /**
  * @brief Groups all of the available vertex arrays together.
  */
 struct VertexArrays {
-  std::unique_ptr<TileVertexArray> tile_vertex_array;      // The tile shader vertex array.
-  std::unique_ptr<FillVertexArray> fill_vertex_array;      // The fill shader vertex array.
-  std::unique_ptr<LineVertexArray> line_vertex_array;      // The line shader vertex array.
-  std::unique_ptr<RectVertexArray> rect_vertex_array;      // The square shader vertex array.
-  std::unique_ptr<CircleVertexArray> circle_vertex_array;  // The circle shader vertex array.
-  std::unique_ptr<ImageVertexArray> image_vertex_array;    // The image shader vertex array.
+  // std::unique_ptr<TileVertexArray> tile_vertex_array;      // The tile shader vertex array.
+  // std::unique_ptr<FillVertexArray> fill_vertex_array;      // The fill shader vertex array.
+  // std::unique_ptr<LineVertexArray> line_vertex_array;      // The line shader vertex array.
+  // std::unique_ptr<RectVertexArray> rect_vertex_array;      // The square shader vertex array.
+  // std::unique_ptr<CircleVertexArray> circle_vertex_array;  // The circle shader vertex array.
+  // std::unique_ptr<ImageVertexArray> image_vertex_array;    // The image shader vertex array.
 
   VertexArrays() = default;
 
-  VertexArrays(std::unique_ptr<TileVertexArray> tile_vertex_array,
-               std::unique_ptr<FillVertexArray> fill_vertex_array,
-               std::unique_ptr<LineVertexArray> line_vertex_array,
-               std::unique_ptr<RectVertexArray> rect_vertex_array,
-               std::unique_ptr<CircleVertexArray> circle_vertex_array,
-               std::unique_ptr<ImageVertexArray> image_vertex_array)
-      : tile_vertex_array(std::move(tile_vertex_array)),
-        fill_vertex_array(std::move(fill_vertex_array)),
-        line_vertex_array(std::move(line_vertex_array)),
-        rect_vertex_array(std::move(rect_vertex_array)),
-        circle_vertex_array(std::move(circle_vertex_array)),
-        image_vertex_array(std::move(image_vertex_array))
+  // VertexArrays(std::unique_ptr<TileVertexArray> tile_vertex_array,
+  //              std::unique_ptr<FillVertexArray> fill_vertex_array,
+  //              std::unique_ptr<LineVertexArray> line_vertex_array,
+  //              std::unique_ptr<RectVertexArray> rect_vertex_array,
+  //              std::unique_ptr<CircleVertexArray> circle_vertex_array,
+  //              std::unique_ptr<ImageVertexArray> image_vertex_array)
+  //     : tile_vertex_array(std::move(tile_vertex_array)),
+  //       fill_vertex_array(std::move(fill_vertex_array)),
+  //       line_vertex_array(std::move(line_vertex_array)),
+  //       rect_vertex_array(std::move(rect_vertex_array)),
+  //       circle_vertex_array(std::move(circle_vertex_array)),
+  //       image_vertex_array(std::move(image_vertex_array))
+  // {
+  // }
+
+#ifdef GK_DEBUG
+
+  std::unique_ptr<DebugRectVertexArray> debug_rect_vertex_array;  // The debug rects.
+
+  VertexArrays(std::unique_ptr<DebugRectVertexArray> debug_rect_vertex_array)
+      : debug_rect_vertex_array(std::move(debug_rect_vertex_array))
   {
   }
+
+#endif
 };
 
 }  // namespace graphick::renderer::GPU

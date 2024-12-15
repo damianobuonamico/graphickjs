@@ -12,7 +12,7 @@
 
 #include "../../math/vector.h"
 
-#include "../../utils/console.h"
+#include "../../utils/debugger.h"
 
 namespace graphick::editor {
 
@@ -20,7 +20,7 @@ Selection::Selection(Scene* scene) : m_scene(scene) {}
 
 rect Selection::bounding_rect() const
 {
-  GK_TOTAL("Selection::bounding_rect");
+  __debug_time_total();
 
   rect selection_rect;
 

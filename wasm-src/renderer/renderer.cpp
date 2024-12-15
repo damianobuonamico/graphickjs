@@ -11,6 +11,12 @@
 
 #include "renderer.h"
 
+#include "../io/resource_manager.h"
+#include "../io/text/font.h"
+#include "../io/text/unicode.h"
+
+#include "../math/vector.h"
+
 #include "../utils/assert.h"
 #include "../utils/debugger.h"
 
@@ -49,6 +55,25 @@ namespace graphick::renderer {
 
 Renderer* Renderer::s_instance = nullptr;
 
+#ifdef GK_DEBUG
+
+#  define __debug_max_rects 1024
+
+inline static GPU::Buffer* __debug_rect_vertex_buffer = nullptr;
+inline static GPU::Texture* __debug_font_texture = nullptr;
+
+/**
+ * @brief The vertex structure for the debug rect.
+ */
+struct __debug_rect_vertex {
+  vec2 position;       // The position of the vertex.
+  vec2 tex_coord;      // The texture coordinate, used for textured quads, circles and lines.
+  uint32_t primitive;  // The primitive type (0 = rect, 1 = textured quad, 2 = circle, 3 = line).
+  uvec4 color;         // The color of the vertex.
+};
+
+#endif
+
 /* -- Renderer -- */
 
 void Renderer::init()
@@ -80,12 +105,23 @@ void Renderer::init()
   GPU::Device::init(GPU::DeviceVersion::GL3);
 #endif
 
+#ifdef GK_DEBUG
+  __debug_rect_vertex_buffer = new GPU::Buffer(GPU::BufferTarget::Vertex,
+                                               GPU::BufferUploadMode::Stream,
+                                               __debug_max_rects * 6 * sizeof(__debug_rect_vertex),
+                                               nullptr);
+#endif
+
   s_instance = new Renderer();
 }
 
 void Renderer::shutdown()
 {
   GK_ASSERT(s_instance != nullptr, "Renderer not initialized, call init() before shutting down!");
+
+#ifdef GK_DEBUG
+  delete __debug_rect_vertex_buffer;
+#endif
 
   delete s_instance;
   s_instance = nullptr;
@@ -100,12 +136,33 @@ void Renderer::shutdown()
 
 void Renderer::begin_frame(const RenderOptions& options)
 {
+  get()->m_viewport = options.viewport;
+
   GPU::Device::begin_commands();
+
+  get()->flush_background_layer();
+
+#ifdef GK_DEBUG
+  if (__debug_font_texture == nullptr) {
+    const io::text::Font& debug_font = io::ResourceManager::get_font(uuid::null);
+    const std::vector<uint8_t> debug_font_atlas = debug_font.__debug_get_atlas(ivec2(128), 11.0f);
+
+    __debug_font_texture = new GPU::Texture(
+        GPU::TextureFormat::R8, ivec2(128), 0, debug_font_atlas.data());
+  }
+#endif
 }
 
 void Renderer::end_frame()
 {
-  size_t time = GPU::Device::end_commands();
+  get()->flush_scene_layer();
+  get()->flush_ui_layer();
+
+#ifdef GK_DEBUG
+  graphick::utils::debugger::render();
+#endif
+
+  const size_t time = GPU::Device::end_commands();
 
   __debug_time_total_record("GPU", time);
 }
@@ -142,65 +199,125 @@ void Renderer::ui_circle(const vec2 center, const float radius, const vec4& colo
 
 #ifdef GK_DEBUG
 
-void Renderer::__debug_rect_impl(const rect& rect, const vec4& color) {}
+void Renderer::__debug_rect_impl(const rect& rect, const vec4& color)
+{
+  const uvec4 u_color = uvec4(color * 255.0f);
 
-void Renderer::__debug_square_impl(const vec2 center, const float radius, const vec4& color) {}
+  std::vector<__debug_rect_vertex> buffer = {
+      {rect.min, vec2::zero(), 0, u_color},
+      {vec2(rect.max.x, rect.min.y), vec2::zero(), 0, u_color},
+      {rect.max, vec2::zero(), 0, u_color},
+      {rect.max, vec2::zero(), 0, u_color},
+      {vec2(rect.min.x, rect.max.y), vec2::zero(), 0, u_color},
+      {rect.min, vec2::zero(), 0, u_color},
+  };
+
+  __debug_rect_vertex_buffer->upload(buffer.data(), buffer.size() * sizeof(__debug_rect_vertex));
+
+  GPU::RenderState render_state = GPU::RenderState{
+      get()->m_programs.debug_rect_program.program,
+      &get()->m_vertex_arrays.debug_rect_vertex_array->vertex_array,
+      GPU::Primitive::Triangles,
+      irect(ivec2::zero(), get()->m_viewport.size)};
+
+  render_state.default_blend().no_depth().no_stencil();
+  render_state.uniforms = {
+      {get()->m_programs.debug_rect_program.vp_uniform, get()->m_viewport.screen_vp_matrix}};
+
+  GPU::Device::draw_arrays(6, render_state);
+}
+
+void Renderer::__debug_square_impl(const vec2 center, const float radius, const vec4& color)
+{
+  __debug_rect_impl(rect(center - vec2(radius), center + vec2(radius)), color);
+}
 
 void Renderer::__debug_circle_impl(const vec2 center, const float radius, const vec4& color) {}
 
 void Renderer::__debug_line_impl(const vec2 start, const vec2 end, const vec4& color) {}
 
-void Renderer::__debug_text_impl(const std::string& text, const vec2 position, const vec4& color)
+float Renderer::__debug_text_impl(const std::string& text, const vec2 position, const vec4& color)
 {
+  std::vector<__debug_rect_vertex> buffer;
+
+  const io::text::Font& font = io::ResourceManager::get_font(uuid::null);
+  const uvec4 u_color = uvec4(color * 255.0f);
+  const float font_size = 11.0f;
+
+  vec2 cursor = position;
+
+  for (const char c : text) {
+    std::pair<rect, rect> quad = font.__debug_get_baked_quad(c, ivec2(128), cursor);
+
+    const auto& [v0, v1, v2, v3] = quad.first.vertices();
+    const auto& [t0, t1, t2, t3] = quad.second.vertices();
+
+    if (u_color.a == 0) {
+      continue;
+    }
+
+    buffer.push_back({math::round(v0), t0, 1, u_color});
+    buffer.push_back({math::round(v1), t1, 1, u_color});
+    buffer.push_back({math::round(v2), t2, 1, u_color});
+    buffer.push_back({math::round(v2), t2, 1, u_color});
+    buffer.push_back({math::round(v3), t3, 1, u_color});
+    buffer.push_back({math::round(v0), t0, 1, u_color});
+  }
+
+  if (u_color.a == 0) {
+    return cursor.x - position.x;
+  }
+
+  __debug_rect_vertex_buffer->upload(buffer.data(), buffer.size() * sizeof(__debug_rect_vertex));
+
+  GPU::RenderState render_state = GPU::RenderState{
+      get()->m_programs.debug_rect_program.program,
+      &get()->m_vertex_arrays.debug_rect_vertex_array->vertex_array,
+      GPU::Primitive::Triangles,
+      irect(ivec2::zero(), get()->m_viewport.size)};
+
+  render_state.default_blend().no_depth().no_stencil();
+
+  render_state.uniforms = {
+      {get()->m_programs.debug_rect_program.vp_uniform, get()->m_viewport.screen_vp_matrix}};
+  render_state.textures = {{get()->m_programs.debug_rect_program.texture, __debug_font_texture}};
+
+  GPU::Device::draw_arrays(buffer.size(), render_state);
+
+  return cursor.x - position.x;
 }
 
 #endif
 
-Renderer::Renderer() {}
+void Renderer::flush_background_layer()
+{
+  /* Setup the viewport. */
+  GPU::Device::set_viewport(m_viewport.size);
+  GPU::Device::clear({m_viewport.background, 1.0f, 0});
+}
+
+void Renderer::flush_scene_layer() {}
+
+void Renderer::flush_ui_layer() {}
+
+Renderer::Renderer()
+{
+#ifdef GK_DEBUG
+  std::unique_ptr<GPU::DebugRectVertexArray> debug_rect_vertex_array =
+      std::make_unique<GPU::DebugRectVertexArray>(m_programs.debug_rect_program,
+                                                  *__debug_rect_vertex_buffer);
+
+  m_vertex_arrays = GPU::VertexArrays{
+      std::move(debug_rect_vertex_array),
+  };
+#endif
+}
 
 }  // namespace graphick::renderer
 
 #if 0
 
 namespace graphick::renderer {
-
-/* -- Static Methods -- */
-
-/**
- * @brief Generates an orthographic projection matrix from a viewport.
- *
- * @param viewport The viewport to generate the projection matrix for.
- * @return The orthographic projection matrix p.
- */
-static dmat4 orthographic_projection(const Viewport& viewport)
-{
-  const dvec2 dsize = dvec2(viewport.size);
-
-  const double factor = 0.5 / viewport.zoom;
-  const double half_width = -dsize.x * factor;
-  const double half_height = dsize.y * factor;
-
-  return dmat4{{-1.0 / half_width, 0.0, 0.0, 0.0},
-               {0.0, -1.0 / half_height, 0.0, 0.0},
-               {0.0, 0.0, -1.0, 0.0},
-               {0.0, 0.0, 0.0, 1.0}};
-}
-
-/**
- * @brief Generates an orthographic translation matrix from a viewport.
- *
- * @param viewport The viewport to generate the translation matrix for.
- * @return The orthographic translation matrix v.
- */
-static dmat4 orthographic_translation(const Viewport& viewport)
-{
-  const dvec2 dsize = dvec2(viewport.size);
-
-  return dmat4{{1.0, 0.0, 0.0, 0.5 * (-dsize.x / viewport.zoom + 2.0 * viewport.position.x)},
-               {0.0, 1.0, 0.0, 0.5 * (-dsize.y / viewport.zoom + 2.0 * viewport.position.y)},
-               {0.0, 0.0, 1.0, 0.0},
-               {0.0, 0.0, 0.0, 1.0}};
-}
 
 #  define RENDER_STATE(name) \
     GPU::RenderState \
@@ -233,61 +350,6 @@ static void flush(InstancedData<T>& data, const GPU::RenderState render_state)
   }
 
   data.instances.clear();
-}
-
-/* -- Static Member Initialization -- */
-
-Renderer* Renderer::s_instance = nullptr;
-
-/* -- Renderer -- */
-
-void Renderer::init()
-{
-  GK_ASSERT(s_instance == nullptr,
-            "Renderer already initialized, call shutdown() before reinitializing!");
-
-#  ifdef EMSCRIPTEN
-  EmscriptenWebGLContextAttributes attr;
-  emscripten_webgl_init_context_attributes(&attr);
-
-  /* Despite
-   * <https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#avoid_alphafalse_which_can_be_expensive>,
-   * when using desynchronized context (essential for responsive input), is better to use
-   * alpha=false to avoid expensive blending operations if there are elements on top.
-   * Emscripten doesn't support desynchronized context yet, so we set it to true after compilation
-   * (see script compile.py).
-   */
-  attr.alpha = false;
-  attr.premultipliedAlpha = false;
-  attr.majorVersion = 2;
-  attr.antialias = false;
-  attr.stencil = true;
-  attr.depth = true;
-
-  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
-  emscripten_webgl_make_context_current(ctx);
-
-  GPU::Device::init(GPU::DeviceVersion::GLES3);
-#  else
-  GPU::Device::init(GPU::DeviceVersion::GL3);
-#  endif
-
-  s_instance = new Renderer();
-}
-
-void Renderer::shutdown()
-{
-  GK_ASSERT(s_instance != nullptr, "Renderer not initialized, call init() before shutting down!");
-
-  delete s_instance;
-  s_instance = nullptr;
-
-  GPU::Device::shutdown();
-
-#  ifdef EMSCRIPTEN
-  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_get_current_context();
-  emscripten_webgl_destroy_context(ctx);
-#  endif
 }
 
 void Renderer::begin_frame(const RenderOptions& options)

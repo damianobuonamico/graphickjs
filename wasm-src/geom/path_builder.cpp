@@ -19,7 +19,7 @@
 #include "../math/math.h"
 #include "../math/matrix.h"
 
-#include "../utils/console.h"
+#include "../utils/debugger.h"
 
 namespace graphick::geom {
 
@@ -394,7 +394,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
   if (m_type != PathType::Generic || m_generic_path->empty())
     return {};
 
-  GK_TOTAL("PathBuilder::stroke()");
+  __debug_time_total();
 
   const double radius = static_cast<double>(options.width) * 0.5;
   const double inv_miter_limit = 1.0 / static_cast<double>(options.miter_limit);

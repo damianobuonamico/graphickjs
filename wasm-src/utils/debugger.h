@@ -70,7 +70,7 @@ struct debugger {
      *
      * @return The average time of the task.
      */
-    size_t average();
+    size_t average() const;
   };
 
  public:
@@ -124,7 +124,7 @@ struct debugger {
 /**
  * @brief The structure that represents a scoped timer.
  *
- * It is used by the GK_TOTAL and GK_AVERAGE macros.
+ * It is used by the __debug_time_total and __debug_time_average macros.
  */
 struct ScopedTimer {
   std::string id;  // The name of the timer.
@@ -174,7 +174,9 @@ using debugger = utils::debugger;
 /**
  * @brief Sets up the debugger for the next frame.
  */
-#  define __debug_time_frame() graphick::utils::debugger::frame()
+#  define __debug_time_frame() \
+    graphick::utils::debugger::frame(); \
+    __debug_time_total()
 
 #else
 

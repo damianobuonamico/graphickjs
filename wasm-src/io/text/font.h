@@ -7,6 +7,8 @@
 
 #include "../../geom/quadratic_path.h"
 
+#include "../../utils/defines.h"
+
 #include <unordered_map>
 
 namespace graphick::io::text {
@@ -103,10 +105,7 @@ class Font {
   /**
    * @brief Frees the font data.
    */
-  ~Font()
-  {
-    delete[] m_data;
-  }
+  ~Font();
 
   /**
    * @brief Returns whether the font is valid.
@@ -145,6 +144,31 @@ class Font {
    */
   float get_kerning(const int glyph1, const int glyph2) const;
 
+#ifdef GK_DEBUG
+  /**
+   * @brief Creates an atlas of the given size for debugging purposes.
+   *
+   * This method is stripped away if GK_DEBUG is not defined.
+   * The atlas includes characters from 32 to 126.
+   *
+   * @param size The size of the atlas.
+   * @param font_size The size of the font in pixels.
+   * @return The atlas.
+   */
+  std::vector<uint8_t> __debug_get_atlas(const ivec2 size, const float font_size) const;
+
+  /**
+   * @brief Returns the baked quad for the given codepoint.
+   * 
+   * This method is stripped away if GK_DEBUG is not defined.
+   * 
+   * @param codepoint The Unicode codepoint.
+   * @param size The size of the atlas.
+   * @param cursor The cursor position, the glyph advance is added to it.
+   * @return A pair of quad coordinates and texture coordinates.
+   */
+  std::pair<rect, rect> __debug_get_baked_quad(const int codepoint, const ivec2 size, vec2& cursor) const;
+#endif
  private:
   /**
    * @brief Loads the glyph for the given codepoint.
@@ -160,6 +184,10 @@ class Font {
 
   float m_scale_factor;  // Factor to multiply the glyphs by to get unit scale.
   float m_line_spacing;  // The distance between two lines of text, in unit scale.
+
+#ifdef GK_DEBUG
+  mutable void* __debug_c_data = nullptr;           // The glyphs positions in the debug atlas.
+#endif
 
   mutable std::unordered_map<int, Glyph> m_glyphs;  // A map of cached codepoints to glyphs.
 };

@@ -23,7 +23,7 @@
 
 #include "../../renderer/renderer.h"
 
-#include "../../utils/console.h"
+#include "../../utils/debugger.h"
 #include "../../utils/misc.h"
 
 #include "../input/input_manager.h"
@@ -131,7 +131,7 @@ void Scene::delete_entity(uuid id)
 
 uuid Scene::entity_at(const vec2 position, const bool deep_search, const float threshold) const
 {
-  GK_TOTAL("Scene::entity_at");
+  __debug_time_total();
 
   const float zoom = viewport.zoom();
   const float local_threshold = threshold / zoom;
@@ -264,7 +264,7 @@ static void render_image(const Entity& entity,
 
 void Scene::render(const bool ignore_cache) const
 {
-  GK_TOTAL("Scene::render");
+  __debug_time_total();
 
   /* Flooring to avoid banding artifacts. */
   const ivec2 viewport_size = ivec2(math::floor(vec2(viewport.size()) * viewport.dpr()));

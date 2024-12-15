@@ -24,6 +24,12 @@ namespace graphick::utils {
 inline static std::unordered_map<std::string, debugger::TotalTimer> s_total_timers = {};
 inline static std::unordered_map<std::string, debugger::AverageTimer> s_average_timers = {};
 
+inline static vec4 s_severity_colors[] = {
+    vec4(0.2f, 0.8f, 0.2f, 1.0f),     // Green
+    vec4(0.95f, 0.67f, 0.11f, 1.0f),  // Orange
+    vec4(0.8f, 0.2f, 0.2f, 1.0f),     // Red
+};
+
 /* -- TotalTimer -- */
 
 void debugger::TotalTimer::start()
@@ -47,7 +53,7 @@ void debugger::TotalTimer::next()
   records[index % RECORDS_COUNT] = 0;
 }
 
-size_t debugger::TotalTimer::average()
+size_t debugger::TotalTimer::average() const
 {
   return std::reduce(records.begin(), records.end()) / RECORDS_COUNT;
 }
@@ -56,7 +62,6 @@ size_t debugger::TotalTimer::average()
 
 void debugger::frame()
 {
-  // total_end("FrameTime");
   for (auto& [name, timer] : s_total_timers) {
     timer.next();
   }
@@ -80,8 +85,9 @@ void debugger::total_start(const std::string& name)
 void debugger::total_end(const std::string& name)
 {
   auto it = s_total_timers.find(name);
-  if (it == s_total_timers.end())
+  if (it == s_total_timers.end()) {
     return;
+  }
 
   it->second.end();
 }
@@ -131,7 +137,77 @@ void debugger::average_end(const std::string& name)
 
 void debugger::render()
 {
-  __debug_rect(rect(0, 0, 100, 100), vec4(0.3f, 0.3f, 0.3f, 0.3f));
+  const vec2 screen_size = vec2(renderer::Renderer::viewport_size());
+
+  const float font_size = 11.0f;
+  const float line_height = std::ceil(font_size * 1.5f);
+  const float padding = font_size;
+
+  vec2 cursor = vec2(padding, line_height + 1.0f);
+  vec2 size = vec2(0, 1.0f);
+
+  for (const auto& [name, timer] : s_total_timers) {
+    const size_t average = timer.average();
+
+    if (average == 0) {
+      continue;
+    }
+
+    const double ms = static_cast<double>(average) / 1e6;
+    const std::string text = name + ": " + std::to_string(ms) + " ms";
+
+    size.x = std::max(size.x, __debug_text(text, cursor, vec4::zero()));
+    cursor.y += line_height;
+  }
+
+  size += cursor + padding;
+  size.y -= line_height - 1.0f;
+
+  cursor = vec2(screen_size.x - size.x, 0.0f);
+
+  __debug_rect(rect(cursor, cursor + size), vec4(0.0f, 0.0f, 0.0f, 0.5f));
+
+  cursor += vec2(padding, line_height + 1.0f);
+
+  for (const auto& [name, timer] : s_total_timers) {
+    const size_t average = timer.average();
+
+    if (average == 0) {
+      continue;
+    }
+
+    const double ms = static_cast<double>(average) / 1e6;
+    const std::string text = name + ": ";
+    const std::string value = std::to_string(ms) + " ms";
+
+    vec4 color = vec4::identity();
+
+    if (name.find("render") != std::string::npos || name.find("main") != std::string::npos ||
+        name.find("GPU") != std::string::npos)
+    {
+      if (ms > 20.0) {
+        color = s_severity_colors[2];
+      } else if (ms > 17.5) {
+        color = s_severity_colors[1];
+      } else {
+        color = s_severity_colors[0];
+      }
+    } else {
+      if (ms > 3.0) {
+        color = s_severity_colors[2];
+      } else if (ms > 2.0) {
+        color = s_severity_colors[1];
+      } else {
+        color = s_severity_colors[0];
+      }
+    }
+
+    const float offset = __debug_text(text, cursor, vec4::identity());
+
+    __debug_text(value, cursor + vec2(offset, 0.0f), color);
+
+    cursor.y += line_height;
+  }
 }
 
 }  // namespace graphick::utils

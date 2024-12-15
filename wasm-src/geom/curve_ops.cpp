@@ -512,7 +512,7 @@ T next_taylor_center(const math::Vec2<T> a, const T t_e, const T tolerance)
 #if 0
   template <typename T, typename _>
   void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink) {
-    GK_TOTAL("geom::cubic_to_quadratics");
+    __debug_time_total();
 
     const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
 
@@ -740,10 +740,6 @@ void cubic_to_circular_quadratics(const CubicBezier<T>& cubic,
 template<typename T, typename _>
 void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink)
 {
-  // return cubic_to_circular_quadratics(cubic, tolerance, sink);
-
-  GK_TOTAL("geom::cubic_to_quadratics");  // 7.7ms -> 7.41ms -> 6.7ms -> 6.25ms -> 4.9ms -> 4.57ms
-
   const auto& [a, b, c, d] = cubic.coefficients();
 
   T t0 = T(0);
@@ -844,7 +840,7 @@ void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, Quadrat
 // template <typename T, typename _>
 // void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink)
 // {
-//   GK_TOTAL("geom::cubic_to_quadratics"); // 7.7ms ->
+//   __debug_time_total(); // 7.7ms ->
 
 //   const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
 
