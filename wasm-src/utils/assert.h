@@ -14,5 +14,5 @@
 #    define assert(...) ((void)0)
 #  endif
 
-#  define GK_ASSERT(x, message) assert(x &&message)
+#  define GK_ASSERT(x, message) assert(x&& message)
 #endif

@@ -136,19 +136,19 @@ GLDevice::GLDevice(const DeviceVersion version)
       break;
   }
 
-  console::log("Initializing Device:");
+  console::info("Initializing Device:");
 
   glCall(m_device_name = (const char*)(glGetString(GL_RENDERER)));
   glCall(m_backend_name = (const char*)(glGetString(GL_VERSION)));
   glCall(glGenQueries(1, &m_timer_query));
 
-  console::log("  Device Name", m_device_name);
-  console::log("  Backend Name", m_backend_name);
+  console::info("  Device Name", m_device_name);
+  console::info("  Backend Name", m_backend_name);
 
   glCall(glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &m_max_vertex_uniform_vectors));
   glCall(glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_max_texture_image_units));
 
-  console::log("Device Initialized!");
+  console::info("Device Initialized!");
 }
 
 GLDevice::~GLDevice()

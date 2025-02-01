@@ -118,9 +118,6 @@ bool InputManager::on_keyboard_event(
 
 bool InputManager::on_resize_event(int width, int height, float dpr, int offset_x, int offset_y)
 {
-  console::log("dpr", dpr);
-  console::log("width", width);
-  console::log("height", height);
   return get()->on_resize(width, height, dpr, offset_x, offset_y);
 }
 

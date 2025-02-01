@@ -143,7 +143,7 @@ void debugger::render()
   const float line_height = std::ceil(font_size * 1.5f);
   const float padding = font_size;
 
-  vec2 cursor = vec2(padding, line_height + 1.0f);
+  vec2 cursor = vec2(padding, line_height);
   vec2 size = vec2(0, 1.0f);
 
   for (const auto& [name, timer] : s_total_timers) {
@@ -161,13 +161,13 @@ void debugger::render()
   }
 
   size += cursor + padding;
-  size.y -= line_height - 1.0f;
+  size.y -= line_height + 1.0f;
 
   cursor = vec2(screen_size.x - size.x, 0.0f);
 
   __debug_rect(rect(cursor, cursor + size), vec4(0.0f, 0.0f, 0.0f, 0.5f));
 
-  cursor += vec2(padding, line_height + 1.0f);
+  cursor += vec2(padding, line_height);
 
   for (const auto& [name, timer] : s_total_timers) {
     const size_t average = timer.average();

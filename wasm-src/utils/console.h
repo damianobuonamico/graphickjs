@@ -14,13 +14,10 @@
 #include "../math/vec4.h"
 
 #include <bitset>
-#include <chrono>
 #include <numeric>
 #include <ostream>
 #include <sstream>
 #include <stdio.h>
-#include <unordered_map>
-#include <vector>
 
 namespace graphick::utils {
 
@@ -61,6 +58,101 @@ struct console {
   }
 
   /**
+   * @brief Logs an info message to the console.
+   *
+   * @param value The info message to log.
+   */
+  static inline void info(const std::string& value)
+  {
+    std::stringstream stream;
+    stream << value;
+
+    printf("\033[0;36m");
+    printf("%s\n", stream.str().c_str());
+    printf("\033[0m");
+  }
+
+  /**
+   * @brief Logs an info message to the console.
+   *
+   * @param name The name of the info message.
+   * @param value The info message to log.
+   */
+  static inline void info(const std::string& name, const std::string& value)
+  {
+    std::stringstream stream;
+    stream << name << ": " << value;
+
+    printf("\033[0;36m");
+    printf("%s\n", stream.str().c_str());
+    printf("\033[0m");
+  }
+
+  /**
+   * @brief Logs a warning message to the console.
+   *
+   * @param value The warning message to log.
+   */
+  static inline void warn(const std::string& value)
+  {
+    std::stringstream stream;
+    stream << value;
+
+    printf("\033[0;33m");
+    printf("%s\n", stream.str().c_str());
+    printf("\033[0m");
+  }
+
+  /**
+   * @brief Logs a warning message to the console.
+   *
+   * @param name The name of the warning message.
+   * @param value The warning message to log.
+   */
+  static inline void warn(const std::string& name, const std::string& value)
+  {
+    std::stringstream stream;
+    stream << name << ": " << value;
+
+    printf("\033[0;33m");
+    printf("%s\n", stream.str().c_str());
+    printf("\033[0m");
+  }
+
+  /**
+   * @brief Logs an error message to the console.
+   *
+   * @param value The error message to log.
+   */
+  template<typename T>
+  static inline void error(T value)
+  {
+    std::stringstream stream;
+    stream << value;
+
+    printf("\033[0;31m");
+    printf("%s\n", stream.str().c_str());
+    printf("\033[0m");
+  }
+
+  /**
+   * @brief Logs an error message to the console.
+   *
+   * @param name The name of the error message.
+   * @param value The error message to log.
+   */
+  template<typename T>
+  static inline void error(const std::string& name, T value)
+  {
+    std::stringstream stream;
+    stream << name << ": " << value;
+
+    printf("\033[0;31m");
+    printf("%s\n", stream.str().c_str());
+    printf("\033[0m");
+  }
+
+  /**
    * @brief Logs a bitset to the console.
    *
    * @param value The value to bitset.
@@ -85,35 +177,6 @@ struct console {
   {
     std::stringstream stream;
     stream << name << ": " << std::bitset<8 * sizeof(value)>(value);
-
-    printf("%s\n", stream.str().c_str());
-  }
-
-  /**
-   * @brief Logs an error message to the console.
-   *
-   * @param value The error message to log.
-   */
-  template<typename T>
-  static inline void error(T value)
-  {
-    std::stringstream stream;
-    stream << value;
-
-    printf("%s\n", stream.str().c_str());
-  }
-
-  /**
-   * @brief Logs an error message to the console.
-   *
-   * @param name The name of the error message.
-   * @param value The error message to log.
-   */
-  template<typename T>
-  static inline void error(const std::string& name, T value)
-  {
-    std::stringstream stream;
-    stream << name << ": " << value;
 
     printf("%s\n", stream.str().c_str());
   }
