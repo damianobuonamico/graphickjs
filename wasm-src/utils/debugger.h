@@ -25,6 +25,16 @@ namespace graphick::utils {
 struct debugger {
  public:
   /**
+   * @brief The structure that represents a debug value, updated every frame.
+   *
+   * If the value is not updated within 1000 frames, it is removed.
+   */
+  struct DebugValue {
+    std::string value;  // The value to display.
+    size_t last_time;   // The last time the value was updated.
+  };
+
+  /**
    * @brief The structure that represents a timer used to measure the average time of a task.
    */
   struct AverageTimer {
@@ -78,6 +88,26 @@ struct debugger {
    * @brief Starts a new frame.
    */
   static void frame();
+
+  /**
+   * @brief Sets a debug value.
+   *
+   * @param name The name of the value.
+   * @param value The value to set.
+   */
+  template<typename T>
+  static inline void value(const std::string& name, const T value)
+  {
+    debugger::value(name, std::to_string(value));
+  }
+
+  /**
+   * @brief Sets a debug value.
+   *
+   * @param name The name of the value.
+   * @param value The value to set.
+   */
+  static void value(const std::string& name, const std::string& value);
 
   /**
    * @brief Starts a total timer.
@@ -156,6 +186,11 @@ using debugger = utils::debugger;
 }
 
 /**
+ * @brief Creates a debug value updated every frame.
+ */
+#  define __debug_value(name, record) graphick::utils::debugger::value(name, record)
+
+/**
  * @brief Creates a scoped timer and adds it to the total time of the task.
  */
 #  define __debug_time_total() graphick::utils::ScopedTimer __scoped_timer(__FUNCTION__, true)
@@ -180,6 +215,7 @@ using debugger = utils::debugger;
 
 #else
 
+#  define __debug_value(...) ((void)0)
 #  define __debug_time_total() ((void)0)
 #  define __debug_time_total_record(...) ((void)0)
 #  define __debug_time_average() ((void)0)

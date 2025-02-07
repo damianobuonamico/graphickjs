@@ -29,7 +29,7 @@ struct Vec2 {
     return 2;
   }
 
-  constexpr T &operator[](uint8_t i)
+  constexpr T& operator[](uint8_t i)
   {
     switch (i) {
       default:
@@ -40,7 +40,7 @@ struct Vec2 {
     }
   }
 
-  constexpr T const &operator[](uint8_t i) const
+  constexpr T const& operator[](uint8_t i) const
   {
     switch (i) {
       default:
@@ -55,14 +55,14 @@ struct Vec2 {
 
   Vec2() = default;
 
-  constexpr Vec2(const Vec2<T> &v) : x(v.x), y(v.y) {}
+  constexpr Vec2(const Vec2<T>& v) : x(v.x), y(v.y) {}
 
   constexpr explicit Vec2(T scalar) : x(scalar), y(scalar) {}
 
   constexpr Vec2(T x, T y) : x(x), y(y) {}
 
   template<typename U>
-  constexpr explicit Vec2(const Vec2<U> &v) : x(static_cast<T>(v.x)), y(static_cast<T>(v.y))
+  constexpr explicit Vec2(const Vec2<U>& v) : x(static_cast<T>(v.x)), y(static_cast<T>(v.y))
   {
   }
 
@@ -73,6 +73,11 @@ struct Vec2 {
     return Vec2<T>(T(0));
   }
 
+  static constexpr Vec2<T> one()
+  {
+    return Vec2<T>(T(1));
+  }
+
   static constexpr Vec2<T> identity()
   {
     return Vec2<T>(T(1));
@@ -80,7 +85,7 @@ struct Vec2 {
 
   /* -- Assign operator -- */
 
-  constexpr Vec2<T> &operator=(const Vec2<T> v)
+  constexpr Vec2<T>& operator=(const Vec2<T> v)
   {
     this->x = v.x;
     this->y = v.y;
@@ -90,14 +95,14 @@ struct Vec2 {
   /* -- Unary arithmetic operators -- */
 
   template<typename U>
-  constexpr Vec2<T> &operator+=(U scalar)
+  constexpr Vec2<T>& operator+=(U scalar)
   {
     this->x += static_cast<T>(scalar);
     this->y += static_cast<T>(scalar);
     return *this;
   }
 
-  constexpr Vec2<T> &operator+=(const Vec2<T> v)
+  constexpr Vec2<T>& operator+=(const Vec2<T> v)
   {
     this->x += v.x;
     this->y += v.y;
@@ -105,14 +110,14 @@ struct Vec2 {
   }
 
   template<typename U>
-  constexpr Vec2<T> &operator-=(U scalar)
+  constexpr Vec2<T>& operator-=(U scalar)
   {
     this->x -= static_cast<T>(scalar);
     this->y -= static_cast<T>(scalar);
     return *this;
   }
 
-  constexpr Vec2<T> &operator-=(const Vec2<T> v)
+  constexpr Vec2<T>& operator-=(const Vec2<T> v)
   {
     this->x -= v.x;
     this->y -= v.y;
@@ -120,14 +125,14 @@ struct Vec2 {
   }
 
   template<typename U>
-  constexpr Vec2<T> &operator*=(U scalar)
+  constexpr Vec2<T>& operator*=(U scalar)
   {
     this->x *= static_cast<T>(scalar);
     this->y *= static_cast<T>(scalar);
     return *this;
   }
 
-  constexpr Vec2<T> &operator*=(const Vec2<T> v)
+  constexpr Vec2<T>& operator*=(const Vec2<T> v)
   {
     this->x *= v.x;
     this->y *= v.y;
@@ -135,14 +140,14 @@ struct Vec2 {
   }
 
   template<typename U>
-  constexpr Vec2<T> &operator/=(U scalar)
+  constexpr Vec2<T>& operator/=(U scalar)
   {
     this->x /= static_cast<T>(scalar);
     this->y /= static_cast<T>(scalar);
     return *this;
   }
 
-  constexpr Vec2<T> &operator/=(const Vec2<T> v)
+  constexpr Vec2<T>& operator/=(const Vec2<T> v)
   {
     this->x /= v.x;
     this->y /= v.y;
@@ -151,14 +156,14 @@ struct Vec2 {
 
   /* -- Increment/Decrement operators -- */
 
-  constexpr Vec2<T> &operator++()
+  constexpr Vec2<T>& operator++()
   {
     ++this->x;
     ++this->y;
     return *this;
   }
 
-  constexpr Vec2<T> &operator--()
+  constexpr Vec2<T>& operator--()
   {
     --this->x;
     --this->y;

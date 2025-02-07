@@ -15,10 +15,7 @@ static const std::string shader_include_names[] = {"quadratic", "cubic", "textur
 
 static const std::string shader_names[] = {"tile",
                                            "fill",
-                                           "line",
-                                           "rect",
-                                           "circle",
-                                           "image",
+                                           "primitive",
 #ifdef GK_DEBUG
                                            "debug_rect"
 #endif
@@ -139,21 +136,9 @@ void ResourceManager::prefetch_shaders()
       ,
 #include "../renderer/gpu/shaders/fill.fs.glsl"
       ,
-#include "../renderer/gpu/shaders/line.vs.glsl"
+#include "../renderer/gpu/shaders/primitive.vs.glsl"
       ,
-#include "../renderer/gpu/shaders/line.fs.glsl"
-      ,
-#include "../renderer/gpu/shaders/rect.vs.glsl"
-      ,
-#include "../renderer/gpu/shaders/rect.fs.glsl"
-      ,
-#include "../renderer/gpu/shaders/circle.vs.glsl"
-      ,
-#include "../renderer/gpu/shaders/circle.fs.glsl"
-      ,
-#include "../renderer/gpu/shaders/image.vs.glsl"
-      ,
-#include "../renderer/gpu/shaders/image.fs.glsl"
+#include "../renderer/gpu/shaders/primitive.fs.glsl"
 #ifdef GK_DEBUG
       ,
 #  include "../renderer/gpu/shaders/debug_rect.vs.glsl"

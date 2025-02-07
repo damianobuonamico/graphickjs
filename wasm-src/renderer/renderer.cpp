@@ -11,10 +11,14 @@
 
 #include "renderer.h"
 
+#include "../geom/path.h"
+#include "../geom/path_builder.h"
+
 #include "../io/resource_manager.h"
 #include "../io/text/font.h"
 #include "../io/text/unicode.h"
 
+#include "../math/matrix.h"
 #include "../math/vector.h"
 
 #include "../utils/assert.h"
@@ -22,21 +26,18 @@
 
 #include "gpu/device.h"
 
+#include <unordered_set>
+
 #if 0
 // TODO: this is temp, the renderer should not know about the editor
 #  include "../editor/scene/cache.h"
 #  include "../editor/scene/components/text.h"
 
 #  include "../geom/intersections.h"
-#  include "../geom/path.h"
-#  include "../geom/path_builder.h"
 
 #  include "../io/resource_manager.h"
 #  include "../io/text/font.h"
 #  include "../io/text/unicode.h"
-
-#  include "../math/matrix.h"
-#  include "../math/vector.h"
 
 #  include "../utils/assert.h"
 #  include "../utils/console.h"
@@ -57,7 +58,7 @@ Renderer* Renderer::s_instance = nullptr;
 
 #ifdef GK_DEBUG
 
-#  define __debug_max_rects 1024
+#  define __debug_max_rects 2048
 
 inline static GPU::Buffer* __debug_rect_vertex_buffer = nullptr;
 inline static GPU::Texture* __debug_font_texture = nullptr;
@@ -137,6 +138,8 @@ void Renderer::shutdown()
 void Renderer::begin_frame(const RenderOptions& options)
 {
   get()->m_viewport = options.viewport;
+  get()->m_tiler.setup(options.viewport.zoom, options.viewport.visible());
+  get()->m_ui_options = UIOptions(options.viewport.dpr / options.viewport.zoom);
 
   GPU::Device::begin_commands();
 
@@ -159,6 +162,7 @@ void Renderer::end_frame()
   get()->flush_ui_layer();
 
 #ifdef GK_DEBUG
+  get()->__debug_flush_layer({true});
   graphick::utils::debugger::render();
 #endif
 
@@ -170,15 +174,25 @@ void Renderer::end_frame()
 bool Renderer::draw(const geom::path& path,
                     const mat2x3& transform,
                     const DrawingOptions& options,
-                    const uuid)
+                    const uuid id)
 {
-  return false;
+  if (path.empty() ||
+      (options.fill == nullptr && options.stroke == nullptr && options.outline == nullptr))
+  {
+    return false;
+  }
+
+  geom::dpath transformed_path = path.transformed<double>(transform);
+  math::drect transformed_bounding_rect = transformed_path.bounding_rect();
+
+  return get()->draw_transformed(
+      transformed_path, transformed_bounding_rect, options, rect::identity().vertices());
 }
 
 bool Renderer::draw(const renderer::Text& text,
                     const mat2x3& transform,
                     const DrawingOptions& options,
-                    const uuid)
+                    const uuid id)
 {
   return false;
 }
@@ -186,16 +200,12 @@ bool Renderer::draw(const renderer::Text& text,
 bool Renderer::draw(const renderer::Image& image,
                     const mat2x3& transform,
                     const DrawingOptions& options,
-                    const uuid)
+                    const uuid id)
 {
+  const bool has_transform = !math::is_identity(transform);
+
   return false;
 }
-
-void Renderer::ui_rect(const rect& rect, const vec4& color) {}
-
-void Renderer::ui_square(const vec2 center, const float radius, const vec4& color) {}
-
-void Renderer::ui_circle(const vec2 center, const float radius, const vec4& color) {}
 
 #ifdef GK_DEBUG
 
@@ -234,7 +244,55 @@ void Renderer::__debug_square_impl(const vec2 center, const float radius, const 
 
 void Renderer::__debug_circle_impl(const vec2 center, const float radius, const vec4& color) {}
 
-void Renderer::__debug_line_impl(const vec2 start, const vec2 end, const vec4& color) {}
+void Renderer::__debug_line_impl(const vec2 start, const vec2 end, const vec4& color)
+{
+  const uvec4 u_color = uvec4(color * 255.0f);
+
+  std::vector<__debug_rect_vertex> buffer = {
+      {start, vec2::zero(), 3, u_color},
+      {end, vec2::zero(), 3, u_color},
+  };
+
+  __debug_rect_vertex_buffer->upload(buffer.data(), buffer.size() * sizeof(__debug_rect_vertex));
+
+  GPU::RenderState render_state = GPU::RenderState{
+      get()->m_programs.debug_rect_program.program,
+      &get()->m_vertex_arrays.debug_rect_vertex_array->vertex_array,
+      GPU::Primitive::Lines,
+      irect(ivec2::zero(), get()->m_viewport.size)};
+
+  render_state.default_blend().no_depth().no_stencil();
+  render_state.uniforms = {
+      {get()->m_programs.debug_rect_program.vp_uniform, get()->m_viewport.screen_vp_matrix}};
+
+  GPU::Device::draw_arrays(2, render_state);
+}
+
+void Renderer::__debug_lines_impl(const std::vector<vec2>& points, const vec4& color)
+{
+  const uvec4 u_color = uvec4(color * 255.0f);
+
+  std::vector<__debug_rect_vertex> buffer;
+
+  for (size_t i = 0; i < points.size() - 1; i++) {
+    buffer.push_back({points[i], vec2::zero(), 3, u_color});
+    buffer.push_back({points[i + 1], vec2::zero(), 3, u_color});
+  }
+
+  __debug_rect_vertex_buffer->upload(buffer.data(), buffer.size() * sizeof(__debug_rect_vertex));
+
+  GPU::RenderState render_state = GPU::RenderState{
+      get()->m_programs.debug_rect_program.program,
+      &get()->m_vertex_arrays.debug_rect_vertex_array->vertex_array,
+      GPU::Primitive::Lines,
+      irect(ivec2::zero(), get()->m_viewport.size)};
+
+  render_state.default_blend().no_depth().no_stencil();
+  render_state.uniforms = {
+      {get()->m_programs.debug_rect_program.vp_uniform, get()->m_viewport.screen_vp_matrix}};
+
+  GPU::Device::draw_arrays(buffer.size(), render_state);
+}
 
 float Renderer::__debug_text_impl(const std::string& text, const vec2 position, const vec4& color)
 {
@@ -289,6 +347,153 @@ float Renderer::__debug_text_impl(const std::string& text, const vec2 position, 
 
 #endif
 
+bool Renderer::draw_transformed(const geom::dpath& path,
+                                const drect& bounding_rect,
+                                const DrawingOptions& options,
+                                const std::array<vec2, 4>& texture_coords,
+                                const uuid id)
+{
+  Drawable drawable;
+
+  if (options.fill && options.fill->paint.visible()) {
+    geom::dcubic_path cubic_path = path.to_cubic_path();
+
+    if (!cubic_path.closed()) {
+      cubic_path.line_to(cubic_path.front());
+    }
+
+    m_tiler.tile(cubic_path, bounding_rect, *options.fill, drawable);
+  }
+
+  if (options.stroke && options.stroke->paint.visible()) {
+  }
+
+  if (drawable.tiles.size() || drawable.fills.size()) {
+    m_tiles.push_drawable(drawable);
+  }
+
+  if (options.outline) {
+    const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
+
+    builder.flatten<float>(m_viewport.visible(),
+                           RendererSettings::flattening_tolerance / m_viewport.zoom,
+                           [&](const vec2 p0, const vec2 p1) {
+                             m_instances.push_line(
+                                 p0, p1, options.outline->color, m_ui_options.line_width);
+                           });
+
+    if (options.outline->draw_vertices) {
+      draw_outline_vertices(path, *options.outline);
+    }
+  }
+
+  return false;
+}
+
+void Renderer::draw_outline_vertices(const geom::dpath& path, const Outline& outline)
+{
+  uint32_t i = path.points_count() - 1;
+  vec2 last = vec2(path.at(i));
+
+  const std::unordered_set<uint32_t>* selected_vertices =
+      static_cast<const std::unordered_set<uint32_t>*>(outline.selected_vertices);
+
+  if (!path.closed()) {
+    m_instances.push_rect(last, m_ui_options.vertex_size, outline.color);
+
+    if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+      m_instances.push_rect(last, m_ui_options.vertex_inner_size, vec4::identity());
+    }
+
+    const vec2 out_handle = vec2(path.out_handle());
+
+    if (out_handle != last) {
+      m_instances.push_circle(out_handle, m_ui_options.handle_radius, outline.color);
+      m_instances.push_line(out_handle, last, outline.color, m_ui_options.line_width);
+    }
+  }
+
+  /* We draw the vertices in reverse order to be coherent with hit testing. */
+
+  path.for_each_reversed(
+      [&](const dvec2 p0_raw) {
+        const vec2 p0 = vec2(p0_raw);
+
+        m_instances.push_rect(p0, m_ui_options.vertex_size, outline.color);
+
+        if (selected_vertices && selected_vertices->find(i) == selected_vertices->end()) {
+          m_instances.push_rect(p0, m_ui_options.vertex_inner_size, vec4::identity());
+        }
+
+        if (!path.closed()) {
+          vec2 in_handle = vec2(path.in_handle());
+
+          if (in_handle != p0) {
+            m_instances.push_circle(in_handle, m_ui_options.handle_radius, outline.color);
+            m_instances.push_line(in_handle, p0, outline.color, m_ui_options.line_width);
+          }
+        }
+
+        last = p0;
+        i -= 1;
+      },
+      [&](const dvec2 p0_raw, const dvec2 p1_raw) {
+        const vec2 p0 = vec2(p0_raw);
+
+        m_instances.push_rect(p0, m_ui_options.vertex_size, outline.color);
+
+        if (selected_vertices && selected_vertices->find(i - 1) == selected_vertices->end()) {
+          m_instances.push_rect(p0, m_ui_options.vertex_inner_size, vec4::identity());
+        }
+
+        last = p0;
+        i -= 1;
+      },
+      [&](const dvec2 p0_raw, const dvec2 p1_raw, const dvec2 p2_raw) {
+        const vec2 p0 = vec2(p0_raw);
+        const vec2 p1 = vec2(p1_raw);
+
+        m_instances.push_rect(p0, m_ui_options.vertex_size, outline.color);
+
+        if (selected_vertices && selected_vertices->find(i - 2) == selected_vertices->end()) {
+          m_instances.push_rect(p0, m_ui_options.vertex_inner_size, vec4::identity());
+        }
+
+        if (p1_raw != p0_raw && p2_raw != p0_raw) {
+          m_instances.push_circle(p1, m_ui_options.handle_radius, outline.color);
+          m_instances.push_line(p1, p0, outline.color, m_ui_options.line_width);
+          m_instances.push_line(p1, last, outline.color, m_ui_options.line_width);
+        }
+
+        last = p0;
+        i -= 2;
+      },
+      [&](const dvec2 p0_raw, const dvec2 p1_raw, const dvec2 p2_raw, const dvec2 p3_raw) {
+        const vec2 p0 = vec2(p0_raw);
+        const vec2 p1 = vec2(p1_raw);
+        const vec2 p2 = vec2(p2_raw);
+
+        m_instances.push_rect(p0, m_ui_options.vertex_size, outline.color);
+
+        if (selected_vertices && selected_vertices->find(i - 3) == selected_vertices->end()) {
+          m_instances.push_rect(p0, m_ui_options.vertex_inner_size, vec4::identity());
+        }
+
+        if (p2_raw != p3_raw) {
+          m_instances.push_circle(p2, m_ui_options.handle_radius, outline.color);
+          m_instances.push_line(p2, last, outline.color, m_ui_options.line_width);
+        }
+
+        if (p1_raw != p0_raw) {
+          m_instances.push_circle(p1, m_ui_options.handle_radius, outline.color);
+          m_instances.push_line(p1, p0, outline.color, m_ui_options.line_width);
+        }
+
+        last = p0;
+        i -= 3;
+      });
+}
+
 void Renderer::flush_background_layer()
 {
   /* Setup the viewport. */
@@ -296,21 +501,106 @@ void Renderer::flush_background_layer()
   GPU::Device::clear({m_viewport.background, 1.0f, 0});
 }
 
-void Renderer::flush_scene_layer() {}
-
-void Renderer::flush_ui_layer() {}
-
-Renderer::Renderer()
+void Renderer::flush_scene_layer()
 {
+  m_tiles.flush(m_viewport.size, m_viewport.vp_matrix, m_viewport.zoom);
+}
+
+void Renderer::flush_ui_layer()
+{
+  m_instances.flush(m_viewport.size, m_viewport.vp_matrix, m_viewport.zoom);
+}
+
+#ifdef GK_DEBUG
+
+void Renderer::__debug_flush_layer(const DebugOptions& options) const
+{
+  if (options.show_LODs) {
+    const double base_tile_size = m_tiler.base_tile_size();
+    const uint8_t max_LOD = m_tiler.max_LOD();
+
+    const drect viewport = m_viewport.visible();
+
+    for (uint8_t LOD = 0; LOD <= max_LOD; LOD++) {
+      const double tile_size = base_tile_size * std::pow(0.5, LOD);
+
+      const dvec2 min = math::floor(viewport.min / tile_size) * tile_size;
+      const dvec2 max = math::ceil(viewport.max / tile_size) * tile_size;
+
+      std::vector<vec2> points;
+
+      bool up = false;
+
+      for (double x = min.x; x < max.x; x += tile_size) {
+        if (up) {
+          points.push_back(vec2(m_viewport.revert(dvec2(x, max.y))));
+          points.push_back(vec2(m_viewport.revert(dvec2(x, min.y))));
+        } else {
+          points.push_back(vec2(m_viewport.revert(dvec2(x, min.y))));
+          points.push_back(vec2(m_viewport.revert(dvec2(x, max.y))));
+        }
+
+        up = !up;
+      }
+
+      __debug_lines(points, vec4(1.0, 1.0, 1.0, 0.1));
+
+      points.clear();
+
+      for (double y = min.y; y < max.y; y += tile_size) {
+        if (up) {
+          points.push_back(vec2(m_viewport.revert(dvec2(min.x, y))));
+          points.push_back(vec2(m_viewport.revert(dvec2(max.x, y))));
+        } else {
+          points.push_back(vec2(m_viewport.revert(dvec2(max.x, y))));
+          points.push_back(vec2(m_viewport.revert(dvec2(min.x, y))));
+        }
+
+        up = !up;
+      }
+
+      __debug_lines(points, vec4(1.0, 1.0, 1.0, 0.1));
+
+      points.clear();
+    }
+
+    __debug_value("LOD", max_LOD);
+  }
+}
+
+#endif
+
+Renderer::Renderer() : m_instances(GK_LARGE_BUFFER_SIZE), m_tiles(GK_LARGE_BUFFER_SIZE)
+{
+  std::unique_ptr<GPU::PrimitiveVertexArray> primitive_vertex_array =
+      std::make_unique<GPU::PrimitiveVertexArray>(m_programs.primitive_program,
+                                                  m_instances.instance_buffer(),
+                                                  m_instances.vertex_buffer());
+  std::unique_ptr<GPU::TileVertexArray> tile_vertex_array = std::make_unique<GPU::TileVertexArray>(
+      m_programs.tile_program, m_tiles.tiles_vertex_buffer(), m_tiles.tiles_index_buffer());
+  std::unique_ptr<GPU::FillVertexArray> fill_vertex_array = std::make_unique<GPU::FillVertexArray>(
+      m_programs.fill_program, m_tiles.fills_vertex_buffer(), m_tiles.fills_index_buffer());
+
 #ifdef GK_DEBUG
   std::unique_ptr<GPU::DebugRectVertexArray> debug_rect_vertex_array =
       std::make_unique<GPU::DebugRectVertexArray>(m_programs.debug_rect_program,
                                                   *__debug_rect_vertex_buffer);
+#endif
 
   m_vertex_arrays = GPU::VertexArrays{
+#ifdef GK_DEBUG
       std::move(debug_rect_vertex_array),
-  };
 #endif
+      std::move(primitive_vertex_array),
+      std::move(tile_vertex_array),
+      std::move(fill_vertex_array)};
+
+  m_instances.update_shader(&m_programs.primitive_program,
+                            m_vertex_arrays.primitive_vertex_array.get());
+  m_tiles.update_shader(&m_programs.tile_program,
+                        &m_programs.fill_program,
+                        m_vertex_arrays.tile_vertex_array.get(),
+                        m_vertex_arrays.fill_vertex_array.get());
 }
 
 }  // namespace graphick::renderer

@@ -18,6 +18,7 @@
 #include "../io/encode/encode.h"
 
 #include "../utils/assert.h"
+#include "../utils/debugger.h"
 
 #define FIT_RESOLUTION 10
 
@@ -2032,6 +2033,9 @@ CubicPath<T> Path<T, _>::to_cubic_path() const
     return path;
   }
 
+  // We reserve twice the points to account for monotonic splitting.
+  path.points.reserve((m_commands_size - 1) * 3 * 2 + 1);
+
   for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
     switch (get_command(i)) {
       case Command::Move:
@@ -2067,33 +2071,8 @@ Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform) const
     return path;
   }
 
-  path.m_commands = m_commands;
-  path.m_commands_size = m_commands_size;
-  path.m_closed = m_closed;
-
-  path.m_points = std::vector<math::Vec2<U>>(m_points.size());
-
-  for (uint32_t i = 0; i < m_points.size(); i++) {
-    math::Vec2<U> p = mat * math::Vec2<U>(m_points[i]);
-    path.m_points[i] = p;
-  }
-
-  path.m_in_handle = mat * math::Vec2<U>(m_in_handle);
-  path.m_out_handle = mat * math::Vec2<U>(m_out_handle);
-
-  return path;
-}
-
-template<typename T, typename _>
-template<typename U>
-Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform,
-                                math::Rect<U>& r_bounding_rect) const
-{
-  math::Mat2x3<U> mat = math::Mat2x3<U>(transform);
-  Path<U> path;
-
-  if (empty()) {
-    return path;
+  if (math::is_identity(transform)) {
+    return Path<U>(*this);
   }
 
   path.m_commands = m_commands;
@@ -2104,8 +2083,6 @@ Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform,
 
   for (uint32_t i = 0; i < m_points.size(); i++) {
     math::Vec2<U> p = mat * math::Vec2<U>(m_points[i]);
-
-    r_bounding_rect.include(p);
     path.m_points[i] = p;
   }
 
@@ -2353,14 +2330,5 @@ template Path<float> Path<float>::transformed(const math::Mat2x3<float>&) const;
 template Path<double> Path<float>::transformed(const math::Mat2x3<float>&) const;
 template Path<float> Path<double>::transformed(const math::Mat2x3<double>&) const;
 template Path<double> Path<double>::transformed(const math::Mat2x3<double>&) const;
-
-template Path<float> Path<float>::transformed(const math::Mat2x3<float>&,
-                                              math::Rect<float>&) const;
-template Path<double> Path<float>::transformed(const math::Mat2x3<float>&,
-                                               math::Rect<double>&) const;
-template Path<float> Path<double>::transformed(const math::Mat2x3<double>&,
-                                               math::Rect<float>&) const;
-template Path<double> Path<double>::transformed(const math::Mat2x3<double>&,
-                                                math::Rect<double>&) const;
 
 }  // namespace graphick::geom

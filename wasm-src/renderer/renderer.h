@@ -11,7 +11,9 @@
 
 #include "gpu/shaders.h"
 
+#include "instances.h"
 #include "renderer_data2.h"
+#include "tiles.h"
 
 #if 0
 #  include <optional>
@@ -43,12 +45,14 @@ using dpath = geom::Path<double, std::enable_if<true>>;
 #  define __debug_square(...) graphick::renderer::Renderer::__debug_square_impl(__VA_ARGS__)
 #  define __debug_circle(...) graphick::renderer::Renderer::__debug_circle_impl(__VA_ARGS__)
 #  define __debug_line(...) graphick::renderer::Renderer::__debug_line_impl(__VA_ARGS__)
+#  define __debug_lines(...) graphick::renderer::Renderer::__debug_lines_impl(__VA_ARGS__)
 #  define __debug_text(...) graphick::renderer::Renderer::__debug_text_impl(__VA_ARGS__)
 #else
 #  define __debug_rect(...) ((void)0)
 #  define __debug_square(...) ((void)0)
 #  define __debug_circle(...) ((void)0)
 #  define __debug_line(...) ((void)0)
+#  define __debug_lines(...) ((void)0)
 #  define __debug_text(...) ((void)0)
 #endif
 
@@ -159,12 +163,31 @@ class Renderer {
                    const uuid id = uuid::null);
 
   /**
+   * @brief Draws a line with the provided color in the UI layer.
+   *
+   * @param start The start of the line.
+   * @param end The end of the line.
+   * @param color The color to use, default is the primary color.
+   * @param width The width of the line, default is the line width.
+   */
+  inline static void ui_line(const vec2 start,
+                             const vec2 end,
+                             const vec4& color = vec4::identity(),
+                             const float width = 1.0f)
+  {
+    get()->m_instances.push_line(start, end, color, width);
+  }
+
+  /**
    * @brief Draws a rectangle with the provided color in the UI layer.
    *
    * @param rect The rectangle to draw.
    * @param color The color to use, default is white.
    */
-  static void ui_rect(const rect& rect, const vec4& color = vec4::identity());
+  inline static void ui_rect(const rect& rect, const vec4& color = vec4::identity())
+  {
+    get()->m_instances.push_rect(rect.center(), rect.size(), color);
+  }
 
   /**
    * @brief Draws a square with the provided color in the UI layer.
@@ -175,7 +198,10 @@ class Renderer {
    */
   static void ui_square(const vec2 center,
                         const float radius,
-                        const vec4& color = vec4::identity());
+                        const vec4& color = vec4::identity())
+  {
+    get()->m_instances.push_rect(center, vec2(radius * 2.0f), color);
+  }
 
   /**
    * @brief Draws a circle with the provided color in the UI layer.
@@ -186,7 +212,10 @@ class Renderer {
    */
   static void ui_circle(const vec2 center,
                         const float radius,
-                        const vec4& color = vec4::identity());
+                        const vec4& color = vec4::identity())
+  {
+    get()->m_instances.push_circle(center, radius, color);
+  }
 
 #ifdef GK_DEBUG
 
@@ -240,6 +269,17 @@ class Renderer {
                                 const vec4& color = vec4::identity());
 
   /**
+   * @brief Draws lines with the provided color in the debug layer.
+   *
+   * This method is stripped away if GK_DEBUG is not defined, use __debug_lines macro instead.
+   *
+   * @param points The points to draw.
+   * @param color The color to use.
+   */
+  static void __debug_lines_impl(const std::vector<vec2>& points,
+                                 const vec4& color = vec4::identity());
+
+  /**
    * @brief Draws text with the provided color in the debug layer.
    *
    * This method is stripped away if GK_DEBUG is not defined, use __debug_text macro instead.
@@ -273,6 +313,29 @@ class Renderer {
   }
 
   /**
+   * @brief Draws a transformed Path with the provided Fill and Stroke properties.
+   *
+   * @param path The transformed Path to draw.
+   * @param bounding_rect The bounding rectangle of the path.
+   * @param options The DrawingOptions to use.
+   * @param texture_coords The texture coordinates to use for the fill.
+   * @return true if the path was visible and drawn, false otherwise.
+   */
+  bool draw_transformed(const geom::dpath& path,
+                        const drect& bounding_rect,
+                        const DrawingOptions& options,
+                        const std::array<vec2, 4>& texture_coords,
+                        const uuid id = uuid::null);
+
+  /**
+   * @brief Draws the individual vertices of a path.
+   *
+   * @param path The Path to draw.
+   * @param outline The Outline properties to use.
+   */
+  void draw_outline_vertices(const geom::dpath& path, const Outline& outline);
+
+  /**
    * @brief Flushes the background layer.
    *
    * This method takes care of the viewport setup (i.e. setting the viewport size)
@@ -289,11 +352,38 @@ class Renderer {
    */
   void flush_ui_layer();
 
+#ifdef GK_DEBUG
+
+  /**
+   * @brief The DebugOptions struct to use when flushing the debug layer.
+   */
+  struct DebugOptions {
+    bool show_LODs;  // Whether to show the scene grid up to the smallest LOD level in use.
+  };
+
+  /**
+   * @brief Flushes the debug layer.
+   *
+   * This method is stripped away if GK_DEBUG is not defined.
+   *
+   * @param options The DebugOptions to use.
+   */
+  void __debug_flush_layer(const DebugOptions& options) const;
+
+#endif
+
  private:
   GPU::Programs m_programs;           // The shader programs to use.
   GPU::VertexArrays m_vertex_arrays;  // The vertex arrays to use.
 
   Viewport m_viewport;                // The viewport of the renderer.
+
+  Tiler m_tiler;                      // Takes care of tiling and LOD.
+
+  InstancedRenderer m_instances;      // The line instances.
+  TiledRenderer m_tiles;              // The tiles renderer.
+
+  UIOptions m_ui_options;             // The UI options (i.e. handle size, colors, etc.).
  private:
   static Renderer* s_instance;        // The singleton instance of the renderer.
 };

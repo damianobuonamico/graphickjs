@@ -87,7 +87,7 @@ struct TileVertex {
                                 const size_t curves_start_index)
   {
     const uint32_t u_curves_offset = static_cast<uint32_t>(curves_start_index) << 12 >> 12;
-    const uint32_t u_paint_type = (static_cast<uint32_t>(paint_type) << 25) >> 25;
+    const uint32_t u_paint_type = static_cast<uint32_t>(paint_type) << 25 >> 25;
     const uint32_t u_blend = static_cast<uint32_t>(blending_mode);
 
     return (u_blend << 27) | (u_paint_type << 20) | (u_curves_offset);

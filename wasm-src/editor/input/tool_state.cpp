@@ -205,7 +205,8 @@ void ToolState::render_overlays(const float zoom) const
 
   for (int i = 0; i < Manipulator::RN; i++) {
     // TODO: replace with layer color
-    renderer::Renderer::ui_square(transform * handles[i], 5.0f / zoom, vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    renderer::Renderer::ui_square(
+        transform * handles[i], 5.0f / zoom, vec4(0.0f, 1.0f, 0.0f, 1.0f));
     renderer::Renderer::ui_square(transform * handles[i], 3.0f / zoom, vec4::identity());
   }
 }

@@ -63,6 +63,16 @@ struct Rect {
 
   /* -- Static constructors -- */
 
+  static constexpr Rect<T> zero()
+  {
+    return Rect<T>(Vec2<T>::zero(), Vec2<T>::zero());
+  }
+
+  static constexpr Rect<T> identity()
+  {
+    return Rect<T>(Vec2<T>::zero(), Vec2<T>::one());
+  }
+
   static constexpr Rect<T> from_size(const Vec2<T> size)
   {
     return Rect<T>(Vec2<T>::zero(), size);

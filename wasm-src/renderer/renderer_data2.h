@@ -10,6 +10,7 @@
 #pragma once
 
 #include "properties.h"
+#include "renderer_settings.h"
 
 #include "../math/mat4.h"
 #include "../math/rect.h"
@@ -114,6 +115,17 @@ struct Viewport {
     return p / zoom - position;
   }
 
+  /**
+   * @brief Converts a point from scene-space to client-space.
+   *
+   * @param p The point in scene-space.
+   * @return The point in client-space.
+   */
+  inline dvec2 revert(const dvec2 p) const
+  {
+    return (p + position) * zoom;
+  }
+
  private:
   drect m_visible;  // The visible area of the viewport in scene-space coordinates.
 };
@@ -135,6 +147,37 @@ struct DrawingOptions {
   const Fill* fill;        // The fill to use, can be nullptr.
   const Stroke* stroke;    // The stroke to use, can be nullptr.
   const Outline* outline;  // The outline to use, can be nullptr.
+};
+
+/**
+ * @brief Collects all the UI related options, transformed based on the viewport.
+ */
+struct UIOptions {
+  vec2 vertex_size;        // The size of a vertex.
+  vec2 vertex_inner_size;  // The size of the white part of a vertex.
+
+  float handle_radius;     // The radius of an handle.
+  float line_width;        // The default width of the lines.
+
+  vec4 primary_color;      // The primary color of the UI.
+  vec4 primary_color_05;   // The primary color 5% darker.
+
+  /**
+   * @brief Constructs a new UIOptions object.
+   *
+   * @param factor The factor to scale the options with (dpr / zoom).
+   */
+  UIOptions(const double factor)
+      : vertex_size(vec2(RendererSettings::ui_handle_size * factor)),
+        vertex_inner_size(vec2((RendererSettings::ui_handle_size - 2.0) * factor)),
+        handle_radius(static_cast<float>(RendererSettings::ui_handle_size * factor / 2.0)),
+        line_width(static_cast<float>(RendererSettings::ui_line_width)),
+        primary_color(RendererSettings::ui_primary_color),
+        primary_color_05(RendererSettings::ui_primary_color * 0.95f)
+  {
+  }
+
+  UIOptions() : UIOptions(1.0) {}
 };
 
 }  // namespace graphick::renderer

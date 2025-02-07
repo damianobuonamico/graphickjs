@@ -1077,28 +1077,14 @@ class Path {
    * @brief Returns a new path that is the result of transforming the current path by the given
    * matrix.
    *
-   * Does not check if the transform is an identity matrix, it should be done before calling this
-   * method. Incoming and outgoing handles are transformed as well.
+   * Checks if the transform is an identity matrix.
+   * Incoming and outgoing handles are transformed as well.
    *
    * @param transform The transformation matrix to apply to the path.
    * @return The transformed path with the new underlying type.
    */
   template<typename U>
   Path<U> transformed(const math::Mat2x3<T>& transform) const;
-
-  /**
-   * @brief Returns a new path that is the result of transforming the current path by the given
-   * matrix.
-   *
-   * Does not check if the transform is an identity matrix, it should be done before calling this
-   * method. Incoming and outgoing handles are transformed as well.
-   *
-   * @param transform The transformation matrix to apply to the path.
-   * @param r_bounding_rect The bounding rectangle of the transformed path to fill.
-   * @return The transformed path with the new underlying type.
-   */
-  template<typename U>
-  Path<U> transformed(const math::Mat2x3<T>& transform, math::Rect<U>& r_bounding_rect) const;
 
   /**
    * @brief Encodes the path to a list of bytes.

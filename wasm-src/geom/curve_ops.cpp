@@ -1013,6 +1013,7 @@ void CubicPath<T, _>::cubic_to(const math::Vec2<T> p1,
                                const math::Vec2<T> p2,
                                const math::Vec2<T> p3)
 {
+  // TODO: cleanup and optimization (avoid push_back maybe)
   GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
   const CubicBezier<T> cubic = {back(), p1, p2, p3};
