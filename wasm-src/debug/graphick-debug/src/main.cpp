@@ -95,11 +95,11 @@ int main()
   // path1.line_to(vec2(16.0f, 128.0f));
   // path1.line_to(vec2(128.0f, -32.0f));
 
-  path1.cubic_to(vec2(0.0f, 100.0f), vec2(100.0f, 100.0f), vec2(100.0f, 0.0f));
-  path1.cubic_to(vec2(100.0f, -100.0f), vec2(0.0f, -100.0f), vec2(0.0f, 0.0f));
+  // path1.cubic_to(vec2(0.0f, 100.0f), vec2(100.0f, 100.0f), vec2(100.0f, 0.0f));
+  // path1.cubic_to(vec2(100.0f, -100.0f), vec2(0.0f, -100.0f), vec2(0.0f, 0.0f));
 
-  // path1.line_to(vec2(100.0f, 100.0f));
-  // path1.line_to(vec2(0.0f, 200.0f));
+  path1.line_to(vec2(100.0f, 100.0f));
+  path1.line_to(vec2(0.0f, 200.0f));
 
   path1.close();
 

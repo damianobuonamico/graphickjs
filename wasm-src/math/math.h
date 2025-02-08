@@ -33,7 +33,7 @@ struct QuadraticSolutions {
   QuadraticSolutions(const T x1, const T x2) : count(2), solutions{x1, x2} {}
 
   template<typename U>
-  QuadraticSolutions(const QuadraticSolutions<U> &quadratic)
+  QuadraticSolutions(const QuadraticSolutions<U>& quadratic)
       : count(quadratic.count), solutions{T(quadratic.solutions[0]), T(quadratic.solutions[1])}
   {
   }
@@ -59,13 +59,13 @@ struct CubicSolutions {
   CubicSolutions(const T x) : count(1), solutions{x, T(0), T(0)} {}
   CubicSolutions(const T x1, const T x2) : count(2), solutions{x1, x2, T(0)} {}
   CubicSolutions(const T x1, const T x2, const T x3) : count(3), solutions{x1, x2, x3} {}
-  CubicSolutions(const QuadraticSolutions<T> &quadratic)
+  CubicSolutions(const QuadraticSolutions<T>& quadratic)
       : count(quadratic.count), solutions{quadratic.solutions[0], quadratic.solutions[1], T(0)}
   {
   }
 
   template<typename U>
-  CubicSolutions(const CubicSolutions<U> &cubic)
+  CubicSolutions(const CubicSolutions<U>& cubic)
       : count(cubic.count),
         solutions{static_cast<T>(cubic.solutions[0]),
                   static_cast<T>(cubic.solutions[1]),
@@ -241,8 +241,30 @@ inline int hash(std::initializer_list<T> numbers)
   int h = 1;
 
   for (T n : numbers) {
-    int i = *(int *)(&n);
+    int i = *(int*)(&n);
     h = 31 * h + i;
+  }
+
+  h ^= (h >> 20) ^ (h >> 12);
+  return h ^ (h >> 7) ^ (h >> 4);
+}
+
+/**
+ * @brief Calculates a hash value for a list of numbers.
+ *
+ * @param vec The list of numbers.
+ * @param offset The offset of the first number.
+ * @param count The number of numbers to hash.
+ * @return The hash value.
+ */
+template<typename T>
+inline int hash(const std::vector<T>& vec, const size_t offset, const size_t count)
+{
+  int h = 1;
+
+  for (size_t i = offset; i < offset + count; i++) {
+    int n = *(int*)(&vec[i]);
+    h = 31 * h + n;
   }
 
   h ^= (h >> 20) ^ (h >> 12);

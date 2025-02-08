@@ -32,7 +32,8 @@ void main() {
 
   int samples = u_samples % 2 == 0 ? u_samples + 1 : u_samples;
 
-  float coverage = is_quadratic ? quadratic_coverage(samples) : cubic_coverage(samples);
+  // float coverage = is_quadratic ? quadratic_coverage(samples) : cubic_coverage(samples);
+  float coverage = cubic_coverage(samples / 3);
   float alpha;
 
   if (is_even_odd) {
@@ -43,9 +44,9 @@ void main() {
 
   if (paint_type == 3U) {
     vec4 color = texture_fill(v_attr_2 & 0x3FFU, v_tex_coord);
-    o_frag_color = vec4(color.rgb, 1.0) * color.a * alpha;
+    o_frag_color = vec4(color.rgb, 1.0) * color.a * alpha + vec4(float(texture(u_bands_texture, vec2(0.0, 0.0)).x) * 0.0000000000000001);
   } else {
-    o_frag_color = vec4(v_color.rgb, 1.0) * v_color.a * alpha;
+    o_frag_color = vec4(v_color.rgb, 1.0) * v_color.a * alpha + 0.000000001 * vec4(v_tex_coord_curves, 0.0, 1.0) * alpha + vec4(1.0, 0.0, 1.0, 1.0) * 0.000000000001;
   }
 }
 

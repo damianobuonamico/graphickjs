@@ -14,6 +14,8 @@
 
 #include "drawable.h"
 
+#include <unordered_set>
+
 namespace graphick::renderer::GPU {
 
 struct TileProgram;
@@ -86,22 +88,70 @@ class Tiler {
 
   using Intersections = std::vector<Intersection>;
 
+  struct CellRows {
+   public:
+    inline std::unordered_set<uint16_t>& operator[](const size_t index)
+    {
+      return m_rows[index];
+    }
+
+    inline const std::unordered_set<uint16_t>& operator[](const size_t index) const
+    {
+      return m_rows[index];
+    }
+
+    inline size_t size() const
+    {
+      return m_size;
+    }
+
+    inline void clear()
+    {
+      for (auto& row : m_rows) {
+        row.clear();
+      }
+
+      m_size = 0;
+    }
+
+    inline void resize(const size_t size)
+    {
+      if (size > m_capacity) {
+        m_rows.resize(size);
+        m_capacity = size;
+      }
+
+      m_size = size;
+    }
+
+   private:
+    std::vector<std::unordered_set<uint16_t>> m_rows;
+
+    size_t m_capacity = 0;
+    size_t m_size = 0;
+  };
+
  private:
-  drect m_visible;                             // The visible area of the scene.
+  drect m_visible;             // The visible area of the scene.
 
-  double m_zoom;                               // The current zoom level.
-  double m_base_cell_size;                     // The largest scene-space tile size.
-  double m_cell_size;                          // The current (smallest) scene-space tile size.
+  double m_zoom;               // The current zoom level.
+  double m_base_cell_size;     // The largest scene-space tile size.
+  double m_cell_size;          // The current (smallest) scene-space tile size.
 
-  uint8_t m_max_LOD;                           // The maximum level of detail.
-  ivec2 m_cell_count;                          // The number of tiles in the x and y direction.
+  uint8_t m_max_LOD;           // The maximum level of detail.
+  ivec2 m_cell_count;          // The number of tiles in the x and y direction.
 
-  std::vector<bool> m_culled;                  // The culled tiles.
+  std::vector<bool> m_culled;  // The culled tiles.
 
-  std::vector<Cell> m_cells;                   // The cells of the path being tiled.
-  std::vector<uint16_t> m_curves;              // Max 8 curves for each cell.
-  std::vector<uint16_t> m_extra_curves;        // The extra curves of the path being tiled.
-  std::vector<Intersections> m_intersections;  // The intersections of the path being tiled.
+  // TODO: store curves in y-lines, not individual cells, then sort and remove duplicates, then
+  // split by fills
+
+  // CellRows m_cells;  // Rows of cells of the path being tiled.
+  std::vector<Cell> m_cells;                       // The cells of the path being tiled.
+  std::vector<uint16_t> m_curves;                  // Max 8 curves for each cell.
+  std::vector<uint16_t> m_extra_curves;            // The extra curves of the path being tiled.
+  std::unordered_map<int, uint32_t> m_curves_map;  // The map of curves group to indices.
+  std::vector<Intersections> m_intersections;      // The intersections of the path being tiled.
 };
 
 /**
@@ -132,8 +182,8 @@ struct TileBatchData {
 
   GPU::Primitive primitive;     // The primitive type of the mesh.
 
-#define GK_CURVES_TEXTURE_SIZE 128
-#define GK_BANDS_TEXTURE_SIZE 128
+#define GK_CURVES_TEXTURE_SIZE 256
+#define GK_BANDS_TEXTURE_SIZE 256
 
   /**
    * @brief Constructs a new TileBatchData object.

@@ -24,11 +24,11 @@ float calculate_cubic_root(float a, float b, float c, float d, float t0) {
   return t;
 }
 
-float cubic_horizontal_coverage(vec2 pixel_pos, float inv_pixel_size, uint curves_offset, uint band_data_start, uint band_curves_count) {
+float cubic_horizontal_coverage(vec2 pixel_pos, float inv_pixel_size, uint curves_offset, uint curves_count) {
   float coverage = 0.0;
 
-  for (uint curve = 0U; curve < band_curves_count; curve++) {
-    uint curve_offset = curves_offset + texture(u_bands_texture, to_coords(band_data_start + curve)).x * 2U;
+  for (uint curve = 0U; curve < curves_count; curve++) {
+    uint curve_offset = curves_offset + curve * 2U;
 
     vec4 p01 = texture(u_curves_texture, to_coords(curve_offset));
     vec4 p23 = texture(u_curves_texture, to_coords(curve_offset + 1U));
@@ -38,7 +38,8 @@ float cubic_horizontal_coverage(vec2 pixel_pos, float inv_pixel_size, uint curve
     vec2 p2 = p23.xy - pixel_pos;
     vec2 p3 = p23.zw - pixel_pos;
 
-    if (max(p0.x, p3.x) * inv_pixel_size < -0.5) break;
+    // TODO: maybe reimplement sorting
+    // if (max(p0.x, p3.x) * inv_pixel_size < -0.5) continue;
 
     bool is_downwards = p0.y > 0.0 || p3.y < 0.0;
 
@@ -86,22 +87,18 @@ float cubic_coverage(int samples) {
   vec2 pixel_size = vec2(fwidth(v_tex_coord_curves.x), fwidth(v_tex_coord_curves.y));
   float coverage = 0.0;
 
-  uint bands = (v_attr_3 >> 24) + 1U;
-
-  uint bands_index_offset = v_attr_3 & 0xFFFFFFU;
-  uint curves_index_offset = v_attr_1 & 0xFFFFFU;
+  uint curves_offset = v_attr_1 & 0xFFFFFU;
+  uint curves_count = v_attr_3 & 0xFFFFU;
+  
+  float winding = float(int(v_attr_3 >> 16) - 32768);
 
   for (int yOffset = (1 - samples) / 2; yOffset <= (samples - 1) / 2; yOffset++) {
     vec2 sample_pos = v_tex_coord_curves + vec2(0.0, yOffset) * pixel_size.y / float(samples);
   
-    uint band_index = clamp(uint(floor(sample_pos.y * float(bands))), 0U, bands - 1U);
-    uint band_data_start = texture(u_bands_texture, to_coords(bands_index_offset + band_index * 2U)).x + bands_index_offset;
-    uint band_curves_count = texture(u_bands_texture, to_coords(bands_index_offset + band_index * 2U + 1U)).x;
-
-    coverage += cubic_horizontal_coverage(sample_pos, 1.0 / pixel_size.x, curves_index_offset, band_data_start, band_curves_count);
+    coverage += cubic_horizontal_coverage(sample_pos, 1.0 / pixel_size.x, curves_offset, curves_count);
   }
 
-  return coverage / float(samples);
+  return winding + coverage / float(samples);
 }
 
 )"

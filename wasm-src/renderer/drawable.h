@@ -22,8 +22,7 @@ namespace graphick::renderer {
  *
  * @note In attr 1, 7 bits for paint type are probably too much.
  * @note In attr_2, paint_coord is 10 bits instead of 8
- * @note In attr_3, there are a few wasted bits (max bands is 64, but 256 is used here, bands
- * coords are 12 bits instead of 10).
+ * @note In attr_3, there are a few wasted bits (16 bits is more than enough for both)
  */
 struct TileVertex {
   vec2 position;               // | position.x (32) | position.y (32) |
@@ -32,7 +31,7 @@ struct TileVertex {
   vec2 tex_coord_curves;       // | tex_coord_curves.x (32) - tex_coord_curves.y (32) |
   uint32_t attr_1;             // | blend (5) - paint_type (7) - curves_offset (20) |
   uint32_t attr_2;             // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
-  uint32_t attr_3;             // | bands_h (8) - bands_offset (24) |
+  uint32_t attr_3;             // | winding (16) - curves_count (16) |
 
   /**
    * @brief Default constructor.
@@ -121,18 +120,16 @@ struct TileVertex {
    *
    * This method should be called once per object.
    *
-   * @param horizontal_bands The number of horizontal bands.
-   * @param bands_start_index The index of the first band in the bands texture.
+   * @param winding The winding number on the left side of the tile.
+   * @param curves_count The number of curve segments in the tile.
    * @return The attr_3 attribute.
    */
-  static uint32_t create_attr_3(const uint8_t horizontal_bands, const size_t bands_start_index)
+  static uint32_t create_attr_3(const int winding, const uint16_t curves_count)
   {
-    const uint32_t u_bands_offset = (static_cast<uint32_t>(bands_start_index) << 8) >> 8;
-    const uint32_t u_bands_h = (horizontal_bands < 1) ?
-                                   0 :
-                                   static_cast<uint32_t>(horizontal_bands - 1);
+    const uint32_t u_winding = static_cast<uint32_t>((winding + 32768)) << 16 >> 16;
+    const uint32_t u_curves_count = static_cast<uint32_t>(curves_count) << 16 >> 16;
 
-    return (u_bands_h << 24) | (u_bands_offset);
+    return (u_winding << 16) | u_curves_count;
   }
 
   /**
@@ -316,29 +313,55 @@ struct Drawable {
     bands.push_back(band);
   }
 
-  inline void push_tile(const drect& bounding_rect,
-                        const uvec4 color,
-                        const std::array<vec2, 4>& tex_coords,
-                        const uint32_t attr_1,
-                        const uint32_t attr_2,
-                        const uint32_t attr_3)
-  {
-    const auto& [v0, v1, v2, v3] = bounding_rect.vertices();
+  // inline void push_tile(const drect& bounding_rect,
+  //                       const uvec4 color,
+  //                       const std::array<vec2, 4>& tex_coords,
+  //                       const uint32_t attr_1,
+  //                       const uint32_t attr_2,
+  //                       const uint32_t attr_3)
+  // {
+  //   const auto& [v0, v1, v2, v3] = bounding_rect.vertices();
 
-    tiles.insert(
-        tiles.end(),
-        {TileVertex(vec2(v0), color, tex_coords[0], {0.0f, 0.0f}, attr_1, attr_2, attr_3),
-         TileVertex(vec2(v1), color, tex_coords[1], {1.0f, 0.0f}, attr_1, attr_2, attr_3),
-         TileVertex(vec2(v2), color, tex_coords[2], {1.0f, 1.0f}, attr_1, attr_2, attr_3),
-         TileVertex(vec2(v3), color, tex_coords[3], {0.0f, 1.0f}, attr_1, attr_2, attr_3)});
-  }
+  //   tiles.insert(
+  //       tiles.end(),
+  //       {TileVertex(vec2(v0), color, tex_coords[0], {0.0f, 0.0f}, attr_1, attr_2, attr_3),
+  //        TileVertex(vec2(v1), color, tex_coords[1], {1.0f, 0.0f}, attr_1, attr_2, attr_3),
+  //        TileVertex(vec2(v2), color, tex_coords[2], {1.0f, 1.0f}, attr_1, attr_2, attr_3),
+  //        TileVertex(vec2(v3), color, tex_coords[3], {0.0f, 1.0f}, attr_1, attr_2, attr_3)});
+  // }
+
+  // inline void push_tile(const vec2 min,
+  //                       const vec2 max,
+  //                       const uvec4 color,
+  //                       const vec2 tex_coord_curve_min,
+  //                       const vec2 tex_coord_curve_max,
+  //                       const std::array<vec2, 4>& tex_coords,
+  //                       const uint32_t attr_1,
+  //                       const uint32_t attr_2,
+  //                       const uint32_t attr_3)
+  // {
+  //   const vec2 v0 = min;
+  //   const vec2 v1 = {max.x, min.y};
+  //   const vec2 v2 = max;
+  //   const vec2 v3 = {min.x, max.y};
+
+  //   const vec2 c0 = tex_coord_curve_min;
+  //   const vec2 c1 = {tex_coord_curve_max.x, tex_coord_curve_min.y};
+  //   const vec2 c2 = tex_coord_curve_max;
+  //   const vec2 c3 = {tex_coord_curve_min.x, tex_coord_curve_max.y};
+
+  //   tiles.insert(tiles.end(),
+  //                {TileVertex(v0, color, tex_coords[0], c0, attr_1, attr_2, attr_3),
+  //                 TileVertex(v1, color, tex_coords[1], c1, attr_1, attr_2, attr_3),
+  //                 TileVertex(v2, color, tex_coords[2], c2, attr_1, attr_2, attr_3),
+  //                 TileVertex(v3, color, tex_coords[3], c3, attr_1, attr_2, attr_3)});
+  // }
 
   inline void push_tile(const vec2 min,
                         const vec2 max,
-                        const uvec4 color,
                         const vec2 tex_coord_curve_min,
                         const vec2 tex_coord_curve_max,
-                        const std::array<vec2, 4>& tex_coords,
+                        const uvec4 color,
                         const uint32_t attr_1,
                         const uint32_t attr_2,
                         const uint32_t attr_3)
@@ -354,10 +377,10 @@ struct Drawable {
     const vec2 c3 = {tex_coord_curve_min.x, tex_coord_curve_max.y};
 
     tiles.insert(tiles.end(),
-                 {TileVertex(v0, color, tex_coords[0], c0, attr_1, attr_2, attr_3),
-                  TileVertex(v1, color, tex_coords[1], c1, attr_1, attr_2, attr_3),
-                  TileVertex(v2, color, tex_coords[2], c2, attr_1, attr_2, attr_3),
-                  TileVertex(v3, color, tex_coords[3], c3, attr_1, attr_2, attr_3)});
+                 {TileVertex(v0, color, vec2::zero(), c0, attr_1, attr_2, attr_3),
+                  TileVertex(v1, color, vec2::zero(), c1, attr_1, attr_2, attr_3),
+                  TileVertex(v2, color, vec2::zero(), c2, attr_1, attr_2, attr_3),
+                  TileVertex(v3, color, vec2::zero(), c3, attr_1, attr_2, attr_3)});
   }
 
   inline void push_fill(const vec2 min,

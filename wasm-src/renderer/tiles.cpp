@@ -15,6 +15,9 @@
 #include "../utils/console.h"
 #include "renderer.h"
 
+#include <algorithm>
+#include <unordered_set>
+
 namespace graphick::renderer {
 
 Tiler::Tiler() : m_zoom(1.0), m_base_cell_size(512.0), m_max_LOD(0) {}
@@ -27,7 +30,7 @@ void Tiler::setup(const double zoom, const drect& visible)
   m_zoom = zoom;
   m_max_LOD = static_cast<uint8_t>(math::clamp(std::round(raw_log), 0.0, 24.0));
 
-  m_max_LOD = std::min(m_max_LOD, uint8_t(8));
+  m_max_LOD = std::min(m_max_LOD, uint8_t(4));
 
   m_cell_size = m_base_cell_size * std::pow(0.5, m_max_LOD);
   m_cell_count = ivec2(math::ceil(visible.max / m_cell_size) -
@@ -52,6 +55,8 @@ void Tiler::tile(const geom::dcubic_path& path,
   const uint32_t attr_1 = TileVertex::create_attr_1(0, fill.paint.type(), drawable.curves.size());
   const uint32_t attr_2 = TileVertex::create_attr_2(0, false, fill.rule == FillRule::EvenOdd, 0);
 
+  const dvec2 bounds_size = bounding_rect.size();
+
   /* Setting up the workspace, a 1 cell padding in all directions is applied. */
 
   const ivec2 path_start_cell = ivec2(math::floor(bounding_rect.min / m_cell_size)) - 1;
@@ -60,6 +65,12 @@ void Tiler::tile(const geom::dcubic_path& path,
 
   m_cells.clear();
   m_cells.resize(path_cell_count.x * path_cell_count.y);
+
+  m_curves.clear();
+  m_curves.resize(path_cell_count.x * path_cell_count.y * 8);
+
+  m_extra_curves.clear();
+  m_curves_map.clear();
 
   m_intersections.clear();
   m_intersections.resize(path_cell_count.y);
@@ -93,8 +104,13 @@ void Tiler::tile(const geom::dcubic_path& path,
 
     if (start_cell == end_cell) {
       /* Curve is within one cell. */
-      // m_cells[start_cell.y * path_cell_count.x + start_cell.x].curves.push_back(i);
+
+      const uint16_t curves_count =
+          m_cells[start_cell.y * path_cell_count.x + start_cell.x].curves_count;
+
+      m_curves[(start_cell.y * path_cell_count.x + start_cell.x) * 8 + curves_count] = i;
       m_cells[start_cell.y * path_cell_count.x + start_cell.x].curves_count++;
+
       continue;
     }
 
@@ -112,7 +128,9 @@ void Tiler::tile(const geom::dcubic_path& path,
     int x = start_cell.x;
     int y = start_cell.y;
 
-    // m_cells[y * path_cell_count.x + x].curves.push_back(i);
+    const uint16_t curves_count = m_cells[y * path_cell_count.x + x].curves_count;
+
+    m_curves[(y * path_cell_count.x + x) * 8 + curves_count] = i;
     m_cells[y * path_cell_count.x + x].curves_count++;
 
     if (linear) {
@@ -128,12 +146,17 @@ void Tiler::tile(const geom::dcubic_path& path,
         const int x_cell_alt_tol = int(std::floor((x0 - x_tol) / m_cell_size)) - path_start_cell.x;
 
         for (int xc = std::min(x, x_cell_tol); xc <= std::max(x, x_cell_tol); xc++) {
-          // m_cells[y * path_cell_count.x + xc].curves.push_back(i);
+          const uint16_t curves_count = m_cells[y * path_cell_count.x + xc].curves_count;
+
+          m_curves[(y * path_cell_count.x + xc) * 8 + curves_count] = i;
           m_cells[y * path_cell_count.x + xc].curves_count++;
         }
 
         if (x_cell_alt_tol != x_cell) {
-          // m_cells[(y - y_inc) * path_cell_count.x + x_cell_alt_tol].curves.push_back(i);
+          const uint16_t curves_count =
+              m_cells[(y - y_inc) * path_cell_count.x + x_cell_alt_tol].curves_count;
+
+          m_curves[((y - y_inc) * path_cell_count.x + x_cell_alt_tol) * 8 + curves_count] = i;
           m_cells[(y - y_inc) * path_cell_count.x + x_cell_alt_tol].curves_count++;
         }
 
@@ -167,12 +190,17 @@ void Tiler::tile(const geom::dcubic_path& path,
         const int x_cell_alt_tol = int(std::floor((x0 - x_tol) / m_cell_size)) - path_start_cell.x;
 
         for (int xc = std::min(x, x_cell_tol); xc <= std::max(x, x_cell_tol); xc++) {
-          // m_cells[y * path_cell_count.x + xc].curves.push_back(i);
+          const uint16_t curves_count = m_cells[y * path_cell_count.x + xc].curves_count;
+
+          m_curves[(y * path_cell_count.x + xc) * 8 + curves_count] = i;
           m_cells[y * path_cell_count.x + xc].curves_count++;
         }
 
         if (x_cell_alt_tol != x_cell) {
-          // m_cells[(y - y_inc) * path_cell_count.x + x_cell_alt_tol].curves.push_back(i);
+          const uint16_t curves_count =
+              m_cells[(y - y_inc) * path_cell_count.x + x_cell_alt_tol].curves_count;
+
+          m_curves[((y - y_inc) * path_cell_count.x + x_cell_alt_tol) * 8 + curves_count] = i;
           m_cells[(y - y_inc) * path_cell_count.x + x_cell_alt_tol].curves_count++;
         }
 
@@ -188,18 +216,38 @@ void Tiler::tile(const geom::dcubic_path& path,
 
     if (x != end_cell.x) {
       for (int xc = std::min(x, end_cell.x); xc <= std::max(x, end_cell.x); xc++) {
-        // m_cells[y * path_cell_count.x + xc].curves.push_back(i);
+        const uint16_t curves_count = m_cells[y * path_cell_count.x + xc].curves_count;
+
+        m_curves[(y * path_cell_count.x + xc) * 8 + curves_count] = i;
         m_cells[y * path_cell_count.x + xc].curves_count++;
       }
     }
+
+    const uint16_t end_curves_count = m_cells[end_cell.y * path_cell_count.x + end_cell.x].curves_count;
+
+    m_curves[(end_cell.y * path_cell_count.x + end_cell.x) * 8 + end_curves_count] = i;
+    m_cells[end_cell.y * path_cell_count.x + end_cell.x].curves_count++;
   }
 
   /* Create tiles and fills. */
 
   for (int y = 0; y < path_cell_count.y; y++) {
-    int fill_start = -1;
+    int intersection_index = 0;
+    int winding = 0;
 
-    for (int x = 0; x < path_cell_count.x; x++) {
+    int fill_start = -1;
+    int tile_start = -1;
+    int tile_start_winding = 0;
+
+    std::sort(m_intersections[y].begin(),
+              m_intersections[y].end(),
+              [](const Intersection a, const Intersection b) { return a.x > b.x; });
+
+    std::unordered_set<uint16_t> tile_curves_indices;
+    uint32_t tile_curves_offset = drawable.curves.size() / 2;
+    uint16_t tile_curves_count = 0;
+
+    for (int x = path_cell_count.x - 1; x >= 0; x--) {
       // {
       //   const dvec2 cell_min = dvec2(path_start_cell + ivec2(x, y)) * m_cell_size;
       //   const dvec2 cell_max = cell_min + m_cell_size;
@@ -210,18 +258,170 @@ void Tiler::tile(const geom::dcubic_path& path,
       // }
 
       const int cell_index = y * path_cell_count.x + x;
+      const uint16_t curves_count = m_cells[cell_index].curves_count;
 
-      // if (!m_cells[cell_index].curves.empty()) {
-      if (m_cells[cell_index].curves_count != 0) {
+#if 1
+      if (curves_count == 0) {
+        if (tile_start > -1) {
+          const dvec2 cell_min = dvec2(path_start_cell + ivec2(x + 1, y)) * m_cell_size;
+          const dvec2 cell_max = cell_min + dvec2(tile_start - x, 1) * m_cell_size;
 
-        if (fill_start > -1) {
-          int winding = 0;
+          const vec2 tex_coord_curves_min = vec2((cell_min - bounding_rect.min) / bounds_size);
+          const vec2 tex_coord_curves_max = vec2((cell_max - bounding_rect.min) / bounds_size);
 
-          for (const Intersection intersection : m_intersections[y]) {
-            if (intersection.x < (x + path_start_cell.x) * m_cell_size) {
-              winding += intersection.sign;
+          const uint32_t attr_1 = TileVertex::create_attr_1(
+              0, fill.paint.type(), tile_curves_offset);
+          const uint32_t attr_3 = TileVertex::create_attr_3(tile_start_winding, tile_curves_count);
+
+          drawable.push_tile(vec2(cell_min),
+                             vec2(cell_max),
+                             tex_coord_curves_min,
+                             tex_coord_curves_max,
+                             color,
+                             attr_1,
+                             attr_2,
+                             attr_3);
+
+          tile_curves_offset = drawable.curves.size() / 2;
+          tile_curves_indices.clear();
+          tile_curves_count = 0;
+
+          tile_start = -1;
+        }
+
+        if (fill_start == -1) {
+          fill_start = x;
+        }
+      } else {
+        if (curves_count <= 8) {
+          for (uint16_t i = 0; i < curves_count; i++) {
+            const uint16_t curve_index = m_curves[cell_index * 8 + i];
+
+            if (tile_curves_indices.find(curve_index) == tile_curves_indices.end()) {
+              tile_curves_indices.insert(curve_index);
+
+              const vec2 p0 = vec2((path[curve_index * 3] - bounding_rect.min) / bounds_size);
+              const vec2 p1 = vec2((path[curve_index * 3 + 1] - bounding_rect.min) / bounds_size);
+              const vec2 p2 = vec2((path[curve_index * 3 + 2] - bounding_rect.min) / bounds_size);
+              const vec2 p3 = vec2((path[curve_index * 3 + 3] - bounding_rect.min) / bounds_size);
+
+              drawable.curves.insert(drawable.curves.end(), {p0, p1, p2, p3});
+
+              tile_curves_count++;
             }
           }
+        }
+
+        if (fill_start > -1) {
+          if (fill.rule == FillRule::NonZero ? (winding != 0) : (winding % 2 != 0)) {
+            const vec2 cell_min = vec2(path_start_cell + ivec2(x + 1, y)) * m_cell_size;
+            const vec2 cell_max = cell_min + vec2(fill_start - x, 1) * m_cell_size;
+
+            drawable.push_fill(cell_min,
+                               cell_max,
+                               color,
+                               {vec2::zero(), vec2::zero(), vec2::zero(), vec2::zero()},
+                               attr_1,
+                               attr_2);
+          }
+
+          fill_start = -1;
+        }
+
+        if (tile_start == -1) {
+          tile_start = x;
+          tile_start_winding = winding;
+        }
+
+        for (; intersection_index < m_intersections[y].size(); intersection_index++) {
+          const Intersection intersection = m_intersections[y][intersection_index];
+
+          if (intersection.x <= (path_start_cell.x + x) * m_cell_size) {
+            break;
+          }
+
+          winding += intersection.sign;
+        }
+      }
+#else
+
+      // if (!m_cells[cell_index].curves.empty()) {
+      if (curves_count != 0) {
+        const dvec2 cell_min = dvec2(path_start_cell + ivec2(x, y)) * m_cell_size;
+        const dvec2 cell_max = cell_min + m_cell_size;
+
+        const vec2 tex_coord_curves_min = vec2((cell_min - bounding_rect.min) / bounds_size);
+        const vec2 tex_coord_curves_max = vec2((cell_max - bounding_rect.min) / bounds_size);
+
+        uint32_t curves_offset = drawable.curves.size() / 2;
+
+        __debug_text(std::to_string(curves_count),
+                     vec2(200.0 + (cell_min + cell_max) / 2),
+                     vec4::identity());
+
+        if (curves_count <= 8) {
+          const int hash = math::hash(m_curves, cell_index * 8, curves_count);
+          const auto it = m_curves_map.find(hash);
+
+          if (it == m_curves_map.end()) {
+            for (uint16_t i = 0; i < 8; i++) {
+              const uint16_t curve_index = m_curves[cell_index * 8 + i];
+
+              const vec2 p0 = vec2((path[curve_index * 3] - bounding_rect.min) / bounds_size);
+              const vec2 p1 = vec2((path[curve_index * 3 + 1] - bounding_rect.min) / bounds_size);
+              const vec2 p2 = vec2((path[curve_index * 3 + 2] - bounding_rect.min) / bounds_size);
+              const vec2 p3 = vec2((path[curve_index * 3 + 3] - bounding_rect.min) / bounds_size);
+
+              drawable.curves.insert(drawable.curves.end(), {p0, p1, p2, p3});
+            }
+
+            m_curves_map.insert(std::make_pair(hash, curves_offset));
+          } else {
+            curves_offset = m_curves_map[hash];
+          }
+        } else {
+          // TODO: implement
+        }
+
+        for (; intersection_index < m_intersections[y].size(); intersection_index++) {
+          const Intersection intersection = m_intersections[y][intersection_index];
+
+          if (intersection.x >= cell_min.x) {
+            break;
+          }
+
+          winding += intersection.sign;
+        }
+
+        const uint32_t attr_1 = TileVertex::create_attr_1(0, fill.paint.type(), curves_offset);
+        const uint32_t attr_3 = TileVertex::create_attr_3(winding, curves_count);
+
+        drawable.push_tile(vec2(cell_min),
+                           vec2(cell_max),
+                           tex_coord_curves_min,
+                           tex_coord_curves_max,
+                           color,
+                           attr_1,
+                           attr_2,
+                           attr_3);
+
+        // const drect cell_rect = drect(cell_min, cell_max);
+
+        // if (curves_count == 8) {
+        //   Renderer::ui_rect(cell_rect, vec4(0.0, 1.0, 0.0, 1.0));
+        // } else {
+        //   Renderer::ui_rect(cell_rect,
+        //                     vec4(1.0, 0.0, 1.0, 1.0 / 8 * curves_count));
+        // }
+
+        if (fill_start > -1) {
+          // int winding = 0;
+
+          // for (const Intersection intersection : m_intersections[y]) {
+          //   if (intersection.x < (x + path_start_cell.x) * m_cell_size) {
+          //     winding += intersection.sign;
+          //   }
+          // }
 
           if (fill.rule == FillRule::NonZero ? (winding != 0) : (winding % 2 != 0)) {
             const vec2 cell_min = vec2(path_start_cell + ivec2(fill_start, y)) * m_cell_size;
@@ -258,6 +458,33 @@ void Tiler::tile(const geom::dcubic_path& path,
 
       //   Renderer::ui_rect(cell_rect, vec4(1.0, 1.0, 0.0, 0.5));
       // }
+#endif
+    }
+
+    if (tile_start > -1) {
+      const dvec2 cell_min = dvec2(path_start_cell + ivec2(0, y)) * m_cell_size;
+      const dvec2 cell_max = cell_min + dvec2(tile_start + 1, 1) * m_cell_size;
+
+      const vec2 tex_coord_curves_min = vec2((cell_min - bounding_rect.min) / bounds_size);
+      const vec2 tex_coord_curves_max = vec2((cell_max - bounding_rect.min) / bounds_size);
+
+      const uint32_t attr_1 = TileVertex::create_attr_1(0, fill.paint.type(), tile_curves_offset);
+      const uint32_t attr_3 = TileVertex::create_attr_3(tile_start_winding, tile_curves_count);
+
+      drawable.push_tile(vec2(cell_min),
+                         vec2(cell_max),
+                         tex_coord_curves_min,
+                         tex_coord_curves_max,
+                         color,
+                         attr_1,
+                         attr_2,
+                         attr_3);
+
+      tile_curves_offset = drawable.curves.size() / 2;
+      tile_curves_indices.clear();
+      tile_curves_count = 0;
+
+      tile_start = -1;
     }
   }
 
@@ -309,7 +536,7 @@ void TiledRenderer::push_drawable(const Drawable& drawable)
 
   // if (!has_texture_paint && drawable.paints.size() == 1) {
   m_batch.fills.upload(drawable, m_z_index);
-  //   m_batch.tiles.upload(drawable, m_z_index);
+  m_batch.tiles.upload(drawable, m_z_index);
   // } else {
   //   m_batch.fills.upload(drawable, m_z_index, m_binded_textures);
   //   m_batch.tiles.upload(drawable, m_z_index, m_binded_textures);
@@ -329,9 +556,6 @@ void TiledRenderer::flush(const ivec2 viewport_size, const mat4& vp_matrix, cons
 
   GPU::RenderState render_state = GPU::RenderState().no_blend().default_depth().no_stencil();
 
-  if (tiles.vertices_count()) {
-  }
-
   if (fills.vertices_count()) {
     fills.vertex_buffer.upload(fills.vertices, fills.vertices_count() * sizeof(FillVertex));
 
@@ -345,6 +569,28 @@ void TiledRenderer::flush(const ivec2 viewport_size, const mat4& vp_matrix, cons
     //     {m_programs.tile_program.textures_uniform, {&data.gradients_texture}}};
 
     GPU::Device::draw_elements(fills.indices_count(), render_state);
+  }
+
+  if (tiles.vertices_count()) {
+    tiles.vertex_buffer.upload(tiles.vertices, tiles.vertices_count() * sizeof(TileVertex));
+
+    // TODO: upload only necessary data
+    tiles.curves_texture.upload(tiles.curves, tiles.max_curves * sizeof(vec2));
+
+    render_state.default_blend().no_depth_write().no_stencil();
+
+    render_state.program = m_tile_program->program;
+    render_state.vertex_array = &m_tile_vertex_array->vertex_array;
+    render_state.primitive = tiles.primitive;
+    render_state.viewport = irect{ivec2::zero(), viewport_size};
+
+    render_state.uniforms = {{m_tile_program->vp_uniform, vp_matrix},
+                             {m_tile_program->samples_uniform, 3}};
+    render_state.textures = std::vector<GPU::TextureBinding>{
+        {m_tile_program->bands_texture_uniform, &tiles.bands_texture},
+        {m_tile_program->curves_texture_uniform, &tiles.curves_texture}};
+
+    GPU::Device::draw_elements(tiles.indices_count(), render_state);
   }
 
   m_batch.clear();
