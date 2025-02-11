@@ -283,6 +283,7 @@ struct DrawablePaintBinding {
  * @brief The Drawable class is the only object that can be directly drawn by the renderer.
  */
 struct Drawable {
+  uint8_t LOD;                    // The level of detail of the drawable.
   drect bounding_rect;            // The bounding rectangle of the drawable.
 
   std::vector<vec2> curves;       // The curves of the drawable.
@@ -309,50 +310,6 @@ struct Drawable {
   {
     bands.push_back(band);
   }
-
-  // inline void push_tile(const drect& bounding_rect,
-  //                       const uvec4 color,
-  //                       const std::array<vec2, 4>& tex_coords,
-  //                       const uint32_t attr_1,
-  //                       const uint32_t attr_2,
-  //                       const uint32_t attr_3)
-  // {
-  //   const auto& [v0, v1, v2, v3] = bounding_rect.vertices();
-
-  //   tiles.insert(
-  //       tiles.end(),
-  //       {TileVertex(vec2(v0), color, tex_coords[0], {0.0f, 0.0f}, attr_1, attr_2, attr_3),
-  //        TileVertex(vec2(v1), color, tex_coords[1], {1.0f, 0.0f}, attr_1, attr_2, attr_3),
-  //        TileVertex(vec2(v2), color, tex_coords[2], {1.0f, 1.0f}, attr_1, attr_2, attr_3),
-  //        TileVertex(vec2(v3), color, tex_coords[3], {0.0f, 1.0f}, attr_1, attr_2, attr_3)});
-  // }
-
-  // inline void push_tile(const vec2 min,
-  //                       const vec2 max,
-  //                       const uvec4 color,
-  //                       const vec2 tex_coord_curve_min,
-  //                       const vec2 tex_coord_curve_max,
-  //                       const std::array<vec2, 4>& tex_coords,
-  //                       const uint32_t attr_1,
-  //                       const uint32_t attr_2,
-  //                       const uint32_t attr_3)
-  // {
-  //   const vec2 v0 = min;
-  //   const vec2 v1 = {max.x, min.y};
-  //   const vec2 v2 = max;
-  //   const vec2 v3 = {min.x, max.y};
-
-  //   const vec2 c0 = tex_coord_curve_min;
-  //   const vec2 c1 = {tex_coord_curve_max.x, tex_coord_curve_min.y};
-  //   const vec2 c2 = tex_coord_curve_max;
-  //   const vec2 c3 = {tex_coord_curve_min.x, tex_coord_curve_max.y};
-
-  //   tiles.insert(tiles.end(),
-  //                {TileVertex(v0, color, tex_coords[0], c0, attr_1, attr_2, attr_3),
-  //                 TileVertex(v1, color, tex_coords[1], c1, attr_1, attr_2, attr_3),
-  //                 TileVertex(v2, color, tex_coords[2], c2, attr_1, attr_2, attr_3),
-  //                 TileVertex(v3, color, tex_coords[3], c3, attr_1, attr_2, attr_3)});
-  // }
 
   inline void push_tile(const vec2 min,
                         const vec2 max,

@@ -110,6 +110,14 @@ struct debugger {
   static void value(const std::string& name, const std::string& value);
 
   /**
+   * @brief Sets a debug value counter.
+   *
+   * @param name The name of the counter.
+   * @param value The value to add to the counter, default is 1.
+   */
+  static void value_counter(const std::string& name, const int value = 1);
+
+  /**
    * @brief Starts a total timer.
    *
    * @param name The name of the timer.
@@ -189,6 +197,11 @@ using debugger = utils::debugger;
  * @brief Creates a debug value updated every frame.
  */
 #  define __debug_value(name, record) graphick::utils::debugger::value(name, record)
+
+/**
+ * @brief Creates a debug value counter reset every frame.
+ */
+#  define __debug_value_counter(...) graphick::utils::debugger::value_counter(__VA_ARGS__)
 
 /**
  * @brief Creates a scoped timer and adds it to the total time of the task.

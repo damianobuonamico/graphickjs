@@ -12,23 +12,8 @@
 #include "gpu/shaders.h"
 
 #include "instances.h"
-#include "renderer_data2.h"
+#include "renderer_data.h"
 #include "tiles.h"
-
-#if 0
-#  include <optional>
-#  include <unordered_set>
-
-#  include "../geom/cubic_bezier.h"
-#  include "../geom/cubic_path.h"
-#  include "../geom/quadratic_path.h"
-
-#  include "../math/mat2x3.h"
-#  include "../math/mat4.h"
-
-#  include "renderer_cache.h"
-#  include "renderer_data.h"
-#endif
 
 namespace graphick::geom {
 template<typename T, typename>
@@ -328,6 +313,15 @@ class Renderer {
                         const uuid id = uuid::null);
 
   /**
+   * @brief Draws the outline of a path.
+   *
+   * @param path The Path to draw.
+   * @param bounding_rect The bounding rectangle of the path.
+   * @param outline The Outline properties to use.
+   */
+  void draw_outline(const geom::dpath& path, const drect& bounding_rect, const Outline& outline);
+
+  /**
    * @brief Draws the individual vertices of a path.
    *
    * @param path The Path to draw.
@@ -392,6 +386,8 @@ class Renderer {
   TiledRenderer m_tiles;                              // The tiles renderer.
 
   UIOptions m_ui_options;       // The UI options (i.e. handle size, colors, etc.).
+
+  RendererCache* m_cache;       // The cache to use for the renderer.
  private:
   static Renderer* s_instance;  // The singleton instance of the renderer.
 };

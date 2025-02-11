@@ -28,6 +28,8 @@
 
 #include "gpu/device.h"
 
+#include "renderer_cache.h"
+
 #include <unordered_set>
 
 #if 0
@@ -140,6 +142,7 @@ void Renderer::begin_frame(const RenderOptions& options)
   get()->m_tiler.setup(options.viewport.zoom, options.viewport.visible());
   get()->m_ui_options = UIOptions(options.viewport.dpr / options.viewport.zoom);
   get()->m_tiles.update_viewport(get()->m_viewport.size, get()->m_viewport.vp_matrix);
+  get()->m_cache = options.cache;
 
   GPU::Device::begin_commands();
 
@@ -182,6 +185,44 @@ bool Renderer::draw(const geom::path& path,
     return false;
   }
 
+  if (get()->m_cache->has_bounding_rect(id) && get()->m_cache->has_drawable(id)) {
+    const drect& bounding_rect = get()->m_cache->get_bounding_rect(id);
+    const Drawable& drawable = get()->m_cache->get_drawable(id);
+
+    const double visible_all = geom::rect_rect_intersection_area(bounding_rect,
+                                                                 get()->m_viewport.visible());
+
+    if (visible_all <= 0) {
+      return false;
+    }
+
+    const double visible_clip = geom::rect_rect_intersection_area(drawable.bounding_rect,
+                                                                  get()->m_viewport.visible());
+
+    const uint8_t LOD = get()->m_tiler.LOD();
+    bool is_LOD_valid = false;
+
+    if (LOD == drawable.LOD) {
+      is_LOD_valid = true;
+    } else if (LOD == drawable.LOD + 1 || drawable.LOD == LOD + 1) {
+      /* We randomly choose whether to update the LOD or not. */
+      is_LOD_valid = rand() > RAND_MAX / 2;
+    }
+
+    if (is_LOD_valid && math::is_almost_equal(visible_all, visible_clip)) {
+      get()->m_tiles.push_drawable(&drawable);
+
+      if (options.outline) {
+        const geom::dpath transformed_path = path.transformed<double>(transform);
+        get()->draw_outline(transformed_path, bounding_rect, *options.outline);
+      }
+
+      return true;
+    }
+  }
+
+  __debug_value_counter("recalculated");
+
   bool has_transform;
 
   const geom::dpath transformed_path = path.transformed<double>(transform, &has_transform);
@@ -207,7 +248,10 @@ bool Renderer::draw(const geom::path& path,
     tex_coords = {v0, v1, v2, v3};
   }
 
-  return get()->draw_transformed(transformed_path, transformed_bounding_rect, options, tex_coords);
+  get()->m_cache->set_bounding_rect(id, transformed_bounding_rect);
+
+  return get()->draw_transformed(
+      transformed_path, transformed_bounding_rect, options, tex_coords, id);
 }
 
 bool Renderer::draw(const renderer::Text& text,
@@ -376,6 +420,9 @@ bool Renderer::draw_transformed(const geom::dpath& path,
 {
   Drawable drawable;
 
+  drawable.bounding_rect = bounding_rect;
+  drawable.LOD = m_tiler.LOD();
+
   if (options.fill && options.fill->paint.visible()) {
     geom::dcubic_path cubic_path = path.to_cubic_path();
 
@@ -406,6 +453,8 @@ bool Renderer::draw_transformed(const geom::dpath& path,
       const std::array<vec2, 4> clipped_tex_coords = reproject_texture_coords(
           bounding_rect, clipped_bounding_rect, texture_coords, vec2::zero(), vec2::zero());
 
+      drawable.bounding_rect = clipped_bounding_rect;
+
       m_tiler.tile(cubic_path, clipped_bounding_rect, *options.fill, clipped_tex_coords, drawable);
     } else {
       m_tiler.tile(cubic_path, bounding_rect, *options.fill, texture_coords, drawable);
@@ -419,26 +468,30 @@ bool Renderer::draw_transformed(const geom::dpath& path,
   if (options.stroke && options.stroke->paint.visible()) {
   }
 
-  if (drawable.tiles.size() || drawable.fills.size()) {
-    m_tiles.push_drawable(drawable);
-  }
+  m_tiles.push_drawable(m_cache->set_drawable(id, std::move(drawable)));
 
   if (options.outline) {
-    const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
-
-    builder.flatten<float>(m_viewport.visible(),
-                           RendererSettings::flattening_tolerance / m_viewport.zoom,
-                           [&](const vec2 p0, const vec2 p1) {
-                             m_instances.push_line(
-                                 p0, p1, options.outline->color, m_ui_options.line_width);
-                           });
-
-    if (options.outline->draw_vertices) {
-      draw_outline_vertices(path, *options.outline);
-    }
+    draw_outline(path, bounding_rect, *options.outline);
   }
 
   return false;
+}
+
+void Renderer::draw_outline(const geom::dpath& path,
+                            const drect& bounding_rect,
+                            const Outline& outline)
+{
+  const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
+
+  builder.flatten<float>(m_viewport.visible(),
+                         RendererSettings::flattening_tolerance / m_viewport.zoom,
+                         [&](const vec2 p0, const vec2 p1) {
+                           m_instances.push_line(p0, p1, outline.color, m_ui_options.line_width);
+                         });
+
+  if (outline.draw_vertices) {
+    draw_outline_vertices(path, outline);
+  }
 }
 
 void Renderer::draw_outline_vertices(const geom::dpath& path, const Outline& outline)
@@ -603,11 +656,9 @@ void Renderer::__debug_flush_layer(const DebugOptions& options) const
 {
   if (options.show_LODs) {
     const double base_tile_size = m_tiler.base_tile_size();
-    const uint8_t max_LOD = m_tiler.max_LOD();
-
     const drect viewport = m_viewport.visible();
 
-    for (uint8_t LOD = 0; LOD <= max_LOD; LOD++) {
+    for (uint8_t LOD = 0; LOD <= m_tiler.LOD(); LOD++) {
       const double tile_size = base_tile_size * std::pow(0.5, LOD);
 
       const dvec2 min = math::floor(viewport.min / tile_size) * tile_size;
@@ -650,7 +701,7 @@ void Renderer::__debug_flush_layer(const DebugOptions& options) const
       points.clear();
     }
 
-    __debug_value("LOD", max_LOD);
+    __debug_value("LOD", m_tiler.LOD());
   }
 }
 

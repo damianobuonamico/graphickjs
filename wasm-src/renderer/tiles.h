@@ -67,9 +67,9 @@ class Tiler {
    *
    * @return The maximum level of detail.
    */
-  inline uint8_t max_LOD() const
+  inline uint8_t LOD() const
   {
-    return m_max_LOD;
+    return m_LOD;
   }
 
   /**
@@ -169,7 +169,7 @@ class Tiler {
   double m_base_cell_size;     // The largest scene-space tile size.
   double m_cell_size;          // The current (smallest) scene-space tile size.
 
-  uint8_t m_max_LOD;           // The maximum level of detail.
+  uint8_t m_LOD;               // The maximum level of detail.
   ivec2 m_cell_count;          // The number of tiles in the x and y direction.
 
   std::vector<bool> m_culled;  // The culled tiles.
@@ -177,10 +177,8 @@ class Tiler {
   // TODO: store curves in y-lines, not individual cells, then sort and remove duplicates, then
   // split by fills
 
-  CellRows m_cells;  // Rows of cells of the path being tiled.
-  // std::vector<Cell> m_cells;                       // The cells of the path being tiled.
-  // std::vector<uint16_t> m_curves;                  // Max 8 curves for each cell.
-  // std::vector<uint16_t> m_extra_curves;            // The extra curves of the path being tiled.
+  CellRows m_cells;                                // Rows of cells of the path being tiled.
+
   std::unordered_map<int, uint32_t> m_curves_map;  // The map of curves group to indices.
   std::vector<Intersections> m_intersections;      // The intersections of the path being tiled.
 };
@@ -735,11 +733,11 @@ class TiledRenderer {
   /**
    * @brief Adds a new drawable to the batch.
    *
-   * To enable culling, drawables should be processed front-to-back.
+   * Drawables should be pushed back to front.
    *
-   * @param drawable The drawable to add.
+   * @param drawable A pointer to the cached drawable.
    */
-  void push_drawable(const Drawable& drawable);
+  void push_drawable(const Drawable* drawable);
 
   /**
    * @brief Flushes the instanced data to the GPU.
@@ -749,8 +747,21 @@ class TiledRenderer {
   void flush();
 
  private:
+  /**
+   * @brief Populates the fill batches.
+   */
+  void populate_fills();
+
+  /**
+   * @brief Populates the tile batches.
+   */
+  void populate_tiles();
+
+ private:
   Batch m_batch;                                             // The tile/fill batch to render.
   uint32_t m_z_index;                                        // The current z-index.
+
+  std::vector<const Drawable*> m_drawables;                  // The drawables to render.
 
   std::vector<std::pair<uuid, uint32_t>> m_binded_textures;  // The textures bound to the GPU.
 

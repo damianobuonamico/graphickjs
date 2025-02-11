@@ -74,6 +74,19 @@ void debugger::value(const std::string& name, const std::string& value)
   s_values[name] = DebugValue{value, now()};
 }
 
+void debugger::value_counter(const std::string& name, const int value)
+{
+  const std::string counter_name = "[counter] " + name;
+
+  auto it = s_values.find(counter_name);
+
+  if (it == s_values.end()) {
+    debugger::value(counter_name, std::to_string(value));
+  } else {
+    it->second.value = std::to_string(std::stoi(it->second.value) + value);
+  }
+}
+
 void debugger::total_start(const std::string& name)
 {
   auto it = s_total_timers.find(name);
@@ -181,11 +194,17 @@ void debugger::render()
     cursor.y += line_height;
   }
 
+  to_remove.clear();
+
   for (const auto& [name, value] : s_values) {
     const std::string text = name + ": " + value.value;
 
     size.x = std::max(size.x, __debug_text(text, cursor, vec4::zero()));
     cursor.y += line_height;
+
+    if (name.substr(0, 9) == "[counter]") {
+      to_remove.push_back(name);
+    }
   }
 
   size += cursor + padding;
@@ -246,6 +265,10 @@ void debugger::render()
     __debug_text(value_text, cursor + vec2(offset, 0.0f), s_severity_colors[0]);
 
     cursor.y += line_height;
+  }
+
+  for (const auto& name : to_remove) {
+    s_values.erase(name);
   }
 }
 

@@ -72,6 +72,12 @@ class RendererCache {
     return m_invalid_rects;
   }
 
+  /**
+   * @brief Gets the transformed bounding rectangle of an element.
+   *
+   * @param id The id of the element.
+   * @return The bounding rectangle of the element.
+   */
   inline const drect& get_bounding_rect(uuid id)
   {
     return m_bounding_rects.at(id);
@@ -88,7 +94,7 @@ class RendererCache {
 
   inline void set_bounding_rect(uuid id, const drect& bounding_rect)
   {
-    m_bounding_rects.insert({id, bounding_rect});
+    m_bounding_rects[id] = bounding_rect;
   }
 
   inline bool has_bounding_rect(uuid id) const
@@ -101,9 +107,9 @@ class RendererCache {
     return m_drawables.at(id);
   }
 
-  inline void set_drawable(uuid id, Drawable&& drawable)
+  inline const Drawable* set_drawable(uuid id, Drawable&& drawable)
   {
-    m_drawables.insert({id, drawable});
+    return &(m_drawables[id] = std::move(drawable));
   }
 
   inline bool has_drawable(uuid id) const

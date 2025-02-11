@@ -49,7 +49,7 @@ std::array<vec2, 4> reproject_texture_coords(const drect bounding_rect,
   return clipped_tex_coords;
 }
 
-Tiler::Tiler() : m_zoom(1.0), m_base_cell_size(512.0), m_max_LOD(0) {}
+Tiler::Tiler() : m_zoom(1.0), m_base_cell_size(512.0), m_LOD(0) {}
 
 void Tiler::setup(const double zoom, const drect& visible)
 {
@@ -57,11 +57,11 @@ void Tiler::setup(const double zoom, const drect& visible)
 
   m_visible = visible;
   m_zoom = zoom;
-  m_max_LOD = static_cast<uint8_t>(math::clamp(std::round(raw_log), 0.0, 24.0));
+  m_LOD = static_cast<uint8_t>(math::clamp(std::round(raw_log), 0.0, 24.0));
 
-  // m_max_LOD = std::min(m_max_LOD, uint8_t(4));
+  // m_LOD = std::min(m_LOD, uint8_t(4));
 
-  m_cell_size = m_base_cell_size * std::pow(0.5, m_max_LOD);
+  m_cell_size = m_base_cell_size * std::pow(0.5, m_LOD);
   m_cell_count = ivec2(math::ceil(visible.max / m_cell_size) -
                        math::floor(visible.min / m_cell_size));
 
@@ -92,9 +92,6 @@ void Tiler::tile(const geom::dcubic_path& path,
   const ivec2 path_start_cell = ivec2(math::floor(bounding_rect.min / m_cell_size)) - 1;
   const ivec2 path_end_cell = ivec2(math::ceil(bounding_rect.max / m_cell_size)) - 1;
   const ivec2 path_cell_count = path_end_cell - path_start_cell + 2;
-
-  __debug_value("path_cell_count.x", path_cell_count.x);
-  __debug_value("path_cell_count.y", path_cell_count.y);
 
   m_cells.clear_and_resize(path_cell_count.x, path_cell_count.y);
   m_curves_map.clear();
@@ -397,60 +394,23 @@ void Tiler::tile(const geom::dcubic_path& path,
       {drawable.tiles.size(), drawable.fills.size(), fill.paint.type(), fill.paint.id()});
 }
 
-void TiledRenderer::push_drawable(const Drawable& drawable)
+void TiledRenderer::push_drawable(const Drawable* drawable)
 {
-  // // TODO: check for gradients, textures, etc.
-  if (!m_batch.fills.can_handle_quads(drawable.fills.size() / 4) ||
-      !m_batch.tiles.can_handle_quads(drawable.tiles.size() / 4) ||
-      !m_batch.tiles.can_handle_curves(drawable.curves.size()))
-  {
-    flush();
+  if (drawable->tiles.empty() && drawable->fills.empty()) {
+    return;
   }
 
-  // TODO: should be non_color_paint
-  uint32_t texture_index = 0;
-  bool has_texture_paint = false;
-
-  for (const DrawablePaintBinding& binding : drawable.paints) {
-    if (binding.paint_type != Paint::Type::TexturePaint) {
-      continue;
-    }
-
-    const auto it = m_textures->find(binding.paint_id);
-    const auto binded_it = std::find_if(
-        m_binded_textures.begin(), m_binded_textures.end(), [binding](const auto& pair) {
-          return pair.first == binding.paint_id;
-        });
-
-    if (it == m_textures->end()) {
-      continue;
-    }
-
-    has_texture_paint = true;
-
-    if (binded_it != m_binded_textures.end()) {
-      texture_index = binded_it->second;
-    } else {
-      /* We add 1 to the index to avoid binding the gradients texture. */
-      m_binded_textures.push_back(std::make_pair(binding.paint_id, m_binded_textures.size() + 1));
-    }
-  }
-
-  if (!has_texture_paint && drawable.paints.size() == 1) {
-    m_batch.fills.upload(drawable, m_z_index);
-    m_batch.tiles.upload(drawable, m_z_index);
-  } else {
-    m_batch.fills.upload(drawable, m_z_index, m_binded_textures);
-    m_batch.tiles.upload(drawable, m_z_index, m_binded_textures);
-  }
-
-  m_z_index += std::max(size_t(1), drawable.paints.size());
+  m_drawables.push_back(drawable);
+  m_z_index += drawable->paints.size();
 }
 
 void TiledRenderer::flush()
 {
   GK_ASSERT(m_tile_program && m_fill_program && m_tile_vertex_array && m_fill_vertex_array,
             "Program and vertex array must be set through update_shader()!");
+
+  populate_fills();
+  populate_tiles();
 
   TileBatchData& tiles = m_batch.tiles;
   FillBatchData& fills = m_batch.fills;
@@ -494,9 +454,6 @@ void TiledRenderer::flush()
       console::log("bad stuff");
     }
 
-    // store vector of pointers to cached drawables (back-to-front). Process fills backwards,
-    // then tiles forwards.
-
     tiles.vertex_buffer.upload(tiles.vertices, tiles.vertices_count() * sizeof(TileVertex));
 
     // TODO: upload only necessary data
@@ -529,7 +486,110 @@ void TiledRenderer::flush()
     GPU::Device::draw_elements(tiles.indices_count(), render_state);
   }
 
+  m_z_index = 0;
+
   m_batch.clear();
+  m_drawables.clear();
+}
+
+void TiledRenderer::populate_fills()
+{
+  uint32_t z_index = 0;
+
+  for (auto it = m_drawables.rbegin(); it != m_drawables.rend(); it++) {
+    const Drawable& drawable = *(*it);
+
+    // TODO: limited batch size
+
+    // TODO: should be non_color_paint
+    uint32_t texture_index = 0;
+    bool has_texture_paint = false;
+
+    // TODO: extract logic
+    for (const DrawablePaintBinding& binding : drawable.paints) {
+      if (binding.paint_type != Paint::Type::TexturePaint) {
+        continue;
+      }
+
+      const auto it = m_textures->find(binding.paint_id);
+      const auto binded_it = std::find_if(
+          m_binded_textures.begin(), m_binded_textures.end(), [binding](const auto& pair) {
+            return pair.first == binding.paint_id;
+          });
+
+      if (it == m_textures->end()) {
+        continue;
+      }
+
+      has_texture_paint = true;
+
+      if (binded_it != m_binded_textures.end()) {
+        texture_index = binded_it->second;
+      } else {
+        /* We add 1 to the index to avoid binding the gradients texture. */
+        m_binded_textures.push_back(
+            std::make_pair(binding.paint_id, m_binded_textures.size() + 1));
+      }
+    }
+
+    if (!has_texture_paint && drawable.paints.size() == 1) {
+      m_batch.fills.upload(drawable, z_index);
+    } else {
+      m_batch.fills.upload(drawable, z_index, m_binded_textures);
+    }
+
+    z_index += drawable.paints.size();
+  }
+}
+
+void TiledRenderer::populate_tiles()
+{
+  uint32_t z_index = m_z_index - 1;
+
+  for (auto it = m_drawables.begin(); it != m_drawables.end(); it++) {
+    const Drawable& drawable = *(*it);
+
+    // TODO: limited batch size
+
+    // TODO: should be non_color_paint
+    uint32_t texture_index = 0;
+    bool has_texture_paint = false;
+
+    // TODO: extract logic
+    for (const DrawablePaintBinding& binding : drawable.paints) {
+      if (binding.paint_type != Paint::Type::TexturePaint) {
+        continue;
+      }
+
+      const auto it = m_textures->find(binding.paint_id);
+      const auto binded_it = std::find_if(
+          m_binded_textures.begin(), m_binded_textures.end(), [binding](const auto& pair) {
+            return pair.first == binding.paint_id;
+          });
+
+      if (it == m_textures->end()) {
+        continue;
+      }
+
+      has_texture_paint = true;
+
+      if (binded_it != m_binded_textures.end()) {
+        texture_index = binded_it->second;
+      } else {
+        /* We add 1 to the index to avoid binding the gradients texture. */
+        m_binded_textures.push_back(
+            std::make_pair(binding.paint_id, m_binded_textures.size() + 1));
+      }
+    }
+
+    if (!has_texture_paint && drawable.paints.size() == 1) {
+      m_batch.tiles.upload(drawable, z_index);
+    } else {
+      m_batch.tiles.upload(drawable, z_index, m_binded_textures);
+    }
+
+    z_index -= drawable.paints.size();
+  }
 }
 
 }  // namespace graphick::renderer

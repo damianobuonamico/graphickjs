@@ -24,14 +24,12 @@ R"(
   void main() {
     uint z_index = a_attr_2 >> 12U;
 
-    gl_Position = u_view_projection * vec4(a_position, float(z_index) / 1048576.0, 1.0);
+    gl_Position = u_view_projection * vec4(a_position, -float(z_index) / 1048576.0, 1.0);
     
     v_color = vec4(a_color) / 255.0;
     v_tex_coord = a_tex_coord;
     v_tex_coord_curves = a_tex_coord_curves;
-    // v_tex_coord = vec2(float(a_tex_coord >> 16U), float(a_tex_coord & 0xFFFFU)) / 65536.0;
-    // v_tex_coord_curves = vec2(float(a_tex_coord_curves >> 16U), float(a_tex_coord_curves & 0xFFFFU)) / 65536.0;
-
+    
     v_attr_1 = a_attr_1;
     v_attr_2 = a_attr_2;
     v_attr_3 = a_attr_3;
