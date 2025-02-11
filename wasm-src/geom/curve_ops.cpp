@@ -4,8 +4,6 @@
  */
 
 #include "curve_ops.h"
-
-#include "cubic_path.h"
 #include "geom.h"
 #include "intersections.h"
 
@@ -169,7 +167,6 @@ math::CubicSolutions<T> max_curvature(const CubicBezier<T>& cubic)
 template<typename T, typename _>
 math::QuadraticSolutions<T> inflections(const CubicBezier<T>& cubic)
 {
-  // TODO: optimize and template
   const T ax = cubic.p1.x - cubic.p0.x;
   const T ay = cubic.p1.y - cubic.p0.y;
   const T bx = cubic.p2.x - T(2) * cubic.p1.x + cubic.p0.x;
@@ -296,6 +293,37 @@ math::Rect<float> CubicBezier<float>::bounding_rect() const
 
 template<>
 math::Rect<double> CubicBezier<double>::bounding_rect() const
+{
+  return geom::bounding_rect(*this);
+}
+
+template<typename T, typename _>
+math::Rect<T> bounding_rect(const CubicPath<T>& path)
+{
+  math::Rect<T> bounds;
+
+  for (size_t i = 0; i < path.size(); i++) {
+    const math::Vec2<T> p0 = path[i * 3];
+    const math::Vec2<T> p1 = path[i * 3 + 1];
+    const math::Vec2<T> p2 = path[i * 3 + 2];
+    const math::Vec2<T> p3 = path[i * 3 + 3];
+
+    const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
+
+    bounds = math::Rect<T>::from_rects(bounds, geom::bounding_rect(curve));
+  }
+
+  return bounds;
+}
+
+template<>
+math::Rect<float> CubicPath<float>::bounding_rect() const
+{
+  return geom::bounding_rect(*this);
+}
+
+template<>
+math::Rect<double> CubicPath<double>::bounding_rect() const
 {
   return geom::bounding_rect(*this);
 }
@@ -509,59 +537,6 @@ T next_taylor_center(const math::Vec2<T> a, const T t_e, const T tolerance)
   return t0_prime;
 }
 
-#if 0
-  template <typename T, typename _>
-  void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink) {
-    __debug_time_total();
-
-    const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
-
-    T t0 = T(0);
-    T t_e = T(0);
-
-    math::Vec2<T> p2 = cubic.p0;
-
-    while (t0 < T(1)) {
-      // Taylor expansion coefficients at t=t0.
-      const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
-
-      // Value of t at which the Taylor approximation error equals the tolerance.
-      const T t_e_prime = taylor_expansion_error(cubic_coefficients[0], t0, tolerance);
-
-      // Value of t at which the next Taylor approximation should start from
-      // in order to mantain the max error at t=t_e.
-      const T t0_prime = next_taylor_center(cubic_coefficients[0], t_e_prime, tolerance);
-
-      // Quadratic Bezier curve from t_e to t_e_prime.
-      const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
-      const QuadraticBezier<T> extracted_quad = extract(quad, t_e, std::min(T(1), t_e_prime));
-
-      if (t0 != T(0)) {
-        sink.back() = math::midpoint(p2, extracted_quad.p0);
-      }
-
-      sink.quadratic_to(extracted_quad.p1, extracted_quad.p2);
-
-      t0 = t0_prime;
-      t_e = t_e_prime;
-      p2 = extracted_quad.p2;
-    }
-
-    // Close the approximation with one last quadratic curve if needed.
-    if (t_e < T(1)) {
-      const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients, t0);
-
-      const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
-      const QuadraticBezier<T> extracted_quad = extract(quad, t_e, T(1));
-
-      sink.back() = math::midpoint(p2, extracted_quad.p0);
-
-      sink.quadratic_to(extracted_quad.p1, cubic.p3);
-    } else {
-      sink.back() = cubic.p3;
-    }
-  }
-#else
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 inline static T fast_cubic_first_solution(const T a, const T b, const T c, const T d)
 {
@@ -837,54 +812,6 @@ void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, Quadrat
   }
 }
 
-// template <typename T, typename _>
-// void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink)
-// {
-//   __debug_time_total(); // 7.7ms ->
-
-//   const std::array<math::Vec2<T>, 4> cubic_coefficients = cubic.coefficients();
-
-//   T t0 = T(0);
-//   T t_e = T(0);
-
-//   math::Vec2<T> p2 = cubic.p0;
-
-//   while (t0 < T(1)) {
-//     // Taylor expansion coefficients at t=t0.
-//     const std::array<math::Vec2<T>, 3> quad_coefficients = taylor_expand(cubic_coefficients,
-//     t0);
-
-//     // Value of t at which the Taylor approximation error equals the tolerance.
-//     const T t_e_prime = taylor_expansion_error(cubic_coefficients[0], t0, tolerance);
-
-//     // Value of t at which the next Taylor approximation should start from
-//     // in order to mantain the max error at t=t_e.
-//     const T t0_prime = next_taylor_center(cubic_coefficients[0], t_e_prime, tolerance);
-
-//     // Quadratic Bezier curve from t_e to t_e_prime.
-//     const QuadraticBezier<T> quad = QuadraticBezier<T>::from_coefficients(quad_coefficients);
-//     const QuadraticBezier<T> extracted_quad = extract(quad, t_e, std::min(T(1), t_e_prime));
-
-//     if (t0 != T(0)) {
-//       sink.back() = math::midpoint(p2, extracted_quad.p0);
-//     }
-
-//     sink.quadratic_to(extracted_quad.p1, extracted_quad.p2);
-
-//     // if (t0 == T(1)) {
-//     //   break;
-//     // }
-
-//     // t0 = std::min(T(1), t0_prime);
-//     t0 = t0_prime;
-//     t_e = t_e_prime;
-//     p2 = extracted_quad.p2;
-//   }
-
-//   sink.back() = cubic.p3;
-// }
-#endif
-
 template<typename T, typename _>
 std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> cubic_to_quadratics_with_intervals(
     const CubicBezier<T>& cubic)
@@ -1013,44 +940,38 @@ void CubicPath<T, _>::cubic_to(const math::Vec2<T> p1,
                                const math::Vec2<T> p2,
                                const math::Vec2<T> p3)
 {
-  // TODO: cleanup and optimization (avoid push_back maybe)
   GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
 
   const CubicBezier<T> cubic = {back(), p1, p2, p3};
   const auto& [a, b, c] = cubic.derivative_coefficients();
   const auto inflection_points = inflections(cubic);
-  // const auto& [a_prime, b_prime] = cubic.second_derivative_coefficients();
 
-  std::vector<float> split_points = {T(0), T(1)};
+  std::array<T, 8> split_points = {T(0), T(1), T(2), T(2), T(2), T(2), T(2), T(2)};
+  uint8_t split_count = 2;
 
   for (uint8_t j = 0; j < inflection_points.count; j++) {
     const T t = inflection_points.solutions[j];
 
-    if (math::is_normalized(t, false)) {
-      split_points.push_back(t);
+    if (t != T(0) && t != T(1)) {
+      split_points[split_count++] = t;
     }
   }
 
   for (uint8_t i = 0; i < 2; i++) {
     const math::QuadraticSolutions<T> solutions = math::solve_quadratic(a[i], b[i], c[i]);
-    // const T inflection = math::solve_linear(a_prime[i], b_prime[i]);
 
     for (uint8_t j = 0; j < solutions.count; j++) {
       const T t = solutions.solutions[j];
 
       if (math::is_normalized(t, false)) {
-        split_points.push_back(t);
+        split_points[split_count++] = t;
       }
     }
-
-    // if (math::is_normalized(inflection, false)) {
-    //   split_points.push_back(inflection);
-    // }
   }
 
-  std::sort(split_points.begin(), split_points.end());
+  std::sort(split_points.begin(), split_points.begin() + split_count);
 
-  for (size_t i = 0; i < split_points.size() - 1; i++) {
+  for (size_t i = 0; i < split_count - 1; i++) {
     const T t0 = split_points[i];
     const T t1 = split_points[i + 1];
 
@@ -1362,4 +1283,5 @@ template struct QuadraticPath<double>;
 
 template struct CubicPath<float>;
 template struct CubicPath<double>;
+
 }  // namespace graphick::geom

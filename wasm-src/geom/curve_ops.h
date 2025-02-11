@@ -6,6 +6,7 @@
 #pragma once
 
 #include "cubic_bezier.h"
+#include "cubic_path.h"
 #include "line.h"
 #include "quadratic_bezier.h"
 #include "quadratic_path.h"
@@ -26,7 +27,7 @@ namespace graphick::geom {
  * @return The sampled point.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline math::Vec2<T> quadratic(const QuadraticBezier<T> &quad, const T t)
+inline math::Vec2<T> quadratic(const QuadraticBezier<T>& quad, const T t)
 {
   const auto [a, b, c] = quad.coefficients();
   return a * t * t + b * t + c;
@@ -40,7 +41,7 @@ inline math::Vec2<T> quadratic(const QuadraticBezier<T> &quad, const T t)
  * @return The sampled point.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline math::Vec2<T> cubic(const CubicBezier<T> &cubic, const T t)
+inline math::Vec2<T> cubic(const CubicBezier<T>& cubic, const T t)
 {
   const auto [a, b, c, d] = cubic.coefficients();
   const T t_sq = t * t;
@@ -51,11 +52,11 @@ inline math::Vec2<T> cubic(const CubicBezier<T> &cubic, const T t)
 
 // TODO: doc
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-math::CubicSolutions<T> max_curvature(const CubicBezier<T> &cubic);
+math::CubicSolutions<T> max_curvature(const CubicBezier<T>& cubic);
 
 // TODO: doc
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-math::QuadraticSolutions<T> inflections(const CubicBezier<T> &cubic);
+math::QuadraticSolutions<T> inflections(const CubicBezier<T>& cubic);
 
 /* -- Approximate Bounding Rectangle -- */
 
@@ -66,7 +67,7 @@ math::QuadraticSolutions<T> inflections(const CubicBezier<T> &cubic);
  * @return The approximate bounding rectangle.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline math::Rect<T> approx_bounding_rect(const QuadraticBezier<T> &quad)
+inline math::Rect<T> approx_bounding_rect(const QuadraticBezier<T>& quad)
 {
   return math::Rect<T>::from_vectors({quad.p0, quad.p1, quad.p2});
 }
@@ -78,7 +79,7 @@ inline math::Rect<T> approx_bounding_rect(const QuadraticBezier<T> &quad)
  * @return The approximate bounding rectangle.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline math::Rect<T> approx_bounding_rect(const CubicBezier<T> &cubic)
+inline math::Rect<T> approx_bounding_rect(const CubicBezier<T>& cubic)
 {
   return math::Rect<T>::from_vectors({cubic.p0, cubic.p1, cubic.p2, cubic.p3});
 }
@@ -92,7 +93,7 @@ inline math::Rect<T> approx_bounding_rect(const CubicBezier<T> &cubic)
  * @return The bounding rectangle.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-math::Rect<T> bounding_rect(const QuadraticBezier<T> &quad);
+math::Rect<T> bounding_rect(const QuadraticBezier<T>& quad);
 
 /**
  * @brief Calculates the bounding rectangle of a cubic bezier curve.
@@ -101,7 +102,16 @@ math::Rect<T> bounding_rect(const QuadraticBezier<T> &quad);
  * @return The bounding rectangle.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-math::Rect<T> bounding_rect(const CubicBezier<T> &cubic);
+math::Rect<T> bounding_rect(const CubicBezier<T>& cubic);
+
+/**
+ * @brief Calculates the bounding rectangle of a cubic bezier path.
+ *
+ * @param path The cubic bezier path.
+ * @return The bounding rectangle.
+ */
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+math::Rect<T> bounding_rect(const CubicPath<T>& path);
 
 /* -- Curve Splitting -- */
 
@@ -113,7 +123,7 @@ math::Rect<T> bounding_rect(const CubicBezier<T> &cubic);
  * @return The resulting quadratic bezier curves.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T> &quad, const T t);
+std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T>& quad, const T t);
 
 /**
  * @brief Splits a cubic bezier curve into three at two a given t values.
@@ -124,7 +134,7 @@ std::array<QuadraticBezier<T>, 2> split(const QuadraticBezier<T> &quad, const T 
  * @return The resulting cubic bezier curves.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-std::array<QuadraticBezier<T>, 3> split(const QuadraticBezier<T> &quad, const T t1, const T t2);
+std::array<QuadraticBezier<T>, 3> split(const QuadraticBezier<T>& quad, const T t1, const T t2);
 
 /**
  * @brief Splits a cubic bezier curve into two at a given t value.
@@ -134,7 +144,7 @@ std::array<QuadraticBezier<T>, 3> split(const QuadraticBezier<T> &quad, const T 
  * @return The resulting cubic bezier curves.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-std::array<CubicBezier<T>, 2> split(const CubicBezier<T> &cubic, const T t);
+std::array<CubicBezier<T>, 2> split(const CubicBezier<T>& cubic, const T t);
 
 /**
  * @brief Splits a cubic bezier curve into three at two a given t values.
@@ -145,7 +155,7 @@ std::array<CubicBezier<T>, 2> split(const CubicBezier<T> &cubic, const T t);
  * @return The resulting cubic bezier curves.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-std::array<CubicBezier<T>, 3> split(const CubicBezier<T> &cubic, const T t1, const T t2);
+std::array<CubicBezier<T>, 3> split(const CubicBezier<T>& cubic, const T t1, const T t2);
 
 /* -- Curve Extraction -- */
 
@@ -158,7 +168,7 @@ std::array<CubicBezier<T>, 3> split(const CubicBezier<T> &cubic, const T t1, con
  * @return The extracted quadratic bezier curve.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-QuadraticBezier<T> extract(const QuadraticBezier<T> &cubic, const T t1, const T t2);
+QuadraticBezier<T> extract(const QuadraticBezier<T>& cubic, const T t1, const T t2);
 
 /**
  * @brief Extracts the part of a cubic bezier curve between two t values.
@@ -169,7 +179,7 @@ QuadraticBezier<T> extract(const QuadraticBezier<T> &cubic, const T t1, const T 
  * @return The extracted cubic bezier curve.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-CubicBezier<T> extract(const CubicBezier<T> &cubic, const T t1, const T t2);
+CubicBezier<T> extract(const CubicBezier<T>& cubic, const T t1, const T t2);
 
 /* -- Conversion -- */
 
@@ -181,10 +191,10 @@ CubicBezier<T> extract(const CubicBezier<T> &cubic, const T t1, const T t2);
  * @param sink The quadratic path to store the resulting curves.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-void cubic_to_quadratics(const CubicBezier<T> &cubic, const T tolerance, QuadraticPath<T> &sink);
+void cubic_to_quadratics(const CubicBezier<T>& cubic, const T tolerance, QuadraticPath<T>& sink);
 
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 std::vector<std::pair<QuadraticBezier<T>, math::Vec2<T>>> cubic_to_quadratics_with_intervals(
-    const CubicBezier<T> &cubic);
+    const CubicBezier<T>& cubic);
 
 }  // namespace graphick::geom

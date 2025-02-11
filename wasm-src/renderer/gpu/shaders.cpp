@@ -22,7 +22,6 @@ TileProgram::TileProgram()
             (std::stringstream() << (Device::max_texture_image_units() - 2)).str()}})),
       vp_uniform(Device::get_uniform(program, "u_view_projection")),
       samples_uniform(Device::get_uniform(program, "u_samples")),
-      bands_texture_uniform(Device::get_texture_uniform(program, "u_bands_texture")),
       curves_texture_uniform(Device::get_texture_uniform(program, "u_curves_texture")),
       textures_uniform(Device::get_textures_uniform(
           program, "u_textures", Device::max_texture_image_units() - 2))
@@ -74,16 +73,16 @@ TileVertexArray::TileVertexArray(const TileProgram& program,
   VertexAttribute third_attr = Device::get_vertex_attribute(program.program, "a_attr_3");
 
   VertexAttrDescriptor position_desc = {
-      VertexAttrClass::Float, VertexAttrType::F32, 2, 36, 0, 0, 0};
-  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 36, 8, 0, 0};
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 40, 0, 0, 0};
+  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 40, 8, 0, 0};
   VertexAttrDescriptor tex_coords_desc = {
-      VertexAttrClass::Float, VertexAttrType::F16, 2, 36, 12, 0, 0};
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 40, 12, 0, 0};
   VertexAttrDescriptor tex_coords_curves_desc = {
-      VertexAttrClass::Float, VertexAttrType::F32, 2, 36, 16, 0, 0};
-  //   VertexAttrClass::Float, VertexAttrType::F16, 2, 36, 20, 0, 0};
-  VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 36, 24, 0, 0};
-  VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 36, 28, 0, 0};
-  VertexAttrDescriptor third_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 36, 32, 0, 0};
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 40, 20, 0, 0};
+  //   VertexAttrClass::Float, VertexAttrType::F16, 2, 40, 20, 0, 0};
+  VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 40, 28, 0, 0};
+  VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 40, 32, 0, 0};
+  VertexAttrDescriptor third_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 40, 36, 0, 0};
 
   index_buffer.bind(vertex_array);
 
@@ -108,12 +107,12 @@ FillVertexArray::FillVertexArray(const FillProgram& program,
   VertexAttribute second_attr = Device::get_vertex_attribute(program.program, "a_attr_2");
 
   VertexAttrDescriptor position_desc = {
-      VertexAttrClass::Float, VertexAttrType::F32, 2, 24, 0, 0, 0};
-  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 24, 8, 0, 0};
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 28, 0, 0, 0};
+  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 28, 8, 0, 0};
   VertexAttrDescriptor tex_coords_desc = {
-      VertexAttrClass::Float, VertexAttrType::F16, 2, 24, 12, 0, 0};
-  VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 24, 16, 0, 0};
-  VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 24, 20, 0, 0};
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 28, 12, 0, 0};
+  VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 28, 20, 0, 0};
+  VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 28, 24, 0, 0};
 
   index_buffer.bind(vertex_array);
 

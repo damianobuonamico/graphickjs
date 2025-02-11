@@ -6,7 +6,7 @@ precision mediump sampler2D;
 uniform sampler2D u_textures[${MAX_TEXTURES}];
 
 in lowp vec4 v_color;
-in lowp vec2 v_tex_coord;
+in highp vec2 v_tex_coord;
 
 flat in highp uint v_attr_1;
 flat in highp uint v_attr_2;

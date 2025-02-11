@@ -1081,10 +1081,11 @@ class Path {
    * Incoming and outgoing handles are transformed as well.
    *
    * @param transform The transformation matrix to apply to the path.
+   * @param r_has_transform Whether the transform is valid or not (identity matrix), can be nullptr.
    * @return The transformed path with the new underlying type.
    */
   template<typename U>
-  Path<U> transformed(const math::Mat2x3<T>& transform) const;
+  Path<U> transformed(const math::Mat2x3<T>& transform, bool* r_has_transform = nullptr) const;
 
   /**
    * @brief Encodes the path to a list of bytes.

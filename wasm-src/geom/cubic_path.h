@@ -65,7 +65,7 @@ struct CubicPath {
    *
    * @return The first control point.
    */
-  inline math::Vec2<T> &front()
+  inline math::Vec2<T>& front()
   {
     return points.front();
   }
@@ -75,7 +75,7 @@ struct CubicPath {
    *
    * @return The last control point.
    */
-  inline math::Vec2<T> &back()
+  inline math::Vec2<T>& back()
   {
     return points.back();
   }
@@ -97,7 +97,7 @@ struct CubicPath {
    * @param i The index of the control point.
    * @return The i-th control point.
    */
-  inline math::Vec2<T> &operator[](const size_t i)
+  inline math::Vec2<T>& operator[](const size_t i)
   {
     return points[i];
   }
@@ -119,7 +119,7 @@ struct CubicPath {
    * @param i The index of the control point.
    * @return The i-th control point.
    */
-  inline math::Vec2<T> &at(const size_t i)
+  inline math::Vec2<T>& at(const size_t i)
   {
     return points[i];
   }
@@ -149,6 +149,13 @@ struct CubicPath {
 
     return bounds;
   }
+
+  /**
+   * @brief Returns the bounding rectangle of the path.
+   *
+   * @return The bounding rectangle of the path.
+   */
+  math::Rect<T> bounding_rect() const;
 
   /**
    * @brief Moves the path cursor to the given point.
@@ -181,9 +188,11 @@ struct CubicPath {
    */
   inline void line_to(const math::Vec2<T> p)
   {
-    GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
-
-    points.insert(points.end(), {p, p, p});
+    if (points.empty()) {
+      move_to(p);
+    } else if (p != points.back()) {
+      points.insert(points.end(), {p, p, p});
+    }
   }
 
   /**
@@ -211,6 +220,25 @@ struct CubicPath {
    * @param p3 The end point of the curve.
    */
   void cubic_to(const math::Vec2<T> p1, const math::Vec2<T> p2, const math::Vec2<T> p3);
+
+  /**
+   * @brief Adds an already monotonic cubic bezier curve to the path.
+   *
+   * Warning: This function does not check if the curve is monotonic, use cubic_to() instead.
+   *
+   * @param p1 The first control point of the curve.
+   * @param p2 The second control point of the curve.
+   * @param p3 The end point of the curve.
+   */
+  inline void cubic_to_monotonic(const math::Vec2<T> p1,
+                                 const math::Vec2<T> p2,
+                                 const math::Vec2<T> p3)
+  {
+    GK_ASSERT(!points.empty(), "Cannot add a curve to an empty path.");
+
+    points.insert(points.end(), {p1, p2, p3});
+  }
+
   /**
    * @brief Adds an arc to the path.
    *

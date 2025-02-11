@@ -12,7 +12,7 @@ R"(
   in highp uint a_attr_2;
 
   out lowp vec4 v_color;
-  out lowp vec2 v_tex_coord;
+  out highp vec2 v_tex_coord;
 
   flat out highp uint v_attr_1;
   flat out highp uint v_attr_2;

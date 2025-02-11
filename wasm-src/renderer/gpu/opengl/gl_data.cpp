@@ -219,6 +219,10 @@ GLenum gl_depth_func(DepthFunc func)
   switch (func) {
     case DepthFunc::Always:
       return GL_ALWAYS;
+    case DepthFunc::Greater:
+      return GL_GREATER;
+    case DepthFunc::Gequal:
+      return GL_GEQUAL;
     case DepthFunc::Less:
       return GL_LESS;
     default:

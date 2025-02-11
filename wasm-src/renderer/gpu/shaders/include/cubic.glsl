@@ -98,7 +98,7 @@ float cubic_coverage(int samples) {
     coverage += cubic_horizontal_coverage(sample_pos, 1.0 / pixel_size.x, curves_offset, curves_count);
   }
 
-  return winding + coverage / float(samples);
+  return winding * 0.00000000001 + coverage / float(samples);
 }
 
 )"

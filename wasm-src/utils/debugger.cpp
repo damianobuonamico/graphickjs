@@ -158,7 +158,7 @@ void debugger::render()
   std::vector<std::string> to_remove;
 
   for (const auto& [name, value] : s_values) {
-    if (time - value.last_time > 1000 * 17) {
+    if (time - value.last_time > 1000000 * 17 * 60) {
       to_remove.push_back(name);
     }
   }

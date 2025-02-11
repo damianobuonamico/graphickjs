@@ -2062,7 +2062,7 @@ CubicPath<T> Path<T, _>::to_cubic_path() const
 
 template<typename T, typename _>
 template<typename U>
-Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform) const
+Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform, bool* r_has_transform) const
 {
   math::Mat2x3<U> mat = math::Mat2x3<U>(transform);
   Path<U> path;
@@ -2071,7 +2071,13 @@ Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform) const
     return path;
   }
 
-  if (math::is_identity(transform)) {
+  const bool has_transform = !math::is_identity(transform);
+
+  if (r_has_transform) {
+    *r_has_transform = has_transform;
+  }
+
+  if (!has_transform) {
     return Path<U>(*this);
   }
 
@@ -2326,9 +2332,9 @@ template class Path<double>;
 template Path<float>::Path(const Path<double>&);
 template Path<double>::Path(const Path<float>&);
 
-template Path<float> Path<float>::transformed(const math::Mat2x3<float>&) const;
-template Path<double> Path<float>::transformed(const math::Mat2x3<float>&) const;
-template Path<float> Path<double>::transformed(const math::Mat2x3<double>&) const;
-template Path<double> Path<double>::transformed(const math::Mat2x3<double>&) const;
+template Path<float> Path<float>::transformed(const math::Mat2x3<float>&, bool*) const;
+template Path<double> Path<float>::transformed(const math::Mat2x3<float>&, bool*) const;
+template Path<float> Path<double>::transformed(const math::Mat2x3<double>&, bool*) const;
+template Path<double> Path<double>::transformed(const math::Mat2x3<double>&, bool*) const;
 
 }  // namespace graphick::geom

@@ -60,7 +60,7 @@ enum class BlendOp { Add, Subtract, ReverseSubtract, Min, Max };
 /**
  * @brief The depth function.
  */
-enum class DepthFunc { Less, Lequal, Always };
+enum class DepthFunc { Less, Lequal, Greater, Gequal, Always };
 
 /**
  * @brief The stencil function.

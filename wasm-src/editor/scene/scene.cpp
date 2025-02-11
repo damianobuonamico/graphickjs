@@ -287,6 +287,7 @@ void Scene::render(const bool ignore_cache) const
 
     const bool is_element = entity.is_element();
     const bool is_text = entity.is_text();
+
     const bool is_selected = selected.find(id) != selected.end();
     const bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
     const bool has_outline = is_selected || is_temp_selected;
@@ -306,8 +307,6 @@ void Scene::render(const bool ignore_cache) const
     renderer::Fill fill_opt;
     renderer::Stroke stroke_opt;
     renderer::DrawingOptions options;
-
-    options.outline = has_outline ? &outline_opt : nullptr;
 
     bool has_fill = m_registry.all_of<FillData>(*it);
     bool has_stroke = m_registry.all_of<StrokeData>(*it);
@@ -350,6 +349,8 @@ void Scene::render(const bool ignore_cache) const
       renderer::Renderer::draw(path, transform_matrix, options, id);
       continue;
     }
+
+    options.outline = &outline_opt;
 
     std::unordered_set<uint32_t> selected_vertices;
     bool is_full = false;

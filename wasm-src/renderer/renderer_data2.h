@@ -144,9 +144,9 @@ struct RenderOptions {
  * @brief Represents the options to draw a path: fill, stroke and outline.
  */
 struct DrawingOptions {
-  const Fill* fill;        // The fill to use, can be nullptr.
-  const Stroke* stroke;    // The stroke to use, can be nullptr.
-  const Outline* outline;  // The outline to use, can be nullptr.
+  const Fill* fill = nullptr;        // The fill to use, can be nullptr.
+  const Stroke* stroke = nullptr;    // The stroke to use, can be nullptr.
+  const Outline* outline = nullptr;  // The outline to use, can be nullptr.
 };
 
 /**

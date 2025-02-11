@@ -26,6 +26,23 @@ struct FillVertexArray;
 }  // namespace graphick::renderer::GPU
 
 namespace graphick::renderer {
+
+/**
+ * @brief Reprojects the texture coordinates of a rectangle to a new clipped rectangle.
+ *
+ * @param bounding_rect The bounding rectangle of the path.
+ * @param clipped_rect The portion of the bounding rectangle that is needed.
+ * @param texture_coords The texture coordinates of original rectangle.
+ * @param r_r_ The minimum texture coordinate of the clipped rectangle.
+ * @param r_tex_coord_curves_max The maximum texture coordinate of the clipped rectangle.
+ * @return The reprojected texture coordinates.
+ */
+std::array<vec2, 4> reproject_texture_coords(const drect bounding_rect,
+                                             const drect clipped_rect,
+                                             const std::array<vec2, 4>& texture_coords,
+                                             vec2& r_tex_coord_curves_min,
+                                             vec2& r_tex_coord_curves_max);
+
 class Tiler {
  public:
   /**
@@ -61,11 +78,13 @@ class Tiler {
    * @param path The cubic path to tile.
    * @param bounding_rect The bounding rectangle of the path.
    * @param fill The fill of the path.
+   * @param texture_coords The texture coordinates of the fill.
    * @param drawable The drawable to add the tiles to.
    */
   void tile(const geom::dcubic_path& path,
             const drect& bounding_rect,
             const Fill& fill,
+            const std::array<vec2, 4>& texture_coords,
             Drawable& drawable);
 
  private:
@@ -90,10 +109,10 @@ class Tiler {
 
   struct CellRows {
    public:
-    inline std::unordered_set<uint16_t>& operator[](const size_t index)
-    {
-      return m_rows[index];
-    }
+    // inline std::unordered_set<uint16_t>& operator[](const size_t index)
+    // {
+    //   return m_rows[index];
+    // }
 
     inline const std::unordered_set<uint16_t>& operator[](const size_t index) const
     {
@@ -105,29 +124,41 @@ class Tiler {
       return m_size;
     }
 
-    inline void clear()
+    inline void clear_and_resize(const int x, const int y)
     {
-      for (auto& row : m_rows) {
-        row.clear();
+      for (size_t i = 0; i < std::min(size_t(y), m_capacity); i++) {
+        m_rows[i].clear();
       }
 
-      m_size = 0;
+      if (y > m_capacity) {
+        m_rows.resize(y);
+        m_capacity = y;
+      }
+
+      m_hsize = x;
+      m_size = y;
+
+      m_tiles.clear();
+      m_tiles.resize(x * y, false);
     }
 
-    inline void resize(const size_t size)
+    inline void insert(const int x, const int y, const uint16_t curve)
     {
-      if (size > m_capacity) {
-        m_rows.resize(size);
-        m_capacity = size;
-      }
+      m_rows[y].insert(curve);
+      m_tiles[y * m_hsize + x] = true;
+    }
 
-      m_size = size;
+    inline bool is_tile(const int x, const int y) const
+    {
+      return m_tiles[y * m_hsize + x];
     }
 
    private:
     std::vector<std::unordered_set<uint16_t>> m_rows;
+    std::vector<bool> m_tiles;
 
     size_t m_capacity = 0;
+    size_t m_hsize = 0;
     size_t m_size = 0;
   };
 
@@ -146,10 +177,10 @@ class Tiler {
   // TODO: store curves in y-lines, not individual cells, then sort and remove duplicates, then
   // split by fills
 
-  // CellRows m_cells;  // Rows of cells of the path being tiled.
-  std::vector<Cell> m_cells;                       // The cells of the path being tiled.
-  std::vector<uint16_t> m_curves;                  // Max 8 curves for each cell.
-  std::vector<uint16_t> m_extra_curves;            // The extra curves of the path being tiled.
+  CellRows m_cells;  // Rows of cells of the path being tiled.
+  // std::vector<Cell> m_cells;                       // The cells of the path being tiled.
+  // std::vector<uint16_t> m_curves;                  // Max 8 curves for each cell.
+  // std::vector<uint16_t> m_extra_curves;            // The extra curves of the path being tiled.
   std::unordered_map<int, uint32_t> m_curves_map;  // The map of curves group to indices.
   std::vector<Intersections> m_intersections;      // The intersections of the path being tiled.
 };
@@ -161,7 +192,6 @@ struct TileBatchData {
   size_t max_vertices;          // The maximum number of vertices in the batch.
   size_t max_indices;           // The maximum number of indices in the batch.
   size_t max_curves;            // The maximum number of control points in the curves texture.
-  size_t max_bands;             // The maximum number of indices in the bands texture.
 
   TileVertex* vertices;         // The vertices of the batch.
   TileVertex* vertices_ptr;     // The current index of the vertices.
@@ -172,18 +202,13 @@ struct TileBatchData {
   vec2* curves;                 // The control points of the curves.
   vec2* curves_ptr;             // The current index of the curves.
 
-  uint16_t* bands;              // The bands of the meshes.
-  uint16_t* bands_ptr;          // The current index of the bands.
-
   GPU::Buffer vertex_buffer;    // The GPU vertex buffer.
   GPU::Buffer index_buffer;     // The GPU index buffer.
   GPU::Texture curves_texture;  // The curves texture.
-  GPU::Texture bands_texture;   // The bands texture.
 
   GPU::Primitive primitive;     // The primitive type of the mesh.
 
 #define GK_CURVES_TEXTURE_SIZE 256
-#define GK_BANDS_TEXTURE_SIZE 256
 
   /**
    * @brief Constructs a new TileBatchData object.
@@ -193,7 +218,6 @@ struct TileBatchData {
         max_vertices(buffer_size / sizeof(TileVertex)),
         max_indices(max_vertices * 3 / 2),
         max_curves(GK_CURVES_TEXTURE_SIZE * GK_CURVES_TEXTURE_SIZE),
-        max_bands(GK_BANDS_TEXTURE_SIZE * GK_BANDS_TEXTURE_SIZE),
         vertex_buffer(GPU::BufferTarget::Vertex,
                       GPU::BufferUploadMode::Dynamic,
                       max_vertices * sizeof(TileVertex)),
@@ -202,20 +226,15 @@ struct TileBatchData {
                      max_indices * sizeof(uint16_t)),
         curves_texture(GPU::TextureFormat::RGBA32F,
                        ivec2{GK_CURVES_TEXTURE_SIZE},
-                       GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag),
-        bands_texture(GPU::TextureFormat::R16UI,
-                      ivec2{GK_BANDS_TEXTURE_SIZE},
-                      GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag)
+                       GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag)
   {
     vertices = new TileVertex[max_vertices];
     indices = new uint16_t[max_indices];
     curves = new vec2[max_curves * 2];
-    bands = new uint16_t[max_bands];
 
     vertices_ptr = vertices;
     indices_ptr = indices;
     curves_ptr = curves;
-    bands_ptr = bands;
 
     // Fill the index buffer with static quads.
     for (size_t i = 0; i < max_indices - 5; i += 6) {
@@ -238,7 +257,6 @@ struct TileBatchData {
     delete[] vertices;
     delete[] indices;
     delete[] curves;
-    delete[] bands;
   }
 
   /**
@@ -272,16 +290,6 @@ struct TileBatchData {
   }
 
   /**
-   * @brief Gets the number of bands currently in the batch.
-   *
-   * @return The number of bands in the batch.
-   */
-  inline size_t bands_count() const
-  {
-    return bands_ptr - bands;
-  }
-
-  /**
    * @brief Clears the batch data.
    */
   inline void clear()
@@ -289,7 +297,6 @@ struct TileBatchData {
     vertices_ptr = vertices;
     indices_ptr = indices;
     curves_ptr = curves;
-    bands_ptr = bands;
   }
 
   /**
@@ -315,60 +322,43 @@ struct TileBatchData {
   }
 
   /**
-   * @brief Checks if the batch can handle the given number of bands.
+   * @brief Uploads vertices and curves to the buffers.
    *
-   * @param bands The number of bands to add.
-   * @return Whether the batch can handle the bands.
-   */
-  inline bool can_handle_bands(const size_t bands) const
-  {
-    return this->bands_count() + bands < max_bands;
-  }
-
-  /**
-   * @brief Uploads the vertices, curves and bands to the buffers.
-   *
-   * @param drawable The drawable with the tile vertices, curves and bands to upload.
+   * @param drawable The drawable with the tile vertices and curves to upload.
    * @param z_index The z-index of the drawable.
    */
   inline void upload(const Drawable& drawable, const uint32_t z_index)
   {
     memcpy(vertices_ptr, drawable.tiles.data(), drawable.tiles.size() * sizeof(TileVertex));
     memcpy(curves_ptr, drawable.curves.data(), drawable.curves.size() * sizeof(vec2));
-    memcpy(bands_ptr, drawable.bands.data(), drawable.bands.size() * sizeof(uint16_t));
 
     const size_t curves_start_index = curves_count();
-    const size_t bands_start_index = bands_count();
 
     const TileVertex* vertices_end_ptr = vertices_ptr + drawable.tiles.size();
 
     for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
       vertices_ptr->add_offset_to_curves(curves_start_index);
-      vertices_ptr->add_offset_to_bands(bands_start_index);
       vertices_ptr->update_z_index(z_index);
     }
 
     curves_ptr += drawable.curves.size();
-    bands_ptr += drawable.bands.size();
   }
 
   /**
-   * @brief Uploads the vertices, curves and bands to the buffers.
+   * @brief Uploads vertices and curves to the buffers.
    *
-   * @param drawable The drawable with the tile vertices, curves and bands to upload.
+   * @param drawable The drawable with the tile vertices and curves to upload.
    * @param z_index The z-index of the drawable.
    * @param textures The texture bindings to use for the drawable.
    */
   inline void upload(const Drawable& drawable,
                      const uint32_t z_index,
-                     const std::unordered_map<uuid, uint32_t>& textures)
+                     const std::vector<std::pair<uuid, uint32_t>>& textures)
   {
     memcpy(vertices_ptr, drawable.tiles.data(), drawable.tiles.size() * sizeof(TileVertex));
     memcpy(curves_ptr, drawable.curves.data(), drawable.curves.size() * sizeof(vec2));
-    memcpy(bands_ptr, drawable.bands.data(), drawable.bands.size() * sizeof(uint16_t));
 
     const size_t curves_start_index = curves_count();
-    const size_t bands_start_index = bands_count();
 
     size_t local_z_index = z_index;
 
@@ -378,7 +368,10 @@ struct TileBatchData {
       const TileVertex* vertices_end_ptr = vertices_start_ptr + binding.last_tile_index;
 
       if (binding.paint_type == Paint::Type::TexturePaint) {
-        const auto it = textures.find(binding.paint_id);
+        const auto it = std::find_if(
+            textures.begin(), textures.end(), [binding](const auto& pair) {
+              return pair.first == binding.paint_id;
+            });
 
         if (it == textures.end()) {
           continue;
@@ -388,14 +381,12 @@ struct TileBatchData {
 
         for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
           vertices_ptr->add_offset_to_curves(curves_start_index);
-          vertices_ptr->add_offset_to_bands(bands_start_index);
           vertices_ptr->update_z_index(local_z_index);
           vertices_ptr->update_paint_coord(texture_index);
         }
       } else {
         for (; vertices_ptr < vertices_end_ptr; vertices_ptr++) {
           vertices_ptr->add_offset_to_curves(curves_start_index);
-          vertices_ptr->add_offset_to_bands(bands_start_index);
           vertices_ptr->update_z_index(local_z_index);
         }
       }
@@ -404,7 +395,6 @@ struct TileBatchData {
     }
 
     curves_ptr += drawable.curves.size();
-    bands_ptr += drawable.bands.size();
   }
 };
 
@@ -527,15 +517,15 @@ struct FillBatchData {
   }
 
   /**
-   * @brief Uploads the vertices, curves and bands to the buffers.
+   * @brief Uploads vertices and curves to the buffers.
    *
-   * @param drawable The drawable with the tile vertices, curves and bands to upload.
+   * @param drawable The drawable with the tile vertices and curves to upload.
    * @param z_index The z-index of the drawable.
    * @param textures The texture bindings to use for the drawable.
    */
   inline void upload(const Drawable& drawable,
                      const uint32_t z_index,
-                     const std::unordered_map<uuid, uint32_t>& textures)
+                     const std::vector<std::pair<uuid, uint32_t>>& textures)
   {
     memcpy(vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
 
@@ -547,7 +537,10 @@ struct FillBatchData {
       const FillVertex* vertices_end_ptr = vertices_start_ptr + binding.last_fill_index;
 
       if (binding.paint_type == Paint::Type::TexturePaint) {
-        const auto it = textures.find(binding.paint_id);
+        const auto it = std::find_if(
+            textures.begin(), textures.end(), [binding](const auto& pair) {
+              return pair.first == binding.paint_id;
+            });
 
         if (it == textures.end()) {
           continue;
@@ -570,7 +563,71 @@ struct FillBatchData {
   }
 };
 
-struct BatchData {};
+#define GK_GRADIENTS_TEXTURE_WIDTH 64
+#define GK_GRADIENTS_TEXTURE_HEIGHT 64
+
+/**
+ * @brief Represents the data of a single batch.
+ * @todo maybe use double buffering
+ */
+struct BatchData {
+  size_t max_gradients;            // The maximum number of gradients in the batch.
+
+  uvec4* gradients;                // The gradients of the meshes.
+  uvec4* gradients_ptr;            // The current index of the gradients.
+
+  GPU::Texture gradients_texture;  // The gradients texture.
+
+  /**
+   * @brief Constructs a new BatchData object.
+   */
+  BatchData()
+      : max_gradients(GK_GRADIENTS_TEXTURE_HEIGHT),
+        gradients_texture(GPU::TextureFormat::RGBA8,
+                          ivec2{GK_GRADIENTS_TEXTURE_WIDTH, GK_GRADIENTS_TEXTURE_HEIGHT},
+                          GPU::TextureSamplingFlagNone)
+  {
+    gradients = new uvec4[max_gradients * GK_GRADIENTS_TEXTURE_WIDTH];
+    gradients_ptr = gradients;
+  }
+
+  /**
+   * @brief Destroys the BatchData object.
+   */
+  ~BatchData()
+  {
+    delete[] gradients;
+  }
+
+  /**
+   * @brief Gets the number of gradients currently in the batch.
+   *
+   * @return The number of gradients in the batch.
+   */
+  inline size_t gradients_count() const
+  {
+    return (gradients_ptr - gradients) / GK_GRADIENTS_TEXTURE_WIDTH;
+  }
+
+  /**
+   * @brief Clears the batch data.
+   */
+  inline void clear()
+  {
+    gradients_ptr = gradients;
+  }
+
+  /**
+   * @brief Checks if the batch can handle the given number of gradients.
+   *
+   * @param gradients The number of gradients to add.
+   * @return Whether the batch can handle the gradients.
+   */
+  inline bool can_handle_gradients(const size_t gradients) const
+  {
+    return this->gradients_count() + gradients < max_gradients;
+  }
+};
 
 struct Batch {
   TileBatchData tiles;
@@ -607,16 +664,32 @@ class TiledRenderer {
    * @param fill_program The program to use for fills.
    * @param tile_vertex_array The vertex array to use with tiles.
    * @param fill_vertex_array The vertex array to use with fills.
+   * @param textures The textures to use.
    */
-  inline void update_shader(GPU::TileProgram* tile_program,
-                            GPU::FillProgram* fill_program,
-                            GPU::TileVertexArray* tile_vertex_array,
-                            GPU::FillVertexArray* fill_vertex_array)
+  inline void update_shaders(GPU::TileProgram* tile_program,
+                             GPU::FillProgram* fill_program,
+                             GPU::TileVertexArray* tile_vertex_array,
+                             GPU::FillVertexArray* fill_vertex_array,
+                             std::unordered_map<uuid, GPU::Texture>* textures)
   {
     m_tile_program = tile_program;
     m_fill_program = fill_program;
     m_tile_vertex_array = tile_vertex_array;
     m_fill_vertex_array = fill_vertex_array;
+    m_textures = textures;
+  }
+
+  /**
+   * @brief Updates the viewport size, view projection matrix and zoom level.
+   *
+   * @param viewport_size The size of the viewport.
+   * @param vp_matrix The view projection matrix.
+   * @param zoom The zoom level of the viewport.
+   */
+  inline void update_viewport(const ivec2 viewport_size, const mat4& vp_matrix)
+  {
+    m_viewport_size = viewport_size;
+    m_vp_matrix = vp_matrix;
   }
 
   /**
@@ -672,23 +745,24 @@ class TiledRenderer {
    * @brief Flushes the instanced data to the GPU.
    *
    * Here the GPU draw calls are actually issued.
-   *
-   * @param viewport_size The size of the viewport.
-   * @param vp_matrix The view projection matrix.
-   * @param zoom The zoom level of the viewport.
    */
-  void flush(const ivec2 viewport_size, const mat4& vp_matrix, const float zoom);
+  void flush();
 
  private:
-  Batch m_batch;                                         // The tile/fill batch to render.
-  uint32_t m_z_index;                                    // The current z-index.
+  Batch m_batch;                                             // The tile/fill batch to render.
+  uint32_t m_z_index;                                        // The current z-index.
 
-  std::unordered_map<uuid, uint32_t> m_binded_textures;  // The textures bound to the GPU.
+  std::vector<std::pair<uuid, uint32_t>> m_binded_textures;  // The textures bound to the GPU.
 
-  GPU::TileProgram* m_tile_program;                      // The tile program to use.
-  GPU::FillProgram* m_fill_program;                      // The fill program to use.
-  GPU::TileVertexArray* m_tile_vertex_array;             // The tile vertex array to use.
-  GPU::FillVertexArray* m_fill_vertex_array;             // The fill vertex array to use.
+  GPU::TileProgram* m_tile_program;                          // The tile program to use.
+  GPU::FillProgram* m_fill_program;                          // The fill program to use.
+  GPU::TileVertexArray* m_tile_vertex_array;                 // The tile vertex array to use.
+  GPU::FillVertexArray* m_fill_vertex_array;                 // The fill vertex array to use.
+
+  std::unordered_map<uuid, GPU::Texture>* m_textures;        // The textures loaded in the GPU.
+
+  ivec2 m_viewport_size;                                     // The size of the viewport.
+  mat4 m_vp_matrix;                                          // The view projection matrix.
 };
 
 }  // namespace graphick::renderer

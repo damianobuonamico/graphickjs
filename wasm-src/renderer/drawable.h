@@ -17,7 +17,7 @@
 namespace graphick::renderer {
 
 /**
- * @brief Represents a vertex used by the tile shader (36 bytes).
+ * @brief Represents a vertex used by the tile shader (40 bytes).
  *
  *
  * @note In attr 1, 7 bits for paint type are probably too much.
@@ -25,13 +25,13 @@ namespace graphick::renderer {
  * @note In attr_3, there are a few wasted bits (16 bits is more than enough for both)
  */
 struct TileVertex {
-  vec2 position;               // | position.x (32) | position.y (32) |
-  uvec4 color;                 // | color.rgba (32) |
-  math::Vec2<half> tex_coord;  // | tex_coord.x (16) - tex_coord.y (16) |
-  vec2 tex_coord_curves;       // | tex_coord_curves.x (32) - tex_coord_curves.y (32) |
-  uint32_t attr_1;             // | blend (5) - paint_type (7) - curves_offset (20) |
-  uint32_t attr_2;             // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
-  uint32_t attr_3;             // | winding (16) - curves_count (16) |
+  vec2 position;          // | position.x (32) | position.y (32) |
+  uvec4 color;            // | color.rgba (32) |
+  vec2 tex_coord;         // | tex_coord.x (32) - tex_coord.y (32) |
+  vec2 tex_coord_curves;  // | tex_coord_curves.x (32) - tex_coord_curves.y (32) |
+  uint32_t attr_1;        // | blend (5) - paint_type (7) - curves_offset (20) |
+  uint32_t attr_2;        // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
+  uint32_t attr_3;        // | winding (16) - curves_count (16) |
 
   /**
    * @brief Default constructor.
@@ -62,13 +62,12 @@ struct TileVertex {
              const uint32_t attr_3)
       : position(position),
         color(color),
+        tex_coord(tex_coord),
         tex_coord_curves(tex_coord_curves),
         attr_1(attr_1),
         attr_2(attr_2),
         attr_3(attr_3)
   {
-    this->tex_coord.x = half(tex_coord.x);
-    this->tex_coord.y = half(tex_coord.y);
   }
 
   /**
@@ -178,7 +177,7 @@ struct TileVertex {
 };
 
 /**
- * @brief Represents a vertex used by the fill shader (24 bytes).
+ * @brief Represents a vertex used by the fill shader (28 bytes).
  *
  *
  * @note In attr 1, 7 bits for paint type are probably too much.
@@ -186,11 +185,11 @@ struct TileVertex {
  * @note In attr_2, paint_coord is 10 bits instead of 8 and there are 2 bits of padding
  */
 struct FillVertex {
-  vec2 position;               // | position.x (32) | position.y (32) |
-  uvec4 color;                 // | color.rgba (32) |
-  math::Vec2<half> tex_coord;  // | tex_coord.x (16) - tex_coord.y (16) |
-  uint32_t attr_1;             // | blend (5) - paint_type (7) - (20) |
-  uint32_t attr_2;             // | z_index (20) - (2) - paint_coord (10) |
+  vec2 position;    // | position.x (32) | position.y (32) |
+  uvec4 color;      // | color.rgba (32) |
+  vec2 tex_coord;   // | tex_coord.x (32) - tex_coord.y (32) |
+  uint32_t attr_1;  // | blend (5) - paint_type (7) - (20) |
+  uint32_t attr_2;  // | z_index (20) - (2) - paint_coord (10) |
 
   /**
    * @brief Default constructor.
@@ -213,10 +212,8 @@ struct FillVertex {
              const vec2 tex_coord,
              const uint32_t attr_1,
              const uint32_t attr_2)
-      : position(position), color(color), attr_1(attr_1), attr_2(attr_2)
+      : position(position), color(color), tex_coord(tex_coord), attr_1(attr_1), attr_2(attr_2)
   {
-    this->tex_coord.x = half(tex_coord.x);
-    this->tex_coord.y = half(tex_coord.y);
   }
 
   /**
@@ -361,6 +358,7 @@ struct Drawable {
                         const vec2 max,
                         const vec2 tex_coord_curve_min,
                         const vec2 tex_coord_curve_max,
+                        const std::array<vec2, 4>& tex_coords,
                         const uvec4 color,
                         const uint32_t attr_1,
                         const uint32_t attr_2,
@@ -377,10 +375,10 @@ struct Drawable {
     const vec2 c3 = {tex_coord_curve_min.x, tex_coord_curve_max.y};
 
     tiles.insert(tiles.end(),
-                 {TileVertex(v0, color, vec2::zero(), c0, attr_1, attr_2, attr_3),
-                  TileVertex(v1, color, vec2::zero(), c1, attr_1, attr_2, attr_3),
-                  TileVertex(v2, color, vec2::zero(), c2, attr_1, attr_2, attr_3),
-                  TileVertex(v3, color, vec2::zero(), c3, attr_1, attr_2, attr_3)});
+                 {TileVertex(v0, color, tex_coords[0], c0, attr_1, attr_2, attr_3),
+                  TileVertex(v1, color, tex_coords[1], c1, attr_1, attr_2, attr_3),
+                  TileVertex(v2, color, tex_coords[2], c2, attr_1, attr_2, attr_3),
+                  TileVertex(v3, color, tex_coords[3], c3, attr_1, attr_2, attr_3)});
   }
 
   inline void push_fill(const vec2 min,

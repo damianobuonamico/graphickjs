@@ -130,6 +130,20 @@ inline T wrap(T t, const T min, const T max)
 }
 
 /**
+ * @brief Checks if two scalars are almost equal.
+ *
+ * @param t1 The first scalar.
+ * @param t2 The second scalar.
+ * @param eps The precision to check with.
+ * @return Whether the scalars are almost equal.
+ */
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>)
+{
+  return std::abs(t1 - t2) <= eps;
+}
+
+/**
  * @brief Checks if a scalar is almost zero.
  *
  * @param t The scalar to check.
@@ -143,17 +157,16 @@ inline bool is_almost_zero(const T t, const T eps = epsilon<T>)
 }
 
 /**
- * @brief Checks if two scalars are almost equal.
+ * @brief Checks if a scalar is almost zero or one.
  *
- * @param t1 The first scalar.
- * @param t2 The second scalar.
+ * @param t The scalar to check.
  * @param eps The precision to check with.
- * @return Whether the scalars are almost equal.
+ * @return Whether the scalar is almost zero or one.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>)
+inline bool is_almost_zero_or_one(const T t, const T eps = epsilon<T>)
 {
-  return std::abs(t1 - t2) <= eps;
+  return std::abs(0.5 - std::abs(t - 0.5)) <= eps;
 }
 
 /**
