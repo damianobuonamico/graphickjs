@@ -7,6 +7,7 @@
 
 #include "cubic_path.h"
 #include "curve_ops.h"
+#include "intersections.h"
 
 #include "../math/rect.h"
 #include "../math/vector.h"

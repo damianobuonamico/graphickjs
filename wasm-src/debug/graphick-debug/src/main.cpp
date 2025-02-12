@@ -24,9 +24,9 @@ int main()
   }
 
 #define TEXT
-// #define IMAGES
-#define TIGER
-  // #define OBJECTS
+  // #define IMAGES
+  // #define TIGER
+#define OBJECTS
 
 #ifdef TEXT
   std::ifstream font_file1("res/fonts/consolas.ttf", std::ios::binary | std::ios::ate);

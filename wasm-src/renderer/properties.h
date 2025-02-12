@@ -253,6 +253,49 @@ struct Outline {
 };
 
 /**
+ * @brief The blending mode to use when rendering a drawable.
+ */
+enum class BlendingMode {
+  Normal = 0,
+  Dissolve,
+  Behind,
+  Clear,
+  Darken,
+  Multiply,
+  ColorBurn,
+  LinearBurn,
+  Lighten,
+  Screen,
+  ColorDodge,
+  Add,  // Linear Dodge
+  Overlay,
+  SoftLight,
+  HardLight,
+  VividLight,
+  LinearLight,
+  PinLight,
+  HardMix,
+  Difference,
+  Exclusion,
+  Subtract,
+  Divide,
+  Hue,
+  Saturation,
+  Color,
+  Luminosity,
+  LighterColor,
+  DarkerColor
+};
+
+/**
+ * @brief The appearance of a drawable.
+ */
+struct Appearance {
+  BlendingMode blending;  // The blending mode to use.
+  float opacity;          // The opacity of the drawable.
+};
+
+/**
  * @brief Text properties used to render text.
  */
 struct Text {

@@ -58,6 +58,8 @@ float Font::get_kerning(const int glyph1, const int glyph2) const
          m_scale_factor;
 }
 
+#ifdef GK_DEBUG
+
 std::vector<uint8_t> Font::__debug_get_atlas(const ivec2 size, const float font_size) const
 {
   if (__debug_c_data) {
@@ -99,6 +101,8 @@ std::pair<rect, rect> Font::__debug_get_baked_quad(const int codepoint,
   return {rect{vec2(quad.x0, quad.y0), vec2(quad.x1, quad.y1)},
           rect{vec2(quad.s0, quad.t0), vec2(quad.s1, quad.t1)}};
 }
+
+#endif
 
 const Glyph Font::load_glyph(const int codepoint) const
 {

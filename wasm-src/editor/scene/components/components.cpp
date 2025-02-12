@@ -390,7 +390,7 @@ TextData::TextData(io::DataDecoder& decoder)
   const auto [has_font_id] = decoder.bitfield<1>();
 
   text = decoder.string();
-  font_id = has_font_id ? decoder.uuid() : uuid::null;
+  font_id = has_font_id ? uuid(decoder.uuid()) : uuid::null;
 }
 
 rect TextData::bounding_rect() const

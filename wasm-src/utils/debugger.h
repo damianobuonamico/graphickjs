@@ -229,6 +229,7 @@ using debugger = utils::debugger;
 #else
 
 #  define __debug_value(...) ((void)0)
+#  define __debug_value_counter(...) ((void)0)
 #  define __debug_time_total() ((void)0)
 #  define __debug_time_total_record(...) ((void)0)
 #  define __debug_time_average() ((void)0)

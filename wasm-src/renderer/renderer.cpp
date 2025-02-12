@@ -139,10 +139,15 @@ void Renderer::shutdown()
 void Renderer::begin_frame(const RenderOptions& options)
 {
   get()->m_viewport = options.viewport;
-  get()->m_tiler.setup(options.viewport.zoom, options.viewport.visible());
+  get()->m_tiler.setup(options.viewport.zoom);
   get()->m_ui_options = UIOptions(options.viewport.dpr / options.viewport.zoom);
-  get()->m_tiles.update_viewport(get()->m_viewport.size, get()->m_viewport.vp_matrix);
   get()->m_cache = options.cache;
+
+  get()->m_tiles.setup(get()->m_viewport.size,
+                       options.viewport.visible(),
+                       get()->m_viewport.vp_matrix,
+                       get()->m_tiler.LOD(),
+                       get()->m_tiler.base_tile_size());
 
   GPU::Device::begin_commands();
 
@@ -451,7 +456,7 @@ bool Renderer::draw_transformed(const geom::dpath& path,
 
       const drect clipped_bounding_rect = cubic_path.bounding_rect();
       const std::array<vec2, 4> clipped_tex_coords = reproject_texture_coords(
-          bounding_rect, clipped_bounding_rect, texture_coords, vec2::zero(), vec2::zero());
+          bounding_rect, clipped_bounding_rect, texture_coords);
 
       drawable.bounding_rect = clipped_bounding_rect;
 

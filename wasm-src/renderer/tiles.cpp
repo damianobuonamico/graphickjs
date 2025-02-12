@@ -49,24 +49,26 @@ std::array<vec2, 4> reproject_texture_coords(const drect bounding_rect,
   return clipped_tex_coords;
 }
 
+std::array<vec2, 4> reproject_texture_coords(const drect bounding_rect,
+                                             const drect clipped_rect,
+                                             const std::array<vec2, 4>& texture_coords)
+{
+  vec2 tex_coord_curves_min;
+  vec2 tex_coord_curves_max;
+
+  return reproject_texture_coords(
+      bounding_rect, clipped_rect, texture_coords, tex_coord_curves_min, tex_coord_curves_max);
+}
+
 Tiler::Tiler() : m_zoom(1.0), m_base_cell_size(512.0), m_LOD(0) {}
 
-void Tiler::setup(const double zoom, const drect& visible)
+void Tiler::setup(const double zoom)
 {
   const double raw_log = -std::log2(13.0 / (m_base_cell_size * zoom));
 
-  m_visible = visible;
   m_zoom = zoom;
   m_LOD = static_cast<uint8_t>(math::clamp(std::round(raw_log), 0.0, 24.0));
-
-  // m_LOD = std::min(m_LOD, uint8_t(4));
-
   m_cell_size = m_base_cell_size * std::pow(0.5, m_LOD);
-  m_cell_count = ivec2(math::ceil(visible.max / m_cell_size) -
-                       math::floor(visible.min / m_cell_size));
-
-  m_culled.clear();
-  m_culled.resize(m_cell_count.x * m_cell_count.y, false);
 }
 
 void Tiler::tile(const geom::dcubic_path& path,
@@ -321,11 +323,7 @@ void Tiler::tile(const geom::dcubic_path& path,
             const dvec2 cell_max = cell_min + dvec2(fill_start - x, 1) * m_cell_size;
 
             const std::array<vec2, 4> transformed_tex_coords = reproject_texture_coords(
-                bounding_rect,
-                drect(cell_min, cell_max),
-                texture_coords,
-                vec2::zero(),
-                vec2::zero());
+                bounding_rect, drect(cell_min, cell_max), texture_coords);
 
             drawable.push_fill(
                 vec2(cell_min), vec2(cell_max), color, transformed_tex_coords, attr_1, attr_2);
@@ -392,6 +390,32 @@ void Tiler::tile(const geom::dcubic_path& path,
 
   drawable.paints.push_back(
       {drawable.tiles.size(), drawable.fills.size(), fill.paint.type(), fill.paint.id()});
+}
+
+void TiledRenderer::setup(const ivec2 viewport_size,
+                          const drect& visible,
+                          const mat4& vp_matrix,
+                          const uint8_t LOD,
+                          const double base_cell_size)
+{
+  m_viewport_size = viewport_size;
+  m_visible = visible;
+  m_vp_matrix = vp_matrix;
+  m_LOD = LOD;
+  m_base_cell_size = base_cell_size;
+
+  m_cell_sizes[0] = m_base_cell_size * std::pow(0.5, m_LOD - 1);
+  m_cell_sizes[1] = m_base_cell_size * std::pow(0.5, m_LOD);
+  m_cell_sizes[2] = m_base_cell_size * std::pow(0.5, m_LOD + 1);
+
+  m_cell_count = ivec2(math::ceil(visible.max / m_cell_sizes[1]) -
+                       math::floor(visible.min / m_cell_sizes[1]));
+
+  m_culled.clear();
+  m_culled.resize(m_cell_count.x * m_cell_count.y, std::numeric_limits<uint32_t>::max());
+
+  m_invalid.clear();
+  m_invalid.resize(m_cell_count.x * m_cell_count.y, false);
 }
 
 void TiledRenderer::push_drawable(const Drawable* drawable)
@@ -486,7 +510,7 @@ void TiledRenderer::flush()
     GPU::Device::draw_elements(tiles.indices_count(), render_state);
   }
 
-  m_z_index = 0;
+  m_z_index = 1;
 
   m_batch.clear();
   m_drawables.clear();
@@ -494,7 +518,7 @@ void TiledRenderer::flush()
 
 void TiledRenderer::populate_fills()
 {
-  uint32_t z_index = 0;
+  uint32_t z_index = 1;
 
   for (auto it = m_drawables.rbegin(); it != m_drawables.rend(); it++) {
     const Drawable& drawable = *(*it);
@@ -532,6 +556,26 @@ void TiledRenderer::populate_fills()
       }
     }
 
+    const double cell_size = m_cell_sizes[1];
+
+    for (size_t i = 0; i < drawable.fills.size() / 4; i++) {
+      const FillVertex& v1 = drawable.fills[i * 4];
+      const FillVertex& v3 = drawable.fills[i * 4 + 2];
+
+      const ivec2 cell_min = ivec2(math::ceil((dvec2(v1.position) - m_visible.min) / cell_size));
+      const ivec2 cell_max = ivec2(math::ceil((dvec2(v3.position) - m_visible.min) / cell_size));
+
+      for (int y = std::max(cell_min.y, 0); y < std::min(cell_max.y, m_cell_count.y); y++) {
+        for (int x = std::max(cell_min.x, 0); x < std::min(cell_max.x, m_cell_count.x); x++) {
+          const int index = x + y * m_cell_count.x;
+
+          if (m_culled[index] > z_index) {
+            m_culled[index] = z_index;
+          }
+        }
+      }
+    }
+
     if (!has_texture_paint && drawable.paints.size() == 1) {
       m_batch.fills.upload(drawable, z_index);
     } else {
@@ -539,6 +583,21 @@ void TiledRenderer::populate_fills()
     }
 
     z_index += drawable.paints.size();
+  }
+
+  for (int y = 0; y < m_cell_count.y; y++) {
+    for (int x = 0; x < m_cell_count.x; x++) {
+      const int index = x + y * m_cell_count.x;
+
+      if (m_culled[index] == std::numeric_limits<uint32_t>::max()) {
+        Renderer::ui_rect(
+            rect(math::floor(vec2(m_visible.min) / m_cell_sizes[1]) * m_cell_sizes[1] +
+                     vec2(x, y) * m_cell_sizes[1],
+                 math::floor(vec2(m_visible.min) / m_cell_sizes[1]) * m_cell_sizes[1] +
+                     vec2(x + 1, y + 1) * m_cell_sizes[1]),
+            vec4(1.0, 0.0, 1.0, 0.5));
+      }
+    }
   }
 }
 

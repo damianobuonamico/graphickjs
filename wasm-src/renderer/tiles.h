@@ -33,7 +33,7 @@ namespace graphick::renderer {
  * @param bounding_rect The bounding rectangle of the path.
  * @param clipped_rect The portion of the bounding rectangle that is needed.
  * @param texture_coords The texture coordinates of original rectangle.
- * @param r_r_ The minimum texture coordinate of the clipped rectangle.
+ * @param r_tex_coord_curves_min The minimum texture coordinate of the clipped rectangle.
  * @param r_tex_coord_curves_max The maximum texture coordinate of the clipped rectangle.
  * @return The reprojected texture coordinates.
  */
@@ -43,6 +43,18 @@ std::array<vec2, 4> reproject_texture_coords(const drect bounding_rect,
                                              vec2& r_tex_coord_curves_min,
                                              vec2& r_tex_coord_curves_max);
 
+/**
+ * @brief Reprojects the texture coordinates of a rectangle to a new clipped rectangle.
+ *
+ * @param bounding_rect The bounding rectangle of the path.
+ * @param clipped_rect The portion of the bounding rectangle that is needed.
+ * @param texture_coords The texture coordinates of original rectangle.
+ * @return The reprojected texture coordinates.
+ */
+std::array<vec2, 4> reproject_texture_coords(const drect bounding_rect,
+                                             const drect clipped_rect,
+                                             const std::array<vec2, 4>& texture_coords);
+
 class Tiler {
  public:
   /**
@@ -50,7 +62,7 @@ class Tiler {
    */
   Tiler();
 
-  void setup(const double zoom, const drect& visible);
+  void setup(const double zoom);
 
   /**
    * @brief Returns the largest scene-space tile size.
@@ -163,16 +175,14 @@ class Tiler {
   };
 
  private:
-  drect m_visible;             // The visible area of the scene.
+  drect m_visible;          // The visible area of the scene.
 
-  double m_zoom;               // The current zoom level.
-  double m_base_cell_size;     // The largest scene-space tile size.
-  double m_cell_size;          // The current (smallest) scene-space tile size.
+  double m_zoom;            // The current zoom level.
+  double m_base_cell_size;  // The largest scene-space tile size.
+  double m_cell_size;       // The current (smallest) scene-space tile size.
 
-  uint8_t m_LOD;               // The maximum level of detail.
-  ivec2 m_cell_count;          // The number of tiles in the x and y direction.
-
-  std::vector<bool> m_culled;  // The culled tiles.
+  uint8_t m_LOD;            // The maximum level of detail.
+  ivec2 m_cell_count;       // The number of tiles in the x and y direction.
 
   // TODO: store curves in y-lines, not individual cells, then sort and remove duplicates, then
   // split by fills
@@ -656,6 +666,21 @@ class TiledRenderer {
   TiledRenderer(const size_t buffer_size) : m_batch(buffer_size) {}
 
   /**
+   * @brief Sets up the renderer with the given zoom level and visible area.
+   *
+   * @param viewport_size The size of the viewport.
+   * @param visible The visible area of the scene.
+   * @param vp_matrix The view projection matrix.
+   * @param LOD The level of detail.
+   * @param base_cell_size The base cell size.
+   */
+  void setup(const ivec2 viewport_size,
+             const drect& visible,
+             const mat4& vp_matrix,
+             const uint8_t LOD,
+             const double base_cell_size);
+
+  /**
    * @brief Updates the shader and vertex array to use.
    *
    * @param tile_program The program to use for tiles.
@@ -675,19 +700,6 @@ class TiledRenderer {
     m_tile_vertex_array = tile_vertex_array;
     m_fill_vertex_array = fill_vertex_array;
     m_textures = textures;
-  }
-
-  /**
-   * @brief Updates the viewport size, view projection matrix and zoom level.
-   *
-   * @param viewport_size The size of the viewport.
-   * @param vp_matrix The view projection matrix.
-   * @param zoom The zoom level of the viewport.
-   */
-  inline void update_viewport(const ivec2 viewport_size, const mat4& vp_matrix)
-  {
-    m_viewport_size = viewport_size;
-    m_vp_matrix = vp_matrix;
   }
 
   /**
@@ -758,22 +770,30 @@ class TiledRenderer {
   void populate_tiles();
 
  private:
-  Batch m_batch;                                             // The tile/fill batch to render.
-  uint32_t m_z_index;                                        // The current z-index.
+  Batch m_batch;                              // The tile/fill batch to render.
+  uint32_t m_z_index;                         // The current z-index.
 
-  std::vector<const Drawable*> m_drawables;                  // The drawables to render.
+  ivec2 m_viewport_size;                      // The size of the viewport.
+  drect m_visible;                            // The visible area of the scene.
+  mat4 m_vp_matrix;                           // The view projection matrix.
 
-  std::vector<std::pair<uuid, uint32_t>> m_binded_textures;  // The textures bound to the GPU.
+  uint8_t m_LOD;                              // The level of detail.
+  ivec2 m_cell_count;                         // The number of tiles in the x and y direction.
 
-  GPU::TileProgram* m_tile_program;                          // The tile program to use.
-  GPU::FillProgram* m_fill_program;                          // The fill program to use.
-  GPU::TileVertexArray* m_tile_vertex_array;                 // The tile vertex array to use.
-  GPU::FillVertexArray* m_fill_vertex_array;                 // The fill vertex array to use.
+  double m_base_cell_size;                    // The base cell size.
+  double m_cell_sizes[3];                     // The cell sizes for each valid LOD (-1, m_LOD, +1).
+
+  std::vector<const Drawable*> m_drawables;   // The drawables to render.
+  std::vector<uint32_t> m_culled;             // The culled tiles.
+  std::vector<bool> m_invalid;                // The culled tiles.
+
+  GPU::TileProgram* m_tile_program;           // The tile program to use.
+  GPU::FillProgram* m_fill_program;           // The fill program to use.
+  GPU::TileVertexArray* m_tile_vertex_array;  // The tile vertex array to use.
+  GPU::FillVertexArray* m_fill_vertex_array;  // The fill vertex array to use.
 
   std::unordered_map<uuid, GPU::Texture>* m_textures;        // The textures loaded in the GPU.
-
-  ivec2 m_viewport_size;                                     // The size of the viewport.
-  mat4 m_vp_matrix;                                          // The view projection matrix.
+  std::vector<std::pair<uuid, uint32_t>> m_binded_textures;  // The textures bound to the GPU.
 };
 
 }  // namespace graphick::renderer
