@@ -362,11 +362,22 @@ void GLDevice::draw_arrays_instanced(const size_t vertex_count,
       gl_primitive(render_state.primitive), 0, (GLsizei)vertex_count, (GLsizei)instance_count));
 }
 
+void GLDevice::default_framebuffer()
+{
+  glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
 void GLDevice::blit_framebuffer(const GLFramebuffer& src,
                                 const irect src_rect,
                                 const irect dst_rect,
                                 const bool reverse)
 {
+  GLbitfield mask = GL_COLOR_BUFFER_BIT;
+
+  if (src.has_depth) {
+    mask |= GL_DEPTH_BUFFER_BIT;
+  }
+
   if (reverse) {
     glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, 0));
     glCall(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, src.gl_framebuffer));
@@ -379,7 +390,7 @@ void GLDevice::blit_framebuffer(const GLFramebuffer& src,
                              src_rect.min.y,
                              src_rect.max.x,
                              src_rect.max.y,
-                             GL_COLOR_BUFFER_BIT,
+                             mask,
                              GL_NEAREST));
   } else {
     glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, src.gl_framebuffer));
@@ -393,11 +404,37 @@ void GLDevice::blit_framebuffer(const GLFramebuffer& src,
                              dst_rect.min.y,
                              dst_rect.max.x,
                              dst_rect.max.y,
-                             GL_COLOR_BUFFER_BIT,
+                             mask,
                              GL_NEAREST));
   }
 
   glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
+void GLDevice::blit_framebuffer(const GLFramebuffer& src,
+                                const GLFramebuffer& dst,
+                                const irect src_rect,
+                                const irect dst_rect)
+{
+  glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, src.gl_framebuffer));
+  glCall(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst.gl_framebuffer));
+
+  GLbitfield mask = GL_COLOR_BUFFER_BIT;
+
+  if (src.has_depth && dst.has_depth) {
+    mask |= GL_DEPTH_BUFFER_BIT;
+  }
+
+  glCall(glBlitFramebuffer(src_rect.min.x,
+                           src_rect.min.y,
+                           src_rect.max.x,
+                           src_rect.max.y,
+                           dst_rect.min.x,
+                           dst_rect.min.y,
+                           dst_rect.max.x,
+                           dst_rect.max.y,
+                           mask,
+                           GL_NEAREST));
 }
 
 void GLDevice::set_uniforms(const GLProgram& program, const std::vector<UniformBinding>& uniforms)

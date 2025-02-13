@@ -24,9 +24,9 @@ int main()
   }
 
 #define TEXT
-  // #define IMAGES
-  // #define TIGER
-#define OBJECTS
+// #define IMAGES
+#define TIGER
+  // #define OBJECTS
 
 #ifdef TEXT
   std::ifstream font_file1("res/fonts/consolas.ttf", std::ios::binary | std::ios::ate);
@@ -107,6 +107,35 @@ int main()
 
   entity1.add_component<editor::FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
   entity1.add_component<editor::StrokeComponent>(vec4{0.93f, 0.64f, 0.74f, 1.0f}, 50.0f);
+
+  geom::path path2;
+
+  path2.move_to(vec2(-50.0f, 0.0f));
+
+  path2.line_to(vec2(150.0f, -100.0f));
+  path2.line_to(vec2(150.0f, 100.0f));
+
+  path2.close();
+
+  editor::Entity entity2 = editor::Editor::scene().create_element(path2);
+
+  entity2.add_component<editor::FillComponent>(vec4{0.3f, 0.8f, 0.3f, 1.0f});
+  entity2.add_component<editor::StrokeComponent>(vec4{0.64f, 0.93f, 0.74f, 1.0f}, 50.0f);
+
+  geom::path path3;
+
+  path3.move_to(vec2(0.0f, 0.0f));
+
+  path3.line_to(vec2(100.0f, 0.0f));
+  path3.line_to(vec2(100.0f, 100.0f));
+  path3.line_to(vec2(0.0f, 100.0f));
+
+  path3.close();
+
+  editor::Entity entity3 = editor::Editor::scene().create_element(path3);
+
+  entity3.add_component<editor::FillComponent>(vec4{0.3f, 0.3f, 0.8f, 1.0f});
+  entity3.add_component<editor::StrokeComponent>(vec4{0.64f, 0.74f, 0.93f, 1.0f}, 50.0f);
 #endif
 
   while (!glfwWindowShouldClose(window)) {

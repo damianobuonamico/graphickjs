@@ -121,14 +121,19 @@ class Tiler {
 
   struct CellRows {
    public:
-    // inline std::unordered_set<uint16_t>& operator[](const size_t index)
-    // {
-    //   return m_rows[index];
-    // }
-
     inline const std::unordered_set<uint16_t>& operator[](const size_t index) const
     {
       return m_rows[index];
+    }
+
+    inline const Intersections& intersections(const size_t index) const
+    {
+      return m_intersections[index];
+    }
+
+    inline Intersections& intersections(const size_t index)
+    {
+      return m_intersections[index];
     }
 
     inline size_t size() const
@@ -140,10 +145,12 @@ class Tiler {
     {
       for (size_t i = 0; i < std::min(size_t(y), m_capacity); i++) {
         m_rows[i].clear();
+        m_intersections[i].clear();
       }
 
       if (y > m_capacity) {
         m_rows.resize(y);
+        m_intersections.resize(y);
         m_capacity = y;
       }
 
@@ -160,6 +167,11 @@ class Tiler {
       m_tiles[y * m_hsize + x] = true;
     }
 
+    inline void intersection(const int y, const Intersection i)
+    {
+      m_intersections[y].push_back(i);
+    }
+
     inline bool is_tile(const int x, const int y) const
     {
       return m_tiles[y * m_hsize + x];
@@ -167,6 +179,7 @@ class Tiler {
 
    private:
     std::vector<std::unordered_set<uint16_t>> m_rows;
+    std::vector<Intersections> m_intersections;
     std::vector<bool> m_tiles;
 
     size_t m_capacity = 0;
@@ -175,22 +188,18 @@ class Tiler {
   };
 
  private:
-  drect m_visible;          // The visible area of the scene.
+  drect m_visible;                                 // The visible area of the scene.
 
-  double m_zoom;            // The current zoom level.
-  double m_base_cell_size;  // The largest scene-space tile size.
-  double m_cell_size;       // The current (smallest) scene-space tile size.
+  double m_zoom;                                   // The current zoom level.
+  double m_base_cell_size;                         // The largest scene-space tile size.
+  double m_cell_size;                              // The current (smallest) scene-space tile size.
 
-  uint8_t m_LOD;            // The maximum level of detail.
-  ivec2 m_cell_count;       // The number of tiles in the x and y direction.
-
-  // TODO: store curves in y-lines, not individual cells, then sort and remove duplicates, then
-  // split by fills
+  uint8_t m_LOD;                                   // The maximum level of detail.
+  ivec2 m_cell_count;                              // The number of tiles in the x and y direction.
 
   CellRows m_cells;                                // Rows of cells of the path being tiled.
 
   std::unordered_map<int, uint32_t> m_curves_map;  // The map of curves group to indices.
-  std::vector<Intersections> m_intersections;      // The intersections of the path being tiled.
 };
 
 /**
@@ -654,7 +663,7 @@ struct Batch {
   {
     tiles.clear();
     fills.clear();
-    // data.clear();
+    data.clear();
   }
 };
 
@@ -765,32 +774,38 @@ class TiledRenderer {
   void populate_fills();
 
   /**
-   * @brief Populates the tile batches.
+   * @brief Renders the tile batches.
    */
-  void populate_tiles();
+  void render_tiles();
 
  private:
-  Batch m_batch;                              // The tile/fill batch to render.
-  uint32_t m_z_index;                         // The current z-index.
+  Batch m_batch;            // The tile/fill batch to render.
+  uint32_t m_z_index;       // The current z-index.
 
-  ivec2 m_viewport_size;                      // The size of the viewport.
-  drect m_visible;                            // The visible area of the scene.
-  mat4 m_vp_matrix;                           // The view projection matrix.
+  ivec2 m_viewport_size;    // The size of the viewport.
+  drect m_visible;          // The visible area of the scene.
+  mat4 m_vp_matrix;         // The view projection matrix.
 
-  uint8_t m_LOD;                              // The level of detail.
-  ivec2 m_cell_count;                         // The number of tiles in the x and y direction.
+  uint8_t m_LOD;            // The level of detail.
+  ivec2 m_cell_count;       // The number of tiles in the x and y direction.
 
-  double m_base_cell_size;                    // The base cell size.
-  double m_cell_sizes[3];                     // The cell sizes for each valid LOD (-1, m_LOD, +1).
+  double m_base_cell_size;  // The base cell size.
+  double m_cell_sizes[3];   // The cell sizes for each valid LOD (-1, m_LOD, +1).
 
-  std::vector<const Drawable*> m_drawables;   // The drawables to render.
-  std::vector<uint32_t> m_culled;             // The culled tiles.
-  std::vector<bool> m_invalid;                // The culled tiles.
+  GPU::Framebuffer* m_front_framebuffer = nullptr;                  // The front framebuffer.
+  GPU::Framebuffer* m_back_framebuffer = nullptr;                   // The back framebuffer.
 
-  GPU::TileProgram* m_tile_program;           // The tile program to use.
-  GPU::FillProgram* m_fill_program;           // The fill program to use.
-  GPU::TileVertexArray* m_tile_vertex_array;  // The tile vertex array to use.
-  GPU::FillVertexArray* m_fill_vertex_array;  // The fill vertex array to use.
+  std::vector<std::pair<const Drawable*, uint32_t>> m_front_stack;  // Draw now.
+  std::vector<std::pair<const Drawable*, uint32_t>> m_back_stack;   // Draw next call.
+
+  std::vector<uint32_t> m_culled;                                   // The culled tiles.
+  std::vector<bool> m_semivalid;                                    // Can draw normal tiles.
+  std::vector<bool> m_invalid;                                      // Cannot draw anything.
+
+  GPU::TileVertexArray* m_tile_vertex_array;                 // The tile vertex array to use.
+  GPU::FillVertexArray* m_fill_vertex_array;                 // The fill vertex array to use.
+  GPU::TileProgram* m_tile_program;                          // The tile program to use.
+  GPU::FillProgram* m_fill_program;                          // The fill program to use.
 
   std::unordered_map<uuid, GPU::Texture>* m_textures;        // The textures loaded in the GPU.
   std::vector<std::pair<uuid, uint32_t>> m_binded_textures;  // The textures bound to the GPU.

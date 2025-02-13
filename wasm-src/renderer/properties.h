@@ -291,8 +291,8 @@ enum class BlendingMode {
  * @brief The appearance of a drawable.
  */
 struct Appearance {
-  BlendingMode blending;  // The blending mode to use.
-  float opacity;          // The opacity of the drawable.
+  BlendingMode blending = BlendingMode::Normal;  // The blending mode to use.
+  float opacity = 1.0f;                          // The opacity of the drawable.
 };
 
 /**

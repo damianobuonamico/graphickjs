@@ -31,10 +31,10 @@ class GLDevice {
   /**
    * @brief This class is a singleton, so every public constructor/destructor is deleted.
    */
-  GLDevice(const GLDevice &) = delete;
-  GLDevice(GLDevice &&) = delete;
-  GLDevice &operator=(const GLDevice &) = delete;
-  GLDevice &operator=(GLDevice &&) = delete;
+  GLDevice(const GLDevice&) = delete;
+  GLDevice(GLDevice&&) = delete;
+  GLDevice& operator=(const GLDevice&) = delete;
+  GLDevice& operator=(GLDevice&&) = delete;
 
   /**
    * @brief Initializes the device with the given version.
@@ -57,7 +57,7 @@ class GLDevice {
    *
    * @return The backend name.
    */
-  inline static const std::string &backend_name()
+  inline static const std::string& backend_name()
   {
     return s_device->m_backend_name;
   }
@@ -67,7 +67,7 @@ class GLDevice {
    *
    * @return The device name.
    */
-  inline static const std::string &device_name()
+  inline static const std::string& device_name()
   {
     return s_device->m_device_name;
   }
@@ -126,7 +126,7 @@ class GLDevice {
    *
    * @param ops The clear operations.
    */
-  static void clear(const ClearOps &ops);
+  static void clear(const ClearOps& ops);
 
   /**
    * @brief Creates a new shader program.
@@ -135,8 +135,8 @@ class GLDevice {
    * @return The new program.
    */
   static GLProgram create_program(
-      const std::string &name,
-      const std::vector<std::pair<std::string, std::string>> &variables = {});
+      const std::string& name,
+      const std::vector<std::pair<std::string, std::string>>& variables = {});
 
   /**
    * @brief Queries the location of the uniform with the given name in the given program.
@@ -145,7 +145,7 @@ class GLDevice {
    * @param name The uniform name to query.
    * @return The location of the given uniform.
    */
-  static GLUniform get_uniform(const GLProgram &program, const std::string &name);
+  static GLUniform get_uniform(const GLProgram& program, const std::string& name);
 
   /**
    * @brief Creates a new texture uniform.
@@ -154,7 +154,7 @@ class GLDevice {
    * @param name The name of the texture uniform.
    * @return The new texture uniform.
    */
-  static GLTextureUniform get_texture_uniform(GLProgram &program, const std::string &name);
+  static GLTextureUniform get_texture_uniform(GLProgram& program, const std::string& name);
 
   /**
    * @brief Creates a new array of textures uniform.
@@ -163,8 +163,8 @@ class GLDevice {
    * @param name The name of the textures uniform.
    * @return The new textures uniform.
    */
-  static GLTexturesUniform get_textures_uniform(GLProgram &program,
-                                                const std::string &name,
+  static GLTexturesUniform get_textures_uniform(GLProgram& program,
+                                                const std::string& name,
                                                 const size_t count);
 
   /**
@@ -174,7 +174,7 @@ class GLDevice {
    * @param name The attribute name to query.
    * @return The location of the given attribute or std::nullopt if not found.
    */
-  static GLVertexAttribute get_vertex_attribute(const GLProgram &program, const std::string &name);
+  static GLVertexAttribute get_vertex_attribute(const GLProgram& program, const std::string& name);
 
   /**
    * @brief Draws the binded index array with the given index count.
@@ -182,7 +182,7 @@ class GLDevice {
    * @param index_count The number of indices to draw.
    * @param render_state The render state to use.
    */
-  static void draw_elements(const size_t index_count, const RenderState &render_state);
+  static void draw_elements(const size_t index_count, const RenderState& render_state);
 
   /**
    * @brief Draws the binded vertex array.
@@ -190,7 +190,7 @@ class GLDevice {
    * @param vertex_count The number of vertices to draw.
    * @param render_state The render state to use.
    */
-  static void draw_arrays(const size_t vertex_count, const RenderState &render_state);
+  static void draw_arrays(const size_t vertex_count, const RenderState& render_state);
 
   /**
    * @brief Draws the binded vertex array with instancing.
@@ -201,7 +201,12 @@ class GLDevice {
    */
   static void draw_arrays_instanced(const size_t vertex_count,
                                     const size_t instance_count,
-                                    const RenderState &render_state);
+                                    const RenderState& render_state);
+
+  /**
+   * @brief Binds the default framebuffer.
+   */
+  static void default_framebuffer();
 
   /**
    * @brief Blits the given framebuffer to the default framebuffer.
@@ -211,10 +216,23 @@ class GLDevice {
    * @param dst_rect The destination rectangle.
    * @param reverse Whether to reverse the blit (default framebuffer to provided framebuffer).
    */
-  static void blit_framebuffer(const GLFramebuffer &src,
+  static void blit_framebuffer(const GLFramebuffer& src,
                                const irect src_rect,
                                const irect dst_rect,
                                const bool reverse);
+
+  /**
+   * @brief Blits the given source framebuffer to the destination framebuffer.
+   *
+   * @param src The source framebuffer.
+   * @param dst The destination framebuffer.
+   * @param src_rect The source rectangle.
+   * @param dst_rect The destination rectangle.
+   */
+  static void blit_framebuffer(const GLFramebuffer& src,
+                               const GLFramebuffer& dst,
+                               const irect src_rect,
+                               const irect dst_rect);
 
  private:
   /**
@@ -233,7 +251,7 @@ class GLDevice {
    * @param program The program to bind the uniforms to.
    * @param uniforms The uniforms to set.
    */
-  void set_uniforms(const GLProgram &program, const std::vector<UniformBinding> &uniforms);
+  void set_uniforms(const GLProgram& program, const std::vector<UniformBinding>& uniforms);
 
   /**
    * @brief Sets the given textures to the correct texture units.
@@ -241,7 +259,7 @@ class GLDevice {
    * @param program The program to bind the textures to.
    * @param textures The textures to set.
    */
-  void set_textures(const GLProgram &program, const std::vector<TextureBinding> &textures);
+  void set_textures(const GLProgram& program, const std::vector<TextureBinding>& textures);
 
   /**
    * @brief Sets the given textures to the correct texture units.
@@ -249,15 +267,15 @@ class GLDevice {
    * @param program The program to bind the textures to.
    * @param textures The texture arrays to set.
    */
-  void set_texture_arrays(const GLProgram &program,
-                          const std::vector<TextureArrayBinding> &textures);
+  void set_texture_arrays(const GLProgram& program,
+                          const std::vector<TextureArrayBinding>& textures);
 
   /**
    * @brief Updates the render state if necessary.
    *
    * @param render_state The render state to update.
    */
-  void set_render_state(const RenderState &render_state);
+  void set_render_state(const RenderState& render_state);
 
  private:
   std::string m_backend_name;          // The backend name.
@@ -271,6 +289,6 @@ class GLDevice {
 
   GLState m_state;                     // The current state.
  private:
-  static GLDevice *s_device;
+  static GLDevice* s_device;
 };
 }  // namespace graphick::renderer::GPU::GL

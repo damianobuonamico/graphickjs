@@ -81,13 +81,16 @@ void Tiler::tile(const geom::dcubic_path& path,
 
   const double tolerance = 2.0 / m_zoom;
 
-  const uvec4 color = fill.paint.is_color() ? uvec4(fill.paint.color() * 255.0f) :
-                                              uvec4(255, 255, 255, 255);
+  const uvec4 color = fill.paint.is_color() ?
+                          uvec4(fill.paint.color() * drawable.appearance.opacity * 255.0f) :
+                          uvec4(vec4(1.0, 1.0, 1.0, drawable.appearance.opacity) * 255.0f);
 
   const uint32_t attr_1 = TileVertex::create_attr_1(0, fill.paint.type(), drawable.curves.size());
   const uint32_t attr_2 = TileVertex::create_attr_2(0, false, fill.rule == FillRule::EvenOdd, 0);
 
   const dvec2 bounds_size = bounding_rect.size();
+
+  const bool create_fills = color.a == 255 && drawable.appearance.blending == BlendingMode::Normal;
 
   /* Setting up the workspace, a 1 cell padding in all directions is applied. */
 
@@ -97,9 +100,6 @@ void Tiler::tile(const geom::dcubic_path& path,
 
   m_cells.clear_and_resize(path_cell_count.x, path_cell_count.y);
   m_curves_map.clear();
-
-  m_intersections.clear();
-  m_intersections.resize(path_cell_count.y);
 
   for (uint16_t i = 0; i < path.size(); i++) {
     /* Being monotonic, it is straightforward to determine which cells the curve intersects. */
@@ -115,8 +115,6 @@ void Tiler::tile(const geom::dcubic_path& path,
     {
       continue;
     }
-
-    // Renderer::ui_circle(vec2(p0), 5.0, vec4(0.0, 0.0, 1.0, 1.0));
 
     const bool right = p3.x >= p0.x;
     const bool up = p3.y <= p0.y;
@@ -186,8 +184,7 @@ void Tiler::tile(const geom::dcubic_path& path,
         if ((up && t0 >= -math::epsilon<double> && t0 < 1.0 - math::epsilon<double>) ||
             (!up && t0 > math::epsilon<double> && t0 <= 1.0 + math::epsilon<double>))
         {
-          // TODO: avoid push_backs, maybe preallocate
-          m_intersections[y - (y_inc - 1) / 2].push_back({x0, up ? int8_t(1) : int8_t(-1)});
+          m_cells.intersection(y - (y_inc - 1) / 2, {x0, up ? int8_t(1) : int8_t(-1)});
         }
 
         x = x_cell;
@@ -222,7 +219,7 @@ void Tiler::tile(const geom::dcubic_path& path,
         if ((up && t0 >= -math::epsilon<double> && t0 < 1.0 - math::epsilon<double>) ||
             (!up && t0 > math::epsilon<double> && t0 <= 1.0 + math::epsilon<double>))
         {
-          m_intersections[y - (y_inc - 1) / 2].push_back({x0, up ? int8_t(1) : int8_t(-1)});
+          m_cells.intersection(y - (y_inc - 1) / 2, {x0, up ? int8_t(1) : int8_t(-1)});
         }
 
         x = x_cell;
@@ -248,8 +245,8 @@ void Tiler::tile(const geom::dcubic_path& path,
     int tile_start = -1;
     int tile_start_winding = 0;
 
-    std::sort(m_intersections[y].begin(),
-              m_intersections[y].end(),
+    std::sort(m_cells.intersections(y).begin(),
+              m_cells.intersections(y).end(),
               [](const Intersection a, const Intersection b) { return a.x > b.x; });
 
     uint32_t row_curves_offset = drawable.curves.size() / 2;
@@ -272,15 +269,6 @@ void Tiler::tile(const geom::dcubic_path& path,
     row_curves_count = curves.size();
 
     for (int x = path_cell_count.x - 1; x >= 0; x--) {
-      // {
-      //   const dvec2 cell_min = dvec2(path_start_cell + ivec2(x, y)) * m_cell_size;
-      //   const dvec2 cell_max = cell_min + m_cell_size;
-
-      //   const drect cell_rect = drect(cell_min, cell_max);
-
-      //   Renderer::ui_rect(cell_rect, vec4(0.0, 0.0, 1.0, 0.5));
-      // }
-
       if (!m_cells.is_tile(x, y)) {
         if (tile_start > -1) {
           const dvec2 cell_min = dvec2(path_start_cell + ivec2(x + 1, y)) * m_cell_size;
@@ -337,8 +325,8 @@ void Tiler::tile(const geom::dcubic_path& path,
           tile_start_winding = winding;
         }
 
-        for (; intersection_index < m_intersections[y].size(); intersection_index++) {
-          const Intersection intersection = m_intersections[y][intersection_index];
+        for (; intersection_index < m_cells.intersections(y).size(); intersection_index++) {
+          const Intersection intersection = m_cells.intersections(y)[intersection_index];
 
           if (intersection.x <= (path_start_cell.x + x) * m_cell_size) {
             break;
@@ -380,14 +368,6 @@ void Tiler::tile(const geom::dcubic_path& path,
     }
   }
 
-  // for (int y = 0; y < path_cell_count.y; y++) {
-  //   const double y0 = double(path_start_cell.y + y) * m_cell_size;
-
-  //   for (const Intersection intersection : m_intersections[y]) {
-  //     Renderer::ui_circle(vec2(intersection.x, y0), 2.0, vec4(1.0, 1.0, 1.0, 0.5));
-  //   }
-  // }
-
   drawable.paints.push_back(
       {drawable.tiles.size(), drawable.fills.size(), fill.paint.type(), fill.paint.id()});
 }
@@ -411,11 +391,29 @@ void TiledRenderer::setup(const ivec2 viewport_size,
   m_cell_count = ivec2(math::ceil(visible.max / m_cell_sizes[1]) -
                        math::floor(visible.min / m_cell_sizes[1]));
 
-  m_culled.clear();
-  m_culled.resize(m_cell_count.x * m_cell_count.y, std::numeric_limits<uint32_t>::max());
+  // m_culled.clear();
+  // m_culled.resize(m_cell_count.x * m_cell_count.y, std::numeric_limits<uint32_t>::max());
 
   m_invalid.clear();
   m_invalid.resize(m_cell_count.x * m_cell_count.y, false);
+
+  m_semivalid.clear();
+  m_semivalid.resize(m_cell_count.x * m_cell_count.y, false);
+
+  if (!m_front_framebuffer || m_front_framebuffer->size() != m_viewport_size) {
+    delete m_front_framebuffer;
+    m_front_framebuffer = new GPU::Framebuffer(m_viewport_size, true);
+  } else {
+    m_front_framebuffer->bind();
+    GPU::Device::clear({vec4{0.0f, 0.0f, 0.0f, 0.0f}, 1.0f, 0});
+  }
+
+  if (!m_back_framebuffer || m_back_framebuffer->size() != m_viewport_size) {
+    delete m_back_framebuffer;
+    m_back_framebuffer = new GPU::Framebuffer(m_viewport_size, true);
+  }
+
+  m_back_framebuffer->bind();
 }
 
 void TiledRenderer::push_drawable(const Drawable* drawable)
@@ -424,7 +422,7 @@ void TiledRenderer::push_drawable(const Drawable* drawable)
     return;
   }
 
-  m_drawables.push_back(drawable);
+  m_front_stack.push_back(std::make_pair(drawable, m_z_index));
   m_z_index += drawable->paints.size();
 }
 
@@ -434,7 +432,6 @@ void TiledRenderer::flush()
             "Program and vertex array must be set through update_shader()!");
 
   populate_fills();
-  populate_tiles();
 
   TileBatchData& tiles = m_batch.tiles;
   FillBatchData& fills = m_batch.fills;
@@ -443,6 +440,8 @@ void TiledRenderer::flush()
   GPU::RenderState render_state = GPU::RenderState().no_blend().default_depth().no_stencil();
 
   if (fills.vertices_count()) {
+    m_back_framebuffer->bind();
+
     fills.vertex_buffer.upload(fills.vertices, fills.vertices_count() * sizeof(FillVertex));
 
     render_state.program = m_fill_program->program;
@@ -467,61 +466,20 @@ void TiledRenderer::flush()
     GPU::Device::draw_elements(fills.indices_count(), render_state);
   }
 
-  if (tiles.vertices_count()) {
-    if (tiles.vertex_buffer.size <= tiles.vertices_count() * sizeof(TileVertex)) {
-      console::log("bad bad stuff");
-    }
-
-    if (tiles.curves_texture.size.x * tiles.curves_texture.size.y * 4 * sizeof(float) <=
-        tiles.max_curves * sizeof(vec2))
-    {
-      console::log("bad stuff");
-    }
-
-    tiles.vertex_buffer.upload(tiles.vertices, tiles.vertices_count() * sizeof(TileVertex));
-
-    // TODO: upload only necessary data
-    tiles.curves_texture.upload(tiles.curves, tiles.max_curves * sizeof(vec2));
-
-    render_state.default_blend().no_depth_write().no_stencil();
-
-    render_state.program = m_tile_program->program;
-    render_state.vertex_array = &m_tile_vertex_array->vertex_array;
-    render_state.primitive = tiles.primitive;
-    render_state.viewport = irect{ivec2::zero(), m_viewport_size};
-
-    render_state.uniforms = {{m_tile_program->vp_uniform, m_vp_matrix},
-                             {m_tile_program->samples_uniform, 3}};
-    render_state.textures = std::vector<GPU::TextureBinding>{
-        {m_tile_program->curves_texture_uniform, &tiles.curves_texture}};
-    render_state.texture_arrays = std::vector<GPU::TextureArrayBinding>{
-        {m_tile_program->textures_uniform, {&data.gradients_texture}}};
-
-    for (const auto& [texture_id, _] : m_binded_textures) {
-      const auto it = m_textures->find(texture_id);
-
-      if (it != m_textures->end()) {
-        render_state.texture_arrays[0].second.push_back(&it->second);
-      } else {
-        // TODO: default texture
-      }
-    }
-
-    GPU::Device::draw_elements(tiles.indices_count(), render_state);
-  }
+  render_tiles();
 
   m_z_index = 1;
 
   m_batch.clear();
-  m_drawables.clear();
+  m_front_stack.clear();
+  m_back_stack.clear();
 }
 
 void TiledRenderer::populate_fills()
 {
-  uint32_t z_index = 1;
-
-  for (auto it = m_drawables.rbegin(); it != m_drawables.rend(); it++) {
-    const Drawable& drawable = *(*it);
+  for (auto it = m_front_stack.rbegin(); it != m_front_stack.rend(); it++) {
+    const Drawable& drawable = *(it->first);
+    const uint32_t z_index = m_z_index - it->second;
 
     // TODO: limited batch size
 
@@ -558,97 +516,221 @@ void TiledRenderer::populate_fills()
 
     const double cell_size = m_cell_sizes[1];
 
-    for (size_t i = 0; i < drawable.fills.size() / 4; i++) {
-      const FillVertex& v1 = drawable.fills[i * 4];
-      const FillVertex& v3 = drawable.fills[i * 4 + 2];
+    // for (size_t i = 0; i < drawable.fills.size() / 4; i++) {
+    //   const FillVertex& v1 = drawable.fills[i * 4];
+    //   const FillVertex& v3 = drawable.fills[i * 4 + 2];
 
-      const ivec2 cell_min = ivec2(math::ceil((dvec2(v1.position) - m_visible.min) / cell_size));
-      const ivec2 cell_max = ivec2(math::ceil((dvec2(v3.position) - m_visible.min) / cell_size));
+    //   const ivec2 cell_min = ivec2(math::ceil((dvec2(v1.position) - m_visible.min) /
+    //   cell_size)); const ivec2 cell_max = ivec2(math::ceil((dvec2(v3.position) - m_visible.min)
+    //   / cell_size));
 
-      for (int y = std::max(cell_min.y, 0); y < std::min(cell_max.y, m_cell_count.y); y++) {
-        for (int x = std::max(cell_min.x, 0); x < std::min(cell_max.x, m_cell_count.x); x++) {
-          const int index = x + y * m_cell_count.x;
+    //   for (int y = std::max(cell_min.y, 0); y < std::min(cell_max.y, m_cell_count.y); y++) {
+    //     for (int x = std::max(cell_min.x, 0); x < std::min(cell_max.x, m_cell_count.x); x++) {
+    //       const int index = x + y * m_cell_count.x;
 
-          if (m_culled[index] > z_index) {
-            m_culled[index] = z_index;
-          }
-        }
-      }
-    }
+    //       if (m_culled[index] > z_index) {
+    //         m_culled[index] = z_index;
+    //       }
+    //     }
+    //   }
+    // }
 
     if (!has_texture_paint && drawable.paints.size() == 1) {
       m_batch.fills.upload(drawable, z_index);
     } else {
       m_batch.fills.upload(drawable, z_index, m_binded_textures);
     }
-
-    z_index += drawable.paints.size();
   }
 
-  for (int y = 0; y < m_cell_count.y; y++) {
-    for (int x = 0; x < m_cell_count.x; x++) {
-      const int index = x + y * m_cell_count.x;
+  // for (int y = 0; y < m_cell_count.y; y++) {
+  //   for (int x = 0; x < m_cell_count.x; x++) {
+  //     const int index = x + y * m_cell_count.x;
 
-      if (m_culled[index] == std::numeric_limits<uint32_t>::max()) {
-        Renderer::ui_rect(
-            rect(math::floor(vec2(m_visible.min) / m_cell_sizes[1]) * m_cell_sizes[1] +
-                     vec2(x, y) * m_cell_sizes[1],
-                 math::floor(vec2(m_visible.min) / m_cell_sizes[1]) * m_cell_sizes[1] +
-                     vec2(x + 1, y + 1) * m_cell_sizes[1]),
-            vec4(1.0, 0.0, 1.0, 0.5));
-      }
-    }
-  }
+  //     if (m_culled[index] == std::numeric_limits<uint32_t>::max()) {
+  //       Renderer::ui_rect(
+  //           rect(math::floor(vec2(m_visible.min) / m_cell_sizes[1]) * m_cell_sizes[1] +
+  //                    vec2(x, y) * m_cell_sizes[1],
+  //                math::floor(vec2(m_visible.min) / m_cell_sizes[1]) * m_cell_sizes[1] +
+  //                    vec2(x + 1, y + 1) * m_cell_sizes[1]),
+  //           vec4(1.0, 0.0, 1.0, 0.5));
+  //     }
+  //   }
+  // }
 }
 
-void TiledRenderer::populate_tiles()
+void TiledRenderer::render_tiles()
 {
-  uint32_t z_index = m_z_index - 1;
+  while (true) {
+    for (auto it = m_front_stack.begin(); it != m_front_stack.end(); it++) {
+      const Drawable& drawable = *(it->first);
+      const uint32_t z_index = it->second;
 
-  for (auto it = m_drawables.begin(); it != m_drawables.end(); it++) {
-    const Drawable& drawable = *(*it);
+      const ivec2 cell_min = ivec2(math::ceil(drawable.bounding_rect.min - m_visible.min) /
+                                   m_cell_sizes[1]);
+      const ivec2 cell_max = ivec2(math::ceil(drawable.bounding_rect.max - m_visible.min) /
+                                   m_cell_sizes[1]);
 
-    // TODO: limited batch size
+      bool semi_valid = false;
+      bool invalid = false;
 
-    // TODO: should be non_color_paint
-    uint32_t texture_index = 0;
-    bool has_texture_paint = false;
+      for (int y = std::max(cell_min.y, 0); y <= std::min(cell_max.y, m_cell_count.y - 1); y++) {
+        for (int x = std::max(cell_min.x, 0); x <= std::min(cell_max.x, m_cell_count.x - 1); x++) {
+          const int index = x + y * m_cell_count.x;
 
-    // TODO: extract logic
-    for (const DrawablePaintBinding& binding : drawable.paints) {
-      if (binding.paint_type != Paint::Type::TexturePaint) {
+          if (m_semivalid[index]) {
+            semi_valid = true;
+          }
+
+          if (m_invalid[index]) {
+            invalid = true;
+          }
+        }
+
+        if (semi_valid && invalid) {
+          break;
+        }
+      }
+
+      if (invalid || (semi_valid && drawable.appearance.blending != BlendingMode::Normal)) {
+        for (int y = std::max(cell_min.y, 0); y <= std::min(cell_max.y, m_cell_count.y - 1); y++) {
+          for (int x = std::max(cell_min.x, 0); x <= std::min(cell_max.x, m_cell_count.x - 1); x++)
+          {
+            const int index = x + y * m_cell_count.x;
+
+            m_invalid[index] = true;
+          }
+        }
+
+        m_back_stack.push_back(std::make_pair(&drawable, z_index));
+
         continue;
       }
 
-      const auto it = m_textures->find(binding.paint_id);
-      const auto binded_it = std::find_if(
-          m_binded_textures.begin(), m_binded_textures.end(), [binding](const auto& pair) {
-            return pair.first == binding.paint_id;
-          });
+      for (int y = std::max(cell_min.y, 0); y <= std::min(cell_max.y, m_cell_count.y - 1); y++) {
+        for (int x = std::max(cell_min.x, 0); x <= std::min(cell_max.x, m_cell_count.x - 1); x++) {
+          const int index = x + y * m_cell_count.x;
 
-      if (it == m_textures->end()) {
-        continue;
+          m_semivalid[index] = true;
+        }
       }
 
-      has_texture_paint = true;
+      // TODO: limited batch size
 
-      if (binded_it != m_binded_textures.end()) {
-        texture_index = binded_it->second;
+      // TODO: should be non_color_paint
+      uint32_t texture_index = 0;
+      bool has_texture_paint = false;
+
+      // TODO: extract logic
+      for (const DrawablePaintBinding& binding : drawable.paints) {
+        if (binding.paint_type != Paint::Type::TexturePaint) {
+          continue;
+        }
+
+        const auto it = m_textures->find(binding.paint_id);
+        const auto binded_it = std::find_if(
+            m_binded_textures.begin(), m_binded_textures.end(), [binding](const auto& pair) {
+              return pair.first == binding.paint_id;
+            });
+
+        if (it == m_textures->end()) {
+          continue;
+        }
+
+        has_texture_paint = true;
+
+        if (binded_it != m_binded_textures.end()) {
+          texture_index = binded_it->second;
+        } else {
+          /* We add 1 to the index to avoid binding the gradients texture. */
+          m_binded_textures.push_back(
+              std::make_pair(binding.paint_id, m_binded_textures.size() + 1));
+        }
+      }
+
+      if (!has_texture_paint && drawable.paints.size() == 1) {
+        m_batch.tiles.upload(drawable, m_z_index - z_index);
       } else {
-        /* We add 1 to the index to avoid binding the gradients texture. */
-        m_binded_textures.push_back(
-            std::make_pair(binding.paint_id, m_binded_textures.size() + 1));
+        m_batch.tiles.upload(drawable, m_z_index - z_index, m_binded_textures);
       }
     }
 
-    if (!has_texture_paint && drawable.paints.size() == 1) {
-      m_batch.tiles.upload(drawable, z_index);
-    } else {
-      m_batch.tiles.upload(drawable, z_index, m_binded_textures);
+    TileBatchData& tiles = m_batch.tiles;
+    BatchData& data = m_batch.data;
+
+    GPU::RenderState render_state = GPU::RenderState().no_blend().default_depth().no_stencil();
+
+    if (tiles.vertices_count()) {
+      if (tiles.vertex_buffer.size <= tiles.vertices_count() * sizeof(TileVertex)) {
+        console::log("bad bad stuff");
+      }
+
+      if (tiles.curves_texture.size.x * tiles.curves_texture.size.y * 4 * sizeof(float) <=
+          tiles.max_curves * sizeof(vec2))
+      {
+        console::log("bad stuff");
+      }
+
+      GPU::Device::blit_framebuffer(*m_back_framebuffer,
+                                    *m_front_framebuffer,
+                                    irect{ivec2::zero(), m_viewport_size},
+                                    irect{ivec2::zero(), m_viewport_size});
+
+      tiles.vertex_buffer.upload(tiles.vertices, tiles.vertices_count() * sizeof(TileVertex));
+
+      // TODO: upload only necessary data
+      tiles.curves_texture.upload(tiles.curves, tiles.max_curves * sizeof(vec2));
+
+      render_state.default_blend().no_depth_write().no_stencil();
+
+      render_state.program = m_tile_program->program;
+      render_state.vertex_array = &m_tile_vertex_array->vertex_array;
+      render_state.primitive = tiles.primitive;
+      render_state.viewport = irect{ivec2::zero(), m_viewport_size};
+
+      render_state.uniforms = {{m_tile_program->vp_uniform, m_vp_matrix},
+                               {m_tile_program->samples_uniform, 3}};
+      render_state.textures = std::vector<GPU::TextureBinding>{
+          {m_tile_program->curves_texture_uniform, &tiles.curves_texture}};
+      render_state.texture_arrays = std::vector<GPU::TextureArrayBinding>{
+          {m_tile_program->textures_uniform, {&data.gradients_texture}}};
+
+      for (const auto& [texture_id, _] : m_binded_textures) {
+        const auto it = m_textures->find(texture_id);
+
+        if (it != m_textures->end()) {
+          render_state.texture_arrays[0].second.push_back(&it->second);
+        } else {
+          // TODO: default texture
+        }
+      }
+
+      GPU::Device::draw_elements(tiles.indices_count(), render_state);
     }
 
-    z_index -= drawable.paints.size();
+    m_batch.clear();
+
+    m_invalid.clear();
+    m_invalid.resize(m_cell_count.x * m_cell_count.y, false);
+
+    m_semivalid.clear();
+    m_semivalid.resize(m_cell_count.x * m_cell_count.y, false);
+
+    if (m_back_stack.empty()) {
+      break;
+    }
+
+    m_front_stack.clear();
+
+    std::swap(m_front_stack, m_back_stack);
+    std::swap(m_front_framebuffer, m_back_framebuffer);
   }
+
+  GPU::Device::blit_framebuffer(*m_front_framebuffer,
+                                irect{ivec2::zero(), m_viewport_size},
+                                irect{ivec2::zero(), m_viewport_size},
+                                false);
+
+  m_back_framebuffer->unbind();
 }
 
 }  // namespace graphick::renderer

@@ -279,22 +279,36 @@ struct DrawablePaintBinding {
   uuid paint_id;
 };
 
+// struct Fill {
+//   vec2 min;
+//   vec2 max;
+
+//   std::array<vec2, 4> tex_coords;
+// };
+
+// struct Tile : public Fill {
+//   vec2 tex_coord_curve_min;
+//   vec2 tex_coord_curve_max;
+
+//   uint16_t curves_count;
+//   int16_t winding;
+// };
+
 /**
  * @brief The Drawable class is the only object that can be directly drawn by the renderer.
  */
 struct Drawable {
-  uint8_t LOD;                    // The level of detail of the drawable.
-  drect bounding_rect;            // The bounding rectangle of the drawable.
+  uint8_t LOD;                               // The level of detail of the drawable.
+  drect bounding_rect;                       // The bounding rectangle of the drawable.
 
-  std::vector<vec2> curves;       // The curves of the drawable.
-  std::vector<uint16_t> bands;    // The bands of the drawable.
+  std::vector<vec2> curves;                  // The curves of the drawable.
 
-  std::vector<TileVertex> tiles;  // The tiles of the drawable.
-  std::vector<FillVertex> fills;  // The fills of the drawable.
-
-  // TODO: add z_index intervals
+  std::vector<TileVertex> tiles;             // The tiles of the drawable.
+  std::vector<FillVertex> fills;             // The fills of the drawable.
 
   std::vector<DrawablePaintBinding> paints;  // The paint bindings of the drawable.
+
+  Appearance appearance;                     // The appearance of the drawable.
 
   inline void push_curve(const vec2 p0, const vec2 p1, const vec2 p2)
   {
@@ -304,11 +318,6 @@ struct Drawable {
   inline void push_curve(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3)
   {
     curves.insert(curves.end(), {p0, p1, p2, p3});
-  }
-
-  inline void push_band(const uint16_t band)
-  {
-    bands.push_back(band);
   }
 
   inline void push_tile(const vec2 min,

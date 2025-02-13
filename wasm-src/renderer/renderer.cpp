@@ -138,6 +138,8 @@ void Renderer::shutdown()
 
 void Renderer::begin_frame(const RenderOptions& options)
 {
+  GPU::Device::begin_commands();
+
   get()->m_viewport = options.viewport;
   get()->m_tiler.setup(options.viewport.zoom);
   get()->m_ui_options = UIOptions(options.viewport.dpr / options.viewport.zoom);
@@ -148,8 +150,6 @@ void Renderer::begin_frame(const RenderOptions& options)
                        get()->m_viewport.vp_matrix,
                        get()->m_tiler.LOD(),
                        get()->m_tiler.base_tile_size());
-
-  GPU::Device::begin_commands();
 
   get()->flush_background_layer();
 
@@ -167,6 +167,9 @@ void Renderer::begin_frame(const RenderOptions& options)
 void Renderer::end_frame()
 {
   get()->flush_scene_layer();
+
+  GPU::Device::default_framebuffer();
+
   get()->flush_ui_layer();
 
 #ifdef GK_DEBUG
@@ -427,6 +430,7 @@ bool Renderer::draw_transformed(const geom::dpath& path,
 
   drawable.bounding_rect = bounding_rect;
   drawable.LOD = m_tiler.LOD();
+  drawable.appearance = Appearance{BlendingMode::Multiply, 1.0f};
 
   if (options.fill && options.fill->paint.visible()) {
     geom::dcubic_path cubic_path = path.to_cubic_path();
