@@ -4,7 +4,8 @@
  *
  * @todo snapping and maybe grid
  * @todo curve molding
- * @todo fix moving the last segment in a closed path (I think).
+ * @todo fix moving handles of non selected elements
+ * @todo fix moving the last segment in a closed path (I think)
  */
 
 #include "direct_select_tool.h"
@@ -132,7 +133,7 @@ void DirectSelectTool::render_overlays() const
                            m_selection_rect.transform(),
                            renderer::DrawingOptions{nullptr, nullptr, &outline});
   renderer::Renderer::ui_rect(m_selection_rect.bounding_rect(),
-                                Settings::Renderer::ui_primary_transparent);
+                              Settings::Renderer::ui_primary_transparent);
 }
 
 void DirectSelectTool::translate_selected()

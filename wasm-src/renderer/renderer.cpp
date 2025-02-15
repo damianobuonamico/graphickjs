@@ -5,7 +5,6 @@
  * @todo gradients overflow handling
  * @todo path builder clipping rect
  * @todo dynamic number of samples based on dpr and hardware performance
- * @todo use exact bounding box and cache it
  * @todo fix line width
  */
 
@@ -31,21 +30,6 @@
 #include "renderer_cache.h"
 
 #include <unordered_set>
-
-#if 0
-// TODO: this is temp, the renderer should not know about the editor
-#  include "../editor/scene/cache.h"
-#  include "../editor/scene/components/text.h"
-
-#  include "../io/resource_manager.h"
-#  include "../io/text/font.h"
-#  include "../io/text/unicode.h"
-
-#  include "../utils/console.h"
-#  include "../utils/defines.h"
-
-#  include <algorithm>
-#endif
 
 #ifdef EMSCRIPTEN
 #  include <emscripten/html5.h>
@@ -86,12 +70,12 @@ void Renderer::init()
 
   const bool desynchronized = false;
 
-  /* Despite
-   * <https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#avoid_alphafalse_which_can_be_expensive>,
-   * when using desynchronized context, is better to use alpha=false to avoid expensive blending
-   * operations if there are elements on top. Emscripten doesn't support desynchronized context
-   * yet, so we set it to true after compilation (see script compile.py).
-   */
+  // Despite
+  // <https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#avoid_alphafalse_which_can_be_expensive>,
+  // when using desynchronized context, it is better to use alpha=false to avoid expensive blending
+  // operations if there are elements on top. Emscripten doesn't support desynchronized context
+  // yet, so we set it to true after compilation (see script compile.py).
+
   attr.alpha = !desynchronized;
   attr.premultipliedAlpha = false;
   attr.majorVersion = 2;
@@ -213,7 +197,8 @@ bool Renderer::draw(const geom::path& path,
     if (LOD == drawable.LOD) {
       is_LOD_valid = true;
     } else if (LOD == drawable.LOD + 1 || drawable.LOD == LOD + 1) {
-      /* We randomly choose whether to update the LOD or not. */
+      // We randomly choose whether to update the LOD or not. To distribute the updates across
+      // multiple frames.
       is_LOD_valid = rand() > RAND_MAX / 2;
     }
 
@@ -255,8 +240,6 @@ bool Renderer::draw(const geom::path& path,
 
     tex_coords = {v0, v1, v2, v3};
   }
-
-  get()->m_cache->set_bounding_rect(id, transformed_bounding_rect);
 
   return get()->draw_transformed(
       transformed_path, transformed_bounding_rect, options, tex_coords, id);
@@ -428,64 +411,19 @@ bool Renderer::draw_transformed(const geom::dpath& path,
 {
   Drawable drawable;
 
-  drawable.bounding_rect = bounding_rect;
-  drawable.valid_rect = bounding_rect;
   drawable.LOD = m_tiler.LOD();
-  drawable.appearance = Appearance{BlendingMode::Normal, 1.0f};
+  drawable.appearance = Appearance{BlendingMode::Multiply, 1.0f};
+
+  bool visible = false;
 
   if (options.fill && options.fill->paint.visible()) {
-    geom::dcubic_path cubic_path = path.to_cubic_path();
+    geom::dcubic_multipath cubic_path = path.to_cubic_multipath();
 
     if (!cubic_path.closed()) {
       cubic_path.line_to(cubic_path.front());
     }
 
-    const drect visible = m_viewport.visible();
-    const double coverage = geom::rect_rect_intersection_area(bounding_rect, visible) /
-                            bounding_rect.area();
-
-    if (coverage <= math::epsilon<double>) {
-      drawable.valid_rect = geom::rect_rect_intersection(visible, bounding_rect);
-      m_cache->set_drawable(id, std::move(drawable));
-
-      return false;
-    }
-
-    const bool clip = coverage < 0.25;
-
-    if (clip) {
-      const double tile_size = m_tiler.tile_size();
-      const drect clip_region = {math::floor(visible.min / tile_size - 2) * tile_size,
-                                 math::ceil(visible.max / tile_size + 2) * tile_size};
-
-      drawable.valid_rect = geom::rect_rect_intersection(clip_region, bounding_rect);
-
-      geom::clip(cubic_path, clip_region);
-
-      if (cubic_path.empty()) {
-        m_cache->set_drawable(id, std::move(drawable));
-
-        return false;
-      }
-
-      const drect clipped_bounding_rect = cubic_path.bounding_rect();
-      const std::array<vec2, 4> clipped_tex_coords = reproject_texture_coords(
-          bounding_rect, clipped_bounding_rect, texture_coords);
-
-      drawable.bounding_rect = clipped_bounding_rect;
-
-      m_tiler.tile(std::move(cubic_path),
-                   clipped_bounding_rect,
-                   *options.fill,
-                   clipped_tex_coords,
-                   drawable);
-    } else {
-      m_tiler.tile(std::move(cubic_path), bounding_rect, *options.fill, texture_coords, drawable);
-    }
-
-    if (options.fill->paint.is_texture()) {
-      request_texture(options.fill->paint.id());
-    }
+    visible |= draw_multipath(cubic_path, bounding_rect, *options.fill, texture_coords, drawable);
   }
 
   if (options.stroke && options.stroke->paint.visible()) {
@@ -499,36 +437,74 @@ bool Renderer::draw_transformed(const geom::dpath& path,
     const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
     const geom::StrokeOutline<double> stroke_path = builder.stroke(stroking_options);
 
-    // if (id != uuid::null) {
-    //   m_cache->set_bounding_rect(id, stroke_path.bounding_rect);
-    // }
+    get()->m_cache->set_bounding_rect(id, stroke_path.bounding_rect);
 
-    m_tiler.tile(
+    visible |= draw_multipath(
         stroke_path.path, stroke_path.bounding_rect, stroke_fill, texture_coords, drawable);
+  } else {
+    get()->m_cache->set_bounding_rect(id, bounding_rect);
+  }
 
-    // TODO: stroke texture coordinates
-    // if (stroke_path.inner.empty()) {
-
-    //   draw_cubic_path(stroke_path.outer,
-    //                   stroke_path.bounding_rect,
-    //                   stroke_fill,
-    //                   culling,
-    //                   fill_texture_coords,
-    //                   drawable);
-    // } else {
-    //   draw_cubic_paths({&stroke_path.outer, &stroke_path.inner},
-    //                    stroke_path.bounding_rect,
-    //                    stroke_fill,
-    //                    culling,
-    //                    fill_texture_coords,
-    //                    drawable);
-    // }
+  if (!visible) {
+    m_cache->set_drawable(id, std::move(drawable));
+    return false;
   }
 
   m_tiles.push_drawable(m_cache->set_drawable(id, std::move(drawable)));
 
   if (options.outline) {
     draw_outline(path, bounding_rect, *options.outline);
+  }
+
+  return true;
+}
+
+bool Renderer::draw_multipath(const geom::dcubic_multipath& path,
+                              const drect& bounding_rect,
+                              const Fill& fill,
+                              const std::array<vec2, 4>& texture_coords,
+                              Drawable& drawable)
+{
+  drawable.bounding_rect = bounding_rect;
+  drawable.valid_rect = bounding_rect;
+
+  const drect visible = m_viewport.visible();
+  const double coverage = geom::rect_rect_intersection_area(bounding_rect, visible) /
+                          bounding_rect.area();
+
+  if (coverage <= math::epsilon<double>) {
+    drawable.valid_rect = geom::rect_rect_intersection(visible, bounding_rect);
+    return false;
+  }
+
+  const bool clip = coverage < 0.25;
+
+  if (clip) {
+    const double tile_size = m_tiler.tile_size();
+    const drect clip_region = {math::floor(visible.min / tile_size - 2) * tile_size,
+                               math::ceil(visible.max / tile_size + 2) * tile_size};
+
+    drawable.valid_rect = geom::rect_rect_intersection(clip_region, bounding_rect);
+
+    geom::dcubic_multipath clipped_path = geom::clip(path, clip_region);
+
+    if (clipped_path.empty()) {
+      return false;
+    }
+
+    const drect clipped_bounding_rect = clipped_path.bounding_rect();
+    const std::array<vec2, 4> clipped_tex_coords = reproject_texture_coords(
+        bounding_rect, clipped_bounding_rect, texture_coords);
+
+    drawable.bounding_rect = clipped_bounding_rect;
+
+    m_tiler.tile(clipped_path, clipped_bounding_rect, fill, clipped_tex_coords, drawable);
+  } else {
+    m_tiler.tile(path, bounding_rect, fill, texture_coords, drawable);
+  }
+
+  if (fill.paint.is_texture()) {
+    request_texture(fill.paint.id());
   }
 
   return true;

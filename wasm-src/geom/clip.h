@@ -320,68 +320,72 @@ inline void clip(std::vector<math::Vec2<T>>& points, const math::Rect<T>& rect)
  * @param x The x value to clip to.
  */
 template<typename T>
-inline void clip_to_left(CubicPath<T>& path, const T x)
+inline CubicMultipath<T> clip_to_left(const CubicMultipath<T>& path, const T x)
 {
   if (path.empty()) {
-    return;
+    return path;
   }
 
   CubicPath<T> new_path;
   new_path.points.reserve(path.points.size());
 
-  for (size_t i = 0; i < path.size(); i++) {
-    /* Curves are monotonic, only p0 and p3 matter. */
+  for (size_t j = 0; j < path.starts.size(); j++) {
+    const size_t end = path.starts.size() > (j + 1) ? path.starts[j + 1] : path.points.size();
 
-    const math::Vec2<T> p0 = path[i * 3];
-    const math::Vec2<T> p1 = path[i * 3 + 1];
-    const math::Vec2<T> p2 = path[i * 3 + 2];
-    const math::Vec2<T> p3 = path[i * 3 + 3];
+    for (size_t i = path.starts[j]; i < end - 3; i += 3) {
+      /* Curves are monotonic, only p0 and p3 matter. */
 
-    const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
+      const math::Vec2<T> p0 = path[i];
+      const math::Vec2<T> p1 = path[i + 1];
+      const math::Vec2<T> p2 = path[i + 2];
+      const math::Vec2<T> p3 = path[i + 3];
 
-    const bool linear = curve.is_line(math::geometric_epsilon<T>);
+      const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
 
-    if (p0.x < x) {
-      if (p3.x > x) {
-        const double t0 = math::clamp((x - p0.x) / (p3.x - p0.x), 0.0, 1.0);
+      const bool linear = curve.is_line(math::geometric_epsilon<T>);
 
-        if (linear) {
-          new_path.line_to({x, math::lerp(p0.y, p3.y, t0)});
-          new_path.line_to(p3);
-        } else {
-          const auto& [a, b, c, d] = curve.coefficients();
-          const double t = math::is_almost_zero_or_one(t0) ?
-                               t0 :
-                               geom::cubic_line_intersect_approx(a.x, b.x, c.x, d.x, x, t0);
+      if (p0.x < x) {
+        if (p3.x > x) {
+          const double t0 = math::clamp((x - p0.x) / (p3.x - p0.x), 0.0, 1.0);
 
-          const CubicBezier<T> new_curve = extract(curve, t, 1.0);
+          if (linear) {
+            new_path.line_to({x, math::lerp(p0.y, p3.y, t0)});
+            new_path.line_to(p3);
+          } else {
+            const auto& [a, b, c, d] = curve.coefficients();
+            const double t = math::is_almost_zero_or_one(t0) ?
+                                 t0 :
+                                 geom::cubic_line_intersect_approx(a.x, b.x, c.x, d.x, x, t0);
 
-          new_path.line_to({x, new_curve.p0.y});
-          new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
-        }
-      }
-    } else {
-      if (new_path.empty() || new_path.back() != p0) {
-        new_path.line_to(p0);
-      }
+            const CubicBezier<T> new_curve = extract(curve, t, 1.0);
 
-      if (p3.x < x) {
-        const double t0 = math::clamp((x - p0.x) / (p3.x - p0.x), 0.0, 1.0);
-
-        if (linear) {
-          new_path.line_to({x, math::lerp(p0.y, p3.y, t0)});
-        } else {
-          const auto& [a, b, c, d] = curve.coefficients();
-          const double t = math::is_almost_zero_or_one(t0) ?
-                               t0 :
-                               geom::cubic_line_intersect_approx(a.x, b.x, c.x, d.x, x, t0);
-
-          const CubicBezier<T> new_curve = extract(curve, 0.0, t);
-
-          new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+            new_path.line_to({x, new_curve.p0.y});
+            new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+          }
         }
       } else {
-        new_path.cubic_to_monotonic(p1, p2, p3);
+        if (new_path.empty() || new_path.back() != p0) {
+          new_path.line_to(p0);
+        }
+
+        if (p3.x < x) {
+          const double t0 = math::clamp((x - p0.x) / (p3.x - p0.x), 0.0, 1.0);
+
+          if (linear) {
+            new_path.line_to({x, math::lerp(p0.y, p3.y, t0)});
+          } else {
+            const auto& [a, b, c, d] = curve.coefficients();
+            const double t = math::is_almost_zero_or_one(t0) ?
+                                 t0 :
+                                 geom::cubic_line_intersect_approx(a.x, b.x, c.x, d.x, x, t0);
+
+            const CubicBezier<T> new_curve = extract(curve, 0.0, t);
+
+            new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+          }
+        } else {
+          new_path.cubic_to_monotonic(p1, p2, p3);
+        }
       }
     }
   }
@@ -390,7 +394,7 @@ inline void clip_to_left(CubicPath<T>& path, const T x)
     new_path.line_to(new_path.front());
   }
 
-  path = new_path;
+  return new_path;
 }
 
 /**
@@ -402,68 +406,72 @@ inline void clip_to_left(CubicPath<T>& path, const T x)
  * @param x The x value to clip to.
  */
 template<typename T>
-inline void clip_to_right(CubicPath<T>& path, const T x)
+inline CubicMultipath<T> clip_to_right(const CubicMultipath<T>& path, const T x)
 {
   if (path.empty()) {
-    return;
+    return path;
   }
 
   CubicPath<T> new_path;
   new_path.points.reserve(path.points.size());
 
-  for (size_t i = 0; i < path.size(); i++) {
-    /* Curves are monotonic, only p0 and p3 matter. */
+  for (size_t j = 0; j < path.starts.size(); j++) {
+    const size_t end = path.starts.size() > (j + 1) ? path.starts[j + 1] : path.points.size();
 
-    const math::Vec2<T> p0 = path[i * 3];
-    const math::Vec2<T> p1 = path[i * 3 + 1];
-    const math::Vec2<T> p2 = path[i * 3 + 2];
-    const math::Vec2<T> p3 = path[i * 3 + 3];
+    for (size_t i = path.starts[j]; i < end - 3; i += 3) {
+      /* Curves are monotonic, only p0 and p3 matter. */
 
-    const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
+      const math::Vec2<T> p0 = path[i];
+      const math::Vec2<T> p1 = path[i + 1];
+      const math::Vec2<T> p2 = path[i + 2];
+      const math::Vec2<T> p3 = path[i + 3];
 
-    const bool linear = curve.is_line(math::geometric_epsilon<T>);
+      const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
 
-    if (p0.x > x) {
-      if (p3.x < x) {
-        const double t0 = math::clamp((x - p0.x) / (p3.x - p0.x), 0.0, 1.0);
+      const bool linear = curve.is_line(math::geometric_epsilon<T>);
 
-        if (linear) {
-          new_path.line_to({x, math::lerp(p0.y, p3.y, t0)});
-          new_path.line_to(p3);
-        } else {
-          const auto& [a, b, c, d] = curve.coefficients();
-          const double t = math::is_almost_zero_or_one(t0) ?
-                               t0 :
-                               geom::cubic_line_intersect_approx(a.x, b.x, c.x, d.x, x, t0);
+      if (p0.x > x) {
+        if (p3.x < x) {
+          const double t0 = math::clamp((x - p0.x) / (p3.x - p0.x), 0.0, 1.0);
 
-          const CubicBezier<T> new_curve = extract(curve, t, 1.0);
+          if (linear) {
+            new_path.line_to({x, math::lerp(p0.y, p3.y, t0)});
+            new_path.line_to(p3);
+          } else {
+            const auto& [a, b, c, d] = curve.coefficients();
+            const double t = math::is_almost_zero_or_one(t0) ?
+                                 t0 :
+                                 geom::cubic_line_intersect_approx(a.x, b.x, c.x, d.x, x, t0);
 
-          new_path.line_to({x, new_curve.p0.y});
-          new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
-        }
-      }
-    } else {
-      if (new_path.empty() || new_path.back() != p0) {
-        new_path.line_to(p0);
-      }
+            const CubicBezier<T> new_curve = extract(curve, t, 1.0);
 
-      if (p3.x > x) {
-        const double t0 = math::clamp((x - p0.x) / (p3.x - p0.x), 0.0, 1.0);
-
-        if (linear) {
-          new_path.line_to({x, math::lerp(p0.y, p3.y, t0)});
-        } else {
-          const auto& [a, b, c, d] = curve.coefficients();
-          const double t = math::is_almost_zero_or_one(t0) ?
-                               t0 :
-                               geom::cubic_line_intersect_approx(a.x, b.x, c.x, d.x, x, t0);
-
-          const CubicBezier<T> new_curve = extract(curve, 0.0, t);
-
-          new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+            new_path.line_to({x, new_curve.p0.y});
+            new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+          }
         }
       } else {
-        new_path.cubic_to_monotonic(p1, p2, p3);
+        if (new_path.empty() || new_path.back() != p0) {
+          new_path.line_to(p0);
+        }
+
+        if (p3.x > x) {
+          const double t0 = math::clamp((x - p0.x) / (p3.x - p0.x), 0.0, 1.0);
+
+          if (linear) {
+            new_path.line_to({x, math::lerp(p0.y, p3.y, t0)});
+          } else {
+            const auto& [a, b, c, d] = curve.coefficients();
+            const double t = math::is_almost_zero_or_one(t0) ?
+                                 t0 :
+                                 geom::cubic_line_intersect_approx(a.x, b.x, c.x, d.x, x, t0);
+
+            const CubicBezier<T> new_curve = extract(curve, 0.0, t);
+
+            new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+          }
+        } else {
+          new_path.cubic_to_monotonic(p1, p2, p3);
+        }
       }
     }
   }
@@ -472,7 +480,7 @@ inline void clip_to_right(CubicPath<T>& path, const T x)
     new_path.line_to(new_path.front());
   }
 
-  path = new_path;
+  return new_path;
 }
 
 /**
@@ -484,68 +492,72 @@ inline void clip_to_right(CubicPath<T>& path, const T x)
  * @param y The y value to clip to.
  */
 template<typename T>
-inline void clip_to_top(CubicPath<T>& path, const T y)
+inline CubicMultipath<T> clip_to_top(const CubicMultipath<T>& path, const T y)
 {
   if (path.empty()) {
-    return;
+    return path;
   }
 
   CubicPath<T> new_path;
   new_path.points.reserve(path.points.size());
 
-  for (size_t i = 0; i < path.size(); i++) {
-    /* Curves are monotonic, only p0 and p3 matter. */
+  for (size_t j = 0; j < path.starts.size(); j++) {
+    const size_t end = path.starts.size() > (j + 1) ? path.starts[j + 1] : path.points.size();
 
-    const math::Vec2<T> p0 = path[i * 3];
-    const math::Vec2<T> p1 = path[i * 3 + 1];
-    const math::Vec2<T> p2 = path[i * 3 + 2];
-    const math::Vec2<T> p3 = path[i * 3 + 3];
+    for (size_t i = path.starts[j]; i < end - 3; i += 3) {
+      /* Curves are monotonic, only p0 and p3 matter. */
 
-    const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
+      const math::Vec2<T> p0 = path[i];
+      const math::Vec2<T> p1 = path[i + 1];
+      const math::Vec2<T> p2 = path[i + 2];
+      const math::Vec2<T> p3 = path[i + 3];
 
-    const bool linear = curve.is_line(math::geometric_epsilon<T>);
+      const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
 
-    if (p0.y < y) {
-      if (p3.y > y) {
-        const double t0 = math::clamp((y - p0.y) / (p3.y - p0.y), 0.0, 1.0);
+      const bool linear = curve.is_line(math::geometric_epsilon<T>);
 
-        if (linear) {
-          new_path.line_to({math::lerp(p0.x, p3.x, t0), y});
-          new_path.line_to(p3);
-        } else {
-          const auto& [a, b, c, d] = curve.coefficients();
-          const double t = math::is_almost_zero_or_one(t0) ?
-                               t0 :
-                               geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
+      if (p0.y < y) {
+        if (p3.y > y) {
+          const double t0 = math::clamp((y - p0.y) / (p3.y - p0.y), 0.0, 1.0);
 
-          const CubicBezier<T> new_curve = extract(curve, t, 1.0);
+          if (linear) {
+            new_path.line_to({math::lerp(p0.x, p3.x, t0), y});
+            new_path.line_to(p3);
+          } else {
+            const auto& [a, b, c, d] = curve.coefficients();
+            const double t = math::is_almost_zero_or_one(t0) ?
+                                 t0 :
+                                 geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
 
-          new_path.line_to({new_curve.p0.x, y});
-          new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
-        }
-      }
-    } else {
-      if (new_path.empty() || new_path.back() != p0) {
-        new_path.line_to(p0);
-      }
+            const CubicBezier<T> new_curve = extract(curve, t, 1.0);
 
-      if (p3.y < y) {
-        const double t0 = math::clamp((y - p0.y) / (p3.y - p0.y), 0.0, 1.0);
-
-        if (linear) {
-          new_path.line_to({math::lerp(p0.x, p3.x, t0), y});
-        } else {
-          const auto& [a, b, c, d] = curve.coefficients();
-          const double t = math::is_almost_zero_or_one(t0) ?
-                               t0 :
-                               geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
-
-          const CubicBezier<T> new_curve = extract(curve, 0.0, t);
-
-          new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+            new_path.line_to({new_curve.p0.x, y});
+            new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+          }
         }
       } else {
-        new_path.cubic_to_monotonic(p1, p2, p3);
+        if (new_path.empty() || new_path.back() != p0) {
+          new_path.line_to(p0);
+        }
+
+        if (p3.y < y) {
+          const double t0 = math::clamp((y - p0.y) / (p3.y - p0.y), 0.0, 1.0);
+
+          if (linear) {
+            new_path.line_to({math::lerp(p0.x, p3.x, t0), y});
+          } else {
+            const auto& [a, b, c, d] = curve.coefficients();
+            const double t = math::is_almost_zero_or_one(t0) ?
+                                 t0 :
+                                 geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
+
+            const CubicBezier<T> new_curve = extract(curve, 0.0, t);
+
+            new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+          }
+        } else {
+          new_path.cubic_to_monotonic(p1, p2, p3);
+        }
       }
     }
   }
@@ -554,7 +566,7 @@ inline void clip_to_top(CubicPath<T>& path, const T y)
     new_path.line_to(new_path.front());
   }
 
-  path = new_path;
+  return new_path;
 }
 
 /**
@@ -566,68 +578,72 @@ inline void clip_to_top(CubicPath<T>& path, const T y)
  * @param y The y value to clip to.
  */
 template<typename T>
-inline void clip_to_bottom(CubicPath<T>& path, const T y)
+inline CubicMultipath<T> clip_to_bottom(const CubicMultipath<T>& path, const T y)
 {
   if (path.empty()) {
-    return;
+    return path;
   }
 
   CubicPath<T> new_path;
   new_path.points.reserve(path.points.size());
 
-  for (size_t i = 0; i < path.size(); i++) {
-    /* Curves are monotonic, only p0 and p3 matter. */
+  for (size_t j = 0; j < path.starts.size(); j++) {
+    const size_t end = path.starts.size() > (j + 1) ? path.starts[j + 1] : path.points.size();
 
-    const math::Vec2<T> p0 = path[i * 3];
-    const math::Vec2<T> p1 = path[i * 3 + 1];
-    const math::Vec2<T> p2 = path[i * 3 + 2];
-    const math::Vec2<T> p3 = path[i * 3 + 3];
+    for (size_t i = path.starts[j]; i < end - 3; i += 3) {
+      /* Curves are monotonic, only p0 and p3 matter. */
 
-    const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
+      const math::Vec2<T> p0 = path[i];
+      const math::Vec2<T> p1 = path[i + 1];
+      const math::Vec2<T> p2 = path[i + 2];
+      const math::Vec2<T> p3 = path[i + 3];
 
-    const bool linear = curve.is_line(math::geometric_epsilon<T>);
+      const CubicBezier<T> curve = CubicBezier<T>(p0, p1, p2, p3);
 
-    if (p0.y > y) {
-      if (p3.y < y) {
-        const double t0 = math::clamp((y - p0.y) / (p3.y - p0.y), 0.0, 1.0);
+      const bool linear = curve.is_line(math::geometric_epsilon<T>);
 
-        if (linear) {
-          new_path.line_to({math::lerp(p0.x, p3.x, t0), y});
-          new_path.line_to(p3);
-        } else {
-          const auto& [a, b, c, d] = curve.coefficients();
-          const double t = math::is_almost_zero_or_one(t0) ?
-                               t0 :
-                               geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
+      if (p0.y > y) {
+        if (p3.y < y) {
+          const double t0 = math::clamp((y - p0.y) / (p3.y - p0.y), 0.0, 1.0);
 
-          const CubicBezier<T> new_curve = extract(curve, t, 1.0);
+          if (linear) {
+            new_path.line_to({math::lerp(p0.x, p3.x, t0), y});
+            new_path.line_to(p3);
+          } else {
+            const auto& [a, b, c, d] = curve.coefficients();
+            const double t = math::is_almost_zero_or_one(t0) ?
+                                 t0 :
+                                 geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
 
-          new_path.line_to({new_curve.p0.x, y});
-          new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
-        }
-      }
-    } else {
-      if (new_path.empty() || new_path.back() != p0) {
-        new_path.line_to(p0);
-      }
+            const CubicBezier<T> new_curve = extract(curve, t, 1.0);
 
-      if (p3.y > y) {
-        const double t0 = math::clamp((y - p0.y) / (p3.y - p0.y), 0.0, 1.0);
-
-        if (linear) {
-          new_path.line_to({math::lerp(p0.x, p3.x, t0), y});
-        } else {
-          const auto& [a, b, c, d] = curve.coefficients();
-          const double t = math::is_almost_zero_or_one(t0) ?
-                               t0 :
-                               geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
-
-          const CubicBezier<T> new_curve = extract(curve, 0.0, t);
-
-          new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+            new_path.line_to({new_curve.p0.x, y});
+            new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+          }
         }
       } else {
-        new_path.cubic_to_monotonic(p1, p2, p3);
+        if (new_path.empty() || new_path.back() != p0) {
+          new_path.line_to(p0);
+        }
+
+        if (p3.y > y) {
+          const double t0 = math::clamp((y - p0.y) / (p3.y - p0.y), 0.0, 1.0);
+
+          if (linear) {
+            new_path.line_to({math::lerp(p0.x, p3.x, t0), y});
+          } else {
+            const auto& [a, b, c, d] = curve.coefficients();
+            const double t = math::is_almost_zero_or_one(t0) ?
+                                 t0 :
+                                 geom::cubic_line_intersect_approx(a.y, b.y, c.y, d.y, y, t0);
+
+            const CubicBezier<T> new_curve = extract(curve, 0.0, t);
+
+            new_path.cubic_to_monotonic(new_curve.p1, new_curve.p2, new_curve.p3);
+          }
+        } else {
+          new_path.cubic_to_monotonic(p1, p2, p3);
+        }
       }
     }
   }
@@ -636,7 +652,7 @@ inline void clip_to_bottom(CubicPath<T>& path, const T y)
     new_path.line_to(new_path.front());
   }
 
-  path = new_path;
+  return new_path;
 }
 
 /**
@@ -648,12 +664,16 @@ inline void clip_to_bottom(CubicPath<T>& path, const T y)
  * @param rect The rect to clip to.
  */
 template<typename T>
-inline void clip(CubicPath<T>& path, const math::Rect<T>& rect)
+inline CubicMultipath<T> clip(const CubicMultipath<T>& path, const math::Rect<T>& rect)
 {
-  clip_to_left(path, rect.min.x);
-  clip_to_right(path, rect.max.x);
-  clip_to_top(path, rect.min.y);
-  clip_to_bottom(path, rect.max.y);
+  CubicMultipath<T> new_path;
+
+  new_path = clip_to_left(path, rect.min.x);
+  new_path = clip_to_right(new_path, rect.max.x);
+  new_path = clip_to_top(new_path, rect.min.y);
+  new_path = clip_to_bottom(new_path, rect.max.y);
+
+  return new_path;
 }
 
 }  // namespace graphick::geom

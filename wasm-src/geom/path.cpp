@@ -2061,6 +2061,42 @@ CubicPath<T> Path<T, _>::to_cubic_path() const
 }
 
 template<typename T, typename _>
+CubicMultipath<T> Path<T, _>::to_cubic_multipath() const
+{
+  CubicMultipath<T> path;
+
+  if (empty()) {
+    return path;
+  }
+
+  // We reserve twice the points to account for monotonic splitting.
+  path.points.reserve((m_commands_size - 1) * 3 * 2 + 1);
+
+  for (uint32_t i = 0, j = 0; i < m_commands_size; i++) {
+    switch (get_command(i)) {
+      case Command::Move:
+        path.move_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Line:
+        path.line_to(m_points[j]);
+        j += 1;
+        break;
+      case Command::Quadratic:
+        path.quadratic_to(m_points[j], m_points[j + 1]);
+        j += 2;
+        break;
+      case Command::Cubic:
+        path.cubic_to(m_points[j], m_points[j + 1], m_points[j + 2]);
+        j += 3;
+        break;
+    }
+  }
+
+  return path;
+}
+
+template<typename T, typename _>
 template<typename U>
 Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform, bool* r_has_transform) const
 {

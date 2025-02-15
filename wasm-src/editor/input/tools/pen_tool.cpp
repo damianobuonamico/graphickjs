@@ -251,7 +251,7 @@ void PenTool::on_new_pointer_down()
 
   if (!m_element) {
     entity = scene.create_element();
-    entity->add_component<StrokeComponent>();
+    // entity->add_component<StrokeComponent>();
     entity->add_component<FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
 
     set_pen_element(entity->id());

@@ -147,7 +147,7 @@ struct StrokeData {
    */
   inline operator renderer::Stroke() const
   {
-    return renderer::Stroke(paint, cap, join, miter_limit, width);
+    return renderer::Stroke(paint, cap, join, width, miter_limit);
   }
 };
 

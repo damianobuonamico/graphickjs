@@ -95,18 +95,18 @@ int main()
   // path1.line_to(vec2(16.0f, 128.0f));
   // path1.line_to(vec2(128.0f, -32.0f));
 
-  path1.cubic_to(vec2(0.0f, 100.0f), vec2(100.0f, 100.0f), vec2(100.0f, 0.0f));
-  path1.cubic_to(vec2(100.0f, -100.0f), vec2(0.0f, -100.0f), vec2(0.0f, 0.0f));
+  // path1.cubic_to(vec2(0.0f, 100.0f), vec2(100.0f, 100.0f), vec2(100.0f, 0.0f));
+  // path1.cubic_to(vec2(100.0f, -100.0f), vec2(0.0f, -100.0f), vec2(0.0f, 0.0f));
 
-  // path1.line_to(vec2(100.0f, 0.0f));
-  // path1.line_to(vec2(0.0f, 200.0f));
+  path1.line_to(vec2(100.0f, 0.0f));
+  path1.line_to(vec2(0.0f, 200.0f));
 
   path1.close();
 
-  // editor::Entity entity1 = editor::Editor::scene().create_element(path1);
+  editor::Entity entity1 = editor::Editor::scene().create_element(path1);
 
-  // entity1.add_component<editor::FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
-  // entity1.add_component<editor::StrokeComponent>(vec4{0.93f, 0.64f, 0.74f, 1.0f}, 50.0f);
+  entity1.add_component<editor::FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
+  entity1.add_component<editor::StrokeComponent>(vec4{0.93f, 0.64f, 0.74f, 1.0f}, 50.0f);
 
   geom::path path2;
 
@@ -117,10 +117,10 @@ int main()
 
   path2.close();
 
-  editor::Entity entity2 = editor::Editor::scene().create_element(path2);
+  // editor::Entity entity2 = editor::Editor::scene().create_element(path2);
 
   // entity2.add_component<editor::FillComponent>(vec4{0.3f, 0.8f, 0.3f, 1.0f});
-  entity2.add_component<editor::StrokeComponent>(vec4{0.64f, 0.93f, 0.74f, 1.0f}, 50.0f);
+  // entity2.add_component<editor::StrokeComponent>(vec4{0.64f, 0.93f, 0.74f, 1.0f}, 50.0f);
 
   geom::path path3;
 

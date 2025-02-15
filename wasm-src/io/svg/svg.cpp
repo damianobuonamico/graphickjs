@@ -30,7 +30,7 @@
 
 namespace graphick::io::svg {
 
-static const char *rtrim(const char *start, const char *end)
+static const char* rtrim(const char* start, const char* end)
 {
   while (end > start && IS_WS(end[-1])) {
     end--;
@@ -39,7 +39,7 @@ static const char *rtrim(const char *start, const char *end)
   return end;
 }
 
-static bool skip_desc(const char *&ptr, const char *end, char ch)
+static bool skip_desc(const char*& ptr, const char* end, char ch)
 {
   if (ptr >= end || *ptr != ch)
     return false;
@@ -48,7 +48,7 @@ static bool skip_desc(const char *&ptr, const char *end, char ch)
   return true;
 }
 
-static bool skip_desc(const char *&ptr, const char *end, const char *data)
+static bool skip_desc(const char*& ptr, const char* end, const char* data)
 {
   int read = 0;
   while (data[read]) {
@@ -64,7 +64,7 @@ static bool skip_desc(const char *&ptr, const char *end, const char *data)
   return true;
 }
 
-static bool skip_until(const char *&ptr, const char *end, char ch)
+static bool skip_until(const char*& ptr, const char* end, char ch)
 {
   while (ptr < end && *ptr != ch) {
     ptr++;
@@ -73,10 +73,10 @@ static bool skip_until(const char *&ptr, const char *end, char ch)
   return ptr < end;
 }
 
-static bool skip_until(const char *&ptr, const char *end, const char *data)
+static bool skip_until(const char*& ptr, const char* end, const char* data)
 {
   while (ptr < end) {
-    const char *start = ptr;
+    const char* start = ptr;
     if (skip_desc(start, end, data))
       break;
     ptr++;
@@ -85,7 +85,7 @@ static bool skip_until(const char *&ptr, const char *end, const char *data)
   return ptr < end;
 }
 
-static bool skip_ws(const char *&ptr, const char *end)
+static bool skip_ws(const char*& ptr, const char* end)
 {
   while (ptr < end && IS_WS(*ptr)) {
     ptr++;
@@ -94,7 +94,7 @@ static bool skip_ws(const char *&ptr, const char *end)
   return ptr < end;
 }
 
-static bool skip_ws_delimiter(const char *&ptr, const char *end, const char delimiter)
+static bool skip_ws_delimiter(const char*& ptr, const char* end, const char delimiter)
 {
   if (ptr < end && !IS_WS(*ptr) && *ptr != delimiter)
     return false;
@@ -109,17 +109,17 @@ static bool skip_ws_delimiter(const char *&ptr, const char *end, const char deli
   return ptr < end;
 }
 
-static bool skip_ws_comma(const char *&ptr, const char *end)
+static bool skip_ws_comma(const char*& ptr, const char* end)
 {
   return skip_ws_delimiter(ptr, end, ',');
 }
 
-static bool read_identifier(const char *&ptr, const char *end, std::string &value)
+static bool read_identifier(const char*& ptr, const char* end, std::string& value)
 {
   if (ptr >= end || !IS_STARTNAMECHAR(*ptr))
     return false;
 
-  const char *start = ptr;
+  const char* start = ptr;
   ptr++;
 
   while (ptr < end && IS_NAMECHAR(*ptr)) {
@@ -145,7 +145,7 @@ inline bool is_integral_digit(char ch, int base)
 }
 
 template<typename I>
-static bool parse_integer(const char *&ptr, const char *end, I &integer, int base = 10)
+static bool parse_integer(const char*& ptr, const char* end, I& integer, int base = 10)
 {
   bool is_negative = 0;
   I value = 0;
@@ -194,7 +194,7 @@ static bool parse_integer(const char *&ptr, const char *end, I &integer, int bas
 }
 
 template<typename I>
-static bool parse_number(const char *&ptr, const char *end, I &number)
+static bool parse_number(const char*& ptr, const char* end, I& number)
 {
   I integer, fraction;
   int sign, expsign, exponent;
@@ -265,7 +265,7 @@ static bool parse_number(const char *&ptr, const char *end, I &number)
   return number >= -number_max && number <= number_max;
 }
 
-static bool parse_number_list(const char *&ptr, const char *end, float *values, int count)
+static bool parse_number_list(const char*& ptr, const char* end, float* values, int count)
 {
   for (int i = 0; i < count; i++) {
     if (!parse_number(ptr, end, values[i]))
@@ -276,7 +276,7 @@ static bool parse_number_list(const char *&ptr, const char *end, float *values, 
   return true;
 }
 
-static bool parse_arc_flag(const char *&ptr, const char *end, bool &flag)
+static bool parse_arc_flag(const char*& ptr, const char* end, bool& flag)
 {
   if (ptr < end && *ptr == '0') {
     flag = false;
@@ -291,7 +291,7 @@ static bool parse_arc_flag(const char *&ptr, const char *end, bool &flag)
   return true;
 }
 
-static bool decode_text(const char *ptr, const char *end, std::string &value)
+static bool decode_text(const char* ptr, const char* end, std::string& value)
 {
   value.clear();
 
@@ -365,10 +365,10 @@ static bool decode_text(const char *ptr, const char *end, std::string &value)
   return true;
 }
 
-static geom::path parse_path(const std::string &string)
+static geom::path parse_path(const std::string& string)
 {
-  const char *ptr = string.data();
-  const char *end = ptr + string.size();
+  const char* ptr = string.data();
+  const char* end = ptr + string.size();
 
   geom::path path{};
 
@@ -588,10 +588,10 @@ static geom::path parse_path(const std::string &string)
   return path;
 }
 
-bool parse_svg(const char *svg)
+bool parse_svg(const char* svg)
 {
-  const char *ptr = svg;
-  const char *end = svg + strlen(svg);
+  const char* ptr = svg;
+  const char* end = svg + strlen(svg);
 
   std::string name;
   std::string value;
@@ -599,7 +599,7 @@ bool parse_svg(const char *svg)
   std::vector<vec4> fill_colors = {{0.0f, 0.0f, 0.0f, 0.0f}};
   std::vector<vec4> stroke_colors = {{0.0f, 0.0f, 0.0f, 0.0f}};
 
-  auto remove_comments = [](std::string &value) {
+  auto remove_comments = [](std::string& value) {
     size_t start = value.find("/*");
     while (start != std::string::npos) {
       size_t end = value.find("*/", start + 2);
@@ -608,7 +608,7 @@ bool parse_svg(const char *svg)
     }
   };
 
-  auto handle_text = [&](const char *start, const char *end, bool in_cdata) {
+  auto handle_text = [&](const char* start, const char* end, bool in_cdata) {
     if (ignoring > 0)
       return;
 
@@ -623,7 +623,7 @@ bool parse_svg(const char *svg)
   };
 
   while (ptr < end) {
-    const char *start = ptr;
+    const char* start = ptr;
     if (!skip_until(ptr, end, '<'))
       break;
 
@@ -813,7 +813,7 @@ bool parse_svg(const char *svg)
             element.add_component<editor::FillComponent>(fill_colors.back());
           }
           if (stroke_colors.back() != vec4{0.0f, 0.0f, 0.0f, 0.0f}) {
-            element.add_component<editor::StrokeComponent>(stroke_colors.back());
+            element.add_component<editor::StrokeComponent>(stroke_colors.back(), 0.5f);
           }
         }
       }
@@ -826,7 +826,7 @@ bool parse_svg(const char *svg)
   return true;
 }
 
-bool parse_svg(const std::string &svg)
+bool parse_svg(const std::string& svg)
 {
   return parse_svg(svg.c_str());
 }

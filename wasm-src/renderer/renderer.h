@@ -310,7 +310,23 @@ class Renderer {
                         const drect& bounding_rect,
                         const DrawingOptions& options,
                         const std::array<vec2, 4>& texture_coords,
-                        const uuid id = uuid::null);
+                        const uuid id);
+
+  /**
+   * @brief Draws a cubic multipath with the provided Fill properties.
+   *
+   * @param path The cubic multipath to draw.
+   * @param bounding_rect The bounding rectangle of the path.
+   * @param fill The Fill properties to use.
+   * @param texture_coords The texture coordinates to use for the fill.
+   * @param drawable The Drawable to use.
+   * @return true if the path was visible and drawn, false otherwise.
+   */
+  bool draw_multipath(const geom::dcubic_multipath& path,
+                      const drect& bounding_rect,
+                      const Fill& fill,
+                      const std::array<vec2, 4>& texture_coords,
+                      Drawable& drawable);
 
   /**
    * @brief Draws the outline of a path.

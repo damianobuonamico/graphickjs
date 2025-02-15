@@ -1074,6 +1074,13 @@ class Path {
   CubicPath<T> to_cubic_path() const;
 
   /**
+   * @brief Converts the path to a list of cubic curves.
+   *
+   * @return The cubic multipath representation of the path.
+   */
+  CubicMultipath<T> to_cubic_multipath() const;
+
+  /**
    * @brief Returns a new path that is the result of transforming the current path by the given
    * matrix.
    *
@@ -1081,7 +1088,8 @@ class Path {
    * Incoming and outgoing handles are transformed as well.
    *
    * @param transform The transformation matrix to apply to the path.
-   * @param r_has_transform Whether the transform is valid or not (identity matrix), can be nullptr.
+   * @param r_has_transform Whether the transform is valid or not (identity matrix), can be
+   * nullptr.
    * @return The transformed path with the new underlying type.
    */
   template<typename U>

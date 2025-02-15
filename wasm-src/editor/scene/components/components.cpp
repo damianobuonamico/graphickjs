@@ -477,8 +477,8 @@ io::EncodedData& StrokeComponent::encode(io::EncodedData& data) const
   const bool has_paint = !is_color || (paint().color() != vec4(0.0f, 0.0f, 0.0f, 1.0f));
   const bool has_cap = cap() != renderer::LineCap::Butt;
   const bool has_join = join() != renderer::LineJoin::Miter;
-  const bool has_miter_limit = miter_limit() != 10.0;
-  const bool has_width = width() != 1.0;
+  const bool has_miter_limit = miter_limit() != 10.0f;
+  const bool has_width = width() != 1.0f;
   const bool is_visible = visible();
 
   data.component_id(component_id);

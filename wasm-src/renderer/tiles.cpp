@@ -69,7 +69,7 @@ void Tiler::setup(const double zoom)
   m_zoom = zoom;
   m_LOD = static_cast<uint8_t>(math::clamp(std::round(raw_log), 0.0, 24.0));
 
-  // m_LOD = std::min(m_LOD, uint8_t(2));
+  // m_LOD = std::min(m_LOD, uint8_t(8));
 
   m_cell_size = m_base_cell_size * std::pow(0.5, m_LOD);
 }
@@ -129,13 +129,6 @@ void Tiler::tile(const geom::dcubic_multipath& path,
 #if SORT_CURVES
     m_curves_max[i] = std::max(p0.x, p3.x);
 #endif
-
-    if (math::squared_distance(p0, p3) < math::geometric_epsilon<double>
-        //  || math::is_almost_equal(p0.y, p3.y, math::geometric_epsilon<double>)
-    )
-    {
-      continue;
-    }
 
     const bool right = p3.x >= p0.x;
     const bool up = p3.y <= p0.y;
@@ -216,7 +209,7 @@ void Tiler::tile(const geom::dcubic_multipath& path,
       for (; y_inc * y > y_inc * end_cell.y; y -= y_inc) {
         const double y0 = (y + path_start_cell.y - (y_inc - 1) / 2) * m_cell_size;
         const double t0 = (y0 - p0.y) / (p3.y - p0.y);
-        const double clamped_t0 = math::clamp(t0, 0.0, 1.0);
+        const double clamped_t0 = std::_Is_nan(t0) ? 0.0 : math::clamp(t0, 0.0, 1.0);
 
         const double t = math::is_almost_zero_or_one(clamped_t0) ?
                              clamped_t0 :
@@ -407,6 +400,12 @@ void Tiler::tile(const geom::dcubic_multipath& path,
 
       tile_start = -1;
     }
+
+    // for (const auto intersection : m_cells.intersections(y)) {
+    //   Renderer::ui_circle(vec2(intersection.x, (path_start_cell.y + y) * m_cell_size),
+    //                       0.05f,
+    //                       vec4(1.0, 1.0, 1.0, 0.7));
+    // }
   }
 
   drawable.paints.push_back(
