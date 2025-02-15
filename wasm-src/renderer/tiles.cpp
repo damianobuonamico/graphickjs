@@ -68,10 +68,13 @@ void Tiler::setup(const double zoom)
 
   m_zoom = zoom;
   m_LOD = static_cast<uint8_t>(math::clamp(std::round(raw_log), 0.0, 24.0));
+
+  // m_LOD = std::min(m_LOD, uint8_t(2));
+
   m_cell_size = m_base_cell_size * std::pow(0.5, m_LOD);
 }
 
-void Tiler::tile(const geom::dcubic_path& path,
+void Tiler::tile(const geom::dcubic_multipath& path,
                  const drect& bounding_rect,
                  const Fill& fill,
                  const std::array<vec2, 4>& texture_coords,
@@ -101,13 +104,31 @@ void Tiler::tile(const geom::dcubic_path& path,
   m_cells.clear_and_resize(path_cell_count.x, path_cell_count.y);
   m_curves_map.clear();
 
+#if SORT_CURVES
+  m_curves_max.clear();
+  m_curves_max.resize(path.size());
+#endif
+
+  size_t start = path.starts.size() > 1 ? path.starts[1] : std::numeric_limits<size_t>::max();
+  uint16_t offset = 0;
+
   for (uint16_t i = 0; i < path.size(); i++) {
+    if (size_t(i) * 3 + 1 == start) {
+      offset += 1;
+      start = path.starts.size() > offset + 1 ? path.starts[offset + 1] :
+                                                std::numeric_limits<size_t>::max();
+    }
+
     /* Being monotonic, it is straightforward to determine which cells the curve intersects. */
 
-    const dvec2 p0 = path[i * 3];
-    const dvec2 p1 = path[i * 3 + 1];
-    const dvec2 p2 = path[i * 3 + 2];
-    const dvec2 p3 = path[i * 3 + 3];
+    const dvec2 p0 = path[i * 3 + offset];
+    const dvec2 p1 = path[i * 3 + offset + 1];
+    const dvec2 p2 = path[i * 3 + offset + 2];
+    const dvec2 p3 = path[i * 3 + offset + 3];
+
+#if SORT_CURVES
+    m_curves_max[i] = std::max(p0.x, p3.x);
+#endif
 
     if (math::squared_distance(p0, p3) < math::geometric_epsilon<double>
         //  || math::is_almost_equal(p0.y, p3.y, math::geometric_epsilon<double>)
@@ -250,23 +271,43 @@ void Tiler::tile(const geom::dcubic_path& path,
               [](const Intersection a, const Intersection b) { return a.x > b.x; });
 
     uint32_t row_curves_offset = drawable.curves.size() / 2;
-    uint16_t row_curves_count = 0;
+    uint16_t row_curves_count = m_cells[y].size();
 
     std::vector<uint16_t> curves;
 
     curves.assign(m_cells[y].begin(), m_cells[y].end());
-    // TOOD: sort curves based on max[a].x > max[b].x
+    std::sort(curves.begin(), curves.end());
 
-    for (const uint16_t i : curves) {
-      const vec2 p0 = vec2((path[i * 3] - bounding_rect.min) / bounds_size);
-      const vec2 p1 = vec2((path[i * 3 + 1] - bounding_rect.min) / bounds_size);
-      const vec2 p2 = vec2((path[i * 3 + 2] - bounding_rect.min) / bounds_size);
-      const vec2 p3 = vec2((path[i * 3 + 3] - bounding_rect.min) / bounds_size);
+    // std::sort(curves.begin(), curves.end(), [&](const uint16_t a, const uint16_t b) {
+    //   return m_curves_max[a] > m_curves_max[b];
+    // });
 
-      drawable.curves.insert(drawable.curves.end(), {p0, p1, p2, p3});
+    const int hash = math::hash(curves, 0, curves.size());
+    auto it = m_curves_map.find(hash);
+
+    if (it == m_curves_map.end()) {
+      m_curves_map[hash] = row_curves_offset;
+
+      size_t start = path.starts.size() > 1 ? path.starts[1] : std::numeric_limits<size_t>::max();
+      uint16_t offset = 0;
+
+      for (const uint16_t i : curves) {
+        if (size_t(i) * 3 + 1 >= start) {
+          offset += 1;
+          start = path.starts.size() > offset + 1 ? path.starts[offset + 1] :
+                                                    std::numeric_limits<size_t>::max();
+        }
+
+        const vec2 p0 = vec2((path[i * 3 + offset] - bounding_rect.min) / bounds_size);
+        const vec2 p1 = vec2((path[i * 3 + offset + 1] - bounding_rect.min) / bounds_size);
+        const vec2 p2 = vec2((path[i * 3 + offset + 2] - bounding_rect.min) / bounds_size);
+        const vec2 p3 = vec2((path[i * 3 + offset + 3] - bounding_rect.min) / bounds_size);
+
+        drawable.curves.insert(drawable.curves.end(), {p0, p1, p2, p3});
+      }
+    } else {
+      row_curves_offset = it->second;
     }
-
-    row_curves_count = curves.size();
 
     for (int x = path_cell_count.x - 1; x >= 0; x--) {
       if (!m_cells.is_tile(x, y)) {
@@ -383,6 +424,7 @@ void TiledRenderer::setup(const ivec2 viewport_size,
   m_vp_matrix = vp_matrix;
   m_LOD = LOD;
   m_base_cell_size = base_cell_size;
+  m_z_index = 1;
 
   m_cell_sizes[0] = m_base_cell_size * std::pow(0.5, m_LOD - 1);
   m_cell_sizes[1] = m_base_cell_size * std::pow(0.5, m_LOD);
@@ -400,20 +442,12 @@ void TiledRenderer::setup(const ivec2 viewport_size,
   m_semivalid.clear();
   m_semivalid.resize(m_cell_count.x * m_cell_count.y, false);
 
-  if (!m_front_framebuffer || m_front_framebuffer->size() != m_viewport_size) {
-    delete m_front_framebuffer;
-    m_front_framebuffer = new GPU::Framebuffer(m_viewport_size, true);
+  if (!m_framebuffers || m_framebuffers->size() != m_viewport_size) {
+    delete m_framebuffers;
+    m_framebuffers = new GPU::DoubleFramebuffer(m_viewport_size);
   } else {
-    m_front_framebuffer->bind();
-    GPU::Device::clear({vec4{0.0f, 0.0f, 0.0f, 0.0f}, 1.0f, 0});
+    m_framebuffers->bind();
   }
-
-  if (!m_back_framebuffer || m_back_framebuffer->size() != m_viewport_size) {
-    delete m_back_framebuffer;
-    m_back_framebuffer = new GPU::Framebuffer(m_viewport_size, true);
-  }
-
-  m_back_framebuffer->bind();
 }
 
 void TiledRenderer::push_drawable(const Drawable* drawable)
@@ -440,7 +474,7 @@ void TiledRenderer::flush()
   GPU::RenderState render_state = GPU::RenderState().no_blend().default_depth().no_stencil();
 
   if (fills.vertices_count()) {
-    m_back_framebuffer->bind();
+    m_framebuffers->bind();
 
     fills.vertex_buffer.upload(fills.vertices, fills.vertices_count() * sizeof(FillVertex));
 
@@ -466,6 +500,8 @@ void TiledRenderer::flush()
     GPU::Device::draw_elements(fills.indices_count(), render_state);
   }
 
+  m_framebuffers->swap();
+
   render_tiles();
 
   m_z_index = 1;
@@ -477,6 +513,8 @@ void TiledRenderer::flush()
 
 void TiledRenderer::populate_fills()
 {
+  __debug_time_total();
+
   for (auto it = m_front_stack.rbegin(); it != m_front_stack.rend(); it++) {
     const Drawable& drawable = *(it->first);
     const uint32_t z_index = m_z_index - it->second;
@@ -560,6 +598,8 @@ void TiledRenderer::populate_fills()
 
 void TiledRenderer::render_tiles()
 {
+  __debug_time_total();
+
   while (true) {
     for (auto it = m_front_stack.begin(); it != m_front_stack.end(); it++) {
       const Drawable& drawable = *(it->first);
@@ -670,15 +710,10 @@ void TiledRenderer::render_tiles()
         console::log("bad stuff");
       }
 
-      GPU::Device::blit_framebuffer(*m_back_framebuffer,
-                                    *m_front_framebuffer,
-                                    irect{ivec2::zero(), m_viewport_size},
-                                    irect{ivec2::zero(), m_viewport_size});
+      m_framebuffers->blit_back_to_front();
 
       tiles.vertex_buffer.upload(tiles.vertices, tiles.vertices_count() * sizeof(TileVertex));
-
-      // TODO: upload only necessary data
-      tiles.curves_texture.upload(tiles.curves, tiles.max_curves * sizeof(vec2));
+      tiles.curves_texture.upload(tiles.curves, tiles.curves_count());
 
       render_state.default_blend().no_depth_write().no_stencil();
 
@@ -720,17 +755,13 @@ void TiledRenderer::render_tiles()
     }
 
     m_front_stack.clear();
+    m_framebuffers->swap();
 
     std::swap(m_front_stack, m_back_stack);
-    std::swap(m_front_framebuffer, m_back_framebuffer);
   }
 
-  GPU::Device::blit_framebuffer(*m_front_framebuffer,
-                                irect{ivec2::zero(), m_viewport_size},
-                                irect{ivec2::zero(), m_viewport_size},
-                                false);
-
-  m_back_framebuffer->unbind();
+  m_framebuffers->blit();
+  m_framebuffers->unbind();
 }
 
 }  // namespace graphick::renderer

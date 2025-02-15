@@ -417,14 +417,17 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
     dvec2 start = p0 + nr;
     dvec2 rstart = p0 - nr;
 
-    outline.inner.move_to(math::Vec2<T>(start));
+    outline.path.move_to(math::Vec2<T>(start));
 
-    add_cap(start, rstart, n, radius, options.cap, outline.inner);
-    add_cap(rstart, start, -n, radius, options.cap, outline.inner);
+    add_cap(start, rstart, n, radius, options.cap, outline.path);
+    add_cap(rstart, start, -n, radius, options.cap, outline.path);
 
     return outline;
   }
 
+  /* The outer contour is added directly to the outline. */
+
+  CubicPath<T> inner;
   dvec2 start_n;
 
   if (math::is_almost_equal(m_generic_path->at(0), m_generic_path->at(1))) {
@@ -440,15 +443,15 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
   dvec2 last_n = start_n;
 
   if (m_generic_path->closed()) {
-    outline.inner.move_to(math::Vec2<T>(p0 - last_n * radius));
-    outline.outer.move_to(math::Vec2<T>(p0 + last_n * radius));
+    inner.move_to(math::Vec2<T>(p0 - last_n * radius));
+    outline.path.move_to(math::Vec2<T>(p0 + last_n * radius));
   } else {
     const dvec2 start = p0 - last_n * radius;
 
-    outline.inner.move_to(math::Vec2<T>(start));
-    outline.outer.move_to(math::Vec2<T>(start));
+    inner.move_to(math::Vec2<T>(start));
+    outline.path.move_to(math::Vec2<T>(start));
 
-    add_cap(start, p0 + last_n * radius, -last_n, radius, options.cap, outline.outer);
+    add_cap(start, p0 + last_n * radius, -last_n, radius, options.cap, outline.path);
   }
 
   drect visible_rect = visible ? drect(*visible) : drect{};
@@ -465,7 +468,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
 
         const bool small_segment = math::squared_distance(line.p0, line.p1) < radius * radius;
 
-        add_join(dvec2(outline.inner.back()),
+        add_join(dvec2(inner.back()),
                  inner_start,
                  p0,
                  -last_n,
@@ -473,11 +476,11 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
                  radius,
                  inv_miter_limit,
                  options.join,
-                 outline.inner,
+                 inner,
                  outline.bounding_rect,
                  small_segment,
                  true);
-        add_join(dvec2(outline.outer.back()),
+        add_join(dvec2(outline.path.back()),
                  outer_start,
                  p0,
                  last_n,
@@ -485,12 +488,12 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
                  radius,
                  inv_miter_limit,
                  options.join,
-                 outline.outer,
+                 outline.path,
                  outline.bounding_rect,
                  small_segment);
 
-        outline.inner.line_to(math::Vec2<T>(line.p1 - start_nr));
-        outline.outer.line_to(math::Vec2<T>(line.p1 + start_nr));
+        inner.line_to(math::Vec2<T>(line.p1 - start_nr));
+        outline.path.line_to(math::Vec2<T>(line.p1 + start_nr));
 
         last_n = start_n;
         p0 = line.p1;
@@ -506,7 +509,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
         const dvec2 inner_start = cubic.p0 - start_nr;
         const dvec2 outer_start = cubic.p0 + start_nr;
 
-        add_join(dvec2(outline.inner.back()),
+        add_join(dvec2(inner.back()),
                  inner_start,
                  p0,
                  -last_n,
@@ -514,11 +517,11 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
                  radius,
                  inv_miter_limit,
                  options.join,
-                 outline.inner,
+                 inner,
                  outline.bounding_rect,
                  false,
                  true);
-        add_join(dvec2(outline.outer.back()),
+        add_join(dvec2(outline.path.back()),
                  outer_start,
                  p0,
                  last_n,
@@ -526,7 +529,7 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
                  radius,
                  inv_miter_limit,
                  options.join,
-                 outline.outer,
+                 outline.path,
                  outline.bounding_rect,
                  false);
 
@@ -537,18 +540,18 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
                 math::drect::expand(cubic.approx_bounding_rect(), radius), visible_rect))
         {
           // TODO: maybe join the two in one function call
-          offset_cubic(cubic, -radius, options.tolerance, outline.inner);
-          offset_cubic(cubic, radius, options.tolerance, outline.outer);
+          offset_cubic(cubic, -radius, options.tolerance, inner);
+          offset_cubic(cubic, radius, options.tolerance, outline.path);
         } else {
           const dvec2 end_nr = end_n * radius;
 
-          outline.inner.line_to(math::Vec2<T>(cubic.p1 - start_nr));
-          outline.inner.line_to(math::Vec2<T>(cubic.p2 - end_nr));
-          outline.inner.line_to(math::Vec2<T>(cubic.p3 - end_nr));
+          inner.line_to(math::Vec2<T>(cubic.p1 - start_nr));
+          inner.line_to(math::Vec2<T>(cubic.p2 - end_nr));
+          inner.line_to(math::Vec2<T>(cubic.p3 - end_nr));
 
-          outline.outer.line_to(math::Vec2<T>(cubic.p1 + start_nr));
-          outline.outer.line_to(math::Vec2<T>(cubic.p2 + end_nr));
-          outline.outer.line_to(math::Vec2<T>(cubic.p3 + end_nr));
+          outline.path.line_to(math::Vec2<T>(cubic.p1 + start_nr));
+          outline.path.line_to(math::Vec2<T>(cubic.p2 + end_nr));
+          outline.path.line_to(math::Vec2<T>(cubic.p3 + end_nr));
         }
 
         last_n = end_n;
@@ -556,43 +559,43 @@ StrokeOutline<T> PathBuilder<T, _>::stroke(const StrokingOptions<T>& options,
       });
 
   if (m_generic_path->closed()) {
-    add_join(dvec2(outline.inner.back()),
-             dvec2(outline.inner.front()),
+    add_join(dvec2(inner.back()),
+             dvec2(inner.front()),
              p0,
              -last_n,
              -start_n,
              radius,
              inv_miter_limit,
              options.join,
-             outline.inner,
+             inner,
              outline.bounding_rect,
              false,
              true);
-    add_join(dvec2(outline.outer.back()),
-             dvec2(outline.outer.front()),
+    add_join(dvec2(outline.path.back()),
+             dvec2(outline.path.front()),
              p0,
              last_n,
              start_n,
              radius,
              inv_miter_limit,
              options.join,
-             outline.outer,
+             outline.path,
              outline.bounding_rect,
              false);
 
-    std::reverse(outline.inner.points.begin(), outline.inner.points.end());
+    std::reverse(inner.points.begin(), inner.points.end());
+
+    outline.path.subpath(inner);
   } else {
-    add_cap(dvec2(outline.outer.points.back()),
-            dvec2(outline.inner.points.back()),
+    add_cap(dvec2(outline.path.points.back()),
+            dvec2(inner.points.back()),
             last_n,
             radius,
             options.cap,
-            outline.outer);
+            outline.path);
 
-    outline.outer.points.insert(outline.outer.points.end(),
-                                outline.inner.points.rbegin() + 1,
-                                outline.inner.points.rend());
-    outline.inner.points.clear();
+    outline.path.points.insert(
+        outline.path.points.end(), inner.points.rbegin() + 1, inner.points.rend());
   }
 
   return outline;

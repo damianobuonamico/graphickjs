@@ -25,14 +25,11 @@ class QuadraticPath;
 
 /**
  * @brief A structure to hold the inner and outer outlines of a stroke.
- *
- * If the path is not closed, the inner outline will be empty.
  */
 template<typename T>
 struct StrokeOutline {
-  geom::CubicPath<T> outer;     // The outer outline of the stroke.
-  geom::CubicPath<T> inner;     // The inner outline of the stroke, in reverse order.
-  math::Rect<T> bounding_rect;  // The bounding rectangle of the stroke.
+  geom::CubicMultipath<T> path;  // The outline of the stroke.
+  math::Rect<T> bounding_rect;   // The bounding rectangle of the stroke.
 };
 
 /**

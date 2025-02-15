@@ -209,6 +209,27 @@ struct QuadraticMultipath : public QuadraticPath<T> {
     starts.push_back(this->points.size());
     this->points.push_back(p);
   }
+
+  /**
+   * @brief Adds a new path to the multipath.
+   *
+   * @param path The path to add.
+   */
+  void subpath(const QuadraticPath<T>& path)
+  {
+    if (path.empty()) {
+      return;
+    }
+
+    if (this->empty()) {
+      starts = {0};
+      this->points = path.points;
+      return;
+    }
+
+    starts.push_back(this->points.size());
+    this->points.insert(this->points.end(), path.points.begin(), path.points.end());
+  }
 };
 
 }  // namespace graphick::geom

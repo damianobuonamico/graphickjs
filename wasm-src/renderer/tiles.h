@@ -85,6 +85,16 @@ class Tiler {
   }
 
   /**
+   * @brief Returns the current scene-space tile size.
+   *
+   * @return The current tile size.
+   */
+  inline double tile_size() const
+  {
+    return m_cell_size;
+  }
+
+  /**
    * @brief Adds the tiles of a cubic path to the drawable.
    *
    * @param path The cubic path to tile.
@@ -93,7 +103,7 @@ class Tiler {
    * @param texture_coords The texture coordinates of the fill.
    * @param drawable The drawable to add the tiles to.
    */
-  void tile(const geom::dcubic_path& path,
+  void tile(const geom::dcubic_multipath& path,
             const drect& bounding_rect,
             const Fill& fill,
             const std::array<vec2, 4>& texture_coords,
@@ -199,6 +209,7 @@ class Tiler {
 
   CellRows m_cells;                                // Rows of cells of the path being tiled.
 
+  std::vector<float> m_curves_max;                 // The x-max values of the curves.
   std::unordered_map<int, uint32_t> m_curves_map;  // The map of curves group to indices.
 };
 
@@ -377,7 +388,7 @@ struct TileBatchData {
 
     const size_t curves_start_index = curves_count();
 
-    size_t local_z_index = z_index;
+    size_t local_z_index = z_index + drawable.paints.size() - 1;
 
     const TileVertex* vertices_start_ptr = vertices_ptr;
 
@@ -408,7 +419,7 @@ struct TileBatchData {
         }
       }
 
-      local_z_index++;
+      local_z_index--;
     }
 
     curves_ptr += drawable.curves.size();
@@ -546,7 +557,7 @@ struct FillBatchData {
   {
     memcpy(vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
 
-    uint32_t local_z_index = z_index;
+    uint32_t local_z_index = z_index + drawable.paints.size() - 1;
 
     const FillVertex* vertices_start_ptr = vertices_ptr;
 
@@ -575,7 +586,7 @@ struct FillBatchData {
         }
       }
 
-      local_z_index++;
+      local_z_index--;
     }
   }
 };
@@ -673,6 +684,14 @@ class TiledRenderer {
    * @brief Constructs a new TiledRenderer object.
    */
   TiledRenderer(const size_t buffer_size) : m_batch(buffer_size) {}
+
+  /**
+   * @brief Destroys the TiledRenderer object.
+   */
+  inline ~TiledRenderer()
+  {
+    delete m_framebuffers;
+  }
 
   /**
    * @brief Sets up the renderer with the given zoom level and visible area.
@@ -792,8 +811,7 @@ class TiledRenderer {
   double m_base_cell_size;  // The base cell size.
   double m_cell_sizes[3];   // The cell sizes for each valid LOD (-1, m_LOD, +1).
 
-  GPU::Framebuffer* m_front_framebuffer = nullptr;                  // The front framebuffer.
-  GPU::Framebuffer* m_back_framebuffer = nullptr;                   // The back framebuffer.
+  GPU::DoubleFramebuffer* m_framebuffers = nullptr;                 // The framebuffers to use.
 
   std::vector<std::pair<const Drawable*, uint32_t>> m_front_stack;  // Draw now.
   std::vector<std::pair<const Drawable*, uint32_t>> m_back_stack;   // Draw next call.

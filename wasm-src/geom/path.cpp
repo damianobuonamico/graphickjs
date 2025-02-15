@@ -2315,13 +2315,7 @@ bool Path<T, _>::is_point_inside_stroke(const math::Vec2<T> point,
   const PathBuilder<T> builder = PathBuilder<T>(*this, math::Rect<T>{});
   const StrokeOutline<T> stroke_path = builder.stroke(stroking_options, &point_threshold);
 
-  int winding = stroke_path.outer.winding_of(point);
-
-  if (!stroke_path.inner.empty()) {
-    winding += stroke_path.inner.winding_of(point);
-  }
-
-  return winding != 0;
+  return stroke_path.path.winding_of(point) != 0;
 }
 
 /* -- Template Instantiation -- */

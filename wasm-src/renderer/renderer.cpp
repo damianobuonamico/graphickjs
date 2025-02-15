@@ -204,7 +204,7 @@ bool Renderer::draw(const geom::path& path,
       return false;
     }
 
-    const double visible_clip = geom::rect_rect_intersection_area(drawable.bounding_rect,
+    const double visible_clip = geom::rect_rect_intersection_area(drawable.valid_rect,
                                                                   get()->m_viewport.visible());
 
     const uint8_t LOD = get()->m_tiler.LOD();
@@ -429,8 +429,9 @@ bool Renderer::draw_transformed(const geom::dpath& path,
   Drawable drawable;
 
   drawable.bounding_rect = bounding_rect;
+  drawable.valid_rect = bounding_rect;
   drawable.LOD = m_tiler.LOD();
-  drawable.appearance = Appearance{BlendingMode::Multiply, 1.0f};
+  drawable.appearance = Appearance{BlendingMode::Normal, 1.0f};
 
   if (options.fill && options.fill->paint.visible()) {
     geom::dcubic_path cubic_path = path.to_cubic_path();
@@ -439,22 +440,31 @@ bool Renderer::draw_transformed(const geom::dpath& path,
       cubic_path.line_to(cubic_path.front());
     }
 
-    const double coverage = geom::rect_rect_intersection_area(bounding_rect,
-                                                              m_viewport.visible()) /
+    const drect visible = m_viewport.visible();
+    const double coverage = geom::rect_rect_intersection_area(bounding_rect, visible) /
                             bounding_rect.area();
 
     if (coverage <= math::epsilon<double>) {
+      drawable.valid_rect = geom::rect_rect_intersection(visible, bounding_rect);
+      m_cache->set_drawable(id, std::move(drawable));
+
       return false;
     }
 
     const bool clip = coverage < 0.25;
 
     if (clip) {
-      // TODO: align rect with grid
-      geom::clip(cubic_path,
-                 m_viewport.visible() + drect(10.0, 10.0, -10.0, -10.0) / m_viewport.zoom);
+      const double tile_size = m_tiler.tile_size();
+      const drect clip_region = {math::floor(visible.min / tile_size - 2) * tile_size,
+                                 math::ceil(visible.max / tile_size + 2) * tile_size};
+
+      drawable.valid_rect = geom::rect_rect_intersection(clip_region, bounding_rect);
+
+      geom::clip(cubic_path, clip_region);
 
       if (cubic_path.empty()) {
+        m_cache->set_drawable(id, std::move(drawable));
+
         return false;
       }
 
@@ -464,9 +474,13 @@ bool Renderer::draw_transformed(const geom::dpath& path,
 
       drawable.bounding_rect = clipped_bounding_rect;
 
-      m_tiler.tile(cubic_path, clipped_bounding_rect, *options.fill, clipped_tex_coords, drawable);
+      m_tiler.tile(std::move(cubic_path),
+                   clipped_bounding_rect,
+                   *options.fill,
+                   clipped_tex_coords,
+                   drawable);
     } else {
-      m_tiler.tile(cubic_path, bounding_rect, *options.fill, texture_coords, drawable);
+      m_tiler.tile(std::move(cubic_path), bounding_rect, *options.fill, texture_coords, drawable);
     }
 
     if (options.fill->paint.is_texture()) {
@@ -475,6 +489,40 @@ bool Renderer::draw_transformed(const geom::dpath& path,
   }
 
   if (options.stroke && options.stroke->paint.visible()) {
+    Fill stroke_fill{options.stroke->paint, FillRule::NonZero};
+
+    const geom::StrokingOptions<double> stroking_options{RendererSettings::stroking_tolerance,
+                                                         options.stroke->width,
+                                                         options.stroke->miter_limit,
+                                                         options.stroke->cap,
+                                                         options.stroke->join};
+    const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
+    const geom::StrokeOutline<double> stroke_path = builder.stroke(stroking_options);
+
+    // if (id != uuid::null) {
+    //   m_cache->set_bounding_rect(id, stroke_path.bounding_rect);
+    // }
+
+    m_tiler.tile(
+        stroke_path.path, stroke_path.bounding_rect, stroke_fill, texture_coords, drawable);
+
+    // TODO: stroke texture coordinates
+    // if (stroke_path.inner.empty()) {
+
+    //   draw_cubic_path(stroke_path.outer,
+    //                   stroke_path.bounding_rect,
+    //                   stroke_fill,
+    //                   culling,
+    //                   fill_texture_coords,
+    //                   drawable);
+    // } else {
+    //   draw_cubic_paths({&stroke_path.outer, &stroke_path.inner},
+    //                    stroke_path.bounding_rect,
+    //                    stroke_fill,
+    //                    culling,
+    //                    fill_texture_coords,
+    //                    drawable);
+    // }
   }
 
   m_tiles.push_drawable(m_cache->set_drawable(id, std::move(drawable)));
@@ -483,7 +531,7 @@ bool Renderer::draw_transformed(const geom::dpath& path,
     draw_outline(path, bounding_rect, *options.outline);
   }
 
-  return false;
+  return true;
 }
 
 void Renderer::draw_outline(const geom::dpath& path,

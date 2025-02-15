@@ -43,7 +43,7 @@ struct CubicPath {
    *
    * @return The number of curves in the path.
    */
-  inline size_t size() const
+  inline virtual size_t size() const
   {
     return empty() ? 0 : (points.size() - 1) / 3;
   }
@@ -164,7 +164,7 @@ struct CubicPath {
    *
    * @param p The point to move the cursor to.
    */
-  inline void move_to(const math::Vec2<T> p)
+  inline virtual void move_to(const math::Vec2<T> p)
   {
     if (points.empty()) {
       points.push_back(p);
@@ -257,6 +257,67 @@ struct CubicPath {
   int winding_of(const math::Vec2<T> p) const;
 };
 
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+struct CubicMultipath : public CubicPath<T> {
+  std::vector<size_t> starts;  // The starting indices of the paths.
+
+  CubicMultipath() = default;
+
+  /**
+   * @brief Converts a cubic path to a cubic multipath
+   */
+  CubicMultipath(CubicPath<T>&& path) : CubicPath<T>(std::move(path))
+  {
+    if (!this->empty()) {
+      starts = {0};
+    }
+  }
+
+  /**
+   * @brief Returns the number of curves in the path.
+   *
+   * @return The number of curves in the path.
+   */
+  inline size_t size() const override
+  {
+    return this->empty() ? 0 : (this->points.size() - starts.size()) / 3;
+  }
+
+  /**
+   * @brief Moves the path cursor to the given point.
+   *
+   * Adds a new path to the multipath (i.e. a new starting index).
+   *
+   * @param p The point to move the cursor to.
+   */
+  void move_to(const math::Vec2<T> p) override
+  {
+    starts.push_back(this->points.size());
+    this->points.push_back(p);
+  }
+
+  /**
+   * @brief Adds a new path to the multipath.
+   *
+   * @param path The path to add.
+   */
+  void subpath(const CubicPath<T>& path)
+  {
+    if (path.empty()) {
+      return;
+    }
+
+    if (this->empty()) {
+      starts = {0};
+      this->points = path.points;
+      return;
+    }
+
+    starts.push_back(this->points.size());
+    this->points.insert(this->points.end(), path.points.begin(), path.points.end());
+  }
+};
+
 }  // namespace graphick::geom
 
 /* -- Aliases -- */
@@ -265,5 +326,8 @@ namespace graphick::geom {
 
 using cubic_path = CubicPath<float>;
 using dcubic_path = CubicPath<double>;
+
+using cubic_multipath = CubicMultipath<float>;
+using dcubic_multipath = CubicMultipath<double>;
 
 }  // namespace graphick::geom

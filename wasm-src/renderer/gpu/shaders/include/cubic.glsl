@@ -38,8 +38,8 @@ float cubic_horizontal_coverage(vec2 pixel_pos, float inv_pixel_size, uint curve
     vec2 p2 = p23.xy - pixel_pos;
     vec2 p3 = p23.zw - pixel_pos;
 
-    // TODO: maybe reimplement sorting
-    // if (max(p0.x, p3.x) * inv_pixel_size < -0.5) continue;
+    // For some reason this performs worse...
+    // if (max(p0.x, p3.x) * inv_pixel_size < -0.5) break;
 
     bool is_downwards = p0.y > 0.0 || p3.y < 0.0;
 

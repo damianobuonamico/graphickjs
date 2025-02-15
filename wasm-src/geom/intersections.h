@@ -72,7 +72,7 @@ inline bool is_point_in_circle(const math::Vec2<T> point,
  */
 template<typename T>
 inline bool is_point_in_rect(const math::Vec2<T> point,
-                             const math::Rect<T> &rect,
+                             const math::Rect<T>& rect,
                              const T threshold = T(0))
 {
   return (point.x + threshold >= rect.min.x && point.x - threshold <= rect.max.x &&
@@ -89,7 +89,7 @@ inline bool is_point_in_rect(const math::Vec2<T> point,
  */
 template<typename T>
 inline bool is_point_in_rect(const math::Vec2<T> point,
-                             const math::Rect<T> &rect,
+                             const math::Rect<T>& rect,
                              const math::Vec2<T> threshold)
 {
   return (point.x + threshold.x >= rect.min.x && point.x - threshold.x <= rect.max.x &&
@@ -104,7 +104,7 @@ inline bool is_point_in_rect(const math::Vec2<T> point,
  * @return True if the rects intersect, false otherwise.
  */
 template<typename T>
-inline bool does_rect_intersect_rect(const math::Rect<T> &a, const math::Rect<T> &b)
+inline bool does_rect_intersect_rect(const math::Rect<T>& a, const math::Rect<T>& b)
 {
   return (b.max.x >= a.min.x && a.max.x >= b.min.x && b.max.y >= a.min.y && a.max.y >= b.min.y);
 }
@@ -117,7 +117,7 @@ inline bool does_rect_intersect_rect(const math::Rect<T> &a, const math::Rect<T>
  * @return True if the first rect is inside the second, false otherwise.
  */
 template<typename T>
-inline bool is_rect_in_rect(const math::Rect<T> &a, const math::Rect<T> &b)
+inline bool is_rect_in_rect(const math::Rect<T>& a, const math::Rect<T>& b)
 {
   return (a.min.x >= b.min.x && a.max.x <= b.max.x && a.min.y >= b.min.y && a.max.y <= b.max.y);
 }
@@ -130,7 +130,7 @@ inline bool is_rect_in_rect(const math::Rect<T> &a, const math::Rect<T> &b)
  * @return The intersection area.
  */
 template<typename T>
-inline T rect_rect_intersection_area(const math::Rect<T> &a, const math::Rect<T> &b)
+inline T rect_rect_intersection_area(const math::Rect<T>& a, const math::Rect<T>& b)
 {
   const T x_left = std::max(a.min.x, b.min.x);
   const T y_top = std::max(a.min.y, b.min.y);
@@ -142,6 +142,28 @@ inline T rect_rect_intersection_area(const math::Rect<T> &a, const math::Rect<T>
   }
 
   return (x_right - x_left) * (y_bottom - y_top);
+}
+
+/**
+ * @brief Calculates the intersection rect of two rects.
+ *
+ * @param a The first rect.
+ * @param b The second rect.
+ * @return The intersection rect.
+ */
+template<typename T>
+inline math::Rect<T> rect_rect_intersection(const math::Rect<T>& a, const math::Rect<T>& b)
+{
+  const T x_left = std::max(a.min.x, b.min.x);
+  const T y_top = std::max(a.min.y, b.min.y);
+  const T x_right = std::min(a.max.x, b.max.x);
+  const T y_bottom = std::min(a.max.y, b.max.y);
+
+  if (x_right < x_left || y_bottom < y_top) {
+    return math::Rect<T>();
+  }
+
+  return math::Rect<T>(x_left, y_top, x_right, y_bottom);
 }
 
 /* -- Line -- */
@@ -156,8 +178,8 @@ inline T rect_rect_intersection_area(const math::Rect<T> &a, const math::Rect<T>
  * @return The intersection t value if it exists, std::nullopt otherwise.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline std::optional<T> line_line_intersection_infinite(const geom::Line<T> &a,
-                                                        const geom::Line<T> &b)
+inline std::optional<T> line_line_intersection_infinite(const geom::Line<T>& a,
+                                                        const geom::Line<T>& b)
 {
   const math::Vec2<T> v1 = a.p1 - a.p0;
   const math::Vec2<T> v2 = b.p0 - b.p1;
@@ -182,8 +204,8 @@ inline std::optional<T> line_line_intersection_infinite(const geom::Line<T> &a,
  * @return The intersection point if it exists, std::nullopt otherwise.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline std::optional<math::Vec2<T>> line_line_intersection_point_infinite(const geom::Line<T> &a,
-                                                                          const geom::Line<T> &b)
+inline std::optional<math::Vec2<T>> line_line_intersection_point_infinite(const geom::Line<T>& a,
+                                                                          const geom::Line<T>& b)
 {
   if (std::optional<T> t = line_line_intersection_infinite(a, b); t.has_value()) {
     return a.sample(t.value());
@@ -201,7 +223,7 @@ inline std::optional<math::Vec2<T>> line_line_intersection_point_infinite(const 
  * @param b The second line segment.
  * @return The intersection t value if it exists, std::nullopt otherwise.
  */
-std::optional<double> line_line_intersection(const dline &a, const dline &b);
+std::optional<double> line_line_intersection(const dline& a, const dline& b);
 
 /**
  * @brief Calculates the intersection t value of two lines.
@@ -212,7 +234,7 @@ std::optional<double> line_line_intersection(const dline &a, const dline &b);
  * @param b The second line segment.
  * @return The intersection t value if it exists, std::nullopt otherwise.
  */
-inline std::optional<float> line_line_intersection(const line &a, const line &b)
+inline std::optional<float> line_line_intersection(const line& a, const line& b)
 {
   return line_line_intersection(dline(a), dline(b));
 }
@@ -224,7 +246,7 @@ inline std::optional<float> line_line_intersection(const line &a, const line &b)
  * @param b The second line segment.
  * @return The intersection point if it exists, std::nullopt otherwise.
  */
-std::optional<dvec2> line_line_intersection_point(const dline &a, const dline &b);
+std::optional<dvec2> line_line_intersection_point(const dline& a, const dline& b);
 
 /**
  * @brief Calculates the intersection points of two lines.
@@ -233,7 +255,7 @@ std::optional<dvec2> line_line_intersection_point(const dline &a, const dline &b
  * @param b The second line segment.
  * @return The intersection point if it exists, std::nullopt otherwise.
  */
-inline std::optional<vec2> line_line_intersection_point(const line &a, const line &b)
+inline std::optional<vec2> line_line_intersection_point(const line& a, const line& b)
 {
   if (std::optional<dvec2> point = line_line_intersection_point(dline(a), dline(b));
       point.has_value())
@@ -252,7 +274,7 @@ inline std::optional<vec2> line_line_intersection_point(const line &a, const lin
  * @param radius The radius of the circle.
  * @return The intersection points.
  */
-math::QuadraticSolutions<dvec2> line_circle_intersection_points(const dline &line,
+math::QuadraticSolutions<dvec2> line_circle_intersection_points(const dline& line,
                                                                 const dvec2 center,
                                                                 const double radius);
 
@@ -264,7 +286,7 @@ math::QuadraticSolutions<dvec2> line_circle_intersection_points(const dline &lin
  * @param radius The radius of the circle.
  * @return The intersection points.
  */
-inline math::QuadraticSolutions<vec2> line_circle_intersection_points(const line &line,
+inline math::QuadraticSolutions<vec2> line_circle_intersection_points(const line& line,
                                                                       const vec2 center,
                                                                       const float radius)
 {
@@ -280,7 +302,7 @@ inline math::QuadraticSolutions<vec2> line_circle_intersection_points(const line
  * @param line the line segment.
  * @return A vector containing the intersection points, if any.
  */
-std::vector<dvec2> line_rect_intersection_points(const dline &line, const drect &rect);
+std::vector<dvec2> line_rect_intersection_points(const dline& line, const drect& rect);
 
 /**
  * @brief Calculates the intersection points between a line segment and a rect.
@@ -289,7 +311,7 @@ std::vector<dvec2> line_rect_intersection_points(const dline &line, const drect 
  * @param rect The rect to check for intersection.
  * @return A vector containing the intersection points, if any.
  */
-inline std::vector<vec2> line_rect_intersection_points(const line &line, const rect &rect)
+inline std::vector<vec2> line_rect_intersection_points(const line& line, const rect& rect)
 {
   std::vector<dvec2> points = line_rect_intersection_points(dline(line), drect(rect));
 
@@ -304,7 +326,7 @@ inline std::vector<vec2> line_rect_intersection_points(const line &line, const r
  * @return true if they intersect, false otherwise.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool does_line_intersect_rect(const Line<T> &line, const math::Rect<T> &rect)
+inline bool does_line_intersect_rect(const Line<T>& line, const math::Rect<T>& rect)
 {
   return !line_rect_intersection_points(line, rect).empty();
 }
@@ -317,7 +339,7 @@ inline bool does_line_intersect_rect(const Line<T> &line, const math::Rect<T> &r
  * @param radius The radius of the circle.
  * @return true if they intersect, false otherwise.
  */
-bool does_line_intersect_circle(const dline &line, const dvec2 &center, const double radius);
+bool does_line_intersect_circle(const dline& line, const dvec2& center, const double radius);
 
 /**
  * @brief Checks whether or not a linear segment intersects a circle.
@@ -327,7 +349,7 @@ bool does_line_intersect_circle(const dline &line, const dvec2 &center, const do
  * @param radius The radius of the circle.
  * @return true if they intersect, false otherwise.
  */
-inline bool does_line_intersect_circle(const line &line, const vec2 &center, const float radius)
+inline bool does_line_intersect_circle(const line& line, const vec2& center, const float radius)
 {
   return does_line_intersect_circle(dline(line), dvec2(center), static_cast<double>(radius));
 }
@@ -339,7 +361,7 @@ inline bool does_line_intersect_circle(const line &line, const vec2 &center, con
  * @param p The point to find the closest t to.
  * @return The closest t value, clamped to the range [0, 1].
  */
-double line_closest_to(const dline &line, const dvec2 p);
+double line_closest_to(const dline& line, const dvec2 p);
 
 /**
  * @brief Calculates the closest t parameter to a point on a line.
@@ -348,7 +370,7 @@ double line_closest_to(const dline &line, const dvec2 p);
  * @param p The point to find the closest t to.
  * @return The closest t value, clamped to the range [0, 1].
  */
-inline float line_closest_to(const line &line, const vec2 p)
+inline float line_closest_to(const line& line, const vec2 p)
 {
   return static_cast<float>(line_closest_to(dline(line), dvec2(p)));
 }
@@ -362,7 +384,7 @@ inline float line_closest_to(const line &line, const vec2 p)
  * @return A vector containing the t values of the intersections between the quadratic curve and
  * the rect.
  */
-std::vector<double> quadratic_rect_intersections(const dquadratic_bezier &quad, const drect &rect);
+std::vector<double> quadratic_rect_intersections(const dquadratic_bezier& quad, const drect& rect);
 
 /**
  * @brief Calculates the intersection points between a quadratic curve and a rect.
@@ -372,8 +394,8 @@ std::vector<double> quadratic_rect_intersections(const dquadratic_bezier &quad, 
  * @return A vector containing the t values of the intersections between the quadratic curve and
  * the rect.
  */
-inline std::vector<float> quadratic_rect_intersections(const quadratic_bezier &quad,
-                                                       const rect &rect)
+inline std::vector<float> quadratic_rect_intersections(const quadratic_bezier& quad,
+                                                       const rect& rect)
 {
   std::vector<double> intersections = quadratic_rect_intersections(dquadratic_bezier(quad),
                                                                    drect(rect));
@@ -389,8 +411,8 @@ inline std::vector<float> quadratic_rect_intersections(const quadratic_bezier &q
  * @return true if they intersect, false otherwise.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool does_quadratic_intersect_rect(const QuadraticBezier<T> &quad,
-                                          const math::Rect<T> &rect)
+inline bool does_quadratic_intersect_rect(const QuadraticBezier<T>& quad,
+                                          const math::Rect<T>& rect)
 {
   return !quadratic_rect_intersections(quad, rect).empty();
 }
@@ -402,7 +424,7 @@ inline bool does_quadratic_intersect_rect(const QuadraticBezier<T> &quad,
  * @param p The point to find the closest t to.
  * @return The closest t value, clamped to the range [0, 1].
  */
-double quadratic_closest_to(const dquadratic_bezier &quad, const dvec2 p);
+double quadratic_closest_to(const dquadratic_bezier& quad, const dvec2 p);
 
 /**
  * @brief Calculates the closest t parameter to a point on a quadratic bezier curve.
@@ -411,7 +433,7 @@ double quadratic_closest_to(const dquadratic_bezier &quad, const dvec2 p);
  * @param p The point to find the closest t to.
  * @return The closest t value, clamped to the range [0, 1].
  */
-inline float quadratic_closest_to(const quadratic_bezier &quad, const vec2 p)
+inline float quadratic_closest_to(const quadratic_bezier& quad, const vec2 p)
 {
   return static_cast<float>(quadratic_closest_to(dquadratic_bezier(quad), dvec2(p)));
 }
@@ -460,7 +482,7 @@ inline T cubic_line_intersect_approx(
  * @return A vector containing the t values of the intersections between the Bezier curve and the
  * rect.
  */
-std::vector<double> cubic_rect_intersections(const dcubic_bezier &cubic, const drect &rect);
+std::vector<double> cubic_rect_intersections(const dcubic_bezier& cubic, const drect& rect);
 
 /**
  * @brief Calculates the intersection points between a cubic Bezier curve and a rect.
@@ -470,7 +492,7 @@ std::vector<double> cubic_rect_intersections(const dcubic_bezier &cubic, const d
  * @return A vector containing the t values of the intersections between the Bezier curve and the
  * rect.
  */
-inline std::vector<float> cubic_rect_intersections(const cubic_bezier &cubic, const rect &rect)
+inline std::vector<float> cubic_rect_intersections(const cubic_bezier& cubic, const rect& rect)
 {
   std::vector<double> intersections = cubic_rect_intersections(dcubic_bezier(cubic), drect(rect));
 
@@ -485,7 +507,7 @@ inline std::vector<float> cubic_rect_intersections(const cubic_bezier &cubic, co
  * @return true if they intersect, false otherwise.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool does_cubic_intersect_rect(const CubicBezier<T> &cubic, const math::Rect<T> &rect)
+inline bool does_cubic_intersect_rect(const CubicBezier<T>& cubic, const math::Rect<T>& rect)
 {
   return !cubic_rect_intersections(cubic, rect).empty();
 }
@@ -497,7 +519,7 @@ inline bool does_cubic_intersect_rect(const CubicBezier<T> &cubic, const math::R
  * @param p The point to find the closest t to.
  * @return The closest t value, clamped to the range [0, 1].
  */
-double cubic_closest_to(const dcubic_bezier &cubic, const dvec2 p);
+double cubic_closest_to(const dcubic_bezier& cubic, const dvec2 p);
 
 /**
  * @brief Calculates the closest t parameter to a point on a cubic bezier curve.
@@ -506,7 +528,7 @@ double cubic_closest_to(const dcubic_bezier &cubic, const dvec2 p);
  * @param p The point to find the closest t to.
  * @return The closest t value, clamped to the range [0, 1].
  */
-inline float cubic_closest_to(const cubic_bezier &cubic, const vec2 p)
+inline float cubic_closest_to(const cubic_bezier& cubic, const vec2 p)
 {
   return static_cast<float>(cubic_closest_to(dcubic_bezier(cubic), dvec2(p)));
 }

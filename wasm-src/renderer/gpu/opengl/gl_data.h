@@ -222,10 +222,10 @@ struct GLTexture {
    * @brief Uploads the data to the texture, treating it as a 1D buffer.
    *
    * @param data The data to upload.
-   * @param byte_size The size of the data in bytes.
+   * @param count The number of pixels to upload.
    * @param offset The offset to upload the data to.
    */
-  void upload(const void* data, const size_t byte_size, const size_t offset = 0) const;
+  void upload(const void* data, const size_t count, const size_t offset = 0) const;
 };
 
 /**
@@ -267,13 +267,65 @@ struct GLFramebuffer {
    * @brief Unbinds the framebuffer.
    */
   void unbind() const;
+};
+
+/**
+ * @brief The OpenGL double framebuffer object.
+ */
+struct GLDoubleFramebuffer {
+  GLTexture front_texture;      // The front framebuffer texture.
+  GLTexture back_texture;       // The back framebuffer texture.
+
+  GLuint gl_front_framebuffer;  // The OpenGL underlying front framebuffer.
+  GLuint gl_back_framebuffer;   // The OpenGL underlying back framebuffer.
+  GLuint gl_renderbuffer;       // The OpenGL underlying shared renderbuffer.
+
+  bool has_depth;               // Whether the framebuffer has a depth buffer.
+  bool complete;                // Whether the framebuffer was successfully created.
+
+  GLDoubleFramebuffer(const ivec2 size, const bool has_depth = true);
+  ~GLDoubleFramebuffer();
+
+  GLDoubleFramebuffer(const GLDoubleFramebuffer&) = delete;
+  GLDoubleFramebuffer& operator=(const GLDoubleFramebuffer&) = delete;
+
+  GLDoubleFramebuffer(GLDoubleFramebuffer&& other) noexcept;
+  GLDoubleFramebuffer& operator=(GLDoubleFramebuffer&& other) noexcept;
 
   /**
-   * @brief Resizes the framebuffer.
+   * @brief Returns the size of the framebuffer.
    *
-   * @param size The new size of the framebuffer.
+   * @return The size of the framebuffer.
    */
-  void resize(const ivec2 size);
+  inline ivec2 size() const
+  {
+    return front_texture.size;
+  }
+
+  /**
+   * @brief Swaps the front and back framebuffers.
+   */
+  void swap();
+
+  /**
+   * @brief Blits the back framebuffer to the front framebuffer.
+   */
+  void blit_back_to_front() const;
+
+  /**
+   * @brief Blits the front framebuffer to the default one.
+   */
+  void blit() const;
+
+  /**
+   * @brief Binds the front framebuffer.
+   */
+  void bind() const;
+
+  /**
+   * @brief Unbinds the framebuffers.
+   */
+  void unbind() const;
 };
 
 /**

@@ -300,6 +300,7 @@ struct DrawablePaintBinding {
 struct Drawable {
   uint8_t LOD;                               // The level of detail of the drawable.
   drect bounding_rect;                       // The bounding rectangle of the drawable.
+  drect valid_rect;                          // The rect where the drawable is always valid.
 
   std::vector<vec2> curves;                  // The curves of the drawable.
 

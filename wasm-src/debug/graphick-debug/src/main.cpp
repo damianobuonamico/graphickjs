@@ -103,10 +103,10 @@ int main()
 
   path1.close();
 
-  editor::Entity entity1 = editor::Editor::scene().create_element(path1);
+  // editor::Entity entity1 = editor::Editor::scene().create_element(path1);
 
-  entity1.add_component<editor::FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
-  entity1.add_component<editor::StrokeComponent>(vec4{0.93f, 0.64f, 0.74f, 1.0f}, 50.0f);
+  // entity1.add_component<editor::FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
+  // entity1.add_component<editor::StrokeComponent>(vec4{0.93f, 0.64f, 0.74f, 1.0f}, 50.0f);
 
   geom::path path2;
 
@@ -119,7 +119,7 @@ int main()
 
   editor::Entity entity2 = editor::Editor::scene().create_element(path2);
 
-  entity2.add_component<editor::FillComponent>(vec4{0.3f, 0.8f, 0.3f, 1.0f});
+  // entity2.add_component<editor::FillComponent>(vec4{0.3f, 0.8f, 0.3f, 1.0f});
   entity2.add_component<editor::StrokeComponent>(vec4{0.64f, 0.93f, 0.74f, 1.0f}, 50.0f);
 
   geom::path path3;
@@ -132,10 +132,10 @@ int main()
 
   path3.close();
 
-  editor::Entity entity3 = editor::Editor::scene().create_element(path3);
+  // editor::Entity entity3 = editor::Editor::scene().create_element(path3);
 
-  entity3.add_component<editor::FillComponent>(vec4{0.3f, 0.3f, 0.8f, 1.0f});
-  entity3.add_component<editor::StrokeComponent>(vec4{0.64f, 0.74f, 0.93f, 1.0f}, 50.0f);
+  // entity3.add_component<editor::FillComponent>(vec4{0.3f, 0.3f, 0.8f, 1.0f});
+  // entity3.add_component<editor::StrokeComponent>(vec4{0.64f, 0.74f, 0.93f, 1.0f}, 50.0f);
 #endif
 
   while (!glfwWindowShouldClose(window)) {

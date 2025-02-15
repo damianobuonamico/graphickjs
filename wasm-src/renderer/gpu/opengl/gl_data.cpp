@@ -7,6 +7,8 @@
 
 #include "opengl.h"
 
+#include <utility>
+
 namespace graphick::renderer::GPU::GL {
 
 /* -- Static methods -- */
@@ -424,8 +426,7 @@ void GLTexture::upload(const void* data, const irect region) const
                          data));
 }
 
-// TODO: try to implement offset
-void GLTexture::upload(const void* data, const size_t byte_size, const size_t offset) const
+void GLTexture::upload(const void* data, const size_t count, const size_t offset) const
 {
   bind(0);
 
@@ -433,8 +434,14 @@ void GLTexture::upload(const void* data, const size_t byte_size, const size_t of
   GLenum type = gl_type(this->format);
 
   ivec2 origin = ivec2::zero();
-  // ivec2 size = ivec2(this->size.x, static_cast<int>(byte_size) / this->size.x + 1);
   ivec2 size = ivec2(this->size.x, this->size.y);
+
+  if (count < size.x) {
+    size.x = count;
+    size.y = 1;
+  } else if (count < size.x * size.y) {
+    size.y = count / size.x + 1;
+  }
 
   glCall(glTexSubImage2D(GL_TEXTURE_2D,
                          0,
@@ -450,7 +457,7 @@ void GLTexture::upload(const void* data, const size_t byte_size, const size_t of
 /* -- GLFramebuffer -- */
 
 GLFramebuffer::GLFramebuffer(const ivec2 size, const bool has_depth)
-    : texture(TextureFormat::RGBA8, size, TextureSamplingFlagNone)
+    : texture(TextureFormat::RGBA8, size, TextureSamplingFlagNone), has_depth(has_depth)
 {
   glCall(glGenFramebuffers(1, &gl_framebuffer));
   bind();
@@ -513,6 +520,138 @@ void GLFramebuffer::bind() const
 }
 
 void GLFramebuffer::unbind() const
+{
+  glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
+/* -- GLDoubleFramebuffer -- */
+
+GLDoubleFramebuffer::GLDoubleFramebuffer(const ivec2 size, const bool has_depth)
+    : front_texture(TextureFormat::RGBA8, size, TextureSamplingFlagNone),
+      back_texture(TextureFormat::RGBA8, size, TextureSamplingFlagNone),
+      has_depth(has_depth)
+{
+  // gen 2 framebuffers
+
+  GLuint gl_framebuffers[2];
+
+  glCall(glGenFramebuffers(2, gl_framebuffers));
+  glCall(glBindFramebuffer(GL_FRAMEBUFFER, gl_framebuffers[0]));
+  glCall(glFramebufferTexture2D(
+      GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, front_texture.gl_texture, 0));
+  glCall(glBindFramebuffer(GL_FRAMEBUFFER, gl_framebuffers[1]));
+  glCall(glFramebufferTexture2D(
+      GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, back_texture.gl_texture, 0));
+
+  gl_front_framebuffer = gl_framebuffers[0];
+  gl_back_framebuffer = gl_framebuffers[1];
+
+  complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+
+  if (has_depth) {
+    glCall(glGenRenderbuffers(1, &gl_renderbuffer));
+    glCall(glBindRenderbuffer(GL_RENDERBUFFER, gl_renderbuffer));
+    glCall(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, size.x, size.y));
+    glCall(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+
+    glCall(glFramebufferRenderbuffer(
+        GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl_renderbuffer));
+    glCall(glBindFramebuffer(GL_FRAMEBUFFER, gl_front_framebuffer));
+    glCall(glFramebufferRenderbuffer(
+        GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl_renderbuffer));
+  }
+
+  complete = complete && glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+
+  unbind();
+}
+
+GLDoubleFramebuffer::~GLDoubleFramebuffer()
+{
+  unbind();
+
+  if (gl_renderbuffer) {
+    glCall(glDeleteRenderbuffers(1, &gl_renderbuffer));
+  }
+
+  GLuint gl_framebuffers[2] = {gl_front_framebuffer, gl_back_framebuffer};
+
+  glCall(glDeleteFramebuffers(2, gl_framebuffers));
+}
+
+GLDoubleFramebuffer::GLDoubleFramebuffer(GLDoubleFramebuffer&& other) noexcept
+    : front_texture(std::move(other.front_texture)),
+      back_texture(std::move(other.back_texture)),
+      gl_front_framebuffer(other.gl_front_framebuffer),
+      gl_back_framebuffer(other.gl_back_framebuffer),
+      gl_renderbuffer(other.gl_renderbuffer),
+      has_depth(other.has_depth),
+      complete(other.complete)
+{
+}
+
+GLDoubleFramebuffer& GLDoubleFramebuffer::operator=(GLDoubleFramebuffer&& other) noexcept
+{
+  front_texture = std::move(other.front_texture);
+  back_texture = std::move(other.back_texture);
+  gl_front_framebuffer = other.gl_front_framebuffer;
+  gl_back_framebuffer = other.gl_back_framebuffer;
+  gl_renderbuffer = other.gl_renderbuffer;
+  has_depth = other.has_depth;
+  complete = other.complete;
+
+  other.gl_front_framebuffer = 0;
+  other.gl_back_framebuffer = 0;
+  other.gl_renderbuffer = 0;
+  other.complete = false;
+
+  return *this;
+}
+
+void GLDoubleFramebuffer::swap()
+{
+  std::swap(gl_front_framebuffer, gl_back_framebuffer);
+  std::swap(front_texture, back_texture);
+}
+
+void GLDoubleFramebuffer::blit_back_to_front() const
+{
+  glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, gl_back_framebuffer));
+  glCall(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl_front_framebuffer));
+  glCall(glBlitFramebuffer(0,
+                           0,
+                           front_texture.size.x,
+                           front_texture.size.y,
+                           0,
+                           0,
+                           front_texture.size.x,
+                           front_texture.size.y,
+                           GL_COLOR_BUFFER_BIT,
+                           GL_NEAREST));
+}
+
+void GLDoubleFramebuffer::blit() const
+{
+  glCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, gl_front_framebuffer));
+  glCall(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+  glCall(glBlitFramebuffer(0,
+                           0,
+                           front_texture.size.x,
+                           front_texture.size.y,
+                           0,
+                           0,
+                           front_texture.size.x,
+                           front_texture.size.y,
+                           GL_COLOR_BUFFER_BIT,
+                           GL_NEAREST));
+}
+
+void GLDoubleFramebuffer::bind() const
+{
+  glCall(glBindFramebuffer(GL_FRAMEBUFFER, gl_front_framebuffer));
+}
+
+void GLDoubleFramebuffer::unbind() const
 {
   glCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 }

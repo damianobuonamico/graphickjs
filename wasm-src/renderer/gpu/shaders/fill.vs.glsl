@@ -20,7 +20,7 @@ R"(
   void main() {
     uint z_index = a_attr_2 >> 12U;
 
-    gl_Position = u_view_projection * vec4(a_position, -float(z_index) / 1048576.0, 1.0);
+    gl_Position = u_view_projection * vec4(a_position, -float(int(z_index) - 524288) / 524288.0, 1.0);
     
     v_color = vec4(a_color) / 255.0;
     v_tex_coord = a_tex_coord;

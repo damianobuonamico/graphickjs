@@ -56,6 +56,11 @@ using Texture = GL::GLTexture;
 using Framebuffer = GL::GLFramebuffer;
 
 /**
+ * @brief The double framebuffer object.
+ */
+using DoubleFramebuffer = GL::GLDoubleFramebuffer;
+
+/**
  * @brief The buffer object.
  */
 using Buffer = GL::GLBuffer;
