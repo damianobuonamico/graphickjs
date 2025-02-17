@@ -963,7 +963,7 @@ void CubicPath<T, _>::cubic_to(const math::Vec2<T> p1,
     for (uint8_t j = 0; j < solutions.count; j++) {
       const T t = solutions.solutions[j];
 
-      if (math::is_normalized(t, false)) {
+      if (math::is_almost_normalized(t)) {
         split_points[split_count++] = t;
       }
     }

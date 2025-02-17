@@ -183,6 +183,21 @@ inline bool is_normalized(const T t, const bool include_ends = true)
 }
 
 /**
+ * @brief Checks if a scalar is almost normalized.
+ *
+ * Ends are never included when an epsilon is provided.
+ *
+ * @param t The scalar to check.
+ * @param eps The precision to check with.
+ * @return Whether the scalar is almost normalized.
+ */
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+inline bool is_almost_normalized(const T t, const T eps = epsilon<T>)
+{
+  return t > T(0) + eps && t < T(1) - eps;
+}
+
+/**
  * @brief Checks if a scalar is in a range.
  *
  * @param t The scalar to check.

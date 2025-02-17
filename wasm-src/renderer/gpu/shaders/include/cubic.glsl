@@ -38,8 +38,7 @@ float cubic_horizontal_coverage(vec2 pixel_pos, float inv_pixel_size, uint curve
     vec2 p2 = p23.xy - pixel_pos;
     vec2 p3 = p23.zw - pixel_pos;
 
-    // For some reason this performs worse...
-    // if (max(p0.x, p3.x) * inv_pixel_size < -0.5) break;
+    if (max(p0.x, p3.x) * inv_pixel_size < -0.5) break;
 
     bool is_downwards = p0.y > 0.0 || p3.y < 0.0;
 
@@ -92,8 +91,8 @@ float cubic_coverage(int samples) {
   
   float winding = float(int(v_attr_3 >> 16) - 32768);
 
-  for (int yOffset = (1 - samples) / 2; yOffset <= (samples - 1) / 2; yOffset++) {
-    vec2 sample_pos = v_tex_coord_curves + vec2(0.0, yOffset) * pixel_size.y / float(samples);
+  for (int offset = (1 - samples) / 2; offset <= (samples - 1) / 2; offset++) {
+    vec2 sample_pos = v_tex_coord_curves + vec2(0.0, offset) * pixel_size.y / float(samples);
   
     coverage += cubic_horizontal_coverage(sample_pos, 1.0 / pixel_size.x, curves_offset, curves_count);
   }

@@ -79,7 +79,6 @@ int main()
 #endif
 
 #ifdef TIGER
-  // TODO: fix triangle culling
   std::ifstream ifs("res/vectors/Ghostscript_Tiger.svg");
   std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   io::svg::parse_svg(content);

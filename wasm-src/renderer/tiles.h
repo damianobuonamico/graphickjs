@@ -388,7 +388,7 @@ struct TileBatchData {
 
     const size_t curves_start_index = curves_count();
 
-    size_t local_z_index = z_index + drawable.paints.size() - 1;
+    size_t local_z_index = z_index;
 
     const TileVertex* vertices_start_ptr = vertices_ptr;
 
@@ -557,7 +557,7 @@ struct FillBatchData {
   {
     memcpy(vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
 
-    uint32_t local_z_index = z_index + drawable.paints.size() - 1;
+    uint32_t local_z_index = z_index;
 
     const FillVertex* vertices_start_ptr = vertices_ptr;
 
@@ -668,13 +668,33 @@ struct Batch {
   Batch(const size_t buffer_size) : tiles(buffer_size), fills(buffer_size) {}
 
   /**
-   * @brief Clears the batch data.
+   * @brief Clears the fill related data.
    */
-  inline void clear()
+  inline void clear_fills()
   {
-    tiles.clear();
     fills.clear();
     data.clear();
+  }
+
+  /**
+   * @brief Clears the tile related data.
+   */
+  inline void clear_tiles()
+  {
+    tiles.clear();
+    data.clear();
+  }
+
+  inline bool can_handle_tiles(const Drawable& drawable) const
+  {
+    // TODO: check if gradients, ecc can be handled
+    return tiles.can_handle_quads(drawable.tiles.size() / 4);
+  }
+
+  inline bool can_handle_fills(const Drawable& drawable) const
+  {
+    // TODO check if gradients, ecc can be handled
+    return fills.can_handle_quads(drawable.fills.size() / 4);
   }
 };
 
@@ -793,9 +813,26 @@ class TiledRenderer {
   void populate_fills();
 
   /**
+   * @brief Renders the fill batches.
+   */
+  void render_fills();
+
+  /**
    * @brief Renders the tile batches.
    */
   void render_tiles();
+
+  /**
+   * @brief Flushes the current fill batch.
+   */
+  void flush_fills();
+
+  /**
+   * @brief Flushes the current tile batch.
+   *
+   * @param blit_back_to_front Whether to blit before drawing.
+   */
+  void flush_tiles(const bool blit_back_to_front);
 
  private:
   Batch m_batch;            // The tile/fill batch to render.

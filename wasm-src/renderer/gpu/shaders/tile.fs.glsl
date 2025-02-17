@@ -31,7 +31,7 @@ void main() {
   int samples = u_samples % 2 == 0 ? u_samples + 1 : u_samples;
 
   // float coverage = is_quadratic ? quadratic_coverage(samples) : cubic_coverage(samples);
-  float coverage = cubic_coverage(samples / 3);
+  float coverage = cubic_coverage(samples);
   float alpha;
 
   if (is_even_odd) {

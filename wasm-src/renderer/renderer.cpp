@@ -6,6 +6,7 @@
  * @todo path builder clipping rect
  * @todo dynamic number of samples based on dpr and hardware performance
  * @todo fix line width
+ * @todo fix first 3 horizontal lines in test4.svg
  */
 
 #include "renderer.h"
@@ -412,7 +413,7 @@ bool Renderer::draw_transformed(const geom::dpath& path,
   Drawable drawable;
 
   drawable.LOD = m_tiler.LOD();
-  drawable.appearance = Appearance{BlendingMode::Multiply, 1.0f};
+  drawable.appearance = Appearance{BlendingMode::Normal, 1.0f};
 
   bool visible = false;
 
