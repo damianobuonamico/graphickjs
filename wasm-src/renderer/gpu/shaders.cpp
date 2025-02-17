@@ -1,391 +1,188 @@
 /**
- * @file shaders.cpp
+ * @file renderer/gpu/shaders.cpp
  * @brief Contains the GPU shaders and vertex arrays implementations.
+ *
+ * @todo query max number of textures
  */
 
 #include "shaders.h"
 
-namespace Graphick::Renderer::GPU {
+#include "device.h"
 
-  DefaultProgram::DefaultProgram() :
-    program(Device::create_program("default")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
-    color_uniform(Device::get_uniform(program, "uColor").value()),
-    texture(Device::get_texture_parameter(program, "uTexture").value()) {}
+#include <sstream>
 
-  OpaqueTileProgram::OpaqueTileProgram() :
-    program(Device::create_program("opaque_tile")),
-    offset_uniform(Device::get_uniform(program, "uOffset").value()),
-    framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
-    tile_size_uniform(Device::get_uniform(program, "uTileSize").value()) {}
+namespace graphick::renderer::GPU {
 
-  MaskedTileProgram::MaskedTileProgram() :
-    program(Device::create_program("masked_tile")),
-    offset_uniform(Device::get_uniform(program, "uOffset").value()),
-    framebuffer_size_uniform(Device::get_uniform(program, "uFramebufferSize").value()),
-    tile_size_uniform(Device::get_uniform(program, "uTileSize").value()),
-    masks_texture_size_uniform(Device::get_uniform(program, "uMasksTextureSize").value()),
-    cover_table_texture_size_uniform(Device::get_uniform(program, "uCoverTableTextureSize").value()),
-    masks_texture(Device::get_texture_parameter(program, "uMasksTexture").value()),
-    cover_table_texture(Device::get_texture_parameter(program, "uCoverTableTexture").value()) {}
+/* -- Programs -- */
 
-  LineProgram::LineProgram() :
-    program(Device::create_program("line")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
-    color_uniform(Device::get_uniform(program, "uColor").value()),
-    line_width_uniform(Device::get_uniform(program, "uLineWidth").value()),
-    zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
-
-  SquareProgram::SquareProgram() :
-    program(Device::create_program("square")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
-    color_uniform(Device::get_uniform(program, "uColor").value()),
-    size_uniform(Device::get_uniform(program, "uSize").value()) {}
-
-  CircleProgram::CircleProgram() :
-    program(Device::create_program("circle")),
-    view_projection_uniform(Device::get_uniform(program, "uViewProjection").value()),
-    color_uniform(Device::get_uniform(program, "uColor").value()),
-    radius_uniform(Device::get_uniform(program, "uRadius").value()),
-    zoom_uniform(Device::get_uniform(program, "uZoom").value()) {}
-
-  Programs::Programs() :
-    opaque_tile_program(),
-    masked_tile_program(),
-    line_program(),
-    square_program(),
-    circle_program() {}
-
-  DefaultVertexArray::DefaultVertexArray(
-    const DefaultProgram& default_program,
-    const Buffer& vertex_buffer
-  )
-    : vertex_array(Device::create_vertex_array())
-  {
-    VertexAttr position_attr = Device::get_vertex_attr(default_program.program, "aPosition").value();
-    VertexAttr tex_coord_attr = Device::get_vertex_attr(default_program.program, "aTexCoord").value();
-
-    VertexAttrDescriptor position_desc = {
-     2,
-     VertexAttrClass::Float,
-     VertexAttrType::F32,
-     16,
-     0,
-     0,
-     0
-    };
-
-    VertexAttrDescriptor tex_coord_desc = {
-     2,
-     VertexAttrClass::Float,
-     VertexAttrType::F32,
-     16,
-     8,
-     0,
-     0
-    };
-
-    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
-    Device::configure_vertex_attr(*vertex_array, tex_coord_attr, tex_coord_desc);
-  }
-
-  OpaqueTileVertexArray::OpaqueTileVertexArray(
-    const OpaqueTileProgram& opaque_tile_program,
-    const Buffer& vertex_buffer,
-    const Buffer& quad_vertex_positions_buffer,
-    const Buffer& quad_vertex_indices_buffer
-  )
-    : vertex_array(Device::create_vertex_array())
-  {
-    VertexAttr position_attr = Device::get_vertex_attr(opaque_tile_program.program, "aPosition").value();
-    VertexAttr color_attr = Device::get_vertex_attr(opaque_tile_program.program, "aColor").value();
-    VertexAttr index_attr = Device::get_vertex_attr(opaque_tile_program.program, "aIndex").value();
-    VertexAttr z_index_attr = Device::get_vertex_attr(opaque_tile_program.program, "aZIndex").value();
-
-    VertexAttrDescriptor position_desc = {
-      2,
-      VertexAttrClass::Int,
-      VertexAttrType::U16,
-      4,
-      0,
-      0,
-      0
-    };
-
-    VertexAttrDescriptor color_desc = {
-      4,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      24,
-      0,
-      1,
-      1
-    };
-
-    VertexAttrDescriptor index_desc = {
-      1,
-      VertexAttrClass::Int,
-      VertexAttrType::I32,
-      24,
-      16,
-      1,
-      1
-    };
-
-    VertexAttrDescriptor z_index_desc = {
-      1,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      24,
-      20,
-      1,
-      1
-    };
-
-    Device::bind_buffer(*vertex_array, quad_vertex_positions_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
-
-    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, color_attr, color_desc);
-    Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
-    Device::configure_vertex_attr(*vertex_array, z_index_attr, z_index_desc);
-
-    Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
-  }
-
-  MaskedTileVertexArray::MaskedTileVertexArray(
-    const MaskedTileProgram& masked_tile_program,
-    const Buffer& vertex_buffer,
-    const Buffer& quad_vertex_positions_buffer,
-    const Buffer& quad_vertex_indices_buffer
-  )
-    : vertex_array(Device::create_vertex_array())
-  {
-    VertexAttr position_attr = Device::get_vertex_attr(masked_tile_program.program, "aPosition").value();
-    VertexAttr color_attr = Device::get_vertex_attr(masked_tile_program.program, "aColor").value();
-    VertexAttr index_attr = Device::get_vertex_attr(masked_tile_program.program, "aIndex").value();
-    VertexAttr mask_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aSegmentsCoords").value();
-    VertexAttr cover_table_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aCoverTableCoords").value();
-    VertexAttr z_index_attr = Device::get_vertex_attr(masked_tile_program.program, "aZIndex").value();
-
-    VertexAttrDescriptor position_desc = {
-      2,
-      VertexAttrClass::Int,
-      VertexAttrType::U16,
-      4,
-      0,
-      0,
-      0
-    };
-
-    VertexAttrDescriptor color_desc = {
-      4,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      32,
-      0,
-      1,
-      1
-    };
-
-    VertexAttrDescriptor index_desc = {
-      1,
-      VertexAttrClass::Int,
-      VertexAttrType::I32,
-      32,
-      16,
-      1,
-      1
-    };
-
-    // TODO: try to use I16 for cover table index (opengl crashes)
-    VertexAttrDescriptor mask_index_desc = {
-      2,
-      VertexAttrClass::Int,
-      VertexAttrType::U16,
-      32,
-      20,
-      1,
-      1
-    };
-
-    // TODO: try to use I16 for cover table index (opengl crashes)
-    VertexAttrDescriptor cover_table_index_desc = {
-      2,
-      VertexAttrClass::Int,
-      VertexAttrType::U16,
-      32,
-      24,
-      1,
-      1
-    };
-
-    VertexAttrDescriptor z_index_desc = {
-      1,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      32,
-      28,
-      1,
-      1
-    };
-
-    Device::bind_buffer(*vertex_array, quad_vertex_positions_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
-
-    Device::bind_buffer(*vertex_array, vertex_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, color_attr, color_desc);
-    Device::configure_vertex_attr(*vertex_array, index_attr, index_desc);
-    Device::configure_vertex_attr(*vertex_array, mask_index_attr, mask_index_desc);
-    Device::configure_vertex_attr(*vertex_array, cover_table_index_attr, cover_table_index_desc);
-    Device::configure_vertex_attr(*vertex_array, z_index_attr, z_index_desc);
-
-    Device::bind_buffer(*vertex_array, quad_vertex_indices_buffer, BufferTarget::Index);
-  }
-
-  LineVertexArray::LineVertexArray(
-    const LineProgram& line_program,
-    const Buffer& instance_buffer,
-    const Buffer& vertex_positions_buffer,
-    const Buffer& vertex_indices_buffer
-  )
-    : vertex_array(Device::create_vertex_array())
-  {
-    VertexAttr position_attr = Device::get_vertex_attr(line_program.program, "aPosition").value();
-    VertexAttr tex_coord_attr = Device::get_vertex_attr(line_program.program, "aTexCoord").value();
-    VertexAttr instance_from_attr = Device::get_vertex_attr(line_program.program, "aInstanceFrom").value();
-    VertexAttr instance_to_attr = Device::get_vertex_attr(line_program.program, "aInstanceTo").value();
-
-    VertexAttrDescriptor position_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      16,
-      0,
-      0,
-      0
-    };
-
-    VertexAttrDescriptor tex_coord_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      16,
-      8,
-      0,
-      0
-    };
-
-    VertexAttrDescriptor instance_from_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      16,
-      0,
-      1,
-      1
-    };
-
-    VertexAttrDescriptor instance_to_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      16,
-      8,
-      1,
-      1
-    };
-
-    Device::bind_buffer(*vertex_array, vertex_positions_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
-    Device::configure_vertex_attr(*vertex_array, tex_coord_attr, tex_coord_desc);
-
-    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, instance_from_attr, instance_from_desc);
-    Device::configure_vertex_attr(*vertex_array, instance_to_attr, instance_to_desc);
-
-    Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
-  }
-
-  SquareVertexArray::SquareVertexArray(
-    const SquareProgram& square_program,
-    const Buffer& instance_buffer,
-    const Buffer& vertex_positions_buffer,
-    const Buffer& vertex_indices_buffer
-  )
-    : vertex_array(Device::create_vertex_array())
-  {
-    VertexAttr position_attr = Device::get_vertex_attr(square_program.program, "aPosition").value();
-    VertexAttr instance_position_attr = Device::get_vertex_attr(square_program.program, "aInstancePosition").value();
-
-    VertexAttrDescriptor position_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      8,
-      0,
-      0,
-      0
-    };
-
-    VertexAttrDescriptor instance_position_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      8,
-      0,
-      1,
-      1
-    };
-
-    Device::bind_buffer(*vertex_array, vertex_positions_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
-
-    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
-
-    Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
-  }
-
-  CircleVertexArray::CircleVertexArray(
-    const CircleProgram& circle_program,
-    const Buffer& instance_buffer,
-    const Buffer& vertex_positions_buffer,
-    const Buffer& vertex_indices_buffer
-  )
-    : vertex_array(Device::create_vertex_array())
-  {
-    VertexAttr position_attr = Device::get_vertex_attr(circle_program.program, "aPosition").value();
-    VertexAttr instance_position_attr = Device::get_vertex_attr(circle_program.program, "aInstancePosition").value();
-
-    VertexAttrDescriptor position_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      8,
-      0,
-      0,
-      0
-    };
-
-    VertexAttrDescriptor instance_position_desc = {
-      2,
-      VertexAttrClass::Float,
-      VertexAttrType::F32,
-      8,
-      0,
-      1,
-      1
-    };
-
-    Device::bind_buffer(*vertex_array, vertex_positions_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, position_attr, position_desc);
-
-    Device::bind_buffer(*vertex_array, instance_buffer, BufferTarget::Vertex);
-    Device::configure_vertex_attr(*vertex_array, instance_position_attr, instance_position_desc);
-
-    Device::bind_buffer(*vertex_array, vertex_indices_buffer, BufferTarget::Index);
-  }
-
+TileProgram::TileProgram()
+    : program(Device::create_program(
+          "tile",
+          {{"MAX_TEXTURES",
+            (std::stringstream() << (Device::max_texture_image_units() - 2)).str()}})),
+      vp_uniform(Device::get_uniform(program, "u_view_projection")),
+      samples_uniform(Device::get_uniform(program, "u_samples")),
+      curves_texture_uniform(Device::get_texture_uniform(program, "u_curves_texture")),
+      textures_uniform(Device::get_textures_uniform(
+          program, "u_textures", Device::max_texture_image_units() - 2))
+{
 }
+
+FillProgram::FillProgram()
+    : program(Device::create_program(
+          "fill",
+          {{"MAX_TEXTURES",
+            (std::stringstream() << (Device::max_texture_image_units() - 2)).str()}})),
+      vp_uniform(Device::get_uniform(program, "u_view_projection")),
+      textures_uniform(Device::get_textures_uniform(
+          program, "u_textures", Device::max_texture_image_units() - 2))
+{
+}
+
+PrimitiveProgram::PrimitiveProgram()
+    : program(Device::create_program("primitive")),
+      vp_uniform(Device::get_uniform(program, "u_view_projection")),
+      zoom_uniform(Device::get_uniform(program, "u_zoom"))
+{
+}
+
+#ifdef GK_DEBUG
+
+DebugRectProgram::DebugRectProgram()
+    : program(Device::create_program("debug_rect")),
+      vp_uniform(Device::get_uniform(program, "u_view_projection")),
+      texture(Device::get_texture_uniform(program, "u_texture"))
+{
+}
+
+#endif
+
+/* -- VertexArrays -- */
+
+TileVertexArray::TileVertexArray(const TileProgram& program,
+                                 const Buffer& vertex_buffer,
+                                 const Buffer& index_buffer)
+{
+  VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+  VertexAttribute color_attr = Device::get_vertex_attribute(program.program, "a_color");
+  VertexAttribute tex_coord_attr = Device::get_vertex_attribute(program.program, "a_tex_coord");
+  VertexAttribute tex_coord_curves_attr = Device::get_vertex_attribute(program.program,
+                                                                       "a_tex_coord_curves");
+  VertexAttribute first_attr = Device::get_vertex_attribute(program.program, "a_attr_1");
+  VertexAttribute second_attr = Device::get_vertex_attribute(program.program, "a_attr_2");
+  VertexAttribute third_attr = Device::get_vertex_attribute(program.program, "a_attr_3");
+
+  VertexAttrDescriptor position_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 40, 0, 0, 0};
+  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 40, 8, 0, 0};
+  VertexAttrDescriptor tex_coords_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 40, 12, 0, 0};
+  VertexAttrDescriptor tex_coords_curves_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 40, 20, 0, 0};
+  //   VertexAttrClass::Float, VertexAttrType::F16, 2, 40, 20, 0, 0};
+  VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 40, 28, 0, 0};
+  VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 40, 32, 0, 0};
+  VertexAttrDescriptor third_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 40, 36, 0, 0};
+
+  index_buffer.bind(vertex_array);
+
+  vertex_buffer.bind(vertex_array);
+  vertex_array.configure_attribute(position_attr, position_desc);
+  vertex_array.configure_attribute(color_attr, color_desc);
+  vertex_array.configure_attribute(tex_coord_attr, tex_coords_desc);
+  vertex_array.configure_attribute(tex_coord_curves_attr, tex_coords_curves_desc);
+  vertex_array.configure_attribute(first_attr, first_desc);
+  vertex_array.configure_attribute(second_attr, second_desc);
+  vertex_array.configure_attribute(third_attr, third_desc);
+}
+
+FillVertexArray::FillVertexArray(const FillProgram& program,
+                                 const Buffer& vertex_buffer,
+                                 const Buffer& index_buffer)
+{
+  VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+  VertexAttribute color_attr = Device::get_vertex_attribute(program.program, "a_color");
+  VertexAttribute tex_coord_attr = Device::get_vertex_attribute(program.program, "a_tex_coord");
+  VertexAttribute first_attr = Device::get_vertex_attribute(program.program, "a_attr_1");
+  VertexAttribute second_attr = Device::get_vertex_attribute(program.program, "a_attr_2");
+
+  VertexAttrDescriptor position_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 28, 0, 0, 0};
+  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 28, 8, 0, 0};
+  VertexAttrDescriptor tex_coords_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 28, 12, 0, 0};
+  VertexAttrDescriptor first_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 28, 20, 0, 0};
+  VertexAttrDescriptor second_desc = {VertexAttrClass::Int, VertexAttrType::U32, 1, 28, 24, 0, 0};
+
+  index_buffer.bind(vertex_array);
+
+  vertex_buffer.bind(vertex_array);
+  vertex_array.configure_attribute(position_attr, position_desc);
+  vertex_array.configure_attribute(color_attr, color_desc);
+  vertex_array.configure_attribute(tex_coord_attr, tex_coords_desc);
+  vertex_array.configure_attribute(first_attr, first_desc);
+  vertex_array.configure_attribute(second_attr, second_desc);
+}
+
+PrimitiveVertexArray::PrimitiveVertexArray(const PrimitiveProgram& program,
+                                           const Buffer& instance_buffer,
+                                           const Buffer& vertex_buffer)
+{
+  VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+  VertexAttribute instance_attr_1 = Device::get_vertex_attribute(program.program,
+                                                                 "a_instance_attr_1");
+  VertexAttribute instance_attr_2 = Device::get_vertex_attribute(program.program,
+                                                                 "a_instance_attr_2");
+  VertexAttribute instance_attr_3 = Device::get_vertex_attribute(program.program,
+                                                                 "a_instance_attr_3");
+  VertexAttribute instance_color_attr = Device::get_vertex_attribute(program.program,
+                                                                     "a_instance_color");
+
+  VertexAttrDescriptor position_desc = {VertexAttrClass::Int, VertexAttrType::U8, 2, 2, 0, 0, 0};
+  VertexAttrDescriptor instance_attr_1_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 24, 0, 1, 1};
+  VertexAttrDescriptor instance_attr_2_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 24, 8, 1, 1};
+  VertexAttrDescriptor instance_attr_3_desc = {
+      VertexAttrClass::Int, VertexAttrType::U32, 1, 24, 16, 1, 1};
+  VertexAttrDescriptor instance_color_desc = {
+      VertexAttrClass::Int, VertexAttrType::U8, 4, 24, 20, 1, 1};
+
+  vertex_buffer.bind(vertex_array);
+  vertex_array.configure_attribute(position_attr, position_desc);
+
+  instance_buffer.bind(vertex_array);
+  vertex_array.configure_attribute(instance_attr_1, instance_attr_1_desc);
+  vertex_array.configure_attribute(instance_attr_2, instance_attr_2_desc);
+  vertex_array.configure_attribute(instance_attr_3, instance_attr_3_desc);
+  vertex_array.configure_attribute(instance_color_attr, instance_color_desc);
+}
+
+#ifdef GK_DEBUG
+
+DebugRectVertexArray::DebugRectVertexArray(const DebugRectProgram& program,
+                                           const Buffer& vertex_buffer)
+{
+  VertexAttribute position_attr = Device::get_vertex_attribute(program.program, "a_position");
+  VertexAttribute tex_coord_attr = Device::get_vertex_attribute(program.program, "a_tex_coord");
+  VertexAttribute color_attr = Device::get_vertex_attribute(program.program, "a_color");
+  VertexAttribute primitive_attr = Device::get_vertex_attribute(program.program, "a_primitive");
+
+  VertexAttrDescriptor position_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 24, 0, 0, 0};
+  VertexAttrDescriptor tex_coords_desc = {
+      VertexAttrClass::Float, VertexAttrType::F32, 2, 24, 8, 0, 0};
+  VertexAttrDescriptor primitive_desc = {
+      VertexAttrClass::Int, VertexAttrType::U32, 1, 24, 16, 0, 0};
+  VertexAttrDescriptor color_desc = {VertexAttrClass::Int, VertexAttrType::U8, 4, 24, 20, 0, 0};
+
+  vertex_buffer.bind(vertex_array);
+  vertex_array.configure_attribute(position_attr, position_desc);
+  vertex_array.configure_attribute(tex_coord_attr, tex_coords_desc);
+  vertex_array.configure_attribute(primitive_attr, primitive_desc);
+  vertex_array.configure_attribute(color_attr, color_desc);
+}
+
+#endif
+
+}  // namespace graphick::renderer::GPU

@@ -1,5 +1,5 @@
-import { Renderer } from "@/editor/renderer";
-import wasm from "./editor";
+import { Renderer } from '@/editor/renderer';
+import wasm from './editor';
 
 const fallback: any = () => {};
 
@@ -20,8 +20,9 @@ const API: Api = {
   _load: fallback,
   _load_font: fallback,
   _load_svg: fallback,
+  _load_image: fallback,
   _to_heap: fallback,
-  _free: fallback,
+  _free: fallback
 };
 
 wasm().then((module: any) => {
@@ -61,6 +62,13 @@ wasm().then((module: any) => {
     module._load_svg(ptr, data.byteLength);
     module._free(ptr);
   };
+  API._load_image = (data: ArrayBuffer) => {
+    const ptr = module._malloc(data.byteLength);
+    const heap = new Uint8Array(module.HEAPU8.buffer, ptr, data.byteLength);
+    heap.set(new Uint8Array(data));
+    module._load_image(ptr, data.byteLength);
+    module._free(ptr);
+  };
 
   API._to_heap = (array: Float32Array) => {
     const bytes = array.length * array.BYTES_PER_ELEMENT;
@@ -76,11 +84,13 @@ wasm().then((module: any) => {
   module._init();
   Renderer.resize();
 
-  fetch(
-    "https://upload.wikimedia.org/wikipedia/commons/f/fd/Ghostscript_Tiger.svg"
-  )
+  fetch('https://upload.wikimedia.org/wikipedia/commons/f/fd/Ghostscript_Tiger.svg')
     .then((res) => res.arrayBuffer())
     .then((text) => API._load_svg(text));
+
+  fetch('https://upload.wikimedia.org/wikipedia/it/thumb/e/ea/Dart_Fener.jpg/1024px-Dart_Fener.jpg')
+    .then((res) => res.arrayBuffer())
+    .then((text) => API._load_image(text));
 
   // fetch(
   //   "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"

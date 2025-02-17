@@ -1,83 +1,238 @@
+/**
+ * @file utils/debugger.h
+ * @brief The file contains the definition of the debugger utilities.
+ */
+
 #pragma once
 
-#if !defined(GK_CONF_DIST) && !defined(EMSCRIPTEN)
-#define GK_USE_DEBUGGER 1
-#define GK_DEBUGGER_OVERLAYS 1
+#include "defines.h"
 
-#define GK_DEBUGGER_INIT() Graphick::Utils::Debugger::init()
-#define GK_DEBUGGER_SHUTDOWN() Graphick::Utils::Debugger::shutdown()
-#define GK_DEBUGGER_RENDER(...) Graphick::Utils::Debugger::render(__VA_ARGS__)
-#define GK_DEBUGGER_CLEAR() Graphick::Utils::Debugger::clear()
-#define GK_DEBUGGER_LOG(...) Graphick::Utils::Debugger::log(__VA_ARGS__)
+#define RECORDS_COUNT 150
 
-#if GK_DEBUGGER_OVERLAYS
-#define GK_DEBUGGER_DRAW(...) Graphick::Utils::Debugger::draw(__VA_ARGS__)
-#else
-#define GK_DEBUGGER_DRAW(...) ((void)0)
-#endif
-#else
-#define GK_USE_DEBUGGER 0
+#ifdef GK_DEBUG
 
-#define GK_DEBUGGER_INIT() ((void)0)
-#define GK_DEBUGGER_SHUTDOWN() ((void)0)
-#define GK_DEBUGGER_RENDER(...) ((void)0)
-#define GK_DEBUGGER_CLEAR(...) ((void)0)
-#define GK_DEBUGGER_LOG(...) ((void)0)
+#  include <string>
+#  include <vector>
 
-#define GK_DEBUGGER_DRAW(...) ((void)0)
-#endif
+namespace graphick::utils {
 
-#if GK_USE_DEBUGGER
-
-#include "../math/vec4.h"
-#include "../math/vec2.h"
-#include "../math/mat2x3.h"
-#include "../math/rect.h"
-
-#include "../lib/stb/stb_truetype.h"
-
-#include <vector>
-#include <string>
-
-namespace Graphick::Renderer {
-  struct Drawable;
-}
-
-namespace Graphick::Renderer::Geometry {
-  class Contour;
-}
-
-namespace Graphick::Utils {
-  class Debugger {
-  public:
-    static void init();
-    static void shutdown();
-
-    static void clear();
-    static void log(const std::string& text);
-
-    static void draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform, const vec4& color);
-    static void draw(const Renderer::Geometry::Contour& contour, const mat2x3& transform);
-    static void draw(const Renderer::Geometry::Contour& contour);
-
-    static void draw(const Renderer::Drawable& drawable, const mat2x3& transform, const vec4& color);
-    static void draw(const Renderer::Drawable& drawable, const mat2x3& transform);
-    static void draw(const Renderer::Drawable& drawable);
-
-    static void draw(const rect& rect);
-
-    static void render(const vec2 viewport_size);
-  private:
-    Debugger() {}
-    ~Debugger() = default;
-
-    static inline Debugger* get() { return s_instance; }
-  private:
-    std::vector<std::string> m_messages;
-  private:
-    static Debugger* s_instance;
+/**
+ * @brief The class that represents the debugger utility.
+ *
+ * The debugger utility is responsible for creating timers and querying draw commands to the
+ * renderer's debug layer.
+ */
+struct debugger {
+ public:
+  /**
+   * @brief The structure that represents a debug value, updated every frame.
+   *
+   * If the value is not updated within 1000 frames, it is removed.
+   */
+  struct DebugValue {
+    std::string value;  // The value to display.
+    size_t last_time;   // The last time the value was updated.
   };
 
+  /**
+   * @brief The structure that represents a timer used to measure the average time of a task.
+   */
+  struct AverageTimer {
+    size_t last_time;     // The last time the timer was started.
+    size_t duration = 0;  // The total duration of the task.
+    size_t samples = 0;   // The number of samples.
+  };
+
+  /**
+   * @brief The structure that represents a timer used to measure the total time of a task during a
+   * frame.
+   */
+  struct TotalTimer {
+    std::vector<size_t> records = std::vector<size_t>(RECORDS_COUNT);  // The records of the task.
+
+    size_t last_time;  // The last time the timer was started.
+    size_t index = 0;  // The index of the current record.
+
+    /**
+     * @brief Starts the timer.
+     */
+    void start();
+
+    /**
+     * @brief Ends the timer.
+     */
+    void end();
+
+    /**
+     * @brief Ends the timer with a specific time.
+     *
+     * @param record The time to record.
+     */
+    void end(const size_t record);
+
+    /**
+     * @brief Moves to the next record.
+     */
+    void next();
+
+    /**
+     * @brief Returns the average time of the task.
+     *
+     * @return The average time of the task.
+     */
+    size_t average() const;
+  };
+
+ public:
+  /**
+   * @brief Starts a new frame.
+   */
+  static void frame();
+
+  /**
+   * @brief Sets a debug value.
+   *
+   * @param name The name of the value.
+   * @param value The value to set.
+   */
+  template<typename T>
+  static inline void value(const std::string& name, const T value)
+  {
+    debugger::value(name, std::to_string(value));
+  }
+
+  /**
+   * @brief Sets a debug value.
+   *
+   * @param name The name of the value.
+   * @param value The value to set.
+   */
+  static void value(const std::string& name, const std::string& value);
+
+  /**
+   * @brief Sets a debug value counter.
+   *
+   * @param name The name of the counter.
+   * @param value The value to add to the counter, default is 1.
+   */
+  static void value_counter(const std::string& name, const int value = 1);
+
+  /**
+   * @brief Starts a total timer.
+   *
+   * @param name The name of the timer.
+   */
+  static void total_start(const std::string& name);
+
+  /**
+   * @brief Ends a total timer.
+   *
+   * @param name The name of the timer.
+   */
+  static void total_end(const std::string& name);
+
+  /**
+   * @brief Records an external total timer (e.g. GPU timer).
+   *
+   * @param name The name of the timer.
+   * @param record The time to record.
+   */
+  static void total_record(const std::string& name, const size_t record);
+
+  /**
+   * @brief Starts an average timer.
+   *
+   * @param name The name of the timer.
+   */
+  static void average_start(const std::string& name);
+
+  /**
+   * @brief Ends an average timer.
+   *
+   * @param name The name of the timer.
+   */
+  static void average_end(const std::string& name);
+
+  /**
+   * @brief Issues the necessary draw commands to the renderer.
+   */
+  static void render();
+};
+
+/**
+ * @brief The structure that represents a scoped timer.
+ *
+ * It is used by the __debug_time_total and __debug_time_average macros.
+ */
+struct ScopedTimer {
+  std::string id;  // The name of the timer.
+  bool total;      // True if the timer is a total timer, false otherwise.
+
+  ScopedTimer(const std::string& id, const bool total = false) : id(id), total(total)
+  {
+    if (total) {
+      debugger::total_start(id);
+    } else {
+      debugger::average_start(id);
+    }
+  }
+
+  ~ScopedTimer()
+  {
+    if (total) {
+      debugger::total_end(id);
+    } else {
+      debugger::average_end(id);
+    }
+  }
+};
+
+}  // namespace graphick::utils
+
+namespace graphick {
+using debugger = utils::debugger;
 }
+
+/**
+ * @brief Creates a debug value updated every frame.
+ */
+#  define __debug_value(name, record) graphick::utils::debugger::value(name, record)
+
+/**
+ * @brief Creates a debug value counter reset every frame.
+ */
+#  define __debug_value_counter(...) graphick::utils::debugger::value_counter(__VA_ARGS__)
+
+/**
+ * @brief Creates a scoped timer and adds it to the total time of the task.
+ */
+#  define __debug_time_total() graphick::utils::ScopedTimer __scoped_timer(__FUNCTION__, true)
+
+/**
+ * @brief Adds the time to the task with the given name.
+ */
+#  define __debug_time_total_record(name, record) \
+    graphick::utils::debugger::total_record(name, record)
+
+/**
+ * @brief Creates a scoped timer and averages it with the other entries of the task.
+ */
+#  define __debug_time_average() graphick::utils::ScopedTimer __scoped_timer(__FUNCTION__)
+
+/**
+ * @brief Sets up the debugger for the next frame.
+ */
+#  define __debug_time_frame() \
+    graphick::utils::debugger::frame(); \
+    __debug_time_total()
+
+#else
+
+#  define __debug_value(...) ((void)0)
+#  define __debug_value_counter(...) ((void)0)
+#  define __debug_time_total() ((void)0)
+#  define __debug_time_total_record(...) ((void)0)
+#  define __debug_time_average() ((void)0)
+#  define __debug_time_frame() ((void)0)
 
 #endif

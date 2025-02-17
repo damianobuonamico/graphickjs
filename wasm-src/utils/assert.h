@@ -6,9 +6,13 @@
 #pragma once
 
 #ifdef GK_CONF_DIST
-#define GK_ASSERT(...) ((void)0)
+#  define GK_ASSERT(...) ((void)0)
 #else
-#include <assert.h>
+#  include <cassert>
 
-#define GK_ASSERT(x, message) assert(x && message)
+#  ifndef assert
+#    define assert(...) ((void)0)
+#  endif
+
+#  define GK_ASSERT(x, message) assert(x&& message)
 #endif

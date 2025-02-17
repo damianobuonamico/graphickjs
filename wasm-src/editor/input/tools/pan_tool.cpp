@@ -9,12 +9,19 @@
 
 #include "../../editor.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
-  PanTool::PanTool() : Tool(ToolType::Pan, CategoryImmediate) {}
+PanTool::PanTool() : Tool(ToolType::Pan, CategoryImmediate | CategoryView) {}
 
-  void PanTool::on_pointer_move() {
-    Editor::scene().viewport.move(InputManager::pointer.scene.movement);
-  }
-
+void PanTool::on_pointer_down()
+{
+  m_start_position = Editor::scene().viewport.position();
 }
+
+void PanTool::on_pointer_move()
+{
+  Editor::scene().viewport.move_to(m_start_position + InputManager::pointer.client.delta /
+                                                          Editor::scene().viewport.zoom());
+}
+
+}  // namespace graphick::editor::input

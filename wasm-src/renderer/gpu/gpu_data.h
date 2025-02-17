@@ -1,316 +1,216 @@
 /**
- * @file gpu_data.h
+ * @file renderer/gpu/gpu_data.h
  * @brief Contains the GPU data definitions.
  */
 
 #pragma once
 
+#include "../../math/mat4.h"
 #include "../../math/vec2.h"
 #include "../../math/vec4.h"
-#include "../../math/mat4.h"
 
-#include <cstdint>
-#include <variant>
 #include <optional>
+#include <variant>
+#include <vector>
 
-namespace Graphick::Renderer::GPU {
+namespace graphick::renderer::GPU {
 
-  /**
-   * @brief The version/dialect of OpenGL we should render with.
-   */
-  enum class DeviceVersion {
-    GL3 = 0,      /* OpenGL 3.0+, core profile. */
-    GLES3 = 1,    /* OpenGL ES 3.0+. */
-  };
+/**
+ * @brief The version/dialect of OpenGL we should render with.
+ */
+enum class DeviceVersion {
+  GL3 = 0,    // OpenGL 3.0+, core profile.
+  GLES3 = 1,  // OpenGL ES 3.0+.
+};
 
-  /**
-   * @brief The kind of access to an image.
-   */
-  enum class ImageAccess {
-    Read,
-    Write,
-    ReadWrite
-  };
+/**
+ * @brief The primitive type.
+ */
+enum class Primitive {
+  Triangles,
+  Lines,
+};
 
-  /**
-   * @brief The texture format.
-   */
-  enum class TextureFormat {
-    R8,
-    RGBA8,
-    RGBA8UI,
-    R32F,
-    RGBA32F
-  };
+/**
+ * @brief The shader kind.
+ */
+enum class ShaderKind {
+  Vertex,
+  Fragment,
+};
 
-  /**
-   * @brief The texture sampling flags.
-   */
-  enum class TextureSamplingFlag {
-    None = 0,
-    RepeatU = 1 << 0,
-    RepeatV = 1 << 1,
-    NearestMin = 1 << 2,
-    NearestMag = 1 << 3
-  };
+/**
+ * @brief The color blend factor.
+ */
+enum class BlendFactor {
+  Zero,
+  One,
+  SrcAlpha,
+  OneMinusSrcAlpha,
+  DestAlpha,
+  OneMinusDestAlpha,
+  DestColor
+};
 
-  /**
-   * @brief The vertex attribute type.
-   */
-  enum class VertexAttrType {
-    F32,
-    I8,
-    I16,
-    I32,
-    U8,
-    U16
-  };
+/**
+ * @brief The color blend operation.
+ */
+enum class BlendOp { Add, Subtract, ReverseSubtract, Min, Max };
 
-  /**
-   * @brief The vertex attribute class.
-   */
-  enum class VertexAttrClass {
-    Float,
-    FloatNorm,
-    Int,
-  };
+/**
+ * @brief The depth function.
+ */
+enum class DepthFunc { Less, Lequal, Greater, Gequal, Always };
 
-  /**
-   * @brief The buffer target.
-   */
-  enum class BufferTarget {
-    Vertex,
-    Index,
-    Storage,
-  };
+/**
+ * @brief The stencil function.
+ */
+enum class StencilFunc { Always, Equal, Nequal };
 
-  /**
-   * @brief The buffer upload mode.
-   */
-  enum class BufferUploadMode {
-    Static,
-    Dynamic,
-    Stream
-  };
+/**
+ * @brief The vertex attribute type.
+ */
+enum class VertexAttrType { F16, F32, I8, I16, I32, U8, U16, U32 };
 
-  /**
-   * @brief The shader kind.
-   */
-  enum class ShaderKind {
-    Vertex,
-    Fragment,
-  };
+/**
+ * @brief The vertex attribute class.
+ */
+enum class VertexAttrClass {
+  Float,
+  FloatNorm,
+  Int,
+};
 
-  /**
-   * @brief The color blend factor.
-   */
-  enum class BlendFactor {
-    Zero,
-    One,
-    SrcAlpha,
-    OneMinusSrcAlpha,
-    DestAlpha,
-    OneMinusDestAlpha,
-    DestColor
-  };
+/**
+ * @brief The texture format.
+ */
+enum class TextureFormat { R8, R16UI, RGB8, RGBA8, RGBA8UI, R16F, R32F, RGBA16F, RGBA32F };
 
-  /**
-   * @brief The color blend operation.
-   */
-  enum class BlendOp {
-    Add,
-    Subtract,
-    ReverseSubtract,
-    Min,
-    Max
-  };
+/**
+ * @brief The texture sampling flags.
+ */
+enum TextureSamplingFlag {
+  TextureSamplingFlagNone = 0,
+  TextureSamplingFlagRepeatU = 1 << 0,
+  TextureSamplingFlagRepeatV = 1 << 1,
+  TextureSamplingFlagNearestMin = 1 << 2,
+  TextureSamplingFlagNearestMag = 1 << 3,
+  TextureSamplingFlagMipmapMin = 1 << 4
+};
 
-  /**
-   * @brief The depth function.
-   */
-  enum class DepthFunc {
-    Less,
-    Lequal,
-    Always
-  };
+/**
+ * @brief The buffer target.
+ */
+enum class BufferTarget {
+  Vertex,
+  Index,
+};
 
-  /**
-   * @brief The stencil function.
-   */
-  enum class StencilFunc {
-    Always,
-    Equal
-  };
+/**
+ * @brief The buffer upload mode.
+ */
+enum class BufferUploadMode { Static, Dynamic, Stream };
 
-  /**
-   * @brief The primitive type.
-   */
-  enum class Primitive {
-    Triangles,
-    Lines,
-  };
+/**
+ * @brief The vertex attribute descriptor.
+ */
+struct VertexAttrDescriptor {
+  VertexAttrClass attr_class;  // The attribute class.
+  VertexAttrType attr_type;    // The attribute type.
 
-  /**
-   * @brief The texture data.
-   *
-   * @struct TextureData
-   */
-  struct TextureData {
-    size_t size;    /* The size of the texture data. */
+  uint32_t size;               // The size of the attribute.
+  uint32_t stride;             // The stride of the attribute.
+  uint32_t offset;             // The offset of the attribute.
+  uint32_t divisor;            // The divisor of the attribute.
+  uint32_t buffer_index;       // The buffer index of the attribute.
+};
 
-    TextureData(size_t size) : size(size) {}
-  };
+/**
+ * @brief The blend state.
+ */
+struct BlendState {
+  BlendFactor src_rgb_factor;     // The source RGB factor.
+  BlendFactor dest_rgb_factor;    // The destination RGB factor.
+  BlendFactor src_alpha_factor;   // The source alpha factor.
+  BlendFactor dest_alpha_factor;  // The destination alpha factor.
+  BlendOp op;                     // The blend operation.
 
-  /**
-   * @brief The 8-bit texture data.
-   *
-   * @struct U8TextureData
-  */
-  struct U8TextureData : public TextureData {
-    uint8_t* data;    /* The underlying texture data. */
-
-    U8TextureData(size_t width, size_t height, uint8_t channels)
-      : TextureData(width* height* channels), data(new uint8_t[size]) {}
-    ~U8TextureData() { delete[] data; }
-  };
-
-  /**
-   * @brief The 32-bit float texture data.
-   *
-   * @struct F32TextureData
-   */
-  struct F32TextureData : public TextureData {
-    float* data;    /* The underlying texture data. */
-
-    F32TextureData(size_t width, size_t height, uint8_t channels)
-      : TextureData(width* height* channels), data(new float[size]) {}
-    ~F32TextureData() { delete[] data; }
-  };
-
-  /**
-   * @brief The vertex attribute descriptor.
-   *
-   * @struct VertexAttrDescriptor
-   */
-  struct VertexAttrDescriptor {
-    size_t size;                   /* The size of the attribute. */
-    VertexAttrClass attr_class;    /* The attribute class. */
-    VertexAttrType attr_type;      /* The attribute type. */
-    size_t stride;                 /* The stride of the attribute. */
-    size_t offset;                 /* The offset of the attribute. */
-    uint32_t divisor;              /* The divisor of the attribute. */
-    uint32_t buffer_index;         /* The buffer index of the attribute. */
-  };
-
-  using UniformData = std::variant<
-    int,
-    ivec2,
-    float,
-    vec2,
-    vec4,
-    mat4
-  >;
-
-  /**
-   * @brief The clear operations.
-   */
-  struct ClearOps {
-    std::optional<vec4> color;         /* The color clear value, if std::nullopt, the color buffer is not cleared. */
-    std::optional<float> depth;        /* The depth clear value, if std::nullopt, the depth buffer is not cleared. */
-    std::optional<uint8_t> stencil;    /* The stencil clear value, if std::nullopt, the stencil buffer is not cleared. */
-
-    /**
-     * @brief Check if the clear operations are not empty.
-     *
-     * @return true if the clear operations are not empty, false otherwise.
-     */
-    inline bool has_ops() const { return color.has_value() || depth.has_value() || stencil.has_value(); }
-  };
-
-  /**
-   * @brief The blend state.
-   *
-   * @struct BlendState
-   */
-  struct BlendState {
-    BlendFactor src_rgb_factor;       /* The source RGB factor. */
-    BlendFactor dest_rgb_factor;      /* The destination RGB factor. */
-    BlendFactor src_alpha_factor;     /* The source alpha factor. */
-    BlendFactor dest_alpha_factor;    /* The destination alpha factor. */
-    BlendOp op;                       /* The blend operation. */
-  };
-
-  /**
-   * @brief The depth state.
-   *
-   * @struct DepthState
-   */
-  struct DepthState {
-    DepthFunc func;    /* The depth function. */
-    bool write;        /* Whether to write to the depth buffer. */
-  };
-
-  /**
-   * @brief The stencil state.
-   *
-   * @struct StencilState
-   */
-  struct StencilState {
-    StencilFunc func;      /* The stencil function. */
-    uint32_t reference;    /* The reference value. */
-    uint32_t mask;         /* The mask value. */
-    bool write;            /* Whether to write to the stencil buffer. */
-  };
-
-  /**
-   * @brief The render options.
-   *
-   * @struct RenderOptions
-   */
-  struct RenderOptions {
-    std::optional<BlendState> blend;        /* The blend state, if std::nullopt, blending is disabled. */
-    std::optional<DepthState> depth;        /* The depth state, if std::nullopt, the depth test is disabled. */
-    std::optional<StencilState> stencil;    /* The stencil state, if std::nullopt, the stencil test is disabled. */
-    ClearOps clear_ops;                     /* The clear operations. */
-    bool color_mask;                        /* Whether to write to the color buffer. */
-  };
-
-  template <typename U>
-  using UniformBinding = std::pair<U, UniformData>;
-
-  template <typename TP, typename T>
-  using TextureBinding = std::pair<TP, T>;
-
-  /**
-   * @brief Returns the number of bytes per pixel for the given texture format.
-   *
-   * @param format The texture format.
-   * @return The number of bytes per pixel.
-   */
-  constexpr uint8_t bytes_per_pixel(TextureFormat format) {
-    switch (format) {
-    case TextureFormat::R8: return 1;
-    case TextureFormat::RGBA8:
-    case TextureFormat::R32F: return 4;
-    default:
-    case TextureFormat::RGBA32F: return 16;
-    }
+  bool operator==(const BlendState& other) const
+  {
+    return src_rgb_factor == other.src_rgb_factor && dest_rgb_factor == other.dest_rgb_factor &&
+           src_alpha_factor == other.src_alpha_factor &&
+           dest_alpha_factor == other.dest_alpha_factor && op == other.op;
   }
 
-  /**
-   * @brief Returns the number of channels per pixel for the given texture format.
-   *
-   * @param format The texture format.
-   * @return The number of channels per pixel.
-   */
-  constexpr uint8_t channels_per_pixel(TextureFormat format) {
-    switch (format) {
-    case TextureFormat::R8:
-    case TextureFormat::R32F: return 1;
-    default:
-    case TextureFormat::RGBA8:
-    case TextureFormat::RGBA32F: return 4;
-    }
+  bool operator!=(const BlendState& other) const
+  {
+    return !operator==(other);
+  }
+};
+
+/**
+ * @brief The depth state.
+ */
+struct DepthState {
+  DepthFunc func;  // The depth function.
+  bool write;      // Whether to write to the depth buffer.
+
+  bool operator==(const DepthState& other) const
+  {
+    return func == other.func && write == other.write;
   }
 
-}
+  bool operator!=(const DepthState& other) const
+  {
+    return !operator==(other);
+  }
+};
+
+/**
+ * @brief The stencil state.
+ */
+struct StencilState {
+  StencilFunc func;    // The stencil function.
+  uint32_t reference;  // The reference value.
+  uint32_t mask;       // The mask value.
+  bool write;          // Whether to write to the stencil buffer.
+
+  bool operator==(const StencilState& other) const
+  {
+    return func == other.func && reference == other.reference && mask == other.mask &&
+           write == other.write;
+  }
+
+  bool operator!=(const StencilState& other) const
+  {
+    return !operator==(other);
+  }
+};
+
+/**
+ * @brief The clear operations.
+ */
+struct ClearOps {
+  std::optional<vec4>
+      color;    // The color clear value. If std::nullopt, the color buffer is not cleared.
+  std::optional<float>
+      depth;    // The depth clear value. If std::nullopt, the depth buffer is not cleared.
+  std::optional<uint8_t>
+      stencil;  // The stencil clear value. If std::nullopt, the stencil buffer is not cleared.
+};
+
+/**
+ * @brief The uniform data.
+ */
+using UniformData = std::variant<uint16_t,
+                                 uint32_t,
+                                 int,
+                                 float,
+                                 ivec2,
+                                 vec2,
+                                 vec4,
+                                 mat4,
+                                 std::vector<int>,
+                                 std::vector<vec4>>;
+
+}  // namespace graphick::renderer::GPU

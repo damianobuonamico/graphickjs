@@ -1,20 +1,20 @@
 R"(
 
-  precision highp float;
+  precision mediump float;
 
-  uniform float uRadius;
-  uniform float uZoom;
+  uniform float u_zoom;
 
-  in vec4 vColor;
-  in vec2 vTexCoord;
+  in lowp vec4 v_color;
+  in lowp vec2 v_tex_coord;
+  in lowp float v_radius;
 
-  out vec4 oFragColor;
+  out vec4 o_frag_color;
 
   void main() {
-    float dist = 2.0 * uRadius * length(vTexCoord);
-    float col = smoothstep(uRadius, uRadius - 1.0 / uZoom, dist) ;
+    float dist = 2.0 * v_radius * length(v_tex_coord);
+    float alpha = smoothstep(v_radius, v_radius - 1.0 / u_zoom, dist) ;
 
-    oFragColor = vec4(vColor.rgb, col);
+    o_frag_color = vec4(v_color.rgb * v_color.a, v_color.a) * alpha;
   }
 
 )"
