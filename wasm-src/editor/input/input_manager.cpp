@@ -2,7 +2,6 @@
  * @file input_manager.cpp
  * @brief Contains the implementation of the InputManager class.
  *
- * @todo fix events clogging animation frame queue (request frame and let editor collapse calls)
  * @todo InputManager reinitialization
  * @todo implement shortcuts and emscripten/glfw key codes mapping
  * @todo move zoom and scroll normalization to the viewport class
@@ -180,7 +179,8 @@ void InputManager::recalculate_hover()
   Scene& scene = Editor::scene();
 
   if (!scene.tool_state.active().is_in_category(Tool::CategoryImmediate)) {
-    float threshold = Settings::Input::movement_threshold_multiplier[(int)pointer.type] * 2.5f;
+    float threshold = Settings::Input::movement_threshold_multiplier[(int)pointer.type] *
+                      Settings::Input::hit_threshold;
 
     hover.set_hovered(
         scene.entity_at(pointer.scene.position,

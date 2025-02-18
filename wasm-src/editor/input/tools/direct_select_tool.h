@@ -30,7 +30,7 @@ class DirectSelectTool : public Tool {
   virtual void on_pointer_move() override;
   virtual void on_pointer_up() override;
 
-  virtual void render_overlays() const override;
+  virtual void render_overlays(const vec4& color) const override;
 
  private:
   /**

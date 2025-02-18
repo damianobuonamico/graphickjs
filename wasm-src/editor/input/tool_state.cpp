@@ -37,7 +37,7 @@ void update_tool_ui(int type) {}
 namespace graphick::editor::input {
 
 ToolState::ToolState()
-    : m_current(Tool::ToolType::Select),
+    : m_current(Tool::ToolType::Pen),
       m_active(m_current),
       m_last_tool(m_current),
       m_tools{new PanTool(),
@@ -189,7 +189,7 @@ void ToolState::render_overlays(const vec4& color, const float zoom) const
 {
   Tool& tool = active();
 
-  tool.render_overlays();
+  tool.render_overlays(color);
 
   if (tool.is_in_category(Tool::CategoryDirect) || tool.is_in_category(Tool::CategoryImmediate) ||
       !manipulator.active())

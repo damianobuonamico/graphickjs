@@ -195,10 +195,15 @@ void PenTool::reset()
   set_pen_element(uuid::null);
 }
 
-void PenTool::render_overlays() const
+void PenTool::render_overlays(const vec4& color) const
 {
-  if (!m_element || InputManager::pointer.down)
+  if (!m_element || InputManager::pointer.down) {
     return;
+  }
+
+  if (!Editor::scene().has_entity(m_element)) {
+    return;
+  }
 
   const Entity entity = Editor::scene().get_entity(m_element);
   const PathComponent path = entity.get_component<PathComponent>();
@@ -230,9 +235,7 @@ void PenTool::render_overlays() const
     segment.line_to(InputManager::pointer.scene.position);
   }
 
-  renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
-  renderer::Renderer::draw(
-      segment, mat2x3::identity(), renderer::DrawingOptions{nullptr, nullptr, &outline});
+  renderer::Renderer::ui_outline(segment, color);
 }
 
 void PenTool::set_pen_element(const uuid id)

@@ -1,6 +1,7 @@
 /**
  * @file hover_state.cpp
  * @brief Contains the implementation of the HoverState class.
+ *
  * @todo hover priority: handle > vertex > segment > element > none
  */
 
@@ -77,6 +78,7 @@ void HoverState::set_hovered(
 
   threshold = static_cast<float>(static_cast<double>(threshold) / zoom);
 
+  const float point_threshold = threshold * 1.5f;
   const bool deep = deep_search && scene.selection.has(id);
 
   if (path.data().empty() && path.data().vacant()) {
@@ -86,14 +88,14 @@ void HoverState::set_hovered(
   }
 
   for (uint32_t i = 0; i < path.data().points_count(); i++) {
-    if (path.data().is_point_inside_point(i, position, transform, threshold)) {
+    if (path.data().is_point_inside_point(i, position, transform, point_threshold)) {
       m_segment = -1;
 
       if (path.data().is_vertex(i)) {
         m_type = HoverType::Vertex;
         m_vertex = i;
         m_handle = -1;
-      } else {
+      } else if (deep) {
         m_type = HoverType::Handle;
         m_vertex = -1;
         m_handle = i;
@@ -105,7 +107,7 @@ void HoverState::set_hovered(
 
   if (path.data().has_in_handle()) {
     if (path.data().is_point_inside_point(
-            geom::path::in_handle_index, position, transform, threshold))
+            geom::path::in_handle_index, position, transform, point_threshold))
     {
       m_type = HoverType::Handle;
       m_segment = -1;
@@ -117,7 +119,7 @@ void HoverState::set_hovered(
 
   if (path.data().has_out_handle()) {
     if (path.data().is_point_inside_point(
-            geom::path::out_handle_index, position, transform, threshold))
+            geom::path::out_handle_index, position, transform, point_threshold))
     {
       m_type = HoverType::Handle;
       m_segment = -1;

@@ -204,6 +204,13 @@ bool Renderer::draw(const geom::path& path,
   if (path.empty() ||
       (options.fill == nullptr && options.stroke == nullptr && options.outline == nullptr))
   {
+    if (path.empty() && !path.vacant() && options.outline) {
+      const geom::dpath transformed_path = path.transformed<double>(transform);
+      const math::drect transformed_bounding_rect = transformed_path.bounding_rect();
+
+      get()->draw_outline(transformed_path, transformed_bounding_rect, *options.outline);
+    }
+
     return false;
   }
 
@@ -291,6 +298,17 @@ bool Renderer::draw(const renderer::Image& image,
   const bool has_transform = !math::is_identity(transform);
 
   return false;
+}
+
+void Renderer::ui_outline(const geom::path& path,
+                          const vec4& color,
+                          const mat2x3& transform,
+                          const bool draw_vertices)
+{
+  const geom::dpath transformed_path = path.transformed<double>(transform);
+
+  get()->draw_outline(
+      transformed_path, transformed_path.bounding_rect(), Outline{nullptr, draw_vertices, color});
 }
 
 #ifdef GK_DEBUG
@@ -544,15 +562,17 @@ void Renderer::draw_outline(const geom::dpath& path,
                             const drect& bounding_rect,
                             const Outline& outline)
 {
-  const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
+  if (!path.empty()) {
+    const geom::PathBuilder<double> builder = geom::PathBuilder(path, bounding_rect);
 
-  builder.flatten<float>(m_viewport.visible(),
-                         RendererSettings::flattening_tolerance / m_viewport.zoom,
-                         [&](const vec2 p0, const vec2 p1) {
-                           m_instances.push_line(p0, p1, outline.color, m_ui_options.line_width);
-                         });
+    builder.flatten<float>(m_viewport.visible(),
+                           RendererSettings::flattening_tolerance / m_viewport.zoom,
+                           [&](const vec2 p0, const vec2 p1) {
+                             m_instances.push_line(p0, p1, outline.color, m_ui_options.line_width);
+                           });
+  }
 
-  if (outline.draw_vertices) {
+  if (!path.vacant() && outline.draw_vertices) {
     draw_outline_vertices(path, outline);
   }
 }

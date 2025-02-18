@@ -202,6 +202,19 @@ class Renderer {
     get()->m_instances.push_circle(center, radius, color);
   }
 
+  /**
+   * @brief Draws the outline of a path with the provided color in the UI layer.
+   *
+   * @param path The path to draw.
+   * @param color The color to use, default is white.
+   * @param transform The transformation matrix to apply to the path, default is identity.
+   * @param draw_vertices Whether to draw the vertices of the path, default is false.
+   */
+  static void ui_outline(const geom::path& path,
+                         const vec4& color = vec4::identity(),
+                         const mat2x3& transform = mat2x3::identity(),
+                         const bool draw_vertices = false);
+
 #ifdef GK_DEBUG
 
   /**

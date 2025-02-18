@@ -7,6 +7,8 @@
 
 #include "keys.h"
 
+#include "../../math/vec4.h"
+
 namespace graphick::editor::input {
 
 /**
@@ -37,8 +39,8 @@ class Tool {
    * @brief Deleted default constructor, copy constructor, move constructor, and destructor.
    */
   Tool() = delete;
-  Tool(const Tool &) = delete;
-  Tool(Tool &&) = delete;
+  Tool(const Tool&) = delete;
+  Tool(Tool&&) = delete;
   ~Tool() = default;
 
   /**
@@ -107,8 +109,10 @@ class Tool {
 
   /**
    * @brief Renders any overlays for the tool.
+   *
+   * @param color The color to render the overlays with.
    */
-  virtual void render_overlays() const {}
+  virtual void render_overlays(const vec4& color) const {}
 
  protected:
   /**

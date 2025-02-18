@@ -18,6 +18,8 @@ struct Settings {
   using Renderer = renderer::RendererSettings;
 
   struct Input {
+    inline static float hit_threshold = 2.5f;       // The threshold for hit detection.
+
     inline static float movement_threshold = 4.0f;  // The threshold for input movement.
     inline static float movement_threshold_multiplier[3] = {
         1.0f, 2.0f, 2.0f};  // The multiplier for different input devices (mouse, pen, touch).

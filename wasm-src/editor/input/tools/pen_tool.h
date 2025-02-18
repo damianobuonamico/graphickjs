@@ -28,7 +28,7 @@ class PenTool : public Tool {
 
   virtual void reset() override;
 
-  virtual void render_overlays() const override;
+  virtual void render_overlays(const vec4& color) const override;
 
   /**
    * @brief Returns the UUID of the pen element.

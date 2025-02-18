@@ -2130,6 +2130,10 @@ Path<U> Path<T, _>::transformed(const math::Mat2x3<T>& transform, bool* r_has_tr
   Path<U> path;
 
   if (empty()) {
+    if (!vacant()) {
+      path.move_to(mat * math::Vec2<U>(m_points[0]));
+    }
+
     return path;
   }
 

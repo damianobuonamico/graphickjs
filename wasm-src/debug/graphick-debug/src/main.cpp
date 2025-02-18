@@ -24,7 +24,7 @@ int main()
   }
 
 #define TEXT
-#define IMAGES
+  // #define IMAGES
   // #define TIGER
   // #define OBJECTS
 
@@ -89,16 +89,16 @@ int main()
 
   path1.move_to(vec2(0.0f, 0.0f));
 
-  // path1.cubic_to(vec2(0.0f, 32.0f), vec2(16.0f, 128.0f), vec2(32.0f, 128.0f));
-  // path1.cubic_to(vec2(48.0f, 128.0f), vec2(64.0f, 32.0f), vec2(64.0f, 0.0f));
+  path1.cubic_to(vec2(0.0f, 32.0f), vec2(16.0f, 128.0f), vec2(32.0f, 128.0f));
+  path1.cubic_to(vec2(48.0f, 128.0f), vec2(64.0f, 32.0f), vec2(64.0f, 0.0f));
   // path1.line_to(vec2(16.0f, 128.0f));
   // path1.line_to(vec2(128.0f, -32.0f));
 
   // path1.cubic_to(vec2(0.0f, 100.0f), vec2(100.0f, 100.0f), vec2(100.0f, 0.0f));
   // path1.cubic_to(vec2(100.0f, -100.0f), vec2(0.0f, -100.0f), vec2(0.0f, 0.0f));
 
-  path1.line_to(vec2(100.0f, 0.0f));
-  path1.line_to(vec2(0.0f, 200.0f));
+  // path1.line_to(vec2(100.0f, 0.0f));
+  // path1.line_to(vec2(0.0f, 200.0f));
 
   path1.close();
 
@@ -116,10 +116,10 @@ int main()
 
   path2.close();
 
-  // editor::Entity entity2 = editor::Editor::scene().create_element(path2);
+  editor::Entity entity2 = editor::Editor::scene().create_element(path2);
 
-  // entity2.add_component<editor::FillComponent>(vec4{0.3f, 0.8f, 0.3f, 1.0f});
-  // entity2.add_component<editor::StrokeComponent>(vec4{0.64f, 0.93f, 0.74f, 1.0f}, 50.0f);
+  entity2.add_component<editor::FillComponent>(vec4{0.3f, 0.8f, 0.3f, 1.0f});
+  entity2.add_component<editor::StrokeComponent>(vec4{0.64f, 0.93f, 0.74f, 1.0f}, 50.0f);
 
   geom::path path3;
 
@@ -131,10 +131,10 @@ int main()
 
   path3.close();
 
-  // editor::Entity entity3 = editor::Editor::scene().create_element(path3);
+  editor::Entity entity3 = editor::Editor::scene().create_element(path3);
 
-  // entity3.add_component<editor::FillComponent>(vec4{0.3f, 0.3f, 0.8f, 1.0f});
-  // entity3.add_component<editor::StrokeComponent>(vec4{0.64f, 0.74f, 0.93f, 1.0f}, 50.0f);
+  entity3.add_component<editor::FillComponent>(vec4{0.3f, 0.3f, 0.8f, 1.0f});
+  entity3.add_component<editor::StrokeComponent>(vec4{0.64f, 0.74f, 0.93f, 1.0f}, 50.0f);
 #endif
 
   while (!glfwWindowShouldClose(window)) {
