@@ -9,6 +9,7 @@
 
 #include "appearance.h"
 #include "base.h"
+#include "group.h"
 
 #include "../entity.h"
 
@@ -513,6 +514,43 @@ io::EncodedData& StrokeComponent::encode(io::EncodedData& data) const
 
 void StrokeComponent::modify(io::DataDecoder& decoder)
 {
+  *m_data = decoder;
+}
+
+/* -- GroupComponent -- */
+
+GroupData::GroupData(io::DataDecoder& decoder)
+{
+  children = decoder.vector<entt::entity>();
+}
+
+io::EncodedData& GroupComponent::encode(io::EncodedData& data) const
+{
+  return data.component_id(component_id).vector(m_data->children);
+}
+
+void GroupComponent::modify(io::DataDecoder& decoder)
+{
+  // TODO: different kind of modification (add, remove, move, etc.), like scene
+  *m_data = decoder;
+}
+
+/* -- LayerComponent -- */
+
+LayerData::LayerData(io::DataDecoder& decoder)
+{
+  children = decoder.vector<entt::entity>();
+  color = decoder.color();
+}
+
+io::EncodedData& LayerComponent::encode(io::EncodedData& data) const
+{
+  return data.component_id(component_id).vector(m_data->children).color(m_data->color);
+}
+
+void LayerComponent::modify(io::DataDecoder& decoder)
+{
+  // TODO: different kind of modification (add, remove, move, etc.), like scene
   *m_data = decoder;
 }
 

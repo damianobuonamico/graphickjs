@@ -10,6 +10,7 @@
 
 #include "components/appearance.h"
 #include "components/base.h"
+#include "components/group.h"
 
 #include "scene.h"
 
@@ -309,6 +310,33 @@ class Entity {
   inline bool is_image() const
   {
     return has_components<ImageComponent>();
+  }
+
+  /**
+   * @brief Checks if the entity is a group.
+   *
+   * A group is an entity that has a GroupComponent.
+   * All entities have a TransformComponent and a IDComponent.
+   *
+   * @return true if the entity is a group, false otherwise.
+   */
+  inline bool is_group() const
+  {
+    return has_components<GroupComponent>();
+  }
+
+  /**
+   * @brief Checks if the entity is a layer.
+   *
+   * A layer is an entity that has a LayerComponent.
+   * A layer entity doesn't have a TransformComponent, but it has a IDComponent.
+   * All entities have a TransformComponent and a IDComponent.
+   *
+   * @return true if the entity is a layer, false otherwise.
+   */
+  inline bool is_layer() const
+  {
+    return has_components<LayerComponent>();
   }
 
   /**

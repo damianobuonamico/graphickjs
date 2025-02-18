@@ -127,8 +127,6 @@ void History::push(Action&& action, const bool execute)
 {
   bool merged = false;
 
-  // TODO: Think of how to implement caching of actions executed outside of the history manager.
-  // Maybe just check with the id of the entity in the action
   if (execute) {
     action.execute(m_scene);
   } else {

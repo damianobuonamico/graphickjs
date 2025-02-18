@@ -185,7 +185,7 @@ void ToolState::recalculate_active()
   }
 }
 
-void ToolState::render_overlays(const float zoom) const
+void ToolState::render_overlays(const vec4& color, const float zoom) const
 {
   Tool& tool = active();
 
@@ -195,19 +195,24 @@ void ToolState::render_overlays(const float zoom) const
       !manipulator.active())
     return;
 
-  mat2x3 transform = manipulator.transform();
+  const std::array<vec2, 4> vertices = manipulator.path().bounding_rect().vertices();
+  const mat2x3 transform = manipulator.transform();
 
-  renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
-  renderer::Renderer::draw(
-      manipulator.path(), transform, renderer::DrawingOptions{nullptr, nullptr, &outline});
+  for (int i = 0; i < 4; i++) {
+    renderer::Renderer::ui_line(transform * vertices[i],
+                                transform * vertices[(i + 1) % 4],
+                                color,
+                                Settings::Renderer::ui_line_width);
+  }
 
   const vec2* handles = manipulator.handles();
 
   for (int i = 0; i < Manipulator::RN; i++) {
-    // TODO: replace with layer color
     renderer::Renderer::ui_square(
-        transform * handles[i], 5.0f / zoom, vec4(0.0f, 1.0f, 0.0f, 1.0f));
-    renderer::Renderer::ui_square(transform * handles[i], 3.0f / zoom, vec4::identity());
+        transform * handles[i], (Settings::Renderer::ui_handle_size + 2.0) * 0.5 / zoom, color);
+    renderer::Renderer::ui_square(transform * handles[i],
+                                  (Settings::Renderer::ui_handle_size) * 0.5 / zoom,
+                                  vec4::identity());
   }
 }
 

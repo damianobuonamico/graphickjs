@@ -84,6 +84,27 @@ class Scene {
   const Entity get_entity(const uuid id) const;
 
   /**
+   * @brief Returns the active layer.
+   *
+   * @return The active layer.
+   */
+  Entity get_active_layer();
+
+  /**
+   * @brief Returns the active layer.
+   *
+   * @return The active layer.
+   */
+  const Entity get_active_layer() const;
+
+  /**
+   * @brief Adds a new layer to the scene.
+   *
+   * @return The new layer.
+   */
+  Entity create_layer();
+
+  /**
    * @brief Creates a new element entity.
    *
    * This method automatically adds all the required components of an element entity.
@@ -234,12 +255,14 @@ class Scene {
                     const HitTestType hit_test_type) const;
 
  private:
-  entt::registry m_registry;          // The main entt registry of the scene.
+  entt::registry m_registry;  // The main entt registry of the scene.
 
   std::unordered_map<uuid, entt::entity>
-      m_entities;                     // A map of entities by their unique identifier.
-  std::vector<entt::entity> m_order;  // The z-order of the entities.
+      m_entities;             // A map of entities by their unique identifier.
+  // std::vector<entt::entity> m_order;  // The z-order of the entities.
+  std::vector<entt::entity> m_layers;  // The layers of the scene.
 
+  size_t m_active_layer = 0;           // The index of the active layer.
   size_t m_entity_tag_number =
       0;                  // The number of unnamed entities created, used for generating tags.
 

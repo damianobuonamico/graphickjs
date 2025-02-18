@@ -5,9 +5,9 @@
 
 #pragma once
 
+#include "image.h"
 #include "path.h"
 #include "text.h"
-#include "image.h"
 
 #include "../../../math/mat2x3.h"
 #include "../../../math/rect.h"

@@ -6,6 +6,7 @@
  * @todo different workflow for paths spanning less than 2x2 tiles
  * @todo different workflow for strokes with width less than twice (or 1.5x) the tile size
  * @todo find optimal tile size for a given zoom level
+ * @todo fix fills not clearing properly (tiles do)
  */
 
 #include "tiles.h"

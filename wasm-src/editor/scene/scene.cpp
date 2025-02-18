@@ -10,6 +10,7 @@
  * @todo get more than one component at a time in entity
  * @todo refactor and abstract away entity related methods in render()
  * @todo when scene serialization is a thing, implement copy constructor
+ * @todo implement layer and groups history
  */
 
 #include "scene.h"
@@ -35,11 +36,14 @@
 
 namespace graphick::editor {
 
-Scene::Scene() : selection(this), history(this) {}
+Scene::Scene() : selection(this), history(this)
+{
+  create_layer();
+}
 
 Scene::Scene(const Scene& other)
     : m_entities(other.m_entities),
-      m_order(other.m_order),
+      m_layers(other.m_layers),
       selection(this),
       history(this),
       viewport(other.viewport)
@@ -69,6 +73,52 @@ Entity Scene::get_entity(const uuid id)
 const Entity Scene::get_entity(const uuid id) const
 {
   return {m_entities.at(id), const_cast<Scene*>(this)};
+}
+
+Entity Scene::get_active_layer()
+{
+  GK_ASSERT(!m_layers.empty(), "No layers in scene!");
+
+  const size_t active_layer = m_active_layer >= m_layers.size() ? 0 : m_active_layer;
+
+  GK_ASSERT(m_registry.all_of<LayerComponent::Data>(m_layers[active_layer]),
+            "Active layer is not a layer!");
+
+  return {m_layers[active_layer], this};
+}
+
+const Entity Scene::get_active_layer() const
+{
+  GK_ASSERT(!m_layers.empty(), "No layers in scene!");
+
+  const size_t active_layer = m_active_layer >= m_layers.size() ? 0 : m_active_layer;
+
+  GK_ASSERT(m_registry.all_of<LayerComponent::Data>(m_layers[active_layer]),
+            "Active layer is not a layer!");
+
+  return {m_layers[m_active_layer], const_cast<Scene*>(this)};
+}
+
+Entity Scene::create_layer()
+{
+  const uuid id = uuid();
+
+  Entity entity = {m_registry.create(), this};
+
+  entity.add<IDComponent>(id);
+  entity.add<TagComponent>("Layer " + std::to_string(m_layers.size() + 1));
+  entity.add<CategoryComponent>(CategoryComponent::Category::None);
+  entity.add<LayerComponent>(vec4(std::rand() % 256, std::rand() % 256, std::rand() % 256, 255) /
+                             255.0f);
+
+  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
+
+  m_entities[id] = entity;
+  m_layers.push_back(entity);
+
+  m_active_layer = m_layers.size() - 1;
+
+  return entity;
 }
 
 Entity Scene::create_element()
@@ -144,13 +194,23 @@ uuid Scene::entity_at(const vec2 position, const bool deep_search, const float t
     }
   }
 
-  for (auto it = m_order.rbegin(); it != m_order.rend(); it++) {
-    const Entity entity = {*it, const_cast<Scene*>(this)};
-    const HitTestType hit_test_type = selection.has(entity.id()) ? HitTestType::EntityOnly :
-                                                                   HitTestType::All;
+  for (auto it = m_layers.rbegin(); it != m_layers.rend(); it++) {
+    const Entity layer_entity = {*it, const_cast<Scene*>(this)};
 
-    if (is_entity_at(entity, position, deep_search, local_threshold, hit_test_type)) {
-      return entity.id();
+    if (!layer_entity.is_layer()) {
+      continue;
+    }
+
+    const LayerComponent layer = layer_entity.get_component<LayerComponent>();
+
+    for (auto it = layer.rbegin(); it != layer.rend(); it++) {
+      const Entity entity = {*it, const_cast<Scene*>(this)};
+      const HitTestType hit_test_type = selection.has(entity.id()) ? HitTestType::EntityOnly :
+                                                                     HitTestType::All;
+
+      if (is_entity_at(entity, position, deep_search, local_threshold, hit_test_type)) {
+        return entity.id();
+      }
     }
   }
 
@@ -281,112 +341,126 @@ void Scene::render(const bool ignore_cache) const
   const auto& temp_selected = selection.temp_selected();
   const bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
 
-  for (auto it = m_order.begin(); it != m_order.end(); it++) {
-    const Entity entity = {*it, const_cast<Scene*>(this)};
-    const uuid id = entity.id();
+  for (auto it = m_layers.begin(); it != m_layers.end(); it++) {
+    const Entity layer_entity = {*it, const_cast<Scene*>(this)};
 
-    const bool is_element = entity.is_element();
-    const bool is_text = entity.is_text();
-
-    const bool is_selected = selected.find(id) != selected.end();
-    const bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
-    const bool has_outline = is_selected || is_temp_selected;
-
-    const mat2x3& transform_matrix = m_registry.get<TransformData>(*it).matrix;
-
-    renderer::Outline outline_opt = {
-        nullptr, is_element && draw_vertices, Settings::Renderer::ui_primary_color};
-
-    if (entity.is_image()) {
-      render_image(entity, id, transform_matrix, has_outline ? &outline_opt : nullptr);
-      continue;
-    } else if (!(is_element || is_text)) {
+    if (!layer_entity.is_layer()) {
       continue;
     }
 
-    renderer::Fill fill_opt;
-    renderer::Stroke stroke_opt;
-    renderer::DrawingOptions options;
+    const LayerComponent layer = layer_entity.get_component<LayerComponent>();
+    const vec4 outline_color = layer.color();
 
-    bool has_fill = m_registry.all_of<FillData>(*it);
-    bool has_stroke = m_registry.all_of<StrokeData>(*it);
+    for (auto it = layer.begin(); it != layer.end(); it++) {
+      const Entity entity = {*it, const_cast<Scene*>(this)};
+      const uuid id = entity.id();
 
-    if (has_fill) {
-      const FillData& fill = m_registry.get<FillData>(*it);
+      const bool is_element = entity.is_element();
+      const bool is_text = entity.is_text();
 
-      if (fill.visible && fill.paint.visible()) {
-        fill_opt = renderer::Fill(fill);
-        options.fill = &fill_opt;
-      } else {
-        has_fill = false;
+      const bool is_selected = selected.find(id) != selected.end();
+      const bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
+      const bool has_outline = is_selected || is_temp_selected;
+
+      const mat2x3& transform_matrix = m_registry.get<TransformData>(*it).matrix;
+
+      renderer::Outline outline_opt = {nullptr, is_element && draw_vertices, outline_color};
+
+      if (entity.is_image()) {
+        render_image(entity, id, transform_matrix, has_outline ? &outline_opt : nullptr);
+        continue;
+      } else if (!(is_element || is_text)) {
+        continue;
       }
-    }
 
-    if (has_stroke) {
-      const StrokeData& stroke = m_registry.get<StrokeData>(*it);
+      renderer::Fill fill_opt;
+      renderer::Stroke stroke_opt;
+      renderer::DrawingOptions options;
 
-      if (stroke.visible && stroke.paint.visible()) {
-        stroke_opt = renderer::Stroke(stroke);
-        options.stroke = &stroke_opt;
-      } else {
-        has_stroke = false;
+      bool has_fill = m_registry.all_of<FillData>(*it);
+      bool has_stroke = m_registry.all_of<StrokeData>(*it);
+
+      if (has_fill) {
+        const FillData& fill = m_registry.get<FillData>(*it);
+
+        if (fill.visible && fill.paint.visible()) {
+          fill_opt = renderer::Fill(fill);
+          options.fill = &fill_opt;
+        } else {
+          has_fill = false;
+        }
       }
-    }
 
-    if (!has_fill && !has_stroke && !has_outline) {
-      continue;
-    }
+      if (has_stroke) {
+        const StrokeData& stroke = m_registry.get<StrokeData>(*it);
 
-    if (is_text) {
-      renderer::Renderer::draw(
-          renderer::Text(m_registry.get<TextData>(*it)), transform_matrix, options, id);
-      continue;
-    }
+        if (stroke.visible && stroke.paint.visible()) {
+          stroke_opt = renderer::Stroke(stroke);
+          options.stroke = &stroke_opt;
+        } else {
+          has_stroke = false;
+        }
+      }
 
-    const geom::path& path = m_registry.get<PathData>(*it);
+      if (!has_fill && !has_stroke && !has_outline) {
+        continue;
+      }
 
-    if (!has_outline) {
+      if (is_text) {
+        renderer::Renderer::draw(
+            renderer::Text(m_registry.get<TextData>(*it)), transform_matrix, options, id);
+        continue;
+      }
+
+      const geom::path& path = m_registry.get<PathData>(*it);
+
+      if (!has_outline) {
+        renderer::Renderer::draw(path, transform_matrix, options, id);
+        continue;
+      }
+
+      options.outline = &outline_opt;
+
+      std::unordered_set<uint32_t> selected_vertices;
+      bool is_full = false;
+
+      if (is_selected) {
+        const Selection::SelectionEntry& entry = selected.at(id);
+
+        is_full = entry.full();
+
+        if (!is_full) {
+          selected_vertices = entry.indices;
+        }
+      }
+
+      if (is_temp_selected && !is_full) {
+        const Selection::SelectionEntry& entry = temp_selected.at(id);
+
+        is_full = entry.full();
+
+        if (!is_full) {
+          selected_vertices.insert(temp_selected.at(id).indices.begin(),
+                                   temp_selected.at(id).indices.end());
+        }
+      }
+
+      outline_opt.selected_vertices = is_full ? nullptr : &selected_vertices;
+
       renderer::Renderer::draw(path, transform_matrix, options, id);
-      continue;
     }
-
-    options.outline = &outline_opt;
-
-    std::unordered_set<uint32_t> selected_vertices;
-    bool is_full = false;
-
-    if (is_selected) {
-      const Selection::SelectionEntry& entry = selected.at(id);
-
-      is_full = entry.full();
-
-      if (!is_full) {
-        selected_vertices = entry.indices;
-      }
-    }
-
-    if (is_temp_selected && !is_full) {
-      const Selection::SelectionEntry& entry = temp_selected.at(id);
-
-      is_full = entry.full();
-
-      if (!is_full) {
-        selected_vertices.insert(temp_selected.at(id).indices.begin(),
-                                 temp_selected.at(id).indices.end());
-      }
-    }
-
-    outline_opt.selected_vertices = is_full ? nullptr : &selected_vertices;
-
-    renderer::Renderer::draw(path, transform_matrix, options, id);
   }
 
-  tool_state.render_overlays(viewport.zoom());
+  LayerComponent layer = get_active_layer().get_component<LayerComponent>();
+
+  tool_state.render_overlays(layer.color(), viewport.zoom());
+
   renderer::Renderer::end_frame();
 }
 
 Entity Scene::create_entity(const uuid id, const std::string& tag_type)
 {
+  LayerComponent layer = get_active_layer().get_component<LayerComponent>();
   Entity entity = {m_registry.create(), this};
 
   entity.add<IDComponent>(id);
@@ -395,30 +469,53 @@ Entity Scene::create_entity(const uuid id, const std::string& tag_type)
   entity.add<TransformComponent>();
 
   m_entities[id] = entity;
-  m_order.push_back(entity);
+
+  layer.push_back(entity);
 
   return entity;
 }
 
 void Scene::add(const uuid id, const io::EncodedData& encoded_data)
 {
+  LayerComponent layer = get_active_layer().get_component<LayerComponent>();
   Entity entity = {m_registry.create(), this, encoded_data};
 
   m_entities[id] = entity;
-  m_order.push_back(entity);
+
+  layer.push_back(entity);
 }
 
 void Scene::remove(const uuid id)
 {
   auto it = m_entities.find(id);
-  if (it == m_entities.end())
+  if (it == m_entities.end()) {
     return;
+  }
 
   entt::entity entity = it->second;
 
   selection.deselect(id);
   m_entities.erase(it);
-  m_order.erase(std::remove(m_order.begin(), m_order.end(), entity), m_order.end());
+
+  bool is_layer = false;
+
+  for (auto it = m_layers.begin(); it != m_layers.end(); it++) {
+    const Entity layer_entity = {*it, const_cast<Scene*>(this)};
+
+    if (*it == entity) {
+      is_layer = true;
+      break;
+    } else if (!layer_entity.is_layer()) {
+      continue;
+    }
+
+    LayerComponent layer = layer_entity.get_component<LayerComponent>();
+
+    layer.remove(entity);
+  }
+
+  m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), entity), m_layers.end());
+
   m_registry.destroy(entity);
 }
 

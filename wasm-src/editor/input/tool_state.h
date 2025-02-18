@@ -10,6 +10,8 @@
 
 #include "tools/common.h"
 
+#include "../../math/vec4.h"
+
 namespace graphick::editor::input {
 
 class PenTool;
@@ -34,14 +36,14 @@ class ToolState {
    *
    * @param other The ToolState object to copy.
    */
-  ToolState(const ToolState &) = delete;
+  ToolState(const ToolState&) = delete;
 
   /**
    * @brief Move constructor for ToolState.
    *
    * @param other The ToolState object to move from.
    */
-  ToolState(ToolState &&) = delete;
+  ToolState(ToolState&&) = delete;
 
   /**
    * @brief Custom destructor for ToolState.
@@ -53,7 +55,7 @@ class ToolState {
    *
    * @return A reference to the current tool.
    */
-  inline Tool &current() const
+  inline Tool& current() const
   {
     return *m_tools[(int)m_current];
   }
@@ -63,7 +65,7 @@ class ToolState {
    *
    * @return A reference to the active tool.
    */
-  inline Tool &active() const
+  inline Tool& active() const
   {
     return *m_tools[(int)m_active];
   }
@@ -74,7 +76,7 @@ class ToolState {
    * @return A pointer to the pen tool if it is either the current or active tool, otherwise
    * nullptr.
    */
-  PenTool *pen() const;
+  PenTool* pen() const;
 
   /**
    * @brief Resets the current and active tools' state.
@@ -149,10 +151,10 @@ class ToolState {
    * This function queues to the renderer the overlays for the current tool and the manipulator (if
    * active).
    */
-  void render_overlays(const float zoom) const;
+  void render_overlays(const vec4& color, const float zoom) const;
 
  private:
-  Tool *m_tools[static_cast<int>(Tool::ToolType::None)];  // An array of pointers to the tools.
+  Tool* m_tools[static_cast<int>(Tool::ToolType::None)];  // An array of pointers to the tools.
 
   Tool::ToolType m_current;                               // The current tool.
   Tool::ToolType m_active;                                // The active tool.
