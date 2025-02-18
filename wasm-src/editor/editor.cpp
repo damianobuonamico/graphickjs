@@ -4,7 +4,6 @@
  *
  * @todo fix all todos (one day)
  * @todo editor reinitialization
- * @todo add emscripten main loop or something similar
  */
 
 #include "editor.h"

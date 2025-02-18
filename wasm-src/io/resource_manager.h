@@ -112,7 +112,7 @@ class ResourceManager {
   /**
    * @brief Default constructor and destructor.
    */
-  ResourceManager() = default;
+  ResourceManager();
   ~ResourceManager() = default;
 
   /**

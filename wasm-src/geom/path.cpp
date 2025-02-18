@@ -1081,7 +1081,7 @@ void Path<T, _>::ellipse(const math::Vec2<T> center, const math::Vec2<T> radius)
 {
   const math::Vec2<T> top_left = center - radius;
   const math::Vec2<T> bottom_right = center + radius;
-  const math::Vec2<T> cp = radius * math::circle_ratio<T>;
+  const math::Vec2<T> cp = radius * math::bezier_circle_ratio<T>;
 
   move_to({center.x, top_left.y});
   cubic_to({center.x + cp.x, top_left.y},
@@ -1138,20 +1138,20 @@ void Path<T, _>::round_rect(const math::Vec2<T> point,
 
   move_to({p.x + r, p.y});
   line_to({p.x + size.x - r, p.y});
-  cubic_to({p.x + size.x - r * math::circle_ratio<T>, p.y},
-           {p.x + size.x, p.y + r * math::circle_ratio<T>},
+  cubic_to({p.x + size.x - r * math::bezier_circle_ratio<T>, p.y},
+           {p.x + size.x, p.y + r * math::bezier_circle_ratio<T>},
            {p.x + size.x, p.y + r});
   line_to({p.x + size.x, p.y + size.y - r});
-  cubic_to({p.x + size.x, p.y + size.y - r * math::circle_ratio<T>},
-           {p.x + size.x - r * math::circle_ratio<T>, p.y + size.y},
+  cubic_to({p.x + size.x, p.y + size.y - r * math::bezier_circle_ratio<T>},
+           {p.x + size.x - r * math::bezier_circle_ratio<T>, p.y + size.y},
            {p.x + size.x - r, p.y + size.y});
   line_to({p.x + r, p.y + size.y});
-  cubic_to({p.x + r * math::circle_ratio<T>, p.y + size.y},
-           {p.x, p.y + size.y - r * math::circle_ratio<T>},
+  cubic_to({p.x + r * math::bezier_circle_ratio<T>, p.y + size.y},
+           {p.x, p.y + size.y - r * math::bezier_circle_ratio<T>},
            {p.x, p.y + size.y - r});
   line_to({p.x, p.y + r});
-  cubic_to({p.x, p.y + r * math::circle_ratio<T>},
-           {p.x + r * math::circle_ratio<T>, p.y},
+  cubic_to({p.x, p.y + r * math::bezier_circle_ratio<T>},
+           {p.x + r * math::bezier_circle_ratio<T>, p.y},
            {p.x + r, p.y});
   close();
 }

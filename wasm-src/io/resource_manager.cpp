@@ -5,11 +5,15 @@
 
 #include "resource_manager.h"
 
+#include "text/default_font.h"
+
 #include "../utils/console.h"
 #include "../utils/defines.h"
 
 #include "../lib/stb/stb_image.h"
 #include "../lib/stb/stb_truetype.h"
+
+static uint8_t default_image_data[4] = {255, 0, 255, 255};
 
 static const std::string shader_include_names[] = {"quadratic", "cubic", "texture"};
 
@@ -90,15 +94,18 @@ uuid ResourceManager::load_default_font(const uint8_t* data, const size_t size)
     return uuid::null;
   }
 
+  s_instance->m_fonts.erase(uuid::null);
+
   return s_instance->m_fonts.insert(std::make_pair(uuid::null, std::move(font))).first->first;
 }
 
 Image ResourceManager::get_image(const uuid id)
 {
   const auto it = s_instance->m_images.find(id);
+
   if (it == s_instance->m_images.end()) {
     console::error("Image not found in cache!");
-    return Image{nullptr, ivec2{0, 0}, 0};
+    return Image{default_image_data, ivec2(1), uint8_t(4)};
   }
 
   return Image{it->second.data, it->second.size, it->second.channels};
@@ -110,11 +117,19 @@ const text::Font& ResourceManager::get_font(const uuid id)
 
   if (it == s_instance->m_fonts.end()) {
     console::error("Font not found in cache!");
-    // TODO: return a default font
     return s_instance->m_fonts.at(uuid::null);
   }
 
   return it->second;
+}
+
+ResourceManager::ResourceManager()
+{
+  text::Font font(default_font_data, std::size(default_font_data));
+  m_fonts.insert(std::make_pair(uuid::null, std::move(font)));
+
+  ImageData image(default_image_data, ivec2(1), uint8_t(4));
+  m_images.insert(std::make_pair(uuid::null, std::move(image)));
 }
 
 void ResourceManager::prefetch_shaders()

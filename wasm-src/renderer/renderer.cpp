@@ -61,6 +61,35 @@ struct __debug_rect_vertex {
 
 #endif
 
+/**
+ * @brief Creates a default checkerboard pattern texture.
+ *
+ * This 32x32 texture is used as a default texture when the requested texture is not found.
+ *
+ * @return The default texture.
+ */
+GPU::Texture create_default_texture()
+{
+  std::vector<uint8_t> data(32 * 32 * 4);
+
+  for (size_t j = 0; j < 32; j++) {
+    for (size_t i = 0; i < 32; i++) {
+      const size_t index = (j * 32 + i) * 4;
+      const bool white = (i + j) % 2 == 0;
+
+      data[index + 0] = white ? 255 : 127;
+      data[index + 1] = white ? 255 : 127;
+      data[index + 2] = white ? 255 : 127;
+      data[index + 3] = 255;
+    }
+  }
+
+  return GPU::Texture(GPU::TextureFormat::RGBA8,
+                      ivec2(32),
+                      GPU::TextureSamplingFlagNearestMin | GPU::TextureSamplingFlagNearestMag,
+                      data.data());
+}
+
 /* -- Renderer -- */
 
 void Renderer::init()
@@ -773,6 +802,8 @@ Renderer::Renderer() : m_instances(GK_LARGE_BUFFER_SIZE), m_tiles(GK_LARGE_BUFFE
                          m_vertex_arrays.tile_vertex_array.get(),
                          m_vertex_arrays.fill_vertex_array.get(),
                          &m_textures);
+
+  m_textures.insert(std::make_pair(uuid::null, std::move(create_default_texture())));
 }
 
 }  // namespace graphick::renderer

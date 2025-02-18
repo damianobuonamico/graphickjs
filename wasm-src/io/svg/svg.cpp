@@ -804,7 +804,7 @@ bool parse_svg(const char* svg)
 
         if (!path.empty()) {
           /*if (!path.closed() && math::is_almost_equal(path.front().p0, path.back().p3,
-          GK_POINT_EPSILON)) { path.close();
+          1e-3f)) { path.close();
           }*/
 
           editor::Entity element = editor::Editor::scene().create_element(std::move(path));

@@ -109,12 +109,18 @@ void SelectTool::render_overlays() const
   if (!m_selection_rect.active())
     return;
 
-  renderer::Outline outline{nullptr, false, Settings::Renderer::ui_primary_color};
-  renderer::Renderer::draw(m_selection_rect.path(),
-                           m_selection_rect.transform(),
-                           renderer::DrawingOptions{nullptr, nullptr, &outline});
+  const std::array<vec2, 4> vertices = m_selection_rect.path().bounding_rect().vertices();
+  const mat2x3 transform = m_selection_rect.transform();
+
+  for (int i = 0; i < 4; i++) {
+    renderer::Renderer::ui_line(transform * vertices[i],
+                                transform * vertices[(i + 1) % 4],
+                                Settings::Renderer::ui_primary_color,
+                                Settings::Renderer::ui_line_width);
+  }
+
   renderer::Renderer::ui_rect(m_selection_rect.bounding_rect(),
-                                Settings::Renderer::ui_primary_transparent);
+                              Settings::Renderer::ui_primary_transparent);
 }
 
 }  // namespace graphick::editor::input

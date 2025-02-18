@@ -10,6 +10,8 @@
 
 #include "../math/mat4.h"
 
+#include "../utils/defines.h"
+
 #include "gpu/render_state.h"
 
 #include "drawable.h"
@@ -235,8 +237,6 @@ struct TileBatchData {
   GPU::Texture curves_texture;  // The curves texture.
 
   GPU::Primitive primitive;     // The primitive type of the mesh.
-
-#define GK_CURVES_TEXTURE_SIZE 256
 
   /**
    * @brief Constructs a new TileBatchData object.
@@ -590,9 +590,6 @@ struct FillBatchData {
     }
   }
 };
-
-#define GK_GRADIENTS_TEXTURE_WIDTH 64
-#define GK_GRADIENTS_TEXTURE_HEIGHT 64
 
 /**
  * @brief Represents the data of a single batch.

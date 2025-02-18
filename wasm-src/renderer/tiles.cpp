@@ -687,7 +687,7 @@ void TiledRenderer::flush_fills()
     if (it != m_textures->end()) {
       render_state.texture_arrays[0].second.push_back(&it->second);
     } else {
-      // TODO: default texture
+      render_state.texture_arrays[0].second.push_back(&m_textures->find(uuid::null)->second);
     }
   }
 
@@ -734,7 +734,7 @@ void TiledRenderer::flush_tiles(const bool blit_back_to_front)
     if (it != m_textures->end()) {
       render_state.texture_arrays[0].second.push_back(&it->second);
     } else {
-      // TODO: default texture
+      render_state.texture_arrays[0].second.push_back(&m_textures->find(uuid::null)->second);
     }
   }
 

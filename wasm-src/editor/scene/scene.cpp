@@ -552,7 +552,6 @@ bool Scene::is_entity_at(const Entity entity,
   const TransformComponent transform = entity.get_component<TransformComponent>();
 
   if (!is_element) {
-    // TODO: what to do here?
     if (entity.is_image()) {
       const ImageComponent image = entity.get_component<ImageComponent>();
       const geom::path path = image.path();
@@ -617,7 +616,6 @@ bool Scene::is_entity_at(const Entity entity,
     has_stroke = true;
   }
 
-  // TODO: check why path is empty when duplicated...
   return path.is_point_inside_path(position,
                                    has_fill ? &filling_options : nullptr,
                                    has_stroke ? &stroking_options : nullptr,

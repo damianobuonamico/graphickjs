@@ -137,7 +137,6 @@ T Line<T>::length() const
 template<typename T, typename _>
 math::CubicSolutions<T> max_curvature(const CubicBezier<T>& cubic)
 {
-  // TODO: optimize and template
   const T axx = cubic.p1.x - cubic.p0.x;
   const T bxx = cubic.p2.x - T(2) * cubic.p1.x + cubic.p0.x;
   const T cxx = cubic.p3.x + T(3) * (cubic.p1.x - cubic.p2.x) - cubic.p0.x;

@@ -50,11 +50,21 @@ inline math::Vec2<T> cubic(const CubicBezier<T>& cubic, const T t)
 
 /* -- Curvature -- */
 
-// TODO: doc
+/**
+ * @brief Returns the t valus of maximum curvature of a cubic bezier curve.
+ *
+ * @param cubic The cubic bezier curve.
+ * @return The t values of the maximum curvature points.
+ */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 math::CubicSolutions<T> max_curvature(const CubicBezier<T>& cubic);
 
-// TODO: doc
+/**
+ * @brief Returns the t valus of inflection points of a cubic bezier curve.
+ *
+ * @param cubic The cubic bezier curve.
+ * @return The t values of the inflection points.
+ */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
 math::QuadraticSolutions<T> inflections(const CubicBezier<T>& cubic);
 

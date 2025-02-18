@@ -13,13 +13,13 @@
 
 #include "../editor.h"
 #include "../scene/entity.h"
+#include "../settings.h"
 
 #include "../../math/math.h"
 #include "../../math/scalar.h"
 #include "../../math/vec2.h"
 
 #include "../../utils/console.h"
-#include "../../utils/defines.h"
 
 namespace graphick::editor::input {
 
@@ -180,7 +180,7 @@ void InputManager::recalculate_hover()
   Scene& scene = Editor::scene();
 
   if (!scene.tool_state.active().is_in_category(Tool::CategoryImmediate)) {
-    float threshold = INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type] * 2.5f;
+    float threshold = Settings::Input::movement_threshold_multiplier[(int)pointer.type] * 2.5f;
 
     hover.set_hovered(
         scene.entity_at(pointer.scene.position,
@@ -257,7 +257,8 @@ bool InputManager::on_pointer_move(PointerTarget target, float x, float y)
   if (!m_moving && pointer.down) {
     if (scene.tool_state.active().is_in_category(Tool::CategoryImmediate) ||
         length(pointer.client.delta) >
-            INPUT_MOVEMENT_THRESHOLD * INPUT_MOVEMENT_THRESHOLD_MULTIPLIER[(int)pointer.type])
+            Settings::Input::movement_threshold *
+                Settings::Input::movement_threshold_multiplier[(int)pointer.type])
     {
       m_moving = true;
     } else {
@@ -364,11 +365,16 @@ bool InputManager::on_wheel(PointerTarget target, float delta_x, float delta_y, 
   Scene& scene = Editor::scene();
 
   if (keys.ctrl) {
-    scene.viewport.zoom_to(math::map(-delta_y, -1.0f, 1.0f, 1.0f - ZOOM_STEP, 1.0f + ZOOM_STEP) *
+    scene.viewport.zoom_to(math::map(-delta_y,
+                                     -1.0f,
+                                     1.0f,
+                                     1.0f - Settings::Input::zoom_step,
+                                     1.0f + Settings::Input::zoom_step) *
                                scene.viewport.zoom(),
                            pointer.client.position);
   } else {
-    scene.viewport.move(math::round(PAN_STEP * vec2{-delta_x, -delta_y}) / scene.viewport.zoom());
+    scene.viewport.move(math::round(Settings::Input::pan_step * vec2{-delta_x, -delta_y}) /
+                        scene.viewport.zoom());
   }
 
   Editor::request_render();

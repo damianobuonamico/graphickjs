@@ -111,13 +111,14 @@ QuadraticSolutions<double> solve_quadratic_normalized(const double a,
   }
 }
 
-// TODO: implement stable method from kurbo
 CubicSolutions<double> solve_cubic(const double a,
                                    const double b,
                                    const double c,
                                    const double d,
                                    const bool include_double_roots)
 {
+  // NOTE: if needed, there is a more stable imlpementation in kurbo
+
   if (is_almost_zero(a)) {
     /* It is a quadratic equation */
 
