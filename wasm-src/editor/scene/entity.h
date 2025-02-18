@@ -330,7 +330,6 @@ class Entity {
    *
    * A layer is an entity that has a LayerComponent.
    * A layer entity doesn't have a TransformComponent, but it has a IDComponent.
-   * All entities have a TransformComponent and a IDComponent.
    *
    * @return true if the entity is a layer, false otherwise.
    */

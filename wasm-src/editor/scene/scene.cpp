@@ -228,7 +228,6 @@ Entity Scene::duplicate_entity(const uuid id)
   return get_entity(new_id);
 }
 
-// TODO: transformed images are not being tested correctly
 std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect,
                                                                        bool deep_search)
 {
@@ -295,6 +294,18 @@ std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const mat
           if (path.data().intersects(rect, transform)) {
             entities.insert({id, Selection::SelectionEntry()});
           }
+        }
+      } else if (entity.is_image()) {
+        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
+          entities.insert({id, Selection::SelectionEntry()});
+          continue;
+        }
+
+        const ImageComponent image = entity.get_component<ImageComponent>();
+        const geom::path path = image.path();
+
+        if (path.intersects(rect, transform)) {
+          entities.insert({id, Selection::SelectionEntry()});
         }
       } else {
         if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {

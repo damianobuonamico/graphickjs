@@ -24,8 +24,8 @@ int main()
   }
 
 #define TEXT
-// #define IMAGES
-#define TIGER
+#define IMAGES
+  // #define TIGER
   // #define OBJECTS
 
 #ifdef TEXT

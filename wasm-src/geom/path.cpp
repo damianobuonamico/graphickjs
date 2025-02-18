@@ -1803,8 +1803,10 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* in
     return false;
   } else if (m_commands_size == 1) {
     if (is_point_in_rect(m_points[0], rect)) {
-      if (indices)
+      if (indices) {
         indices->push_back(0);
+      }
+
       return true;
     }
 
@@ -1815,8 +1817,9 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* in
     return false;
   }
 
-  if (indices)
+  if (indices) {
     indices->reserve(points_count(false));
+  }
 
   bool found = false;
 
@@ -1824,17 +1827,22 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* in
     switch (get_command(i)) {
       case Command::Move:
         if (is_point_in_rect(m_points[point_i], rect)) {
-          if (indices)
+          if (indices) {
             indices->push_back(point_i);
+          }
+
           found = true;
         }
 
         point_i += 1;
+
         break;
       case Command::Line:
         if (is_point_in_rect(m_points[point_i], rect)) {
-          if (indices)
+          if (indices) {
             indices->push_back(point_i);
+          }
+
           found = true;
         } else if (!found &&
                    does_line_intersect_rect({m_points[point_i - 1], m_points[point_i]}, rect))
@@ -1843,11 +1851,14 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* in
         }
 
         point_i += 1;
+
         break;
       case Command::Quadratic:
         if (is_point_in_rect(m_points[point_i + 1], rect)) {
-          if (indices)
+          if (indices) {
             indices->push_back(point_i + 1);
+          }
+
           found = true;
         } else if (!found &&
                    does_quadratic_intersect_rect(
@@ -1857,11 +1868,14 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* in
         }
 
         point_i += 2;
+
         break;
       case Command::Cubic:
         if (is_point_in_rect(m_points[point_i + 2], rect)) {
-          if (indices)
+          if (indices) {
             indices->push_back(point_i + 2);
+          }
+
           found = true;
         } else if (!found && does_cubic_intersect_rect({m_points[point_i - 1],
                                                         m_points[point_i],
@@ -1873,6 +1887,7 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect, std::vector<uint32_t>* in
         }
 
         point_i += 3;
+
         break;
     }
   }
@@ -1893,8 +1908,10 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect,
     return false;
   } else if (m_commands_size == 1) {
     if (is_point_in_rect(transform * m_points[0], rect)) {
-      if (indices)
+      if (indices) {
         indices->push_back(0);
+      }
+
       return true;
     }
 
@@ -1903,12 +1920,13 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect,
 
   math::Vec2<T> last = math::Vec2<T>::zero();
 
-  if (!does_rect_intersect_rect(rect, transform * approx_bounding_rect())) {
-    return false;
-  }
+  // if (!does_rect_intersect_rect(rect, transform * approx_bounding_rect())) {
+  //   return false;
+  // }
 
-  if (indices)
+  if (indices) {
     indices->reserve(points_count(false));
+  }
 
   bool found = false;
 
@@ -1918,8 +1936,10 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect,
         const math::Vec2<T> p0 = transform * m_points[point_i];
 
         if (is_point_in_rect(p0, rect)) {
-          if (indices)
+          if (indices) {
             indices->push_back(point_i);
+          }
+
           found = true;
         }
 
@@ -1932,22 +1952,28 @@ bool Path<T, _>::intersects(const math::Rect<T>& rect,
         const math::Vec2<T> p1 = transform * m_points[point_i];
 
         if (is_point_in_rect(p1, rect)) {
-          if (indices)
+          if (indices) {
             indices->push_back(point_i);
+          }
+
           found = true;
         } else if (!found && does_line_intersect_rect({last, p1}, rect)) {
           found = true;
         }
 
         point_i += 1;
+        last = p1;
+
         break;
       }
       case Command::Quadratic: {
         const math::Vec2<T> p2 = transform * m_points[point_i + 1];
 
         if (is_point_in_rect(p2, rect)) {
-          if (indices)
+          if (indices) {
             indices->push_back(point_i + 1);
+          }
+
           found = true;
         } else if (!found &&
                    does_quadratic_intersect_rect({last, transform * m_points[point_i], p2}, rect))

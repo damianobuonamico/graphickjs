@@ -1219,6 +1219,29 @@ int CubicPath<T, _>::winding_of(const math::Vec2<T> p) const
   return winding;
 }
 
+template<typename T, typename _>
+int CubicMultipath<T, _>::winding_of(const math::Vec2<T> p) const
+{
+  if (starts.empty() || this->points.size() < 4) {
+    return 0;
+  }
+
+  int winding = 0;
+
+  for (size_t j = 0; j < starts.size(); j++) {
+    const size_t end = starts.size() > (j + 1) ? starts[j + 1] : this->points.size();
+
+    for (size_t i = starts[j]; i < end - 3; i += 3) {
+      winding += geom::winding_of(
+          CubicBezier<T>{
+              this->points[i], this->points[i + 1], this->points[i + 2], this->points[i + 3]},
+          p);
+    }
+  }
+
+  return winding;
+}
+
 /* -- Template Instantiation -- */
 
 template struct Line<float>;
@@ -1280,8 +1303,12 @@ cubic_to_quadratics_with_intervals(const CubicBezier<double>&);
 
 template struct QuadraticPath<float>;
 template struct QuadraticPath<double>;
+template struct QuadraticMultipath<float>;
+template struct QuadraticMultipath<double>;
 
 template struct CubicPath<float>;
 template struct CubicPath<double>;
+template struct CubicMultipath<float>;
+template struct CubicMultipath<double>;
 
 }  // namespace graphick::geom

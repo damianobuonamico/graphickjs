@@ -254,7 +254,7 @@ struct CubicPath {
    * @param p The point to compute the winding number for.
    * @return The winding number of the point.
    */
-  int winding_of(const math::Vec2<T> p) const;
+  virtual int winding_of(const math::Vec2<T> p) const;
 };
 
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
@@ -316,6 +316,14 @@ struct CubicMultipath : public CubicPath<T> {
     starts.push_back(this->points.size());
     this->points.insert(this->points.end(), path.points.begin(), path.points.end());
   }
+
+  /**
+   * @brief Returns the winding number of a point with respect to the path.
+   *
+   * @param p The point to compute the winding number for.
+   * @return The winding number of the point.
+   */
+  virtual int winding_of(const math::Vec2<T> p) const override;
 };
 
 }  // namespace graphick::geom
