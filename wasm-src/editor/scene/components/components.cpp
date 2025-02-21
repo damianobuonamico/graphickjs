@@ -89,7 +89,7 @@ rect TransformComponent::bounding_rect() const
 {
   switch (m_parent_ptr.type()) {
     case ParentData::Type::Path:
-      return m_parent_ptr.path_ptr()->bounding_rect(m_data->matrix);
+      return m_parent_ptr.path_ptr()->path.bounding_rect(m_data->matrix);
     case ParentData::Type::Text:
       return m_data->matrix * m_parent_ptr.text_ptr()->bounding_rect();
     case ParentData::Type::Image:
@@ -105,7 +105,7 @@ rect TransformComponent::approx_bounding_rect() const
     return bounding_rect();
   }
 
-  return m_data->matrix * m_parent_ptr.path_ptr()->approx_bounding_rect();
+  return m_data->matrix * m_parent_ptr.path_ptr()->path.approx_bounding_rect();
 }
 
 vec2 TransformComponent::revert(const vec2 point) const
@@ -181,7 +181,7 @@ void TransformComponent::modify(io::DataDecoder& decoder)
 size_t PathComponent::move_to(const vec2 p0)
 {
   commit_load([&]() {
-    m_data->move_to(p0);
+    m_data->path.move_to(p0);
     return 0;
   });
 
@@ -191,46 +191,47 @@ size_t PathComponent::move_to(const vec2 p0)
 size_t PathComponent::line_to(const vec2 p1, const bool reverse)
 {
   commit_load([&]() {
-    m_data->line_to(p1, reverse);
+    m_data->path.line_to(p1, reverse);
     return 0;
   });
 
-  return reverse ? 0 : (m_data->points_count() - 1);
+  return reverse ? 0 : (m_data->path.points_count() - 1);
 }
 
 size_t PathComponent::quadratic_to(const vec2 p1, const vec2 p2, const bool reverse)
 {
   commit_load([&]() {
-    m_data->quadratic_to(p1, p2, reverse);
+    m_data->path.quadratic_to(p1, p2, reverse);
     return 0;
   });
 
-  return reverse ? 0 : (m_data->points_count() - 1);
+  return reverse ? 0 : (m_data->path.points_count() - 1);
 }
 
 size_t PathComponent::cubic_to(const vec2 p1, const vec2 p2, const vec2 p3, const bool reverse)
 {
   commit_load([&]() {
-    m_data->cubic_to(p1, p2, p3, reverse);
+    m_data->path.cubic_to(p1, p2, p3, reverse);
     return 0;
   });
 
-  return reverse ? 0 : (m_data->points_count() - 1);
+  return reverse ? 0 : (m_data->path.points_count() - 1);
 }
 
 size_t PathComponent::close(const bool reverse)
 {
   commit_load([&]() {
-    m_data->close();
+    m_data->path.close();
     return 0;
   });
 
   if (reverse) {
-    return std::min(m_data->points_count() - 1,
-                    m_data->points_count() - static_cast<uint32_t>(m_data->back().type) - 1);
+    return std::min(m_data->path.points_count() - 1,
+                    m_data->path.points_count() - static_cast<uint32_t>(m_data->path.back().type) -
+                        1);
   }
 
-  return m_data->points_count() - 1;
+  return m_data->path.points_count() - 1;
 }
 
 // TODO: join path modify actions
@@ -243,10 +244,10 @@ void PathComponent::translate(const size_t point_index, const vec2 delta)
 
   io::EncodedData backup, data;
 
-  vec2 backup_position = m_data->at(point_index);
+  vec2 backup_position = m_data->path.at(point_index);
   vec2 position = backup_position + delta;
 
-  m_data->translate(point_index, delta);
+  m_data->path.translate(point_index, delta);
 
   backup.component_id(component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::ModifyPoint))
@@ -263,31 +264,31 @@ void PathComponent::translate(const size_t point_index, const vec2 delta)
 
 size_t PathComponent::to_line(const size_t command_index, const size_t reference_point)
 {
-  if (m_data->command_at(command_index) == Data::Command::Cubic) {
+  if (m_data->path.command_at(command_index) == geom::path::Command::Cubic) {
     return reference_point;
   }
 
-  return commit_load([&]() { return m_data->to_line(command_index, reference_point); });
+  return commit_load([&]() { return m_data->path.to_line(command_index, reference_point); });
 }
 
 size_t PathComponent::to_cubic(const size_t command_index, const size_t reference_point)
 {
-  if (m_data->command_at(command_index) == Data::Command::Cubic) {
+  if (m_data->path.command_at(command_index) == geom::path::Command::Cubic) {
     return reference_point;
   }
 
-  return commit_load([&]() { return m_data->to_cubic(command_index, reference_point); });
+  return commit_load([&]() { return m_data->path.to_cubic(command_index, reference_point); });
 }
 
 size_t PathComponent::split(const size_t segment_index, const float t)
 {
-  return commit_load([&]() { return m_data->split(segment_index, t); });
+  return commit_load([&]() { return m_data->path.split(segment_index, t); });
 }
 
 void PathComponent::remove(const size_t index, const bool keep_shape)
 {
   commit_load([&]() {
-    m_data->remove(index, keep_shape);
+    m_data->path.remove(index, keep_shape);
     return 0;
   });
 }
@@ -296,7 +297,7 @@ io::EncodedData& PathComponent::encode(io::EncodedData& data) const
 {
   data.component_id(component_id);
 
-  return m_data->encode(data);
+  return m_data->path.encode(data);
 }
 
 void PathComponent::modify(io::DataDecoder& decoder)
@@ -306,10 +307,10 @@ void PathComponent::modify(io::DataDecoder& decoder)
   switch (type) {
     case PathModifyType::ModifyPoint: {
       size_t point_index = decoder.uint32();
-      vec2 old_position = m_data->at(point_index);
+      vec2 old_position = m_data->path.at(point_index);
       vec2 new_position = decoder.vec2();
 
-      m_data->translate(point_index, new_position - old_position);
+      m_data->path.translate(point_index, new_position - old_position);
 
       break;
     }
@@ -326,13 +327,13 @@ size_t PathComponent::commit_load(const std::function<size_t()> action)
 
   backup.component_id(PathComponent::component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-  m_data->encode(backup);
+  m_data->path.encode(backup);
 
   size_t index = action();
 
   data.component_id(PathComponent::component_id)
       .uint8(static_cast<uint8_t>(PathModifyType::LoadData));
-  m_data->encode(data);
+  m_data->path.encode(data);
 
   m_entity->scene()->history.modify(m_entity->id(), std::move(data), std::move(backup), false);
 

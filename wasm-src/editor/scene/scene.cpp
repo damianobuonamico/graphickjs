@@ -147,41 +147,12 @@ Entity Scene::create_element()
 {
   const uuid id = uuid();
 
-  LayerComponent layer = get_active_layer().get_component<LayerComponent>();
-  Entity entity = {m_registry.create(), this};
-
-  // geom::path path{};
-
-  // path.move_to({0, 0});
+  Entity entity = create_entity(id, "Element");
 
   entity.add<PathComponent>();
-  entity.add<IDComponent>(id);
-  entity.add<TagComponent>("Element " + std::to_string(m_entity_tag_number++));
-  entity.add<CategoryComponent>(CategoryComponent::Category::Selectable);
-  entity.add<TransformComponent>();
-  // entity.add<PathComponent>(path);
-
-  m_entities[id] = entity;
-
-  layer.push_back(entity);
+  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
 
   return entity;
-
-  // Entity entity = create_entity(id, "Element");
-
-  // console::log("is_element1", entity.is_element());
-
-  // entity.add<PathComponent>();
-  // console::log("is_element2", entity.is_element());
-
-  // Entity nentity = get_entity(id);
-
-  // // history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
-  // console::log("is_element3", nentity.is_element());
-
-  // console::log("id", nentity.id());
-
-  // return nentity;
 }
 
 Entity Scene::create_element(const geom::path& path)
@@ -474,7 +445,7 @@ void Scene::render(const bool ignore_cache) const
         continue;
       }
 
-      const geom::path& path = m_registry.get<PathData>(*it);
+      const geom::path& path = m_registry.get<PathData>(*it).path;
 
       if (!has_outline) {
         renderer::Renderer::draw(path, transform_matrix, options, id);

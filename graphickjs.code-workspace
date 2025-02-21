@@ -86,7 +86,9 @@
       "*.glsl": "glsl",
       "condition_variable": "cpp",
       "coroutine": "cpp",
-      "shared_mutex": "cpp"
+      "shared_mutex": "cpp",
+      "ranges": "cpp",
+      "span": "cpp"
     }
   }
 }

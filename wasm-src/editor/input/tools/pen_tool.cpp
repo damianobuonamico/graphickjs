@@ -26,17 +26,6 @@ PenTool::PenTool() : Tool(ToolType::Pen, CategoryDirect) {}
 
 void PenTool::on_pointer_down()
 {
-  Entity entity = Editor::scene().create_element();
-
-  console::log("has_transform", entity.has_component<TransformComponent>());
-  console::log("has_path", entity.has_component<PathComponent>());
-  console::log("is_element1", entity.is_element());
-
-  const PathComponent path = entity.get_component<PathComponent>();
-
-  console::log(path.data().size());
-
-#if 0
   HoverState::HoverType hover_type = InputManager::hover.type();
   std::optional<Entity> entity = InputManager::hover.entity();
 
@@ -82,7 +71,6 @@ void PenTool::on_pointer_down()
   }
 
   on_new_pointer_down();
-#endif
 }
 
 void PenTool::on_pointer_move()
@@ -261,53 +249,34 @@ void PenTool::set_pen_element(const uuid id)
 void PenTool::on_new_pointer_down()
 {
   Scene& scene = Editor::scene();
-  // Entity entity = {entt::null, &scene};
+  Entity entity = {entt::null, &scene};
 
-  Entity entity = scene.create_element();
-  entity.add_component<StrokeComponent>(vec4{1.0f, 0.0f, 0.4f, 1.0f});
-  entity.add_component<FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
-  entity.add_component<PathComponent>();
+  if (!m_element) {
+    entity = scene.create_element();
+    entity.add_component<StrokeComponent>();
+    entity.add_component<FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
 
-  // if (!m_element) {
-  //   entity = scene.create_element();
-  //   // entity->add_component<StrokeComponent>();
-  //   entity.add_component<FillComponent>(vec4{0.8f, 0.3f, 0.3f, 1.0f});
-
-  //   set_pen_element(entity.id());
-  //   console::log("is_element6", entity.is_element());
-  // } else {
-  //   if (!scene.has_entity(m_element) || !(entity = scene.get_entity(m_element)).is_element()) {
-  //     set_pen_element(uuid::null);
-  //     return;
-  //   }
-  // }
-
-  console::log("test1");
-
-  console::log("id", entity.id());
-  console::log("tag", entity.tag());
-  console::log("is_element", entity.is_element());
-  console::log("has_transform", entity.has_component<TransformComponent>());
-  console::log("has_path", entity.has_component<PathComponent>());
-  console::log("handle", (int)entt::entity(entity));
+    set_pen_element(entity.id());
+  } else {
+    if (!scene.has_entity(m_element) || !(entity = scene.get_entity(m_element)).is_element()) {
+      set_pen_element(uuid::null);
+      return;
+    }
+  }
 
   TransformComponent transform = entity.get_component<TransformComponent>();
   PathComponent path = entity.get_component<PathComponent>();
-
-  console::log("test2");
 
   const mat2x3 inverse_transform = transform.inverse();
   const vec2 pointer_position = inverse_transform * InputManager::pointer.scene.position;
 
   if (path.data().vacant()) {
     m_vertex = path.move_to(pointer_position);
-    console::log("test3");
 
     scene.selection.clear();
     scene.selection.select(m_element);
   } else if (m_reverse) {
     const bool has_in_handle = path.data().has_in_handle();
-    console::log("test4");
 
     if (has_in_handle) {
       m_vertex = path.cubic_to(path.data().at(geom::path::in_handle_index),
@@ -319,7 +288,6 @@ void PenTool::on_new_pointer_down()
     }
   } else {
     const bool has_out_handle = path.data().has_out_handle();
-    console::log("test5");
 
     if (has_out_handle) {
       m_vertex = path.cubic_to(path.data().at(geom::path::out_handle_index),
@@ -330,7 +298,6 @@ void PenTool::on_new_pointer_down()
       m_vertex = path.line_to(pointer_position, m_reverse);
     }
   }
-  console::log("test6");
 
   m_mode = Mode::New;
 }

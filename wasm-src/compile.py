@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-DEBUG = True
+DEBUG = False
 SANITIZE = False
 DESYNCHRONIZED = False
 
@@ -44,10 +44,7 @@ COMMON = [
 ]
 
 
-# Try -sINLINING_LIMIT=1
-# Try -fsanitize=undefined
-# Try -fsanitize=leak
-# Try -sSAFE_HEAP=1
+# Other options could be -fsanitize=undefined, -fsanitize=address, -fsanitize=leak, -sSAFE_HEAP=1
 if (SANITIZE):
   # COMMON = COMMON + ['-sINLINING_LIMIT=1']
   COMMON = COMMON + ['-sASSERTIONS=2', '-sSTACK_OVERFLOW_CHECK=2',  '-sCHECK_NULL_WRITES=1', '-sVERBOSE=1', '-sSAFE_HEAP', '-DGK_CONF_DEBUG=1', '-g', '-fdebug-compilation-dir="../wasm-src"']

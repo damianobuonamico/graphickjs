@@ -15,8 +15,18 @@ namespace graphick::editor {
  * @brief PathComponent data.
  *
  * This struct should not be used directly, use the PathComponent wrapper instead.
+ *
+ * @note We use a struct instead of a using or typedef because when compiling entt with Clang,
+ * sometimes the PathComponent is not handled properly (not added to the registry).
  */
-using PathData = geom::path;
+struct PathData {
+  geom::path path;  // The true path data.
+
+  PathData() = default;
+  PathData(const geom::path& path) : path(path) {}
+  PathData(geom::path&& path) : path(std::move(path)) {}
+  PathData(io::DataDecoder& decoder) : path(decoder) {}
+};
 
 /**
  * @brief PathComponent wrapper.
@@ -38,7 +48,7 @@ struct PathComponent : public ComponentWrapper {
    */
   inline operator const geom::path&() const
   {
-    return *m_data;
+    return m_data->path;
   }
 
   /**
@@ -48,7 +58,7 @@ struct PathComponent : public ComponentWrapper {
    */
   inline const geom::path& data() const
   {
-    return *m_data;
+    return m_data->path;
   }
 
   /**
@@ -58,7 +68,7 @@ struct PathComponent : public ComponentWrapper {
    */
   inline const geom::path* operator->() const
   {
-    return m_data;
+    return &m_data->path;
   }
 
   /**
