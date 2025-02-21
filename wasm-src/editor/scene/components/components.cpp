@@ -554,4 +554,23 @@ void LayerComponent::modify(io::DataDecoder& decoder)
   *m_data = decoder;
 }
 
+/* -- ArtboardComponent -- */
+
+ArtboardData::ArtboardData(io::DataDecoder& decoder) : color(decoder.color()) {}
+
+void ArtboardComponent::color(const vec4& color)
+{
+  MODIFY_NO_EXECUTE(m_data->color = color);
+}
+
+io::EncodedData& ArtboardComponent::encode(io::EncodedData& data) const
+{
+  return data.component_id(component_id).color(m_data->color);
+}
+
+void ArtboardComponent::modify(io::DataDecoder& decoder)
+{
+  *m_data = decoder;
+}
+
 }  // namespace graphick::editor

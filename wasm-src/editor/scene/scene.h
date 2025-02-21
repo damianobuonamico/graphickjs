@@ -98,6 +98,20 @@ class Scene {
   const Entity get_active_layer() const;
 
   /**
+   * @brief Returns the background entity.
+   *
+   * @return The background entity.
+   */
+  Entity get_background();
+
+  /**
+   * @brief Returns the background entity.
+   *
+   * @return The background entity.
+   */
+  const Entity get_background() const;
+
+  /**
    * @brief Adds a new layer to the scene.
    *
    * @return The new layer.
@@ -255,18 +269,16 @@ class Scene {
                     const HitTestType hit_test_type) const;
 
  private:
-  entt::registry m_registry;  // The main entt registry of the scene.
+  entt::registry m_registry;                          // The main entt registry of the scene.
+  entt::entity m_background;                          // The background entity of the scene.
 
-  std::unordered_map<uuid, entt::entity>
-      m_entities;             // A map of entities by their unique identifier.
-  // std::vector<entt::entity> m_order;  // The z-order of the entities.
-  std::vector<entt::entity> m_layers;  // The layers of the scene.
+  std::unordered_map<uuid, entt::entity> m_entities;  // Entities by their unique identifier.
+  std::vector<entt::entity> m_layers;                 // The layers of the scene.
 
-  size_t m_active_layer = 0;           // The index of the active layer.
-  size_t m_entity_tag_number =
-      0;                  // The number of unnamed entities created, used for generating tags.
+  size_t m_active_layer = 0;                          // The index of the active layer.
+  size_t m_entity_tag_number = 0;                     // Number of unnamed entities (for tags).
 
-  mutable Cache m_cache;  // The cache of the scene.
+  mutable Cache m_cache;                              // The cache of the scene.
  private:
   friend class Editor;
   friend class Entity;

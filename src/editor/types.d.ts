@@ -1,4 +1,8 @@
-type Workspace = "designer" | "publisher" | "whiteboard";
+type Workspace = 'designer' | 'publisher' | 'whiteboard';
+
+interface ComponentsState {
+  background?: [number, number, number, number];
+}
 
 interface State {
   name: string;
@@ -7,6 +11,8 @@ interface State {
   loading: boolean;
   timeline: boolean;
   timelineHeight: number;
+  componentsPanelWidth: number;
+  components: ComponentsState;
 }
 
 interface MountedListener {

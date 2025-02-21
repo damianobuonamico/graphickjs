@@ -70,6 +70,14 @@ void History::modify(uuid entity_id,
 void History::undo()
 {
   if (!m_actions.empty() && !m_batch_indices.empty() && m_batch_index > 0) {
+    if (m_actions.size() != m_batch_indices[m_batch_indices.size() - 1]) {
+      if (m_batch_index == m_batch_indices.size() - 1) {
+        m_batch_index++;
+      }
+
+      m_batch_indices.push_back(m_actions.size());
+    }
+
     int64_t batch_start = m_batch_indices[m_batch_index - 1];
     int64_t batch_end = m_batch_indices[m_batch_index];
 

@@ -52,7 +52,7 @@ const Popover: Component<{ children: [JSX.Element, JSX.Element]; translate?: vec
         <Portal>
           <div
             ref={panelRef}
-            class="absolute bg-primary-800 shadow-md rounded border-primary-600 border z-10"
+            class="absolute bg-primary-800 shadow-md rounded border-primary-600 border z-[1000]"
             style={{
               top: anchor()[1] + 'px',
               right: anchor()[0] + 'px'

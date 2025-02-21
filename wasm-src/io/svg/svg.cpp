@@ -1,5 +1,5 @@
 /**
- * @file svg.cpp
+ * @file io/svg/svg.cpp
  * @brief Contains the implementation of the SVG parser.
  *
  * @todo refactor and finish implementation (true style parsing)

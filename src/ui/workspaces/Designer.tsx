@@ -1,8 +1,9 @@
-import InputManager from "@/editor/input";
-import { classNames } from "@/utils/utils";
-import { Component } from "solid-js";
-import { CanvasDOM } from "../multimedia";
-import { Timeline, TitleBar, ToolBar } from "../navigation";
+import InputManager from '@/editor/input';
+import { classNames } from '@/utils/utils';
+import { Component } from 'solid-js';
+import { CanvasDOM } from '../multimedia';
+import API from '@/wasm/loader';
+import { ComponentsPanel, Timeline, TitleBar, ToolBar } from '../navigation';
 
 const Designer: Component<{
   state: State;
@@ -15,18 +16,21 @@ const Designer: Component<{
         setMode={(mode: Workspace) => setState({ workspace: mode })}
         loading={state.loading}
       />
-      <div class="grid grid-cols-designer">
+      <div
+        class="grid"
+        style={{ 'grid-template-columns': `2.5rem 1fr ${state.componentsPanelWidth}px` }}
+      >
         <ToolBar
           tools={[
-            "select",
-            "directSelect",
-            "separator",
-            "pen",
-            "separator",
-            ["rectangle", "ellipse"],
-            "separator",
-            "pan",
-            "zoom",
+            'select',
+            'directSelect',
+            'separator',
+            'pen',
+            'separator',
+            ['rectangle', 'ellipse'],
+            'separator',
+            'pan',
+            'zoom'
           ]}
           tool={state.tool}
           setTool={(tool: Tool) => {
@@ -35,20 +39,15 @@ const Designer: Component<{
           }}
         />
         <div
-          class={classNames("grow overflow-hidden z-0 grid")}
+          class={classNames('grow overflow-hidden z-0 grid')}
           style={{
-            "grid-template-rows": state.timeline
-              ? `1fr ${state.timelineHeight}px`
-              : "1fr 0px",
+            'grid-template-rows': state.timeline ? `1fr ${state.timelineHeight}px` : '1fr 0px'
           }}
         >
           <CanvasDOM />
           <Timeline
             onResize={(y) => {
-              let height = Math.min(
-                window.innerHeight - y,
-                window.innerHeight - 200
-              );
+              let height = Math.min(window.innerHeight - y, window.innerHeight - 200);
               if (height < 30) setState({ timeline: false });
               else setState({ timeline: true, timelineHeight: height });
 
@@ -56,6 +55,16 @@ const Designer: Component<{
             }}
           />
         </div>
+        <ComponentsPanel
+          components={state.components}
+          setComponents={(components) => API._modify_ui_data({ components })}
+          onResize={(x) => {
+            let width = Math.max(Math.min(window.innerWidth - x, 500), 250);
+            setState({ componentsPanelWidth: width });
+
+            InputManager.onResize({} as UIEvent);
+          }}
+        />
       </div>
     </div>
   );

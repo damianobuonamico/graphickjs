@@ -21,11 +21,18 @@ using namespace emscripten;
 
 #ifdef __INTELLISENSE__
 #  define EMSCRIPTEN_KEEPALIVE
+#  define EMSCRIPTEN_BINDINGS(name)
 #endif
 
 using namespace graphick;
 
 extern "C" {
+
+struct Buffer {
+  unsigned int data;
+  unsigned int size;
+};
+
 bool EMSCRIPTEN_KEEPALIVE on_pointer_event(int target,
                                            int event,
                                            int type,
@@ -160,4 +167,105 @@ void EMSCRIPTEN_KEEPALIVE save()
 {
   // editor::Editor::save();
 }
+
+#if 0
+unsigned long long EMSCRIPTEN_KEEPALIVE ui_data()
+{
+  io::EncodedData data = editor::Editor::ui_data();
+
+  const unsigned long long size = data.data.size();
+  const unsigned long long buffer = (unsigned long long)malloc(size * sizeof(uint8_t));
+
+  std::memcpy((void*)buffer, data.data.data(), size);
+
+  console::log("size", size);
+  console::log("data", buffer);
+  console::log("buffer", (size << 32 >> 32) | (buffer << 32));
+
+  return (size << 32 >> 32) | (buffer << 32);
+
+  // Buffer buffer;
+  // buffer.size = (unsigned int)data.data.size();
+  // buffer.data = (unsigned int)(uint8_t*)malloc(buffer.size * sizeof(uint8_t));
+
+  // std::memcpy((void*)buffer.data, data.data.data(), buffer.size);
+
+  // return buffer;
 }
+#elif 0
+Buffer ui_data()
+{
+  io::EncodedData data = editor::Editor::ui_data();
+
+  Buffer buffer;
+  buffer.size = (unsigned int)data.data.size();
+  buffer.data = (unsigned int)(uint8_t*)malloc(buffer.size * sizeof(uint8_t));
+
+  console::log("size", buffer.size);
+  console::log("data", buffer.data);
+
+  std::memcpy((void*)buffer.data, data.data.data(), buffer.size);
+
+  return buffer;
+}
+#elif 0
+unsigned int EMSCRIPTEN_KEEPALIVE ui_data()
+{
+  io::EncodedData ui_data = editor::Editor::ui_data();
+
+  const unsigned int buffer_size = 2;
+  const unsigned int buffer_data = (unsigned int)malloc(buffer_size * sizeof(unsigned int));
+
+  console::log("buffer_data", buffer_data);
+
+  const unsigned int size = ui_data.data.size();
+  const unsigned int data = (unsigned int)malloc(size * sizeof(uint8_t));
+
+  ((unsigned int*)buffer_data)[0] = data;
+  ((unsigned int*)buffer_data)[1] = size;
+
+  console::log("buffer_data[0]", ((unsigned int*)buffer_data)[0]);
+  console::log("buffer_data[1]", ((unsigned int*)buffer_data)[1]);
+
+  std::memcpy((void*)data, ui_data.data.data(), size);
+
+  return buffer_data;
+}
+#else
+const char* EMSCRIPTEN_KEEPALIVE ui_data()
+{
+  const std::string& ui_data = editor::Editor::ui_data();
+  const char* buffer = (const char*)malloc((ui_data.size() + 1) * sizeof(char));
+
+  std::strcpy((char*)buffer, ui_data.c_str());
+
+  // std::memcpy((void*)buffer, ui_data.data(), ui_data.size());
+
+  return buffer;
+}
+
+void EMSCRIPTEN_KEEPALIVE modify_ui_data(const char* data)
+{
+  editor::Editor::modify_ui_data(std::string(data));
+}
+#endif
+
+// #ifndef __INTELLISENSE__
+// EMSCRIPTEN_BINDINGS(embind)
+// {
+//   value_object<Buffer>("Buffer").field("data", &Buffer::data).field("size", &Buffer::size);
+//   function("ui_data", &ui_data);
+// }
+// #endif
+}
+
+// std::vector<uint8_t> ui_data()
+// {
+//   return editor::Editor::ui_data().data;
+// }
+
+// EMSCRIPTEN_BINDINGS(module)
+// {
+//   register_vector<uint8_t>("vector<uint8_t>");
+//   function("_ui_data", &ui_data);
+// }

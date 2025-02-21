@@ -38,6 +38,8 @@ interface Api {
   _on_touch_drag(target: number, deltaX: number, deltaY: number): boolean;
 
   _set_tool(type: number): void;
+  _ui_data(): object;
+  _modify_ui_data(data: object): void;
 
   _save(): string;
   _load(data: string): void;

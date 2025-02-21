@@ -7,7 +7,7 @@ interface SelectOption {
   label: string | JSX.Element;
 }
 
-const Slider: Component<{
+const Select: Component<{
   onChange?(id: string): void;
   class?: string;
   value: string;
@@ -32,4 +32,4 @@ const Slider: Component<{
   );
 };
 
-export default Slider;
+export default Select;

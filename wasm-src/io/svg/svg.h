@@ -1,5 +1,5 @@
 /**
- * @file svg.h
+ * @file io/svg/svg.h
  * @brief Contains the declaration of the SVG parser.
  *
  * @todo decide whether to return EncodedData (or similar) or add directly to the scene

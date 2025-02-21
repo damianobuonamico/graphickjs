@@ -16,6 +16,8 @@ const API: Api = {
   _on_touch_pinch: fallback,
   _on_touch_drag: fallback,
   _set_tool: fallback,
+  _ui_data: fallback,
+  _modify_ui_data: fallback,
   _save: fallback,
   _load: fallback,
   _load_font: fallback,
@@ -40,6 +42,31 @@ wasm().then((module: any) => {
   API._on_touch_drag = module._on_touch_drag;
 
   API._set_tool = module._set_tool;
+  API._ui_data = () => {
+    const str_ptr: number = module._ui_data();
+    const str: string = module.UTF8ToString(str_ptr);
+
+    module._free(str_ptr);
+
+    return JSON.parse(str);
+
+    // const data = module._ui_data();
+
+    // console.log(data.size());
+    // console.log(data.get(1));
+
+    // return {
+    //   data: 0,
+    //   size: 0
+    // };
+  };
+  API._modify_ui_data = (data: object) => {
+    const str = JSON.stringify(data);
+    const ptr = module.allocateUTF8(str);
+
+    module._modify_ui_data(ptr);
+    module._free(ptr);
+  };
 
   API._save = module._save;
   API._load = (data: string) => {
@@ -59,7 +86,7 @@ wasm().then((module: any) => {
     const ptr = module._malloc(data.byteLength);
     const heap = new Uint8Array(module.HEAPU8.buffer, ptr, data.byteLength);
     heap.set(new Uint8Array(data));
-    module._load_svg(ptr, data.byteLength);
+    module._load_svg(ptr);
     module._free(ptr);
   };
   API._load_image = (data: ArrayBuffer) => {
@@ -91,6 +118,13 @@ wasm().then((module: any) => {
   fetch('https://upload.wikimedia.org/wikipedia/it/thumb/e/ea/Dart_Fener.jpg/1024px-Dart_Fener.jpg')
     .then((res) => res.arrayBuffer())
     .then((text) => API._load_image(text));
+
+  setTimeout(() => {
+    const buffer = API._ui_data();
+    console.log(buffer);
+
+    // API._free(buffer.data);
+  }, 1000);
 
   // fetch(
   //   "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"

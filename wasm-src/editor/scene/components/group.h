@@ -131,6 +131,8 @@ struct GroupComponent : public ComponentWrapper {
 
  private:
   Data* m_data;  // The actual component data.
+ private:
+  friend class Entity;
 };
 
 /**
@@ -257,6 +259,75 @@ struct LayerComponent : public ComponentWrapper {
 
  private:
   Data* m_data;  // The actual component data.
+ private:
+  friend class Entity;
+};
+
+/**
+ * @brief ArtboardComponent data.
+ *
+ * This struct should not be used directly, use the ArtboardComponent wrapper instead.
+ */
+struct ArtboardData {
+  vec4 color;  // The artboard color.
+
+  ArtboardData() = default;
+  ArtboardData(const vec4& color) : color(color) {}
+  ArtboardData(io::DataDecoder& decoder);
+};
+
+/**
+ * @brief ArtboardComponent wrapper.
+ *
+ * Artboards and backgrounds are implemented through this component.
+ */
+struct ArtboardComponent : public ComponentWrapper {
+ public:
+  static constexpr uint8_t component_id = 11;  // The component id.
+  using Data = ArtboardData;                   // The component underlying data type.
+ public:
+  /**
+   * @brief Constructor.
+   */
+  ArtboardComponent(const Entity* entity, Data* data) : ComponentWrapper(entity), m_data(data) {}
+
+  /**
+   * @brief Returns the artboard color.
+   *
+   * @return The artboard color.
+   */
+  inline vec4 color() const
+  {
+    return m_data->color;
+  }
+
+  /**
+   * @brief Sets the artboard color.
+   *
+   * @param color The new artboard color.
+   */
+  void color(const vec4& color);
+
+  /**
+   * @brief Encodes the component in binary format.
+   *
+   * @param data The encoded data to append the component to.
+   * @return A reference to the encoded data.
+   */
+  io::EncodedData& encode(io::EncodedData& data) const override;
+
+ private:
+  /**
+   * @brief Modifies the underlying data of the component.
+   *
+   * @param decoder A diff of the modified component's data.
+   */
+  void modify(io::DataDecoder& decoder) override;
+
+ private:
+  Data* m_data;  // The actual component data.
+ private:
+  friend class Entity;
 };
 
 }  // namespace graphick::editor

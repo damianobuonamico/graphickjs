@@ -11,6 +11,7 @@
  * @todo refactor and abstract away entity related methods in render()
  * @todo when scene serialization is a thing, implement copy constructor
  * @todo implement layer and groups history
+ * @todo entity_at with open path not working (close the path)
  */
 
 #include "scene.h"
@@ -38,11 +39,21 @@ namespace graphick::editor {
 
 Scene::Scene() : selection(this), history(this)
 {
+  Entity entity = {m_registry.create(), this};
+  uuid id = uuid();
+
+  entity.add<IDComponent>(id);
+  entity.add<ArtboardComponent>(vec4(229, 229, 229, 255) / 255.0f);
+
+  m_background = entity;
+  m_entities[id] = entity;
+
   create_layer();
 }
 
 Scene::Scene(const Scene& other)
     : m_entities(other.m_entities),
+      m_background(other.m_background),
       m_layers(other.m_layers),
       selection(this),
       history(this),
@@ -52,6 +63,7 @@ Scene::Scene(const Scene& other)
 
 Scene::Scene(Scene&& other) noexcept
     : m_registry(std::move(other.m_registry)),
+      m_background(other.m_background),
       m_entities(std::move(other.m_entities)),
       selection(this),
       history(this)
@@ -85,6 +97,16 @@ Entity Scene::get_active_layer()
             "Active layer is not a layer!");
 
   return {m_layers[active_layer], this};
+}
+
+Entity Scene::get_background()
+{
+  return {m_background, this};
+}
+
+const Entity Scene::get_background() const
+{
+  return {m_background, const_cast<Scene*>(this)};
 }
 
 const Entity Scene::get_active_layer() const
@@ -125,12 +147,41 @@ Entity Scene::create_element()
 {
   const uuid id = uuid();
 
-  Entity entity = create_entity(id, "Element");
+  LayerComponent layer = get_active_layer().get_component<LayerComponent>();
+  Entity entity = {m_registry.create(), this};
+
+  // geom::path path{};
+
+  // path.move_to({0, 0});
 
   entity.add<PathComponent>();
-  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
+  entity.add<IDComponent>(id);
+  entity.add<TagComponent>("Element " + std::to_string(m_entity_tag_number++));
+  entity.add<CategoryComponent>(CategoryComponent::Category::Selectable);
+  entity.add<TransformComponent>();
+  // entity.add<PathComponent>(path);
+
+  m_entities[id] = entity;
+
+  layer.push_back(entity);
 
   return entity;
+
+  // Entity entity = create_entity(id, "Element");
+
+  // console::log("is_element1", entity.is_element());
+
+  // entity.add<PathComponent>();
+  // console::log("is_element2", entity.is_element());
+
+  // Entity nentity = get_entity(id);
+
+  // // history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
+  // console::log("is_element3", nentity.is_element());
+
+  // console::log("id", nentity.id());
+
+  // return nentity;
 }
 
 Entity Scene::create_element(const geom::path& path)
@@ -344,7 +395,7 @@ void Scene::render(const bool ignore_cache) const
       dvec2(viewport.position()),
       static_cast<double>(viewport.zoom() * viewport.dpr()),
       static_cast<double>(viewport.dpr()),
-      vec4{0.2f, 0.2f, 0.21f, 1.0f}};
+      get_background().get_component<ArtboardComponent>().color()};
 
   renderer::Renderer::begin_frame({rendering_viewport, &m_cache.renderer_cache, ignore_cache});
 

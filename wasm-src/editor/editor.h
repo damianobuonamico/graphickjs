@@ -21,12 +21,16 @@ namespace graphick::editor {
  */
 struct RenderRequestOptions {
   bool ignore_cache = false;  // Whether to ignore the cache and redraw everything.
-  int frame_rate =
-      60;  // The frame rate to render at, if >= 60 it will render at the screen's refresh rate.
+  bool update_ui = true;      // Whether to send an update request to the UI.
+  int frame_rate = 60;        // Target frame rate
+                              // if >= 60 it will render at the screen's refresh rate.
 
   RenderRequestOptions() = default;
 
-  RenderRequestOptions(bool ignore_cache) : ignore_cache(ignore_cache) {}
+  RenderRequestOptions(bool ignore_cache, bool update_ui = true)
+      : ignore_cache(ignore_cache), update_ui(update_ui)
+  {
+  }
 
   /**
    * @brief Updates the options with the latest request.
@@ -36,6 +40,7 @@ struct RenderRequestOptions {
   inline void update(const RenderRequestOptions& options)
   {
     ignore_cache |= options.ignore_cache;
+    update_ui |= options.update_ui;
     frame_rate = options.frame_rate;
   }
 };
@@ -112,6 +117,22 @@ class Editor {
    */
   static void request_render(const RenderRequestOptions options = {});
 
+  /**
+   * @brief Returns an JSON representation of the editor's UI.
+   *
+   * The data changes based on the current state of the editor (selected entities).
+   *
+   * @return The JSON data of the editor's UI.
+   */
+  static std::string ui_data();
+
+  /**
+   * @brief Reflects the changes made in the editor's UI.
+   *
+   * @param data The changes made in the editor's UI.
+   */
+  static void modify_ui_data(const std::string& data);
+
  private:
   /**
    * @brief Default constructor and destructor.
@@ -145,11 +166,8 @@ class Editor {
 
   double m_last_render_time = 0.0;                       // The last render time.
  private:
-#ifdef EMSCRIPTEN
-  friend int render_callback(const double time, void* user_data);
-#else
   friend bool render_callback(const double time, void* user_data);
-#endif
+
  private:
   static Editor* s_instance;  // The editor's singleton instance.
 };

@@ -14,7 +14,7 @@
     @apply bg-primary-700;
     @apply text-xs;
     @apply font-semibold;
-    @apply text-primary-200;
+    @apply text-primary-100;
     @apply overflow-hidden;
     @apply select-none;
   }

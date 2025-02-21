@@ -1,28 +1,26 @@
-import { Component, createEffect } from "solid-js";
-import { Button } from "../inputs";
-import { PauseIcon, PlayIcon, PlusIcon, StopIcon } from "../icons";
+import { Component, createEffect } from 'solid-js';
+import { Button } from '../inputs';
+import { PauseIcon, PlayIcon, PlusIcon, StopIcon } from '../icons';
 
-const Timeline: Component<{ onResize: (movement: number) => void }> = (
-  props
-) => {
+const Timeline: Component<{ onResize: (y: number) => void }> = (props) => {
   let canvas: HTMLCanvasElement | undefined;
 
   createEffect(() => {
     if (canvas) {
-      canvas.style.opacity = "1";
+      canvas.style.opacity = '1';
     }
   });
 
   const onPointerDown = () => {
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
   };
 
   const onPointerMove = (e: PointerEvent) => props.onResize(e.clientY);
 
   const onPointerUp = () => {
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
   };
 
   return (
@@ -37,7 +35,7 @@ const Timeline: Component<{ onResize: (movement: number) => void }> = (
         <canvas
           class="absolute"
           ref={(ref) => {
-            ref.style.opacity = "0";
+            ref.style.opacity = '0';
             canvas = ref;
           }}
         />

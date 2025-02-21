@@ -52,7 +52,12 @@ class Entity {
   /**
    * @brief Copy constructor
    */
-  Entity(const Entity& other) = default;
+  Entity(const Entity& other) : m_handle(other.m_handle), m_scene(other.m_scene) {}
+
+  /**
+   * @brief Move constructor
+   */
+  // Entity(Entity&& other) noexcept : m_handle(other.m_handle), m_scene(other.m_scene) {}
 
   /**
    * @brief Adds a component to the entity.
@@ -74,7 +79,7 @@ class Entity {
     io::EncodedData encoded_data;
     component.encode(encoded_data);
 
-    m_scene->history.add(id(), Action::Target::Component, std::move(encoded_data), false);
+    // m_scene->history.add(id(), Action::Target::Component, std::move(encoded_data), false);
 
     return component;
   }
@@ -362,11 +367,16 @@ class Entity {
    * @return The added component.
    */
   template<typename T, typename... Args>
-  inline T add(Args&&... args)
+  T add(Args&&... args)
   {
-    return T{
-        this,
-        &m_scene->m_registry.emplace<typename T::Data>(m_handle, std::forward<Args>(args)...)};
+    auto& data = m_scene->m_registry.emplace<typename T::Data>(m_handle,
+                                                               std::forward<Args>(args)...);
+
+    return T{this, &data};
+
+    // return T{
+    //     this,
+    //     &m_scene->m_registry.emplace<typename T::Data>(m_handle, std::forward<Args>(args)...)};
   }
 
   /**

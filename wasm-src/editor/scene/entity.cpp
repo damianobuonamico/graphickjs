@@ -47,12 +47,15 @@ io::EncodedData Entity::encode() const
   ENCODE_COMPONENT(IDComponent);
   ENCODE_COMPONENT(TagComponent);
   ENCODE_COMPONENT(CategoryComponent);
+  ENCODE_COMPONENT(TransformComponent);
   ENCODE_COMPONENT(PathComponent);
+  ENCODE_COMPONENT(FillComponent);
+  ENCODE_COMPONENT(StrokeComponent);
   ENCODE_COMPONENT(ImageComponent);
   ENCODE_COMPONENT(TextComponent);
-  ENCODE_COMPONENT(TransformComponent);
-  ENCODE_COMPONENT(StrokeComponent);
-  ENCODE_COMPONENT(FillComponent);
+  ENCODE_COMPONENT(GroupComponent);
+  ENCODE_COMPONENT(LayerComponent);
+  ENCODE_COMPONENT(ArtboardComponent);
 
   return data;
 }
@@ -70,12 +73,15 @@ std::pair<uuid, io::EncodedData> Entity::duplicate() const
   }
 
   ENCODE_COMPONENT(CategoryComponent);
+  ENCODE_COMPONENT(TransformComponent);
   ENCODE_COMPONENT(PathComponent);
+  ENCODE_COMPONENT(FillComponent);
+  ENCODE_COMPONENT(StrokeComponent);
   ENCODE_COMPONENT(ImageComponent);
   ENCODE_COMPONENT(TextComponent);
-  ENCODE_COMPONENT(TransformComponent);
-  ENCODE_COMPONENT(StrokeComponent);
-  ENCODE_COMPONENT(FillComponent);
+  ENCODE_COMPONENT(GroupComponent);
+  ENCODE_COMPONENT(LayerComponent);
+  ENCODE_COMPONENT(ArtboardComponent);
 
   return {id_data.id, data};
 }
@@ -91,12 +97,15 @@ void Entity::add(const io::EncodedData& encoded_data, const bool full_entity)
       DECODE_COMPONENT(IDComponent);
       DECODE_COMPONENT(TagComponent);
       DECODE_COMPONENT(CategoryComponent);
+      DECODE_COMPONENT(TransformComponent);
       DECODE_COMPONENT(PathComponent);
+      DECODE_COMPONENT(FillComponent);
+      DECODE_COMPONENT(StrokeComponent);
       DECODE_COMPONENT(ImageComponent);
       DECODE_COMPONENT(TextComponent);
-      DECODE_COMPONENT(TransformComponent);
-      DECODE_COMPONENT(StrokeComponent);
-      DECODE_COMPONENT(FillComponent);
+      DECODE_COMPONENT(GroupComponent);
+      DECODE_COMPONENT(LayerComponent);
+      DECODE_COMPONENT(ArtboardComponent);
     }
   }
 }
@@ -111,12 +120,15 @@ void Entity::remove(const io::EncodedData& encoded_data)
     switch (component_id) {
       REMOVE_COMPONENT(TagComponent);
       REMOVE_COMPONENT(CategoryComponent);
+      REMOVE_COMPONENT(TransformComponent);
       REMOVE_COMPONENT(PathComponent);
+      REMOVE_COMPONENT(FillComponent);
+      REMOVE_COMPONENT(StrokeComponent);
       REMOVE_COMPONENT(ImageComponent);
       REMOVE_COMPONENT(TextComponent);
-      REMOVE_COMPONENT(TransformComponent);
-      REMOVE_COMPONENT(StrokeComponent);
-      REMOVE_COMPONENT(FillComponent);
+      REMOVE_COMPONENT(GroupComponent);
+      REMOVE_COMPONENT(LayerComponent);
+      REMOVE_COMPONENT(ArtboardComponent);
     }
   }
 }
@@ -131,12 +143,15 @@ void Entity::modify(const io::EncodedData& encoded_data)
     switch (component_id) {
       MODIFY_COMPONENT(TagComponent);
       MODIFY_COMPONENT(CategoryComponent);
+      MODIFY_COMPONENT(TransformComponent);
       MODIFY_COMPONENT(PathComponent);
+      MODIFY_COMPONENT(FillComponent);
+      MODIFY_COMPONENT(StrokeComponent);
       MODIFY_COMPONENT(ImageComponent);
       MODIFY_COMPONENT(TextComponent);
-      MODIFY_COMPONENT(TransformComponent);
-      MODIFY_COMPONENT(StrokeComponent);
-      MODIFY_COMPONENT(FillComponent);
+      MODIFY_COMPONENT(GroupComponent);
+      MODIFY_COMPONENT(LayerComponent);
+      MODIFY_COMPONENT(ArtboardComponent);
     }
   }
 }

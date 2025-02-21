@@ -9,8 +9,10 @@
 #include "editor.h"
 
 #include "input/input_manager.h"
+#include "scene/entity.h"
 #include "scene/scene.h"
 
+#include "../io/json/json.h"
 #include "../io/resource_manager.h"
 
 #include "../renderer/renderer.h"
@@ -24,11 +26,13 @@
 namespace graphick::editor {
 
 #ifdef EMSCRIPTEN
-int render_callback(const double time, void* user_data)
+bool render_callback(const double time, void* user_data)
 {
   Editor::get()->render_frame(time);
-  return 1;
+  return true;
 }
+
+EM_JS(void, msgbus_send, (const int msg_id), { window.msgbus.send(msg_id); });
 #else
 bool render_callback(const double time, void* user_data)
 {
@@ -94,6 +98,10 @@ Scene& Editor::scene()
 
 void Editor::resize(const ivec2 size, const ivec2 offset, float dpr)
 {
+  if (size.x >= 900) {
+    modify_ui_data("{\"components\":{\"background\":[0.0,0.0,0.0,1.0]}}");
+  }
+
   for (auto& scene : get()->m_scenes) {
     scene.viewport.resize(size, offset, dpr);
   }
@@ -116,6 +124,44 @@ void Editor::request_render(const RenderRequestOptions options)
   get()->m_render_request->update(options);
 }
 
+std::string Editor::ui_data()
+{
+  const Scene& scene = get()->scene();
+
+  io::json::JSON data = io::json::JSON::object();
+
+  if (scene.selection.size()) {
+
+  } else {
+    ArtboardComponent background = scene.get_background().get_component<ArtboardComponent>();
+
+    data["background"] = background.color();
+  }
+
+  return data.dump();
+}
+
+void Editor::modify_ui_data(const std::string& data)
+{
+  io::json::JSON json = io::json::JSON::parse(data);
+
+  if (!json.has("components")) {
+    return;
+  }
+
+  io::json::JSON& components = json["components"];
+
+  if (components.has("background")) {
+    const vec4 color = components["background"].to_vec4();
+
+    get()->scene().get_background().get_component<ArtboardComponent>().color(color);
+  }
+
+  console::log(data);
+
+  request_render({false, false});
+}
+
 bool Editor::render_frame(const double time)
 {
   if (!m_render_request.has_value())
@@ -128,6 +174,12 @@ bool Editor::render_frame(const double time)
   }
 
   scene().render(m_render_request->ignore_cache);
+
+  if (m_render_request->update_ui) {
+#ifdef EMSCRIPTEN
+    msgbus_send(0);
+#endif
+  }
 
   m_render_request.reset();
 
