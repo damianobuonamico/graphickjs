@@ -36,7 +36,8 @@ const InputWrapper: Component<{
               <Show
                 when={
                   index() !== (props.children as JSX.Element[]).length - 1 &&
-                  (props.children as any)[index() + 1]() != false
+                  (typeof (props.children as any)[index() + 1] != 'function' ||
+                    (props.children as any)[index() + 1]() != false)
                 }
               >
                 <div class="w-[1px] h-auto border-l border-transparent border-l-primary-800 separator"></div>
