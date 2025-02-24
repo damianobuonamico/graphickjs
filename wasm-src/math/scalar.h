@@ -65,6 +65,59 @@ inline T round(const T t, const T precision) noexcept
 }
 
 /**
+ * @brief Returns the minimum of two scalars.
+ *
+ * @param t1 The first scalar.
+ * @param t2 The second scalar.
+ * @return The minimum scalar.
+ */
+template<typename T>
+inline T min(const T t1, const T t2)
+{
+  return t1 < t2 ? t1 : t2;
+}
+
+/**
+ * @brief Returns the minimum of three scalars.
+ *
+ * @param t1 The first scalar.
+ * @param t2 The second scalar.
+ * @param t3 The third scalar.
+ * @return The minimum scalar.
+ */
+template<typename T>
+inline T min(const T t1, const T t2, const T t3)
+{
+  return min(min(t1, t2), t3);
+}
+
+/**
+ * @brief Returns the maximum of two scalars.
+ *
+ * @param t1 The first scalar.
+ * @param t2 The second scalar.
+ * @return The maximum scalar.
+ */
+template<typename T>
+inline T max(const T t1, const T t2)
+{
+  return t1 > t2 ? t1 : t2;
+}
+
+/**
+ * @brief Returns the maximum of two scalars.
+ *
+ * @param t1 The first scalar.
+ * @param t2 The second scalar.
+ * @return The maximum scalar.
+ */
+template<typename T>
+inline T max(const T t1, const T t2, const T t3)
+{
+  return max(max(t1, t2), t3);
+}
+
+/**
  * @brief Clamps a scalar between a minimum and a maximum.
  *
  * @param t The scalar to clamp.

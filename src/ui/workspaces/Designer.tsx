@@ -56,7 +56,7 @@ const Designer: Component<{
           />
         </div>
         <ComponentsPanel
-          components={state.components}
+          components={state.ui_data.components}
           setComponents={(components) => API._modify_ui_data({ components })}
           onResize={(x) => {
             let width = Math.max(Math.min(window.innerWidth - x, 500), 250);

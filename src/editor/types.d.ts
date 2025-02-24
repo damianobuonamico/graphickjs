@@ -1,7 +1,19 @@
 type Workspace = 'designer' | 'publisher' | 'whiteboard';
 
 interface ComponentsState {
-  background?: [number, number, number, number];
+  background?: BackgroundComponentData;
+  fill?: Mixed<FillComponentData>;
+  stroke?: Mixed<StrokeComponentData>;
+}
+
+interface ComponentsStateOperation {
+  background?: Operation<BackgroundComponentData>;
+  fill?: Operation<FillComponentData>;
+  stroke?: Operation<StrokeComponentData>;
+}
+
+interface UIData {
+  components?: ComponentsState;
 }
 
 interface State {
@@ -12,7 +24,7 @@ interface State {
   timeline: boolean;
   timelineHeight: number;
   componentsPanelWidth: number;
-  components: ComponentsState;
+  ui_data: UIData;
 }
 
 interface MountedListener {

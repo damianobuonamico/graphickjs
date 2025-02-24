@@ -363,7 +363,7 @@ struct DataDecoder {
       return 0;
 
     int16_t t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(int16_t));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(int16_t));
     m_index += sizeof(int16_t);
 
     return t;
@@ -381,7 +381,7 @@ struct DataDecoder {
       return 0;
 
     int32_t t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(int32_t));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(int32_t));
     m_index += sizeof(int32_t);
 
     return t;
@@ -399,7 +399,7 @@ struct DataDecoder {
       return 0;
 
     int64_t t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(int64_t));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(int64_t));
     m_index += sizeof(int64_t);
 
     return t;
@@ -431,7 +431,7 @@ struct DataDecoder {
       return 0;
 
     uint16_t t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(uint16_t));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(uint16_t));
     m_index += sizeof(uint16_t);
 
     return t;
@@ -449,7 +449,7 @@ struct DataDecoder {
       return 0;
 
     uint32_t t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(uint32_t));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(uint32_t));
     m_index += sizeof(uint32_t);
 
     return t;
@@ -467,7 +467,7 @@ struct DataDecoder {
       return 0;
 
     uint64_t t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(uint64_t));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(uint64_t));
     m_index += sizeof(uint64_t);
 
     return t;
@@ -485,7 +485,7 @@ struct DataDecoder {
       return 0;
 
     float t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(float));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(float));
     m_index += sizeof(float);
 
     return t;
@@ -503,7 +503,7 @@ struct DataDecoder {
       return 0;
 
     double t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(double));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(double));
     m_index += sizeof(double);
 
     return t;
@@ -582,7 +582,7 @@ struct DataDecoder {
       return std::vector<T>();
 
     std::vector<T> t(size);
-    std::memcpy(t.data(), m_data->data.data() + m_index, size * sizeof(T));
+    std::memcpy((void*)t.data(), m_data->data.data() + m_index, size * sizeof(T));
     m_index += size * sizeof(T);
 
     return t;
@@ -600,7 +600,7 @@ struct DataDecoder {
       return math::vec2();
 
     math::vec2 t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(math::vec2));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(math::vec2));
     m_index += sizeof(math::vec2);
 
     return t;
@@ -618,7 +618,7 @@ struct DataDecoder {
       return math::mat2x3();
 
     math::mat2x3 t;
-    std::memcpy(&t, m_data->data.data() + m_index, sizeof(math::mat2x3));
+    std::memcpy((void*)&t, m_data->data.data() + m_index, sizeof(math::mat2x3));
     m_index += sizeof(math::mat2x3);
 
     return t;

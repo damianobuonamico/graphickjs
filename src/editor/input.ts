@@ -1,29 +1,26 @@
-import { KEYS } from "@utils/keys";
-import { fillObject, isInputLike } from "@utils/utils";
-import { vec2, round } from "@math";
-import { Renderer } from "./renderer";
-import { ToolState } from "./tools";
+import { KEYS } from '@utils/keys';
+import { fillObject, isInputLike } from '@utils/utils';
+import { vec2, round } from '@math';
+import { Renderer } from './renderer';
+import { ToolState } from './tools';
 
-import API from "@/wasm/loader";
+import API from '@/wasm/loader';
 
 abstract class InputManager {
   public static tool: ToolState;
 
-  private static m_type: "touch" | "pen" | "mouse" = "mouse";
+  private static m_type: 'touch' | 'pen' | 'mouse' = 'mouse';
   private static m_touches: Map<number, TouchID> = new Map();
   private static m_touchCenter: vec2 = vec2.create();
 
   private static m_mountedListeners: MountedListener[] = [];
 
   public static init(setTool: (tool: Tool) => void) {
-    this.tool = new ToolState(setTool, "select");
+    this.tool = new ToolState(setTool, 'select');
     this.mount();
   }
 
-  private static addListener<
-    K extends keyof HTMLElementEventMap,
-    T extends keyof WindowEventMap
-  >(
+  private static addListener<K extends keyof HTMLElementEventMap, T extends keyof WindowEventMap>(
     type: K | T,
     callback: (this: Window, e: any) => any,
     target: HTMLElement | Window | Document = window,
@@ -36,51 +33,43 @@ abstract class InputManager {
   private static mount() {
     if (this.m_mountedListeners.length) return;
 
-    this.addListener("cut", this.onCut.bind(this));
-    this.addListener("copy", this.onCopy.bind(this));
-    this.addListener("paste", this.onPaste.bind(this));
+    this.addListener('cut', this.onCut.bind(this));
+    this.addListener('copy', this.onCopy.bind(this));
+    this.addListener('paste', this.onPaste.bind(this));
 
-    this.addListener("keydown", this.onKeyDown.bind(this));
-    this.addListener("keyup", this.onKeyUp.bind(this));
+    this.addListener('keydown', this.onKeyDown.bind(this));
+    this.addListener('keyup', this.onKeyUp.bind(this));
 
-    this.addListener("pointerdown", this.calculateDeviceType.bind(this));
+    this.addListener('pointerdown', this.calculateDeviceType.bind(this));
 
-    if (this.m_type === "touch") {
-      this.addListener("touchstart", this.onTouchStart.bind(this));
-      this.addListener("touchmove", this.onTouchMove.bind(this));
-      this.addListener("touchend", this.onTouchEnd.bind(this));
-      this.addListener("touchcancel", this.onTouchEnd.bind(this));
+    if (this.m_type === 'touch') {
+      this.addListener('touchstart', this.onTouchStart.bind(this));
+      this.addListener('touchmove', this.onTouchMove.bind(this));
+      this.addListener('touchend', this.onTouchEnd.bind(this));
+      this.addListener('touchcancel', this.onTouchEnd.bind(this));
     } else {
-      this.addListener("pointerdown", this.onPointerDown.bind(this));
-      this.addListener("pointermove", this.onPointerMove.bind(this), window, {
+      this.addListener('pointerdown', this.onPointerDown.bind(this));
+      this.addListener('pointermove', this.onPointerMove.bind(this), window, {
         passive: true,
-        capture: true,
+        capture: true
       });
-      this.addListener("pointerup", this.onPointerUp.bind(this));
-      this.addListener("pointercancel", this.onPointerUp.bind(this));
-      this.addListener(
-        "pointerenter",
-        this.onPointerEnter.bind(this),
-        document
-      );
-      this.addListener(
-        "pointerleave",
-        this.onPointerLeave.bind(this),
-        document
-      );
+      this.addListener('pointerup', this.onPointerUp.bind(this));
+      this.addListener('pointercancel', this.onPointerUp.bind(this));
+      this.addListener('pointerenter', this.onPointerEnter.bind(this), document);
+      this.addListener('pointerleave', this.onPointerLeave.bind(this), document);
     }
 
-    this.addListener("resize", this.onResize.bind(this));
+    this.addListener('resize', this.onResize.bind(this));
     // this.addListener("contextmenu", (e: UIEvent) => e.preventDefault());
-    this.addListener("wheel", this.onWheel.bind(this), window, {
-      passive: false,
+    this.addListener('wheel', this.onWheel.bind(this), window, {
+      passive: false
     });
-    this.addListener("load", () => {
+    this.addListener('load', () => {
       setTimeout(() => {
         Renderer.resize();
       }, 100);
     });
-    this.addListener("beforeunload", () => {
+    this.addListener('beforeunload', () => {
       API._shutdown();
     });
   }
@@ -110,10 +99,7 @@ abstract class InputManager {
       if (e.touches[i].target !== Renderer.canvas) continue;
 
       const id = e.touches[i].identifier;
-      const center = vec2.fromValues(
-        e.touches[i].clientX,
-        e.touches[i].clientY
-      );
+      const center = vec2.fromValues(e.touches[i].clientX, e.touches[i].clientY);
 
       if (this.m_touches.has(id)) {
         // Update existing touch
@@ -127,7 +113,7 @@ abstract class InputManager {
           position: vec2.clone(center),
           prev: vec2.clone(center),
           to: vec2.clone(center),
-          id,
+          id
         });
       }
     }
@@ -191,16 +177,12 @@ abstract class InputManager {
 
   //* Keyboard Events
   private static onKeyDown(e: KeyboardEvent) {
-    if (isInputLike(e.target)) return;
+    if (isInputLike(e.target)) {
+      if (e.key === KEYS.ESCAPE) e.target.blur();
+      return;
+    }
 
-    API._on_keyboard_event(
-      0,
-      this.getKeyCode(e.key),
-      e.repeat,
-      e.altKey,
-      e.ctrlKey,
-      e.shiftKey
-    );
+    API._on_keyboard_event(0, this.getKeyCode(e.key), e.repeat, e.altKey, e.ctrlKey, e.shiftKey);
   }
 
   private static getKeyCode(key: string): number {
@@ -234,14 +216,7 @@ abstract class InputManager {
   private static onKeyUp(e: KeyboardEvent) {
     if (isInputLike(e.target)) return;
 
-    API._on_keyboard_event(
-      1,
-      this.getKeyCode(e.key),
-      e.repeat,
-      e.altKey,
-      e.ctrlKey,
-      e.shiftKey
-    );
+    API._on_keyboard_event(1, this.getKeyCode(e.key), e.repeat, e.altKey, e.ctrlKey, e.shiftKey);
   }
 
   //* Helper Events
@@ -251,20 +226,19 @@ abstract class InputManager {
       this.unmount();
       this.mount();
 
-      if (this.m_type === "touch")
-        this.onTouchStart(new TouchEvent("touchdown", e));
+      if (this.m_type === 'touch') this.onTouchStart(new TouchEvent('touchdown', e));
       else this.onPointerDown(e);
     }
   }
 
   private static getPointerTypeCode(type: string): number {
     switch (type) {
-      case "pen":
+      case 'pen':
         return 1;
-      case "touch":
+      case 'touch':
         return 2;
       default:
-      case "mouse":
+      case 'mouse':
         return 0;
     }
   }
@@ -360,7 +334,7 @@ abstract class InputManager {
           API._on_pointer_event(
             e.target === Renderer.canvas ? 1 : 0,
             0,
-            this.getPointerTypeCode("touch"),
+            this.getPointerTypeCode('touch'),
             0,
             e.touches[0].clientX,
             e.touches[0].clientY,
@@ -384,7 +358,7 @@ abstract class InputManager {
       API._on_pointer_event(
         e.target === Renderer.canvas ? 1 : 0,
         1,
-        this.getPointerTypeCode("touch"),
+        this.getPointerTypeCode('touch'),
         0,
         e.touches[0].clientX,
         e.touches[0].clientY,
@@ -429,7 +403,7 @@ abstract class InputManager {
     API._on_pointer_event(
       e.target === Renderer.canvas ? 1 : 0,
       2,
-      this.getPointerTypeCode("touch"),
+      this.getPointerTypeCode('touch'),
       0,
       this.m_touchCenter[0],
       this.m_touchCenter[1],
@@ -469,12 +443,7 @@ abstract class InputManager {
       deltaY = 0;
     }
 
-    API._on_wheel_event(
-      e.target === Renderer.canvas ? 1 : 0,
-      deltaX,
-      deltaY,
-      e.ctrlKey
-    );
+    API._on_wheel_event(e.target === Renderer.canvas ? 1 : 0, deltaX, deltaY, e.ctrlKey);
 
     e.preventDefault();
   }

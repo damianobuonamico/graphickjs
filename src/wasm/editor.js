@@ -3376,8 +3376,6 @@ function update_tool_ui(type) { window._set_tool(type); }
       return (...args) => ccall(ident, returnType, argTypes, args, opts);
     };
 
-  
-  var allocateUTF8 = stringToNewUTF8;
 
 embind_init_charCodes();
 BindingError = Module['BindingError'] = class BindingError extends Error { constructor(message) { super(message); this.name = 'BindingError'; }};
@@ -3622,7 +3620,7 @@ var _emscripten_stack_get_current = wasmExports['emscripten_stack_get_current']
 
 Module['cwrap'] = cwrap;
 Module['UTF8ToString'] = UTF8ToString;
-Module['allocateUTF8'] = allocateUTF8;
+Module['stringToNewUTF8'] = stringToNewUTF8;
 
 
 function run() {

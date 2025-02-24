@@ -323,6 +323,7 @@ bool InputManager::on_key_down(KeyboardKey key)
 {
   Scene& scene = Editor::scene();
 
+  // TODO: prevent default after shortcut
   if ((key == KeyboardKey::Z || (int)key == 90 /* TEMP: GLFW */) && keys.ctrl) {
     if (keys.shift) {
       scene.history.redo();

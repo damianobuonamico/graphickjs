@@ -40,6 +40,14 @@ bool render_callback(const double time, void* user_data)
 }
 #endif
 
+#define MODIFY_SELECTED(component, ...) \
+  for (const auto& [id, _] : get()->scene().selection.selected()) { \
+    Entity entity = get()->scene().get_entity(id); \
+    if (entity.has_component<component>()) { \
+      entity.get_component<component>().__VA_ARGS__; \
+    } \
+  }
+
 Editor* Editor::s_instance = nullptr;
 
 void Editor::init()
@@ -98,9 +106,7 @@ Scene& Editor::scene()
 
 void Editor::resize(const ivec2 size, const ivec2 offset, float dpr)
 {
-  if (size.x >= 900) {
-    modify_ui_data("{\"components\":{\"background\":[0.0,0.0,0.0,1.0]}}");
-  }
+  console::log(ui_data());
 
   for (auto& scene : get()->m_scenes) {
     scene.viewport.resize(size, offset, dpr);
@@ -129,13 +135,25 @@ std::string Editor::ui_data()
   const Scene& scene = get()->scene();
 
   io::json::JSON data = io::json::JSON::object();
+  io::json::JSON& components = data["components"] = io::json::JSON::object();
 
   if (scene.selection.size()) {
+    for (const auto& [id, _] : scene.selection.selected()) {
+      const Entity& entity = scene.get_entity(id);
 
+      if (entity.has_component<FillComponent>()) {
+        entity.get_component<FillComponent>().ui_data(components);
+      }
+
+      if (entity.has_component<StrokeComponent>()) {
+        entity.get_component<StrokeComponent>().ui_data(components);
+      }
+    }
   } else {
-    ArtboardComponent background = scene.get_background().get_component<ArtboardComponent>();
+    ArtboardComponent scene_background = scene.get_background().get_component<ArtboardComponent>();
+    io::json::JSON& background = components["background"] = io::json::JSON::object();
 
-    data["background"] = background.color();
+    background["color"] = scene_background.color();
   }
 
   return data.dump();
@@ -152,9 +170,81 @@ void Editor::modify_ui_data(const std::string& data)
   io::json::JSON& components = json["components"];
 
   if (components.has("background")) {
-    const vec4 color = components["background"].to_vec4();
+    io::json::JSON& background = components["background"];
+
+    // TODO: check if color exists
+    const vec4 color = background["color"].to_vec4();
 
     get()->scene().get_background().get_component<ArtboardComponent>().color(color);
+  }
+
+  if (components.has("fill")) {
+    io::json::JSON& fill = components["fill"];
+
+    if (fill.type() == io::json::JSON::Class::String) {
+      const std::string fill_op = fill.to_string();
+
+      if (fill_op == "add") {
+      } else if (fill_op == "remove") {
+      }
+    } else {
+      if (fill.has("color")) {
+        const vec4 color = fill["color"].to_vec4();
+        MODIFY_SELECTED(FillComponent, color(color));
+      }
+
+      if (fill.has("rule")) {
+        const renderer::FillRule rule = static_cast<renderer::FillRule>(fill["rule"].to_int());
+        MODIFY_SELECTED(FillComponent, rule(rule));
+      }
+
+      if (fill.has("visible")) {
+        const bool visible = fill["visible"].to_bool();
+        MODIFY_SELECTED(FillComponent, visible(visible));
+      }
+    }
+  }
+
+  if (components.has("stroke")) {
+    io::json::JSON& stroke = components["stroke"];
+
+    if (stroke.type() == io::json::JSON::Class::String) {
+      const std::string stroke_op = stroke.to_string();
+
+      if (stroke_op == "add") {
+      } else if (stroke_op == "remove") {
+      }
+    } else {
+      if (stroke.has("color")) {
+        const vec4 color = stroke["color"].to_vec4();
+        MODIFY_SELECTED(StrokeComponent, color(color));
+      }
+
+      if (stroke.has("width")) {
+        const float width = stroke["width"].to_float();
+        MODIFY_SELECTED(StrokeComponent, width(width));
+      }
+
+      if (stroke.has("cap")) {
+        const renderer::LineCap cap = static_cast<renderer::LineCap>(stroke["cap"].to_int());
+        MODIFY_SELECTED(StrokeComponent, cap(cap));
+      }
+
+      if (stroke.has("join")) {
+        const renderer::LineJoin join = static_cast<renderer::LineJoin>(stroke["join"].to_int());
+        MODIFY_SELECTED(StrokeComponent, join(join));
+      }
+
+      if (stroke.has("miter_limit")) {
+        const float miter_limit = stroke["miter_limit"].to_float();
+        MODIFY_SELECTED(StrokeComponent, miter_limit(miter_limit));
+      }
+
+      if (stroke.has("visible")) {
+        const bool visible = stroke["visible"].to_bool();
+        MODIFY_SELECTED(StrokeComponent, visible(visible));
+      }
+    }
   }
 
   console::log(data);

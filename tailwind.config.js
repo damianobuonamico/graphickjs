@@ -29,10 +29,13 @@ module.exports = {
           400: '#575c62',
           500: '#30363d',
           600: '#21262d',
-          700: '#171b22',
+          700: '#191d24',
           800: '#0e1117',
           900: '#010409'
         }
+      },
+      height: {
+        input: '1.5rem'
       },
       gridTemplateColumns: {
         'menu-item': '30px 1fr 30px',

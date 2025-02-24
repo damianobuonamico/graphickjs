@@ -11,26 +11,78 @@ export function getWorkspacePrimaryColor(mode: Workspace) {
   }
 }
 
-export function HSB2RGB([h, s, b]: vec3): vec3 {
+export function HSV2RGB([h, s, v]: vec3): vec3 {
+  h /= 360;
   s /= 100;
-  b /= 100;
+  v /= 100;
 
-  const k = (n: number) => (n + h / 60) % 6;
-  const f = (n: number) => b * (1 - s * Math.max(0, Math.min(k(n), 4 - k(n), 1)));
+  let r = 0;
+  let g = 0;
+  let b = 0;
 
-  return [clamp(f(5), 0, 1), clamp(f(3), 0, 1), clamp(f(1), 0, 1)];
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+
+  switch (i % 6) {
+    case 0:
+      (r = v), (g = t), (b = p);
+      break;
+    case 1:
+      (r = q), (g = v), (b = p);
+      break;
+    case 2:
+      (r = p), (g = v), (b = t);
+      break;
+    case 3:
+      (r = p), (g = q), (b = v);
+      break;
+    case 4:
+      (r = t), (g = p), (b = v);
+      break;
+    case 5:
+      (r = v), (g = p), (b = q);
+      break;
+  }
+
+  return [r, g, b];
 }
 
-export function RGB2HSB([r, g, b]: vec3): vec3 {
-  const v = Math.max(r, g, b),
-    n = v - Math.min(r, g, b);
-  const h = n === 0 ? 0 : n && v === r ? (g - b) / n : v === g ? 2 + (b - r) / n : 4 + (r - g) / n;
+export function RGB2HSV([r, g, b]: vec3): vec3 {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
 
-  return [60 * (h < 0 ? h + 6 : h), v && (n / v) * 100, v * 100];
+  let h = 0;
+  let s = 0;
+  let v = max;
+
+  const d = max - min;
+
+  s = max == 0 ? 0 : d / max;
+
+  if (max != min) {
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+
+    h /= 6;
+  }
+
+  return [h * 360, s * 100, v * 100];
 }
 
 export function HEX2RGB(hex: string): vec3 | vec4 {
-  const parsed = hex.substring(1);
+  const parsed = hex.at(0) == '#' ? hex.substring(1) : hex;
   const size = parsed.length;
 
   if (size <= 4) {
@@ -66,6 +118,9 @@ export function HEX2RGB(hex: string): vec3 | vec4 {
 
 export function RGB2HEX([r, g, b]: vec3): string {
   return (
-    '#' + (((1 << 24) + (((r * 255) << 16) + ((g * 255) << 8) + b * 255)) | 0).toString(16).slice(1)
-  );
+    ((1 << 24) + ((Math.round(r * 255) << 16) + (Math.round(g * 255) << 8) + Math.round(b * 255))) |
+    0
+  )
+    .toString(16)
+    .slice(1);
 }

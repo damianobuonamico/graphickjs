@@ -15,6 +15,7 @@
 
 #include "../../editor.h"
 
+#include "../../../io/json/json.h"
 #include "../../../io/resource_manager.h"
 
 #include "../../../math/math.h"
@@ -427,6 +428,33 @@ FillData::FillData(io::DataDecoder& decoder)
   visible = is_visible;
 }
 
+void FillComponent::color(const vec4& color)
+{
+  if (m_data->paint.is_color() && m_data->paint.color() == color) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->paint = renderer::Paint(color));
+}
+
+void FillComponent::rule(renderer::FillRule rule)
+{
+  if (m_data->rule == rule) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->rule = rule);
+}
+
+void FillComponent::visible(bool visible)
+{
+  if (m_data->visible == visible) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->visible = visible);
+}
+
 io::EncodedData& FillComponent::encode(io::EncodedData& data) const
 {
   const bool is_color = paint().is_color();
@@ -452,6 +480,31 @@ io::EncodedData& FillComponent::encode(io::EncodedData& data) const
   return data;
 }
 
+void FillComponent::ui_data(io::json::JSON& data) const
+{
+  if (data.has("fill")) {
+    io::json::JSON& fill = data["fill"];
+
+    if (fill.has("color") && fill["color"].to_vec4() != paint().color()) {
+      fill["color"] = "mixed";
+    }
+
+    if (fill.has("rule") && fill["rule"].to_int() != static_cast<int>(rule())) {
+      fill["rule"] = "mixed";
+    }
+
+    if (fill.has("visible") && fill["visible"].to_bool() != visible()) {
+      fill["visible"] = "mixed";
+    }
+  } else {
+    io::json::JSON& fill = data["fill"] = io::json::JSON::object();
+
+    fill["color"] = paint().color();
+    fill["rule"] = static_cast<int>(rule());
+    fill["visible"] = visible();
+  }
+}
+
 void FillComponent::modify(io::DataDecoder& decoder)
 {
   *m_data = decoder;
@@ -471,6 +524,60 @@ StrokeData::StrokeData(io::DataDecoder& decoder)
   miter_limit = has_miter_limit ? decoder.float32() : 10.0f;
   width = has_width ? decoder.float32() : 1.0f;
   visible = is_visible;
+}
+
+void StrokeComponent::color(const vec4& color)
+{
+  if (m_data->paint.is_color() && m_data->paint.color() == color) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->paint = renderer::Paint(color));
+}
+
+void StrokeComponent::cap(renderer::LineCap cap)
+{
+  if (m_data->cap == cap) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->cap = cap);
+}
+
+void StrokeComponent::join(renderer::LineJoin join)
+{
+  if (m_data->join == join) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->join = join);
+}
+
+void StrokeComponent::miter_limit(float miter_limit)
+{
+  if (m_data->miter_limit == miter_limit) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->miter_limit = miter_limit);
+}
+
+void StrokeComponent::width(float width)
+{
+  if (m_data->width == width) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->width = width);
+}
+
+void StrokeComponent::visible(bool visible)
+{
+  if (m_data->visible == visible) {
+    return;
+  }
+
+  MODIFY_NO_EXECUTE(m_data->visible = visible);
 }
 
 io::EncodedData& StrokeComponent::encode(io::EncodedData& data) const
@@ -511,6 +618,46 @@ io::EncodedData& StrokeComponent::encode(io::EncodedData& data) const
   }
 
   return data;
+}
+
+void StrokeComponent::ui_data(io::json::JSON& data) const
+{
+  if (data.has("stroke")) {
+    io::json::JSON& stroke = data["stroke"];
+
+    if (stroke.has("color") && stroke["color"].to_vec4() != paint().color()) {
+      stroke["color"] = "mixed";
+    }
+
+    if (stroke.has("width") && stroke["width"].to_float() != width()) {
+      stroke["width"] = "mixed";
+    }
+
+    if (stroke.has("cap") && stroke["cap"].to_int() != static_cast<int>(cap())) {
+      stroke["cap"] = "mixed";
+    }
+
+    if (stroke.has("join") && stroke["join"].to_int() != static_cast<int>(join())) {
+      stroke["join"] = "mixed";
+    }
+
+    if (stroke.has("miter_limit") && stroke["miter_limit"].to_float() != miter_limit()) {
+      stroke["miter_limit"] = "mixed";
+    }
+
+    if (stroke.has("visible") && stroke["visible"].to_bool() != visible()) {
+      stroke["visible"] = "mixed";
+    }
+  } else {
+    io::json::JSON& stroke = data["stroke"] = io::json::JSON::object();
+
+    stroke["color"] = paint().color();
+    stroke["width"] = width();
+    stroke["cap"] = static_cast<int>(cap());
+    stroke["join"] = static_cast<int>(join());
+    stroke["miter_limit"] = miter_limit();
+    stroke["visible"] = visible();
+  }
 }
 
 void StrokeComponent::modify(io::DataDecoder& decoder)
@@ -561,6 +708,10 @@ ArtboardData::ArtboardData(io::DataDecoder& decoder) : color(decoder.color()) {}
 
 void ArtboardComponent::color(const vec4& color)
 {
+  if (m_data->color == color) {
+    return;
+  }
+
   MODIFY_NO_EXECUTE(m_data->color = color);
 }
 

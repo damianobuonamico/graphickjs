@@ -1,7 +1,7 @@
 import { Component } from 'solid-js';
 import { IconProps } from './types';
 
-const BorderWidthIcon: Component<IconProps> = (props) => (
+const BorderSolidIcon: Component<IconProps> = (props) => (
   <svg
     width="15"
     height="15"
@@ -11,7 +11,7 @@ const BorderWidthIcon: Component<IconProps> = (props) => (
     {...props}
   >
     <path
-      d="M1 3H14V4H1V3ZM1 6H14V8H1V6ZM14 10.25H1V12.75H14V10.25Z"
+      d="M1.25 7.5C1.25 7.22386 1.47386 7 1.75 7H13.25C13.5261 7 13.75 7.22386 13.75 7.5C13.75 7.77614 13.5261 8 13.25 8H1.75C1.47386 8 1.25 7.77614 1.25 7.5Z"
       fill={props.color || 'currentColor'}
       fill-rule="evenodd"
       clip-rule="evenodd"
@@ -19,4 +19,4 @@ const BorderWidthIcon: Component<IconProps> = (props) => (
   </svg>
 );
 
-export default BorderWidthIcon;
+export default BorderSolidIcon;

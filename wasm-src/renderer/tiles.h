@@ -357,8 +357,8 @@ struct TileBatchData {
    */
   inline void upload(const Drawable& drawable, const uint32_t z_index)
   {
-    memcpy(vertices_ptr, drawable.tiles.data(), drawable.tiles.size() * sizeof(TileVertex));
-    memcpy(curves_ptr, drawable.curves.data(), drawable.curves.size() * sizeof(vec2));
+    memcpy((void*)vertices_ptr, drawable.tiles.data(), drawable.tiles.size() * sizeof(TileVertex));
+    memcpy((void*)curves_ptr, drawable.curves.data(), drawable.curves.size() * sizeof(vec2));
 
     const size_t curves_start_index = curves_count();
 
@@ -383,8 +383,8 @@ struct TileBatchData {
                      const uint32_t z_index,
                      const std::vector<std::pair<uuid, uint32_t>>& textures)
   {
-    memcpy(vertices_ptr, drawable.tiles.data(), drawable.tiles.size() * sizeof(TileVertex));
-    memcpy(curves_ptr, drawable.curves.data(), drawable.curves.size() * sizeof(vec2));
+    memcpy((void*)vertices_ptr, drawable.tiles.data(), drawable.tiles.size() * sizeof(TileVertex));
+    memcpy((void*)curves_ptr, drawable.curves.data(), drawable.curves.size() * sizeof(vec2));
 
     const size_t curves_start_index = curves_count();
 
@@ -535,7 +535,7 @@ struct FillBatchData {
    */
   inline void upload(const Drawable& drawable, const uint32_t z_index)
   {
-    memcpy(vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
+    memcpy((void*)vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
 
     const FillVertex* vertices_end_ptr = vertices_ptr + drawable.fills.size();
 
@@ -555,7 +555,7 @@ struct FillBatchData {
                      const uint32_t z_index,
                      const std::vector<std::pair<uuid, uint32_t>>& textures)
   {
-    memcpy(vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
+    memcpy((void*)vertices_ptr, drawable.fills.data(), drawable.fills.size() * sizeof(FillVertex));
 
     uint32_t local_z_index = z_index;
 

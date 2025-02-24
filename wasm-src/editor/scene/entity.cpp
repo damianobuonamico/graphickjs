@@ -24,7 +24,7 @@ namespace graphick::editor {
 #define REMOVE_COMPONENT(component_type) \
   case (component_type::component_id): { \
     remove<component_type>(); \
-    component_type::Data(decoder); \
+    auto _ = component_type::Data(decoder); \
     break; \
   }
 

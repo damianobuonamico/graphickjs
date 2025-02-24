@@ -15,7 +15,7 @@ const Editor: Component = () => {
     timeline: false,
     timelineHeight: 500,
     componentsPanelWidth: 250,
-    components: {}
+    ui_data: {}
   });
 
   InputManager.init((tool: Tool) => {
@@ -32,7 +32,7 @@ const Editor: Component = () => {
   const onMessage = (msgID: number) => {
     switch (msgID) {
       case 0:
-        setState({ components: API._ui_data() });
+        setState({ ui_data: API._ui_data() });
         break;
     }
   };

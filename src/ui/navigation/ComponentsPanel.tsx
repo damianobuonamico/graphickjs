@@ -1,10 +1,10 @@
 import { Component, Show } from 'solid-js';
-import { BackgroundComponent, ColorPropertyValue } from '../components';
+import { BackgroundComponent, FillComponent, StrokeComponent } from '../components';
 
 const ComponentsPanel: Component<{
   onResize: (x: number) => void;
-  components: ComponentsState;
-  setComponents: (components: ComponentsState) => void;
+  components?: ComponentsState;
+  setComponents: (components: ComponentsStateOperation) => void;
 }> = (props) => {
   const onPointerDown = () => {
     window.addEventListener('pointermove', onPointerMove);
@@ -27,10 +27,22 @@ const ComponentsPanel: Component<{
         ></div>
       </div>
       <div class="flex w-full h-full flex-col">
-        <Show when={props.components.background !== undefined}>
+        <Show when={props.components !== undefined && props.components.background !== undefined}>
           <BackgroundComponent
-            data={{ color: props.components.background! }}
-            setData={(data) => props.setComponents({ background: data.color })}
+            data={props.components!.background!}
+            setData={(data) => props.setComponents({ background: data })}
+          />
+        </Show>
+        <Show when={props.components !== undefined && props.components.fill !== undefined}>
+          <FillComponent
+            data={props.components!.fill!}
+            setData={(data) => props.setComponents({ fill: data })}
+          />
+        </Show>
+        <Show when={props.components !== undefined && props.components.stroke !== undefined}>
+          <StrokeComponent
+            data={props.components!.stroke!}
+            setData={(data) => props.setComponents({ stroke: data })}
           />
         </Show>
       </div>

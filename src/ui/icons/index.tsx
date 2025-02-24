@@ -3,46 +3,66 @@ import { IconProps } from './types';
 import AffinityDesignerLogoIcon from './AffinityDesignerLogoIcon';
 import AffinityPhotoLogoIcon from './AffinityPhotoLogoIcon';
 import AffinityPublisherLogoIcon from './AffinityPublisherLogoIcon';
+import BorderDashedIcon from './BorderDashedIcon';
+import BorderDottedIcon from './BorderDottedIcon';
+import BorderSolidIcon from './BorderSolidIcon';
+import BorderWidthIcon from './BorderWidthIcon';
+import CapButtIcon from './CapButtIcon';
+import CapRoundIcon from './CapRoundIcon';
+import CapSquareIcon from './CapSquareIcon';
+import CaretDownIcon from './CaretDownIcon';
+import CaretLeftIcon from './CaretLeftIcon';
+import CaretRightIcon from './CaretRightIcon';
+import CaretUpIcon from './CaretUpIcon';
 import CheckIcon from './CheckIcon';
 import ChevronRightIcon from './ChevronRightIcon';
 import CircleIcon from './CircleIcon';
+import EraserIcon from './EraserIcon';
+import EyeClosedIcon from './EyeClosedIcon';
 import EyeDropperIcon from './EyeDropperIcon';
+import EyeOpenIcon from './EyeOpenIcon';
 import HandIcon from './HandIcon';
+import JoinBevelIcon from './JoinBevelIcon';
+import JoinMiterIcon from './JoinMiterIcon';
+import JoinRoundIcon from './JoinRoundIcon';
 import LoadingIcon from './LoadingIcon';
+import MinusIcon from './MinusIcon';
+import PauseIcon from './PauseIcon';
 import PencilIcon from './PencilIcon';
 import PenIcon from './PenIcon';
+import PlayIcon from './PlayIcon';
+import PlusIcon from './PlusIcon';
 import PointerIcon from './PointerIcon';
 import PointerVertexIcon from './PointerVertexIcon';
 import RectangleIcon from './RectangleIcon';
-import ZoomIcon from './ZoomIcon';
-import PlusIcon from './PlusIcon';
-import MinusIcon from './MinusIcon';
-import EyeClosedIcon from './EyeClosedIcon';
-import EyeOpenIcon from './EyeOpenIcon';
-import BorderWidthIcon from './BorderWidthIcon';
-import CornerBevelIcon from './CornerBevelIcon';
-import CornerMiterIcon from './CornerMiterIcon';
-import CornerRoundIcon from './CornerRoundIcon';
-import PauseIcon from './PauseIcon';
-import PlayIcon from './PlayIcon';
 import StopIcon from './StopIcon';
-import EraserIcon from './EraserIcon';
+import ZoomIcon from './ZoomIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
 export { AffinityPublisherLogoIcon };
+export { BorderDashedIcon };
+export { BorderDottedIcon };
+export { BorderSolidIcon };
 export { BorderWidthIcon };
+export { CapButtIcon };
+export { CapRoundIcon };
+export { CapSquareIcon };
+export { CaretDownIcon };
+export { CaretLeftIcon };
+export { CaretRightIcon };
+export { CaretUpIcon };
 export { CheckIcon };
 export { ChevronRightIcon };
 export { CircleIcon };
-export { CornerBevelIcon };
-export { CornerMiterIcon };
-export { CornerRoundIcon };
 export { EraserIcon };
 export { EyeClosedIcon };
 export { EyeDropperIcon };
 export { EyeOpenIcon };
 export { HandIcon };
+export { JoinBevelIcon };
+export { JoinMiterIcon };
+export { JoinRoundIcon };
 export { LoadingIcon };
 export { MinusIcon };
 export { PauseIcon };
@@ -64,20 +84,34 @@ const getIcon = (name: string, props?: IconProps) => {
       return <AffinityPhotoLogoIcon {...props} />;
     case 'affinityPublisherLogo':
       return <AffinityPublisherLogoIcon {...props} />;
+    case 'borderDashed':
+      return <BorderDashedIcon {...props} />;
+    case 'borderDotted':
+      return <BorderDottedIcon {...props} />;
+    case 'borderSolid':
+      return <BorderSolidIcon {...props} />;
     case 'borderWidth':
       return <BorderWidthIcon {...props} />;
+    case 'capButt':
+      return <CapButtIcon {...props} />;
+    case 'capRound':
+      return <CapRoundIcon {...props} />;
+    case 'capSquare':
+      return <CapSquareIcon {...props} />;
+    case 'caretDown':
+      return <CaretDownIcon {...props} />;
+    case 'caretLeft':
+      return <CaretLeftIcon {...props} />;
+    case 'caretRight':
+      return <CaretRightIcon {...props} />;
+    case 'caretUp':
+      return <CaretUpIcon {...props} />;
     case 'check':
       return <CheckIcon {...props} />;
     case 'chevronRight':
       return <ChevronRightIcon {...props} />;
     case 'circle':
       return <CircleIcon {...props} />;
-    case 'cornerBevel':
-      return <CornerBevelIcon {...props} />;
-    case 'cornerMiter':
-      return <CornerMiterIcon {...props} />;
-    case 'cornerRound':
-      return <CornerRoundIcon {...props} />;
     case 'eraser':
       return <EraserIcon {...props} />;
     case 'eyeClosed':
@@ -88,6 +122,12 @@ const getIcon = (name: string, props?: IconProps) => {
       return <EyeOpenIcon {...props} />;
     case 'hand':
       return <HandIcon {...props} />;
+    case 'joinBevel':
+      return <JoinBevelIcon {...props} />;
+    case 'joinMiter':
+      return <JoinMiterIcon {...props} />;
+    case 'joinRound':
+      return <JoinRoundIcon {...props} />;
     case 'loading':
       return <LoadingIcon {...props} />;
     case 'minus':
@@ -113,7 +153,7 @@ const getIcon = (name: string, props?: IconProps) => {
     case 'zoom':
       return <ZoomIcon {...props} />;
     default:
-      return <></>;
+      return undefined;
   }
 };
 

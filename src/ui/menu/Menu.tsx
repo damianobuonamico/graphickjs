@@ -1,6 +1,6 @@
 import { Component, createSignal, Show, createEffect, onMount, onCleanup, JSX } from 'solid-js';
 import { vec2 } from '@math';
-import { ChevronRightIcon } from '@icons';
+import { CaretRightIcon } from '@icons';
 import { Button } from '@inputs';
 import { ButtonVariant } from '@inputs/Button';
 import ControlledMenu, { calculateAltLabel, MenuItems } from './ControlledMenu';
@@ -90,7 +90,7 @@ const Menu: Component<{
         }}
         ref={menuButtonRef}
         leftIcon={props.menuButton.icon}
-        rightIcon={props.isSubMenu ? <ChevronRightIcon /> : undefined}
+        rightIcon={props.isSubMenu ? <CaretRightIcon /> : undefined}
         active={props.active}
         style={
           props.menuButton.variant === 'file-menu' && props.menuButton.label === ''

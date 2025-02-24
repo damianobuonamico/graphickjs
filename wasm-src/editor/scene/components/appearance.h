@@ -101,12 +101,40 @@ struct FillComponent : public ComponentWrapper {
   }
 
   /**
+   * @brief Sets the paint type to color.
+   *
+   * @param color The new color.
+   */
+  void color(const vec4& color);
+
+  /**
+   * @brief Sets the fill rule.
+   *
+   * @param rule The new fill rule.
+   */
+  void rule(renderer::FillRule rule);
+
+  /**
+   * @brief Sets the visibility of the fill.
+   *
+   * @param visible The new visibility.
+   */
+  void visible(bool visible);
+
+  /**
    * @brief Encodes the component in binary format.
    *
    * @param data The encoded data to append the component to.
    * @return A reference to the encoded data.
    */
   io::EncodedData& encode(io::EncodedData& data) const override;
+
+  /**
+   * @brief If possible encodes the component data in a JSON format.
+   *
+   * @param data The JSON object to append the component data to.
+   */
+  void ui_data(io::json::JSON& data) const override;
 
  private:
   /**
@@ -244,6 +272,48 @@ struct StrokeComponent : public ComponentWrapper {
     return m_data->visible;
   }
 
+    /**
+   * @brief Sets the paint type to color.
+   *
+   * @param color The new color.
+   */
+  void color(const vec4& color);
+
+  /**
+   * @brief Sets the line cap.
+   *
+   * @param cap The new line cap.
+   */
+  void cap(renderer::LineCap cap);
+
+  /**
+   * @brief Sets the line join.
+   *
+   * @param join The new line join.
+   */
+  void join(renderer::LineJoin join);
+
+  /**
+   * @brief Sets the miter limit.
+   *
+   * @param miter_limit The new miter limit.
+   */
+  void miter_limit(float miter_limit);
+
+  /**
+   * @brief Sets the width.
+   *
+   * @param width The new width.
+   */
+  void width(float width);
+
+  /**
+   * @brief Sets the visibility of the stroke.
+   *
+   * @param visible The new visibility.
+   */
+  void visible(bool visible);
+
   /**
    * @brief Encodes the component in binary format.
    *
@@ -251,6 +321,13 @@ struct StrokeComponent : public ComponentWrapper {
    * @return A reference to the encoded data.
    */
   io::EncodedData& encode(io::EncodedData& data) const override;
+
+  /**
+   * @brief If possible encodes the component data in a JSON format.
+   *
+   * @param data The JSON object to append the component data to.
+   */
+  void ui_data(io::json::JSON& data) const override;
 
  private:
   /**

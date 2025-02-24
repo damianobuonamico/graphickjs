@@ -12,6 +12,12 @@ struct DataDecoder;
 
 }  // namespace graphick::io
 
+namespace graphick::io::json {
+
+class JSON;
+
+};
+
 namespace graphick::editor {
 
 class Entity;
@@ -41,6 +47,16 @@ struct ComponentWrapper {
    * @return A reference to the encoded data.
    */
   virtual io::EncodedData& encode(io::EncodedData& data) const = 0;
+
+  /**
+   * @brief If possible encodes the component data in a JSON format.
+   *
+   * If the data already has a JSON representation of this component, it is either updated or
+   * invalidated.
+   *
+   * @param data The JSON object to append the component data to.
+   */
+  virtual void ui_data(io::json::JSON& data) const {}
 
  protected:
   /**

@@ -50,6 +50,12 @@ wasm().then((module: any) => {
 
     return JSON.parse(str);
 
+    // const json: object = JSON.parse(str);
+
+    // console.log(json);
+
+    // return json;
+
     // const data = module._ui_data();
 
     // console.log(data.size());
@@ -62,7 +68,7 @@ wasm().then((module: any) => {
   };
   API._modify_ui_data = (data: object) => {
     const str = JSON.stringify(data);
-    const ptr = module.allocateUTF8(str);
+    const ptr = module.stringToNewUTF8(str);
 
     module._modify_ui_data(ptr);
     module._free(ptr);
@@ -70,7 +76,7 @@ wasm().then((module: any) => {
 
   API._save = module._save;
   API._load = (data: string) => {
-    const ptr = module.allocateUTF8(data);
+    const ptr = module.stringToNewUTF8(data);
     module._load(ptr);
     module._free(ptr);
   };

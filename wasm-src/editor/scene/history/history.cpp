@@ -69,6 +69,8 @@ void History::modify(uuid entity_id,
 
 void History::undo()
 {
+  console::log("actionssize", m_actions.size());
+
   if (!m_actions.empty() && !m_batch_indices.empty() && m_batch_index > 0) {
     if (m_actions.size() != m_batch_indices[m_batch_indices.size() - 1]) {
       if (m_batch_index == m_batch_indices.size() - 1) {

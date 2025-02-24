@@ -31,14 +31,16 @@ constexpr utf8_encoding utf8_info[4] = {
  */
 inline int utf8_codepoint(std::istream& stream)
 {
-  uint8_t next = stream.get();
+  const int next_raw = stream.get();
 
-  if (next == EOF) {
+  if (next_raw == EOF) {
     return -1;
   }
 
+  const uint8_t next = static_cast<uint8_t>(next_raw);
+
   for (const auto& type : utf8_info) {
-    if (static_cast<uint8_t>(next & type.mask) == type.value) {
+    if ((next & type.mask) == type.value) {
       int result = next & ~type.mask;
       int count = type.extra;
 
