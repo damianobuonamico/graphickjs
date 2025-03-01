@@ -42,6 +42,8 @@ const StrokeComponent: Component<{
           type="float"
           class="ml-1.5"
           onChange={(width: number) => props.setData({ width })}
+          min={0}
+          max={1000}
         />
         <Popover>
           <Button variant="small-button" class="ml-1.5">

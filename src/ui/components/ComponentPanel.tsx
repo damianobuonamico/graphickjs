@@ -9,7 +9,7 @@ const ComponentPanel: Component<{
   return (
     <div
       class={classNames(
-        'bg-primary-800 h-fit w-full border-primary-600 border-b pb-2 pt-1.5 px-4 text-xs',
+        'bg-primary-800 h-fit w-full border-primary-600 border-b pb-2 pt-1.5 px-4',
         {
           'pb-3': !props.children
         }

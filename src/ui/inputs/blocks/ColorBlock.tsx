@@ -2,7 +2,16 @@ import { vec2 } from '@/math';
 import { EyeDropperIcon } from '@/ui/icons';
 import { Popover } from '@/ui/overlays';
 import { HEX2RGB, HSV2RGB, RGB2HEX, RGB2HSV } from '@/utils/color';
-import { Component, createEffect, createMemo, createSignal, Match, Show, Switch } from 'solid-js';
+import {
+  Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  Match,
+  onCleanup,
+  Show,
+  Switch
+} from 'solid-js';
 import Button from '../Button';
 import InputWrapper from './InputWrapper';
 import Slider from '../Slider';
@@ -69,9 +78,9 @@ const ColorBlock: Component<{
     }
   };
 
-  const onMouseDown = (e: MouseEvent) => {
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+  const onPointerDown = (e: MouseEvent) => {
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
 
     if (pickerRef) {
       const rect = pickerRef.getBoundingClientRect();
@@ -85,7 +94,7 @@ const ColorBlock: Component<{
     }
   };
 
-  const onMouseMove = (e: MouseEvent) => {
+  const onPointerMove = (e: MouseEvent) => {
     e.preventDefault();
 
     if (pickerRef) {
@@ -100,8 +109,9 @@ const ColorBlock: Component<{
     }
   };
 
-  const onMouseUp = () => {
-    document.removeEventListener('mousemove', onMouseMove);
+  const onPointerUp = () => {
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
   };
 
   return (
@@ -150,7 +160,7 @@ const ColorBlock: Component<{
           style={{
             background: `linear-gradient(to top,#000,rgba(255,255,255,0)), linear-gradient(to right,#fff,rgba(0,0,0,0)), hsl(${props.value[0]}, 100%, 50%)`
           }}
-          onMouseDown={onMouseDown}
+          onPointerDown={onPointerDown}
         >
           <div
             class="w-3 h-3 relative -left-1.5 -top-1.5 border-white border-2 rounded-md"

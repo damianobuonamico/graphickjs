@@ -2,12 +2,14 @@ type Workspace = 'designer' | 'publisher' | 'whiteboard';
 
 interface ComponentsState {
   background?: BackgroundComponentData;
+  transform?: TransformComponentData;
   fill?: Mixed<FillComponentData>;
   stroke?: Mixed<StrokeComponentData>;
 }
 
 interface ComponentsStateOperation {
   background?: Operation<BackgroundComponentData>;
+  transform?: Operation<TransformComponentData>;
   fill?: Operation<FillComponentData>;
   stroke?: Operation<StrokeComponentData>;
 }

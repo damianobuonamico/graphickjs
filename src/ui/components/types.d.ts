@@ -5,6 +5,14 @@ interface BackgroundComponentData {
   color: vec4;
 }
 
+interface TransformComponentData {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  angle: number;
+}
+
 interface FillComponentData {
   color: vec4;
   rule: number;

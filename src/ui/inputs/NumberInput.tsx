@@ -1,4 +1,4 @@
-import { Component } from 'solid-js';
+import { Component, createEffect, createMemo, createSignal } from 'solid-js';
 import InputWrapper from './blocks/InputWrapper';
 import TextBlock from './blocks/TextBlock';
 
@@ -11,18 +11,34 @@ const NumberInput: Component<{
   type?: 'int' | 'float';
   min?: number;
   max?: number;
+  decimals?: number;
 }> = (props) => {
+  const onChange = props.onChange ?? (() => {});
+
+  const [value, setValue] = createSignal(props.value);
+
+  const displayValue = createMemo(() => (value() === 'mixed' ? '' : value()));
+  const placeholder = createMemo(() => (value() === 'mixed' ? 'mixed' : ''));
+
+  createEffect(() => {
+    setValue(props.value);
+  });
+
   return (
     <InputWrapper class={props.class}>
       <TextBlock
-        onChange={props.onChange}
-        value={props.value === 'mixed' ? '' : props.value}
-        placeholder={props.value === 'mixed' ? 'mixed' : ''}
+        onChange={(value: number) => {
+          setValue(value);
+          onChange(value);
+        }}
+        value={displayValue()}
+        placeholder={placeholder()}
         leftIcon={props.leftIcon}
         rightIcon={props.rightIcon}
         type={props.type ?? 'int'}
         min={props.min}
         max={props.max}
+        decimals={props.decimals}
       />
     </InputWrapper>
   );

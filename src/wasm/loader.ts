@@ -121,9 +121,9 @@ wasm().then((module: any) => {
     .then((res) => res.arrayBuffer())
     .then((text) => API._load_svg(text));
 
-  fetch('https://upload.wikimedia.org/wikipedia/it/thumb/e/ea/Dart_Fener.jpg/1024px-Dart_Fener.jpg')
-    .then((res) => res.arrayBuffer())
-    .then((text) => API._load_image(text));
+  // fetch('https://upload.wikimedia.org/wikipedia/it/thumb/e/ea/Dart_Fener.jpg/1024px-Dart_Fener.jpg')
+  //   .then((res) => res.arrayBuffer())
+  //   .then((text) => API._load_image(text));
 
   setTimeout(() => {
     const buffer = API._ui_data();

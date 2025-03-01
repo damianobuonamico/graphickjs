@@ -1,5 +1,6 @@
 import { Component, Show } from 'solid-js';
 import { BackgroundComponent, FillComponent, StrokeComponent } from '../components';
+import TransformComponent from '../components/TransformComponent';
 
 const ComponentsPanel: Component<{
   onResize: (x: number) => void;
@@ -31,6 +32,12 @@ const ComponentsPanel: Component<{
           <BackgroundComponent
             data={props.components!.background!}
             setData={(data) => props.setComponents({ background: data })}
+          />
+        </Show>
+        <Show when={props.components !== undefined && props.components.transform !== undefined}>
+          <TransformComponent
+            data={props.components!.transform!}
+            setData={(data) => props.setComponents({ transform: data })}
           />
         </Show>
         <Show when={props.components !== undefined && props.components.fill !== undefined}>

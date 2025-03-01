@@ -1,4 +1,4 @@
-import { Component, Show } from 'solid-js';
+import { Component } from 'solid-js';
 import ComponentPanel from './ComponentPanel';
 import { ColorInput } from '../inputs';
 import Checkbox from '../inputs/Checkbox';

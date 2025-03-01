@@ -56,7 +56,7 @@ const ColorInput: Component<{ onInput?(value: vec4): void; value: vec4 | 'mixed'
           value={Math.round(HSVA()[3] * 100)}
           type="int"
           rightIcon="%"
-          class="w-5"
+          class="w-6 text-right"
           min={0}
           max={100}
           onChange={(value: number) => setHSVA2RGBA([...(HSVA().slice(0, 3) as vec3), value / 100])}
