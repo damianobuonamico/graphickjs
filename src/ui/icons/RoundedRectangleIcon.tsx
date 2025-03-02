@@ -1,7 +1,7 @@
 import { Component } from 'solid-js';
 import { IconProps } from './types';
 
-const RectangleIcon: Component<IconProps> = (props) => (
+const RoundedRectangleIcon: Component<IconProps> = (props) => (
   <svg
     width="15"
     height="15"
@@ -15,11 +15,12 @@ const RectangleIcon: Component<IconProps> = (props) => (
       y="2"
       width="11"
       height="11"
+      rx="2"
       fill={props.color || 'currentColor'}
       fill-opacity="0.35"
     />
     <path
-      d="M2 1C1.44772 1 1 1.44772 1 2V13C1 13.5523 1.44772 14 2 14H13C13.5523 14 14 13.5523 14 13V2C14 1.44772 13.5523 1 13 1H2ZM13 2H2V13H13V2Z"
+      d="M4 1C2.34315 1 1 2.34315 1 4V11C1 12.6569 2.34315 14 4 14H11C12.6569 14 14 12.6569 14 11V4C14 2.34315 12.6569 1 11 1H4ZM4 2C2.89543 2 2 2.89543 2 4V11C2 12.1046 2.89543 13 4 13H11C12.1046 13 13 12.1046 13 11V4C13 2.89543 12.1046 2 11 2H4Z"
       fill={props.color || 'currentColor'}
       fill-rule="evenodd"
       clip-rule="evenodd"
@@ -27,4 +28,4 @@ const RectangleIcon: Component<IconProps> = (props) => (
   </svg>
 );
 
-export default RectangleIcon;
+export default RoundedRectangleIcon;

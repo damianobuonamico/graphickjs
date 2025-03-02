@@ -3,6 +3,8 @@ import { IconProps } from './types';
 import AffinityDesignerLogoIcon from './AffinityDesignerLogoIcon';
 import AffinityPhotoLogoIcon from './AffinityPhotoLogoIcon';
 import AffinityPublisherLogoIcon from './AffinityPublisherLogoIcon';
+import ArcIcon from './ArcIcon';
+import ArrowIcon from './ArrowIcon';
 import BorderDashedIcon from './BorderDashedIcon';
 import BorderDottedIcon from './BorderDottedIcon';
 import BorderSolidIcon from './BorderSolidIcon';
@@ -21,10 +23,12 @@ import EraserIcon from './EraserIcon';
 import EyeClosedIcon from './EyeClosedIcon';
 import EyeDropperIcon from './EyeDropperIcon';
 import EyeOpenIcon from './EyeOpenIcon';
+import GradientIcon from './GradientIcon';
 import HandIcon from './HandIcon';
 import JoinBevelIcon from './JoinBevelIcon';
 import JoinMiterIcon from './JoinMiterIcon';
 import JoinRoundIcon from './JoinRoundIcon';
+import LineIcon from './LineIcon';
 import LoadingIcon from './LoadingIcon';
 import MinusIcon from './MinusIcon';
 import PauseIcon from './PauseIcon';
@@ -33,14 +37,24 @@ import PenIcon from './PenIcon';
 import PlayIcon from './PlayIcon';
 import PlusIcon from './PlusIcon';
 import PointerIcon from './PointerIcon';
-import PointerVertexIcon from './PointerVertexIcon';
+import PointerNodeIcon from './PointerNodeIcon';
+import PointerNodeGroupIcon from './PointerNodeGroupIcon';
+import PolygonIcon from './PolygonIcon';
 import RectangleIcon from './RectangleIcon';
+import RoundedRectangleIcon from './RoundedRectangleIcon';
+import RulerIcon from './RulerIcon';
+import SpiralIcon from './SpiralIcon';
+import SplineIcon from './SplineIcon';
+import StarIcon from './StarIcon';
 import StopIcon from './StopIcon';
+import TypeIcon from './TypeIcon';
 import ZoomIcon from './ZoomIcon';
 
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
 export { AffinityPublisherLogoIcon };
+export { ArcIcon };
+export { ArrowIcon };
 export { BorderDashedIcon };
 export { BorderDottedIcon };
 export { BorderSolidIcon };
@@ -59,10 +73,12 @@ export { EraserIcon };
 export { EyeClosedIcon };
 export { EyeDropperIcon };
 export { EyeOpenIcon };
+export { GradientIcon };
 export { HandIcon };
 export { JoinBevelIcon };
 export { JoinMiterIcon };
 export { JoinRoundIcon };
+export { LineIcon };
 export { LoadingIcon };
 export { MinusIcon };
 export { PauseIcon };
@@ -71,9 +87,17 @@ export { PenIcon };
 export { PlayIcon };
 export { PlusIcon };
 export { PointerIcon };
-export { PointerVertexIcon };
+export { PointerNodeIcon };
+export { PointerNodeGroupIcon };
+export { PolygonIcon };
 export { RectangleIcon };
+export { RoundedRectangleIcon };
+export { RulerIcon };
+export { SpiralIcon };
+export { SplineIcon };
+export { StarIcon };
 export { StopIcon };
+export { TypeIcon };
 export { ZoomIcon };
 
 const getIcon = (name: string, props?: IconProps) => {
@@ -84,6 +108,10 @@ const getIcon = (name: string, props?: IconProps) => {
       return <AffinityPhotoLogoIcon {...props} />;
     case 'affinityPublisherLogo':
       return <AffinityPublisherLogoIcon {...props} />;
+    case 'arc':
+      return <ArcIcon {...props} />;
+    case 'arrow':
+      return <ArrowIcon {...props} />;
     case 'borderDashed':
       return <BorderDashedIcon {...props} />;
     case 'borderDotted':
@@ -120,6 +148,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <EyeDropperIcon {...props} />;
     case 'eyeOpen':
       return <EyeOpenIcon {...props} />;
+    case 'gradient':
+      return <GradientIcon {...props} />;
     case 'hand':
       return <HandIcon {...props} />;
     case 'joinBevel':
@@ -128,6 +158,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <JoinMiterIcon {...props} />;
     case 'joinRound':
       return <JoinRoundIcon {...props} />;
+    case 'line':
+      return <LineIcon {...props} />;
     case 'loading':
       return <LoadingIcon {...props} />;
     case 'minus':
@@ -144,12 +176,28 @@ const getIcon = (name: string, props?: IconProps) => {
       return <PlusIcon {...props} />;
     case 'pointer':
       return <PointerIcon {...props} />;
-    case 'pointerVertex':
-      return <PointerVertexIcon {...props} />;
+    case 'pointerGroup':
+      return <PointerNodeIcon {...props} />;
+    case 'pointerNodeGroup':
+      return <PointerNodeGroupIcon {...props} />;
+    case 'polygon':
+      return <PolygonIcon {...props} />;
     case 'rectangle':
       return <RectangleIcon {...props} />;
+    case 'roundedRectangle':
+      return <RoundedRectangleIcon {...props} />;
+    case 'ruler':
+      return <RulerIcon {...props} />;
+    case 'spiral':
+      return <SpiralIcon {...props} />;
+    case 'spline':
+      return <SplineIcon {...props} />;
+    case 'star':
+      return <StarIcon {...props} />;
     case 'stop':
       return <StopIcon {...props} />;
+    case 'type':
+      return <TypeIcon {...props} />;
     case 'zoom':
       return <ZoomIcon {...props} />;
     default:

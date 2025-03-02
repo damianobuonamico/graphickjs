@@ -1,4 +1,4 @@
-import API from "@/wasm/loader";
+import API from '@/wasm/loader';
 
 declare global {
   interface Window {
@@ -13,7 +13,7 @@ enum ToolType {
   DirectSelect,
   Pen,
   Pencil,
-  None,
+  None
 }
 
 class ToolState {
@@ -29,23 +29,23 @@ class ToolState {
     window._set_tool = (type: ToolType) => {
       switch (type) {
         case ToolType.Pan:
-          this.m_setTool("pan");
+          this.m_setTool('pan');
           break;
         case ToolType.Zoom:
-          this.m_setTool("zoom");
+          this.m_setTool('zoom');
           break;
         case ToolType.DirectSelect:
-          this.m_setTool("directSelect");
+          this.m_setTool('selectNode');
           break;
         case ToolType.Pen:
-          this.m_setTool("pen");
+          this.m_setTool('pen');
           break;
         case ToolType.Pencil:
-          this.m_setTool("pencil");
+          this.m_setTool('pencil');
           break;
         case ToolType.Select:
         default:
-          this.m_setTool("select");
+          this.m_setTool('select');
           break;
       }
     };
@@ -57,22 +57,22 @@ class ToolState {
 
   public set current(tool: Tool) {
     switch (tool) {
-      case "pan":
+      case 'pan':
         API._set_tool(ToolType.Pan);
         break;
-      case "zoom":
+      case 'zoom':
         API._set_tool(ToolType.Zoom);
         break;
-      case "directSelect":
+      case 'selectNode':
         API._set_tool(ToolType.DirectSelect);
         break;
-      case "pen":
+      case 'pen':
         API._set_tool(ToolType.Pen);
         break;
-      case "pencil":
+      case 'pencil':
         API._set_tool(ToolType.Pencil);
         break;
-      case "select":
+      case 'select':
       default:
         API._set_tool(ToolType.Select);
         break;

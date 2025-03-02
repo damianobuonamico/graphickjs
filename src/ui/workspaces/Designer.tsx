@@ -23,11 +23,16 @@ const Designer: Component<{
         <ToolBar
           tools={[
             'select',
-            'directSelect',
+            ['selectNode', 'selectNodeGroup'],
             'separator',
-            'pen',
+            ['pen', 'spline'],
             'separator',
-            ['rectangle', 'ellipse'],
+            'text',
+            ['line', 'arrow', 'arc', 'spiral'],
+            ['rectangle', 'roundedRectangle', 'ellipse', 'polygon', 'star'],
+            'separator',
+            ['eyedropper', 'ruler'],
+            'gradient',
             'separator',
             'pan',
             'zoom'

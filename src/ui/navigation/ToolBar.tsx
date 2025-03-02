@@ -1,28 +1,67 @@
 import { Component, createEffect, For, JSX } from 'solid-js';
 import { Button } from '@inputs';
 import {
+  ArcIcon,
+  ArrowIcon,
   CircleIcon,
   EraserIcon,
+  EyeDropperIcon,
+  GradientIcon,
   HandIcon,
+  LineIcon,
   PencilIcon,
   PenIcon,
   PointerIcon,
-  PointerVertexIcon,
+  PointerNodeGroupIcon,
+  PointerNodeIcon,
+  PolygonIcon,
   RectangleIcon,
+  RoundedRectangleIcon,
+  RulerIcon,
+  SpiralIcon,
+  SplineIcon,
+  StarIcon,
+  TypeIcon,
   ZoomIcon
 } from '@icons';
 import MenuSelect from '../menu/MenuSelect';
 
 export function getToolIcon(tool: Tool): JSX.Element {
   switch (tool) {
-    case 'directSelect':
-      return <PointerVertexIcon />;
+    case 'selectNode':
+      return <PointerNodeIcon />;
+    case 'selectNodeGroup':
+      return <PointerNodeGroupIcon />;
     case 'pen':
       return <PenIcon />;
+    case 'spline':
+      return <SplineIcon />;
+    case 'text':
+      return <TypeIcon />;
+    case 'line':
+      return <LineIcon />;
+    case 'arrow':
+      return <ArrowIcon />;
+    case 'arc':
+      return <ArcIcon />;
+    case 'spiral':
+      return <SpiralIcon />;
     case 'rectangle':
       return <RectangleIcon />;
+    case 'roundedRectangle':
+      return <RoundedRectangleIcon />;
     case 'ellipse':
       return <CircleIcon />;
+    case 'polygon':
+      return <PolygonIcon />;
+    case 'star':
+      return <StarIcon />;
+    case 'gradient':
+      return <GradientIcon />;
+    case 'eyedropper':
+      return <EyeDropperIcon />;
+    case 'ruler':
+      return <RulerIcon />;
     case 'pan':
       return <HandIcon />;
     case 'zoom':
