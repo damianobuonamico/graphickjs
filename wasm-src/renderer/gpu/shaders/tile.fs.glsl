@@ -24,14 +24,14 @@ out vec4 o_frag_color;
 #include "texture.glsl"
 
 void main() {
-  bool is_even_odd = bool((v_attr_2 >> 10) & 0x1U);
-  bool is_quadratic = bool((v_attr_2 >> 11) & 0x1U);
+  bool is_even_odd = bool((v_attr_2 >> 9) & 0x1U);
+  uint curves_type = uint((v_attr_2 >> 10) & 0x3U);
   uint paint_type = uint((v_attr_1 >> 20) & 0x7FU);
 
   int samples = u_samples % 2 == 0 ? u_samples + 1 : u_samples;
 
   // float coverage = is_quadratic ? quadratic_coverage(samples) : cubic_coverage(samples);
-  float coverage = cubic_coverage(samples);
+  float coverage = curves_type == 0U ? 1.0 : (cubic_coverage(samples));
   float alpha;
 
   if (is_even_odd) {

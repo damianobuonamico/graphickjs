@@ -95,7 +95,10 @@ void Tiler::tile(const geom::dcubic_multipath& path,
                           uvec4(vec4(1.0, 1.0, 1.0, drawable.appearance.opacity) * 255.0f);
 
   const uint32_t attr_1 = TileVertex::create_attr_1(0, fill.paint.type(), drawable.curves.size());
-  const uint32_t attr_2 = TileVertex::create_attr_2(0, false, fill.rule == FillRule::EvenOdd, 0);
+  const uint32_t attr_2 = TileVertex::create_attr_2(
+      0, CurvesType::Cubic, fill.rule == FillRule::EvenOdd, 0);
+  const uint32_t attr_2_fill = TileVertex::create_attr_2(
+      0, CurvesType::None, fill.rule == FillRule::EvenOdd, 0);
 
   const dvec2 bounds_size = bounding_rect.size();
 
@@ -342,8 +345,24 @@ void Tiler::tile(const geom::dcubic_multipath& path,
             const std::array<vec2, 4> transformed_tex_coords = reproject_texture_coords(
                 bounding_rect, drect(cell_min, cell_max), texture_coords);
 
-            drawable.push_fill(
-                vec2(cell_min), vec2(cell_max), color, transformed_tex_coords, attr_1, attr_2);
+            if (create_fills) {
+              drawable.push_fill(vec2(cell_min),
+                                 vec2(cell_max),
+                                 color,
+                                 transformed_tex_coords,
+                                 attr_1,
+                                 attr_2_fill);
+            } else {
+              drawable.push_tile(vec2(cell_min),
+                                 vec2(cell_max),
+                                 vec2::zero(),
+                                 vec2::zero(),
+                                 transformed_tex_coords,
+                                 color,
+                                 attr_1,
+                                 attr_2_fill,
+                                 0);
+            }
           }
 
           fill_start = -1;
@@ -465,6 +484,7 @@ void TiledRenderer::flush()
   render_fills();
 
   m_framebuffers->swap();
+  m_framebuffers->blit_back_to_front();
 
   render_tiles();
 
@@ -534,7 +554,7 @@ void TiledRenderer::render_tiles()
   __debug_time_total();
 
   bool complete_batch = true;
-  bool first_in_batch = true;
+  bool first_in_batch = false;  // to avoid blitting again, already done after render_fills()
 
   while (true) {
     for (auto it = m_front_stack.begin(); it != m_front_stack.end(); it++) {
@@ -705,7 +725,6 @@ void TiledRenderer::flush_tiles(const bool blit_back_to_front)
   GPU::RenderState render_state = GPU::RenderState().no_blend().default_depth().no_stencil();
 
   if (!tiles.vertices_count()) {
-    m_framebuffers->blit_back_to_front();
     return;
   }
 

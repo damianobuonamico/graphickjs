@@ -159,6 +159,8 @@ void Renderer::begin_frame(const RenderOptions& options)
   get()->m_ui_options = UIOptions(options.viewport.dpr / options.viewport.zoom);
   get()->m_cache = options.cache;
 
+  get()->flush_background_layer();
+
   get()->m_tiles.setup(get()->m_viewport.size,
                        options.viewport.visible(),
                        get()->m_viewport.vp_matrix,

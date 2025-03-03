@@ -16,6 +16,12 @@
 
 namespace graphick::renderer {
 
+enum class CurvesType : uint8_t {
+  None = 0,  // Treat as a fill
+  Quadratic = 1,
+  Cubic = 2,
+};
+
 /**
  * @brief Represents a vertex used by the tile shader (40 bytes).
  *
@@ -30,7 +36,7 @@ struct TileVertex {
   vec2 tex_coord;         // | tex_coord.x (32) - tex_coord.y (32) |
   vec2 tex_coord_curves;  // | tex_coord_curves.x (32) - tex_coord_curves.y (32) |
   uint32_t attr_1;        // | blend (5) - paint_type (7) - curves_offset (20) |
-  uint32_t attr_2;        // | z_index (20) - is_quad (1) - is_eodd (1) - paint_coord (10) |
+  uint32_t attr_2;        // | z_index (20) - curves_type (2) - is_eodd (1) - paint_coord (9) |
   uint32_t attr_3;        // | winding (16) - curves_count (16) |
 
   /**
@@ -97,21 +103,21 @@ struct TileVertex {
    * This method should be called once per object.
    *
    * @param z_index The z-index of the vertex.
-   * @param is_quadratic Whether the curves are quadratic or cubic.
+   * @param curves_type The type of curves used by the vertex.
    * @param is_even_odd Whether the fill rule is even-odd or non-zero.
    * @param paint_coord The paint coordinate of the vertex.
    * @return The attr_2 attribute.
    */
   static uint32_t create_attr_2(const uint32_t z_index,
-                                const bool is_quadratic,
+                                const CurvesType curves_type,
                                 const bool is_even_odd,
                                 const uint16_t paint_coord)
   {
-    const uint32_t u_is_quad = static_cast<uint32_t>(is_quadratic);
+    const uint32_t u_curves_type = static_cast<uint32_t>(curves_type);
     const uint32_t u_is_eodd = static_cast<uint32_t>(is_even_odd);
-    const uint32_t u_paint_coord = (static_cast<uint32_t>(paint_coord) << 22) >> 22;
+    const uint32_t u_paint_coord = (static_cast<uint32_t>(paint_coord) << 23) >> 23;
 
-    return (z_index << 12) | (u_is_quad << 11) | (u_is_eodd << 10) | u_paint_coord;
+    return (z_index << 12) | (u_curves_type << 10) | (u_is_eodd << 9) | u_paint_coord;
   }
 
   /**
