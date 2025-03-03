@@ -37,18 +37,24 @@
 
 namespace graphick::editor {
 
+static std::vector<vec4> s_layer_colors = {vec4(79, 128, 255, 255) / 255.0f,
+                                           vec4(255, 79, 79, 255) / 255.0f,
+                                           vec4(79, 255, 79, 255) / 255.0f};
+
 Scene::Scene() : selection(this), history(this)
 {
   Entity entity = {m_registry.create(), this};
   uuid id = uuid();
 
   entity.add<IDComponent>(id);
-  entity.add<ArtboardComponent>(vec4(229, 229, 229, 255) / 255.0f);
+  entity.add<ArtboardComponent>(vec4(25, 29, 36, 255) / 255.0f);
 
   m_background = entity;
   m_entities[id] = entity;
 
   create_layer();
+
+  history.clear();
 }
 
 Scene::Scene(const Scene& other)
@@ -128,10 +134,9 @@ Entity Scene::create_layer()
   Entity entity = {m_registry.create(), this};
 
   entity.add<IDComponent>(id);
-  entity.add<TagComponent>("Layer " + std::to_string(m_layers.size() + 1));
+  entity.add<TagComponent>("Layer " + std::to_string(m_entity_tag_number++));
   entity.add<CategoryComponent>(CategoryComponent::Category::None);
-  entity.add<LayerComponent>(vec4(std::rand() % 256, std::rand() % 256, std::rand() % 256, 255) /
-                             255.0f);
+  entity.add<LayerComponent>(s_layer_colors[m_layer_tag_number++ % s_layer_colors.size()]);
 
   history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
 

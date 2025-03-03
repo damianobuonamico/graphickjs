@@ -110,10 +110,13 @@ void History::redo()
 
 void History::pop()
 {
-  if (m_actions.empty() || m_batch_indices.empty())
+  if (m_actions.empty() || m_batch_indices.empty()) {
     return;
-  if (m_batch_indices.size() == 1)
+  }
+
+  if (m_batch_indices.size() == 1) {
     clear();
+  }
 
   m_actions.erase(m_actions.begin() + m_batch_indices[m_batch_indices.size() - 2],
                   m_actions.end());
@@ -121,6 +124,13 @@ void History::pop()
 
   if (m_batch_index > static_cast<int64_t>(m_batch_indices.size()) - 1)
     m_batch_index = m_batch_indices.size() - 1;
+}
+
+void History::clear()
+{
+  m_actions.clear();
+  m_batch_indices = {0};
+  m_batch_index = 0;
 }
 
 void History::end_batch()
@@ -170,13 +180,6 @@ void History::seal()
     m_actions.erase(m_actions.begin() + m_batch_indices[m_batch_index], m_actions.end());
     m_batch_indices.erase(m_batch_indices.begin() + m_batch_index + 1, m_batch_indices.end());
   }
-}
-
-void History::clear()
-{
-  m_actions.clear();
-  m_batch_indices = {0};
-  m_batch_index = 0;
 }
 
 }  // namespace graphick::editor

@@ -99,6 +99,11 @@ class History {
   void pop();
 
   /**
+   * @brief Clear the history.
+   */
+  void clear();
+
+  /**
    * @brief End the current batch of actions.
    */
   void end_batch();
@@ -120,11 +125,6 @@ class History {
    * This method clears the redo buffer;
    */
   void seal();
-
-  /**
-   * @brief Clear the history.
-   */
-  void clear();
 
  private:
   std::vector<Action> m_actions;        // The list of actions.

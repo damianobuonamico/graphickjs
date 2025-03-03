@@ -276,6 +276,7 @@ class Scene {
   std::vector<entt::entity> m_layers;                 // The layers of the scene.
 
   size_t m_active_layer = 0;                          // The index of the active layer.
+  size_t m_layer_tag_number = 0;                      // Number of unnamed layers (for tags).
   size_t m_entity_tag_number = 0;                     // Number of unnamed entities (for tags).
 
   mutable Cache m_cache;                              // The cache of the scene.
