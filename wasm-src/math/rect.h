@@ -6,6 +6,7 @@
 #pragma once
 
 #include "vec2.h"
+#include "vector.h"
 
 #include <array>
 #include <initializer_list>
@@ -90,6 +91,21 @@ struct Rect {
   }
 
   static constexpr Rect<T> from_vectors(const std::initializer_list<Vec2<T>> vectors)
+  {
+    Vec2<T> min = std::numeric_limits<Vec2<T>>::max();
+    Vec2<T> max = std::numeric_limits<Vec2<T>>::lowest();
+
+    for (Vec2<T> v : vectors) {
+      min.x = min.x > v.x ? v.x : min.x;
+      min.y = min.y > v.y ? v.y : min.y;
+      max.x = max.x < v.x ? v.x : max.x;
+      max.y = max.y < v.y ? v.y : max.y;
+    }
+
+    return Rect<T>(min, max);
+  }
+
+  static constexpr Rect<T> from_vectors(const std::array<Vec2<T>, 4> vectors)
   {
     Vec2<T> min = std::numeric_limits<Vec2<T>>::max();
     Vec2<T> max = std::numeric_limits<Vec2<T>>::lowest();
@@ -269,6 +285,22 @@ struct RRect : public Rect<T> {
   template<typename U>
   constexpr RRect(const RRect<U>& r) : Rect<T>(r.min, r.max), angle(static_cast<T>(r.angle))
   {
+  }
+
+  constexpr std::array<Vec2<T>, 4> vertices() const
+  {
+    return {math::rotate(this->min, vec2::zero(), angle),
+            math::rotate(vec2(this->max.x, this->min.y), vec2::zero(), angle),
+            math::rotate(this->max, vec2::zero(), angle),
+            math::rotate(vec2(this->min.x, this->max.y), vec2::zero(), angle)};
+  }
+
+  static constexpr Rect<T> to_rect(const RRect<T>& r)
+  {
+    return Rect<T>::from_vectors({math::rotate(r.min, vec2::zero(), r.angle),
+                                  math::rotate(vec2(r.max.x, r.min.y), vec2::zero(), r.angle),
+                                  math::rotate(r.max, vec2::zero(), r.angle),
+                                  math::rotate(vec2(r.min.x, r.max.y), vec2::zero(), r.angle)});
   }
 };
 

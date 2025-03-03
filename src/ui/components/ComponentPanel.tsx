@@ -5,6 +5,7 @@ const ComponentPanel: Component<{
   children?: JSX.Element;
   title: string;
   controls?: JSX.Element;
+  class?: string;
 }> = (props) => {
   return (
     <div
@@ -20,7 +21,7 @@ const ComponentPanel: Component<{
         {props.controls}
       </div>
       <Show when={props.children}>
-        <div>{props.children}</div>
+        <div class={props.class}>{props.children}</div>
       </Show>
     </div>
   );

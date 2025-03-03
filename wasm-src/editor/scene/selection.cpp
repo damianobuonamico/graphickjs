@@ -35,6 +35,47 @@ rect Selection::bounding_rect() const
   return selection_rect;
 }
 
+rrect Selection::bounding_rrect() const
+{
+  __debug_time_total();
+
+  rrect selection_rrect;
+  bool rotated = true;
+
+  selection_rrect.angle = std::numeric_limits<float>::infinity();
+
+  for (auto& [id, _] : m_selected) {
+    const Entity entity = m_scene->get_entity(id);
+
+    if (rotated) {
+      const rrect entity_rrect = entity.get_component<TransformComponent>().bounding_rrect();
+
+      if (selection_rrect.angle == std::numeric_limits<float>::infinity() ||
+          math::is_almost_equal(selection_rrect.angle, entity_rrect.angle))
+      {
+        math::min(selection_rrect.min, entity_rrect.min, selection_rrect.min);
+        math::max(selection_rrect.max, entity_rrect.max, selection_rrect.max);
+
+        selection_rrect.angle = entity_rrect.angle;
+      } else {
+        const rect entity_rect = rrect::to_rect(entity_rrect);
+
+        selection_rrect = rrect::to_rect(selection_rrect);
+        selection_rrect = rect::from_rects(selection_rrect, entity_rect);
+
+        rotated = false;
+      }
+    } else {
+      const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
+
+      math::min(selection_rrect.min, entity_rect.min, selection_rrect.min);
+      math::max(selection_rrect.max, entity_rect.max, selection_rrect.max);
+    }
+  }
+
+  return selection_rrect;
+}
+
 bool Selection::has(const uuid id, bool include_temp) const
 {
   return m_selected.find(id) != m_selected.end() ||

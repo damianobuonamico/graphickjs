@@ -6,6 +6,7 @@ const ComponentsPanel: Component<{
   onResize: (x: number) => void;
   components?: ComponentsState;
   setComponents: (components: ComponentsStateOperation) => void;
+  refreshUI: () => void;
 }> = (props) => {
   const onPointerDown = () => {
     window.addEventListener('pointermove', onPointerMove);
@@ -38,6 +39,7 @@ const ComponentsPanel: Component<{
           <TransformComponent
             data={props.components!.transform!}
             setData={(data) => props.setComponents({ transform: data })}
+            refreshUI={props.refreshUI}
           />
         </Show>
         <Show when={props.components !== undefined && props.components.fill !== undefined}>

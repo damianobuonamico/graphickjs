@@ -412,6 +412,15 @@ struct TransformComponent : public ComponentWrapper {
   rect bounding_rect() const;
 
   /**
+   * @brief Calculates the rotated bounding rectangle of the entity.
+   *
+   * The rotated bounding rectangle follows the rotation of
+   * 
+   * @return The bounding rectangle of the entity.
+   */
+  rrect bounding_rrect() const;
+
+  /**
    * @brief Calculates the approximate bounding rectangle of the entity.
    *
    * This function is faster than the bounding_rect function, but the result is not as accurate.

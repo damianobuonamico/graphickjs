@@ -439,6 +439,7 @@ void TiledRenderer::setup(const ivec2 viewport_size,
   if (!m_framebuffers || m_framebuffers->size() != m_viewport_size) {
     delete m_framebuffers;
     m_framebuffers = new GPU::DoubleFramebuffer(m_viewport_size);
+    m_framebuffers->bind();
   } else {
     m_framebuffers->bind();
   }
@@ -704,6 +705,7 @@ void TiledRenderer::flush_tiles(const bool blit_back_to_front)
   GPU::RenderState render_state = GPU::RenderState().no_blend().default_depth().no_stencil();
 
   if (!tiles.vertices_count()) {
+    m_framebuffers->blit_back_to_front();
     return;
   }
 

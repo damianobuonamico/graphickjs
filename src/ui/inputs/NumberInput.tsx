@@ -4,6 +4,7 @@ import TextBlock from './blocks/TextBlock';
 
 const NumberInput: Component<{
   onChange?(value: number): void;
+  onSubmit?(): void;
   value: number | 'mixed';
   class?: string;
   leftIcon?: string;
@@ -31,6 +32,7 @@ const NumberInput: Component<{
           setValue(value);
           onChange(value);
         }}
+        onSubmit={props.onSubmit}
         value={displayValue()}
         placeholder={placeholder()}
         leftIcon={props.leftIcon}

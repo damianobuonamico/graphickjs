@@ -3,6 +3,7 @@ import { IconProps } from './types';
 import AffinityDesignerLogoIcon from './AffinityDesignerLogoIcon';
 import AffinityPhotoLogoIcon from './AffinityPhotoLogoIcon';
 import AffinityPublisherLogoIcon from './AffinityPublisherLogoIcon';
+import AngleIcon from './AngleIcon';
 import ArcIcon from './ArcIcon';
 import ArrowIcon from './ArrowIcon';
 import BorderDashedIcon from './BorderDashedIcon';
@@ -29,6 +30,8 @@ import JoinBevelIcon from './JoinBevelIcon';
 import JoinMiterIcon from './JoinMiterIcon';
 import JoinRoundIcon from './JoinRoundIcon';
 import LineIcon from './LineIcon';
+import LinkIcon from './LinkIcon';
+import LinkNoneIcon from './LinkNoneIcon';
 import LoadingIcon from './LoadingIcon';
 import MinusIcon from './MinusIcon';
 import PauseIcon from './PauseIcon';
@@ -53,6 +56,7 @@ import ZoomIcon from './ZoomIcon';
 export { AffinityDesignerLogoIcon };
 export { AffinityPhotoLogoIcon };
 export { AffinityPublisherLogoIcon };
+export { AngleIcon };
 export { ArcIcon };
 export { ArrowIcon };
 export { BorderDashedIcon };
@@ -79,6 +83,8 @@ export { JoinBevelIcon };
 export { JoinMiterIcon };
 export { JoinRoundIcon };
 export { LineIcon };
+export { LinkIcon };
+export { LinkNoneIcon };
 export { LoadingIcon };
 export { MinusIcon };
 export { PauseIcon };
@@ -108,6 +114,8 @@ const getIcon = (name: string, props?: IconProps) => {
       return <AffinityPhotoLogoIcon {...props} />;
     case 'affinityPublisherLogo':
       return <AffinityPublisherLogoIcon {...props} />;
+    case 'angle':
+      return <AngleIcon {...props} />;
     case 'arc':
       return <ArcIcon {...props} />;
     case 'arrow':
@@ -160,6 +168,10 @@ const getIcon = (name: string, props?: IconProps) => {
       return <JoinRoundIcon {...props} />;
     case 'line':
       return <LineIcon {...props} />;
+    case 'link':
+      return <LinkIcon {...props} />;
+    case 'linkNone':
+      return <LinkNoneIcon {...props} />;
     case 'loading':
       return <LoadingIcon {...props} />;
     case 'minus':

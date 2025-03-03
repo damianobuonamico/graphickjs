@@ -140,9 +140,12 @@ std::string Editor::ui_data()
   io::json::JSON& components = data["components"] = io::json::JSON::object();
 
   if (scene.selection.size()) {
-    const rect selection_rect = scene.selection.bounding_rect();
+    const rrect selection_rrect = scene.selection.bounding_rrect();
+    const rect selection_rect = rrect::to_rect(selection_rrect);
+
+    const float selection_angle = selection_rrect.angle;
+    const vec2 selection_size = selection_rrect.size();
     const vec2 selection_center = selection_rect.center();
-    const vec2 selection_size = selection_rect.size();
 
     io::json::JSON& selection = components["transform"] = io::json::JSON::object();
 
@@ -150,7 +153,7 @@ std::string Editor::ui_data()
     selection["y"] = selection_center.y;
     selection["w"] = selection_size.x;
     selection["h"] = selection_size.y;
-    selection["angle"] = 0.0f;
+    selection["angle"] = math::radians_to_degrees(selection_angle);
 
     for (const auto& [id, _] : scene.selection.selected()) {
       const Entity& entity = scene.get_entity(id);
@@ -182,8 +185,7 @@ void Editor::modify_ui_data(const std::string& data)
   }
 
   io::json::JSON& components = json["components"];
-
-  bool update_ui = false;
+  Scene& scene = get()->scene();
 
   if (components.has("background")) {
     io::json::JSON& background = components["background"];
@@ -191,43 +193,53 @@ void Editor::modify_ui_data(const std::string& data)
     // TODO: check if color exists
     const vec4 color = background["color"].to_vec4();
 
-    get()->scene().get_background().get_component<ArtboardComponent>().color(color);
+    scene.get_background().get_component<ArtboardComponent>().color(color);
   }
 
   if (components.has("transform")) {
     io::json::JSON& transform = components["transform"];
 
-    const rect selection_rect = get()->scene().selection.bounding_rect();
+    const rrect selection_rrect = scene.selection.bounding_rrect();
+    const rect selection_rect = rrect::to_rect(selection_rrect);
+
+    const float selection_angle = selection_rrect.angle;
+    const vec2 selection_size = selection_rrect.size();
     const vec2 selection_center = selection_rect.center();
-    const vec2 selection_size = selection_rect.size();
+    const vec2 scale_center = selection_rrect.center();
 
     const vec2 center = {transform.has("x") ? transform["x"].to_float() : selection_center.x,
                          transform.has("y") ? transform["y"].to_float() : selection_center.y};
     const vec2 size = {transform.has("w") ? transform["w"].to_float() : selection_size.x,
                        transform.has("h") ? transform["h"].to_float() : selection_size.y};
-    // const float angle = transform["angle"].to_float();
+    const float angle = transform.has("angle") ?
+                            math::degrees_to_radians(transform["angle"].to_float()) :
+                            selection_angle;
 
     const vec2 offset = center - selection_center;
     const vec2 scale = size / selection_size;
 
-    for (auto& [id, _] : get()->scene().selection.selected()) {
-      Entity entity = get()->scene().get_entity(id);
+    for (auto& [id, _] : scene.selection.selected()) {
+      Entity entity = scene.get_entity(id);
 
       if (entity.has_component<TransformComponent>()) {
         TransformComponent transform = entity.get_component<TransformComponent>();
         mat2x3 matrix = transform.matrix();
 
         if (!math::is_almost_equal(scale, vec2::one())) {
-          matrix = math::scale(matrix, selection_center, scale);
+          matrix = math::rotate(math::scale(math::rotate(matrix, vec2::zero(), -selection_angle),
+                                            scale_center,
+                                            scale),
+                                vec2::zero(),
+                                selection_angle);
+        } else if (!math::is_almost_equal(angle, selection_angle)) {
+          matrix = math::rotate(matrix, selection_center, angle - selection_angle);
+        } else if (!math::is_almost_zero(offset)) {
+          matrix = math::translate(matrix, offset);
         }
-
-        matrix = math::translate(matrix, offset);
 
         transform.set(matrix);
       }
     }
-
-    update_ui = true;
   }
 
   if (components.has("fill")) {
@@ -299,7 +311,7 @@ void Editor::modify_ui_data(const std::string& data)
     }
   }
 
-  request_render({false, update_ui});
+  request_render({false, false});
 }
 
 bool Editor::render_frame(const double time)

@@ -154,6 +154,13 @@ class Selection {
   rect bounding_rect() const;
 
   /**
+   * @brief Calculates the rotated bounding rectangle of the selected entities.
+   *
+   * @return The bounding rectangle of the selected entities.
+   */
+  rrect bounding_rrect() const;
+
+  /**
    * @brief Checks if an entity is selected.
    *
    * @param id The ID of the entity.

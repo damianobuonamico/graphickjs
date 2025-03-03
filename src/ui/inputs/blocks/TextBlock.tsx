@@ -5,6 +5,7 @@ import { Component, Show } from 'solid-js';
 
 const TextBlock: Component<{
   onChange?(value: string | number): void;
+  onSubmit?(): void;
   value: string | number;
   placeholder?: string;
   class?: string;
@@ -97,6 +98,7 @@ const TextBlock: Component<{
     document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('pointerup', onPointerUp);
 
+    props.onSubmit?.();
     // try {
     //   document.exitPointerLock();
     // } catch (error) {
@@ -109,7 +111,7 @@ const TextBlock: Component<{
       <Show when={props.leftIcon}>
         <a
           onPointerDown={numeric ? onPointerDown : undefined}
-          class={classNames('mr-2 text-primary-300 font-semibold', {
+          class={classNames('mr-2 text-primary-300 font-semibold w-4 text-center justify-center', {
             'cursor-ew-resize': numeric
           })}
         >
@@ -132,6 +134,7 @@ const TextBlock: Component<{
           const value = validateFn(e.currentTarget.value);
           if (value !== undefined) {
             onChange(value);
+            props.onSubmit?.();
             e.currentTarget.blur();
           }
         }}

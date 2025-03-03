@@ -8,7 +8,8 @@ import { ComponentsPanel, Timeline, TitleBar, ToolBar } from '../navigation';
 const Designer: Component<{
   state: State;
   setState: (state: Partial<State>) => void;
-}> = ({ state, setState }) => {
+  refreshUI: () => void;
+}> = ({ state, setState, refreshUI }) => {
   return (
     <div class="w-screen h-screen bg-primary-700 grid grid-rows-title-bar">
       <TitleBar
@@ -63,6 +64,7 @@ const Designer: Component<{
         <ComponentsPanel
           components={state.ui_data.components}
           setComponents={(components) => API._modify_ui_data({ components })}
+          refreshUI={refreshUI}
           onResize={(x) => {
             let width = Math.max(Math.min(window.innerWidth - x, 500), 250);
             setState({ componentsPanelWidth: width });

@@ -22,14 +22,14 @@ namespace graphick::editor::input {
 
 /* -- Methods -- */
 
-size_t translate_control_point(PathComponent &path,
+size_t translate_control_point(PathComponent& path,
                                const size_t point_index,
-                               const mat2x3 &transform,
-                               const vec2 *override_movement,
+                               const mat2x3& transform,
+                               const vec2* override_movement,
                                bool create_handles,
                                bool keep_in_handle_length,
                                bool translate_in_first,
-                               int *direction)
+                               int* direction)
 {
   const mat2x3 inverse_transform = override_movement ? mat2x3{} : math::inverse(transform);
   const vec2 position = inverse_transform * InputManager::pointer.scene.position;
@@ -182,10 +182,15 @@ rect SelectionRect::bounding_rect() const
   return transform() * m_path.bounding_rect();
 }
 
+rrect SelectionRect::bounding_rrect() const
+{
+  return rrect{m_position, m_position + m_size, m_angle};
+}
+
 mat2x3 SelectionRect::transform() const
 {
-  return math::translate(math::rotate(math::scale(mat2x3{1.0f}, m_size), m_angle),
-                         m_position + m_size / 2.0f);
+  return math::rotate(
+      math::translate(math::scale(mat2x3{1.0f}, m_size), m_position + m_size / 2.0f), m_angle);
 }
 
 void SelectionRect::set(const vec2 position)
@@ -208,12 +213,12 @@ void SelectionRect::reset()
 
 bool Manipulator::update()
 {
-  Selection &selection = Editor::scene().selection;
+  Selection& selection = Editor::scene().selection;
 
   if (selection.empty())
     return m_active = false;
 
-  update_positions(selection.bounding_rect());
+  update_positions(selection.bounding_rrect());
 
   return true;
 }
@@ -270,7 +275,7 @@ bool Manipulator::on_pointer_down(const float threshold)
             return false;
       }
 
-      m_start_bounding_rect = bounding_rect();
+      m_start_bounding_rrect = bounding_rrect();
       m_active_handle = static_cast<HandleType>(i);
       m_handle = handle_position;
       m_in_use = true;
@@ -279,12 +284,12 @@ bool Manipulator::on_pointer_down(const float threshold)
         m_center = vec2{0.0f};
       }
 
-      Scene &scene = Editor::scene();
-      auto &selected = scene.selection.selected();
+      Scene& scene = Editor::scene();
+      auto& selected = scene.selection.selected();
 
       m_cache.reserve(selected.size());
 
-      for (const auto &[id, _] : selected) {
+      for (const auto& [id, _] : selected) {
         if (scene.has_entity(id)) {
           Entity entity = scene.get_entity(id);
 
@@ -337,7 +342,7 @@ bool Manipulator::on_key(const bool down, const KeyboardKey key)
   return true;
 }
 
-void Manipulator::update_positions(const rrect &bounding_rect)
+void Manipulator::update_positions(const rrect& bounding_rect)
 {
   vec2 rect_size = bounding_rect.size();
 
@@ -367,10 +372,10 @@ void Manipulator::update_positions(const rrect &bounding_rect)
 
 void Manipulator::on_scale_pointer_move()
 {
-  vec2 local_center = InputManager::keys.alt ? vec2{0.0f} : m_center;
-
-  vec2 old_delta = m_handle - local_center;
-  vec2 delta = inverse(m_start_transform) * InputManager::pointer.scene.position - local_center;
+  const vec2 local_center = InputManager::keys.alt ? vec2{0.0f} : m_center;
+  const vec2 old_delta = m_handle - local_center;
+  const vec2 delta = inverse(m_start_transform) * InputManager::pointer.scene.position -
+                     local_center;
 
   vec2 magnitude = delta / old_delta;
   uint8_t axial = 0; /* 0 = none, 1 = x, 2 = y */
@@ -397,26 +402,33 @@ void Manipulator::on_scale_pointer_move()
     }
   }
 
-  vec2 center = m_start_transform * local_center;
+  const vec2 center = math::rotate(
+      m_start_transform * local_center, vec2::zero(), -m_start_bounding_rrect.angle);
 
-  rrect new_bounding_rect = {math::scale(m_start_bounding_rect.min, center, magnitude),
-                             math::scale(m_start_bounding_rect.max, center, magnitude)};
+  const rrect new_bounding_rect = {math::scale(m_start_bounding_rrect.min, center, magnitude),
+                                   math::scale(m_start_bounding_rrect.max, center, magnitude),
+                                   m_start_bounding_rrect.angle};
 
   update_positions(new_bounding_rect);
 
-  Scene &scene = Editor::scene();
-  auto &selected = scene.selection.selected();
+  Scene& scene = Editor::scene();
+  auto& selected = scene.selection.selected();
 
   size_t i = 0;
 
-  for (const auto &[id, _] : selected) {
+  for (const auto& [id, _] : selected) {
     if (scene.has_entity(id)) {
       Entity entity = scene.get_entity(id);
 
       if (entity.has_component<TransformComponent>()) {
         TransformComponent transform = entity.get_component<TransformComponent>();
 
-        transform.set(math::scale(m_cache[i], center, magnitude));
+        transform.set(math::rotate(
+            math::scale(math::rotate(m_cache[i], vec2::zero(), -m_start_bounding_rrect.angle),
+                        center,
+                        magnitude),
+            vec2::zero(),
+            m_start_bounding_rrect.angle));
       }
     }
 
@@ -426,24 +438,28 @@ void Manipulator::on_scale_pointer_move()
 
 void Manipulator::on_rotate_pointer_move()
 {
-  float angle = math::angle(m_handle - m_center,
-                            inverse(m_start_transform) * InputManager::pointer.scene.position -
-                                m_center);
-  float sin_angle = std::sin(angle);
-  float cos_angle = std::cos(angle);
+  const float angle = math::angle(
+      m_handle - m_center,
+      inverse(m_start_transform) * InputManager::pointer.scene.position - m_center);
+  const float sin_angle = std::sin(angle);
+  const float cos_angle = std::cos(angle);
 
-  vec2 center = m_start_transform * m_center;
+  const vec2 center = m_start_transform * m_center;
+  const vec2 delta_center = math::rotate(center, vec2::zero(), -m_start_bounding_rrect.angle);
+  const vec2 delta = math::rotate(delta_center, vec2::zero(), -angle) - delta_center;
 
-  rrect new_bounding_rect = {m_start_bounding_rect, angle};
+  const rrect new_bounding_rect = {m_start_bounding_rrect.min + delta,
+                                   m_start_bounding_rrect.max + delta,
+                                   m_start_bounding_rrect.angle + angle};
 
   update_positions(new_bounding_rect);
 
-  Scene &scene = Editor::scene();
-  auto &selected = scene.selection.selected();
+  Scene& scene = Editor::scene();
+  auto& selected = scene.selection.selected();
 
   size_t i = 0;
 
-  for (const auto &[id, _] : selected) {
+  for (const auto& [id, _] : selected) {
     if (scene.has_entity(id)) {
       Entity entity = scene.get_entity(id);
 

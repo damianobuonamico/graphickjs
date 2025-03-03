@@ -100,6 +100,48 @@ rect TransformComponent::bounding_rect() const
   }
 }
 
+rrect TransformComponent::bounding_rrect() const
+{
+  const float angle = math::rotation(m_data->matrix);
+
+  if (math::is_almost_zero(angle)) {
+    return bounding_rect();
+  }
+
+  const mat2x3 unrotated_matrix = math::rotate(m_data->matrix, -angle);
+
+  switch (m_parent_ptr.type()) {
+    case ParentData::Type::Path:
+      return rrect(m_parent_ptr.path_ptr()->path.bounding_rect(unrotated_matrix), angle);
+    case ParentData::Type::Text:
+      return rrect(unrotated_matrix * m_parent_ptr.text_ptr()->bounding_rect(), angle);
+    case ParentData::Type::Image:
+      return rrect(unrotated_matrix * m_parent_ptr.image_ptr()->bounding_rect(), angle);
+    default:
+      return math::translation(m_data->matrix);
+  }
+
+  // rect raw_bounding_rect;
+
+  // switch (m_parent_ptr.type()) {
+  //   case ParentData::Type::Path:
+  //     raw_bounding_rect = m_parent_ptr.path_ptr()->path.bounding_rect();
+  //     break;
+  //   case ParentData::Type::Text:
+  //     raw_bounding_rect = m_parent_ptr.text_ptr()->bounding_rect();
+  //     break;
+  //   case ParentData::Type::Image:
+  //     raw_bounding_rect = m_parent_ptr.image_ptr()->bounding_rect();
+  //     break;
+  //   default:
+  //     raw_bounding_rect = math::translation(m_data->matrix);
+  //     break;
+  // }
+
+  // console::log("angle", angle);
+  // return rrect(unrotated_matrix * raw_bounding_rect, angle);
+}
+
 rect TransformComponent::approx_bounding_rect() const
 {
   if (!m_parent_ptr.is_path()) {

@@ -41,14 +41,14 @@ namespace graphick::editor::input {
  * @return The update point index (i.e. a segment was converted from linear to cubic, so two points
  * were added).
  */
-size_t translate_control_point(PathComponent &path,
+size_t translate_control_point(PathComponent& path,
                                const size_t point_index,
-                               const mat2x3 &transform,
-                               const vec2 *override_movement = nullptr,
+                               const mat2x3& transform,
+                               const vec2* override_movement = nullptr,
                                bool create_handles = false,
                                bool keep_in_handle_length = true,
                                bool translate_in_first = false,
-                               int *direction = nullptr);
+                               int* direction = nullptr);
 
 /**
  * @brief A class representing a selection rectangle.
@@ -72,14 +72,14 @@ class SelectionRect {
    *
    * @param other The SelectionRect object to copy.
    */
-  SelectionRect(const SelectionRect &other) = default;
+  SelectionRect(const SelectionRect& other) = default;
 
   /**
    * @brief Move constructor for SelectionRect.
    *
    * @param other The SelectionRect object to move from.
    */
-  SelectionRect(SelectionRect &&) = default;
+  SelectionRect(SelectionRect&&) = default;
 
   /**
    * @brief Default destructor for SelectionRect.
@@ -111,7 +111,7 @@ class SelectionRect {
    *
    * @return A geom::path object representing the path of the selection rectangle.
    */
-  inline const geom::path &path() const
+  inline const geom::path& path() const
   {
     return m_path;
   }
@@ -129,6 +129,13 @@ class SelectionRect {
    * @return A rect object representing the bounding rectangle of the selection rectangle.
    */
   rect bounding_rect() const;
+
+    /**
+   * @brief Returns the rotated bounding rectangle of the selection rectangle.
+   *
+   * The rotated bounding rectangle follows the rotation of the selection rectangle.
+   */
+  rrect bounding_rrect() const;
 
   /**
    * @brief Sets the position of the selection rectangle.
@@ -219,14 +226,14 @@ class Manipulator : public SelectionRect {
    *
    * @param other The Manipulator object to copy.
    */
-  Manipulator(const Manipulator &other) = default;
+  Manipulator(const Manipulator& other) = default;
 
   /**
    * @brief Move constructor for Manipulator.
    *
    * @param other The Manipulator object to move from.
    */
-  Manipulator(Manipulator &&) = default;
+  Manipulator(Manipulator&&) = default;
 
   /**
    * @brief Default destructor for Manipulator.
@@ -249,7 +256,7 @@ class Manipulator : public SelectionRect {
    * @return An array of vec2 objects representing the positions of the handles, it's size is equal
    * to HandleNone.
    */
-  inline const vec2 *handles() const
+  inline const vec2* handles() const
   {
     return m_handles;
   }
@@ -294,9 +301,9 @@ class Manipulator : public SelectionRect {
   /**
    * @brief Updates the positions of the handles.
    *
-   * @param bounding_rect The target bounding rectangle of the manipulator.
+   * @param bounding_rrect The target bounding rectangle of the manipulator.
    */
-  void update_positions(const rrect &bounding_rect);
+  void update_positions(const rrect& bounding_rrect);
 
   /**
    * @brief Scale pointer move event handler.
@@ -321,7 +328,7 @@ class Manipulator : public SelectionRect {
   vec2 m_handle = {0.0f, 0.0f};  // The active handle start position.
   HandleType m_active_handle;    // The active handle. */
 
-  rect m_start_bounding_rect;    // The start bounding rectangle of the manipulator.
+  rrect m_start_bounding_rrect;  // The start bounding rectangle of the manipulator.
   mat2x3 m_start_transform;      // The start transform matrix of the manipulator.
 };
 
