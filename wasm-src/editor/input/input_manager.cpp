@@ -324,7 +324,7 @@ bool InputManager::on_key_down(KeyboardKey key)
   Scene& scene = Editor::scene();
 
   // TODO: prevent default after shortcut
-  if ((key == KeyboardKey::Z || (int)key == 90 /* TEMP: GLFW */) && keys.ctrl) {
+  if ((key == KeyboardKey::Z) && keys.ctrl) {
     if (keys.shift) {
       scene.history.redo();
     } else {
@@ -337,6 +337,8 @@ bool InputManager::on_key_down(KeyboardKey key)
       scene.delete_entity(scene.selection.selected().begin()->first);
       scene.history.end_batch();
     }
+  } else if ((key == KeyboardKey::G) && keys.ctrl) {
+    scene.group_selected();
   }
 
   return false;

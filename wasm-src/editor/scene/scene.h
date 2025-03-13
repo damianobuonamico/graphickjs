@@ -114,9 +114,21 @@ class Scene {
   /**
    * @brief Adds a new layer to the scene.
    *
+   * This method automatically adds all the required components of a group entity.
+   *
    * @return The new layer.
    */
   Entity create_layer();
+
+  /**
+   * @brief Creates a new group entity.
+   *
+   * This method automatically adds all the required components of a group entity.
+   *
+   * @param entities The entities to add to the group.
+   * @return The new group.
+   */
+  Entity create_group(const std::vector<entt::entity>& entities = {});
 
   /**
    * @brief Creates a new element entity.
@@ -204,15 +216,15 @@ class Scene {
   std::unordered_map<uuid, Selection::SelectionEntry> entities_in(const math::rect& rect,
                                                                   bool deep_search = false);
 
- private:
   /**
-   * @brief The type of hit test to perform.
+   * @brief Groups the selected entities.
    */
-  enum class HitTestType {
-    All,         // Both fill, stroke and outline.
-    EntityOnly,  // Only the fill and stroke, no outline.
-    OutlineOnly  // Only the outline (used for selected entities priority).
-  };
+  void group_selected();
+
+  /**
+   * @brief Ungroups the selected entities.
+   */
+  void ungroup_selected();
 
  private:
   /**
@@ -250,23 +262,6 @@ class Scene {
    * This method should only be called by the history manager.
    */
   void remove(const uuid id);
-
-  /**
-   * @brief Check if the entity is at the specified position.
-   *
-   * @param entity The entity to check.
-   * @param position The position to check.
-   * @param deep_search If true, individual vertices and other handles will be checked.
-   * @param threshold The threshold to use when hit testing.
-   * @param fill If true, the fill of the entity will be hit tested.
-   * @param stroke If true, the stroke of the entity will be hit tested.
-   * @return true if the entity is at the specified position, false otherwise.
-   */
-  bool is_entity_at(const Entity entity,
-                    const vec2 position,
-                    const bool deep_search,
-                    const float threshold,
-                    const HitTestType hit_test_type) const;
 
  private:
   entt::registry m_registry;                          // The main entt registry of the scene.

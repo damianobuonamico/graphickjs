@@ -28,6 +28,13 @@ template<>
 inline constexpr double epsilon<double> = std::numeric_limits<double>::epsilon();
 
 template<typename T>
+inline constexpr T math_epsilon = T(0);
+template<>
+inline constexpr float math_epsilon<float> = 1e-9f;
+template<>
+inline constexpr double math_epsilon<double> = 1e-9;
+
+template<typename T>
 inline constexpr T geometric_epsilon = T(0);
 template<>
 inline constexpr float geometric_epsilon<float> = 1e-3f;
@@ -191,7 +198,7 @@ inline T wrap(T t, const T min, const T max)
  * @return Whether the scalars are almost equal.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>)
+inline bool is_almost_equal(const T t1, const T t2, const T eps = math_epsilon<T>)
 {
   return std::abs(t1 - t2) <= eps;
 }
@@ -204,7 +211,7 @@ inline bool is_almost_equal(const T t1, const T t2, const T eps = epsilon<T>)
  * @return Whether the scalar is almost zero.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool is_almost_zero(const T t, const T eps = epsilon<T>)
+inline bool is_almost_zero(const T t, const T eps = math_epsilon<T>)
 {
   return std::abs(t) <= eps;
 }
@@ -217,7 +224,7 @@ inline bool is_almost_zero(const T t, const T eps = epsilon<T>)
  * @return Whether the scalar is almost zero or one.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool is_almost_zero_or_one(const T t, const T eps = epsilon<T>)
+inline bool is_almost_zero_or_one(const T t, const T eps = math_epsilon<T>)
 {
   return std::abs(0.5 - std::abs(t - 0.5)) <= eps;
 }
@@ -245,7 +252,7 @@ inline bool is_normalized(const T t, const bool include_ends = true)
  * @return Whether the scalar is almost normalized.
  */
 template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
-inline bool is_almost_normalized(const T t, const T eps = epsilon<T>)
+inline bool is_almost_normalized(const T t, const T eps = math_epsilon<T>)
 {
   return t > T(0) + eps && t < T(1) - eps;
 }

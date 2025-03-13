@@ -78,7 +78,7 @@ class RendererCache {
    * @param id The id of the element.
    * @return The bounding rectangle of the element.
    */
-  inline const drect& get_bounding_rect(uuid id)
+  inline const drect& get_bounding_rect(uuid id) const
   {
     return m_bounding_rects.at(id);
   }
@@ -102,7 +102,7 @@ class RendererCache {
     return m_bounding_rects.find(id) != m_bounding_rects.end();
   }
 
-  inline const Drawable& get_drawable(uuid id)
+  inline const Drawable& get_drawable(uuid id) const 
   {
     return m_drawables.at(id);
   }

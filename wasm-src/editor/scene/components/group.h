@@ -26,6 +26,11 @@ namespace graphick::editor {
  * This struct should not be used directly, use the GroupComponent wrapper instead.
  */
 struct GroupData {
+  enum class GroupType {
+    Normal = 0,  // A normal group.
+    CompoundPath,  // A compound path group.
+  };
+
   std::vector<entt::entity> children;  // The ids of the children entities.
 
   GroupData() = default;

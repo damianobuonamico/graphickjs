@@ -37,6 +37,15 @@
 
 namespace graphick::editor {
 
+/**
+ * @brief The type of hit test to perform.
+ */
+enum class HitTestType {
+  All,         // Both fill, stroke and outline.
+  EntityOnly,  // Only the fill and stroke, no outline.
+  OutlineOnly  // Only the outline (used for selected entities priority).
+};
+
 static std::vector<vec4> s_layer_colors = {vec4(79, 128, 255, 255) / 255.0f,
                                            vec4(255, 79, 79, 255) / 255.0f,
                                            vec4(79, 255, 79, 255) / 255.0f};
@@ -148,45 +157,28 @@ Entity Scene::create_layer()
   return entity;
 }
 
+Entity Scene::create_group(const std::vector<entt::entity>& entities)
+{
+  const uuid id = uuid();
+
+  Entity entity = create_entity(id, "Group");
+
+  entity.add<GroupComponent>(entities);
+  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
+
+  return entity;
+}
+
 Entity Scene::create_element()
 {
   const uuid id = uuid();
 
-  LayerComponent layer = get_active_layer().get_component<LayerComponent>();
-  Entity entity = {m_registry.create(), this};
-
-  // geom::path path{};
-
-  // path.move_to({0, 0});
+  Entity entity = create_entity(id, "Element");
 
   entity.add<PathComponent>();
-  entity.add<IDComponent>(id);
-  entity.add<TagComponent>("Element " + std::to_string(m_entity_tag_number++));
-  entity.add<CategoryComponent>(CategoryComponent::Category::Selectable);
-  entity.add<TransformComponent>();
-  // entity.add<PathComponent>(path);
-
-  m_entities[id] = entity;
-
-  layer.push_back(entity);
+  history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
 
   return entity;
-
-  // Entity entity = create_entity(id, "Element");
-
-  // console::log("is_element1", entity.is_element());
-
-  // entity.add<PathComponent>();
-  // console::log("is_element2", entity.is_element());
-
-  // Entity nentity = get_entity(id);
-
-  // // history.add(id, Action::Target::Entity, std::move(entity.encode()), false);
-  // console::log("is_element3", nentity.is_element());
-
-  // console::log("id", nentity.id());
-
-  // return nentity;
 }
 
 Entity Scene::create_element(const geom::path& path)
@@ -235,6 +227,152 @@ void Scene::delete_entity(uuid id)
   delete_entity(get_entity(id));
 }
 
+uuid entity_at(const Entity entity,
+               const mat2x3& parent_transform,
+               const bool parent_selected,
+               const vec2 position,
+               const bool deep_search,
+               const float threshold,
+               const HitTestType parent_hit_test_type,
+               const Cache* cache,
+               Scene* scene)
+{
+  const uuid id = entity.id();
+  const bool selected = parent_selected || scene->selection.has(id);
+  const bool deep_search_entity = deep_search && selected;
+
+  const HitTestType hit_test_type = (parent_hit_test_type == HitTestType::All && selected) ?
+                                        HitTestType::EntityOnly :
+                                        parent_hit_test_type;
+
+  if (entity.is_element()) {
+    if (!deep_search_entity && cache->renderer_cache.has_bounding_rect(id)) {
+      const rect bounding_rect = rect(cache->renderer_cache.get_bounding_rect(id));
+
+      if (!geom::is_point_in_rect(position, bounding_rect, threshold)) {
+        return uuid::null;
+      }
+    }
+
+    const geom::path& path = entity.get_component<PathComponent>().data();
+    const mat2x3& transform = entity.get_component<TransformComponent>();
+
+    bool has_fill = false;
+    bool has_stroke = false;
+
+    geom::FillingOptions filling_options;
+    geom::StrokingOptions<float> stroking_options;
+
+    if (hit_test_type != HitTestType::OutlineOnly && entity.has_component<FillComponent>()) {
+      auto& fill_component = entity.get_component<FillComponent>();
+
+      filling_options = geom::FillingOptions{fill_component.rule()};
+      has_fill = fill_component.visible() && fill_component.paint().visible();
+    }
+
+    if (entity.has_component<StrokeComponent>()) {
+      auto& stroke_component = entity.get_component<StrokeComponent>();
+
+      stroking_options = geom::StrokingOptions<float>{
+          static_cast<float>(Settings::Renderer::stroking_tolerance),
+          stroke_component.width(),
+          stroke_component.miter_limit(),
+          stroke_component.cap(),
+          stroke_component.join()};
+      has_stroke = stroke_component.visible() && stroke_component.paint().visible();
+    }
+
+    if (hit_test_type == HitTestType::OutlineOnly ||
+        (!has_stroke && hit_test_type == HitTestType::All))
+    {
+      stroking_options = geom::StrokingOptions<float>{
+          static_cast<float>(Settings::Renderer::stroking_tolerance),
+          0.0f,
+          0.0f,
+          geom::LineCap::Square,
+          geom::LineJoin::Bevel};
+      has_stroke = true;
+    }
+
+    return path.is_point_inside_path(position,
+                                     has_fill ? &filling_options : nullptr,
+                                     has_stroke ? &stroking_options : nullptr,
+                                     parent_transform * transform,
+                                     threshold,
+                                     deep_search_entity) ?
+               id :
+               uuid::null;
+  } else if (entity.is_image()) {
+    const mat2x3& transform = entity.get_component<TransformComponent>();
+    const ImageComponent image = entity.get_component<ImageComponent>();
+    const geom::path path = image.path();
+
+    const geom::FillingOptions filling_options{geom::FillRule::NonZero};
+    const geom::StrokingOptions<float> stroking_options{
+        static_cast<float>(Settings::Renderer::stroking_tolerance),
+        0.0f,
+        0.0f,
+        geom::LineCap::Square,
+        geom::LineJoin::Bevel};
+
+    return path.is_point_inside_path(
+               position,
+               hit_test_type != HitTestType::OutlineOnly ? &filling_options : nullptr,
+               hit_test_type != HitTestType::EntityOnly ? &stroking_options : nullptr,
+               parent_transform * transform,
+               threshold,
+               false) ?
+               id :
+               uuid::null;
+  } else if (entity.is_text()) {
+    return uuid::null;
+  } else if (entity.is_group()) {
+    const GroupComponent group = entity.get_component<GroupComponent>();
+
+    for (auto it = group.rbegin(); it != group.rend(); it++) {
+      const Entity entity = {*it, scene};
+
+      const uuid child_id = editor::entity_at(entity,
+                                              mat2x3::identity(),
+                                              parent_selected,
+                                              position,
+                                              deep_search_entity,
+                                              threshold,
+                                              hit_test_type,
+                                              cache,
+                                              scene);
+
+      if (child_id != uuid::null) {
+        // If not deep searching, return the entire group.
+        return deep_search_entity ? child_id : id;
+      }
+    }
+  } else if (entity.is_layer()) {
+    const LayerComponent layer = entity.get_component<LayerComponent>();
+
+    for (auto it = layer.rbegin(); it != layer.rend(); it++) {
+      const Entity entity = {*it, scene};
+
+      const uuid child_id = editor::entity_at(entity,
+                                              mat2x3::identity(),
+                                              parent_selected,
+                                              position,
+                                              deep_search_entity,
+                                              threshold,
+                                              hit_test_type,
+                                              cache,
+                                              scene);
+
+      if (child_id != uuid::null) {
+        // An entire layer cannot be selected.
+        return child_id;
+      }
+    }
+  }
+
+  return uuid::null;
+}
+
 uuid Scene::entity_at(const vec2 position, const bool deep_search, const float threshold) const
 {
   __debug_time_total();
@@ -243,30 +381,36 @@ uuid Scene::entity_at(const vec2 position, const bool deep_search, const float t
   const float local_threshold = threshold / zoom;
 
   for (const auto& [id, entry] : selection.selected()) {
-    if (is_entity_at(
-            get_entity(id), position, deep_search, local_threshold, HitTestType::OutlineOnly))
+    // TODO: fix this identity transform
+    if (editor::entity_at(get_entity(id),
+                          mat2x3::identity(),
+                          true,
+                          position,
+                          deep_search,
+                          local_threshold,
+                          HitTestType::OutlineOnly,
+                          &m_cache,
+                          const_cast<Scene*>(this)) != uuid::null)
     {
       return id;
     }
   }
 
   for (auto it = m_layers.rbegin(); it != m_layers.rend(); it++) {
-    const Entity layer_entity = {*it, const_cast<Scene*>(this)};
+    const Entity layer = {*it, const_cast<Scene*>(this)};
 
-    if (!layer_entity.is_layer()) {
-      continue;
-    }
+    const uuid id = editor::entity_at(layer,
+                                      mat2x3::identity(),
+                                      false,
+                                      position,
+                                      deep_search,
+                                      local_threshold,
+                                      HitTestType::All,
+                                      &m_cache,
+                                      const_cast<Scene*>(this));
 
-    const LayerComponent layer = layer_entity.get_component<LayerComponent>();
-
-    for (auto it = layer.rbegin(); it != layer.rend(); it++) {
-      const Entity entity = {*it, const_cast<Scene*>(this)};
-      const HitTestType hit_test_type = selection.has(entity.id()) ? HitTestType::EntityOnly :
-                                                                     HitTestType::All;
-
-      if (is_entity_at(entity, position, deep_search, local_threshold, hit_test_type)) {
-        return entity.id();
-      }
+    if (id != uuid::null) {
+      return id;
     }
   }
 
@@ -374,33 +518,237 @@ std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const mat
   return entities;
 }
 
+void Scene::group_selected()
+{
+  // TODO: handle multiple layers
+  // TODO: history
+  // TODO: z-ordering
+
+  LayerComponent layer = get_active_layer().get_component<LayerComponent>();
+
+  std::vector<entt::entity> entities;
+
+  for (const auto& [id, entry] : selection.selected()) {
+    Entity entity = get_entity(id);
+
+    entities.push_back(entity);
+    layer.remove(entity);
+  }
+
+  Entity group = create_group(entities);
+
+  selection.clear();
+  selection.select(group.id());
+
+  console::log("group_selected");
+}
+
+void Scene::ungroup_selected()
+{
+  console::log("ungroup_selected");
+}
+
+static void render_element(const Entity& entity,
+                           const uuid id,
+                           const mat2x3& parent_transform,
+                           const bool selected,
+                           const bool temp_selected,
+                           const entt::registry* registry,
+                           const renderer::Outline* parent_outline,
+                           const Scene* scene)
+{
+  const bool has_outline = selected || temp_selected;
+
+  renderer::Fill fill_opt;
+  renderer::Stroke stroke_opt;
+  renderer::Outline outline_opt;
+  renderer::DrawingOptions options;
+
+  bool has_fill = registry->all_of<FillData>(entity);
+  bool has_stroke = registry->all_of<StrokeData>(entity);
+
+  if (has_fill) {
+    const FillData& fill = registry->get<FillData>(entity);
+
+    if (fill.visible && fill.paint.visible()) {
+      fill_opt = renderer::Fill(fill);
+      options.fill = &fill_opt;
+    } else {
+      has_fill = false;
+    }
+  }
+
+  if (has_stroke) {
+    const StrokeData& stroke = registry->get<StrokeData>(entity);
+
+    if (stroke.visible && stroke.paint.visible()) {
+      stroke_opt = renderer::Stroke(stroke);
+      options.stroke = &stroke_opt;
+    } else {
+      has_stroke = false;
+    }
+  }
+
+  if (!has_fill && !has_stroke && !has_outline) {
+    return;
+  }
+
+  if (has_outline) {
+    outline_opt = *parent_outline;
+    outline_opt.draw_vertices = parent_outline->draw_vertices && has_outline;
+
+    options.outline = &outline_opt;
+  }
+
+  const geom::path& path_data = registry->get<PathData>(entity).path;
+  const mat2x3& transform = registry->get<TransformData>(entity).matrix;
+
+  const mat2x3 total_transform = parent_transform * transform;
+
+  if (!has_outline || !outline_opt.draw_vertices) {
+    renderer::Renderer::draw(path_data, total_transform, options, id);
+    return;
+  }
+
+  std::unordered_set<uint32_t> selected_vertices;
+  bool is_full = false;
+
+  if (selected) {
+    if (scene->selection.selected().find(id) != scene->selection.selected().end()) {
+      const Selection::SelectionEntry& entry = scene->selection.selected().at(id);
+
+      is_full = entry.full();
+
+      if (!is_full) {
+        selected_vertices = entry.indices;
+      }
+    } else {
+      is_full = true;
+    }
+  }
+
+  if (temp_selected && !is_full) {
+    if (scene->selection.temp_selected().find(id) != scene->selection.temp_selected().end()) {
+      const Selection::SelectionEntry& entry = scene->selection.temp_selected().at(id);
+
+      is_full = entry.full();
+
+      if (!is_full) {
+        selected_vertices.insert(scene->selection.temp_selected().at(id).indices.begin(),
+                                 scene->selection.temp_selected().at(id).indices.end());
+      }
+    } else {
+      is_full = true;
+    }
+  }
+
+  outline_opt.selected_vertices = is_full ? nullptr : &selected_vertices;
+
+  renderer::Renderer::draw(path_data, total_transform, options, id);
+}
+
 static void render_image(const Entity& entity,
                          const uuid id,
-                         const mat2x3& transform,
-                         const renderer::Outline* outline)
+                         const mat2x3& parent_transform,
+                         const bool selected,
+                         const bool temp_selected,
+                         const entt::registry* registry,
+                         const renderer::Outline* parent_outline,
+                         const Scene* scene)
 {
+  const bool has_outline = selected || temp_selected;
+
+  renderer::Fill fill_opt;
+  renderer::Stroke stroke_opt;
+  renderer::DrawingOptions options;
+
+  bool has_stroke = registry->all_of<StrokeData>(entity);
+
+  options.fill = &fill_opt;
+
+  if (has_stroke) {
+    const StrokeData& stroke = registry->get<StrokeData>(entity);
+
+    if (stroke.visible && stroke.paint.visible()) {
+      stroke_opt = renderer::Stroke(stroke);
+      options.stroke = &stroke_opt;
+    } else {
+      has_stroke = false;
+    }
+  }
+
   const ImageComponent image = entity.get_component<ImageComponent>();
+  const mat2x3& transform = registry->get<TransformData>(entity).matrix;
+
+  const mat2x3 total_transform = parent_transform * transform;
   const vec2 size = vec2(image.size());
 
-  renderer::Fill fill{
-      image.id(), renderer::Paint::Type::TexturePaint, renderer::FillRule::NonZero};
+  fill_opt = renderer::Fill(
+      image.id(), renderer::Paint::Type::TexturePaint, renderer::FillRule::NonZero);
 
-  renderer::Renderer::draw(
-      image.path(), transform, renderer::DrawingOptions{&fill, nullptr, outline}, id);
+  if (has_outline) {
+    options.outline = parent_outline;
+  }
+
+  renderer::Renderer::draw(image.path(), total_transform, options, id);
+}
+
+static void render_entity(const Entity& entity,
+                          const mat2x3& parent_transform,
+                          const bool parent_selected,
+                          const bool parent_temp_selected,
+                          const entt::registry* registry,
+                          renderer::Outline* outline,
+                          Scene* scene)
+{
+  const uuid id = entity.id();
+
+  const bool selected = parent_selected ||
+                        scene->selection.selected().find(id) != scene->selection.selected().end();
+  const bool temp_selected = parent_temp_selected || scene->selection.temp_selected().find(id) !=
+                                                         scene->selection.temp_selected().end();
+
+  if (entity.is_element()) {
+    render_element(
+        entity, id, parent_transform, selected, temp_selected, registry, outline, scene);
+  } else if (entity.is_image()) {
+    render_image(entity, id, parent_transform, selected, temp_selected, registry, outline, scene);
+  } else if (entity.is_text()) {
+  } else if (entity.is_group()) {
+    const GroupComponent group = entity.get_component<GroupComponent>();
+
+    for (auto it = group.begin(); it != group.end(); it++) {
+      const Entity entity = {*it, scene};
+
+      render_entity(entity, parent_transform, selected, temp_selected, registry, outline, scene);
+    }
+  } else if (entity.is_layer()) {
+    const LayerComponent layer = entity.get_component<LayerComponent>();
+
+    outline->color = layer.color();
+
+    for (auto it = layer.begin(); it != layer.end(); it++) {
+      const Entity entity = {*it, scene};
+
+      render_entity(entity, parent_transform, selected, temp_selected, registry, outline, scene);
+    }
+  }
 }
 
 void Scene::render(const bool ignore_cache) const
 {
   __debug_time_total();
 
-  /* Flooring to avoid banding artifacts. */
-  const ivec2 viewport_size = ivec2(math::floor(vec2(viewport.size()) * viewport.dpr()));
+  const double dpr = static_cast<double>(viewport.dpr());
+  const double zoom = static_cast<double>(viewport.zoom()) * dpr;
+
+  // Flooring to avoid banding artifacts.
+  const ivec2 viewport_size = ivec2(math::floor(dvec2(viewport.size()) * dpr));
+  const dvec2 viewport_position = dvec2(viewport.position());
+  const vec4 background = get_background().get_component<ArtboardComponent>().color();
+
   const renderer::Viewport rendering_viewport = {
-      viewport_size,
-      dvec2(viewport.position()),
-      static_cast<double>(viewport.zoom() * viewport.dpr()),
-      static_cast<double>(viewport.dpr()),
-      get_background().get_component<ArtboardComponent>().color()};
+      viewport_size, viewport_position, zoom, dpr, background};
 
   renderer::Renderer::begin_frame({rendering_viewport, &m_cache.renderer_cache, ignore_cache});
 
@@ -408,119 +756,17 @@ void Scene::render(const bool ignore_cache) const
   const auto& temp_selected = selection.temp_selected();
   const bool draw_vertices = tool_state.active().is_in_category(input::Tool::CategoryDirect);
 
+  renderer::Outline outline = {nullptr, draw_vertices, Settings::Renderer::ui_primary_color};
+
   for (auto it = m_layers.begin(); it != m_layers.end(); it++) {
-    const Entity layer_entity = {*it, const_cast<Scene*>(this)};
+    const Entity layer = {*it, const_cast<Scene*>(this)};
 
-    if (!layer_entity.is_layer()) {
-      continue;
-    }
-
-    const LayerComponent layer = layer_entity.get_component<LayerComponent>();
-    const vec4 outline_color = layer.color();
-
-    for (auto it = layer.begin(); it != layer.end(); it++) {
-      const Entity entity = {*it, const_cast<Scene*>(this)};
-      const uuid id = entity.id();
-
-      const bool is_element = entity.is_element();
-      const bool is_text = entity.is_text();
-
-      const bool is_selected = selected.find(id) != selected.end();
-      const bool is_temp_selected = temp_selected.find(id) != temp_selected.end();
-      const bool has_outline = is_selected || is_temp_selected;
-
-      const mat2x3& transform_matrix = m_registry.get<TransformData>(*it).matrix;
-
-      renderer::Outline outline_opt = {nullptr, is_element && draw_vertices, outline_color};
-
-      if (entity.is_image()) {
-        render_image(entity, id, transform_matrix, has_outline ? &outline_opt : nullptr);
-        continue;
-      } else if (!(is_element || is_text)) {
-        continue;
-      }
-
-      renderer::Fill fill_opt;
-      renderer::Stroke stroke_opt;
-      renderer::DrawingOptions options;
-
-      bool has_fill = m_registry.all_of<FillData>(*it);
-      bool has_stroke = m_registry.all_of<StrokeData>(*it);
-
-      if (has_fill) {
-        const FillData& fill = m_registry.get<FillData>(*it);
-
-        if (fill.visible && fill.paint.visible()) {
-          fill_opt = renderer::Fill(fill);
-          options.fill = &fill_opt;
-        } else {
-          has_fill = false;
-        }
-      }
-
-      if (has_stroke) {
-        const StrokeData& stroke = m_registry.get<StrokeData>(*it);
-
-        if (stroke.visible && stroke.paint.visible()) {
-          stroke_opt = renderer::Stroke(stroke);
-          options.stroke = &stroke_opt;
-        } else {
-          has_stroke = false;
-        }
-      }
-
-      if (!has_fill && !has_stroke && !has_outline) {
-        continue;
-      }
-
-      if (is_text) {
-        renderer::Renderer::draw(
-            renderer::Text(m_registry.get<TextData>(*it)), transform_matrix, options, id);
-        continue;
-      }
-
-      const geom::path& path = m_registry.get<PathData>(*it).path;
-
-      if (!has_outline) {
-        renderer::Renderer::draw(path, transform_matrix, options, id);
-        continue;
-      }
-
-      options.outline = &outline_opt;
-
-      std::unordered_set<uint32_t> selected_vertices;
-      bool is_full = false;
-
-      if (is_selected) {
-        const Selection::SelectionEntry& entry = selected.at(id);
-
-        is_full = entry.full();
-
-        if (!is_full) {
-          selected_vertices = entry.indices;
-        }
-      }
-
-      if (is_temp_selected && !is_full) {
-        const Selection::SelectionEntry& entry = temp_selected.at(id);
-
-        is_full = entry.full();
-
-        if (!is_full) {
-          selected_vertices.insert(temp_selected.at(id).indices.begin(),
-                                   temp_selected.at(id).indices.end());
-        }
-      }
-
-      outline_opt.selected_vertices = is_full ? nullptr : &selected_vertices;
-
-      renderer::Renderer::draw(path, transform_matrix, options, id);
-    }
+    render_entity(
+        layer, mat2x3::identity(), false, false, &m_registry, &outline, const_cast<Scene*>(this));
   }
 
-  LayerComponent layer = get_active_layer().get_component<LayerComponent>();
-
-  tool_state.render_overlays(layer.color(), viewport.zoom());
+  tool_state.render_overlays(get_active_layer().get_component<LayerComponent>().color(),
+                             viewport.zoom());
 
   renderer::Renderer::end_frame();
 }
@@ -584,100 +830,6 @@ void Scene::remove(const uuid id)
   m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), entity), m_layers.end());
 
   m_registry.destroy(entity);
-}
-
-bool Scene::is_entity_at(const Entity entity,
-                         const vec2 position,
-                         const bool deep_search,
-                         const float threshold,
-                         const HitTestType hit_test_type) const
-{
-  const uuid id = entity.id();
-  const bool is_element = entity.is_element();
-
-  const bool deep_search_entity = deep_search && selection.has(id);
-
-  if ((!deep_search_entity || !is_element) && m_cache.renderer_cache.has_bounding_rect(id)) {
-    const rect bounding_rect = rect(m_cache.renderer_cache.get_bounding_rect(id));
-
-    if (!geom::is_point_in_rect(position, bounding_rect, threshold)) {
-      return false;
-    }
-  }
-
-  const TransformComponent transform = entity.get_component<TransformComponent>();
-
-  if (!is_element) {
-    if (entity.is_image()) {
-      const ImageComponent image = entity.get_component<ImageComponent>();
-      const geom::path path = image.path();
-
-      const geom::FillingOptions filling_options{geom::FillRule::NonZero};
-      const geom::StrokingOptions<float> stroking_options{
-          static_cast<float>(Settings::Renderer::stroking_tolerance),
-          0.0f,
-          0.0f,
-          geom::LineCap::Square,
-          geom::LineJoin::Bevel};
-
-      return path.is_point_inside_path(
-          position,
-          hit_test_type != HitTestType::OutlineOnly ? &filling_options : nullptr,
-          hit_test_type != HitTestType::EntityOnly ? &stroking_options : nullptr,
-          transform,
-          threshold,
-          deep_search_entity);
-    }
-    return geom::is_point_in_rect(position, transform.bounding_rect(), threshold);
-  }
-
-  const PathComponent& path_component = entity.get_component<PathComponent>();
-
-  const geom::path& path = path_component.data();
-
-  bool has_fill = false;
-  bool has_stroke = false;
-
-  geom::FillingOptions filling_options;
-  geom::StrokingOptions<float> stroking_options;
-
-  if (hit_test_type != HitTestType::OutlineOnly && entity.has_component<FillComponent>()) {
-    auto& fill_component = entity.get_component<FillComponent>();
-
-    filling_options = geom::FillingOptions{fill_component.rule()};
-    has_fill = fill_component.visible() && fill_component.paint().visible();
-  }
-
-  if (entity.has_component<StrokeComponent>()) {
-    auto& stroke_component = entity.get_component<StrokeComponent>();
-
-    stroking_options = geom::StrokingOptions<float>{
-        static_cast<float>(Settings::Renderer::stroking_tolerance),
-        stroke_component.width(),
-        stroke_component.miter_limit(),
-        stroke_component.cap(),
-        stroke_component.join()};
-    has_stroke = stroke_component.visible() && stroke_component.paint().visible();
-  }
-
-  if (hit_test_type == HitTestType::OutlineOnly ||
-      (!has_stroke && hit_test_type == HitTestType::All))
-  {
-    stroking_options = geom::StrokingOptions<float>{
-        static_cast<float>(Settings::Renderer::stroking_tolerance),
-        0.0f,
-        0.0f,
-        geom::LineCap::Square,
-        geom::LineJoin::Bevel};
-    has_stroke = true;
-  }
-
-  return path.is_point_inside_path(position,
-                                   has_fill ? &filling_options : nullptr,
-                                   has_stroke ? &stroking_options : nullptr,
-                                   transform,
-                                   threshold,
-                                   deep_search_entity);
 }
 
 }  // namespace graphick::editor
