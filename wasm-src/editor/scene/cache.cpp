@@ -5,6 +5,9 @@
 
 #include "cache.h"
 
+#include "entity.h"
+#include "scene.h"
+
 #include "../../math/vector.h"
 
 namespace graphick::editor {
@@ -13,6 +16,33 @@ void Cache::clear()
 {
   for (int i = 0; i < m_grid.size(); i++) {
     m_grid[i] = false;
+  }
+}
+
+void Cache::clear(const uuid entity_id, const Scene* scene)
+{
+  renderer_cache.clear(entity_id);
+
+  if (!scene->has_entity(entity_id)) {
+    return;
+  }
+  
+  Entity entity = scene->get_entity(entity_id);
+
+  if (entity.is_group()) {
+    const GroupComponent& group = entity.get_component<GroupComponent>();
+
+    for (auto& it = group.begin(); it != group.end(); it++) {
+      Entity child = Entity(*it, const_cast<Scene*>(scene));
+      clear(child.id(), scene);
+    }
+  } else if (entity.is_layer()) {
+    const LayerComponent& layer = entity.get_component<LayerComponent>();
+
+    for (auto& it = layer.begin(); it != layer.end(); it++) {
+      Entity child = Entity(*it, const_cast<Scene*>(scene));
+      clear(child.id(), scene);
+    }
   }
 }
 

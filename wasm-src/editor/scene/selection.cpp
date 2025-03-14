@@ -26,6 +26,7 @@ rect Selection::bounding_rect() const
 
   for (auto& [id, _] : m_selected) {
     const Entity entity = m_scene->get_entity(id);
+
     const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
 
     math::min(selection_rect.min, entity_rect.min, selection_rect.min);

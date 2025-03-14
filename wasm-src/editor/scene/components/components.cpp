@@ -95,6 +95,8 @@ rect TransformComponent::bounding_rect() const
       return m_data->matrix * m_parent_ptr.text_ptr()->bounding_rect();
     case ParentData::Type::Image:
       return m_data->matrix * m_parent_ptr.image_ptr()->bounding_rect();
+    case ParentData::Type::Group:
+      return m_data->matrix * m_parent_ptr.group_ptr()->bounding_rect(this->m_entity->scene());
     default:
       return math::translation(m_data->matrix);
   }
@@ -117,29 +119,13 @@ rrect TransformComponent::bounding_rrect() const
       return rrect(unrotated_matrix * m_parent_ptr.text_ptr()->bounding_rect(), angle);
     case ParentData::Type::Image:
       return rrect(unrotated_matrix * m_parent_ptr.image_ptr()->bounding_rect(), angle);
+    case ParentData::Type::Group:
+      return rrect(unrotated_matrix *
+                       m_parent_ptr.group_ptr()->bounding_rect(this->m_entity->scene()),
+                   angle);
     default:
       return math::translation(m_data->matrix);
   }
-
-  // rect raw_bounding_rect;
-
-  // switch (m_parent_ptr.type()) {
-  //   case ParentData::Type::Path:
-  //     raw_bounding_rect = m_parent_ptr.path_ptr()->path.bounding_rect();
-  //     break;
-  //   case ParentData::Type::Text:
-  //     raw_bounding_rect = m_parent_ptr.text_ptr()->bounding_rect();
-  //     break;
-  //   case ParentData::Type::Image:
-  //     raw_bounding_rect = m_parent_ptr.image_ptr()->bounding_rect();
-  //     break;
-  //   default:
-  //     raw_bounding_rect = math::translation(m_data->matrix);
-  //     break;
-  // }
-
-  // console::log("angle", angle);
-  // return rrect(unrotated_matrix * raw_bounding_rect, angle);
 }
 
 rect TransformComponent::approx_bounding_rect() const
@@ -712,6 +698,22 @@ void StrokeComponent::modify(io::DataDecoder& decoder)
 GroupData::GroupData(io::DataDecoder& decoder)
 {
   children = decoder.vector<entt::entity>();
+}
+
+rect GroupData::bounding_rect(const Scene* scene) const
+{
+  rect bounding_rect;
+
+  for (const entt::entity handle : children) {
+    Entity child = Entity(handle, const_cast<Scene*>(scene));
+
+    if (child.has_component<TransformComponent>()) {
+      bounding_rect = rect::from_rects(bounding_rect,
+                                       child.get_component<TransformComponent>().bounding_rect());
+    }
+  }
+
+  return bounding_rect;
 }
 
 io::EncodedData& GroupComponent::encode(io::EncodedData& data) const

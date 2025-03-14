@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "group.h"
 #include "image.h"
 #include "path.h"
 #include "text.h"
@@ -247,7 +248,7 @@ struct ParentData {
   /**
    * @brief The type of the parent component.
    */
-  enum class Type : uint8_t { None, Path, Text, Image };
+  enum class Type : uint8_t { None, Path, Text, Image, Group };
 
  public:
   /**
@@ -257,6 +258,7 @@ struct ParentData {
   ParentData(const PathData* path_ptr) : m_type(Type::Path), m_ptr(path_ptr) {}
   ParentData(const TextData* text_ptr) : m_type(Type::Text), m_ptr(text_ptr) {}
   ParentData(const ImageData* image_ptr) : m_type(Type::Image), m_ptr(image_ptr) {}
+  ParentData(const GroupData* group_ptr) : m_type(Type::Group), m_ptr(group_ptr) {}
 
   /**
    * @brief Checks if the parent component is valid.
@@ -296,6 +298,16 @@ struct ParentData {
   inline bool is_image() const
   {
     return is_valid() && m_type == Type::Image;
+  }
+
+  /**
+   * @brief Checks if the parent component is a group.
+   *
+   * @return true if the parent component is a group, false otherwise.
+   */
+  inline bool is_group() const
+  {
+    return is_valid() && m_type == Type::Group;
   }
 
   /**
@@ -340,6 +352,18 @@ struct ParentData {
   inline const ImageData* image_ptr() const
   {
     return static_cast<const ImageData*>(m_ptr);
+  }
+
+  /**
+   * @brief Returns the pointer to the group parent component.
+   *
+   * This method does not perform any type checking, type() should be called first.
+   *
+   * @return The pointer to the path parent component.
+   */
+  inline const GroupData* group_ptr() const
+  {
+    return static_cast<const GroupData*>(m_ptr);
   }
 
  private:
@@ -415,7 +439,7 @@ struct TransformComponent : public ComponentWrapper {
    * @brief Calculates the rotated bounding rectangle of the entity.
    *
    * The rotated bounding rectangle follows the rotation of
-   * 
+   *
    * @return The bounding rectangle of the entity.
    */
   rrect bounding_rrect() const;

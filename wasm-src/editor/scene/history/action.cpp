@@ -188,7 +188,7 @@ void Action::execute_add(Scene* scene) const
     scene->get_entity(entity_id).add(m_data);
   }
 
-  scene->m_cache.clear(entity_id);
+  scene->m_cache.clear(entity_id, scene);
 
   // rect bounding_rect;
 
@@ -218,7 +218,7 @@ void Action::execute_remove(Scene* scene) const
     scene->get_entity(entity_id).remove(m_data);
   }
 
-  scene->m_cache.clear(entity_id);
+  scene->m_cache.clear(entity_id, scene);
 
   // rect bounding_rect;
 
@@ -244,7 +244,7 @@ void Action::execute_remove(Scene* scene) const
 void Action::execute_modify(Scene* scene) const
 {
   scene->get_entity(entity_id).modify(m_data);
-  scene->m_cache.clear(entity_id);
+  scene->m_cache.clear(entity_id, scene);
 
   // Entity entity = scene->get_entity(entity_id);
   // rect bounding_rect_before = entity.get_component<TransformComponent>().approx_bounding_rect();
@@ -264,7 +264,7 @@ void Action::revert_add(Scene* scene) const
     scene->get_entity(entity_id).remove(m_data);
   }
 
-  scene->m_cache.clear(entity_id);
+  scene->m_cache.clear(entity_id, scene);
 
   // rect bounding_rect;
 
@@ -296,7 +296,7 @@ void Action::revert_remove(Scene* scene) const
     scene->get_entity(entity_id).add(m_data);
   }
 
-  scene->m_cache.clear(entity_id);
+  scene->m_cache.clear(entity_id, scene);
 
   // rect bounding_rect;
 
@@ -321,7 +321,7 @@ void Action::revert_remove(Scene* scene) const
 void Action::revert_modify(Scene* scene) const
 {
   scene->get_entity(entity_id).modify(m_backup);
-  scene->m_cache.clear(entity_id);
+  scene->m_cache.clear(entity_id, scene);
 
   // Entity entity = scene->get_entity(entity_id);
   // rect bounding_rect_before = entity.get_component<TransformComponent>().approx_bounding_rect();

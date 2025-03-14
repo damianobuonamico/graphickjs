@@ -102,6 +102,10 @@ class Entity {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
                                 &m_scene->m_registry.get<ImageComponent::Data>(m_handle)};
+    } else if (has_component<GroupComponent>()) {
+      return TransformComponent{this,
+                                &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
+                                &m_scene->m_registry.get<GroupComponent::Data>(m_handle)};
     } else {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle)};
@@ -128,10 +132,18 @@ class Entity {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
                                 &m_scene->m_registry.get<PathComponent::Data>(m_handle)};
+    } else if (has_component<TextComponent>()) {
+      return TransformComponent{this,
+                                &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
+                                &m_scene->m_registry.get<TextComponent::Data>(m_handle)};
     } else if (has_component<ImageComponent>()) {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
                                 &m_scene->m_registry.get<ImageComponent::Data>(m_handle)};
+    } else if (has_component<GroupComponent>()) {
+      return TransformComponent{this,
+                                &m_scene->m_registry.get<TransformComponent::Data>(m_handle),
+                                &m_scene->m_registry.get<GroupComponent::Data>(m_handle)};
     } else {
       return TransformComponent{this,
                                 &m_scene->m_registry.get<TransformComponent::Data>(m_handle)};

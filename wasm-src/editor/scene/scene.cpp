@@ -328,12 +328,13 @@ uuid entity_at(const Entity entity,
     return uuid::null;
   } else if (entity.is_group()) {
     const GroupComponent group = entity.get_component<GroupComponent>();
+    const mat2x3& transform = entity.get_component<TransformComponent>();
 
     for (auto it = group.rbegin(); it != group.rend(); it++) {
       const Entity entity = {*it, scene};
 
       const uuid child_id = editor::entity_at(entity,
-                                              mat2x3::identity(),
+                                              parent_transform * transform,
                                               parent_selected,
                                               position,
                                               deep_search_entity,
@@ -354,7 +355,7 @@ uuid entity_at(const Entity entity,
       const Entity entity = {*it, scene};
 
       const uuid child_id = editor::entity_at(entity,
-                                              mat2x3::identity(),
+                                              parent_transform,
                                               parent_selected,
                                               position,
                                               deep_search_entity,
@@ -428,11 +429,144 @@ Entity Scene::duplicate_entity(const uuid id)
   return get_entity(new_id);
 }
 
+static void entities_in(const Entity entity,
+                        const mat2x3 parent_transform,
+                        const math::rect& rect,
+                        const bool deep_search,
+                        std::unordered_map<uuid, Selection::SelectionEntry>& entities,
+                        std::vector<uint32_t>& vertices,
+                        std::vector<uuid>& group_hierarchy)
+{
+  if (!entity.has_component<TransformComponent>()) {
+    return;
+  }
+
+  const uuid id = entity.id();
+  const uuid entry_id = deep_search || group_hierarchy.empty() ? id : group_hierarchy.back();
+
+  if (entity.is_group()) {
+    const GroupComponent group = entity.get_component<GroupComponent>();
+
+    group_hierarchy.push_back(id);
+
+    for (auto it = group.rbegin(); it != group.rend(); it++) {
+      const Entity entity = {*it, entity.scene()};
+      const mat2x3& transform = entity.get_component<TransformComponent>();
+
+      editor::entities_in(entity,
+                          parent_transform * transform,
+                          rect,
+                          deep_search,
+                          entities,
+                          vertices,
+                          group_hierarchy);
+    }
+
+    group_hierarchy.pop_back();
+  } else if (entity.is_layer()) {
+    const LayerComponent layer = entity.get_component<LayerComponent>();
+
+    for (auto it = layer.rbegin(); it != layer.rend(); it++) {
+      const Entity entity = {*it, entity.scene()};
+
+      editor::entities_in(
+          entity, parent_transform, rect, deep_search, entities, vertices, group_hierarchy);
+    }
+  } else {
+    const TransformComponent transform = entity.get_component<TransformComponent>();
+    const mat2x3 total_transform = parent_transform * transform.matrix();
+    const float angle = math::rotation(total_transform);
+
+    if (math::is_almost_zero(std::fmodf(angle, math::two_pi<float>))) {
+      const mat2x3 inverse_transform = math::inverse(total_transform);
+      const math::rect selection_rect = inverse_transform * rect;
+
+      if (entity.is_element()) {
+        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
+          entities.insert({entry_id, Selection::SelectionEntry()});
+          return;
+        }
+
+        const PathComponent path = entity.get_component<PathComponent>();
+
+        if (deep_search) {
+          vertices.clear();
+
+          if (path.data().intersects(selection_rect, &vertices)) {
+            entities.insert({entry_id,
+                             Selection::SelectionEntry{
+                                 std::unordered_set<uint32_t>(vertices.begin(), vertices.end())}});
+          }
+        } else {
+          if (path.data().intersects(selection_rect)) {
+            entities.insert({entry_id, Selection::SelectionEntry()});
+          }
+        }
+      } else {
+        if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
+          entities.insert({entry_id, Selection::SelectionEntry()});
+        }
+      }
+    } else {
+      if (entity.is_element()) {
+        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
+          entities.insert({entry_id, Selection::SelectionEntry()});
+          return;
+        }
+
+        const PathComponent path = entity.get_component<PathComponent>();
+
+        if (deep_search) {
+          vertices.clear();
+
+          if (path.data().intersects(rect, transform, &vertices)) {
+            entities.insert({entry_id,
+                             Selection::SelectionEntry{
+                                 std::unordered_set<uint32_t>(vertices.begin(), vertices.end())}});
+          }
+        } else {
+          if (path.data().intersects(rect, transform)) {
+            entities.insert({entry_id, Selection::SelectionEntry()});
+          }
+        }
+      } else if (entity.is_image()) {
+        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
+          entities.insert({entry_id, Selection::SelectionEntry()});
+          return;
+        }
+
+        const ImageComponent image = entity.get_component<ImageComponent>();
+        const geom::path path = image.path();
+
+        if (path.intersects(rect, transform)) {
+          entities.insert({entry_id, Selection::SelectionEntry()});
+        }
+      } else {
+        if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
+          entities.insert({entry_id, Selection::SelectionEntry()});
+        }
+      }
+    }
+  }
+}
+
 std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect,
                                                                        bool deep_search)
 {
   std::unordered_map<uuid, Selection::SelectionEntry> entities;
   std::vector<uint32_t> vertices;
+  std::vector<uuid> group_hierarchy;
+
+  for (auto it = m_layers.begin(); it != m_layers.end(); it++) {
+    const Entity layer = {*it, const_cast<Scene*>(this)};
+
+    group_hierarchy.clear();
+
+    editor::entities_in(
+        layer, mat2x3::identity(), rect, deep_search, entities, vertices, group_hierarchy);
+  }
+
+  return entities;
 
   auto view = get_all_entities_with<IDComponent::Data, TransformComponent::Data>();
 
@@ -716,11 +850,13 @@ static void render_entity(const Entity& entity,
   } else if (entity.is_text()) {
   } else if (entity.is_group()) {
     const GroupComponent group = entity.get_component<GroupComponent>();
+    const mat2x3& transform = entity.get_component<TransformComponent>();
 
     for (auto it = group.begin(); it != group.end(); it++) {
       const Entity entity = {*it, scene};
 
-      render_entity(entity, parent_transform, selected, temp_selected, registry, outline, scene);
+      render_entity(
+          entity, parent_transform * transform, selected, temp_selected, registry, outline, scene);
     }
   } else if (entity.is_layer()) {
     const LayerComponent layer = entity.get_component<LayerComponent>();

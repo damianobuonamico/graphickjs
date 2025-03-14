@@ -13,6 +13,8 @@
 
 namespace graphick::editor {
 
+class Scene;
+
 /**
  * @brief The Cache class is used to store cached data.
  *
@@ -32,10 +34,7 @@ class Cache {
    *
    * @param entity_id The id of the entity to clear.
    */
-  inline void clear(const uuid entity_id)
-  {
-    renderer_cache.clear(entity_id);
-  }
+  void clear(const uuid entity_id, const Scene* scene);
 
   /**
    * @brief Sets the portion of the screen that is cached.

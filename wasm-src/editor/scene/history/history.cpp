@@ -150,7 +150,7 @@ void History::push(Action&& action, const bool execute)
   if (execute) {
     action.execute(m_scene);
   } else {
-    m_scene->m_cache.clear(action.entity_id);
+    m_scene->m_cache.clear(action.entity_id, m_scene);
   }
 
   seal();

@@ -7,6 +7,7 @@
 
 #include "common.h"
 
+#include "../../../math/rect.h"
 #include "../../../math/vec4.h"
 #include "../../../utils/uuid.h"
 
@@ -20,6 +21,8 @@ enum class entity : uint32_t;
 
 namespace graphick::editor {
 
+class Scene;
+
 /**
  * @brief GroupComponent data.
  *
@@ -27,8 +30,8 @@ namespace graphick::editor {
  */
 struct GroupData {
   enum class GroupType {
-    Normal = 0,  // A normal group.
-    CompoundPath,  // A compound path group.
+    Normal = 0,                        // A normal group.
+    CompoundPath,                      // A compound path group.
   };
 
   std::vector<entt::entity> children;  // The ids of the children entities.
@@ -36,6 +39,17 @@ struct GroupData {
   GroupData() = default;
   GroupData(const std::vector<entt::entity>& children) : children(children) {}
   GroupData(io::DataDecoder& decoder);
+
+  /**
+   * @brief Returns the bounding rect of the group.
+   *
+   * The bounding box method of a parent component is required to be implemented in the component's
+   * data struct, not in the wrapper: the TransformComponent can only access the data struct.
+   *
+   * @param scene The scene the group belongs to.
+   * @return The bounding rect of the group.
+   */
+  rect bounding_rect(const Scene* scene) const;
 };
 
 /**
