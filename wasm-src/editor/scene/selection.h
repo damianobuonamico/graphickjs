@@ -5,8 +5,9 @@
 
 #pragma once
 
-#include "../../math/rect.h"
+#include "hierarchy.h"
 
+#include "../../math/rect.h"
 #include "../../utils/uuid.h"
 
 #include <unordered_map>
@@ -15,6 +16,7 @@
 namespace graphick::editor {
 
 class Scene;
+class Hierarchy;
 
 /**
  * @brief The selection manager of a scene.
@@ -32,28 +34,38 @@ class Selection {
      * @brief The type of the selection entry.
      */
     enum class Type {
-      Entity = 0,  // An entity selection entry does not have any children.
-      Element      // An element selection entry has children (e.g. vertices).
+      Entity = 0,         // An entity selection entry does not have any children.
+      Element             // An element selection entry has children (e.g. vertices).
     };
 
+    Hierarchy hierarchy;  // The (group only) hierarchy of the entity.
     std::unordered_set<uint32_t> indices;  // The indices of the children.
     Type type;                             // The type of the selection entry.
+
+    SelectionEntry() = default;
 
     /**
      * @brief Constructs a selection entry.
      *
      * @param type The type of the selection entry.
+     * @param hierarchy The hierarchy of the entity.
      */
-    SelectionEntry(const Type type = Type::Entity) : type(type) {}
+    SelectionEntry(const Hierarchy& hierarchy, const Type type = Type::Entity)
+        : type(type), hierarchy(hierarchy)
+    {
+    }
 
     /**
      * @brief Constructs a selection entry.
      *
      * @param type The type of the selection entry.
      * @param indices The indices of the children.
+     * @param hierarchy The hierarchy of the entity.
      */
-    SelectionEntry(std::unordered_set<uint32_t> indices, const Type type = Type::Element)
-        : indices(indices), type(type)
+    SelectionEntry(std::unordered_set<uint32_t> indices,
+                   const Hierarchy& hierarchy,
+                   const Type type = Type::Element)
+        : indices(indices), type(type), hierarchy(hierarchy)
     {
     }
 

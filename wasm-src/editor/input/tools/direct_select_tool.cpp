@@ -134,36 +134,43 @@ void DirectSelectTool::render_overlays(const vec4& color) const
 
 void DirectSelectTool::translate_selected()
 {
-  vec2 absolute_movenent = InputManager::pointer.scene.movement;
-  vec2 movement = absolute_movenent;
+  vec2 position = InputManager::pointer.scene.position;
+  vec2 origin = position - InputManager::pointer.scene.movement;
 
   Scene& scene = Editor::scene();
 
   if (m_vertex.has_value()) {
-    Entity entity = scene.get_entity(m_entity);
+    const Entity entity = scene.get_entity(m_entity);
+    const Hierarchy hierarchy = scene.get_hierarchy(m_entity);
 
-    TransformComponent transform = entity.get_component<TransformComponent>();
-    PathComponent path = entity.get_component<PathComponent>();
+    const TransformComponent transform_component = entity.get_component<TransformComponent>();
+    const PathComponent path = entity.get_component<PathComponent>();
 
-    const mat2x3 inverse_transform = math::inverse(transform.matrix());
-
-    const vec2 position = inverse_transform * InputManager::pointer.scene.position;
+    const mat2x3 transform = hierarchy.transform() * transform_component.matrix();
     const vec2 vertex_position = path.data().at(m_vertex.value());
 
-    absolute_movenent = InputManager::pointer.scene.position -
-                        transform.transform(vertex_position);
-    movement = position - vertex_position;
+    origin = transform * vertex_position;
   }
 
   for (auto& [id, entry] : scene.selection.selected()) {
     Entity entity = scene.get_entity(id);
-    TransformComponent transform = entity.get_component<TransformComponent>();
+    TransformComponent transform_component = entity.get_component<TransformComponent>();
+
+    const Hierarchy hierarchy = scene.get_hierarchy(id);
+    const mat2x3 parent_transform = hierarchy.transform();
 
     if (entry.full()) {
-      transform.translate(absolute_movenent);
+      const mat2x3 inverse_transform = math::inverse(parent_transform);
+
+      transform_component.translate(inverse_transform * position - inverse_transform * origin);
     } else {
+      PathComponent path = entity.get_component<PathComponent>();
+
+      const mat2x3 transform = parent_transform * transform_component.matrix();
+      const mat2x3 inverse_transform = math::inverse(transform);
+      const vec2 movement = inverse_transform * position - inverse_transform * origin;
+
       for (size_t i : entry.indices) {
-        PathComponent path = entity.get_component<PathComponent>();
         translate_control_point(path, i, transform, &movement, false, true, false, nullptr);
       }
     }

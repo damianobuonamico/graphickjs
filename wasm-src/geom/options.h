@@ -50,6 +50,11 @@ struct StrokingOptions {
 
   LineCap cap;    // The line cap used to determine how the ends of a stroke are drawn.
   LineJoin join;  // The line join used to determine how the corners of a stroke are drawn.
+
+  static inline StrokingOptions<T> outline_default(const T tolerance = T(0.25))
+  {
+    return StrokingOptions<T>{tolerance, T(0), T(0), LineCap::Square, LineJoin::Bevel};
+  }
 };
 
 /**

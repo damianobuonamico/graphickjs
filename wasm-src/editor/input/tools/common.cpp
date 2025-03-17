@@ -31,7 +31,8 @@ size_t translate_control_point(PathComponent& path,
                                bool translate_in_first,
                                int* direction)
 {
-  const mat2x3 inverse_transform = override_movement ? mat2x3{} : math::inverse(transform);
+  const mat2x3 inverse_transform = override_movement ? mat2x3::identity() :
+                                                       math::inverse(transform);
   const vec2 position = inverse_transform * InputManager::pointer.scene.position;
   const vec2 origin = inverse_transform * InputManager::pointer.scene.origin;
 
@@ -215,8 +216,9 @@ bool Manipulator::update()
 {
   Selection& selection = Editor::scene().selection;
 
-  if (selection.empty())
+  if (selection.empty()) {
     return m_active = false;
+  }
 
   update_positions(selection.bounding_rrect());
 
@@ -416,19 +418,35 @@ void Manipulator::on_scale_pointer_move()
 
   size_t i = 0;
 
-  for (const auto& [id, _] : selected) {
+  for (const auto& [id, entry] : selected) {
     if (scene.has_entity(id)) {
       Entity entity = scene.get_entity(id);
 
       if (entity.has_component<TransformComponent>()) {
         TransformComponent transform = entity.get_component<TransformComponent>();
 
-        transform.set(math::rotate(
-            math::scale(math::rotate(m_cache[i], vec2::zero(), -m_start_bounding_rrect.angle),
-                        center,
-                        magnitude),
-            vec2::zero(),
-            m_start_bounding_rrect.angle));
+        if (entry.hierarchy.entries.empty()) {
+          mat2x3 new_transform;
+
+          new_transform = math::rotate(m_cache[i], vec2::zero(), -m_start_bounding_rrect.angle);
+          new_transform = math::scale(new_transform, center, magnitude);
+          new_transform = math::rotate(new_transform, vec2::zero(), m_start_bounding_rrect.angle);
+
+          transform.set(new_transform);
+        } else {
+          const mat2x3 parent_transform = entry.hierarchy.transform();
+          const mat2x3 inverse_parent_transform = math::inverse(parent_transform);
+
+          mat2x3 new_transform;
+
+          new_transform = parent_transform * m_cache[i];
+          new_transform = math::rotate(new_transform, vec2::zero(), -m_start_bounding_rrect.angle);
+          new_transform = math::scale(new_transform, center, magnitude);
+          new_transform = math::rotate(new_transform, vec2::zero(), m_start_bounding_rrect.angle);
+          new_transform = inverse_parent_transform * new_transform;
+
+          transform.set(new_transform);
+        }
       }
     }
 
@@ -459,14 +477,27 @@ void Manipulator::on_rotate_pointer_move()
 
   size_t i = 0;
 
-  for (const auto& [id, _] : selected) {
+  for (const auto& [id, entry] : selected) {
     if (scene.has_entity(id)) {
       Entity entity = scene.get_entity(id);
 
       if (entity.has_component<TransformComponent>()) {
         TransformComponent transform = entity.get_component<TransformComponent>();
 
-        transform.set(math::rotate(m_cache[i], center, sin_angle, cos_angle));
+        if (entry.hierarchy.entries.empty()) {
+          transform.set(math::rotate(m_cache[i], center, sin_angle, cos_angle));
+        } else {
+          const mat2x3 parent_transform = entry.hierarchy.transform();
+          const mat2x3 inverse_parent_transform = math::inverse(parent_transform);
+
+          mat2x3 new_transform;
+
+          new_transform = parent_transform * m_cache[i];
+          new_transform = math::rotate(new_transform, center, sin_angle, cos_angle);
+          new_transform = inverse_parent_transform * new_transform;
+
+          transform.set(new_transform);
+        }
       }
     }
 

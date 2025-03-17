@@ -6,6 +6,7 @@
 #pragma once
 
 #include "cache.h"
+#include "hierarchy.h"
 #include "history/history.h"
 #include "selection.h"
 #include "viewport.h"
@@ -13,8 +14,10 @@
 #include "../input/tool_state.h"
 
 #include "../../io/encode/encode.h"
-
 #include "../../lib/entt/entt.hpp"
+#include "../../math/mat2x3.h"
+
+#include <functional>
 
 namespace graphick::editor {
 
@@ -32,6 +35,15 @@ class Scene {
   History history;              // Manages the history of the scene.
 
   input::ToolState tool_state;  // Manages the tool state of the scene.
+ public:
+  struct ForEachOptions {
+    bool reverse = false;
+    bool callback_on_layers = false;
+    bool callback_on_groups = false;
+    bool layers_in_hierarchy = false;
+    bool break_and_return = false;
+  };
+
  public:
   /**
    * @brief Default constructor, copy constructor and move constructor.
@@ -110,6 +122,31 @@ class Scene {
    * @return The background entity.
    */
   const Entity get_background() const;
+
+  /**
+   * @brief Returns the hierarchy of the specified entity.
+   *
+   * @param entity_id The unique identifier of the entity to get the hierarchy of.
+   * @param layers_in_hierarchy If true, layers will be included in the hierarchy.
+   * @return The hierarchy of the specified entity.
+   */
+  Hierarchy get_hierarchy(const uuid entity_id, const bool layers_in_hierarchy = true) const;
+
+  /**
+   * @brief Iterates over all the entities in the scene.
+   *
+   * @param entity_callback The callback to call for each entity.
+   */
+  void for_each(std::function<void(const Entity, const Hierarchy&)> entity_callback,
+                const ForEachOptions& options = {}) const;
+
+  /**
+   * @brief Iterates over all the entities in the scene
+   *
+   * @param entity_callback The callback to call for each entity.
+   */
+  void for_each(std::function<void(Entity, const Hierarchy&)> entity_callback,
+                const ForEachOptions& options = {});
 
   /**
    * @brief Adds a new layer to the scene.

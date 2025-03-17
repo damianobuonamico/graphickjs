@@ -124,6 +124,167 @@ const Entity Scene::get_background() const
   return {m_background, const_cast<Scene*>(this)};
 }
 
+Hierarchy Scene::get_hierarchy(const uuid entity_id, const bool layers_in_hierarchy) const
+{
+  Hierarchy return_hierarchy = {};
+  ForEachOptions options = {false, true, true, layers_in_hierarchy, false};
+
+  for_each(
+      [&](const Entity entity, const Hierarchy& hierarchy) {
+        if (entity.id() == entity_id) {
+          return_hierarchy = hierarchy;
+          options.break_and_return = true;
+        }
+      },
+      options);
+
+  return return_hierarchy;
+}
+
+static void for_each(const Entity entity,
+                     std::function<void(const Entity, const Hierarchy&)> entity_callback,
+                     const Scene::ForEachOptions& options,
+                     Scene* scene,
+                     Hierarchy& hierarchy)
+{
+  if (options.break_and_return) {
+    return;
+  }
+
+  if (entity.is_group()) {
+    const GroupComponent group = entity.get_component<GroupComponent>();
+    const TransformComponent transform = entity.get_component<TransformComponent>();
+    const uuid id = entity.id();
+
+    if (options.callback_on_groups) {
+      entity_callback(entity, hierarchy);
+    }
+
+    hierarchy.push({id, false, scene->selection.has(id, true), transform.matrix()});
+
+    if (options.reverse) {
+      for (auto it = group.rbegin(); it != group.rend(); it++) {
+        const Entity entity = {*it, scene};
+
+        for_each(entity, entity_callback, options, scene, hierarchy);
+
+        if (options.break_and_return) {
+          return;
+        }
+      }
+    } else {
+      for (auto it = group.begin(); it != group.end(); it++) {
+        const Entity entity = {*it, scene};
+
+        for_each(entity, entity_callback, options, scene, hierarchy);
+
+        if (options.break_and_return) {
+          return;
+        }
+      }
+    }
+
+    hierarchy.pop();
+  } else if (entity.is_layer()) {
+    const LayerComponent layer = entity.get_component<LayerComponent>();
+    const uuid id = entity.id();
+
+    if (options.layers_in_hierarchy) {
+      hierarchy.push({id, true, false, mat2x3::identity()});
+    }
+
+    if (options.callback_on_layers) {
+      entity_callback(entity, hierarchy);
+    }
+
+    if (options.reverse) {
+      for (auto it = layer.rbegin(); it != layer.rend(); it++) {
+        const Entity entity = {*it, scene};
+
+        for_each(entity, entity_callback, options, scene, hierarchy);
+
+        if (options.break_and_return) {
+          return;
+        }
+      }
+    } else {
+      for (auto it = layer.begin(); it != layer.end(); it++) {
+        const Entity entity = {*it, scene};
+
+        for_each(entity, entity_callback, options, scene, hierarchy);
+
+        if (options.break_and_return) {
+          return;
+        }
+      }
+    }
+
+    if (options.layers_in_hierarchy) {
+      hierarchy.pop();
+    }
+  } else {
+    entity_callback(entity, hierarchy);
+  }
+}
+
+void Scene::for_each(std::function<void(const Entity, const Hierarchy&)> entity_callback,
+                     const ForEachOptions& options) const
+{
+  if (options.break_and_return) {
+    return;
+  }
+
+  Hierarchy hierarchy;
+
+  if (options.reverse) {
+    for (auto it = m_layers.rbegin(); it != m_layers.rend(); it++) {
+      const Entity layer = {*it, const_cast<Scene*>(this)};
+
+      editor::for_each(layer, entity_callback, options, const_cast<Scene*>(this), hierarchy);
+
+      if (options.break_and_return) {
+        return;
+      }
+
+      hierarchy.clear();
+    }
+  } else {
+    for (auto it = m_layers.begin(); it != m_layers.end(); it++) {
+      const Entity layer = {*it, const_cast<Scene*>(this)};
+
+      editor::for_each(layer, entity_callback, options, const_cast<Scene*>(this), hierarchy);
+
+      if (options.break_and_return) {
+        return;
+      }
+
+      hierarchy.clear();
+    }
+  }
+}
+
+void Scene::for_each(std::function<void(Entity, const Hierarchy&)> entity_callback,
+                     const ForEachOptions& options)
+{
+  Hierarchy hierarchy;
+
+  if (options.reverse) {
+    for (auto it = m_layers.rbegin(); it != m_layers.rend(); it++) {
+      const Entity layer = {*it, const_cast<Scene*>(this)};
+
+      editor::for_each(layer, entity_callback, options, const_cast<Scene*>(this), hierarchy);
+      hierarchy.clear();
+    }
+  } else {
+    for (auto it = m_layers.begin(); it != m_layers.end(); it++) {
+      const Entity layer = {*it, const_cast<Scene*>(this)};
+
+      editor::for_each(layer, entity_callback, options, const_cast<Scene*>(this), hierarchy);
+      hierarchy.clear();
+    }
+  }
+}
+
 const Entity Scene::get_active_layer() const
 {
   GK_ASSERT(!m_layers.empty(), "No layers in scene!");
@@ -227,30 +388,38 @@ void Scene::delete_entity(uuid id)
   delete_entity(get_entity(id));
 }
 
-uuid entity_at(const Entity entity,
-               const mat2x3& parent_transform,
-               const bool parent_selected,
-               const vec2 position,
-               const bool deep_search,
-               const float threshold,
-               const HitTestType parent_hit_test_type,
-               const Cache* cache,
-               Scene* scene)
-{
-  const uuid id = entity.id();
-  const bool selected = parent_selected || scene->selection.has(id);
-  const bool deep_search_entity = deep_search && selected;
+struct EntityAtOptions {
+  Hierarchy& const hierarchy;
 
-  const HitTestType hit_test_type = (parent_hit_test_type == HitTestType::All && selected) ?
+  vec2 position = vec2::zero();
+  bool deep_search = false;
+  float threshold = 0.0f;
+
+  HitTestType hit_test_type = HitTestType::All;
+
+  const Cache* cache = nullptr;
+  const Scene* scene = nullptr;
+
+  EntityAtOptions(Hierarchy& const hierarchy) : hierarchy(hierarchy) {}
+};
+
+static bool is_entity_at(const Entity entity, const EntityAtOptions& options)
+{
+  const bool selected = options.hierarchy.selected() || options.scene->selection.has(entity.id());
+  const bool deep_search_entity = options.deep_search && selected;
+  const float tolerance = static_cast<float>(Settings::Renderer::stroking_tolerance);
+
+  const HitTestType hit_test_type = (options.hit_test_type == HitTestType::All && selected) ?
                                         HitTestType::EntityOnly :
-                                        parent_hit_test_type;
+                                        options.hit_test_type;
+  const uuid id = entity.id();
 
   if (entity.is_element()) {
-    if (!deep_search_entity && cache->renderer_cache.has_bounding_rect(id)) {
-      const rect bounding_rect = rect(cache->renderer_cache.get_bounding_rect(id));
+    if (!deep_search_entity && options.cache->renderer_cache.has_bounding_rect(id)) {
+      const rect bounding_rect = rect(options.cache->renderer_cache.get_bounding_rect(id));
 
-      if (!geom::is_point_in_rect(position, bounding_rect, threshold)) {
-        return uuid::null;
+      if (!geom::is_point_in_rect(options.position, bounding_rect, options.threshold)) {
+        return false;
       }
     }
 
@@ -273,105 +442,49 @@ uuid entity_at(const Entity entity,
     if (entity.has_component<StrokeComponent>()) {
       auto& stroke_component = entity.get_component<StrokeComponent>();
 
-      stroking_options = geom::StrokingOptions<float>{
-          static_cast<float>(Settings::Renderer::stroking_tolerance),
-          stroke_component.width(),
-          stroke_component.miter_limit(),
-          stroke_component.cap(),
-          stroke_component.join()};
+      stroking_options = geom::StrokingOptions<float>{tolerance,
+                                                      stroke_component.width(),
+                                                      stroke_component.miter_limit(),
+                                                      stroke_component.cap(),
+                                                      stroke_component.join()};
       has_stroke = stroke_component.visible() && stroke_component.paint().visible();
     }
 
     if (hit_test_type == HitTestType::OutlineOnly ||
         (!has_stroke && hit_test_type == HitTestType::All))
     {
-      stroking_options = geom::StrokingOptions<float>{
-          static_cast<float>(Settings::Renderer::stroking_tolerance),
-          0.0f,
-          0.0f,
-          geom::LineCap::Square,
-          geom::LineJoin::Bevel};
+      stroking_options = geom::StrokingOptions<float>::outline_default(tolerance);
       has_stroke = true;
     }
 
-    return path.is_point_inside_path(position,
+    return path.is_point_inside_path(options.position,
                                      has_fill ? &filling_options : nullptr,
                                      has_stroke ? &stroking_options : nullptr,
-                                     parent_transform * transform,
-                                     threshold,
-                                     deep_search_entity) ?
-               id :
-               uuid::null;
+                                     options.hierarchy.transform() * transform,
+                                     options.threshold,
+                                     deep_search_entity);
   } else if (entity.is_image()) {
-    const mat2x3& transform = entity.get_component<TransformComponent>();
+    const TransformComponent transform = entity.get_component<TransformComponent>();
     const ImageComponent image = entity.get_component<ImageComponent>();
+
     const geom::path path = image.path();
 
     const geom::FillingOptions filling_options{geom::FillRule::NonZero};
-    const geom::StrokingOptions<float> stroking_options{
-        static_cast<float>(Settings::Renderer::stroking_tolerance),
-        0.0f,
-        0.0f,
-        geom::LineCap::Square,
-        geom::LineJoin::Bevel};
+    const geom::StrokingOptions<float> stroking_options =
+        geom::StrokingOptions<float>::outline_default(tolerance);
 
     return path.is_point_inside_path(
-               position,
-               hit_test_type != HitTestType::OutlineOnly ? &filling_options : nullptr,
-               hit_test_type != HitTestType::EntityOnly ? &stroking_options : nullptr,
-               parent_transform * transform,
-               threshold,
-               false) ?
-               id :
-               uuid::null;
+        options.position,
+        hit_test_type != HitTestType::OutlineOnly ? &filling_options : nullptr,
+        hit_test_type != HitTestType::EntityOnly ? &stroking_options : nullptr,
+        options.hierarchy.transform() * transform.matrix(),
+        options.threshold,
+        false);
   } else if (entity.is_text()) {
-    return uuid::null;
-  } else if (entity.is_group()) {
-    const GroupComponent group = entity.get_component<GroupComponent>();
-    const mat2x3& transform = entity.get_component<TransformComponent>();
-
-    for (auto it = group.rbegin(); it != group.rend(); it++) {
-      const Entity entity = {*it, scene};
-
-      const uuid child_id = editor::entity_at(entity,
-                                              parent_transform * transform,
-                                              parent_selected,
-                                              position,
-                                              deep_search_entity,
-                                              threshold,
-                                              hit_test_type,
-                                              cache,
-                                              scene);
-
-      if (child_id != uuid::null) {
-        // If not deep searching, return the entire group.
-        return deep_search_entity ? child_id : id;
-      }
-    }
-  } else if (entity.is_layer()) {
-    const LayerComponent layer = entity.get_component<LayerComponent>();
-
-    for (auto it = layer.rbegin(); it != layer.rend(); it++) {
-      const Entity entity = {*it, scene};
-
-      const uuid child_id = editor::entity_at(entity,
-                                              parent_transform,
-                                              parent_selected,
-                                              position,
-                                              deep_search_entity,
-                                              threshold,
-                                              hit_test_type,
-                                              cache,
-                                              scene);
-
-      if (child_id != uuid::null) {
-        // An entire layer cannot be selected.
-        return child_id;
-      }
-    }
+    // TODO: implement text hit test
   }
 
-  return uuid::null;
+  return false;
 }
 
 uuid Scene::entity_at(const vec2 position, const bool deep_search, const float threshold) const
@@ -381,41 +494,49 @@ uuid Scene::entity_at(const vec2 position, const bool deep_search, const float t
   const float zoom = viewport.zoom();
   const float local_threshold = threshold / zoom;
 
+  Hierarchy _dummy_hierarchy;
+  EntityAtOptions entity_at_options(_dummy_hierarchy);
+
+  entity_at_options.position = position;
+  entity_at_options.deep_search = deep_search;
+  entity_at_options.threshold = local_threshold;
+  entity_at_options.hit_test_type = HitTestType::OutlineOnly;
+  entity_at_options.cache = &m_cache;
+  entity_at_options.scene = this;
+
   for (const auto& [id, entry] : selection.selected()) {
-    // TODO: fix this identity transform
-    if (editor::entity_at(get_entity(id),
-                          mat2x3::identity(),
-                          true,
-                          position,
-                          deep_search,
-                          local_threshold,
-                          HitTestType::OutlineOnly,
-                          &m_cache,
-                          const_cast<Scene*>(this)) != uuid::null)
-    {
-      return id;
+    if (editor::is_entity_at(get_entity(id), entity_at_options)) {
+      if (deep_search) {
+        return id;
+      } else {
+        const Hierarchy hierarchy = get_hierarchy(id, false);
+        return deep_search || hierarchy.entries.empty() ? id : hierarchy.entries.front().id;
+      }
     }
   }
 
-  for (auto it = m_layers.rbegin(); it != m_layers.rend(); it++) {
-    const Entity layer = {*it, const_cast<Scene*>(this)};
+  const float tolerance = static_cast<float>(Settings::Renderer::stroking_tolerance);
 
-    const uuid id = editor::entity_at(layer,
-                                      mat2x3::identity(),
-                                      false,
-                                      position,
-                                      deep_search,
-                                      local_threshold,
-                                      HitTestType::All,
-                                      &m_cache,
-                                      const_cast<Scene*>(this));
+  uuid return_id = uuid::null;
 
-    if (id != uuid::null) {
-      return id;
-    }
-  }
+  ForEachOptions options;
 
-  return uuid::null;
+  options.reverse = true;
+  entity_at_options.hit_test_type = HitTestType::All;
+
+  for_each(
+      [&](const Entity entity, const Hierarchy& hierarchy) {
+        entity_at_options.hierarchy = hierarchy;
+
+        if (editor::is_entity_at(entity, entity_at_options)) {
+          return_id = deep_search || hierarchy.entries.empty() ? entity.id() :
+                                                                 hierarchy.entries.front().id;
+          options.break_and_return = true;
+        }
+      },
+      options);
+
+  return return_id;
 }
 
 Entity Scene::duplicate_entity(const uuid id)
@@ -429,125 +550,83 @@ Entity Scene::duplicate_entity(const uuid id)
   return get_entity(new_id);
 }
 
-static void entities_in(const Entity entity,
-                        const mat2x3 parent_transform,
-                        const math::rect& rect,
-                        const bool deep_search,
-                        std::unordered_map<uuid, Selection::SelectionEntry>& entities,
-                        std::vector<uint32_t>& vertices,
-                        std::vector<uuid>& group_hierarchy)
-{
-  if (!entity.has_component<TransformComponent>()) {
-    return;
+struct EntitiesInOptions {
+  Hierarchy& const hierarchy;
+
+  math::rect rect = math::rect();
+  bool deep_search = false;
+
+  std::vector<uint32_t>& vertices;
+
+  EntitiesInOptions(Hierarchy& const hierarchy, std::vector<uint32_t>& vertices)
+      : hierarchy(hierarchy), vertices(vertices)
+  {
   }
+};
 
-  const uuid id = entity.id();
-  const uuid entry_id = deep_search || group_hierarchy.empty() ? id : group_hierarchy.back();
+static bool is_entity_in(const Entity entity, const EntitiesInOptions& options)
+{
+  const TransformComponent transform_component = entity.get_component<TransformComponent>();
 
-  if (entity.is_group()) {
-    const GroupComponent group = entity.get_component<GroupComponent>();
+  const mat2x3 parent_transform = options.hierarchy.transform();
+  const mat2x3 transform = parent_transform * transform_component.matrix();
+  const rect bounding_rect = transform_component.bounding_rect(parent_transform);
 
-    group_hierarchy.push_back(id);
+  const float angle = math::rotation(transform);
 
-    for (auto it = group.rbegin(); it != group.rend(); it++) {
-      const Entity entity = {*it, entity.scene()};
-      const mat2x3& transform = entity.get_component<TransformComponent>();
+  if (math::is_almost_zero(std::fmodf(angle, math::two_pi<float>))) {
+    const mat2x3 inverse_transform = math::inverse(transform);
+    const math::rect selection_rect = inverse_transform * options.rect;
 
-      editor::entities_in(entity,
-                          parent_transform * transform,
-                          rect,
-                          deep_search,
-                          entities,
-                          vertices,
-                          group_hierarchy);
-    }
+    if (entity.is_element()) {
+      if (geom::is_rect_in_rect(bounding_rect, options.rect)) {
+        return true;
+      }
 
-    group_hierarchy.pop_back();
-  } else if (entity.is_layer()) {
-    const LayerComponent layer = entity.get_component<LayerComponent>();
+      const PathComponent path = entity.get_component<PathComponent>();
 
-    for (auto it = layer.rbegin(); it != layer.rend(); it++) {
-      const Entity entity = {*it, entity.scene()};
-
-      editor::entities_in(
-          entity, parent_transform, rect, deep_search, entities, vertices, group_hierarchy);
+      if (options.deep_search) {
+        if (path.data().intersects(selection_rect, &options.vertices)) {
+          return true;
+        }
+      } else if (path.data().intersects(selection_rect)) {
+        return true;
+      }
+    } else if (geom::does_rect_intersect_rect(bounding_rect, options.rect)) {
+      return true;
     }
   } else {
-    const TransformComponent transform = entity.get_component<TransformComponent>();
-    const mat2x3 total_transform = parent_transform * transform.matrix();
-    const float angle = math::rotation(total_transform);
-
-    if (math::is_almost_zero(std::fmodf(angle, math::two_pi<float>))) {
-      const mat2x3 inverse_transform = math::inverse(total_transform);
-      const math::rect selection_rect = inverse_transform * rect;
-
-      if (entity.is_element()) {
-        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
-          entities.insert({entry_id, Selection::SelectionEntry()});
-          return;
-        }
-
-        const PathComponent path = entity.get_component<PathComponent>();
-
-        if (deep_search) {
-          vertices.clear();
-
-          if (path.data().intersects(selection_rect, &vertices)) {
-            entities.insert({entry_id,
-                             Selection::SelectionEntry{
-                                 std::unordered_set<uint32_t>(vertices.begin(), vertices.end())}});
-          }
-        } else {
-          if (path.data().intersects(selection_rect)) {
-            entities.insert({entry_id, Selection::SelectionEntry()});
-          }
-        }
-      } else {
-        if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
-          entities.insert({entry_id, Selection::SelectionEntry()});
-        }
+    if (entity.is_element()) {
+      if (geom::is_rect_in_rect(bounding_rect, options.rect)) {
+        return true;
       }
-    } else {
-      if (entity.is_element()) {
-        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
-          entities.insert({entry_id, Selection::SelectionEntry()});
-          return;
-        }
 
-        const PathComponent path = entity.get_component<PathComponent>();
+      const PathComponent path = entity.get_component<PathComponent>();
 
-        if (deep_search) {
-          vertices.clear();
-
-          if (path.data().intersects(rect, transform, &vertices)) {
-            entities.insert({entry_id,
-                             Selection::SelectionEntry{
-                                 std::unordered_set<uint32_t>(vertices.begin(), vertices.end())}});
-          }
-        } else {
-          if (path.data().intersects(rect, transform)) {
-            entities.insert({entry_id, Selection::SelectionEntry()});
-          }
+      if (options.deep_search) {
+        if (path.data().intersects(options.rect, transform, &options.vertices)) {
+          return true;
         }
-      } else if (entity.is_image()) {
-        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
-          entities.insert({entry_id, Selection::SelectionEntry()});
-          return;
-        }
-
-        const ImageComponent image = entity.get_component<ImageComponent>();
-        const geom::path path = image.path();
-
-        if (path.intersects(rect, transform)) {
-          entities.insert({entry_id, Selection::SelectionEntry()});
-        }
-      } else {
-        if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
-          entities.insert({entry_id, Selection::SelectionEntry()});
-        }
+      } else if (path.data().intersects(options.rect, transform)) {
+        return true;
       }
+    } else if (entity.is_image()) {
+      if (geom::is_rect_in_rect(bounding_rect, options.rect)) {
+        return true;
+      }
+
+      const ImageComponent image = entity.get_component<ImageComponent>();
+      const geom::path path = image.path();
+
+      if (path.intersects(options.rect, transform)) {
+        return true;
+      }
+    } else if (geom::does_rect_intersect_rect(bounding_rect, options.rect)) {
+      return true;
     }
   }
+
+  return false;
 }
 
 std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const math::rect& rect,
@@ -555,99 +634,42 @@ std::unordered_map<uuid, Selection::SelectionEntry> Scene::entities_in(const mat
 {
   std::unordered_map<uuid, Selection::SelectionEntry> entities;
   std::vector<uint32_t> vertices;
-  std::vector<uuid> group_hierarchy;
 
-  for (auto it = m_layers.begin(); it != m_layers.end(); it++) {
-    const Entity layer = {*it, const_cast<Scene*>(this)};
+  Hierarchy _dummy_hierarchy;
+  EntitiesInOptions entities_in_options(_dummy_hierarchy, vertices);
 
-    group_hierarchy.clear();
+  entities_in_options.rect = rect;
+  entities_in_options.deep_search = deep_search;
 
-    editor::entities_in(
-        layer, mat2x3::identity(), rect, deep_search, entities, vertices, group_hierarchy);
-  }
+  ForEachOptions options;
 
-  return entities;
-
-  auto view = get_all_entities_with<IDComponent::Data, TransformComponent::Data>();
-
-  for (entt::entity handle : view) {
-    const Entity entity = {handle, this};
-    const uuid id = entity.id();
-    const TransformComponent transform = entity.get_component<TransformComponent>();
-
-    const float angle = math::rotation(transform.matrix());
-
-    if (math::is_almost_zero(std::fmodf(angle, math::two_pi<float>))) {
-      const mat2x3 inverse_transform = transform.inverse();
-      const math::rect selection_rect = inverse_transform * rect;
-
-      if (entity.is_element()) {
-        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
-          entities.insert({id, Selection::SelectionEntry()});
-          continue;
-        }
-
-        const PathComponent path = entity.get_component<PathComponent>();
-
+  for_each(
+      [&](const Entity entity, const Hierarchy& hierarchy) {
         if (deep_search) {
           vertices.clear();
-
-          if (path.data().intersects(selection_rect, &vertices)) {
-            entities.insert({id,
-                             Selection::SelectionEntry{
-                                 std::unordered_set<uint32_t>(vertices.begin(), vertices.end())}});
-          }
-        } else {
-          if (path.data().intersects(selection_rect)) {
-            entities.insert({id, Selection::SelectionEntry()});
-          }
-        }
-      } else {
-        if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
-          entities.insert({id, Selection::SelectionEntry()});
-        }
-      }
-    } else {
-      if (entity.is_element()) {
-        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
-          entities.insert({id, Selection::SelectionEntry()});
-          continue;
         }
 
-        const PathComponent path = entity.get_component<PathComponent>();
+        entities_in_options.hierarchy = hierarchy;
 
-        if (deep_search) {
-          vertices.clear();
+        if (editor::is_entity_in(entity, entities_in_options)) {
+          if (deep_search) {
+            if (vertices.empty()) {
+              entities.insert({entity.id(), Selection::SelectionEntry(hierarchy)});
+            } else {
+              entities.insert({entity.id(),
+                               Selection::SelectionEntry{
+                                   std::unordered_set<uint32_t>(vertices.begin(), vertices.end()),
+                                   hierarchy}});
+            }
+          } else {
+            const uuid entry_id = hierarchy.entries.empty() ? entity.id() :
+                                                              hierarchy.entries.front().id;
 
-          if (path.data().intersects(rect, transform, &vertices)) {
-            entities.insert({id,
-                             Selection::SelectionEntry{
-                                 std::unordered_set<uint32_t>(vertices.begin(), vertices.end())}});
-          }
-        } else {
-          if (path.data().intersects(rect, transform)) {
-            entities.insert({id, Selection::SelectionEntry()});
+            entities.insert({entry_id, Selection::SelectionEntry()});
           }
         }
-      } else if (entity.is_image()) {
-        if (geom::is_rect_in_rect(transform.bounding_rect(), rect)) {
-          entities.insert({id, Selection::SelectionEntry()});
-          continue;
-        }
-
-        const ImageComponent image = entity.get_component<ImageComponent>();
-        const geom::path path = image.path();
-
-        if (path.intersects(rect, transform)) {
-          entities.insert({id, Selection::SelectionEntry()});
-        }
-      } else {
-        if (geom::does_rect_intersect_rect(transform.bounding_rect(), rect)) {
-          entities.insert({id, Selection::SelectionEntry()});
-        }
-      }
-    }
-  }
+      },
+      options);
 
   return entities;
 }
@@ -686,12 +708,11 @@ static void render_element(const Entity& entity,
                            const uuid id,
                            const mat2x3& parent_transform,
                            const bool selected,
-                           const bool temp_selected,
                            const entt::registry* registry,
                            const renderer::Outline* parent_outline,
                            const Scene* scene)
 {
-  const bool has_outline = selected || temp_selected;
+  const bool has_outline = selected;
 
   renderer::Fill fill_opt;
   renderer::Stroke stroke_opt;
@@ -756,20 +777,14 @@ static void render_element(const Entity& entity,
       if (!is_full) {
         selected_vertices = entry.indices;
       }
-    } else {
-      is_full = true;
-    }
-  }
-
-  if (temp_selected && !is_full) {
-    if (scene->selection.temp_selected().find(id) != scene->selection.temp_selected().end()) {
+    } else if (scene->selection.temp_selected().find(id) != scene->selection.temp_selected().end())
+    {
       const Selection::SelectionEntry& entry = scene->selection.temp_selected().at(id);
 
       is_full = entry.full();
 
       if (!is_full) {
-        selected_vertices.insert(scene->selection.temp_selected().at(id).indices.begin(),
-                                 scene->selection.temp_selected().at(id).indices.end());
+        selected_vertices = entry.indices;
       }
     } else {
       is_full = true;
@@ -785,12 +800,11 @@ static void render_image(const Entity& entity,
                          const uuid id,
                          const mat2x3& parent_transform,
                          const bool selected,
-                         const bool temp_selected,
                          const entt::registry* registry,
                          const renderer::Outline* parent_outline,
                          const Scene* scene)
 {
-  const bool has_outline = selected || temp_selected;
+  const bool has_outline = selected;
 
   renderer::Fill fill_opt;
   renderer::Stroke stroke_opt;
@@ -827,50 +841,6 @@ static void render_image(const Entity& entity,
   renderer::Renderer::draw(image.path(), total_transform, options, id);
 }
 
-static void render_entity(const Entity& entity,
-                          const mat2x3& parent_transform,
-                          const bool parent_selected,
-                          const bool parent_temp_selected,
-                          const entt::registry* registry,
-                          renderer::Outline* outline,
-                          Scene* scene)
-{
-  const uuid id = entity.id();
-
-  const bool selected = parent_selected ||
-                        scene->selection.selected().find(id) != scene->selection.selected().end();
-  const bool temp_selected = parent_temp_selected || scene->selection.temp_selected().find(id) !=
-                                                         scene->selection.temp_selected().end();
-
-  if (entity.is_element()) {
-    render_element(
-        entity, id, parent_transform, selected, temp_selected, registry, outline, scene);
-  } else if (entity.is_image()) {
-    render_image(entity, id, parent_transform, selected, temp_selected, registry, outline, scene);
-  } else if (entity.is_text()) {
-  } else if (entity.is_group()) {
-    const GroupComponent group = entity.get_component<GroupComponent>();
-    const mat2x3& transform = entity.get_component<TransformComponent>();
-
-    for (auto it = group.begin(); it != group.end(); it++) {
-      const Entity entity = {*it, scene};
-
-      render_entity(
-          entity, parent_transform * transform, selected, temp_selected, registry, outline, scene);
-    }
-  } else if (entity.is_layer()) {
-    const LayerComponent layer = entity.get_component<LayerComponent>();
-
-    outline->color = layer.color();
-
-    for (auto it = layer.begin(); it != layer.end(); it++) {
-      const Entity entity = {*it, scene};
-
-      render_entity(entity, parent_transform, selected, temp_selected, registry, outline, scene);
-    }
-  }
-}
-
 void Scene::render(const bool ignore_cache) const
 {
   __debug_time_total();
@@ -894,12 +864,30 @@ void Scene::render(const bool ignore_cache) const
 
   renderer::Outline outline = {nullptr, draw_vertices, Settings::Renderer::ui_primary_color};
 
-  for (auto it = m_layers.begin(); it != m_layers.end(); it++) {
-    const Entity layer = {*it, const_cast<Scene*>(this)};
+  ForEachOptions options;
 
-    render_entity(
-        layer, mat2x3::identity(), false, false, &m_registry, &outline, const_cast<Scene*>(this));
-  }
+  options.callback_on_layers = true;
+
+  for_each(
+      [&](const Entity entity, const Hierarchy& hierarchy) {
+        const uuid id = entity.id();
+
+        const bool parent_selected = hierarchy.selected();
+        const bool selected = parent_selected || selection.has(id, true);
+
+        if (entity.is_element()) {
+          render_element(entity, id, hierarchy.transform(), selected, &m_registry, &outline, this);
+        } else if (entity.is_image()) {
+          render_image(entity, id, hierarchy.transform(), selected, &m_registry, &outline, this);
+        } else if (entity.is_text()) {
+
+        } else if (entity.is_layer()) {
+          const LayerComponent layer = entity.get_component<LayerComponent>();
+
+          outline.color = layer.color();
+        }
+      },
+      options);
 
   tool_state.render_overlays(get_active_layer().get_component<LayerComponent>().color(),
                              viewport.zoom());

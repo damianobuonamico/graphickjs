@@ -130,7 +130,7 @@ class SelectionRect {
    */
   rect bounding_rect() const;
 
-    /**
+  /**
    * @brief Returns the rotated bounding rectangle of the selection rectangle.
    *
    * The rotated bounding rectangle follows the rotation of the selection rectangle.

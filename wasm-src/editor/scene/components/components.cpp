@@ -102,6 +102,24 @@ rect TransformComponent::bounding_rect() const
   }
 }
 
+rect TransformComponent::bounding_rect(const mat2x3& parent_transform) const
+{
+  const mat2x3 matrix = parent_transform * m_data->matrix;
+
+  switch (m_parent_ptr.type()) {
+    case ParentData::Type::Path:
+      return m_parent_ptr.path_ptr()->path.bounding_rect(matrix);
+    case ParentData::Type::Text:
+      return matrix * m_parent_ptr.text_ptr()->bounding_rect();
+    case ParentData::Type::Image:
+      return matrix * m_parent_ptr.image_ptr()->bounding_rect();
+    case ParentData::Type::Group:
+      return matrix * m_parent_ptr.group_ptr()->bounding_rect(this->m_entity->scene());
+    default:
+      return math::translation(matrix);
+  }
+}
+
 rrect TransformComponent::bounding_rrect() const
 {
   const float angle = math::rotation(m_data->matrix);
@@ -125,6 +143,33 @@ rrect TransformComponent::bounding_rrect() const
                    angle);
     default:
       return math::translation(m_data->matrix);
+  }
+}
+
+rrect TransformComponent::bounding_rrect(const mat2x3& parent_transform) const
+{
+  const mat2x3 matrix = parent_transform * m_data->matrix;
+  const float angle = math::rotation(matrix);
+
+  if (math::is_almost_zero(angle)) {
+    return bounding_rect();
+  }
+
+  const mat2x3 unrotated_matrix = math::rotate(matrix, -angle);
+
+  switch (m_parent_ptr.type()) {
+    case ParentData::Type::Path:
+      return rrect(m_parent_ptr.path_ptr()->path.bounding_rect(unrotated_matrix), angle);
+    case ParentData::Type::Text:
+      return rrect(unrotated_matrix * m_parent_ptr.text_ptr()->bounding_rect(), angle);
+    case ParentData::Type::Image:
+      return rrect(unrotated_matrix * m_parent_ptr.image_ptr()->bounding_rect(), angle);
+    case ParentData::Type::Group:
+      return rrect(unrotated_matrix *
+                       m_parent_ptr.group_ptr()->bounding_rect(this->m_entity->scene()),
+                   angle);
+    default:
+      return math::translation(matrix);
   }
 }
 

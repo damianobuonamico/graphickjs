@@ -3,6 +3,7 @@
  * @brief This file contains the implementation of the Selection class.
  *
  * @todo optimize selection parsing and rendering
+ * @todo optimize identity matrix checks
  */
 
 #include "selection.h"
@@ -24,10 +25,11 @@ rect Selection::bounding_rect() const
 
   rect selection_rect;
 
-  for (auto& [id, _] : m_selected) {
+  for (auto& [id, entry] : m_selected) {
     const Entity entity = m_scene->get_entity(id);
 
-    const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
+    const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect(
+        entry.hierarchy.transform());
 
     math::min(selection_rect.min, entity_rect.min, selection_rect.min);
     math::max(selection_rect.max, entity_rect.max, selection_rect.max);
@@ -45,11 +47,12 @@ rrect Selection::bounding_rrect() const
 
   selection_rrect.angle = std::numeric_limits<float>::infinity();
 
-  for (auto& [id, _] : m_selected) {
+  for (auto& [id, entry] : m_selected) {
     const Entity entity = m_scene->get_entity(id);
 
     if (rotated) {
-      const rrect entity_rrect = entity.get_component<TransformComponent>().bounding_rrect();
+      const rrect entity_rrect = entity.get_component<TransformComponent>().bounding_rrect(
+          entry.hierarchy.transform());
 
       if (selection_rrect.angle == std::numeric_limits<float>::infinity() ||
           math::is_almost_equal(selection_rrect.angle, entity_rrect.angle))
@@ -67,7 +70,8 @@ rrect Selection::bounding_rrect() const
         rotated = false;
       }
     } else {
-      const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect();
+      const rect entity_rect = entity.get_component<TransformComponent>().bounding_rect(
+          entry.hierarchy.transform());
 
       math::min(selection_rrect.min, entity_rect.min, selection_rrect.min);
       math::max(selection_rrect.max, entity_rect.max, selection_rrect.max);
@@ -118,7 +122,7 @@ void Selection::select(const uuid id)
   const Entity entity = m_scene->get_entity(id);
 
   if (entity.is_in_category(CategoryComponent::Category::Selectable)) {
-    m_selected[id] = SelectionEntry{};
+    m_selected[id] = SelectionEntry(m_scene->get_hierarchy(id, false));
   }
 }
 
@@ -137,7 +141,8 @@ void Selection::select_child(const uuid element_id, uint32_t child_index)
   auto it = m_selected.find(element_id);
 
   if (it == m_selected.end()) {
-    m_selected[element_id] = SelectionEntry{{child_index}};
+    m_selected[element_id] = SelectionEntry{{child_index},
+                                            m_scene->get_hierarchy(element_id, false)};
     return;
   }
 

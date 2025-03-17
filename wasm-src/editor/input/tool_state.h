@@ -146,6 +146,17 @@ class ToolState {
   void recalculate_active();
 
   /**
+   * @brief Forces the update of the tool state, including the manipulator.
+   *
+   * This function should mainly be called after performing actions through shortcuts.
+   */
+  inline void force_update()
+  {
+    recalculate_active();
+    manipulator.update();
+  }
+
+  /**
    * @brief Renders the overlays for the current tool.
    *
    * This function queues to the renderer the overlays for the current tool and the manipulator (if

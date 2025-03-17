@@ -60,7 +60,11 @@ void HoverState::set_hovered(
     return;
   }
 
-  const Entity entity = scene.get_entity(id);
+  const Hierarchy hierarchy = scene.get_hierarchy(id);
+  const uuid entity_id = deep_search || hierarchy.entries.empty() ? id :
+                                                                    hierarchy.entries.back().id;
+
+  const Entity entity = scene.get_entity(entity_id);
 
   if (!entity.is_element()) {
     m_type = HoverType::Entity;
@@ -74,12 +78,14 @@ void HoverState::set_hovered(
   }
 
   const PathComponent path = entity.get_component<PathComponent>();
-  const TransformComponent transform = entity.get_component<TransformComponent>();
+  const TransformComponent transform_component = entity.get_component<TransformComponent>();
+
+  const mat2x3 transform = hierarchy.transform() * transform_component.matrix();
 
   threshold = static_cast<float>(static_cast<double>(threshold) / zoom);
 
   const float point_threshold = threshold * 1.5f;
-  const bool deep = deep_search && scene.selection.has(id);
+  const bool deep = deep_search && scene.selection.has(entity_id);
 
   if (path.data().empty() && path.data().vacant()) {
     m_type = HoverType::None;

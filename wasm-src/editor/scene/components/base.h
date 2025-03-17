@@ -435,6 +435,14 @@ struct TransformComponent : public ComponentWrapper {
    */
   rect bounding_rect() const;
 
+   /**
+   * @brief Calculates the bounding rectangle of the entity.
+   *
+   * @param parent_transform The transformation matrix of the parent entity.
+   * @return The bounding rectangle of the entity.
+   */
+  rect bounding_rect(const mat2x3& parent_transform) const;
+
   /**
    * @brief Calculates the rotated bounding rectangle of the entity.
    *
@@ -443,6 +451,16 @@ struct TransformComponent : public ComponentWrapper {
    * @return The bounding rectangle of the entity.
    */
   rrect bounding_rrect() const;
+
+  /**
+   * @brief Calculates the rotated bounding rectangle of the entity.
+   *
+   * The rotated bounding rectangle follows the rotation of
+   *
+   * @param parent_transform The transformation matrix of the parent entity.
+   * @return The bounding rectangle of the entity.
+   */
+  rrect bounding_rrect(const mat2x3& parent_transform) const;
 
   /**
    * @brief Calculates the approximate bounding rectangle of the entity.

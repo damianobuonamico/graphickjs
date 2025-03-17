@@ -341,6 +341,9 @@ bool InputManager::on_key_down(KeyboardKey key)
     scene.group_selected();
   }
 
+  // TODO: call when successfully performed
+  scene.tool_state.force_update();
+
   return false;
 }
 
