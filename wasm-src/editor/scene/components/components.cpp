@@ -102,9 +102,11 @@ rect TransformComponent::bounding_rect() const
   }
 }
 
-rect TransformComponent::bounding_rect(const mat2x3& parent_transform) const
+rect TransformComponent::bounding_rect(const mat2x3& parent_transform,
+                                       const bool is_complete_transform) const
 {
-  const mat2x3 matrix = parent_transform * m_data->matrix;
+  const mat2x3 matrix = is_complete_transform ? parent_transform :
+                                                parent_transform * m_data->matrix;
 
   switch (m_parent_ptr.type()) {
     case ParentData::Type::Path:
@@ -152,7 +154,7 @@ rrect TransformComponent::bounding_rrect(const mat2x3& parent_transform) const
   const float angle = math::rotation(matrix);
 
   if (math::is_almost_zero(angle)) {
-    return bounding_rect();
+    return bounding_rect(matrix, true);
   }
 
   const mat2x3 unrotated_matrix = math::rotate(matrix, -angle);

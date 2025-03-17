@@ -389,7 +389,7 @@ void Scene::delete_entity(uuid id)
 }
 
 struct EntityAtOptions {
-  Hierarchy& const hierarchy;
+  Hierarchy& hierarchy;
 
   vec2 position = vec2::zero();
   bool deep_search = false;
@@ -400,7 +400,7 @@ struct EntityAtOptions {
   const Cache* cache = nullptr;
   const Scene* scene = nullptr;
 
-  EntityAtOptions(Hierarchy& const hierarchy) : hierarchy(hierarchy) {}
+  EntityAtOptions(Hierarchy& hierarchy) : hierarchy(hierarchy) {}
 };
 
 static bool is_entity_at(const Entity entity, const EntityAtOptions& options)
@@ -551,14 +551,14 @@ Entity Scene::duplicate_entity(const uuid id)
 }
 
 struct EntitiesInOptions {
-  Hierarchy& const hierarchy;
+  Hierarchy& hierarchy;
 
   math::rect rect = math::rect();
   bool deep_search = false;
 
   std::vector<uint32_t>& vertices;
 
-  EntitiesInOptions(Hierarchy& const hierarchy, std::vector<uint32_t>& vertices)
+  EntitiesInOptions(Hierarchy& hierarchy, std::vector<uint32_t>& vertices)
       : hierarchy(hierarchy), vertices(vertices)
   {
   }

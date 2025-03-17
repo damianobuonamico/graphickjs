@@ -42,6 +42,21 @@ class Scene {
     bool callback_on_groups = false;
     bool layers_in_hierarchy = false;
     bool break_and_return = false;
+
+    ForEachOptions() noexcept {}
+
+    ForEachOptions(const bool reverse,
+                   const bool callback_on_layers,
+                   const bool callback_on_groups,
+                   const bool layers_in_hierarchy,
+                   const bool break_and_return) noexcept
+        : reverse(reverse),
+          callback_on_layers(callback_on_layers),
+          callback_on_groups(callback_on_groups),
+          layers_in_hierarchy(layers_in_hierarchy),
+          break_and_return(break_and_return)
+    {
+    }
   };
 
  public:

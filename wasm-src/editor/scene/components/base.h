@@ -435,13 +435,15 @@ struct TransformComponent : public ComponentWrapper {
    */
   rect bounding_rect() const;
 
-   /**
+  /**
    * @brief Calculates the bounding rectangle of the entity.
    *
    * @param parent_transform The transformation matrix of the parent entity.
+   * @param is_complete_transform If the parent transformation matrix has already been applied.
    * @return The bounding rectangle of the entity.
    */
-  rect bounding_rect(const mat2x3& parent_transform) const;
+  rect bounding_rect(const mat2x3& parent_transform,
+                     const bool is_complete_transform = false) const;
 
   /**
    * @brief Calculates the rotated bounding rectangle of the entity.
