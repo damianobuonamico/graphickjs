@@ -1,16 +1,30 @@
+# Graphick
+
+[Graphick](http://graphickjs.vercel.app) is a demo graphic design software written in C++ for the web using WebAssembly. The UI is written in JS using SolidJS.
+
+## Features
+
+Some of the features already built are:
+
+- Fast custom vector renderer (fills, strokes, images).
+- Full history system.
+- Basic editor tools.
+- Zooming and panning infinite canvas.
+- WASM to SolidJS UI synchronization.
+- Basic SVG loading.
+- Math and geometry utilities.
+
+Some other features are buried deep into secondary branches:
+
+- Freehand writing
+- Text support
+- Animation support
+
 ## Usage
-
-Those templates dependencies are maintained via [pnpm](https://pnpm.io) via `pnpm up -Lri`.
-
-This is the reason you see a `pnpm-lock.yaml`. That being said, any package manager will work. This file can be safely be removed once you clone a template.
 
 ```bash
 $ npm install # or pnpm install or yarn install
 ```
-
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
-
-## Available Scripts
 
 In the project directory, you can run:
 
@@ -24,11 +38,13 @@ The page will reload if you make edits.<br>
 ### `npm run build`
 
 Builds the app for production to the `dist` folder.<br>
-It correctly bundles Solid in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+## Development
 
-## Deployment
+Run wasm-src/debug/setup.bat script to set up a development Visual Studio solution.
 
-You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+To compile WASM binaries run wasm-src/compile.py (make sure to have emscripten installed).
+
+## Contributing
+
+The project was built in my free time and it is not under current development. If someone is interested in evolving this project into opensource or something, just open a GitHub issue or discussion.
