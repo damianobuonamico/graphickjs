@@ -1,3 +1,8 @@
+/**
+ * @file select_tool.cpp
+ * @brief Contains the implementation of the SelectTool class.
+ */
+
 #include "select_tool.h"
 
 #include "../input_manager.h"
@@ -9,100 +14,105 @@
 
 #include "../../../utils/console.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
-  SelectTool::SelectTool() : Tool(ToolType::Select, CategoryNone) {}
+SelectTool::SelectTool() : Tool(ToolType::Select, CategoryNone) {}
 
-  void SelectTool::on_pointer_down() {
-    m_is_element_added_to_selection = false;
-    m_dragging_occurred = false;
-    m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity()->id() : uuid{ 0 };
+void SelectTool::on_pointer_down()
+{
+  m_is_entity_added_to_selection = false;
+  m_dragging_occurred = false;
+  m_entity = InputManager::hover.entity().has_value() ? InputManager::hover.entity()->id() :
+                                                        uuid::null;
 
-    if (!InputManager::keys.shift && (m_entity == uuid{ 0 } || !Editor::scene().selection.has(m_entity))) {
-      Editor::scene().selection.clear();
-    }
+  Scene& scene = Editor::scene();
 
-    if (m_entity != uuid{ 0 }) {
-      if (!Editor::scene().selection.has(m_entity)) {
-        Editor::scene().selection.select(m_entity);
-        m_is_element_added_to_selection = true;
-      }
-
-      if (InputManager::keys.alt) {
-        // std::vector<Entity*> entities = Editor::scene().selection.entities();
-        // Editor::scene().selection.clear();
-
-        // TODO: Duplication
-        // for (Entity* entity : entities) {
-        //   Entity* duplicate = Editor::scene().duplicate(entity);
-        //   if (duplicate) Editor::scene().selection.select(duplicate);
-        // }
-      }
-    } else {
-      m_selection_rect.set(InputManager::pointer.scene.position);
-    }
+  if (!InputManager::keys.shift && (m_entity == uuid::null || !scene.selection.has(m_entity))) {
+    scene.selection.clear();
   }
 
-  void SelectTool::on_pointer_move() {
-    if ((m_entity != uuid{ 0 } && Editor::scene().selection.has(m_entity)) || InputManager::keys.alt) {
-      if (!Editor::scene().selection.empty()) {
-        vec2 delta = InputManager::pointer.scene.delta;
-        // TODO: Snapping
+  if (m_entity != uuid::null) {
+    if (!scene.selection.has(m_entity)) {
+      scene.selection.select(m_entity);
+      m_is_entity_added_to_selection = true;
+    }
 
-        m_dragging_occurred = true;
-        for (auto& [id, _] : Editor::scene().selection.selected()) {
-          Entity entity = Editor::scene().get_entity(id);
-          // TODO: all entities should have transform component
-          if (!entity.has_component<TransformComponent>()) continue;
+    if (InputManager::keys.alt) {
+      std::vector<uuid> duplicated;
 
-          entity.get_component<TransformComponent>().translate(delta);
-          // entity.get_component<TransformComponent>().position.set_delta(delta);
-        }
-        //     for (auto& [id, entity] : Editor::scene().selection) {
-        //       entity->transform()->translate(delta - entity->transform()->position().delta());
+      for (const auto& [id, _] : scene.selection.selected()) {
+        duplicated.push_back(scene.duplicate_entity(id).id());
       }
-    } else if (m_selection_rect.active()) {
-      OPTICK_EVENT();
 
-      m_selection_rect.size(InputManager::pointer.scene.delta);
-      Editor::scene().selection.temp_select(Editor::scene().entities_in(m_selection_rect.bounding_rect()));
+      scene.selection.clear();
+
+      for (uuid id : duplicated) {
+        scene.selection.select(id);
+      }
     }
+  } else {
+    m_selection_rect.set(InputManager::pointer.scene.position);
   }
+}
 
-  void SelectTool::on_pointer_up() {
-    // TODO: abort
-    Editor::scene().selection.sync();
+void SelectTool::on_pointer_move()
+{
+  m_dragging_occurred = true;
 
-    if (m_selection_rect.active()) {
-      m_selection_rect.reset();
-    }
+  if ((m_entity != uuid::null && Editor::scene().selection.has(m_entity)) ||
+      InputManager::keys.alt)
+  {
+    if (!Editor::scene().selection.empty()) {
+      const vec2 movement = InputManager::pointer.scene.movement;
 
-    if (m_dragging_occurred && !Editor::scene().selection.empty()) {
       for (auto& [id, _] : Editor::scene().selection.selected()) {
         Entity entity = Editor::scene().get_entity(id);
-        if (!entity.has_component<TransformComponent>()) continue;
 
-        entity.get_component<TransformComponent>().apply();
-      }
-      // for (auto& [id, entity] : Editor::scene().selection) {
-      //   entity->transform()->position().apply();
-      // }
-    } else if (m_entity != uuid{ 0 } && Editor::scene().selection.has(m_entity) && !m_is_element_added_to_selection) {
-      if (InputManager::keys.shift) {
-        Editor::scene().selection.deselect(m_entity);
-      } else {
-        if (InputManager::pointer.button == InputManager::PointerButton::Left) {
-          Editor::scene().selection.clear();
-        }
-        Editor::scene().selection.select(m_entity);
+        entity.get_component<TransformComponent>().translate(movement);
       }
     }
+  } else if (m_selection_rect.active()) {
+    m_selection_rect.size(InputManager::pointer.scene.delta);
+    Editor::scene().selection.temp_select(
+        Editor::scene().entities_in(m_selection_rect.bounding_rect()));
   }
-
-  void SelectTool::render_overlays() const {
-    if (!m_selection_rect.active()) return;
-
-    Renderer::Renderer::draw_outline(m_selection_rect.path(), m_selection_rect.transform());
-  }
-
 }
+
+void SelectTool::on_pointer_up()
+{
+  Editor::scene().selection.sync();
+
+  if (m_selection_rect.active()) {
+    m_selection_rect.reset();
+  }
+
+  if (m_dragging_occurred) {
+    return;
+  }
+
+  if (m_entity != uuid::null && Editor::scene().selection.has(m_entity) &&
+      !m_is_entity_added_to_selection)
+  {
+    if (InputManager::keys.shift) {
+      Editor::scene().selection.deselect(m_entity);
+    } else {
+      if (InputManager::pointer.button == InputManager::PointerButton::Left) {
+        Editor::scene().selection.clear();
+      }
+      Editor::scene().selection.select(m_entity);
+    }
+  }
+}
+
+void SelectTool::render_overlays(const vec4& color) const
+{
+  if (!m_selection_rect.active())
+    return;
+
+  renderer::Renderer::ui_rect(m_selection_rect.bounding_rect(),
+                              Settings::Renderer::ui_primary_transparent);
+  renderer::Renderer::ui_outline(
+      m_selection_rect.path(), Settings::Renderer::ui_primary_color, m_selection_rect.transform());
+}
+
+}  // namespace graphick::editor::input

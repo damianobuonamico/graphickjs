@@ -1,165 +1,162 @@
+/**
+ * @file renderer/gpu/shaders.h
+ * @brief Contains the GPU shaders and vertex arrays definitions.
+ */
+
 #pragma once
 
-#include "device.h"
+#include "../../utils/defines.h"
 
-namespace Graphick::Renderer::GPU {
+#include "render_state.h"
 
-  struct DefaultProgram {
-    Program program;
-    Uniform view_projection_uniform;
-    Uniform color_uniform;
-    TextureParameter texture;
+#include <memory>
 
-    DefaultProgram();
-  };
+namespace graphick::renderer::GPU {
 
-  struct OpaqueTileProgram {
-    Program program;
-    Uniform offset_uniform;
-    Uniform framebuffer_size_uniform;
-    Uniform tile_size_uniform;
+/**
+ * @brief The tile shader program.
+ */
+struct TileProgram {
+  Program program;                        // The shader program.
 
-    OpaqueTileProgram();
-  };
+  Uniform vp_uniform;                     // The view projection uniform.
+  Uniform samples_uniform;                // The antialiasing samples uniform.
 
-  struct MaskedTileProgram {
-    Program program;
-    Uniform offset_uniform;
-    Uniform framebuffer_size_uniform;
-    Uniform tile_size_uniform;
-    Uniform masks_texture_size_uniform;
-    Uniform cover_table_texture_size_uniform;
-    TextureParameter masks_texture;
-    TextureParameter cover_table_texture;
+  TextureUniform curves_texture_uniform;  // The curves texture uniform (sampler2D), separate from
+                                          // the non float array.
+  TexturesUniform textures_uniform;       // The texture uniforms:
+                                          //  - [0] is the gradient texture
+                                          //  - [1...] are the image textures (or tiles textures).
 
-    MaskedTileProgram();
-  };
+  TileProgram();
+};
 
-  struct LineProgram {
-    Program program;
-    Uniform view_projection_uniform;
-    Uniform color_uniform;
-    Uniform line_width_uniform;
-    Uniform zoom_uniform;
+/**
+ * @brief Fill shader program.
+ */
+struct FillProgram {
+  Program program;                   // The shader program.
+  Uniform vp_uniform;                // The view projection uniform.
 
-    LineProgram();
-  };
+  TexturesUniform textures_uniform;  // The texture uniforms:
+                                     //  - [0] is the gradient texture
+                                     //  - [1...] are the image textures (or tiles textures).
 
-  struct SquareProgram {
-    Program program;
-    Uniform view_projection_uniform;
-    Uniform color_uniform;
-    Uniform size_uniform;
+  FillProgram();
+};
 
-    SquareProgram();
-  };
+/**
+ * @brief Primitive shader program.
+ */
+struct PrimitiveProgram {
+  Program program;       // The shader program.
+  Uniform vp_uniform;    // The view projection uniform.
+  Uniform zoom_uniform;  // The zoom uniform.
 
-  struct CircleProgram {
-    Program program;
-    Uniform view_projection_uniform;
-    Uniform color_uniform;
-    Uniform radius_uniform;
-    Uniform zoom_uniform;
+  PrimitiveProgram();
+};
 
-    CircleProgram();
-  };
+#ifdef GK_DEBUG
 
-  struct GPUPathProgram {
-    Program program;
-    Uniform view_projection_uniform;
-    Uniform color_uniform;
-    Uniform paths_texture_size_uniform;
-    TextureParameter paths_texture;
+/**
+ * @brief Debug rect shader program.
+ */
+struct DebugRectProgram {
+  Program program;         // The shader program.
+  Uniform vp_uniform;      // The view projection uniform.
+  TextureUniform texture;  // The image texture.
 
-    GPUPathProgram();
-  };
+  DebugRectProgram();
+};
 
-  struct Programs {
-    DefaultProgram default_program;
-    OpaqueTileProgram opaque_tile_program;
-    MaskedTileProgram masked_tile_program;
-    LineProgram line_program;
-    SquareProgram square_program;
-    CircleProgram circle_program;
-    GPUPathProgram gpu_path_program;
+#endif
 
-    Programs();
-  };
+/**
+ * @brief Groups all of the available shaders together.
+ */
+struct Programs {
+  TileProgram tile_program;             // The tile shader program.
+  FillProgram fill_program;             // The fill shader program.
+  PrimitiveProgram primitive_program;   // The primitive shader program.
 
-  struct DefaultVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;
+#ifdef GK_DEBUG
+  DebugRectProgram debug_rect_program;  // The debug rect shader program.
+#endif
+};
 
-    DefaultVertexArray(
-      const DefaultProgram& default_program,
-      const Buffer& vertex_buffer
-    );
-  };
+/**
+ * @brief Vertex array to use with TileProgram.
+ */
+struct TileVertexArray {
+  VertexArray vertex_array;  // The vertex array.
 
-  struct OpaqueTileVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;
+  TileVertexArray(const TileProgram& program,
+                  const Buffer& vertex_buffer,
+                  const Buffer& index_buffer);
+};
 
-    OpaqueTileVertexArray(
-      const OpaqueTileProgram& opaque_tile_program,
-      const Buffer& vertex_buffer,
-      const Buffer& quad_vertex_positions_buffer,
-      const Buffer& quad_vertex_indices_buffer
-    );
-  };
+struct FillVertexArray {
+  VertexArray vertex_array;  // The vertex array.
 
-  struct MaskedTileVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;
+  FillVertexArray(const FillProgram& program,
+                  const Buffer& vertex_buffer,
+                  const Buffer& index_buffer);
+};
 
-    MaskedTileVertexArray(
-      const MaskedTileProgram& masked_tile_program,
-      const Buffer& vertex_buffer,
-      const Buffer& quad_vertex_positions_buffer,
-      const Buffer& quad_vertex_indices_buffer
-    );
-  };
+/**
+ * @brief Vertex array to use with PrimitiveProgram.
+ */
+struct PrimitiveVertexArray {
+  VertexArray vertex_array;  // The vertex array.
 
+  PrimitiveVertexArray(const PrimitiveProgram& program,
+                       const Buffer& instance_buffer,
+                       const Buffer& vertex_buffer);
+};
 
-  struct LineVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;
+#ifdef GK_DEBUG
 
-    LineVertexArray(
-      const LineProgram& line_program,
-      const Buffer& instance_buffer,
-      const Buffer& vertex_positions_buffer,
-      const Buffer& vertex_indices_buffer
-    );
-  };
+/**
+ * @brief Vertex array to use with DebugRectProgram.
+ */
+struct DebugRectVertexArray {
+  VertexArray vertex_array;  // The vertex array.
 
-  struct SquareVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;
+  DebugRectVertexArray(const DebugRectProgram& program, const Buffer& vertex_buffer);
+};
 
-    SquareVertexArray(
-      const SquareProgram& square_program,
-      const Buffer& instance_buffer,
-      const Buffer& vertex_positions_buffer,
-      const Buffer& vertex_indices_buffer
-    );
-  };
+#endif
 
-  struct CircleVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;
+/**
+ * @brief Groups all of the available vertex arrays together.
+ */
+struct VertexArrays {
+  std::unique_ptr<TileVertexArray> tile_vertex_array;             // The tile shader vertex array.
+  std::unique_ptr<FillVertexArray> fill_vertex_array;             // The fill shader vertex array.
+  std::unique_ptr<PrimitiveVertexArray> primitive_vertex_array;   // The primitive vertex array.
 
-    CircleVertexArray(
-      const CircleProgram& circle_program,
-      const Buffer& instance_buffer,
-      const Buffer& vertex_positions_buffer,
-      const Buffer& vertex_indices_buffer
-    );
-  };
+#ifdef GK_DEBUG
+  std::unique_ptr<DebugRectVertexArray> debug_rect_vertex_array;  // The debug rects.
+#endif
 
-  struct GPUPathVertexArray {
-    std::shared_ptr<VertexArray> vertex_array;
+  VertexArrays() = default;
 
-    GPUPathVertexArray(
-      const GPUPathProgram& gpu_path_program,
-      const Buffer& instance_buffer,
-      const Buffer& quad_vertex_positions_buffer,
-      const Buffer& quad_vertex_indices_buffer
-    );
-  };
+  VertexArrays(
+#ifdef GK_DEBUG
+      std::unique_ptr<DebugRectVertexArray> debug_rect_vertex_array,
+#endif
+      std::unique_ptr<PrimitiveVertexArray> primitive_vertex_array,
+      std::unique_ptr<TileVertexArray> tile_vertex_array,
+      std::unique_ptr<FillVertexArray> fill_vertex_array)
+      :
+#ifdef GK_DEBUG
+        debug_rect_vertex_array(std::move(debug_rect_vertex_array)),
+#endif
+        primitive_vertex_array(std::move(primitive_vertex_array)),
+        tile_vertex_array(std::move(tile_vertex_array)),
+        fill_vertex_array(std::move(fill_vertex_array))
+  {
+  }
+};
 
-}
+}  // namespace graphick::renderer::GPU

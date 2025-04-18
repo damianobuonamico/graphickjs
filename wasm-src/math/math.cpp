@@ -1,635 +1,294 @@
 /**
- * @file math.cpp
+ * @file math/math.cpp
  * @brief Contains the implementation of math functions used by the Graphick editor.
  *
  * @todo try inlining lerps in split_bezier()
+ * @todo ask if roots with multiplicity > 1 should be considered as separate roots
  */
 
 #include "math.h"
 
-#include "dvec2.h"
-
 #include <algorithm>
 
-namespace Graphick::Math {
+namespace graphick::math {
 
-  /**
-   * @brief Calculates the x-coordinate of the intersection point between two lines defined by their endpoints.
-   *
-   * If one of the lines is horizontal, use the x_intersect_horizontal() function.
-   *
-   * @param x1, y1, x2, y2 The coordinates of the first line.
-   * @param x3, y3, x4, y4 The coordinates of the second line.
-   * @return The x-coordinate of the intersection point.
-   */
-  static inline float x_intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
-    float num = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
-    float den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+QuadraticSolutions<double> solve_quadratic(const double a, const double b, const double c)
+{
+  const double sc = c / a;
+  const double sb = b / a;
 
-    return num / den;
-  }
-
-  /**
-   * @brief Calculates the y-coordinate of the intersection point between two lines defined by their endpoints.
-   *
-   * If one of the lines is vertical, use the y_intersect_vertical() function.
-   *
-   * @param x1, y1, x2, y2 The coordinates of the first line.
-   * @param x3, y3, x4, y4 The coordinates of the second line.
-   * @return The y-coordinate of the intersection point.
-   */
-  static inline float y_intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
-    float num = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
-    float den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-
-    return num / den;
-  }
-
-  /**
-   * @brief Calculates the x-coordinate of the intersection point between two lines.
-   *
-   * If the first line is not horizontal, use the x_intersect() function.
-   *
-   * @param y The y-coordinate of the horizontal line
-   * @param x1, y1, x2, y2 The coordinates of the second line.
-   * @return The x-coordinate of the intersection point.
-   */
-  static inline float x_intersect_horizontal(float y, float x1, float y1, float x2, float y2) {
-    float num = x1 * y2 - y1 * x2 - y * (x1 - x2);
-    float den = y2 - y1;
-
-    return num / den;
-  }
-  static inline f24x8 x_intersect_horizontal(f24x8 y, f24x8 x1, f24x8 y1, f24x8 x2, f24x8 y2) {
-    int64_t num = static_cast<int64_t>(x1) * y2 - static_cast<int64_t>(y1) * x2 - static_cast<int64_t>(y) * (x1 - x2);
-    int64_t den = y2 - y1;
-
-    return static_cast<f24x8>(num / den);
-  }
-
-  /**
-   * @brief Calculates the y-coordinate of the intersection point between two lines.
-   *
-   * If the first line is not vertical, use the y_intersect() function.
-   *
-   * @param x The x-coordinate of the vertical line
-   * @param x1, y1, x2, y2 The coordinates of the second line.
-   * @return The y-coordinate of the intersection point.
-   */
-  static inline float y_intersect_vertical(float x, float x1, float y1, float x2, float y2) {
-    float num = x1 * y2 - y1 * x2 + x * (y1 - y2);
-    float den = x1 - x2;
-
-    return num / den;
-  }
-  static inline f24x8 y_intersect_vertical(f24x8 x, f24x8 x1, f24x8 y1, f24x8 x2, f24x8 y2) {
-    int64_t num = static_cast<int64_t>(x1) * y2 - static_cast<int64_t>(y1) * x2 + static_cast<int64_t>(x) * (y1 - y2);
-    int64_t den = x1 - x2;
-
-    return static_cast<f24x8>(num / den);
-  }
-
-  QuadraticSolutions solve_quadratic(double a, double b, double c) {
-    if (Math::is_almost_zero(a)) {
-      /* It is a linear equation */
-
-      return { solve_linear(b, c) };
-    }
-
-    double discriminant = b * b - 4.0 * a * c;
-
-    if (Math::is_almost_zero(discriminant)) {
-      /* One real root. */
-
-      double root = -b / (2.0 * a);
-
-      // TODO: ask if roots with multiplicity > 1 should be considered as separate roots
-      return { root, root };
-    } else if (discriminant < 0.0) {
-      /* No real roots. */
-
-      return {};
-    }
-
-    /* Two real roots. */
-
-    double q = std::sqrt(discriminant);
-    double a2 = 2.0 * a;
-
-    return { (q - b) / a2, (-b - q) / a2 };
-  }
-
-  CubicSolutions solve_cubic(double a, double b, double c, double d) {
-    if (Math::is_almost_zero(a)) {
-      /* It is a quadratic equation */
-
-      return solve_quadratic(b, c, d);
-    }
-
-    if (Math::is_almost_zero(d)) {
-      /* One root is 0. */
-
-      CubicSolutions solutions = solve_quadratic(a, b, c);
-      solutions.count++;
-
-      return solutions;
-    }
-
-    /* Calculate coefficients of the depressed cubic equation: y^3 + py + q = 0 */
-    double p = (3 * a * c - b * b) / (3 * a * a);
-    double q = (2 * b * b * b - 9 * a * b * c + 27 * a * a * d) / (27 * a * a * a);
-
-    /* Calculate discriminant */
-    double discriminant = (q * q) / 4 + (p * p * p) / 27;
-
-    if (Math::is_almost_zero(discriminant)) {
-      double u = std::cbrt(-q / 2);
-      /* Three real roots, two of them are equal */
-      double realRoot1 = 2 * u - b / (3 * a);
-      double realRoot2 = -u - b / (3 * a);
-
-      // TODO: ask if roots with multiplicity > 1 should be considered as different roots
-      return { realRoot1, realRoot2, realRoot2 };
-    } else if (discriminant > 0) {
-      double u = std::cbrt(-q / 2 + std::sqrt(discriminant));
-
-      /* One real root and two complex roots */
-      double v = std::cbrt(-q / 2 - std::sqrt(discriminant));
-      double realRoot = u + v - b / (3 * a);
-
-      return { realRoot };
-    } else {
-      double phi = std::acos(-q / 2 * std::sqrt(-27 / (p * p * p)));
-      double b1 = -b / (3.0 * a);
-      double xi = 2.0 * std::sqrt(-p / 3);
-
-      /* Three distinct real roots */
-      double root1 = xi * std::cos(phi / 3) + b1;
-      double root2 = xi * std::cos((phi + 2 * MATH_PI) / 3) + b1;
-      double root3 = xi * std::cos((phi + 4 * MATH_PI) / 3) + b1;
-
-      return { root1, root2, root3 };
-    }
-  }
-
-  rect rrect_to_rect(const rrect& r) {
-    vec2 center = r.center();
-
-    float sin = std::sinf(r.angle);
-    float cos = std::cosf(r.angle);
-
-    vec2 r1 = rotate(r.min, center, sin, cos);
-    vec2 r2 = rotate({ r.min.x, r.max.y }, center, sin, cos);
-    vec2 r3 = rotate(r.max, center, sin, cos);
-    vec2 r4 = rotate({ r.max.x, r.min.y }, center, sin, cos);
-
-    return {
-      min(min(r1, r2), min(r3, r4)),
-      max(max(r1, r2), max(r3, r4))
-    };
-  }
-
-  std::optional<float> line_line_intersection(const rect& a, const rect& b) {
-    float den = b.max.x - b.min.x;
-
-    if (is_almost_zero(den)) {
-      float t = (b.min.x - a.min.x) / (a.max.x - a.min.x);
-      if (t >= 0.0f && t <= 1.0f) {
-        return { t };
-      }
-
-      return {};
-    }
-
-    float m = (b.max.y - b.min.y) / den;
-
-    float t = (m * b.min.x - b.min.y + a.min.y - m * a.min.x) / (m * (a.max.x - a.min.x) + a.min.y - a.max.y);
-    if (t >= 0.0f && t <= 1.0f) {
-      return t;
-    }
-
-    return std::nullopt;
-  }
-
-  std::optional<vec2> line_line_intersection_point(const rect& a, const rect& b) {
-    rect rect = { min(b.min, b.max), max(b.min, b.max) };
-    float den = b.max.x - b.min.x;
-
-    if (is_almost_zero(den)) {
-      float t = (b.min.x - a.min.x) / (a.max.x - a.min.x);
-
-      if (t >= 0.0f && t <= 1.0f) {
-        return lerp(a.min, a.max, t);
-      }
-
-      return std::nullopt;
-    }
-
-    float m = (b.max.y - b.min.y) / den;
-    float t = (m * b.min.x - b.min.y + a.min.y - m * a.min.x) / (m * (a.max.x - a.min.x) + a.min.y - a.max.y);
-
-    if (t >= 0.0f && t <= 1.0f) {
-      return lerp(a.min, a.max, t);
-    }
-
-    return std::nullopt;
-  }
-
-  std::vector<vec2> line_circle_intersection_points(const rect& line, const vec2 center, const float radius) {
-    vec2 ldir = line.max - line.min;
-    vec2 tvec = line.min - center;
-
-    const float a = squared_length(ldir);
-    const float b = 2.0f * dot(ldir, tvec);
-    const float c = squared_length(center) + squared_length(line.min) - (2.0f * dot(center, line.min)) - radius * radius;
-
-    const float i = b * b - 4.0f * a * c;
-
-    if ((i < 0.0f) || (a == 0.0f)) {
-      return {};
-    } else if (i == 0.0f) {
-      const float mu = -b / (2.0f * a);
-      return { ldir * mu + line.min };
-    } else if (i > 0.0f) {
-      const float i_sqrt = sqrt(i);
-
-      float mu1 = (-b + i_sqrt) / (2.0f * a);
-      float mu2 = (-b - i_sqrt) / (2.0f * a);
-
-      return { ldir * mu1 + line.min, ldir * mu2 + line.min };
+  if (!(std::isfinite(sc) && std::isfinite(sb))) {
+    const double root = -c / b;
+    if (std::isfinite(root)) {
+      return {root};
+    } else if (c == 0.0 && b == 0.0) {
+      return {0.0};
     } else {
       return {};
     }
   }
 
-  std::vector<vec2> line_rect_intersection_points(const vec2 p0, const vec2 p3, const rect& rect) {
-    std::vector<vec2> intersection_points;
-    std::vector<double> intersections;
+  const double det = sb * sb - 4.0 * sc;
+  double root1 = 0.0;
 
-    dvec2 dp0 = { p0.x, p0.y };
-    dvec2 dp3 = { p3.x, p3.y };
-
-    dvec2 a = dp3 - dp0;
-
-    double t1 = solve_linear(a.x, dp0.x - (double)rect.min.x);
-    double t2 = solve_linear(a.x, dp0.x - (double)rect.max.x);
-    double t3 = solve_linear(a.y, dp0.y - (double)rect.min.y);
-    double t4 = solve_linear(a.y, dp0.y - (double)rect.max.y);
-
-    if (t1 >= 0.0 && t1 <= 1.0) intersections.push_back(t1);
-    if (t2 >= 0.0 && t2 <= 1.0) intersections.push_back(t2);
-    if (t3 >= 0.0 && t3 <= 1.0) intersections.push_back(t3);
-    if (t4 >= 0.0 && t4 <= 1.0) intersections.push_back(t4);
-
-    if (intersections.empty()) return intersection_points;
-
-    std::sort(intersections.begin(), intersections.end());
-
-    for (double t : intersections) {
-      dvec2 p = dp0 + (dp3 - dp0) * t;
-
-      if (is_point_in_rect({ (float)p.x, (float)p.y }, rect, GK_POINT_EPSILON)) {
-        intersection_points.push_back({ (float)p.x, (float)p.y });
-      }
+  if (std::isfinite(det)) {
+    if (det < 0.0) {
+      return {};
+    } else if (det == 0) {
+      return {-0.5 * sb};
     }
-
-    return intersection_points;
+    root1 = -0.5 * (sb + std::copysign(std::sqrt(det), sb));
+  } else {
+    root1 = -sb;
   }
 
-  std::vector<float> bezier_rect_intersections(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const rect& rect) {
-    std::vector<float> intersections_t;
-    std::vector<double> intersections;
+  const double root2 = sc / root1;
 
-    dvec2 dp0 = { p0.x, p0.y };
-    dvec2 dp1 = { p1.x, p1.y };
-    dvec2 dp2 = { p2.x, p2.y };
-    dvec2 dp3 = { p3.x, p3.y };
-
-    dvec2 a = -dp0 + 3.0 * dp1 - 3.0 * dp2 + dp3;
-    dvec2 b = 3.0 * dp0 - 6.0 * dp1 + 3.0 * dp2;
-    dvec2 c = -3.0 * dp0 + 3.0 * dp1;
-
-    for (int j = 0; j < 2; j++) {
-      for (int k = 0; k < 2; k++) {
-        CubicSolutions roots = solve_cubic(a[k], b[k], c[k], dp0[k] - rect[j][k]);
-
-        for (uint8_t i = 0; i < roots.count; i++) {
-          double t = roots.solutions[i];
-
-          if (t >= 0.0 && t <= 1.0) intersections.push_back(t);
-        }
-      }
+  if (std::isfinite(root2)) {
+    if (root2 > root1) {
+      return {root1, root2};
+    } else {
+      return {root2, root1};
     }
-
-    if (intersections.empty()) return intersections_t;
-
-    std::sort(intersections.begin(), intersections.end());
-
-
-    for (double t : intersections) {
-      double t_sq = t * t;
-      dvec2 p = a * t_sq * t + b * t_sq + c * t + dp0;
-
-      if (is_point_in_rect({ (float)p.x, (float)p.y }, rect, GK_POINT_EPSILON)) {
-        intersections_t.push_back((float)t);
-      }
-    }
-
-    return intersections_t;
   }
 
-  void clip_to_left(std::vector<vec2>& points, float x) {
-    if (points.empty()) return;
-
-    std::vector<vec2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      vec2 point = points[i];
-
-      if (point.x < x) {
-        if (points[i + 1].x > x) {
-          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].x < x) {
-          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  void clip_to_left(std::vector<f24x8x2>& points, f24x8 x) {
-    if (points.empty()) return;
-
-    std::vector<f24x8x2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      f24x8x2 point = points[i];
-
-      if (point.x < x) {
-        if (points[i + 1].x > x) {
-          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].x < x) {
-          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  void clip_to_right(std::vector<vec2>& points, float x) {
-    if (points.empty()) return;
-
-    std::vector<vec2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      vec2 point = points[i];
-
-      if (point.x > x) {
-        if (points[i + 1].x < x) {
-          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].x > x) {
-          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  void clip_to_right(std::vector<f24x8x2>& points, f24x8 x) {
-    if (points.empty()) return;
-
-    std::vector<f24x8x2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      f24x8x2 point = points[i];
-
-      if (point.x > x) {
-        if (points[i + 1].x < x) {
-          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].x > x) {
-          new_points.push_back({ x, y_intersect_vertical(x, point.x, point.y, points[i + 1].x, points[i + 1].y) });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  void clip_to_top(std::vector<vec2>& points, float y) {
-    if (points.empty()) return;
-
-    std::vector<vec2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      vec2 point = points[i];
-
-      if (point.y < y) {
-        if (points[i + 1].y > y) {
-          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].y < y) {
-          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  void clip_to_top(std::vector<f24x8x2>& points, f24x8 y) {
-    if (points.empty()) return;
-
-    std::vector<f24x8x2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      f24x8x2 point = points[i];
-
-      if (point.y < y) {
-        if (points[i + 1].y > y) {
-          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].y < y) {
-          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  void clip_to_bottom(std::vector<vec2>& points, float y) {
-    if (points.empty()) return;
-
-    std::vector<vec2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      vec2 point = points[i];
-
-      if (point.y > y) {
-        if (points[i + 1].y < y) {
-          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].y > y) {
-          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  void clip_to_bottom(std::vector<f24x8x2>& points, f24x8 y) {
-    if (points.empty()) return;
-
-    std::vector<f24x8x2> new_points;
-
-    for (int i = 0; i < points.size() - 1; i++) {
-      f24x8x2 point = points[i];
-
-      if (point.y > y) {
-        if (points[i + 1].y < y) {
-          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      } else {
-        new_points.push_back(point);
-
-        if (points[i + 1].y > y) {
-          new_points.push_back({ x_intersect_horizontal(y, point.x, point.y, points[i + 1].x, points[i + 1].y), y });
-        }
-      }
-    }
-
-    if (new_points.size() > 2 && new_points.front() != new_points.back()) {
-      new_points.push_back(new_points.front());
-    }
-
-    points = new_points;
-  }
-
-  vec2 circle_center(const vec2 a, const vec2 b, const vec2 c) {
-    float offset = squared_length(b);
-    float bc = 0.5f * (squared_length(a) - offset);
-    float cd = 0.5f * (offset - (squared_length(c)));
-    float det = (a.x - b.x) * (b.y - c.y) - (b.x - c.x) * (a.y - b.y);
-
-    if (std::fabsf(det) < GK_EPSILON) {
-      return { 0.0f, 0.0f };
-    }
-
-    float inverse_det = 1.0f / det;
-
-    return {
-      (bc * (b.y - c.y) - cd * (a.y - b.y)) * inverse_det,
-      (cd * (a.x - b.x) - bc * (b.x - c.x)) * inverse_det
-    };
-  }
-
-  bool clockwise(const std::vector<vec2>& points) {
-    float sum = (points[0].x - points[points.size() - 1].x) * (points[0].y + points[points.size() - 1].y);
-
-    for (size_t i = 0; i < points.size() - 1; i++) {
-      sum += (points[i + 1].x - points[i].x) * (points[i + 1].y + points[i].y);
-    }
-
-    return sum >= 0.0f;
-  }
-
-  std::tuple<vec2, vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t) {
-    vec2 p = bezier(p0, p1, p2, p3, t);
-
-    vec2 q0 = lerp(p0, p1, t);
-    vec2 q1 = lerp(p1, p2, t);
-    vec2 q2 = lerp(p2, p3, t);
-
-    vec2 r0 = lerp(q0, q1, t);
-    vec2 r1 = lerp(q1, q2, t);
-
-    return { p, q0, r0, r1, q2 };
-  }
-
-  std::tuple<vec2, vec2, vec2, vec2> split_bezier(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3, const float t1, const float t2) {
-    float a = t1;
-    float b = t2;
-
-    vec2 P000 = p0;
-    vec2 P001 = p1;
-    vec2 P011 = p2;
-    vec2 P111 = p3;
-
-    vec2 P00a = lerp(P000, P001, a);
-    vec2 P00b = lerp(P000, P001, b);
-    vec2 P01a = lerp(P001, P011, a);
-    vec2 P01b = lerp(P001, P011, b);
-    vec2 Pa11 = lerp(P011, P111, a);
-    vec2 Pb11 = lerp(P011, P111, b);
-
-    vec2 P0aa = lerp(P00a, P01a, a);
-    vec2 P0bb = lerp(P00b, P01b, b);
-    vec2 P1aa = lerp(P01a, Pa11, a);
-    vec2 P1bb = lerp(P01b, Pb11, b);
-
-    vec2 Paaa = lerp(P0aa, P1aa, a);
-    vec2 Paab = lerp(P0aa, P1aa, b);
-    vec2 Pabb = lerp(P0bb, P1bb, a);
-    vec2 Pbbb = lerp(P0bb, P1bb, b);
-
-    return { Paaa, Paab, Pabb, Pbbb };
-  }
-
+  return {root1};
 }
+
+QuadraticSolutions<double> solve_quadratic_normalized(const double a,
+                                                      const double b,
+                                                      const double c)
+{
+  const double sc = c / a;
+  const double sb = b / a;
+
+  if (!(std::isfinite(sc) && std::isfinite(sb))) {
+    const double root = -c / b;
+    if (std::isfinite(root) && is_normalized(root)) {
+      return {root};
+    } else if (c == 0.0 && b == 0.0) {
+      return {0.0};
+    } else {
+      return {};
+    }
+  }
+
+  const double det = sb * sb - 4.0 * sc;
+  double root1 = 0.0;
+
+  if (std::isfinite(det)) {
+    if (det < 0.0) {
+      return {};
+    } else if (det == 0) {
+      return {-0.5 * sb};
+    }
+    root1 = -0.5 * (sb + std::copysign(std::sqrt(det), sb));
+  } else {
+    root1 = -sb;
+  }
+
+  const double root2 = sc / root1;
+
+  const bool root1_norm = is_normalized(root1);
+  const bool root2_norm = is_normalized(root2);
+
+  if (std::isfinite(root2) && root2_norm) {
+    if (!root1_norm) {
+      return {root2};
+    }
+
+    if (root2 > root1) {
+      return {root1, root2};
+    } else {
+      return {root2, root1};
+    }
+  }
+
+  if (root1_norm) {
+    return {root1};
+  } else {
+    return {};
+  }
+}
+
+CubicSolutions<double> solve_cubic(const double a,
+                                   const double b,
+                                   const double c,
+                                   const double d,
+                                   const bool include_double_roots)
+{
+  // NOTE: if needed, there is a more stable imlpementation in kurbo
+
+  if (is_almost_zero(a)) {
+    /* It is a quadratic equation */
+
+    return solve_quadratic(b, c, d);
+  }
+
+  if (is_almost_zero(d)) {
+    /* One root is 0. */
+
+    CubicSolutions solutions = solve_quadratic(a, b, c);
+
+    if (!include_double_roots) {
+      if ((solutions.count == 0) || (solutions.count == 1 && solutions.solutions[0] != 0) ||
+          (solutions.count == 2 && solutions.solutions[0] != 0 && solutions.solutions[1] != 0))
+      {
+        solutions.count++;
+      }
+    } else {
+      solutions.count++;
+    }
+
+    return solutions;
+  }
+
+  /* Calculate coefficients of the depressed cubic equation: y^3 + py + q = 0 */
+  const double p = (3.0 * a * c - b * b) / (3.0 * a * a);
+  const double q = (2.0 * b * b * b - 9.0 * a * b * c + 27.0 * a * a * d) / (27.0 * a * a * a);
+
+  /* Calculate discriminant */
+  const double discriminant = (q * q) / 4.0 + (p * p * p) / 27.0;
+
+  if (is_almost_zero(discriminant)) {
+    const double u = std::cbrt(-q / 2.0);
+
+    /* Three real roots, two of them are equal */
+    const double real_root1 = 2.0 * u - b / (3.0 * a);
+    const double real_root2 = -u - b / (3.0 * a);
+
+    if (include_double_roots)
+      return {real_root1, real_root2, real_root2};
+
+    return {real_root1, real_root2};
+  } else if (discriminant > 0) {
+    const double u = std::cbrt(-q / 2.0 + std::sqrt(discriminant));
+
+    /* One real root and two complex roots */
+    const double v = std::cbrt(-q / 2.0 - std::sqrt(discriminant));
+    const double real_root = u + v - b / (3.0 * a);
+
+    return {real_root};
+  } else {
+    const double phi = std::acos(-q / 2.0 * std::sqrt(-27.0 / (p * p * p)));
+    const double b1 = -b / (3.0 * a);
+    const double xi = 2.0 * std::sqrt(-p / 3.0);
+
+    /* Three distinct real roots */
+    const double root1 = xi * std::cos(phi / 3.0) + b1;
+    const double root2 = xi * std::cos((phi + two_pi<double>) / 3.0) + b1;
+    const double root3 = xi * std::cos((phi + 2.0 * two_pi<double>) / 3.0) + b1;
+
+    return {root1, root2, root3};
+  }
+}
+
+CubicSolutions<double> solve_cubic_normalized(const double a,
+                                              const double b,
+                                              const double c,
+                                              const double d,
+                                              const bool include_double_roots)
+{
+  if (is_almost_zero(a)) {
+    /* It is a quadratic equation */
+
+    return solve_quadratic_normalized(b, c, d);
+  }
+
+  if (is_almost_zero(d)) {
+    /* One root is 0. */
+
+    CubicSolutions solutions = solve_quadratic_normalized(a, b, c);
+
+    if (!include_double_roots) {
+      if ((solutions.count == 0) || (solutions.count == 1 && solutions.solutions[0] != 0) ||
+          (solutions.count == 2 && solutions.solutions[0] != 0 && solutions.solutions[1] != 0))
+      {
+        solutions.count++;
+      }
+    } else {
+      solutions.count++;
+    }
+
+    return solutions;
+  }
+
+  /* Calculate coefficients of the depressed cubic equation: y^3 + py + q = 0 */
+  const double p = (3.0 * a * c - b * b) / (3.0 * a * a);
+  const double q = (2.0 * b * b * b - 9.0 * a * b * c + 27.0 * a * a * d) / (27.0 * a * a * a);
+
+  /* Calculate discriminant */
+  const double discriminant = (q * q) / 4.0 + (p * p * p) / 27.0;
+
+  if (is_almost_zero(discriminant)) {
+    const double u = std::cbrt(-q / 2.0);
+
+    /* Three real roots, two of them are equal */
+    const double real_root1 = 2.0 * u - b / (3.0 * a);
+    const double real_root2 = -u - b / (3.0 * a);
+
+    const bool real_root1_norm = math::is_normalized(real_root1);
+    const bool real_root2_norm = math::is_normalized(real_root2);
+
+    if (real_root1_norm && real_root2_norm) {
+      if (include_double_roots)
+        return {real_root1, real_root2, real_root2};
+      return {real_root1, real_root2};
+    } else if (real_root1_norm) {
+      return {real_root1};
+    } else if (real_root2_norm) {
+      return {real_root2, real_root2};
+    }
+
+    return {};
+  } else if (discriminant > 0) {
+    const double u = std::cbrt(-q / 2.0 + std::sqrt(discriminant));
+
+    /* One real root and two complex roots */
+    const double v = std::cbrt(-q / 2.0 - std::sqrt(discriminant));
+    const double real_root = u + v - b / (3.0 * a);
+
+    if (math::is_normalized(real_root))
+      return {real_root};
+
+    return {};
+  } else {
+    const double phi = std::acos(-q / 2.0 * std::sqrt(-27.0 / (p * p * p)));
+    const double b1 = -b / (3.0 * a);
+    const double xi = 2.0 * std::sqrt(-p / 3.0);
+
+    /* Three distinct real roots */
+    const double root1 = xi * std::cos(phi / 3.0) + b1;
+    const double root2 = xi * std::cos((phi + two_pi<double>) / 3.0) + b1;
+    const double root3 = xi * std::cos((phi + 2.0 * two_pi<double>) / 3.0) + b1;
+
+    const bool root1_norm = math::is_normalized(root1);
+    const bool root2_norm = math::is_normalized(root2);
+    const bool root3_norm = math::is_normalized(root3);
+
+    const uint8_t flag = (static_cast<uint8_t>(root1_norm)) |
+                         (static_cast<uint8_t>(root2_norm) << 1) |
+                         (static_cast<uint8_t>(root3_norm) << 2);
+
+    switch (flag) {
+      case 0b001:
+        return {root1};
+      case 0b010:
+        return {root2};
+      case 0b011:
+        return {root1, root2};
+      case 0b100:
+        return {root3};
+      case 0b101:
+        return {root1, root3};
+      case 0b110:
+        return {root2, root3};
+      case 0b111:
+        return {root1, root2, root3};
+      default:
+      case 0b000:
+        return {};
+    }
+  }
+}
+}  // namespace graphick::math

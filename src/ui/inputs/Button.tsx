@@ -4,7 +4,8 @@ import getIcon from '../icons';
 
 export type ButtonVariant =
   | 'button'
-  | 'select-button'
+  | 'small-button'
+  | 'toggle-button'
   | 'file-menu'
   | 'file-menu-icon'
   | 'menu'
@@ -27,12 +28,15 @@ const Button: Component<{
   rightIcon?: JSX.Element;
   disabled?: boolean;
   style?: JSX.CSSProperties;
+  class?: string;
 }> = (props) => {
   const variant = props.variant || 'button';
   const isIcon = variant.includes('icon');
   const isFile = variant.includes('file');
   const isMenu = variant.includes('menu');
   const isButton = variant.includes('button');
+  const isSmall = variant.includes('small') || variant.includes('toggle');
+
   let longPressTimer: number;
 
   const onMouseDown = (e: MouseEvent) => {
@@ -89,10 +93,18 @@ const Button: Component<{
           variant === 'tool'
         ],
         [
-          'aspect-square w-8 h-8 rounded flex items-center justify-center hover:bg-primary-600',
-          { 'text-primary': props.active && props.variant !== 'select-button' },
+          { 'h-8': !isSmall },
+          { 'h-6': isSmall },
+          'aspect-square rounded flex items-center justify-center hover:!bg-primary-600',
           isButton
-        ]
+        ],
+        [
+          'px-2 border',
+          { 'text-primary-300 border-transparent': !props.active },
+          { '!bg-primary-800 border-primary-600 hover:border-primary-500': props.active },
+          props.variant === 'toggle-button'
+        ],
+        props.class
       )}
     >
       <Show when={variant === 'menu' || props.leftIcon}>

@@ -1,93 +1,424 @@
 /**
  * @file math/rect.h
- * @brief This file contains the definition of the rect and rrect struct.
+ * @brief This file contains the Rect and RRect structs, templated 2D rects.
  */
 
 #pragma once
 
 #include "vec2.h"
+#include "vector.h"
 
-namespace Graphick::Math {
+#include <array>
+#include <initializer_list>
 
-  /**
-   * @brief A 2D rectangle struct with min and max components.
-   *
-   * @struct rect
-   */
-  struct rect {
-    vec2 min;   /* The minimum point of the rectangle. */
-    vec2 max;   /* The maximum point of the rectangle. */
+namespace graphick::math {
 
-    /* -- Component accesses -- */
+/**
+ * @brief A 2D rectangle struct with min and max components.
+ */
+template<typename T>
+struct Rect {
+  Vec2<T> min;  // The minimum point of the rectangle.
+  Vec2<T> max;  // The maximum point of the rectangle.
 
-    constexpr vec2& operator[](uint8_t i);
-    constexpr vec2 const& operator[](uint8_t i) const;
+  /* -- Component accesses -- */
 
-    /* -- Constructors -- */
+  constexpr Vec2<T>& operator[](uint8_t i)
+  {
+    switch (i) {
+      default:
+      case 0:
+        return min;
+      case 1:
+        return max;
+    }
+  }
 
-    rect() : min(std::numeric_limits<vec2>::max()), max(std::numeric_limits<vec2>::lowest()) {}
-    constexpr rect(const rect& r) = default;
-    constexpr rect(vec2 v);
-    constexpr rect(vec2 v1, vec2 v2);
+  constexpr Vec2<T> const& operator[](uint8_t i) const
+  {
+    switch (i) {
+      default:
+      case 0:
+        return min;
+      case 1:
+        return max;
+    }
+  }
 
-    /* -- Dimensions -- */
+  /* -- Constructors -- */
 
-    constexpr float width() const;
-    constexpr float height() const;
-    constexpr vec2 size() const;
-    constexpr vec2 center() const;
-    constexpr float area() const;
+  Rect() : min(std::numeric_limits<Vec2<T>>::max()), max(std::numeric_limits<Vec2<T>>::lowest()) {}
 
-    /* -- Unary arithmetic operators -- */
+  constexpr Rect(const Rect<T>& r) = default;
 
-    constexpr rect& operator+=(float scalar);
-    constexpr rect& operator+=(const vec2 v);
-    constexpr rect& operator-=(float scalar);
-    constexpr rect& operator-=(const vec2 v);
-    constexpr rect& operator*=(float scalar);
-    constexpr rect& operator*=(const vec2 v);
-    constexpr rect& operator/=(float scalar);
-    constexpr rect& operator/=(const vec2 v);
-  };
+  constexpr Rect(Vec2<T> v) : min(v), max(v) {}
 
-  /**
-   * @brief A 2D rotated rectangle struct with min and max components and an angle of rotation.
-   *
-   * @struct rrect
-   */
-  struct rrect : public rect {
-    float angle;    /* The angle of rotation of the rectangle. */
+  constexpr Rect(Vec2<T> v1, Vec2<T> v2) : min(v1), max(v2) {}
 
-    /* -- Constructors -- */
+  constexpr Rect(T a, T b, T c, T d) : min(a, b), max(c, d) {}
 
-    rrect() : rect(), angle(0.0f) {}
-    constexpr rrect(const rrect& r) : rect(r.min, r.max), angle(r.angle) {}
-    constexpr rrect(const rect& r, float t = 0.0f) : rect(r), angle(t) {}
-    constexpr rrect(vec2 v, float t = 0.0f) : rect(v), angle(t) {}
-    constexpr rrect(vec2 v1, vec2 v2, float t = 0.0f) : rect(v1, v2), angle(t) {}
-  };
+  template<typename U>
+  constexpr Rect(const Rect<U>& r) : min(r.min), max(r.max)
+  {
+  }
 
-  /* -- Binary operators -- */
+  /* -- Static constructors -- */
 
-  constexpr rect operator+(const rect& r1, const rect& r2);
-  constexpr rect operator+(const rect& r, float scalar);
-  constexpr rect operator+(const rect& r, const vec2 v);
-  constexpr rect operator-(const rect& r1, const rect& r2);
-  constexpr rect operator-(const rect& r, float scalar);
-  constexpr rect operator-(const rect& r, const vec2 v);
-  constexpr rect operator*(const rect& r, float scalar);
-  constexpr rect operator*(const rect& r, const vec2 v);
-  constexpr rect operator/(const rect& r, float scalar);
-  constexpr rect operator/(const rect& r, const vec2 v);
-  constexpr rect operator%(const rect& r, float scalar);
-  constexpr rect operator%(const rect& r, const vec2 v);
+  static constexpr Rect<T> zero()
+  {
+    return Rect<T>(Vec2<T>::zero(), Vec2<T>::zero());
+  }
 
+  static constexpr Rect<T> identity()
+  {
+    return Rect<T>(Vec2<T>::zero(), Vec2<T>::one());
+  }
+
+  static constexpr Rect<T> from_size(const Vec2<T> size)
+  {
+    return Rect<T>(Vec2<T>::zero(), size);
+  }
+
+  static constexpr Rect<T> from_center(const Vec2<T> center, const Vec2<T> size)
+  {
+    return Rect<T>(center - size / 2, center + size / 2);
+  }
+
+  static constexpr Rect<T> from_vectors(const Vec2<T> v1, const Vec2<T> v2)
+  {
+    return Rect<T>({v1.x < v2.x ? v1.x : v2.x, v1.y < v2.y ? v1.y : v2.y},
+                   {v1.x > v2.x ? v1.x : v2.x, v1.y > v2.y ? v1.y : v2.y});
+  }
+
+  static constexpr Rect<T> from_vectors(const std::initializer_list<Vec2<T>> vectors)
+  {
+    Vec2<T> min = std::numeric_limits<Vec2<T>>::max();
+    Vec2<T> max = std::numeric_limits<Vec2<T>>::lowest();
+
+    for (Vec2<T> v : vectors) {
+      min.x = min.x > v.x ? v.x : min.x;
+      min.y = min.y > v.y ? v.y : min.y;
+      max.x = max.x < v.x ? v.x : max.x;
+      max.y = max.y < v.y ? v.y : max.y;
+    }
+
+    return Rect<T>(min, max);
+  }
+
+  static constexpr Rect<T> from_vectors(const std::array<Vec2<T>, 4> vectors)
+  {
+    Vec2<T> min = std::numeric_limits<Vec2<T>>::max();
+    Vec2<T> max = std::numeric_limits<Vec2<T>>::lowest();
+
+    for (Vec2<T> v : vectors) {
+      min.x = min.x > v.x ? v.x : min.x;
+      min.y = min.y > v.y ? v.y : min.y;
+      max.x = max.x < v.x ? v.x : max.x;
+      max.y = max.y < v.y ? v.y : max.y;
+    }
+
+    return Rect<T>(min, max);
+  }
+
+  static constexpr Rect<T> from_rects(const Rect<T>& r1, const Rect<T>& r2)
+  {
+    Vec2<T> min = r1.min;
+    Vec2<T> max = r1.max;
+
+    for (uint8_t i = 0; i < 2; i++) {
+      min.x = min.x > r2[i].x ? r2[i].x : min.x;
+      min.y = min.y > r2[i].y ? r2[i].y : min.y;
+      max.x = max.x < r2[i].x ? r2[i].x : max.x;
+      max.y = max.y < r2[i].y ? r2[i].y : max.y;
+    }
+
+    return Rect<T>(min, max);
+  }
+
+  static constexpr Rect<T> expand(const Rect<T>& r, T t)
+  {
+    return Rect<T>(r.min - t, r.max + t);
+  }
+
+  /* -- Dimensions -- */
+
+  constexpr T width() const
+  {
+    return max.x - min.x;
+  }
+
+  constexpr T height() const
+  {
+    return max.y - min.y;
+  }
+
+  constexpr Vec2<T> size() const
+  {
+    return max - min;
+  }
+
+  constexpr Vec2<T> center() const
+  {
+    return (min + max) / T(2);
+  }
+
+  constexpr T area() const
+  {
+    Vec2<T> size = this->size();
+    return size.x * size.y;
+  }
+
+  /* -- Methods -- */
+
+  constexpr Rect<T>& include(const Vec2<T> v)
+  {
+    min.x = min.x > v.x ? v.x : min.x;
+    min.y = min.y > v.y ? v.y : min.y;
+    max.x = max.x < v.x ? v.x : max.x;
+    max.y = max.y < v.y ? v.y : max.y;
+    return *this;
+  }
+
+  constexpr std::array<Vec2<T>, 4> vertices() const
+  {
+    return {min, {max.x, min.y}, max, {min.x, max.y}};
+  }
+
+  constexpr Vec2<T> top_left() const
+  {
+    return min;
+  }
+
+  constexpr Vec2<T> top_right() const
+  {
+    return {max.x, min.y};
+  }
+
+  constexpr Vec2<T> bottom_left() const
+  {
+    return {min.x, max.y};
+  }
+
+  constexpr Vec2<T> bottom_right() const
+  {
+    return max;
+  }
+
+  /* -- Unary arithmetic operators -- */
+
+  constexpr Rect<T>& operator+=(T scalar)
+  {
+    min += scalar;
+    max += scalar;
+    return *this;
+  }
+
+  constexpr Rect<T>& operator+=(const Vec2<T> v)
+  {
+    min += v;
+    max += v;
+    return *this;
+  }
+
+  constexpr Rect<T>& operator-=(T scalar)
+  {
+    min -= scalar;
+    max -= scalar;
+    return *this;
+  }
+
+  constexpr Rect<T>& operator-=(const Vec2<T> v)
+  {
+    min -= v;
+    max -= v;
+    return *this;
+  }
+
+  constexpr Rect<T>& operator*=(T scalar)
+  {
+    min *= scalar;
+    max *= scalar;
+    return *this;
+  }
+
+  constexpr Rect<T>& operator*=(const Vec2<T> v)
+  {
+    min *= v;
+    max *= v;
+    return *this;
+  }
+
+  constexpr Rect<T>& operator/=(T scalar)
+  {
+    min /= scalar;
+    max /= scalar;
+    return *this;
+  }
+
+  constexpr Rect<T>& operator/=(const Vec2<T> v)
+  {
+    min /= v;
+    max /= v;
+    return *this;
+  }
+};
+
+/**
+ * @brief A 2D rotated rectangle struct with min and max components and an angle of rotation.
+ */
+template<typename T, typename = std::enable_if<std::is_floating_point_v<T>>>
+struct RRect : public Rect<T> {
+  T angle;  // The angle of rotation of the rectangle.
+
+  /* -- Constructors -- */
+
+  RRect() : Rect<T>(), angle(0) {}
+
+  constexpr RRect(const RRect& r) : Rect<T>(r.min, r.max), angle(r.angle) {}
+
+  constexpr RRect(const Rect<T>& r, T t = 0) : Rect<T>(r), angle(t) {}
+
+  constexpr RRect(Vec2<T> v, T t = 0) : Rect<T>(v), angle(t) {}
+
+  constexpr RRect(Vec2<T> v1, Vec2<T> v2, T t = 0) : Rect<T>(v1, v2), angle(t) {}
+
+  template<typename U>
+  constexpr RRect(const RRect<U>& r) : Rect<T>(r.min, r.max), angle(static_cast<T>(r.angle))
+  {
+  }
+
+  constexpr std::array<Vec2<T>, 4> vertices() const
+  {
+    return {math::rotate(this->min, vec2::zero(), angle),
+            math::rotate(vec2(this->max.x, this->min.y), vec2::zero(), angle),
+            math::rotate(this->max, vec2::zero(), angle),
+            math::rotate(vec2(this->min.x, this->max.y), vec2::zero(), angle)};
+  }
+
+  static constexpr Rect<T> to_rect(const RRect<T>& r)
+  {
+    return Rect<T>::from_vectors({math::rotate(r.min, vec2::zero(), r.angle),
+                                  math::rotate(vec2(r.max.x, r.min.y), vec2::zero(), r.angle),
+                                  math::rotate(r.max, vec2::zero(), r.angle),
+                                  math::rotate(vec2(r.min.x, r.max.y), vec2::zero(), r.angle)});
+  }
+};
+
+/* -- Binary operators -- */
+
+template<typename T>
+constexpr Rect<T> operator+(const Rect<T>& r1, const Rect<T>& r2)
+{
+  return Rect<T>(r1.min + r2.min, r1.max + r2.max);
 }
 
-namespace Graphick {
-
-  using rect = Math::rect;
-  using rrect = Math::rrect;
+template<typename T>
+constexpr Rect<T> operator+(const Rect<T>& r, const Vec2<T> v)
+{
+  return Rect<T>(r.min + v, r.max + v);
 }
 
-#include "rect.inl"
+template<typename T, typename U>
+constexpr Rect<T> operator+(const Rect<T>& r, U scalar)
+{
+  return Rect<T>(r.min + scalar, r.max + scalar);
+}
+
+template<typename T>
+constexpr Rect<T> operator-(const Rect<T>& r1, const Rect<T>& r2)
+{
+  return Rect<T>(r1.min - r2.min, r1.max - r2.max);
+}
+
+template<typename T>
+constexpr Rect<T> operator-(const Rect<T>& r, const Vec2<T> v)
+{
+  return Rect<T>(r.min - v, r.max - v);
+}
+
+template<typename T, typename U>
+constexpr Rect<T> operator-(const Rect<T>& r, U scalar)
+{
+  return Rect<T>(r.min - scalar, r.max - scalar);
+}
+
+template<typename T>
+constexpr Rect<T> operator*(const Rect<T>& r, const Vec2<T> v)
+{
+  return Rect<T>(r.min * v, r.max * v);
+}
+
+template<typename T, typename U>
+constexpr Rect<T> operator*(const Rect<T>& r, U scalar)
+{
+  return Rect<T>(r.min * scalar, r.max * scalar);
+}
+
+template<typename T>
+constexpr Rect<T> operator/(const Rect<T>& r, const Vec2<T> v)
+{
+  return Rect<T>(r.min / v, r.max / v);
+}
+
+template<typename T, typename U>
+constexpr Rect<T> operator/(const Rect<T>& r, U scalar)
+{
+  return Rect<T>(r.min / scalar, r.max / scalar);
+}
+
+template<typename T>
+constexpr Rect<T> operator%(const Rect<T>& r, const Vec2<T> v)
+{
+  return Rect<T>(r.min % v, r.max % v);
+}
+
+template<typename T, typename U>
+constexpr Rect<T> operator%(const Rect<T>& r, U scalar)
+{
+  return Rect<T>(r.min % scalar, r.max % scalar);
+}
+
+/* -- Boolean operators -- */
+
+template<typename T>
+constexpr bool operator==(const Rect<T>& r1, const Rect<T>& r2)
+{
+  return r1.min == r2.min && r1.max == r2.max;
+}
+
+template<typename T>
+constexpr bool operator!=(const Rect<T>& r1, const Rect<T>& r2)
+{
+  return !(r1 == r2);
+}
+}  // namespace graphick::math
+
+/* -- Aliases -- */
+
+namespace graphick::math {
+
+using rect = math::Rect<float>;
+using drect = math::Rect<double>;
+using irect = math::Rect<int32_t>;
+using urect = math::Rect<uint8_t>;
+
+using rrect = math::RRect<float>;
+using drrect = math::RRect<double>;
+using irrect = math::RRect<int32_t>;
+using urrect = math::RRect<uint8_t>;
+
+}  // namespace graphick::math
+
+namespace graphick {
+
+using math::drect;
+using math::irect;
+using math::rect;
+using math::urect;
+
+using math::drrect;
+using math::irrect;
+using math::rrect;
+using math::urrect;
+
+}  // namespace graphick

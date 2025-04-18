@@ -1,3 +1,9 @@
+/**
+ * @file common.cpp
+ * @brief Contains the implementation of common classes and functions used by input tools in the
+ * Graphick editor.
+ */
+
 #include "common.h"
 
 #include "../input_manager.h"
@@ -5,218 +11,243 @@
 #include "../../editor.h"
 #include "../../scene/entity.h"
 
-#include "../../../history/values.h"
-
 #include "../../../math/math.h"
 #include "../../../math/matrix.h"
 
-#include "../../../renderer/geometry/path.h"
+#include "../../../geom/intersections.h"
 
 #include "../../../utils/console.h"
 
-namespace Graphick::Editor::Input {
+namespace graphick::editor::input {
 
-  /* -- Methods -- */
+/* -- Methods -- */
 
-  void handle_pointer_move(
-    Renderer::Geometry::Path& path,
-    Renderer::Geometry::ControlPoint& vertex,
-    const mat2x3& transform,
-    bool create_handles, bool keep_in_handle_length, bool swap_in_out,
-    int* direction, History::Vec2Value* in_use_handle
-  ) {
-    mat2x3 inverse_transform = Math::inverse(transform);
+size_t translate_control_point(PathComponent& path,
+                               const size_t point_index,
+                               const mat2x3& transform,
+                               const vec2* override_movement,
+                               bool create_handles,
+                               bool keep_in_handle_length,
+                               bool translate_in_first,
+                               int* direction)
+{
+  const mat2x3 inverse_transform = override_movement ? mat2x3::identity() :
+                                                       math::inverse(transform);
+  const vec2 position = inverse_transform * InputManager::pointer.scene.position;
+  const vec2 origin = inverse_transform * InputManager::pointer.scene.origin;
 
-    vec2 pointer_position = inverse_transform * InputManager::pointer.scene.position;
-    vec2 pointer_origin = inverse_transform * InputManager::pointer.scene.origin;
-    vec2 pointer_last = inverse_transform * (InputManager::pointer.scene.position - InputManager::pointer.scene.movement);
-    vec2 pointer_delta = pointer_position - pointer_origin;
-    vec2 pointer_movement = pointer_position - pointer_last;
+  geom::path::VertexNode node = path.data().node_at(point_index);
 
-    auto handles = path.relative_handles(vertex.id);
+  if (!create_handles && point_index == node.vertex) {
+    const vec2 vertex_position = path.data().at(node.vertex);
+    const vec2 movement = override_movement ? *override_movement : position - vertex_position;
 
-    if (InputManager::keys.space) {
-      vertex.add_delta(pointer_movement);
+    path.translate(node.vertex, movement);
 
-      if (handles.in_handle) handles.in_handle->add_delta(pointer_movement);
-      if (handles.out_handle) handles.out_handle->add_delta(pointer_movement);
+    if (node.in >= 0)
+      path.translate(static_cast<size_t>(node.in), movement);
+    if (node.out >= 0)
+      path.translate(static_cast<size_t>(node.out), movement);
+    if (node.close_vertex >= 0)
+      path.translate(static_cast<size_t>(node.close_vertex), movement);
 
-      return;
-    }
+    return point_index;
+  } else if (InputManager::keys.space) {
+    const vec2 out_position = path.data().at(node.out);
+    const vec2 movement = override_movement ? *override_movement : position - out_position;
 
-    if (in_use_handle && in_use_handle != handles.out_handle) {
-      std::swap(handles.in_handle, handles.out_handle);
-      std::swap(handles.in_segment, handles.out_segment);
-    }
+    path.translate(node.vertex, movement);
 
-    if (path.empty()) {
-      if (create_handles && !handles.out_handle) {
-        path.create_out_handle(pointer_origin);
-        handles.out_handle = path.out_handle_ptr()->get();
+    if (node.in >= 0)
+      path.translate(static_cast<size_t>(node.in), movement);
+    if (node.out >= 0)
+      path.translate(static_cast<size_t>(node.out), movement);
+    if (node.close_vertex >= 0)
+      path.translate(static_cast<size_t>(node.close_vertex), movement);
+
+    return point_index;
+  }
+
+  vec2 out_position = position;
+  vec2 in_position = 2.0f * path.data().at(node.vertex) - position;
+
+  bool swap_in_out = false;
+
+  if (direction) {
+    if (*direction == 0) {
+      float cos = 0;
+
+      if (node.out >= 0) {
+        cos = math::dot(origin - position,
+                        path.data().at(static_cast<size_t>(node.out)) -
+                            path.data().at(static_cast<size_t>(node.vertex)));
+      } else if (node.vertex > 0) {
+        cos = -math::dot(origin - position,
+                         path.data().at(static_cast<size_t>(node.vertex)) -
+                             path.data().at(static_cast<size_t>(node.vertex - 1)));
       }
 
-      if (handles.out_handle) handles.out_handle->set_delta(pointer_delta);
-
-      if (InputManager::keys.alt) return;
-
-      if (create_handles && !handles.in_handle) {
-        path.create_in_handle(pointer_origin);
-        handles.in_handle = path.in_handle_ptr()->get();
-      }
-
-      if (handles.in_handle) handles.in_handle->move_to(2.0f * vertex.get() - pointer_position);
-
-      return;
+      if (cos > 0)
+        *direction = -1;
+      else
+        *direction = 1;
     }
 
-    if (direction) {
-      if (*direction == 0) {
-        float cos = 0;
-
-        if (handles.out_handle) {
-          cos = Math::dot(-pointer_delta, handles.out_handle->get() - vertex.get());
-        } else if (handles.out_segment) {
-          cos = Math::dot(-pointer_delta, (handles.out_segment->has_p2() ? handles.out_segment->p2() : handles.out_segment->p3()) - vertex.get());
-        }
-
-        if (cos > 0) *direction = -1;
-        else *direction = 1;
-      }
-
-      if (*direction < 0) {
-        std::swap(handles.in_handle, handles.out_handle);
-        std::swap(handles.in_segment, handles.out_segment);
-      }
+    if (*direction < 0) {
+      swap_in_out = !swap_in_out;
     }
+  }
 
-    vec2 out_handle_position = pointer_position;
-    vec2 in_handle_position = 2.0f * vertex.get() - pointer_position;
+  if (translate_in_first) {
+    swap_in_out = !swap_in_out;
+
+    std::swap(out_position, in_position);
+  }
+
+  if (swap_in_out) {
+    std::swap(node.in, node.out);
+    std::swap(node.in_command, node.out_command);
+  }
+
+  size_t new_point_index = point_index;
+
+  if (create_handles && node.out < 0) {
+    if (node.out_command < 0)
+      return new_point_index;
+
+    new_point_index = path.to_cubic(static_cast<size_t>(node.out_command), new_point_index);
+    node = path.data().node_at(new_point_index);
 
     if (swap_in_out) {
-      std::swap(handles.in_segment, handles.out_segment);
-      std::swap(handles.in_handle, handles.out_handle);
-      std::swap(out_handle_position, in_handle_position);
+      std::swap(node.in, node.out);
+      std::swap(node.in_command, node.out_command);
     }
+  }
 
-    bool should_reverse_out = (!direction && path.reversed()) || (direction && *direction > 0);
+  const vec2 old_out_position = path.data().at(static_cast<size_t>(node.out));
+  const vec2 movement = override_movement ? *override_movement : out_position - old_out_position;
 
-    if (create_handles && !handles.out_handle) {
-      if (handles.out_segment) {
-        if (should_reverse_out) {
-          handles.out_segment->create_p1(pointer_position);
-          handles.out_handle = handles.out_segment->p1_ptr().lock().get();
-        } else {
-          handles.out_segment->create_p2(pointer_position);
-          handles.out_handle = handles.out_segment->p2_ptr().lock().get();
-        }
-      } else {
-        if (should_reverse_out) {
-          path.create_in_handle(pointer_origin);
-          handles.out_handle = path.in_handle_ptr()->get();
-        } else {
-          path.create_out_handle(pointer_origin);
-          handles.out_handle = path.out_handle_ptr()->get();
-        }
-      }
+  path.translate(static_cast<size_t>(node.out), movement);
+
+  if (InputManager::keys.alt || (node.in < 0 && (!create_handles || translate_in_first))) {
+    return new_point_index;
+  }
+
+  if (create_handles && node.in < 0) {
+    if (node.in_command < 0)
+      return new_point_index;
+
+    new_point_index = path.to_cubic(static_cast<size_t>(node.in_command), new_point_index);
+    node = path.data().node_at(new_point_index);
+
+    if (swap_in_out) {
+      std::swap(node.in, node.out);
+      std::swap(node.in_command, node.out_command);
     }
+  }
 
-    if (handles.out_handle) handles.out_handle->move_to(out_handle_position);
+  if (keep_in_handle_length) {
+    const vec2 vertex_position = path.data().at(node.vertex);
+    const vec2 dir = math::normalize(vertex_position -
+                                     path.data().at(static_cast<size_t>(node.out)));
 
-    if (
-      InputManager::keys.alt ||
-      Math::is_almost_equal(handles.out_handle->get(), vertex.get()) ||
-      (!handles.in_handle && keep_in_handle_length) ||
-      (!create_handles && !handles.in_handle)
-      ) return;
-
-    if (!handles.in_handle) {
-      if ((!direction && path.reversed() == swap_in_out) || (direction && *direction > 0)) {
-        handles.in_segment->create_p2(pointer_position);
-        handles.in_handle = handles.in_segment->p2_ptr().lock().get();
-      } else {
-        handles.in_segment->create_p1(pointer_position);
-        handles.in_handle = handles.in_segment->p1_ptr().lock().get();
-      }
+    if (!math::is_almost_zero(dir)) {
+      const float length = math::distance(path.data().at(static_cast<size_t>(node.in)),
+                                          vertex_position);
+      in_position = dir * length + vertex_position;
+    } else {
+      in_position = path.data().at(static_cast<size_t>(node.in));
     }
-
-    if (keep_in_handle_length) {
-      vec2 dir = Math::normalize(vertex.get() - handles.out_handle->get());
-      float length = Math::length(handles.in_handle->get() - handles.in_handle->delta() - vertex.get() + vertex.delta());
-
-      in_handle_position = dir * length + vertex.get();
-    }
-
-    handles.in_handle->move_to(in_handle_position);
   }
 
-  /* -- SelectionRect -- */
+  path.translate(static_cast<size_t>(static_cast<size_t>(node.in)),
+                 in_position - path.data().at(static_cast<size_t>(node.in)));
 
-  SelectionRect::SelectionRect(bool dashed) :
-    m_position({ 0.0f, 0.0f }), m_anchor_position({ 0.0f, 0.0f }),
-    m_dashed(dashed)
-  {
-    m_path.move_to({ -0.5f, -0.5f });
-    m_path.line_to({ 0.5f, -0.5f });
-    m_path.line_to({ 0.5f, 0.5f });
-    m_path.line_to({ -0.5f, 0.5f });
-    m_path.close();
+  return new_point_index;
+}
+
+/* -- SelectionRect -- */
+
+SelectionRect::SelectionRect(bool dashed)
+    : m_position({0.0f, 0.0f}), m_anchor_position({0.0f, 0.0f}), m_dashed(dashed)
+{
+  m_path.move_to({-0.5f, -0.5f});
+  m_path.line_to({0.5f, -0.5f});
+  m_path.line_to({0.5f, 0.5f});
+  m_path.line_to({-0.5f, 0.5f});
+  m_path.close();
+}
+
+rect SelectionRect::bounding_rect() const
+{
+  return transform() * m_path.bounding_rect();
+}
+
+rrect SelectionRect::bounding_rrect() const
+{
+  return rrect{m_position, m_position + m_size, m_angle};
+}
+
+mat2x3 SelectionRect::transform() const
+{
+  return math::rotate(
+      math::translate(math::scale(mat2x3{1.0f}, m_size), m_position + m_size / 2.0f), m_angle);
+}
+
+void SelectionRect::set(const vec2 position)
+{
+  m_anchor_position = m_position = position;
+  m_active = true;
+
+  size({0.0f, 0.0f});
+}
+
+void SelectionRect::reset()
+{
+  m_position = m_anchor_position;
+  m_active = false;
+
+  size({0.0f, 0.0f});
+}
+
+/* -- Manipulator -- */
+
+bool Manipulator::update()
+{
+  Selection& selection = Editor::scene().selection;
+
+  if (selection.empty()) {
+    return m_active = false;
   }
 
-  rect SelectionRect::bounding_rect() const {
-    return transform() * m_path.bounding_rect();
+  update_positions(selection.bounding_rrect());
+
+  return true;
+}
+
+bool Manipulator::on_pointer_down(const float threshold)
+{
+  m_start_transform = transform();
+  m_threshold = threshold;
+
+  if (!m_active) {
+    m_active_handle = HandleNone;
+    m_in_use = false;
+
+    return false;
   }
 
-  mat2x3 SelectionRect::transform() const {
-    return Math::translate(Math::rotate(Math::scale(mat2x3{ 1.0f }, m_size), m_angle), m_position + m_size / 2.0f);
-  }
+  vec2 transformed_position = math::inverse(m_start_transform) *
+                              InputManager::pointer.scene.position;
+  vec2 handle_size = vec2{threshold} / m_size;
 
-  void SelectionRect::set(const vec2 position) {
-    m_anchor_position = m_position = position;
-    m_active = true;
+  for (int i = 0; i < HandleNone; i++) {
+    vec2 handle_position = m_handles[i];
 
-    size({ 0.0f, 0.0f });
-  }
-
-  void SelectionRect::reset() {
-    m_position = m_anchor_position;
-    m_active = false;
-
-    size({ 0.0f, 0.0f });
-  }
-
-  /* -- Manipulator -- */
-
-  bool Manipulator::update() {
-    Selection& selection = Editor::scene().selection;
-
-    if (selection.empty()) return m_active = false;
-
-    update_positions(selection.bounding_rect());
-
-    return true;
-  }
-
-  bool Manipulator::on_pointer_down(const float threshold) {
-    m_start_transform = transform();
-    m_threshold = threshold;
-    m_cache.clear();
-
-    if (!m_active) {
-      m_active_handle = HandleNone;
-      m_in_use = false;
-
-      return false;
-    }
-
-    vec2 transformed_position = transform() / InputManager::pointer.scene.position;
-    vec2 handle_size = vec2{ threshold } / m_size;
-
-    for (int i = 0; i < HandleNone; i++) {
-      vec2 handle_position = m_handles[i];
-
-      if (Math::is_point_in_ellipse(transformed_position, handle_position, i >= 8 ? handle_size * 2.0f : handle_size)) {
-
-        switch (i) {
+    if (geom::is_point_in_ellipse(
+            transformed_position, handle_position, i >= 8 ? handle_size * 2.0f : handle_size))
+    {
+      switch (i) {
         case N:
           m_center = m_handles[S];
           break;
@@ -242,164 +273,236 @@ namespace Graphick::Editor::Input {
           m_center = m_handles[NE];
           break;
         default:
-          if (Math::is_point_in_rect(transformed_position, { vec2{ -0.5f }, vec2{ 0.5f } })) return false;
-        }
+          if (geom::is_point_in_rect(transformed_position, {vec2{-0.5f}, vec2{0.5f}}))
+            return false;
+      }
 
-        m_start_bounding_rect = bounding_rect();
-        m_active_handle = static_cast<HandleType>(i);
-        m_handle = handle_position;
-        m_in_use = true;
+      m_start_bounding_rrect = bounding_rrect();
+      m_active_handle = static_cast<HandleType>(i);
+      m_handle = handle_position;
+      m_in_use = true;
 
-        if (i > SW) {
-          m_center = vec2{ 0.0f };
-        }
+      if (i > SW) {
+        m_center = vec2{0.0f};
+      }
 
-        Scene& scene = Editor::scene();
-        auto& selected = scene.selection.selected();
+      Scene& scene = Editor::scene();
+      auto& selected = scene.selection.selected();
 
-        m_cache.reserve(selected.size());
+      m_cache.reserve(selected.size());
 
-        for (const auto& [id, _] : selected) {
-          if (scene.has_entity(id)) {
-            Entity entity = scene.get_entity(id);
+      for (const auto& [id, _] : selected) {
+        if (scene.has_entity(id)) {
+          Entity entity = scene.get_entity(id);
 
-            if (entity.has_component<TransformComponent>()) {
-              m_cache.push_back(entity.get_component<TransformComponent>()._value());
-            }
+          if (entity.has_component<TransformComponent>()) {
+            m_cache.push_back(entity.get_component<TransformComponent>());
           }
         }
+      }
 
-        return true;
+      return true;
+    }
+  }
+
+  m_active_handle = HandleNone;
+  m_in_use = false;
+
+  return false;
+}
+
+void Manipulator::on_pointer_move()
+{
+  if (!m_active)
+    return;
+
+  if (m_active_handle > SW)
+    on_rotate_pointer_move();
+  else
+    on_scale_pointer_move();
+}
+
+void Manipulator::on_pointer_up()
+{
+  m_active_handle = HandleNone;
+  m_in_use = false;
+
+  m_cache.clear();
+
+  update();
+}
+
+bool Manipulator::on_key(const bool down, const KeyboardKey key)
+{
+  if (!m_active || !m_in_use)
+    return false;
+
+  if (InputManager::keys.shift_state_changed || InputManager::keys.alt_state_changed) {
+    on_pointer_move();
+  }
+
+  return true;
+}
+
+void Manipulator::update_positions(const rrect& bounding_rect)
+{
+  vec2 rect_size = bounding_rect.size();
+
+  set(bounding_rect.min);
+  size(rect_size);
+  angle(bounding_rect.angle);
+
+  if (std::abs(rect_size.x) >= m_threshold * 7.0f) {
+    m_handles[N] = m_handles[RN] = vec2{0.0f, -0.5f};
+    m_handles[S] = m_handles[RS] = vec2{0.0f, 0.5f};
+  } else {
+    m_handles[N] = m_handles[RN] = m_handles[S] = m_handles[RS] = std::numeric_limits<vec2>::max();
+  }
+
+  if (std::abs(rect_size.y) >= m_threshold * 7.0f) {
+    m_handles[E] = m_handles[RE] = vec2{0.5f, 0.0f};
+    m_handles[W] = m_handles[RW] = vec2{-0.5f, 0.0f};
+  } else {
+    m_handles[E] = m_handles[RE] = m_handles[W] = m_handles[RW] = std::numeric_limits<vec2>::max();
+  }
+
+  m_handles[NW] = m_handles[RNW] = vec2{-0.5f, -0.5f};
+  m_handles[NE] = m_handles[RNE] = vec2{0.5f, -0.5f};
+  m_handles[SE] = m_handles[RSE] = vec2{0.5f, 0.5f};
+  m_handles[SW] = m_handles[RSW] = vec2{-0.5f, 0.5f};
+}
+
+void Manipulator::on_scale_pointer_move()
+{
+  const vec2 local_center = InputManager::keys.alt ? vec2{0.0f} : m_center;
+  const vec2 old_delta = m_handle - local_center;
+  const vec2 delta = inverse(m_start_transform) * InputManager::pointer.scene.position -
+                     local_center;
+
+  vec2 magnitude = delta / old_delta;
+  uint8_t axial = 0; /* 0 = none, 1 = x, 2 = y */
+
+  if (m_active_handle == N || m_active_handle == S) {
+    magnitude.x = 1.0f;
+    axial = 1;
+  } else if (m_active_handle == E || m_active_handle == W) {
+    magnitude.y = 1.0f;
+    axial = 2;
+  }
+
+  if (InputManager::keys.shift) {
+    if (axial == 1) {
+      magnitude.x = magnitude.y;
+    } else if (axial == 2) {
+      magnitude.y = magnitude.x;
+    } else {
+      if (magnitude.x > magnitude.y) {
+        magnitude.x = magnitude.y;
+      } else {
+        magnitude.y = magnitude.x;
       }
     }
-
-    m_active_handle = HandleNone;
-    m_in_use = false;
-
-    return false;
   }
 
-  void Manipulator::on_pointer_move() {
-    if (!m_active) return;
+  const vec2 center = math::rotate(
+      m_start_transform * local_center, vec2::zero(), -m_start_bounding_rrect.angle);
 
-    if (m_active_handle > SW) on_rotate_pointer_move();
-    else on_scale_pointer_move();
-  }
+  const rrect new_bounding_rect = {math::scale(m_start_bounding_rrect.min, center, magnitude),
+                                   math::scale(m_start_bounding_rrect.max, center, magnitude),
+                                   m_start_bounding_rrect.angle};
 
-  void Manipulator::on_pointer_up() {
-    m_active_handle = HandleNone;
-    m_in_use = false;
+  update_positions(new_bounding_rect);
 
-    for (History::Mat2x3Value* matrix : m_cache) {
-      matrix->apply();
-    }
+  Scene& scene = Editor::scene();
+  auto& selected = scene.selection.selected();
 
-    m_cache.clear();
+  size_t i = 0;
 
-    update();
-  }
+  for (const auto& [id, entry] : selected) {
+    if (scene.has_entity(id)) {
+      Entity entity = scene.get_entity(id);
 
-  bool Manipulator::on_key(const bool down, const KeyboardKey key) {
-    if (!m_active) return false;
+      if (entity.has_component<TransformComponent>()) {
+        TransformComponent transform = entity.get_component<TransformComponent>();
 
-    if (InputManager::keys.shift_state_changed || InputManager::keys.alt_state_changed) {
-      on_pointer_move();
-    }
+        if (entry.hierarchy.entries.empty()) {
+          mat2x3 new_transform;
 
-    return true;
-  }
+          new_transform = math::rotate(m_cache[i], vec2::zero(), -m_start_bounding_rrect.angle);
+          new_transform = math::scale(new_transform, center, magnitude);
+          new_transform = math::rotate(new_transform, vec2::zero(), m_start_bounding_rrect.angle);
 
-  void Manipulator::update_positions(const rrect& bounding_rect) {
-    vec2 rect_size = bounding_rect.size();
-
-    set(bounding_rect.min);
-    size(rect_size);
-    angle(bounding_rect.angle);
-
-    if (std::abs(rect_size.x) >= m_threshold * 7.0f) {
-      m_handles[N] = m_handles[RN] = vec2{ 0.0f, -0.5f };
-      m_handles[S] = m_handles[RS] = vec2{ 0.0f, 0.5f };
-    } else {
-      m_handles[N] = m_handles[RN] = m_handles[S] = m_handles[RS] = std::numeric_limits<vec2>::max();
-    }
-
-    if (std::abs(rect_size.y) >= m_threshold * 7.0f) {
-      m_handles[E] = m_handles[RE] = vec2{ 0.5f, 0.0f };
-      m_handles[W] = m_handles[RW] = vec2{ -0.5f, 0.0f };
-    } else {
-      m_handles[E] = m_handles[RE] = m_handles[W] = m_handles[RW] = std::numeric_limits<vec2>::max();
-    }
-
-    m_handles[NW] = m_handles[RNW] = vec2{ -0.5f, -0.5f };
-    m_handles[NE] = m_handles[RNE] = vec2{ 0.5f, -0.5f };
-    m_handles[SE] = m_handles[RSE] = vec2{ 0.5f, 0.5f };
-    m_handles[SW] = m_handles[RSW] = vec2{ -0.5f, 0.5f };
-  }
-
-  void Manipulator::on_scale_pointer_move() {
-    vec2 local_center = InputManager::keys.alt ? vec2{ 0.0f } : m_center;
-
-    vec2 old_delta = m_handle - local_center;
-    vec2 delta = m_start_transform / InputManager::pointer.scene.position - local_center;
-
-    vec2 magnitude = delta / old_delta;
-    uint8_t axial = 0;    /* 0 = none, 1 = x, 2 = y */
-
-    if (m_active_handle == N || m_active_handle == S) {
-      magnitude.x = 1.0f;
-      axial = 1;
-    } else if (m_active_handle == E || m_active_handle == W) {
-      magnitude.y = 1.0f;
-      axial = 2;
-    }
-
-    if (InputManager::keys.shift) {
-      if (axial == 1) {
-        magnitude.x = magnitude.y;
-      } else if (axial == 2) {
-        magnitude.y = magnitude.x;
-      } else {
-        if (magnitude.x > magnitude.y) {
-          magnitude.x = magnitude.y;
+          transform.set(new_transform);
         } else {
-          magnitude.y = magnitude.x;
+          const mat2x3 parent_transform = entry.hierarchy.transform();
+          const mat2x3 inverse_parent_transform = math::inverse(parent_transform);
+
+          mat2x3 new_transform;
+
+          new_transform = parent_transform * m_cache[i];
+          new_transform = math::rotate(new_transform, vec2::zero(), -m_start_bounding_rrect.angle);
+          new_transform = math::scale(new_transform, center, magnitude);
+          new_transform = math::rotate(new_transform, vec2::zero(), m_start_bounding_rrect.angle);
+          new_transform = inverse_parent_transform * new_transform;
+
+          transform.set(new_transform);
         }
       }
     }
 
-    vec2 center = m_start_transform * local_center;
-
-    rrect new_bounding_rect = {
-      Math::scale(m_start_bounding_rect.min, center, magnitude),
-      Math::scale(m_start_bounding_rect.max, center, magnitude)
-    };
-
-    update_positions(new_bounding_rect);
-
-    for (History::Mat2x3Value* matrix : m_cache) {
-      matrix->set_delta(mat2x3{ 0.0f });
-      matrix->scale(center, magnitude);
-    }
+    i++;
   }
-
-  void Manipulator::on_rotate_pointer_move() {
-    float angle = Math::angle(m_handle - m_center, m_start_transform / InputManager::pointer.scene.position - m_center);
-    float sin_angle = std::sinf(angle);
-    float cos_angle = std::cosf(angle);
-
-    vec2 center = m_start_transform * m_center;
-
-    rrect new_bounding_rect = {
-      m_start_bounding_rect,
-      angle
-    };
-
-    update_positions(new_bounding_rect);
-
-    for (History::Mat2x3Value* matrix : m_cache) {
-      matrix->set_delta(mat2x3{ 0.0f });
-      matrix->rotate(center, sin_angle, cos_angle);
-    }
-  }
-
 }
+
+void Manipulator::on_rotate_pointer_move()
+{
+  const float angle = math::angle(
+      m_handle - m_center,
+      inverse(m_start_transform) * InputManager::pointer.scene.position - m_center);
+  const float sin_angle = std::sin(angle);
+  const float cos_angle = std::cos(angle);
+
+  const vec2 center = m_start_transform * m_center;
+  const vec2 delta_center = math::rotate(center, vec2::zero(), -m_start_bounding_rrect.angle);
+  const vec2 delta = math::rotate(delta_center, vec2::zero(), -angle) - delta_center;
+
+  const rrect new_bounding_rect = {m_start_bounding_rrect.min + delta,
+                                   m_start_bounding_rrect.max + delta,
+                                   m_start_bounding_rrect.angle + angle};
+
+  update_positions(new_bounding_rect);
+
+  Scene& scene = Editor::scene();
+  auto& selected = scene.selection.selected();
+
+  size_t i = 0;
+
+  for (const auto& [id, entry] : selected) {
+    if (scene.has_entity(id)) {
+      Entity entity = scene.get_entity(id);
+
+      if (entity.has_component<TransformComponent>()) {
+        TransformComponent transform = entity.get_component<TransformComponent>();
+
+        if (entry.hierarchy.entries.empty()) {
+          transform.set(math::rotate(m_cache[i], center, sin_angle, cos_angle));
+        } else {
+          const mat2x3 parent_transform = entry.hierarchy.transform();
+          const mat2x3 inverse_parent_transform = math::inverse(parent_transform);
+
+          mat2x3 new_transform;
+
+          new_transform = parent_transform * m_cache[i];
+          new_transform = math::rotate(new_transform, center, sin_angle, cos_angle);
+          new_transform = inverse_parent_transform * new_transform;
+
+          transform.set(new_transform);
+        }
+      }
+    }
+
+    i++;
+  }
+}
+
+}  // namespace graphick::editor::input

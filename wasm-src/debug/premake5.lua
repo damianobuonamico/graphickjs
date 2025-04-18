@@ -13,11 +13,9 @@ workspace "graphick-debug"
   IncludeDir = {}
   IncludeDir["glfw"] = "graphick-debug/lib/glfw/include"
   IncludeDir["glad"] = "graphick-debug/lib/glad/include"
-  IncludeDir["optick"] = "graphick-debug/lib/optick/src"
   
   include "graphick-debug/lib/glfw"
   include "graphick-debug/lib/glad"
-  include "graphick-debug/lib/optick"
   
   project "graphick-debug"
   kind "ConsoleApp"
@@ -48,14 +46,12 @@ workspace "graphick-debug"
     "%{prj.name}/src",
     "%{IncludeDir.glfw}",
     "%{IncludeDir.glad}",
-    "%{IncludeDir.optick}",
     "../../"
   }
 
   links {
     "glfw",
     "glad",
-    "optick",
     "opengl32.lib"
   }
 
@@ -68,6 +64,10 @@ workspace "graphick-debug"
     "/NODEFAULTLIB:\"LIBCMT\""
   }
 
+  flags {
+    "MultiProcessorCompile"
+  }
+
   filter "system:windows"
     systemversion "latest"
 
@@ -76,12 +76,12 @@ workspace "graphick-debug"
     }
 
   filter "configurations:Debug"
-    defines { "GK_CONF_DEBUG", "GK_USE_OPTICK" }
+    defines { "GK_CONF_DEBUG" }
     runtime "Debug"
     symbols "On"
 
   filter "configurations:Release"
-    defines { "GK_CONF_RELEASE", "GK_USE_OPTICK" }
+    defines { "GK_CONF_RELEASE" }
     runtime "Release"
     optimize "On"
     symbols "On"

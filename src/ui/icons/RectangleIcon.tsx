@@ -15,12 +15,11 @@ const RectangleIcon: Component<IconProps> = (props) => (
       y="2"
       width="11"
       height="11"
-      rx="0.5"
       fill={props.color || 'currentColor'}
       fill-opacity="0.35"
     />
     <path
-      d="M2 1C1.44772 1 1 1.44772 1 2V13C1 13.5523 1.44772 14 2 14H13C13.5523 14 14 13.5523 14 13V2C14 1.44772 13.5523 1 13 1H2ZM2.5 2C2.22386 2 2 2.22386 2 2.5V12.5C2 12.7761 2.22386 13 2.5 13H12.5C12.7761 13 13 12.7761 13 12.5V2.5C13 2.22386 12.7761 2 12.5 2H2.5Z"
+      d="M2 1C1.44772 1 1 1.44772 1 2V13C1 13.5523 1.44772 14 2 14H13C13.5523 14 14 13.5523 14 13V2C14 1.44772 13.5523 1 13 1H2ZM13 2H2V13H13V2Z"
       fill={props.color || 'currentColor'}
       fill-rule="evenodd"
       clip-rule="evenodd"

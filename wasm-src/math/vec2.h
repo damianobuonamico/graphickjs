@@ -1,97 +1,353 @@
 /**
- * @file vec2.h
- * @brief This file contains the definition of the vec2 struct, a 2D single precision vector.
+ * @file math/vec2.h
+ * @brief This file contains the Vec2 struct, a templated 2D vector.
  */
 
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
-namespace Graphick::Math {
+namespace graphick::math {
 
-  /**
-   * @brief A 2D vector struct with x and y components.
-   *
-   * @struct vec2
-   */
-  struct vec2 {
-    union { float x, r, s; };   /* The 0 component of the vector. */
-    union { float y, g, t; };   /* The 1 component of the vector. */
+/**
+ * @brief A 2D vector struct with x and y components.
+ */
+template<typename T>
+struct Vec2 {
+  union {
+    T x, r, s;
+  };  // The 0 component of the vector.
+  union {
+    T y, g, t;
+  };  // The 1 component of the vector.
 
-    /* -- Component accesses -- */
+  /* -- Component accesses -- */
 
-    static constexpr uint8_t length() { return 2; }
-    constexpr float& operator[](uint8_t i);
-    constexpr float const& operator[](uint8_t i) const;
+  static constexpr uint8_t length()
+  {
+    return 2;
+  }
 
-    /* -- Constructors -- */
+  constexpr T& operator[](uint8_t i)
+  {
+    switch (i) {
+      default:
+      case 0:
+        return x;
+      case 1:
+        return y;
+    }
+  }
 
-    vec2() = default;
-    constexpr vec2(const vec2& v) = default;
-    constexpr explicit vec2(float scalar);
-    constexpr vec2(float x, float y);
+  constexpr T const& operator[](uint8_t i) const
+  {
+    switch (i) {
+      default:
+      case 0:
+        return x;
+      case 1:
+        return y;
+    }
+  }
 
-    /* -- Assign operator -- */
+  /* -- Constructors -- */
 
-    constexpr vec2& operator=(const vec2 v);
+  Vec2() = default;
 
-    /* -- Unary arithmetic operators -- */
+  constexpr Vec2(const Vec2<T>& v) : x(v.x), y(v.y) {}
 
-    constexpr vec2& operator+=(float scalar);
-    constexpr vec2& operator+=(const vec2 v);
-    constexpr vec2& operator-=(float scalar);
-    constexpr vec2& operator-=(const vec2 v);
-    constexpr vec2& operator*=(float scalar);
-    constexpr vec2& operator*=(const vec2 v);
-    constexpr vec2& operator/=(float scalar);
-    constexpr vec2& operator/=(const vec2 v);
+  constexpr explicit Vec2(T scalar) : x(scalar), y(scalar) {}
 
-    /* -- Increment/Decrement operators -- */
+  constexpr Vec2(T x, T y) : x(x), y(y) {}
 
-    constexpr vec2& operator++();
-    constexpr vec2& operator--();
-  };
+  template<typename U>
+  constexpr explicit Vec2(const Vec2<U>& v) : x(static_cast<T>(v.x)), y(static_cast<T>(v.y))
+  {
+  }
 
-  /* -- Unary operators */
+  /* -- Static constructors -- */
 
-  constexpr vec2 operator+(const vec2 v);
-  constexpr vec2 operator-(const vec2 v);
+  static constexpr Vec2<T> zero()
+  {
+    return Vec2<T>(T(0));
+  }
 
-  /* -- Binary operators -- */
+  static constexpr Vec2<T> one()
+  {
+    return Vec2<T>(T(1));
+  }
 
-  constexpr vec2 operator+(const vec2 v, float scalar);
-  constexpr vec2 operator+(float scalar, const vec2 v);
-  constexpr vec2 operator+(const vec2 v1, const vec2 v2);
-  constexpr vec2 operator-(const vec2 v, float scalar);
-  constexpr vec2 operator-(float scalar, const vec2 v);
-  constexpr vec2 operator-(const vec2 v1, const vec2 v2);
-  constexpr vec2 operator*(const vec2 v, float scalar);
-  constexpr vec2 operator*(float scalar, const vec2 v);
-  constexpr vec2 operator*(const vec2 v1, const vec2 v2);
-  constexpr vec2 operator/(const vec2 v, float scalar);
-  constexpr vec2 operator/(float scalar, const vec2 v);
-  constexpr vec2 operator/(const vec2 v1, const vec2 v2);
-  constexpr vec2 operator%(const vec2 v, float scalar);
-  constexpr vec2 operator%(float scalar, const vec2 v);
-  constexpr vec2 operator%(const vec2 v1, const vec2 v2);
+  static constexpr Vec2<T> identity()
+  {
+    return Vec2<T>(T(1));
+  }
 
-  /* -- Boolean operators -- */
+  /* -- Assign operator -- */
 
-  constexpr bool operator==(const vec2 v1, const vec2 v2);
-  constexpr bool operator!=(const vec2 v1, const vec2 v2);
-  constexpr vec2 operator&&(const vec2 v1, const vec2 v2);
-  constexpr vec2 operator||(const vec2 v1, const vec2 v2);
+  constexpr Vec2<T>& operator=(const Vec2<T> v)
+  {
+    this->x = v.x;
+    this->y = v.y;
+    return *this;
+  }
 
-  /* -- Address operator -- */
+  /* -- Unary arithmetic operators -- */
 
-  constexpr const float* operator&(const vec2& v);
+  template<typename U>
+  constexpr Vec2<T>& operator+=(U scalar)
+  {
+    this->x += static_cast<T>(scalar);
+    this->y += static_cast<T>(scalar);
+    return *this;
+  }
 
+  constexpr Vec2<T>& operator+=(const Vec2<T> v)
+  {
+    this->x += v.x;
+    this->y += v.y;
+    return *this;
+  }
+
+  template<typename U>
+  constexpr Vec2<T>& operator-=(U scalar)
+  {
+    this->x -= static_cast<T>(scalar);
+    this->y -= static_cast<T>(scalar);
+    return *this;
+  }
+
+  constexpr Vec2<T>& operator-=(const Vec2<T> v)
+  {
+    this->x -= v.x;
+    this->y -= v.y;
+    return *this;
+  }
+
+  template<typename U>
+  constexpr Vec2<T>& operator*=(U scalar)
+  {
+    this->x *= static_cast<T>(scalar);
+    this->y *= static_cast<T>(scalar);
+    return *this;
+  }
+
+  constexpr Vec2<T>& operator*=(const Vec2<T> v)
+  {
+    this->x *= v.x;
+    this->y *= v.y;
+    return *this;
+  }
+
+  template<typename U>
+  constexpr Vec2<T>& operator/=(U scalar)
+  {
+    this->x /= static_cast<T>(scalar);
+    this->y /= static_cast<T>(scalar);
+    return *this;
+  }
+
+  constexpr Vec2<T>& operator/=(const Vec2<T> v)
+  {
+    this->x /= v.x;
+    this->y /= v.y;
+    return *this;
+  }
+
+  /* -- Increment/Decrement operators -- */
+
+  constexpr Vec2<T>& operator++()
+  {
+    ++this->x;
+    ++this->y;
+    return *this;
+  }
+
+  constexpr Vec2<T>& operator--()
+  {
+    --this->x;
+    --this->y;
+    return *this;
+  }
+};
+
+/* -- Unary operators */
+
+template<typename T>
+constexpr Vec2<T> operator+(const Vec2<T> v)
+{
+  return v;
 }
 
-namespace Graphick {
-
-  using vec2 = Math::vec2;
-
+template<typename T>
+constexpr Vec2<T> operator-(const Vec2<T> v)
+{
+  return Vec2<T>(-v.x, -v.y);
 }
 
-#include "vec2.inl"
+/* -- Binary operators -- */
+
+template<typename T, typename U>
+constexpr Vec2<T> operator+(const Vec2<T> v, U scalar)
+{
+  return Vec2<T>(v.x + static_cast<T>(scalar), v.y + static_cast<T>(scalar));
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator+(U scalar, const Vec2<T> v)
+{
+  return Vec2<T>(static_cast<T>(scalar) + v.x, static_cast<T>(scalar) + v.y);
+}
+
+template<typename T>
+constexpr Vec2<T> operator+(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return Vec2<T>(v1.x + v2.x, v1.y + v2.y);
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator-(const Vec2<T> v, U scalar)
+{
+  return Vec2<T>(v.x - static_cast<T>(scalar), v.y - static_cast<T>(scalar));
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator-(U scalar, const Vec2<T> v)
+{
+  return Vec2<T>(static_cast<T>(scalar) - v.x, static_cast<T>(scalar) - v.y);
+}
+
+template<typename T>
+constexpr Vec2<T> operator-(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return Vec2<T>(v1.x - v2.x, v1.y - v2.y);
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator*(const Vec2<T> v, U scalar)
+{
+  return Vec2<T>(v.x * static_cast<T>(scalar), v.y * static_cast<T>(scalar));
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator*(U scalar, const Vec2<T> v)
+{
+  return Vec2<T>(static_cast<T>(scalar) * v.x, static_cast<T>(scalar) * v.y);
+}
+
+template<typename T>
+constexpr Vec2<T> operator*(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return Vec2<T>(v1.x * v2.x, v1.y * v2.y);
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator/(const Vec2<T> v, U scalar)
+{
+  return Vec2<T>(v.x / static_cast<T>(scalar), v.y / static_cast<T>(scalar));
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator/(U scalar, const Vec2<T> v)
+{
+  return Vec2<T>(static_cast<T>(scalar) / v.x, static_cast<T>(scalar) / v.y);
+}
+
+template<typename T>
+constexpr Vec2<T> operator/(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return Vec2<T>(v1.x / v2.x, v1.y / v2.y);
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator%(const Vec2<T> v, U scalar)
+{
+  return Vec2<T>(static_cast<T>(static_cast<int>(v.x) % static_cast<int>(scalar)),
+                 static_cast<T>(static_cast<int>(v.y) % static_cast<int>(scalar)));
+}
+
+template<typename T, typename U>
+constexpr Vec2<T> operator%(U scalar, const Vec2<T> v)
+{
+  return Vec2<T>(static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.x)),
+                 static_cast<T>(static_cast<int>(scalar) % static_cast<int>(v.y)));
+}
+
+template<typename T>
+constexpr Vec2<T> operator%(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return Vec2<T>(static_cast<T>(static_cast<int>(v1.x) % static_cast<int>(v2.x)),
+                 static_cast<T>(static_cast<int>(v1.y) % static_cast<int>(v2.y)));
+}
+
+/* -- Boolean operators -- */
+
+template<typename T>
+constexpr bool operator==(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return v1.x == v2.x && v1.y == v2.y;
+}
+
+template<typename T>
+constexpr bool operator!=(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return !(v1 == v2);
+}
+
+template<typename T>
+constexpr Vec2<T> operator&&(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return Vec2<T>(v1.x && v2.x, v1.y && v2.y);
+}
+
+template<typename T>
+constexpr Vec2<T> operator||(const Vec2<T> v1, const Vec2<T> v2)
+{
+  return Vec2<T>(v1.x || v2.x, v1.y || v2.y);
+}
+}  // namespace graphick::math
+
+namespace std {
+
+/* -- numeric_limits -- */
+
+template<typename T>
+class numeric_limits<graphick::math::Vec2<T>> {
+ public:
+  static inline graphick::math::Vec2<T> min()
+  {
+    return graphick::math::Vec2{numeric_limits<T>::min()};
+  }
+
+  static inline graphick::math::Vec2<T> max()
+  {
+    return graphick::math::Vec2{numeric_limits<T>::max()};
+  }
+
+  static inline graphick::math::Vec2<T> lowest()
+  {
+    return graphick::math::Vec2{numeric_limits<T>::lowest()};
+  }
+};
+
+}  // namespace std
+
+/* -- Aliases -- */
+
+namespace graphick::math {
+
+using vec2 = math::Vec2<float>;
+using dvec2 = math::Vec2<double>;
+using ivec2 = math::Vec2<int32_t>;
+using uvec2 = math::Vec2<uint8_t>;
+
+}  // namespace graphick::math
+
+namespace graphick {
+
+using math::dvec2;
+using math::ivec2;
+using math::uvec2;
+using math::vec2;
+
+}  // namespace graphick

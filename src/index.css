@@ -14,9 +14,15 @@
     @apply bg-primary-700;
     @apply text-xs;
     @apply font-semibold;
-    @apply text-primary-200;
+    @apply text-primary-100;
     @apply overflow-hidden;
     @apply select-none;
+
+    /* font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'BlinkMacSystemFont', 'Segoe UI',
+      'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', sans-serif, 'SFProLocalRange';
+    font-size: 11px;
+    line-height: 19px;
+    font-weight: 500; */
   }
 
   canvas {
