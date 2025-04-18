@@ -102,7 +102,8 @@ void Tiler::tile(const geom::dcubic_multipath& path,
 
   const dvec2 bounds_size = bounding_rect.size();
 
-  const bool create_fills = color.a == 255 && drawable.appearance.blending == BlendingMode::Normal;
+  const bool create_fills = fill.paint.is_color() && color.a == 255 &&
+                            drawable.appearance.blending == BlendingMode::Normal;
 
   /* Setting up the workspace, a 1 cell padding in all directions is applied. */
 

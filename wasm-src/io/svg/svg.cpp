@@ -395,10 +395,8 @@ static geom::path parse_path(const std::string& string)
         c[1] += current_point.y;
       }
 
-      // path.moveTo(c[0], c[1]);
       path.move_to({c[0], c[1]});
-      // auto vertex = std::make_shared<VertexEntity>(vec2{ c[0], c[1] });
-      // vertices.push_back(std::make_pair(vertex->id, vertex));
+
       start_point.x = current_point.x = c[0];
       start_point.y = current_point.y = c[1];
       command = command == 'm' ? 'l' : 'L';
@@ -411,10 +409,8 @@ static geom::path parse_path(const std::string& string)
         c[1] += current_point.y;
       }
 
-      // path.lineTo(c[0], c[1]);
       path.line_to({c[0], c[1]});
-      // auto vertex = std::make_shared<VertexEntity>(vec2{ c[0], c[1] });
-      // vertices.push_back(std::make_pair(vertex->id, vertex));
+
       current_point.x = c[0];
       current_point.y = c[1];
     } else if (command == 'H' || command == 'h') {
@@ -424,10 +420,8 @@ static geom::path parse_path(const std::string& string)
       if (command == 'h')
         c[0] += current_point.x;
 
-      // path.lineTo(c[0], current_point.y);
       path.line_to({c[0], current_point.y});
-      // auto vertex = std::make_shared<VertexEntity>(vec2{ c[0], current_point.y });
-      // vertices.push_back(std::make_pair(vertex->id, vertex));
+
       current_point.x = c[0];
     } else if (command == 'V' || command == 'v') {
       if (!parse_number_list(ptr, end, c + 1, 1))
@@ -436,10 +430,8 @@ static geom::path parse_path(const std::string& string)
       if (command == 'v')
         c[1] += current_point.y;
 
-      // path.lineTo(current_point.x, c[1]);
       path.line_to({current_point.x, c[1]});
-      // auto vertex = std::make_shared<VertexEntity>(vec2{ current_point.x, c[1] });
-      // vertices.push_back(std::make_pair(vertex->id, vertex));
+
       current_point.y = c[1];
     } else if (command == 'Q' || command == 'q') {
       if (!parse_number_list(ptr, end, c, 4))
@@ -453,15 +445,7 @@ static geom::path parse_path(const std::string& string)
       }
 
       path.quadratic_to({c[0], c[1]}, {c[2], c[3]});
-      // float cx1 = 2.0 / 3.0 * c[0] + 1.0 / 3.0 * current_point.x;
-      // float cy1 = 2.0 / 3.0 * c[1] + 1.0 / 3.0 * current_point.y;
-      // float cx2 = 2.0 / 3.0 * c[0] + 1.0 / 3.0 * c[2];
-      // float cy2 = 2.0 / 3.0 * c[1] + 1.0 / 3.0 * c[3];
-      // path.quadTo(current_point.x, current_point.y, c[0], c[1], c[2], c[3]);
-      // vertices.back().second->set_right(vec2{ cx1, cy1 } - vec2{ current_point.x,
-      // current_point.y }); auto vertex = std::make_shared<VertexEntity>(vec2{ c[2], c[3] }, vec2{
-      // cx2, cy2 } - vec2{ c[2], c[3] }, true); vertices.push_back(std::make_pair(vertex->id,
-      // vertex));
+
       control_point.x = c[0];
       control_point.y = c[1];
       current_point.x = c[2];
@@ -480,11 +464,7 @@ static geom::path parse_path(const std::string& string)
       }
 
       path.cubic_to({c[0], c[1]}, {c[2], c[3]}, {c[4], c[5]});
-      // path.cubicTo(c[0], c[1], c[2], c[3], c[4], c[5]);
-      // vertices.back().second->set_right(vec2{ c[0], c[1] } - vec2{ current_point.x,
-      // current_point.y }); auto vertex = std::make_shared<VertexEntity>(vec2{ c[4], c[5] }, vec2{
-      // c[2], c[3] } - vec2{ c[4], c[5] }, true); vertices.push_back(std::make_pair(vertex->id,
-      // vertex));
+
       control_point.x = c[2];
       control_point.y = c[3];
       current_point.x = c[4];
@@ -508,15 +488,7 @@ static geom::path parse_path(const std::string& string)
       }
 
       path.quadratic_to({c[0], c[1]}, {c[2], c[3]});
-      // float cx1 = 2.0 / 3.0 * c[0] + 1.0 / 3.0 * current_point.x;
-      // float cy1 = 2.0 / 3.0 * c[1] + 1.0 / 3.0 * current_point.y;
-      // float cx2 = 2.0 / 3.0 * c[0] + 1.0 / 3.0 * c[2];
-      // float cy2 = 2.0 / 3.0 * c[1] + 1.0 / 3.0 * c[3];
-      // path.quadTo(current_point.x, current_point.y, c[0], c[1], c[2], c[3]);
-      // vertices.back().second->set_right(vec2{ cx1, cy1 } - vec2{ current_point.x,
-      // current_point.y }); auto vertex = std::make_shared<VertexEntity>(vec2{ c[2], c[3] }, vec2{
-      // cx2, cy2 } - vec2{ c[2], c[3] }, true); vertices.push_back(std::make_pair(vertex->id,
-      // vertex));
+
       control_point.x = c[0];
       control_point.y = c[1];
       current_point.x = c[2];
@@ -542,11 +514,7 @@ static geom::path parse_path(const std::string& string)
       }
 
       path.cubic_to({c[0], c[1]}, {c[2], c[3]}, {c[4], c[5]});
-      // path.cubicTo(c[0], c[1], c[2], c[3], c[4], c[5]);
-      // vertices.back().second->set_right(vec2{ c[0], c[1] } - vec2{ current_point.x,
-      // current_point.y }); auto vertex = std::make_shared<VertexEntity>(vec2{ c[4], c[5] }, vec2{
-      // c[2], c[3] } - vec2{ c[4], c[5] }, true); vertices.push_back(std::make_pair(vertex->id,
-      // vertex));
+
       control_point.x = c[2];
       control_point.y = c[3];
       current_point.x = c[4];
@@ -555,7 +523,6 @@ static geom::path parse_path(const std::string& string)
       if (!parse_number_list(ptr, end, c, 3) || !parse_arc_flag(ptr, end, f[0]) ||
           !parse_arc_flag(ptr, end, f[1]) || !parse_number_list(ptr, end, c + 3, 2))
         return path;
-      // if (!parse_number_list(ptr, end, c, 3)) return path;
 
       if (command == 'a') {
         c[3] += current_point.x;
@@ -564,7 +531,7 @@ static geom::path parse_path(const std::string& string)
 
       path.arc_to(
           {current_point.x, current_point.y}, {c[0], c[1]}, c[2], f[0], f[1], {c[3], c[4]});
-      // path.arcTo(current_point.x, current_point.y, c[0], c[1], c[2], f[0], f[1], c[3], c[4]);
+
       current_point.x = c[3];
       current_point.y = c[4];
     } else if (command == 'Z' || command == 'z') {
@@ -631,7 +598,8 @@ bool parse_svg(const char* svg)
     ptr++;
 
     if (ptr < end && *ptr == '/') {
-      // if (current == nullptr && ignoring == 0) return false;
+      // if (current == nullptr && ignoring == 0)
+      //   return false;
 
       ptr++;
       if (!read_identifier(ptr, end, name))

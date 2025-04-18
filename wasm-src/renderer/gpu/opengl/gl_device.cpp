@@ -220,7 +220,11 @@ void GLDevice::clear(const ClearOps& ops)
     glCall(glDepthMask(GL_TRUE));
 
     if (ops.depth != s_device->m_state.clear_ops.depth) {
+#ifdef EMSCRIPTEN
       glCall(glClearDepthf(ops.depth.value()));
+#else
+      glCall(glClearDepth(ops.depth.value()));
+#endif
 
       s_device->m_state.clear_ops.depth = ops.depth.value();
     }
